@@ -152,15 +152,18 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
             .Construir();
 
     private static GrupoColetado ComposicaoFamiliar() =>
-        GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("RG_NUMERO_MEMBRO", 0)
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+            .ComOcorrencias(0, null)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("RG_NUMERO_MEMBRO", 0)
                 .ComRotulo("RG do membro")
                 .DeTexto("LIVRE")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .ComClassificacao("IDENTIFICADOR")
                 .ComRestricoes(new TamanhoTexto(1, 5))
-                .Construir()],
-            FinalidadeFormulario.Inscricao).Value!;
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static InscricaoRequest ComRespostaDoMembro() => Resposta("APELIDO", "Nanda") with
     {

@@ -35,6 +35,7 @@
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/GrupoColetadoDeTeste.cs" Link="GrupoColetadoDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
     <Compile Include="../Shared/ExibicaoDeTeste.cs" Link="ExibicaoDeTeste.cs" />
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />

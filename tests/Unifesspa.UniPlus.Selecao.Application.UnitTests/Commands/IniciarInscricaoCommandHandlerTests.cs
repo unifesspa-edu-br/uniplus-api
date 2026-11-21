@@ -193,11 +193,13 @@ public sealed class IniciarInscricaoCommandHandlerTests
             .ComClassificacao(classificacao)
             .Construir();
 
-    private static GrupoColetado GrupoComDocumento() => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",
-        minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
-        [Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR")],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado GrupoComDocumento() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+        .NaSecao(null)
+        .ComOcorrencias(0, null)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR"))
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     private static ConfiguracaoPublicada ConfiguracaoComDocumentoNoGrupo(ProcessoSeletivo processoBase) => new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),

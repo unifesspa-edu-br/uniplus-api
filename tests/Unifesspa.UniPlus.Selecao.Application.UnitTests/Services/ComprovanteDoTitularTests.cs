@@ -188,10 +188,12 @@ public sealed class ComprovanteDoTitularTests
             .DeTexto("LIVRE")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
-        return GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 1, maximo: null, exibicao: null,
-            Obrigatoriedade.Nunca, [parentesco, Texto("NOME_MEMBRO", "Nome do membro", 1)],
-            FinalidadeFormulario.Inscricao, incluiCandidato: true).Value!;
+        return GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+            .ComOcorrencias(1, null)
+            .IncluindoOCandidato()
+            .ComCampos(parentesco, Texto("NOME_MEMBRO", "Nome do membro", 1))
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
     }
 
 

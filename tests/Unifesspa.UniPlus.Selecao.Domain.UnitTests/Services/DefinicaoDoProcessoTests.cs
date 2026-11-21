@@ -34,14 +34,17 @@ public sealed class DefinicaoDoProcessoTests
     public void Montar_SecaoSoComGrupo_EntraComOGrupo()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        GrupoColetado familia = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, "FAMILIA", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+        GrupoColetado familia = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+            .NaSecao("FAMILIA")
+            .ComOcorrencias(1, null)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
                 .ComRotulo("Parentesco")
                 .DoTipo(TipoRenderizacao.SelecaoUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .Construir()],
-            FinalidadeFormulario.Habilitacao).Value!;
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Habilitacao)
+            .Construir();
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [familia]).IsSuccess.Should().BeTrue();
 
         DefinicaoFormulario definicao = Montar(processo);

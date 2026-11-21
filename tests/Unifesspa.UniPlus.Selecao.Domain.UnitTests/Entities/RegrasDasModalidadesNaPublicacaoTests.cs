@@ -233,9 +233,11 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         new Dictionary<string, string>(StringComparer.Ordinal) { [AgregadoDoGrupo] = CampoDeMembro });
 
     private static GrupoColetado GrupoComOCampoDeMembro(FinalidadeFormulario finalidade) =>
-        GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando(CampoDeMembro, 0).ComRotulo("Membro pede").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
-            finalidade).Value!;
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 2)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando(CampoDeMembro, 0).ComRotulo("Membro pede").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .DaFinalidade(finalidade)
+            .Construir();
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == codigo);

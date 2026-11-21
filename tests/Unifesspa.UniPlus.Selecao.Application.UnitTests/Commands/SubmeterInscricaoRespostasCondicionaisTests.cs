@@ -145,18 +145,19 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
         inscricao.Formulario.Preenchimento.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().NotContainKey("RENDA_DO_MEMBRO");
     }
 
-    private static GrupoColetado GrupoDeDependentes() => GrupoColetado.Criar(
-        "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
-        PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
-        Obrigatoriedade.Nunca,
-        [FatoColetadoDeTeste.Coletando("NOME_DEPENDENTE", 0).ComRotulo("Nome").DeTexto("LIVRE").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado GrupoDeDependentes() => GrupoColetadoDeTeste.Agrupando("DEPENDENTES", 2)
+        .ComRotulo("Dependentes")
+        .ComOcorrencias(0, null)
+        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)
+        .ComCampos(FatoColetadoDeTeste.Coletando("NOME_DEPENDENTE", 0).ComRotulo("Nome").DeTexto("LIVRE").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
-    private static GrupoColetado GrupoDeComposicao() => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
-        Obrigatoriedade.Nunca,
-        [Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA")],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado GrupoDeComposicao() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+        .ComOcorrencias(0, null)
+        .ComCampos(Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA"))
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> RespostasDaComposicao() => new(StringComparer.Ordinal)
     {

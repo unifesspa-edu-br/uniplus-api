@@ -155,15 +155,17 @@ internal static class FormularioDoEnvioDeTeste
         .ComClassificacao("SENSIVEL")
         .Construir();
 
-    internal static GrupoColetado GrupoMunicipal() => GrupoColetado.Criar(
-        "LOCAIS", 1, FormularioDeTeste.Secao, "Locais", minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Nunca,
-        [FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
+    internal static GrupoColetado GrupoMunicipal() => GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)
+        .ComRotulo("Locais")
+        .ComOcorrencias(0, null)
+        .ComCampos(FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
             .ComRotulo("Município")
             .DoTipo(TipoRenderizacao.Municipio)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
-            .Construir()],
-        FinalidadeFormulario.Inscricao).Value!;
+            .Construir())
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     internal static Dictionary<string, JsonElement> Texto(params (string Fato, string Valor)[] respostas) =>
         respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal);

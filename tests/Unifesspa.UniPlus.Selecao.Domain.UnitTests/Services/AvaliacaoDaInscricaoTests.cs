@@ -245,7 +245,14 @@ public sealed class AvaliacaoDaInscricaoTests
                 .ComClassificacao("SENSIVEL")
                 .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
                 .Construir();
-            grupos = [GrupoColetado.Criar(GrupoDeMunicipios, 1, Secao, "Municípios", 0, 3, null, Obrigatoriedade.Sempre, [membro], FinalidadeFormulario.Inscricao).Value!];
+            grupos = [GrupoColetadoDeTeste.Agrupando(GrupoDeMunicipios, 1)
+                .NaSecao(Secao)
+                .ComRotulo("Municípios")
+                .ComOcorrencias(0, 3)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComCampos(membro)
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir()];
             definicao = new DefinicaoFormulario(
                 [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
                     [new DefinicaoGrupo(GrupoDeMunicipios, soSePedeOFator, Obrigatoriedade.Sempre, 0, 3,

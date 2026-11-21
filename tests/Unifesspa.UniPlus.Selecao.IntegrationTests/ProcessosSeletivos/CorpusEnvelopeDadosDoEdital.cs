@@ -133,12 +133,12 @@ internal static class CorpusEnvelopeDadosDoEdital
     /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
     /// o máximo nulo; o grupo inclui o candidato, identificado pelo parentesco.
     /// </summary>
-    internal static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 1, null,
-        PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
-        Obrigatoriedade.Nunca,
-        Ordem([
+    internal static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 2)
+        .ComOcorrencias(1, null)
+        .IncluindoOCandidato()
+        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!)
+        .ComCampos(Ordem([
             FatoColetadoDeTeste.Coletando("TRABALHADOR_RURAL", 0)
                 .ComRotulo("Trabalha no campo")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
@@ -156,8 +156,8 @@ internal static class CorpusEnvelopeDadosDoEdital
                 .DoTipo(TipoRenderizacao.SelecaoUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir(),
-        ], permutar),
-        incluiCandidato: true).Value!;
+        ], permutar))
+        .Construir();
 
     /// <summary>
     /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>

@@ -63,12 +63,14 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     }
 
     private static GrupoColetado GrupoDaInscricao() =>
-        GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("MEMBRO_PEDE_O_ACRESCIMO", 0)
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 2)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MEMBRO_PEDE_O_ACRESCIMO", 0)
                 .ComRotulo("Membro pede o acréscimo")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .Construir()],
-            FinalidadeFormulario.Inscricao).Value!;
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>
         processo.DefinirBonusRegional(

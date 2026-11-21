@@ -78,8 +78,12 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
             .DeTexto("LIVRE")
             .ExibidoQuando(ExibicaoDeTeste.Quando("LOCAL_MUNICIPIO", Operador.Igual, Belem))
             .Construir();
-        return GrupoColetado.Criar("LOCAIS", 1, FormularioDeTeste.Secao, "Locais", minimo: 0, maximo: null,
-            exibicao: null, Obrigatoriedade.Nunca, [GrupoMunicipal().Subitens.First(), observacao], FinalidadeFormulario.Inscricao).Value!;
+        return GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)
+            .ComRotulo("Locais")
+            .ComOcorrencias(0, null)
+            .ComCampos(GrupoMunicipal().Subitens.First(), observacao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
     }
 
     private static DocumentoExigido DocumentoCondicional(Guid fase, string codigo, string fato, JsonElement valor) =>

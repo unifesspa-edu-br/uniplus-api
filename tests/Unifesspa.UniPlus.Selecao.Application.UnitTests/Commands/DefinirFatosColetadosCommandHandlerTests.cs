@@ -49,14 +49,15 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         .NaSecao(FormularioDeTeste.Secao)
         .Construir();
 
-    private static GrupoColetado ComposicaoFamiliar(int ordem) => GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", ordem, FormularioDeTeste.Secao, "Composição familiar", 0, 10, null, Obrigatoriedade.Nunca,
-            [FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+    private static GrupoColetado ComposicaoFamiliar(int ordem) => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", ordem)
+            .ComOcorrencias(0, 10)
+            .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
                 .ComRotulo("Parentesco")
                 .DoTipo(TipoRenderizacao.SelecaoUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .Construir()],
-            FinalidadeFormulario.Inscricao).Value!;
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static Task<Result> RegravarSoOsItensAsync(ProcessoSeletivo processo, FatoColetado baixaRenda) =>
         DefinirNaInscricaoAsync(

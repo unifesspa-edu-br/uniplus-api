@@ -59,10 +59,11 @@ public sealed class FatosDasVersoesPublicadasTests
     [Fact(DisplayName = "O código do grupo e os campos dele contam como coletados pela finalidade")]
     public void Garante_GrupoECamposDoGrupo()
     {
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "FAMILIA", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("MEMBRO_RENDA", 0).ComRotulo("Renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
-            FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("FAMILIA", 1)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MEMBRO_RENDA", 0).ComRotulo("Renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
         FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")], [grupo])]);
 

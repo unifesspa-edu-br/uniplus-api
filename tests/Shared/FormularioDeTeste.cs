@@ -279,9 +279,7 @@ internal static class FormularioDeTeste
     private static GrupoColetado Deslocar(GrupoColetado grupo, int deslocamento) =>
         deslocamento == 0
             ? grupo
-            : GrupoColetado.Criar(
-                grupo.Codigo, grupo.Ordem + deslocamento, grupo.EtapaCodigo, grupo.Rotulo, grupo.Minimo, grupo.Maximo, grupo.Exibicao,
-                grupo.Obrigatoriedade, [.. grupo.Subitens], grupo.Finalidade, grupo.IncluiCandidato).Value!;
+            : GrupoColetadoDeTeste.Como(grupo).NaOrdem(grupo.Ordem + deslocamento).Construir();
 
     /// <summary>O formato que o catálogo dá a cada texto do conjunto básico.</summary>
     private static readonly Dictionary<string, string> FormatoDosTextos = new(StringComparer.Ordinal)

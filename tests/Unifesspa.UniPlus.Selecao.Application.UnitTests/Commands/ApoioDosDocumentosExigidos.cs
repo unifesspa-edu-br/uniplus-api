@@ -100,9 +100,11 @@ internal static class ApoioDosDocumentosExigidos
     }
 
     private static GrupoColetado GrupoDaComposicaoFamiliar() =>
-        GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!;
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+            .ComOcorrencias(1, 10)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .Construir();
 
     private static FatoCandidatoView FatoMaiorIdadeDoMembro() =>
         new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",

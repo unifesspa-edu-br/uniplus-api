@@ -187,14 +187,14 @@ internal static class ProcessosDeInscricaoDeTeste
 
     private static GrupoColetado ComposicaoFamiliar()
     {
-        GrupoColetado composicaoFamiliar = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, etapaCodigo: FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
-            Obrigatoriedade.Sempre,
-            [
+        GrupoColetado composicaoFamiliar = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+            .ComOcorrencias(0, null)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(
                 CampoTextual("RG_NUMERO_MEMBRO", 0, "RG do membro", "IDENTIFICADOR"),
-                CampoTextual("PARENTESCO", 1, "Parentesco", "PESSOAL"),
-            ],
-            FinalidadeFormulario.Inscricao).Value!;
+                CampoTextual("PARENTESCO", 1, "Parentesco", "PESSOAL"))
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         return composicaoFamiliar;
     }
 

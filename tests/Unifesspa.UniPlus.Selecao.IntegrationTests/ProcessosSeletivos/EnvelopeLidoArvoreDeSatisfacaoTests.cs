@@ -80,9 +80,11 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
     private static void DefinirGrupoDeComposicaoFamiliar(ProcessoSeletivo processo) =>
         processo.DefinirItens([], grupos:
         [
-            GrupoColetado.Criar(
-                "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-                [FatoColetadoDeTeste.Coletando("SEM_RENDA", 0).ComRotulo("Sem renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!,
+            GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+                .ComOcorrencias(1, 10)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComCampos(FatoColetadoDeTeste.Coletando("SEM_RENDA", 0).ComRotulo("Sem renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
 
     private static NoExigencia RaizGrupoOuDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)

@@ -56,8 +56,10 @@ public sealed class FaseEfetivaDosFatosTests
         FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 
     private static GrupoColetado Grupo(string membro) =>
-        GrupoColetado.Criar($"GRUPO_{membro}", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando(membro, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!;
+        GrupoColetadoDeTeste.Agrupando($"GRUPO_{membro}", 1)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando(membro, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .Construir();
 
     private static void DefinirDerivado(ProcessoSeletivo processo, string derivado, string dependencia) =>
         processo.DefinirRegrasDerivacao(
@@ -169,9 +171,10 @@ public sealed class FaseEfetivaDosFatosTests
         FatoColetado campo = FatoColetadoDeTeste.Coletando("MEMBRO_RURAL", 0)
             .ComObrigatoriedade(campoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)
             .Construir();
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "GRUPO_MEMBRO_RURAL", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null,
-            grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, [campo]).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("GRUPO_MEMBRO_RURAL", 1)
+            .ComObrigatoriedade(grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)
+            .ComCampos(campo)
+            .Construir();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA")], [grupo])
             .IsSuccess.Should().BeTrue();
         PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(processo.Declaracao(), Agregados).Should().BeNull("nenhuma regra cita o agregado");

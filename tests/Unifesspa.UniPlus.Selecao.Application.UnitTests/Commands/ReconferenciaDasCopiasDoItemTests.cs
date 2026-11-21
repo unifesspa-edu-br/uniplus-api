@@ -180,10 +180,13 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         PredicadoDnf quandoPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
         FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1, itens.First().EtapaCodigo, "Composição familiar", 0, 10, quandoPreta, Obrigatoriedade.Nunca,
-            [FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir()],
-            FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1)
+            .NaSecao(itens.First().EtapaCodigo)
+            .ComOcorrencias(0, 10)
+            .ExibidoQuando(quandoPreta)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");

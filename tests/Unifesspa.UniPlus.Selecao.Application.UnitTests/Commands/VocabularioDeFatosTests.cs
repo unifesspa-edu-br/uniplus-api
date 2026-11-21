@@ -115,13 +115,14 @@ public sealed class VocabularioDeFatosTests
     public void QueOProcessoResolve_AgregadoDeCampoDeGrupo_Incluido()
     {
         ProcessoSeletivo processo = Processo();
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO", 0)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                 .ComRotulo("Categoria de renda")
                 .DoTipo(TipoRenderizacao.SelecaoUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .Construir()]).Value!;
+                .Construir())
+            .Construir();
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])

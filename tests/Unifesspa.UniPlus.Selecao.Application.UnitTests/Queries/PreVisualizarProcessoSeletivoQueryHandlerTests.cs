@@ -254,11 +254,11 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
-        GrupoColetado composicao = GrupoColetado.Criar(
-            Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", minimoDaComposicao, null,
-            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
-            Obrigatoriedade.Sempre,
-            [
+        GrupoColetado composicao = GrupoColetadoDeTeste.Agrupando(Composicao, 0)
+            .ComOcorrencias(minimoDaComposicao, null)
+            .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(
                 FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                     .ComRotulo("Categoria de renda")
                     .DoTipo(TipoRenderizacao.SelecaoUnica)
@@ -267,9 +267,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
                     .ComRotulo("Menor sob guarda")
                     .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                    .Construir(),
-            ],
-            FinalidadeFormulario.Habilitacao).Value!;
+                    .Construir())
+            .DaFinalidade(FinalidadeFormulario.Habilitacao)
+            .Construir();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [composicao]).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(

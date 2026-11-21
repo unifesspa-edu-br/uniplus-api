@@ -128,7 +128,12 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         "termo" => cenario.Processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita(Novo)]),
         _ => cenario.Processo.DefinirFatosColetados(
             FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)],
-            [GrupoColetado.Criar("DEPENDENTES", 1, FormularioDeTeste.Secao, "Dependentes", 0, 5, Cita(Novo), Obrigatoriedade.Sempre, [Campo("DEPENDENTE_RENDA", 0)]).Value!]),
+            [GrupoColetadoDeTeste.Agrupando("DEPENDENTES", 1)
+                .ComRotulo("Dependentes")
+                .ExibidoQuando(Cita(Novo))
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComCampos(Campo("DEPENDENTE_RENDA", 0))
+                .Construir()]),
     };
 
     [Fact(DisplayName = "O formulário de habilitação acrescentado depois da publicação também não cita fato que só a base da inscrição coleta")]
@@ -335,9 +340,10 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .Construir();
 
     private static GrupoColetado Familia(int ordem, params string[] campos) =>
-        GrupoColetado.Criar(
-            "FAMILIA", ordem, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [.. campos.Select(static (campo, indice) => Campo(campo, indice))]).Value!;
+        GrupoColetadoDeTeste.Agrupando("FAMILIA", ordem)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos([.. campos.Select(static (campo, indice) => Campo(campo, indice))])
+            .Construir();
 
     private static PredicadoDnf Cita(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

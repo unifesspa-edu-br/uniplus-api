@@ -292,5 +292,5 @@ public sealed class ProcessoSeletivoGruposColetadosTests
 
     private static GrupoColetado Grupo(
         string codigo, int ordem, string secao = FormularioDeTeste.Secao, PredicadoDnf? exibicao = null, params FatoColetado[] campos) =>
-        GrupoColetado.Criar(codigo, ordem, secao, "Composição familiar", 0, 5, exibicao, Obrigatoriedade.Nunca, campos).Value!;
+        GrupoColetadoDeTeste.Agrupando(codigo, ordem).NaSecao(secao).ExibidoQuando(exibicao).ComCampos(campos).Construir();
 }

@@ -346,7 +346,14 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             ArvoreExigenciasCongelada.DeGrafoReidratado(raizes),
             [Campo(BaixaRenda), Campo(PediuFator)],
-            [GrupoColetado.Criar(Familia, 1, Secao, "Família", 0, null, null, Obrigatoriedade.Sempre, [Campo(RendaDoMembro, etapa: null)], FinalidadeFormulario.Inscricao).Value!],
+            [GrupoColetadoDeTeste.Agrupando(Familia, 1)
+                .NaSecao(Secao)
+                .ComRotulo("Família")
+                .ComOcorrencias(0, null)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComCampos(Campo(RendaDoMembro, etapa: null))
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir()],
             [],
             [FaseDaInscricao, FaseDaHabilitacao],
             [Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao), Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);

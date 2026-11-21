@@ -65,5 +65,5 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
         FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static GrupoColetado Grupo(string codigo, int ordem, params FatoColetado[] campos) =>
-        GrupoColetado.Criar(codigo, ordem, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, campos).Value!;
+        GrupoColetadoDeTeste.Agrupando(codigo, ordem).ComCampos(campos).Construir();
 }

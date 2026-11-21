@@ -155,10 +155,12 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         Agregados = [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)],
     };
 
-    private static GrupoColetado Familia() => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 1, Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
-        [Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null)],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado Familia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+        .NaSecao(Secao)
+        .ComOcorrencias(0, null)
+        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null))
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     /// <summary>A configuração de um processo, como a configuração publicada ou a configuração viva a dão à projeção.</summary>
     private sealed record Configuracao(

@@ -31,8 +31,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
             .ComRotulo("Parentesco")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [campo]).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO", 0).ComCampos(campo).Construir();
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
