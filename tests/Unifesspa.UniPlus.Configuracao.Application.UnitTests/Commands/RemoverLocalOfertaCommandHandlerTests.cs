@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class RemoverLocalOfertaCommandHandlerTests
 {
@@ -21,7 +22,7 @@ public sealed class RemoverLocalOfertaCommandHandlerTests
     private static LocalOferta NovoLocal() =>
         LocalOferta.Criar(
             new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
-            DateTimeOffset.UnixEpoch).Value!;
+            DateTimeOffset.UnixEpoch).ValorEsperado();
 
     [Fact(DisplayName = "Local inexistente retorna 404 (NaoEncontrado)")]
     public async Task Handle_NaoEncontrado_Retorna404()

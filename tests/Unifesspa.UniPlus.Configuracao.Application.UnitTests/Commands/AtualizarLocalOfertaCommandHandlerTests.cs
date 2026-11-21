@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class AtualizarLocalOfertaCommandHandlerTests
 {
@@ -22,7 +23,7 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
     private static LocalOferta Existente() =>
         LocalOferta.Criar(
             new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
-            TimeProvider.System.GetUtcNow()).Value!;
+            TimeProvider.System.GetUtcNow()).ValorEsperado();
 
     private static AtualizarLocalOfertaCommand Comando(Guid id, Guid? campusId = null) =>
         new(id, TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null);
@@ -106,7 +107,7 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
         Guid campusId = Guid.CreateVersion7();
         LocalOferta existente = LocalOferta.Criar(
             new(TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null),
-            TimeProvider.System.GetUtcNow()).Value!;
+            TimeProvider.System.GetUtcNow()).ValorEsperado();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarLocalOfertaCommandHandler.Handle(

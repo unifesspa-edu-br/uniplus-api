@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
 {
@@ -25,7 +26,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
     private LocalOferta Existente()
     {
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null), Criacao).Value!;
+            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null), Criacao).ValorEsperado();
         _repository.ObterPorIdAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
 
         return local;
@@ -70,7 +71,8 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
             _repository, _campusRepository, _unitOfWork, new RelogioFixo(Edicao), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        criado!.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
+        criado.Should().NotBeNull();
+        criado.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
         criado.CidadeDisplayAtualizadoEm.Should().Be(Edicao);
     }
 

@@ -308,23 +308,23 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     // ── Conversores/comparadores ──────────────────────────────────────────────
 
     private static readonly ValueConverter<DominioFato, string> DominioConverter =
-        new(dominio => DominiosFato.ParaTokenCanonico(dominio), token => DominiosFato.Analisar(token));
+        new(dominio => DominiosFato.ParaTokenCanonico(dominio), codigo => DominiosFato.Analisar(codigo));
 
     private static readonly ValueConverter<OrigemFato, string> OrigemConverter =
-        new(origem => OrigensFato.ParaTokenCanonico(origem), token => OrigensFato.Analisar(token));
+        new(origem => OrigensFato.ParaTokenCanonico(origem), codigo => OrigensFato.Analisar(codigo));
 
     private static readonly ValueConverter<FonteValoresFato, string> FonteValoresConverter =
-        new(fonte => FontesValoresFato.ParaTokenCanonico(fonte), token => FontesValoresFato.Analisar(token));
+        new(fonte => FontesValoresFato.ParaTokenCanonico(fonte), codigo => FontesValoresFato.Analisar(codigo));
 
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
-        new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));
+        new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), codigo => CardinalidadesFato.Analisar(codigo));
 
     private static readonly ValueConverter<ComponenteDeExibicao, string> ComponenteExibicaoConverter =
-        new(componente => ComponentesDeExibicao.ParaTokenCanonico(componente), token => ComponentesDeExibicao.Analisar(token));
+        new(componente => ComponentesDeExibicao.ParaTokenCanonico(componente), codigo => ComponentesDeExibicao.Analisar(codigo));
 
     private static readonly ValueConverter<FormatoTexto, string> FormatoConverter =
-        new(formato => FormatosTexto.ParaTokenCanonico(formato), token => FormatosTexto.Analisar(token));
+        new(formato => FormatosTexto.ParaTokenCanonico(formato), codigo => FormatosTexto.Analisar(codigo));
 
     private static readonly ValueConverter<EscopoFato, string> EscopoConverter =
-        new(escopo => EscoposFato.ParaTokenCanonico(escopo), token => EscoposFato.Analisar(token));
+        new(escopo => EscoposFato.ParaTokenCanonico(escopo), codigo => EscoposFato.Analisar(codigo));
 }

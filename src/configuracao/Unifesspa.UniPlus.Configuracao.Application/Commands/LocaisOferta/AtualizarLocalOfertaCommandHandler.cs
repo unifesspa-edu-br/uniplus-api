@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// o que é determinável sem o registro persistido — tipo, cidade, formato e
 /// coerência do endereço com a cidade da própria declaração, código e-MEC — e só
 /// então busca o Local de Oferta por Id (validação sempre vence 404). A
-/// resolução final do endereço (preservando o instante do display cache quando
+/// resolução final do endereço (preservando o instante da cópia da cidade quando
 /// o conteúdo não muda) só é possível depois do fetch, mas o formato já foi
 /// confirmado válido na conferência prévia com a mesma declaração e o mesmo
 /// instante — não pode falhar de novo.
@@ -95,15 +95,13 @@ public static class AtualizarLocalOfertaCommandHandler
     private static async Task<Result> ConferirCampusResponsavelAsync(
         AtualizarLocalOfertaCommand command, LocalOferta local, ICampusRepository campusRepository, CancellationToken cancellationToken)
     {
-        bool campusMudou = command.CampusResponsavelId.HasValue && command.CampusResponsavelId != local.CampusResponsavelId;
-
-        return campusMudou
-            ? await CampusResponsavelDoLocal.ConferirAsync(command.CampusResponsavelId!.Value, campusRepository, cancellationToken).ConfigureAwait(false)
+        return command.CampusResponsavelId is { } campusId && campusId != local.CampusResponsavelId
+            ? await CampusResponsavelDoLocal.ConferirAsync(campusId, campusRepository, cancellationToken).ConfigureAwait(false)
             : Result.Success();
     }
 
     // O formato do endereço já foi confirmado na conferência prévia, com a mesma declaração e o mesmo instante: esta resolução
-    // só existe para preservar o instante do display cache quando o conteúdo do endereço não muda.
+    // só existe para preservar o instante da cópia da cidade ou do endereço quando o conteúdo do endereço não muda.
     private static ReferenciaEnderecoGeo? EnderecoPreservandoOInstante(
         AtualizarLocalOfertaCommand command, LocalOferta local, DateTimeOffset agora)
     {

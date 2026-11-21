@@ -69,9 +69,9 @@ internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declara
         ReferenciaEnderecoGeo? endereco = declaracao.Endereco;
         Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
             endereco?.CidadeCodigoIbge, endereco?.CidadeUf, declaracao.CidadeCodigoIbge, declaracao.CidadeUf);
-        if (coerencia.IsFailure)
+        if (coerencia.Error is { } erroDeCoerencia)
         {
-            _erros.Add(new("endereco", coerencia.Error!));
+            _erros.Add(new("endereco", erroDeCoerencia));
         }
     }
 

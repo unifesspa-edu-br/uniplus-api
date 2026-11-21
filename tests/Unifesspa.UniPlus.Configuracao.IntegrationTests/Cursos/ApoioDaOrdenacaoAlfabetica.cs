@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal sealed class ApoioDaOrdenacaoAlfabetica
 {
@@ -179,7 +180,7 @@ internal sealed class ApoioDaOrdenacaoAlfabetica
     {
         LocalOferta local = LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
-            DateTimeOffset.UtcNow).Value!;
+            DateTimeOffset.UtcNow).ValorEsperado();
 
         await PersistirAsync(local);
 

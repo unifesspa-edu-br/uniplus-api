@@ -71,7 +71,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .IsRequired();
     }
 
-    // Coleção primitiva de 1..2 tokens de domínio fechado, mapeada a um array
+    // Coleção primitiva de 1..2 códigos de domínio fechado, mapeada a um array
     // nativo do Postgres (varchar(30)[]). Array em vez de tabela filha porque
     // só ele permite ao banco recusar, numa única expressão sem subquery, as
     // três formas de violação da cardinalidade: lista vazia, turno repetido e
@@ -188,7 +188,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_formato_pedagogico",
-            $"formato_pedagogico IN ({TokensSql(FormatosPedagogicos.TokensCanonicos)})");
+            $"formato_pedagogico IN ({CodigosSql(FormatosPedagogicos.TokensCanonicos)})");
     }
 
     // Domínio fechado do programa de oferta e guard condicional da base legal (ADR-0066): programa
@@ -197,7 +197,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_programa_de_oferta",
-            $"programa_de_oferta IN ({TokensSql(ProgramasDeOferta.TokensCanonicos)})");
+            $"programa_de_oferta IN ({CodigosSql(ProgramasDeOferta.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_base_legal_programa",
@@ -209,15 +209,15 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_regime_de_turno",
-            $"regime_de_turno IN ({TokensSql(RegimesDeTurno.TokensCanonicos)})");
+            $"regime_de_turno IN ({CodigosSql(RegimesDeTurno.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_regime_de_funcionamento",
-            $"regime_de_funcionamento IN ({TokensSql(RegimesDeFuncionamento.TokensCanonicos)})");
+            $"regime_de_funcionamento IN ({CodigosSql(RegimesDeFuncionamento.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_turnos_dominio",
-            $"turnos::text[] <@ ARRAY[{TokensSql(TurnosOferta.TokensCanonicos)}]::text[]");
+            $"turnos::text[] <@ ARRAY[{CodigosSql(TurnosOferta.TokensCanonicos)}]::text[]");
     }
 
     // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
@@ -259,19 +259,19 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     private static string CompatibilidadeFuncionamentoRegimeSql()
     {
         IEnumerable<string> clausulas = RegimesDeFuncionamento.TokensCanonicos
-            .Select(token =>
+            .Select(codigo =>
             {
-                RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento funcionamento);
-                return (Token: token, Exigido: RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento));
+                RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento funcionamento);
+                return (Codigo: codigo, Exigido: RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento));
             })
             .Where(par => par.Exigido is not null)
             .Select(par =>
-                $"(regime_de_funcionamento <> '{par.Token}' "
+                $"(regime_de_funcionamento <> '{par.Codigo}' "
                 + $"OR regime_de_turno = '{RegimesDeTurno.ParaTokenCanonico(par.Exigido!.Value)}')");
 
         return string.Join(" AND ", clausulas);
     }
 
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
+    private static string CodigosSql(IReadOnlyList<string> codigos) =>
+        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }

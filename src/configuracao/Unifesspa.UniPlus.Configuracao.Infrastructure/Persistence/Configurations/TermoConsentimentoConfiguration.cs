@@ -38,7 +38,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
     {
         table.HasCheckConstraint(
             "ck_termos_de_consentimento_forma_aceite_rascunho",
-            $"forma_aceite_rascunho IN ({TokensSql(FormasAceite.TokensCanonicos)})");
+            $"forma_aceite_rascunho IN ({CodigosSql(FormasAceite.TokensCanonicos)})");
         table.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
     }
 
@@ -119,6 +119,6 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
             .HasDatabaseName("ix_termos_de_consentimento_nome");
     }
 
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
+    private static string CodigosSql(IReadOnlyList<string> codigos) =>
+        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }

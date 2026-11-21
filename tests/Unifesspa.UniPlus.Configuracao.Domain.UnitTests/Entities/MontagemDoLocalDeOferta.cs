@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static class MontagemDoLocalDeOferta
 {
@@ -24,11 +25,11 @@ internal static class MontagemDoLocalDeOferta
         LocalOferta.Criar(Declaracao(ajuste), Agora);
 
     internal static LocalOferta Existente(Func<DeclaracaoDoLocalDeOferta, DeclaracaoDoLocalDeOferta>? ajuste = null) =>
-        Criar(ajuste).Value!;
+        Criar(ajuste).ValorEsperado();
 
     internal static ReferenciaEnderecoGeo Endereco(string cidadeCodigoIbge = "1504208", string cidadeUf = "PA") =>
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
             cidadeCodigoIbge, "Marabá", cidadeUf, -5.3m, -49.1m,
-            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
+            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).ValorEsperado();
 }

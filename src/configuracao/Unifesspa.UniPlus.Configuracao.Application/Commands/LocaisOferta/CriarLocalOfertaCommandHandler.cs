@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler do <see cref="CriarLocalOfertaCommand"/>: valida o agregado por
 /// inteiro primeiro (sem I/O) — tipo, cidade, coerência com o endereço e código
-/// e-MEC acumulados no mesmo lote — só então confere a existência do campus
+/// e-MEC acumulados na mesma resposta — só então confere a existência do campus
 /// responsável (quando informado, FK intra-banco opcional ADR-0065) e persiste o
 /// local, que define sozinho a proveniência da cidade.
 /// </summary>
@@ -32,13 +32,13 @@ public static class CriarLocalOfertaCommandHandler
 
         Result<LocalOferta> local = MontarLocal(command, timeProvider.GetUtcNow());
 
-        return local.IsFailure
-            ? Result<Guid>.ValidationFailure(local.Errors)
-            : await ConferirCampusEGravarAsync(local.Value!, repository, campusRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
+        return local.Value is { } novo
+            ? await ConferirCampusEGravarAsync(novo, repository, campusRepository, unitOfWork, cancellationToken).ConfigureAwait(false)
+            : Result<Guid>.ValidationFailure(local.Errors);
     }
 
     // Não retorna cedo quando o endereço falha: o local é criado de qualquer forma (sem endereço) para que tipo, cidade e
-    // código e-MEC também sejam conferidos e entrem no mesmo lote de errors[]; senão um CEP malformado esconderia os demais.
+    // código e-MEC também sejam conferidos e entrem juntos em errors[]; senão um CEP malformado esconderia os demais.
     private static Result<LocalOferta> MontarLocal(CriarLocalOfertaCommand command, DateTimeOffset agora)
     {
         (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
@@ -63,7 +63,7 @@ public static class CriarLocalOfertaCommandHandler
             : Result.Success();
 
         return campus.IsFailure
-            ? Result<Guid>.Failure(campus.Error!)
+            ? Result<Guid>.ValidationFailure(campus.Errors)
             : await GravarAsync(local, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 

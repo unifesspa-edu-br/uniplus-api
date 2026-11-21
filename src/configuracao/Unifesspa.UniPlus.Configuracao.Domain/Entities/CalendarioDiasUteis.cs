@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>No máximo um dataset é vigente por vez — a invariante cross-agregado é
 /// aplicada pelo handler (que desmarca o vigente anterior na mesma transação) e
 /// reforçada por índice único parcial de banco, nunca só por guarda em memória.</para>
-/// <para>Motor de contagem de dias úteis (como um instante-âncora em dia não útil se
+/// <para>Motor de contagem de dias úteis (como um instante de referência em dia não útil se
 /// resolve) é escopo futuro do módulo de Recursos — esta entidade só entrega o
 /// cadastro e a pergunta "há dataset vigente?".</para>
 /// </remarks>
@@ -66,7 +66,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// Cria um dataset novo, com a lista completa de dias não úteis. Nasce sempre
     /// <b>não vigente</b> — tornar-se o dataset corrente é uma operação explícita
     /// (<see cref="MarcarVigente"/>), nunca implícita na criação. <c>Abrangencia</c>
-    /// chega como token canônico UPPER_SNAKE (ex.: <c>NACIONAL</c>) — a análise e a
+    /// chega como código canônico UPPER_SNAKE (ex.: <c>NACIONAL</c>) — a análise e a
     /// validação de campo ocorrem aqui, não no chamador.
     /// </summary>
     public static Result<CalendarioDiasUteis> Criar(string? versaoDataset, IReadOnlyList<DiaNaoUtilCriacao?>? diasNaoUteis)
@@ -113,7 +113,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// <see cref="Criar"/> e recusa duplicata contra as datas <b>já persistidas</b>
     /// no agregado, a mesma checagem que <see cref="Criar"/> aplica a cada item
     /// contra os itens já aceitos da lista. A defesa final contra duplicata
-    /// sob concorrência real é o índice único de banco (sem token de concorrência
+    /// sob concorrência real é o índice único de banco (sem controle de concorrência
     /// no pai: inserir um filho não muta o pai, então nada aqui depende de
     /// <c>xmin</c>).
     /// </summary>

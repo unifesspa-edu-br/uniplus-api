@@ -30,7 +30,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     public TipoLocalOferta Tipo { get; private set; }
     public Guid? CampusResponsavelId { get; private set; }
 
-    // Referência de cidade do Geo (ADR-0090) — código + display cache.
+    // Referência de cidade do Geo (ADR-0090) — código + nome copiado do cadastro de municípios.
     public string CidadeCodigoIbge { get; private set; } = string.Empty;
     public string CidadeNome { get; private set; } = string.Empty;
     public string CidadeUf { get; private set; } = string.Empty;
@@ -60,13 +60,13 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     public static Result<LocalOferta> Criar(DeclaracaoDoLocalDeOferta declaracao, DateTimeOffset agora)
     {
         Result<CamposDoLocalDeOferta> campos = Conferir(declaracao);
-        if (campos.IsFailure)
+        if (campos.Value is not { } valores)
         {
             return Result<LocalOferta>.ValidationFailure(campos.Errors);
         }
 
         var local = new LocalOferta();
-        local.AplicarCampos(campos.Value!);
+        local.AplicarCampos(valores);
         local.RenovarProcedenciaDaCidade(agora);
 
         return Result<LocalOferta>.Success(local);
@@ -74,24 +74,24 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Atualiza os atributos do Local de Oferta a partir da <paramref name="declaracao"/>. A proveniência da cidade só é
-    /// renovada com <paramref name="agora"/> quando o código IBGE, o nome ou a UF mudam; qualquer outro campo preserva o
-    /// instante em que a cidade foi copiada. A existência do campus responsável (quando informado) é responsabilidade do
-    /// handler.
+    /// renovada com <paramref name="agora"/> quando o código IBGE ou o nome da cidade mudam (a UF não conta); qualquer
+    /// outro campo preserva o instante em que a cidade foi copiada. A existência do campus responsável (quando informado)
+    /// é responsabilidade do handler.
     /// </summary>
     public Result Atualizar(DeclaracaoDoLocalDeOferta declaracao, DateTimeOffset agora)
     {
         Result<CamposDoLocalDeOferta> campos = Conferir(declaracao);
-        if (campos.IsFailure)
+        if (campos.Value is not { } valores)
         {
             return Result.ValidationFailure(campos.Errors);
         }
 
-        if (ReferenciaDaCidadeMudou(campos.Value!))
+        if (ReferenciaDaCidadeMudou(valores))
         {
             RenovarProcedenciaDaCidade(agora);
         }
 
-        AplicarCampos(campos.Value!);
+        AplicarCampos(valores);
 
         return Result.Success();
     }

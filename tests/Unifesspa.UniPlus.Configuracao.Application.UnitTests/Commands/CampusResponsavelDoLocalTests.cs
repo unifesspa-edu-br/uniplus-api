@@ -33,7 +33,8 @@ public sealed class CampusResponsavelDoLocalTests
         Result resultado = await CampusResponsavelDoLocal.ConferirAsync(campusId, _campusRepository, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.CampusResponsavelNaoEncontrado);
+        resultado.Error.Should().NotBeNull();
+        resultado.Error.Code.Should().Be(LocalOfertaErrorCodes.CampusResponsavelNaoEncontrado);
         resultado.Error.Message.Should().Be("O Campus responsável informado não foi encontrado.");
     }
 

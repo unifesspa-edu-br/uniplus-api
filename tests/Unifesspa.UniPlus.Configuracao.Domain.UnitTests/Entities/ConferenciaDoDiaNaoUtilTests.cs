@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// As regras de um dia não útil declarado, exercitadas pela inclusão pontual, que rotula as recusas com o campo "item".
@@ -17,7 +18,7 @@ public sealed class ConferenciaDoDiaNaoUtilTests
     private static IReadOnlyList<FieldError> Recusas(DiaNaoUtilCriacao? item)
     {
         CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar(
-            "2027.1", [new DiaNaoUtilCriacao("NACIONAL", null, null, null, Data.AddDays(30), "Dia base")]).Value!;
+            "2027.1", [new DiaNaoUtilCriacao("NACIONAL", null, null, null, Data.AddDays(30), "Dia base")]).ValorEsperado();
 
         return calendario.IncluirDiaNaoUtil(item).Errors;
     }

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDaModalidade;
 
@@ -17,7 +18,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ampla sem remanejamento preenche os campos e fica ativa com Guid v7")]
     public void Criar_AmplaSemRemanejamento_Valida()
     {
-        Modalidade m = Criar("AC", d => d with { Descricao = "Ampla concorrência", CodigoDaNaturezaLegal = "AMPLA" }).Value!;
+        Modalidade m = Criar("AC", d => d with { Descricao = "Ampla concorrência", CodigoDaNaturezaLegal = "AMPLA" }).ValorEsperado();
 
         m.Id.Should().NotBe(Guid.Empty);
         m.Codigo.Valor.Should().Be("AC");
@@ -40,7 +41,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Natureza e composição ausentes assumem defaults AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS")]
     public void Criar_SemNaturezaComposicao_AplicaDefaults()
     {
-        Modalidade m = Criar(ajuste: d => d with { CodigoDaNaturezaLegal = null, CodigoDaComposicaoDeVagas = null }).Value!;
+        Modalidade m = Criar(ajuste: d => d with { CodigoDaNaturezaLegal = null, CodigoDaComposicaoDeVagas = null }).ValorEsperado();
 
         m.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
         m.ComposicaoVagas.Should().Be(ComposicaoVagas.RestanteDasVagasOfertadas);
@@ -85,7 +86,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ação quando indeferido válida é aceita")]
     public void Criar_AcaoValida_Aceita()
     {
-        Modalidade m = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "RECLASSIFICAR_AC" }).Value!;
+        Modalidade m = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "RECLASSIFICAR_AC" }).ValorEsperado();
 
         m.AcaoQuandoIndeferido.Should().Be(AcaoQuandoIndeferido.ReclassificarAc);
     }
