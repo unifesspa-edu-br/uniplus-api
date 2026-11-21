@@ -43,10 +43,11 @@ public sealed class OpcoesDaVersaoFixadaTests
 
     private static ProcessoSeletivo ProcessoComRecurso()
     {
-        FatoColetado campoRecurso = FatoColetado.Criar(
-            AtendimentoEspecializado.FatoRecursoAcessibilidade, 1, "De qual recurso de acessibilidade você vai precisar?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado campoRecurso = FatoColetadoDeTeste.Coletando(AtendimentoEspecializado.FatoRecursoAcessibilidade, 1)
+            .ComRotulo("De qual recurso de acessibilidade você vai precisar?")
+            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .ComClassificacao("SENSIVEL")
+            .Construir();
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
             [], [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação")], []).Value!;
         return NovoProcessoDeInscricao(nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), atendimento, [campoRecurso]);

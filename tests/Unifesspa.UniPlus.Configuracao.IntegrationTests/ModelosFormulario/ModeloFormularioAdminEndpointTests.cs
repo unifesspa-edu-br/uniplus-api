@@ -42,6 +42,34 @@ public sealed class ModeloFormularioAdminEndpointTests
         await AtivarAsync(client, id);
     }
 
+    [Fact(DisplayName = "O descritivo e o conteúdo lidos voltam ao PUT sem transformação, e a leitura seguinte é igual")]
+    public async Task LeituraVoltaAoPut_SemTransformacao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        JsonObject antes = await ObterAsync(client, id);
+
+        HttpResponseMessage reescrita = await EnviarAsync(
+            client, HttpMethod.Put, $"{Base}/{id}", new { descritivo = antes["descritivo"]!.DeepClone(), conteudo = antes["conteudo"]!.DeepClone() });
+
+        reescrita.StatusCode.Should().Be(HttpStatusCode.NoContent, await reescrita.Content.ReadAsStringAsync());
+        JsonNode.DeepEquals(await ObterAsync(client, id), antes).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O descritivo ausente na edição é recusado com o nome obrigatório no caminho do descritivo")]
+    public async Task DescritivoAusente_RecusaONomeNoCaminhoDoDescritivo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        JsonNode conteudo = (await ObterAsync(client, id))["conteudo"]!.DeepClone();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { conteudo });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("descritivo.nome").And.Contain("uniplus.configuracao.modelo_formulario.nome_obrigatorio");
+    }
+
     [Fact(DisplayName = "O modelo de inscrição ganha a seção dos dados básicos, cita um deles sem declará-lo e recusa alterá-lo")]
     public async Task ModeloDeInscricao_SecaoDosDadosBasicos()
     {
@@ -83,7 +111,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         (await StatusAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Nome que não deve ficar", conteudo))).Should().Be(HttpStatusCode.UnprocessableEntity);
 
         JsonObject depois = await ObterAsync(client, id);
-        depois["nome"]!.GetValue<string>().Should().Be("Habilitação Medicina 2027");
+        depois["descritivo"]!["nome"]!.GetValue<string>().Should().Be("Habilitação Medicina 2027");
         depois["conteudo"]!["termos"]!.AsArray().Should().BeEmpty();
     }
 
@@ -135,7 +163,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         lido["ativo"]!.GetValue<bool>().Should().BeTrue();
         lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
-        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["precondicao"]![0]![0]!;
+        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["regras"]!["exibicao"]![0]![0]!;
         condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
         condicao["valor"]!.GetValue<bool>().Should().BeTrue();
     }
@@ -152,7 +180,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         using (JsonDocument inativos = await ListarAsync(client, "?ativo=false&finalidade=HABILITACAO&tipoProcesso=QUALQUER_TIPO"))
         {
             inativos.RootElement.EnumerateArray().Should().Contain(m => m.GetProperty("id").GetGuid() == id
-                && m.GetProperty("nome").GetString() == "Habilitação editada");
+                && m.GetProperty("descritivo").GetProperty("nome").GetString() == "Habilitação editada");
         }
 
         using JsonDocument outraFinalidade = await ListarAsync(client, "?finalidade=INSCRICAO");
@@ -169,7 +197,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     private static JsonNode ComCorRacaDispensada(JsonNode conteudo)
     {
         JsonNode alterado = conteudo.DeepClone();
-        Item(alterado["itens"]!.AsArray(), "COR_RACA")["obrigatoriedade"] = "NUNCA";
+        Item(alterado["itens"]!.AsArray(), "COR_RACA")["regras"]!["obrigatoriedade"]!["tipo"] = "NUNCA";
         return alterado;
     }
 
@@ -177,11 +205,8 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         ["codigo"] = "LGPD",
         ["ordem"] = 0,
-        ["termoId"] = Guid.NewGuid(),
-        ["versaoId"] = Guid.NewGuid(),
-        ["exibicao"] = null,
-        ["obrigatoriedade"] = "SEMPRE",
-        ["predicadoObrigatoriedade"] = null,
+        ["termo"] = new JsonObject { ["termoId"] = Guid.NewGuid(), ["versaoId"] = Guid.NewGuid() },
+        ["regras"] = new JsonObject { ["exibicao"] = null, ["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE" } },
     });
 
     private static async Task ConferirCodigoDoErroAsync(HttpResponseMessage resposta, string codigo)

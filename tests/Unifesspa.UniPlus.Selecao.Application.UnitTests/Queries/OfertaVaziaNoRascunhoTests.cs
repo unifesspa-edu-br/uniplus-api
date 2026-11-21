@@ -49,7 +49,7 @@ public sealed class OfertaVaziaNoRascunhoTests
             RepositorioDo(processo), CatalogoComOFato(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.FatosColetados.Should().ContainSingle(c => c.FatoCodigo == Fato)
+        resultado.Value!.Formulario.Coleta.Itens.Should().ContainSingle(c => c.FatoCodigo == Fato)
             .Which.ValoresSelecionaveis.Should().NotBeNull().And.BeEmpty();
     }
 
@@ -57,7 +57,7 @@ public sealed class OfertaVaziaNoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Oferta vazia");
         processo.DefinirItens(
-            [FatoColetado.Criar(Fato, 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoRenderizacao.SelecaoMultipla).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }

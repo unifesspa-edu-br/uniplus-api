@@ -33,90 +33,109 @@ public static class DefinirFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
+        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result definido = processo is null
+            ? Result.Failure(ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            : await DefinirAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+        if (definido.IsSuccess)
         {
-            return Result.Failure(ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        return definido;
+    }
+
+    internal static DomainError ProcessoNaoEncontrado(Guid id) =>
+        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado.");
+
+    private static async Task<Result> DefinirAsync(
+        DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+    {
         // Fora do rascunho a recusa vem antes de consultar cadastros.
         if (processo.MutacaoBloqueada() is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        // O formulário de inscrição tem a seção reservada dos dados básicos, a primeira; o que nasce
-        // agora nasce também com os itens dela.
-        bool inscricao = command.Finalidade == FinalidadeFormulario.Inscricao;
-        IReadOnlyList<EtapaFormularioInput> entradas = command.Etapas ?? [];
-        List<FieldError> daSecao = [];
-        if (inscricao)
-        {
-            (entradas, daSecao) = ConjuntoBasicoDaInscricao.MesclarEtapas(entradas, SecaoDadosBasicosDoProcesso.Secao(processo));
-        }
+        FormularioLido lido = await LerAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+        return lido.Erros.Count > 0
+            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, processo, lido)])
+            : Gravar(command, processo, lido);
+    }
 
+    /// <summary>
+    /// As etapas lidas pela forma, as exibições conferidas contra o catálogo — lido só quando preciso — e, na criação do
+    /// formulário de inscrição, os itens do conjunto básico. O formulário de inscrição tem a seção reservada dos dados
+    /// básicos, a primeira: o que nasce agora nasce também com os itens dela.
+    /// </summary>
+    private static async Task<FormularioLido> LerAsync(
+        DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+    {
+        bool inscricao = command.Finalidade == FinalidadeFormulario.Inscricao;
+        (IReadOnlyList<EtapaFormularioInput> entradas, List<FieldError> daSecao) = inscricao
+            ? ConjuntoBasicoDaInscricao.MesclarEtapas(command.Etapas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo))
+            : (command.Etapas ?? [], []);
         EtapasDoFormularioLidas lidas = EscritaDasEtapasDoFormulario.Ler(entradas);
         bool criaInscricao = inscricao && processo.FormularioDe(FinalidadeFormulario.Inscricao) is null;
-
-        // A semântica das exibições e os itens da criação vêm do catálogo, lido só quando preciso.
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
         List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasEtapasDoFormulario.ConferirExibicoes(lidas, contexto)];
-        List<EtapaFormulario> etapas = [.. lidas.Etapas];
+        List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
+        return new FormularioLido(entradas.Count, [.. lidas.Etapas], itensDaCriacao, contexto, erros);
+    }
 
-        List<FatoColetado>? itensDaCriacao = null;
-        if (criaInscricao)
-        {
-            (List<FatoColetado> basicos, List<FieldError> errosDosBasicos) =
-                EscritaDosItens.Resolver(EscritaDosItens.Ler(ConjuntoBasicoDaInscricao.Itens), contexto);
-            erros.AddRange(errosDosBasicos);
-            itensDaCriacao = basicos;
-        }
+    private static List<FatoColetado> ResolverItensDaCriacao(ContextoDoCatalogo contexto, List<FieldError> erros)
+    {
+        (List<FatoColetado> basicos, List<FieldError> errosDosBasicos) = EscritaDosItens.Resolver(EscritaDosItens.Ler(ConjuntoBasicoDaInscricao.Itens), contexto);
+        erros.AddRange(errosDosBasicos);
+        return basicos;
+    }
 
-        if (erros.Count > 0)
-        {
-            // As recusas do formulário somam-se às das etapas (ADR-0125). A estrutura só é conferida
-            // com todas as etapas montadas, e a exibição já recusada pela semântica não é recusada
-            // de novo pela posição.
-            HashSet<string> recusados = [.. erros.Select(static e => e.Field ?? string.Empty)];
-            erros.AddRange(RegrasDosFormularios
-                .ConferirFormulario(
-                    processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, etapas, etapasCompletas: etapas.Count == entradas.Count, itensDaCriacao)
-                .Where(recusa => recusa.Field is not { } campo
-                    || !campo.EndsWith(".exibicao", StringComparison.Ordinal)
-                    || !recusados.Contains(campo)));
-            return Result.ValidationFailure(erros);
-        }
+    /// <summary>
+    /// As recusas do formulário somam-se às das etapas (ADR-0125). A estrutura só é conferida com todas as etapas montadas,
+    /// e a exibição já recusada pela semântica não é recusada de novo pela posição.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirEstrutura(DefinirFormularioCommand command, ProcessoSeletivo processo, FormularioLido lido)
+    {
+        HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
+        return RegrasDosFormularios
+            .ConferirFormulario(
+                processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, lido.Etapas, lido.EtapasCompletas, lido.ItensDaCriacao)
+            .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
+    }
 
-        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
-            contexto.Fatos,
-            ReferenciasVivas.Vinculos(processo.Declaracao()),
-            VinculosDeFatos.De(
-                (itensDaCriacao ?? []).Select(static f => f.FatoCodigo),
-                etapas.SelectMany(static e => e.Condicoes).Concat((itensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
-                    .Select(static c => (c.Fato, c.Valor))));
+    private static Result Gravar(DefinirFormularioCommand command, ProcessoSeletivo processo, FormularioLido lido)
+    {
+        Result vinculoNovo = ConferirVinculoNovo(processo, lido);
         if (vinculoNovo.IsFailure)
         {
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definir = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, etapas, itensDaCriacao);
-        if (definir.IsFailure)
-        {
-            return Result.ValidationFailure(definir.Errors);
-        }
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result.Success();
+        Result definido = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, lido.Etapas, lido.ItensDaCriacao);
+        return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
-    internal static DomainError ProcessoNaoEncontrado(Guid id) =>
-        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado.");
+    private static Result ConferirVinculoNovo(ProcessoSeletivo processo, FormularioLido lido) =>
+        ConferenciaDeVinculoNovo.Conferir(
+            lido.Contexto.Fatos,
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
+            VinculosDeFatos.De(
+                (lido.ItensDaCriacao ?? []).Select(static f => f.FatoCodigo),
+                lido.Etapas.SelectMany(static e => e.Condicoes).Concat((lido.ItensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
+                    .Select(static c => (c.Fato, c.Valor))));
+
+    /// <summary>
+    /// As etapas montadas, os itens da criação do formulário de inscrição, o contexto do catálogo que as conferiu e as
+    /// recusas da leitura; as etapas estão completas quando nenhuma entrada foi recusada.
+    /// </summary>
+    private sealed record FormularioLido(
+        int QuantidadeEnviada, List<EtapaFormulario> Etapas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros)
+    {
+        public bool EtapasCompletas => Etapas.Count == QuantidadeEnviada;
+    }
 }
 
 /// <summary>Remove o formulário da finalidade; a regra de só em rascunho é do processo.</summary>
@@ -131,22 +150,15 @@ public static class RemoverFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
+        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result removido = processo is null
+            ? Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            : processo.RemoverFormulario(command.Finalidade);
+        if (removido.IsSuccess)
         {
-            return Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        Result remover = processo.RemoverFormulario(command.Finalidade);
-        if (remover.IsFailure)
-        {
-            return Result.Failure(remover.Error!);
-        }
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result.Success();
+        return removido;
     }
 }

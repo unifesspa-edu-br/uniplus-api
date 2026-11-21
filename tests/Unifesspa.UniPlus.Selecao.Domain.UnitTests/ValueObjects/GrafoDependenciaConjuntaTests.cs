@@ -23,11 +23,11 @@ public sealed class GrafoDependenciaConjuntaTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static CondicaoPrecondicaoFato Precond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. citados.Select(Precond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. citados.Select(static c => (c, Operador.Igual, (object)true))]))
+            .Construir();
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,
@@ -56,7 +56,7 @@ public sealed class GrafoDependenciaConjuntaTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
     private static FatoColetado NaFinalidade(FinalidadeFormulario finalidade, string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao, finalidade: finalidade, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).NaSecao(secao).DaFinalidade(finalidade).Construir();
 
     private static int Posicao(GrafoDependenciaConjunta grafo, ClasseNoGrafo classe, string codigo) =>
         grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == classe && n.Codigo == codigo);
@@ -96,17 +96,15 @@ public sealed class GrafoDependenciaConjuntaTests
             .Should().NotContain(static a => a.Destino.Codigo == "FAIXA_ETARIA");
     }
 
+    /// <summary>
+    /// PCD declarado (produção); CONCORRER_PCD declarado gatado por PCD (pré-condição); MODALIDADE derivado de
+    /// CONCORRER_PCD (derivação); exigência gatilhada por MODALIDADE (gatilho).
+    /// </summary>
     [Fact(DisplayName = "As quatro classes de aresta são montadas das componentes da configuração")]
     public void QuatroClassesDeAresta_Montadas()
     {
-        // PCD declarado (produção); CONCORRER_PCD declarado gatado por PCD (pré-condição);
-        // MODALIDADE derivado de CONCORRER_PCD (derivação); exigência gatilhada por MODALIDADE (gatilho).
-        FatoColetado pcd = Declarado("PCD", 0);
-        FatoColetado concorrer = Declarado("CONCORRER_PCD", 1, "PCD");
-        ConfiguracaoDerivacaoFato modalidade = Derivado("MODALIDADE", "CONCORRER_PCD");
-        DocumentoExigido laudo = ExigenciaGatilhadaPor("MODALIDADE");
-
-        Result<GrafoDependenciaConjunta> resultado = Construir([pcd, concorrer], [modalidade], [laudo]);
+        Result<GrafoDependenciaConjunta> resultado = Construir(
+            [Declarado("PCD", 0), Declarado("CONCORRER_PCD", 1, "PCD")], [Derivado("MODALIDADE", "CONCORRER_PCD")], [ExigenciaGatilhadaPor("MODALIDADE")]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         IReadOnlyList<ArestaGrafoDependencia> arestas = resultado.Value!.Arestas;
@@ -242,19 +240,19 @@ public sealed class GrafoDependenciaConjuntaTests
         resultado.Value!.Arestas.Should().NotContain(a => a.Tipo == TipoArestaGrafo.Gatilho);
     }
 
+    private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
+    [
+        EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
+        EtapaFormulario.Criar("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Cotas", null, null, Cita("EGRESSO")).Value!,
+        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+    ]).Value!;
+
     [Fact(DisplayName = "Seção com exibição é nó do grafo: o fato citado vem antes dela, e ela antes dos seus campos")]
     public void SecaoCondicional_EntraNoGrafo()
     {
-        FormularioProcesso inscricao = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
-        [
-            EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-            EtapaFormulario.Criar("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Cotas", null, null, Cita("EGRESSO")).Value!,
-            EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
-        ]).Value!;
-
         GrafoDependenciaConjunta grafo = Construir(
             [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "CONCORRER_EP", 1, "COTAS")],
-            formularios: [inscricao]).Value!;
+            formularios: [InscricaoComSecaoDeCotasCondicionada()]).Value!;
 
         grafo.Arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
             && a.Origem == new NoGrafoDependencia(ClasseNoGrafo.Fato, "EGRESSO") && a.Destino == new NoGrafoDependencia(ClasseNoGrafo.Secao, "INSCRICAO.COTAS"));

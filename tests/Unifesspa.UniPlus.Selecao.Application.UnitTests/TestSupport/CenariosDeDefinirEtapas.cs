@@ -17,6 +17,27 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+/// <summary>
+/// Os cadastros e o registro de codecs que a definição das etapas consulta além do tipo de etapa. O que o
+/// cenário não informa fica como dublê inerte.
+/// </summary>
+internal sealed record CadastrosDeApoioDeDefinirEtapas(
+    ITipoBancaReader? TiposDeBanca = null,
+    IRegraCatalogoReader? Regras = null,
+    ITipoAtoPublicadoReader? Atos = null,
+    IRegistroCodecsEnvelope? Codecs = null)
+{
+    /// <summary>A definição das etapas sobre o repositório dado, com dublê inerte no que o cenário não informou.</summary>
+    internal DefinicaoDasEtapas Definicao(ITipoEtapaReader tipoEtapa, IProcessoSeletivoRepository repository) => new(
+        tipoEtapa,
+        TiposDeBanca ?? Substitute.For<ITipoBancaReader>(),
+        Regras ?? Substitute.For<IRegraCatalogoReader>(),
+        Atos ?? Substitute.For<ITipoAtoPublicadoReader>(),
+        repository,
+        Codecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
+        new MotivosDosLugaresQueSaem(MotivoDeTeste.SemEscolha()));
+}
+
 internal static class CenariosDeDefinirEtapas
 {
     internal static readonly Guid TipoProvaObjetivaOrigemId = new("019fee1e-7000-7000-8000-000000000001");
@@ -27,9 +48,9 @@ internal static class CenariosDeDefinirEtapas
     {
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, true, true, false, false, []));
+            .Returns(TipoEtapaViewDeTeste.Com(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA").Chamado("Prova Objetiva").Construir());
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, true, true, false, false, []));
+            .Returns(TipoEtapaViewDeTeste.Com(TipoRedacaoOrigemId, "REDACAO").Chamado("Redação").Construir());
         return reader;
     }
 
@@ -55,21 +76,11 @@ internal static class CenariosDeDefinirEtapas
         IProcessoSeletivoRepository repository,
         IUnitOfWork unitOfWork,
         ITipoEtapaReader? tipoEtapaReader = null,
-        ITipoBancaReader? tipoBancaReader = null,
-        IRegraCatalogoReader? regraCatalogoReader = null,
-        ITipoAtoPublicadoReader? tipoAtoPublicadoReader = null,
-        IRegistroCodecsEnvelope? registroCodecs = null) =>
+        CadastrosDeApoioDeDefinirEtapas? cadastros = null) =>
         DefinirEtapasCommandHandler.Handle(
             command,
             repository,
-            new DefinicaoDasEtapas(
-                tipoEtapaReader ?? ReaderPadrao(),
-                tipoBancaReader ?? Substitute.For<ITipoBancaReader>(),
-                regraCatalogoReader ?? Substitute.For<IRegraCatalogoReader>(),
-                tipoAtoPublicadoReader ?? Substitute.For<ITipoAtoPublicadoReader>(),
-                repository,
-                registroCodecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
-                new MotivosDosLugaresQueSaem(MotivoDeTeste.SemEscolha())),
+            (cadastros ?? new CadastrosDeApoioDeDefinirEtapas()).Definicao(tipoEtapaReader ?? ReaderPadrao(), repository),
             unitOfWork,
             TimeProvider.System,
             CancellationToken.None);
@@ -103,7 +114,8 @@ internal static class CenariosDeDefinirEtapas
     /// <summary>O tipo de etapa como o cadastro o devolve hoje, sem descrição e sem conceitos.</summary>
     internal static TipoEtapaView TipoNoCadastro(
         Guid id, string codigo, string nome, bool admitePontuacao = true, bool admiteEliminacao = true, bool notaDeOrigemNoEnem = false, bool exigeCorrecaoIndependente = false) =>
-        new(id, codigo, nome, null, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente, []);
+        TipoEtapaViewDeTeste.Com(id, codigo).Chamado(nome).ComCarater(admitePontuacao, admiteEliminacao)
+            .ComNotaDoEnem(notaDeOrigemNoEnem).ComCorrecaoIndependente(exigeCorrecaoIndependente).Construir();
 
     /// <summary>O tipo de etapa como ficou congelado na etapa do processo.</summary>
     internal static TipoEtapaSnapshot TipoCongelado(

@@ -8,37 +8,45 @@
         "itens": [
           {
             "fatoCodigo": "NOTA_A",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_NUMERICA",
-                "minimo": 0.5,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null
-              }
-            ],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_NUMERICA",
+                  "minimo": 0.5,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null
+                }
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "NOTA_B",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_NUMERICA",
-                "minimo": 0.5,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null
-              }
-            ],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_NUMERICA",
+                  "minimo": 0.5,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null
+                }
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -61,14 +69,18 @@
     "campos": [
       {
         "fatoCodigo": "NOTA_A",
-        "restricoesVioladas": [
-          "FAIXA_NUMERICA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_NUMERICA"
+          ]
+        }
       },
       {
         "fatoCodigo": "NOTA_B",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

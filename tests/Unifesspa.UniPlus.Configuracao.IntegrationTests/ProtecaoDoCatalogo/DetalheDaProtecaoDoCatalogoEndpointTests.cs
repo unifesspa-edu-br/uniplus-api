@@ -41,7 +41,7 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         HttpResponseMessage editada = await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original, hipoteseLegal: "EXERCICIO_REGULAR_DE_DIREITOS"));
         editada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement depois = await ObterFatoAsync(client, IdDeQuilombola);
-        (depois.GetProperty("hipoteseLegal").GetString(), depois.GetProperty("aprovacao").GetProperty("situacao").GetString()).Should().Be(("EXERCICIO_REGULAR_DE_DIREITOS", "PENDENTE"));
+        (ProtecaoDoFato(depois).GetProperty("hipoteseLegal").GetString(), ProtecaoDoFato(depois).GetProperty("aprovacao").GetProperty("situacao").GetString()).Should().Be(("EXERCICIO_REGULAR_DE_DIREITOS", "PENDENTE"));
 
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -59,7 +59,7 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{IdDeQuilombola}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement aceito = await ObterFatoAsync(client, IdDeQuilombola);
-        (aceito.GetProperty("codigo").GetString(), aceito.GetProperty("classificacaoProtecao").GetString(), aceito.GetProperty("aprovacao").GetProperty("situacao").GetString())
+        (aceito.GetProperty("codigo").GetString(), ProtecaoDoFato(aceito).GetProperty("classificacao").GetString(), ProtecaoDoFato(aceito).GetProperty("aprovacao").GetProperty("situacao").GetString())
             .Should().Be(("QUILOMBOLA", "PESSOAL", "APROVADA"));
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }

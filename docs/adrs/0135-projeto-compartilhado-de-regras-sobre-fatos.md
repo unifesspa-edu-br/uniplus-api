@@ -48,8 +48,8 @@ Três restrições delimitam onde esse código pode morar:
 
 **Movem para o projeto**, sem mudança de comportamento, 20 tipos em 18 arquivos, o fechamento das dependências entre eles:
 
-- o predicado e suas partes (`PredicadoDnf`, `ClausulaDnf`, `CondicaoDnf`, `Operador`, `EstadoAtomo`), com o mapeamento entre o operador e o código que viaja no contrato (`OperadorCodigo`). A Configuração recebe condições com o operador em texto e precisa da mesma conversão;
-- a validação do predicado (`PredicadoDnfValidador`, `PredicadoDnfErrorCodes`) e a descrição do fato de que ela depende (`DescritorFatoCandidato`, `TipoDominioFato`, com o mapeamento do tipo de domínio para o código, `TipoDominioFatoCodigo`);
+- o predicado e suas partes (`PredicadoDnf`, `ClausulaDnf`, `CondicaoDnf`, `Operador`, `EstadoAtomo`), com o código de contrato do operador declarado no próprio enum, como manda a ADR-0176. A Configuração recebe condições com o operador em texto e lê esse mesmo código;
+- a validação do predicado (`PredicadoDnfValidador`, `PredicadoDnfErrorCodes`) e a descrição do fato de que ela depende (`DescritorFatoCandidato`, `TipoDominioFato`);
 - a derivação (`MotorDerivacao`, `RegraDerivacao`, `DerivacaoDoFato`, `ResultadoDerivacao`), com os códigos de erro declarados nos mesmos arquivos (`RegraDerivacaoErrorCodes`, `DerivacaoDoFatoErrorCodes`);
 - o estado resolvido do fato (`FatoResolvido`, `EstadoFato`, `Ternario`).
 

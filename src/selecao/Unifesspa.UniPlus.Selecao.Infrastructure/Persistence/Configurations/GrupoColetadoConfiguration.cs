@@ -42,6 +42,8 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Ignore(g => g.Ocorrencias);
+        builder.Ignore(g => g.Regras);
         builder.Ignore(g => g.FatosCitados);
         builder.Ignore(g => g.Condicoes);
 

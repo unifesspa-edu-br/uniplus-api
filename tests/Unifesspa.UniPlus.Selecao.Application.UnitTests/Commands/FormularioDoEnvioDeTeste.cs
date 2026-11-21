@@ -105,9 +105,12 @@ internal static class FormularioDoEnvioDeTeste
         return (VersaoComDataDeReferenciaFixa(), ConfiguracaoDoProcesso(processoBase, exigencias), versaoDoTermo);
     }
 
-    internal static FatoColetado ItemApelidoObrigatorio() => FatoColetado.Criar(
-        "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado ItemApelidoObrigatorio() => FatoColetadoDeTeste.Coletando("APELIDO", 0)
+        .ComRotulo("Apelido")
+        .DeTexto("LIVRE")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComRestricoes()
+        .Construir();
 
     internal static TermoExigidoFormulario TermoDeVeracidade(VersaoTermoEscolhida versaoDoTermo) => TermoExigidoFormulario.Criar(
         "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
@@ -147,16 +150,22 @@ internal static class FormularioDoEnvioDeTeste
     internal static Guid OfertaDo(ConfiguracaoPublicada configuracao) => configuracao.Vagas.DistribuicaoVagas[0].OfertaCursoOrigemId;
 
     /// <summary>Um booleano que, respondido "não", esconde o que depende dele.</summary>
-    internal static FatoColetado Pergunta(string fato, int ordem) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado Pergunta(string fato, int ordem) => FatoColetadoDeTeste.Coletando(fato, ordem)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComClassificacao("SENSIVEL")
+        .Construir();
 
-    internal static GrupoColetado GrupoMunicipal() => GrupoColetado.Criar(
-        "LOCAIS", 1, FormularioDeTeste.Secao, "Locais", minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Nunca,
-        [FatoColetado.Criar(
-            "LOCAL_MUNICIPIO", 0, "Município", TipoRenderizacao.Municipio, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao,
-            restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!],
-        FinalidadeFormulario.Inscricao).Value!;
+    internal static GrupoColetado GrupoMunicipal() => GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)
+        .ComRotulo("Locais")
+        .ComOcorrencias(0, null)
+        .ComCampos(FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
+            .ComRotulo("Município")
+            .DoTipo(TipoRenderizacao.Municipio)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
+            .Construir())
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     internal static Dictionary<string, JsonElement> Texto(params (string Fato, string Valor)[] respostas) =>
         respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal);

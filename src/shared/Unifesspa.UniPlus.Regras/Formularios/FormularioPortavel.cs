@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -59,8 +60,19 @@ public sealed record FormularioPortavel(
                 FormularioPortavelErrorCodes.EstruturaInvalida, $"O elemento '{nulo}' das regras é nulo."));
         }
 
+        if (CaminhoDasOcorrenciasAusentes() is { } caminho)
+        {
+            return Result<DefinicaoFormulario>.ValidationFailure([new FieldError(caminho, new DomainError(
+                GrupoFormularioErrorCodes.OcorrenciasObrigatorias, "As ocorrências do grupo são obrigatórias."))]);
+        }
+
         return ConversaoDoPortavel.Converter(this);
     }
+
+    private string? CaminhoDasOcorrenciasAusentes() =>
+        (Etapas ?? []).SelectMany((etapa, i) => (etapa.Grupos ?? []).Select((grupo, j) => (grupo, i, j)))
+            .Where(static x => x.grupo.Ocorrencias is null)
+            .Select(static x => $"etapas[{x.i}].grupos[{x.j}].ocorrencias").FirstOrDefault();
 
     /// <summary>
     /// O caminho do primeiro elemento nulo dentro das regras, como <c>etapas[0].itens[2]</c>; nulo
@@ -68,30 +80,40 @@ public sealed record FormularioPortavel(
     /// definição.
     /// </summary>
     private string? CaminhoDoPrimeiroNulo() =>
-        Lista(Etapas, "etapas", static (etapa, caminho) =>
-            Predicado(etapa.Exibicao, $"{caminho}.exibicao")
-            ?? Lista(etapa.Itens, $"{caminho}.itens", NuloNoItem)
-            ?? Lista(etapa.Grupos, $"{caminho}.grupos", static (grupo, doGrupo) =>
-                Predicado(grupo.Exibicao, $"{doGrupo}.exibicao")
-                ?? Predicado(grupo.PredicadoObrigatoriedade, $"{doGrupo}.predicadoObrigatoriedade")
-                ?? Lista(grupo.Subitens, $"{doGrupo}.subitens", NuloNoItem)))
-        ?? Lista(Termos, "termos", static (termo, caminho) =>
-            Predicado(termo.Exibicao, $"{caminho}.exibicao") ?? Predicado(termo.PredicadoObrigatoriedade, $"{caminho}.predicadoObrigatoriedade"))
+        Lista(Etapas, "etapas", NuloNaEtapa)
+        ?? Lista(Termos, "termos", static (termo, caminho) => NuloNaExibicaoEObrigatoriedade(termo.Regras, $"{caminho}.regras"))
         ?? Lista(Derivacoes, "derivacoes", static (derivacao, caminho) =>
             Lista(derivacao.Regras, $"{caminho}.regras", static (regra, daRegra) => Predicado(regra.Quando, $"{daRegra}.quando")))
         ?? Lista(Agregados, "agregados", static (_, _) => null);
 
-    private static string? NuloNoItem(ItemPortavel item, string caminho) =>
-        Predicado(item.Exibicao, $"{caminho}.exibicao")
-        ?? Predicado(item.PredicadoObrigatoriedade, $"{caminho}.predicadoObrigatoriedade")
-        ?? Lista(item.Restricoes, $"{caminho}.restricoes", static (restricao, daRestricao) =>
-            Lista(restricao.Entradas, $"{daRestricao}.entradas", static (entrada, daEntrada) =>
-                Predicado(entrada.Quando, $"{daEntrada}.quando") ?? Lista(entrada.Valores, $"{daEntrada}.valores", static (_, _) => null))
-            ?? Lista(restricao.Fatos, $"{daRestricao}.fatos", static (_, _) => null))
-        ?? (item.Impedimento is { } impedimento ? Predicado(impedimento.Quando, $"{caminho}.impedimento.quando") : null)
-        ?? Lista(item.Oferta, $"{caminho}.oferta", static (_, _) => null);
+    private static string? NuloNaEtapa(EtapaPortavel etapa, string caminho) =>
+        Predicado(etapa.Exibicao, $"{caminho}.exibicao")
+        ?? Lista(etapa.Itens, $"{caminho}.itens", NuloNoItem)
+        ?? Lista(etapa.Grupos, $"{caminho}.grupos", NuloNoGrupo);
 
-    private static string? Predicado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado, string caminho) =>
+    private static string? NuloNoGrupo(GrupoPortavel grupo, string caminho) =>
+        NuloNaExibicaoEObrigatoriedade(grupo.Regras, $"{caminho}.regras")
+        ?? Lista(grupo.Subitens, $"{caminho}.subitens", NuloNoItem);
+
+    private static string? NuloNoItem(ItemPortavel item, string caminho) =>
+        NuloNasRegrasDoCampo(item.Regras, $"{caminho}.regras") ?? Lista(item.Oferta, $"{caminho}.oferta", static (_, _) => null);
+
+    private static string? NuloNaExibicaoEObrigatoriedade(ExibicaoEObrigatoriedadeDto? regras, string caminho) =>
+        Predicado(regras?.Exibicao, $"{caminho}.exibicao")
+        ?? Predicado(regras?.Obrigatoriedade?.Predicado, $"{caminho}.obrigatoriedade.predicado");
+
+    private static string? NuloNasRegrasDoCampo(RegrasDoCampoDto? regras, string caminho) =>
+        Predicado(regras?.Exibicao, $"{caminho}.exibicao")
+        ?? Predicado(regras?.Obrigatoriedade?.Predicado, $"{caminho}.obrigatoriedade.predicado")
+        ?? Lista(regras?.Restricoes, $"{caminho}.restricoes", NuloNaRestricao)
+        ?? (regras?.Impedimento is { } impedimento ? Predicado(impedimento.Quando, $"{caminho}.impedimento.quando") : null);
+
+    private static string? NuloNaRestricao(RestricaoValorDto restricao, string caminho) =>
+        Lista(restricao.Entradas, $"{caminho}.entradas", static (entrada, daEntrada) =>
+            Predicado(entrada.Quando, $"{daEntrada}.quando") ?? Lista(entrada.Valores, $"{daEntrada}.valores", static (_, _) => null))
+        ?? Lista(restricao.Fatos, $"{caminho}.fatos", static (_, _) => null);
+
+    private static string? Predicado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado, string caminho) =>
         Lista(predicado, caminho, static (clausula, daClausula) => Lista(clausula, daClausula, static (_, _) => null));
 
     private static string? Lista<T>(IReadOnlyList<T>? lista, string caminho, Func<T, string, string?> dentro)
@@ -100,12 +122,7 @@ public sealed record FormularioPortavel(
         for (int i = 0; i < (lista?.Count ?? 0); i++)
         {
             string doElemento = $"{caminho}[{i}]";
-            if (lista![i] is not { } elemento)
-            {
-                return doElemento;
-            }
-
-            if (dentro(elemento, doElemento) is { } nulo)
+            if ((lista![i] is { } elemento ? dentro(elemento, doElemento) : doElemento) is { } nulo)
             {
                 return nulo;
             }
@@ -141,7 +158,7 @@ public sealed record FormularioPortavel(
         Result<DefinicaoFormulario> definicao = ParaDefinicao();
         if (definicao.IsFailure)
         {
-            return Result<AvaliacaoFormulario>.Failure(definicao.Error!);
+            return Result<AvaliacaoFormulario>.ValidationFailure(definicao.Errors);
         }
 
         return Result<AvaliacaoFormulario>.Success(AvaliadorFormulario.Avaliar(definicao.Value!, DentroDaOferta(entrada)));
@@ -163,33 +180,25 @@ public sealed record FormularioPortavel(
     private static EtapaPortavel Etapa(DefinicaoEtapa etapa, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(
             etapa.Codigo,
-            ParaFio(etapa.Exibicao),
+            etapa.Exibicao?.ToDto(),
             [.. etapa.Itens.Select(i => Item(i, ofertados))],
             [.. etapa.Grupos.Select(g => Grupo(g, ofertados))]);
 
     private static GrupoPortavel Grupo(DefinicaoGrupo grupo, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(
             grupo.Codigo,
-            ParaFio(grupo.Exibicao),
-            EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade),
-            ParaFio(grupo.Obrigatoriedade.Predicado),
-            grupo.Minimo,
-            grupo.Maximo,
-            grupo.IncluiCandidato,
+            new OcorrenciasDoGrupo(grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato).ToDto(),
+            new ExibicaoEObrigatoriedade(grupo.Exibicao, grupo.Obrigatoriedade).ToDto(),
             [.. grupo.Subitens.Select(s => Item(s, ofertados))]);
 
     private static TermoPortavel Termo(DefinicaoTermo termo) =>
-        new(
-            termo.Codigo,
-            ParaFio(termo.Exibicao),
-            EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade),
-            ParaFio(termo.Obrigatoriedade.Predicado));
+        new(termo.Codigo, new ExibicaoEObrigatoriedade(termo.Exibicao, termo.Obrigatoriedade).ToDto());
 
     private static DerivacaoPortavel Derivacao(DerivacaoDoFato derivacao) =>
         new(
             derivacao.CodigoFato,
             derivacao.Booleano,
-            [.. derivacao.Regras.Select(static r => new RegraDerivacaoPortavel(ParaFio(r.Quando)!, r.Contribui))]);
+            [.. derivacao.Regras.Select(static r => new RegraDerivacaoPortavel(r.Quando.ToDto(), r.Contribui))]);
 
     private static AgregadoPortavel Agregado(DefinicaoAgregado agregado) =>
         new(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, AgregadoDeGrupo.ParaToken(agregado.Operacao));
@@ -197,15 +206,7 @@ public sealed record FormularioPortavel(
     private static ItemPortavel Item(DefinicaoItem item, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(
             item.FatoCodigo,
-            ParaFio(item.Exibicao),
-            EntradaDeRegras.ParaEntrada(item.Obrigatoriedade),
-            ParaFio(item.Obrigatoriedade.Predicado),
-            [.. item.Restricoes.Select(EntradaDeRegras.ParaEntrada)],
-            EntradaDeRegras.ParaEntrada(item.Impedimento),
+            new RegrasDoCampo(item.Exibicao, item.Obrigatoriedade, item.Restricoes, item.Impedimento).ToDto(),
             ofertados.TryGetValue(item.FatoCodigo, out IReadOnlySet<string>? oferta) ? [.. oferta.Order(StringComparer.Ordinal)] : null,
             item.Formato);
-
-    /// <summary>O predicado na forma do fio: nulo sem condição, a lista vazia sem cláusula.</summary>
-    private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? ParaFio(PredicadoDnf? predicado) =>
-        EntradaDeRegras.ParaEntrada(predicado);
 }

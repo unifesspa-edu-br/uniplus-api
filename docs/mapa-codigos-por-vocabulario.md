@@ -229,7 +229,7 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesPeriodoComDeslocamentoEndpointTests.cs` | fase-HOMOLOGACAO | 65 | renomear |
 | `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesLoteDeRecusasEndpointTests.cs` | fase-HOMOLOGACAO-resultado-final | 51 | manter |
 | `Selecao.IntegrationTests/Outbox/Cascading/FatosDasVersoesPublicadasNaRetificacaoEndpointTests.cs` | finalidade-HABILITACAO | 49,52,202 | manter (ponto em aberto) |
-| `Selecao.IntegrationTests/Outbox/Cascading/FormulariosEndpointTests.cs` | finalidade-HABILITACAO | 96 | manter (ponto em aberto) |
+| `Selecao.IntegrationTests/Outbox/Cascading/FormulariosEscritaEndpointTests.cs` | finalidade-HABILITACAO | 92 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/MotivosDeDecisao/MotivosDoProcessoEndpointTests.cs` | decisao-HOMOLOGACAO_DAS_INSCRICOES | 57 | manter |
 | `Selecao.IntegrationTests/MotivosDeDecisao/MotivoDeDecisaoAdminEndpointTests.cs` | decisao-HOMOLOGACAO_DAS_INSCRICOES | 385 | manter |
 | `Configuracao.IntegrationTests/FatosCandidato/FatoCandidatoAdminEndpointTests.cs` | fase-HABILITACAO | 87,266,312,326,354,371,495 | manter (ponto em aberto) |

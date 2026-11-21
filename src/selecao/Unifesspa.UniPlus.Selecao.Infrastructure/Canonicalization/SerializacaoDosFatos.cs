@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -127,30 +128,51 @@ internal static class SerializacaoDosFatos
 
     private static JsonObject SerializarFatoColetado(
         FatoColetado fato,
-        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato) => new()
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato)
+    {
+        JsonObject objeto = new()
         {
             ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
             ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
             ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = fato.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-            ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
-            ["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(fato.Obrigatoriedade),
-            ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
-            ["pedirConfirmacao"] = fato.PedirConfirmacao,
-            ["restricoes"] = SerializacaoDosFormularios.SerializarRestricoes(fato.Restricoes),
-            ["impedimento"] = fato.Impedimento is { } impedimento ? SerializacaoDosFormularios.SerializarImpedimento(impedimento) : null,
-            ["origemValores"] = fato.OrigemValores.ToString(),
-            ["formato"] = fato.Formato,
-            ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
-            ["hipoteseLegal"] = fato.HipoteseLegal,
-            ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento),
-            ["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao),
-            ["componenteExibicao"] = fato.ComponenteExibicao,
-            ["precondicao"] = SerializacaoDosPredicados.SerializarDnf(fato.Precondicoes.Select(
-            static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
-            ["valoresSelecionaveis"] = valoresDoFato is null ? null : SerializarValoresSelecionaveis(valoresDoFato),
+            ["tipoRenderizacao"] = fato.TipoRenderizacao.Codigo(),
         };
+        AdicionarRegrasDaResposta(objeto, fato);
+        AdicionarTratamentoDoDado(objeto, fato);
+        AdicionarApresentacaoEOpcoes(objeto, fato, valoresDoFato);
+
+        return objeto;
+    }
+
+    private static void AdicionarRegrasDaResposta(JsonObject objeto, FatoColetado fato)
+    {
+        objeto["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(fato.Obrigatoriedade);
+        objeto["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null;
+        objeto["pedirConfirmacao"] = fato.PedirConfirmacao;
+        objeto["restricoes"] = SerializacaoDosFormularios.SerializarRestricoes(fato.Restricoes);
+        objeto["impedimento"] = fato.Impedimento is { } impedimento ? SerializacaoDosFormularios.SerializarImpedimento(impedimento) : null;
+    }
+
+    private static void AdicionarTratamentoDoDado(JsonObject objeto, FatoColetado fato)
+    {
+        objeto["origemValores"] = fato.OrigemValores.ToString();
+        objeto["formato"] = fato.Formato;
+        objeto["classificacaoProtecao"] = fato.ClassificacaoProtecao;
+        objeto["hipoteseLegal"] = fato.HipoteseLegal;
+        objeto["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento);
+    }
+
+    private static void AdicionarApresentacaoEOpcoes(
+        JsonObject objeto, FatoColetado fato, IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato)
+    {
+        objeto["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao);
+        objeto["componenteExibicao"] = fato.ComponenteExibicao;
+        objeto["precondicao"] = SerializacaoDosPredicados.SerializarDnf(
+            fato.Precondicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, c.Valor)));
+        objeto["valoresSelecionaveis"] = valoresDoFato is null ? null : SerializarValoresSelecionaveis(valoresDoFato);
+    }
 
     private static JsonArray SerializarValoresSelecionaveis(IReadOnlyList<ValorDominioDeclaradoCongelado> valores) =>
         new([.. valores
@@ -168,7 +190,14 @@ internal static class SerializacaoDosFatos
         IEnumerable<GrupoColetado> grupos,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados) =>
-        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => (JsonNode)new JsonObject
+        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => SerializarGrupo(g, valoresSelecionaveisCongelados, agregados))];
+
+    private static JsonObject SerializarGrupo(
+        GrupoColetado g,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
+        IReadOnlyList<DefinicaoAgregado>? agregados)
+    {
+        JsonObject objeto = new()
         {
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
             ["finalidade"] = EstruturaFormulario.ParaToken(g.Finalidade),
@@ -178,46 +207,50 @@ internal static class SerializacaoDosFatos
             ["minimo"] = g.Minimo,
             ["maximo"] = g.Maximo,
             ["incluiCandidato"] = g.IncluiCandidato,
-            ["exibicao"] = g.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
-            ["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(g.Obrigatoriedade),
-            ["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados),
-            ["agregados"] = new JsonArray([.. (agregados ?? [])
-                .Where(a => string.Equals(a.GrupoCodigo, g.Codigo, StringComparison.Ordinal))
-                .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
-                .Select(static a => (JsonNode)new JsonObject
-                {
-                    ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
-                    ["fatoDeMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
-                    ["operacao"] = AgregadoDeGrupo.ParaToken(a.Operacao),
-                })]),
-        })];
+        };
+        AdicionarRegrasEComposicaoDoGrupo(objeto, g, valoresSelecionaveisCongelados, agregados);
 
-    internal static JsonArray SerializarRegrasDerivacao(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao)
-    {
-        JsonArray array = [];
-        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
-        {
-            JsonArray regras = [];
-            foreach (RegraDerivacaoConfigurada regra in config.Regras.OrderBy(static r => r.Ordem))
-            {
-                regras.Add(new JsonObject
-                {
-                    ["ordem"] = regra.Ordem,
-                    ["contribui"] = regra.Contribui is { } contribui ? HashCanonicalComputer.NormalizeNfc(contribui) : null,
-                    ["quando"] = SerializacaoDosPredicados.SerializarDnf(regra.Condicoes.Select(
-                        static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
-                });
-            }
-
-            array.Add(new JsonObject
-            {
-                ["codigoFato"] = HashCanonicalComputer.NormalizeNfc(config.CodigoFato),
-                ["regras"] = regras,
-            });
-        }
-
-        return array;
+        return objeto;
     }
+
+    private static void AdicionarRegrasEComposicaoDoGrupo(
+        JsonObject objeto,
+        GrupoColetado g,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
+        IReadOnlyList<DefinicaoAgregado>? agregados)
+    {
+        objeto["exibicao"] = g.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null;
+        objeto["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(g.Obrigatoriedade);
+        objeto["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados);
+        objeto["agregados"] = SerializarAgregadosDoGrupo(g, agregados);
+    }
+
+    private static JsonArray SerializarAgregadosDoGrupo(GrupoColetado g, IReadOnlyList<DefinicaoAgregado>? agregados) =>
+        new([.. (agregados ?? [])
+            .Where(a => string.Equals(a.GrupoCodigo, g.Codigo, StringComparison.Ordinal))
+            .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
+            .Select(static a => (JsonNode)new JsonObject
+            {
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
+                ["fatoDeMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
+                ["operacao"] = AgregadoDeGrupo.ParaToken(a.Operacao),
+            })]);
+
+    internal static JsonArray SerializarRegrasDerivacao(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao) =>
+        [.. regrasDerivacao
+            .OrderBy(static c => c.CodigoFato, StringComparer.Ordinal)
+            .Select(static c => (JsonNode)new JsonObject
+            {
+                ["codigoFato"] = HashCanonicalComputer.NormalizeNfc(c.CodigoFato),
+                ["regras"] = new JsonArray([.. c.Regras.OrderBy(static r => r.Ordem).Select(SerializarRegraDeDerivacao)]),
+            })];
+
+    private static JsonNode SerializarRegraDeDerivacao(RegraDerivacaoConfigurada regra) => new JsonObject
+    {
+        ["ordem"] = regra.Ordem,
+        ["contribui"] = regra.Contribui is { } contribui ? HashCanonicalComputer.NormalizeNfc(contribui) : null,
+        ["quando"] = SerializacaoDosPredicados.SerializarDnf(regra.Condicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
+    };
 
     internal static JsonObject SerializarGrafoDependencia(ProcessoSeletivo processo)
     {

@@ -12102,6 +12102,48 @@
           }
         }
       },
+      "AplicabilidadeDaExigenciaDto": {
+        "required": [
+          "tipo",
+          "condicoes"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "condicoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoGatilhoDto"
+            }
+          }
+        }
+      },
+      "AplicabilidadeDaExigenciaInput": {
+        "required": [
+          "tipo",
+          "condicoes"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "condicoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CondicaoGatilhoInput"
+            }
+          }
+        }
+      },
       "AplicacaoDeModeloDto": {
         "required": [
           "finalidade",
@@ -12157,6 +12199,120 @@
           "modeloId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "ApresentacaoDaEtapaDto": {
+        "required": [
+          "titulo",
+          "descricao",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ApresentacaoDaEtapaInput": {
+        "required": [
+          "titulo",
+          "descricao",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ApresentacaoDoCampoDto": {
+        "required": [
+          "rotulo",
+          "tipoRenderizacao",
+          "ajuda",
+          "pedirConfirmacao"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": "string"
+          },
+          "tipoRenderizacao": {
+            "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApresentacaoDoCampoInput": {
+        "required": [
+          "rotulo",
+          "tipoRenderizacao"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tipoRenderizacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+              }
+            ]
+          },
+          "ajuda": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pedirConfirmacao": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -12965,6 +13121,49 @@
           }
         }
       },
+      "BaseLegalCongeladaDto": {
+        "required": [
+          "id",
+          "tipoInstrumento",
+          "identificacao",
+          "descricao",
+          "municipios"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoInstrumento": {
+            "type": "string"
+          },
+          "identificacao": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfiguracaoBonusRegionalMunicipioDto"
+            }
+          }
+        }
+      },
+      "BaseLegalDoBonusInput": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "BaseLegalDto": {
         "required": [
           "id",
@@ -13049,13 +13248,10 @@
         "required": [
           "fatoCodigo",
           "ordem",
-          "rotulo",
-          "tipoRenderizacao",
-          "valoresSelecionaveis",
           "etapaCodigo",
+          "apresentacao",
           "formato",
-          "ajuda",
-          "pedirConfirmacao"
+          "valoresSelecionaveis"
         ],
         "type": "object",
         "properties": {
@@ -13066,11 +13262,20 @@
             "type": "integer",
             "format": "int32"
           },
-          "rotulo": {
-            "type": "string"
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
-          "tipoRenderizacao": {
-            "type": "string"
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDoCampoDto"
+          },
+          "formato": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "valoresSelecionaveis": {
             "minItems": 1,
@@ -13081,27 +13286,6 @@
             "items": {
               "$ref": "#/components/schemas/ValorSelecionavel"
             }
-          },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "formato": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "ajuda": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "pedirConfirmacao": {
-            "type": "boolean"
           }
         }
       },
@@ -13191,6 +13375,54 @@
           "ambas"
         ],
         "type": "string"
+      },
+      "CardinalidadeQualificadaDto": {
+        "required": [
+          "quantidadeMinima",
+          "distincao"
+        ],
+        "type": "object",
+        "properties": {
+          "quantidadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "distincao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DistincaoDasApresentacoesDto"
+              }
+            ]
+          }
+        }
+      },
+      "CardinalidadeQualificadaInput": {
+        "type": "object",
+        "properties": {
+          "quantidadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "distincao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DistincaoDasApresentacoesInput"
+              }
+            ]
+          }
+        }
       },
       "CategoriaJulgadaDto": {
         "required": [
@@ -13431,6 +13663,48 @@
           }
         }
       },
+      "ColetaDoFormularioDto": {
+        "required": [
+          "itens",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoColetadoDto"
+            }
+          }
+        }
+      },
+      "ColetaRenderizavel": {
+        "required": [
+          "itens",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoRenderizavel"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoRenderizavel"
+            }
+          }
+        }
+      },
       "ComprovanteDaInscricaoDto": {
         "required": [
           "candidato",
@@ -13557,26 +13831,7 @@
             "type": "string"
           },
           "operador": {
-            "type": "string"
-          },
-          "valor": {
-            "$ref": "#/components/schemas/JsonElement"
-          }
-        }
-      },
-      "CondicaoDerivacaoInput": {
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "type": "object",
-        "properties": {
-          "fato": {
-            "type": "string"
-          },
-          "operador": {
-            "type": "string"
+            "$ref": "#/components/schemas/OperadorCodigo"
           },
           "valor": {
             "$ref": "#/components/schemas/JsonElement"
@@ -13605,7 +13860,7 @@
             "type": "string"
           },
           "operador": {
-            "type": "string"
+            "$ref": "#/components/schemas/OperadorCodigo"
           },
           "valor": {
             "type": "string"
@@ -13629,7 +13884,14 @@
             "type": "string"
           },
           "operador": {
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OperadorCodigo"
+              }
+            ]
           },
           "valor": {
             "type": "string"
@@ -13673,7 +13935,7 @@
             "type": "string"
           },
           "operador": {
-            "type": "string"
+            "$ref": "#/components/schemas/OperadorCodigo"
           },
           "valor": {
             "$ref": "#/components/schemas/JsonElement"
@@ -13692,7 +13954,14 @@
             "type": "string"
           },
           "operador": {
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OperadorCodigo"
+              }
+            ]
           },
           "valor": {
             "$ref": "#/components/schemas/JsonElement"
@@ -13733,11 +14002,7 @@
           "fator",
           "teto",
           "fatoElegibilidadeCodigo",
-          "baseLegalBonusRegionalId",
-          "tipoInstrumento",
-          "identificacao",
-          "descricao",
-          "municipios"
+          "baseLegal"
         ],
         "type": "object",
         "properties": {
@@ -13765,24 +14030,8 @@
               "string"
             ]
           },
-          "baseLegalBonusRegionalId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipoInstrumento": {
-            "type": "string"
-          },
-          "identificacao": {
-            "type": "string"
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "municipios": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConfiguracaoBonusRegionalMunicipioDto"
-            }
+          "baseLegal": {
+            "$ref": "#/components/schemas/BaseLegalCongeladaDto"
           }
         }
       },
@@ -14268,6 +14517,33 @@
           }
         }
       },
+      "ConteudoDoTermoDto": {
+        "required": [
+          "nome",
+          "texto",
+          "baseLegal",
+          "formaAceite",
+          "hashVersao"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "texto": {
+            "type": "string"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "formaAceite": {
+            "type": "string"
+          },
+          "hashVersao": {
+            "type": "string"
+          }
+        }
+      },
       "CpfMascaradoDto": {
         "required": [
           "valor",
@@ -14463,12 +14739,7 @@
           "id",
           "ordem",
           "regra",
-          "etapaRef",
-          "idadeMinima",
-          "fato",
-          "operador",
-          "valor",
-          "areas"
+          "parametros"
         ],
         "type": "object",
         "properties": {
@@ -14483,59 +14754,16 @@
           "regra": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
           },
-          "etapaRef": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "idadeMinima": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "fato": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "operador": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "valor": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "areas": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
+          "parametros": {
+            "$ref": "#/components/schemas/ParametrosDoCriterioDesempateDto"
           }
         }
       },
       "CriterioDesempateInput": {
         "required": [
           "ordem",
-          "regraCodigo",
-          "regraVersao",
-          "etapaRef",
-          "idadeMinima",
-          "fato",
-          "operador",
-          "valor"
+          "regra",
+          "parametros"
         ],
         "type": "object",
         "properties": {
@@ -14543,52 +14771,25 @@
             "type": "integer",
             "format": "int32"
           },
-          "regraCodigo": {
-            "type": "string"
-          },
-          "regraVersao": {
-            "type": "string"
-          },
-          "etapaRef": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "idadeMinima": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "fato": {
-            "type": [
-              "null",
-              "string"
+          "regra": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraInput"
+              }
             ]
           },
-          "operador": {
-            "type": [
-              "null",
-              "string"
+          "parametros": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ParametrosDoCriterioDesempateInput"
+              }
             ]
-          },
-          "valor": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "areas": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -14753,28 +14954,25 @@
       "DefinirBonusRegionalRequest": {
         "required": [
           "aplica",
-          "regraCodigo",
-          "regraVersao",
+          "regra",
           "fator",
           "teto",
           "fatoElegibilidadeCodigo",
-          "baseLegalBonusRegionalId"
+          "baseLegal"
         ],
         "type": "object",
         "properties": {
           "aplica": {
             "type": "boolean"
           },
-          "regraCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "regraVersao": {
-            "type": [
-              "null",
-              "string"
+          "regra": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraInput"
+              }
             ]
           },
           "fator": {
@@ -14797,12 +14995,15 @@
               "string"
             ]
           },
-          "baseLegalBonusRegionalId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
+          "baseLegal": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BaseLegalDoBonusInput"
+              }
+            ]
           }
         }
       },
@@ -15242,6 +15443,70 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DistincaoDasApresentacoesDto": {
+        "required": [
+          "chave",
+          "dataReferencia",
+          "ocorrenciasEsperadas"
+        ],
+        "type": "object",
+        "properties": {
+          "chave": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataReferencia": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "DistincaoDasApresentacoesInput": {
+        "required": [
+          "chave",
+          "dataReferencia",
+          "ocorrenciasEsperadas"
+        ],
+        "type": "object",
+        "properties": {
+          "chave": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataReferencia": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -19300,25 +19565,11 @@
       "DocumentoExigidoDto": {
         "required": [
           "id",
-          "exigidoNaFaseId",
-          "tipoDocumentoOrigemId",
-          "tipoDocumentoCodigo",
-          "tipoDocumentoNome",
-          "tipoDocumentoCategoria",
+          "tipoDocumento",
+          "momento",
           "aplicabilidade",
-          "obrigatorio",
-          "consequenciaIndeferimento",
-          "condicoes",
-          "basesLegais",
-          "idadeMaximaEmissao",
-          "formatosPermitidos",
-          "tamanhoMaximoBytes",
-          "exigidoNaEtapaId",
-          "modelo",
-          "finalidade",
-          "classificacaoProtecao",
-          "finalidadeTratamento",
-          "hipoteseLegal",
+          "indeferimento",
+          "requisitos",
           "fatosComprovados"
         ],
         "type": "object",
@@ -19327,98 +19578,20 @@
             "type": "string",
             "format": "uuid"
           },
-          "exigidoNaFaseId": {
-            "type": "string",
-            "format": "uuid"
+          "tipoDocumento": {
+            "$ref": "#/components/schemas/TipoDocumentoDaExigenciaDto"
           },
-          "tipoDocumentoOrigemId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipoDocumentoCodigo": {
-            "type": "string"
-          },
-          "tipoDocumentoNome": {
-            "type": "string"
-          },
-          "tipoDocumentoCategoria": {
-            "type": "string"
+          "momento": {
+            "$ref": "#/components/schemas/MomentoDaExigenciaDto"
           },
           "aplicabilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/AplicabilidadeDaExigenciaDto"
           },
-          "obrigatorio": {
-            "type": "boolean"
+          "indeferimento": {
+            "$ref": "#/components/schemas/IndeferimentoDoDocumentoDto"
           },
-          "consequenciaIndeferimento": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "condicoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CondicaoGatilhoDto"
-            }
-          },
-          "basesLegais": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalDto"
-            }
-          },
-          "idadeMaximaEmissao": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/IdadeMaximaEmissaoDto"
-              }
-            ]
-          },
-          "formatosPermitidos": {
-            "$ref": "#/components/schemas/JsonElement"
-          },
-          "tamanhoMaximoBytes": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "exigidoNaEtapaId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "modelo": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ModeloDaExigenciaDto"
-              }
-            ]
-          },
-          "finalidade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "classificacaoProtecao": {
-            "type": "string"
-          },
-          "finalidadeTratamento": {
-            "type": "string"
-          },
-          "hipoteseLegal": {
-            "type": "string"
+          "requisitos": {
+            "$ref": "#/components/schemas/RequisitosDoDocumentoDto"
           },
           "fatosComprovados": {
             "type": "array",
@@ -19779,9 +19952,7 @@
           "ordem",
           "tipo",
           "bloco",
-          "titulo",
-          "descricao",
-          "aviso",
+          "apresentacao",
           "exibicao"
         ],
         "type": "object",
@@ -19802,20 +19973,8 @@
               "string"
             ]
           },
-          "titulo": {
-            "type": "string"
-          },
-          "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "aviso": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDaEtapaDto"
           },
           "exibicao": {
             "type": [
@@ -19837,9 +19996,7 @@
           "ordem",
           "tipo",
           "bloco",
-          "titulo",
-          "descricao",
-          "aviso"
+          "apresentacao"
         ],
         "type": "object",
         "properties": {
@@ -19859,19 +20016,14 @@
               "string"
             ]
           },
-          "titulo": {
-            "type": "string"
-          },
-          "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "aviso": {
-            "type": [
-              "null",
-              "string"
+          "apresentacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApresentacaoDaEtapaInput"
+              }
             ]
           },
           "exibicao": {
@@ -19908,7 +20060,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
               }
             }
           },
@@ -20117,6 +20269,61 @@
             "items": {
               "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
             }
+          }
+        }
+      },
+      "ExibicaoEObrigatoriedadeDto": {
+        "required": [
+          "exibicao",
+          "obrigatoriedade"
+        ],
+        "type": "object",
+        "properties": {
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          }
+        }
+      },
+      "ExibicaoEObrigatoriedadeInput": {
+        "required": [
+          "exibicao",
+          "obrigatoriedade"
+        ],
+        "type": "object",
+        "properties": {
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ObrigatoriedadeInput"
+              }
+            ]
           }
         }
       },
@@ -20430,17 +20637,11 @@
         "required": [
           "fatoCodigo",
           "ordem",
-          "rotulo",
-          "tipoRenderizacao",
-          "obrigatoriedade",
-          "precondicao",
-          "opcoes",
           "etapaCodigo",
+          "apresentacao",
+          "regras",
           "formato",
-          "ajuda",
-          "pedirConfirmacao",
-          "restricoes",
-          "impedimento"
+          "opcoes"
         ],
         "type": "object",
         "properties": {
@@ -20451,26 +20652,23 @@
             "type": "integer",
             "format": "int32"
           },
-          "rotulo": {
-            "type": "string"
-          },
-          "tipoRenderizacao": {
-            "type": "string"
-          },
-          "obrigatoriedade": {
-            "$ref": "#/components/schemas/ObrigatoriedadeDto"
-          },
-          "precondicao": {
+          "etapaCodigo": {
             "type": [
               "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
-              }
-            }
+              "string"
+            ]
+          },
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDoCampoDto"
+          },
+          "regras": {
+            "$ref": "#/components/schemas/RegrasDoCampoDto"
+          },
+          "formato": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "opcoes": {
             "type": [
@@ -20480,43 +20678,6 @@
             "items": {
               "$ref": "#/components/schemas/OpcaoDoProcessoDto"
             }
-          },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "formato": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "ajuda": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "pedirConfirmacao": {
-            "type": "boolean"
-          },
-          "restricoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RestricaoValorDto"
-            }
-          },
-          "impedimento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImpedimentoDto"
-              }
-            ]
           }
         }
       },
@@ -20524,10 +20685,8 @@
         "required": [
           "fatoCodigo",
           "ordem",
-          "rotulo",
-          "tipoRenderizacao",
-          "obrigatoriedade",
-          "precondicao"
+          "apresentacao",
+          "regras"
         ],
         "type": "object",
         "properties": {
@@ -20538,75 +20697,30 @@
             "type": "integer",
             "format": "int32"
           },
-          "rotulo": {
-            "type": "string"
-          },
-          "tipoRenderizacao": {
-            "type": "string"
-          },
-          "obrigatoriedade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "precondicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "ajuda": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "pedirConfirmacao": {
-            "type": "boolean",
-            "default": false
-          },
-          "restricoes": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/RestricaoValorInput"
-            }
-          },
-          "impedimento": {
+          "apresentacao": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ImpedimentoInput"
+                "$ref": "#/components/schemas/ApresentacaoDoCampoInput"
               }
+            ]
+          },
+          "regras": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegrasDoCampoInput"
+              }
+            ]
+          },
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -20684,12 +20798,10 @@
           "finalidade",
           "faseId",
           "titulo",
-          "modeloOrigemId",
-          "modeloOrigemCodigo",
+          "modeloOrigem",
           "etapas",
-          "fatosColetados",
-          "termos",
-          "grupos"
+          "coleta",
+          "termos"
         ],
         "type": "object",
         "properties": {
@@ -20709,17 +20821,14 @@
               "string"
             ]
           },
-          "modeloOrigemId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "modeloOrigemCodigo": {
-            "type": [
-              "null",
-              "string"
+          "modeloOrigem": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDeOrigemDto"
+              }
             ]
           },
           "etapas": {
@@ -20728,22 +20837,13 @@
               "$ref": "#/components/schemas/EtapaFormularioDto"
             }
           },
-          "fatosColetados": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FatoColetadoDto"
-            }
+          "coleta": {
+            "$ref": "#/components/schemas/ColetaDoFormularioDto"
           },
           "termos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermoExigidoDto"
-            }
-          },
-          "grupos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GrupoColetadoDto"
             }
           }
         }
@@ -20818,25 +20918,70 @@
           }
         }
       },
-      "FormularioRenderizavelDto": {
+      "FormularioRenderizavel": {
         "required": [
-          "comprovacaoDocumental",
-          "dependenciasDaAvaliacao",
-          "dependenciasDoFator",
-          "faseId",
           "finalidade",
           "titulo",
           "etapas",
           "termos",
-          "fatosColetados",
-          "grupos",
+          "coleta",
           "regras",
-          "pressupostos",
-          "dataReferenciaFatos",
-          "fusoDoEnvio"
+          "pressupostos"
         ],
         "type": "object",
         "properties": {
+          "finalidade": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecaoRenderizavel"
+            }
+          },
+          "termos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoRenderizavel"
+            }
+          },
+          "coleta": {
+            "$ref": "#/components/schemas/ColetaRenderizavel"
+          },
+          "regras": {
+            "$ref": "#/components/schemas/FormularioPortavel"
+          },
+          "pressupostos": {
+            "$ref": "#/components/schemas/PressupostosDoFormulario"
+          }
+        }
+      },
+      "FormularioRenderizavelDto": {
+        "required": [
+          "formulario",
+          "faseId",
+          "comprovacaoDocumental",
+          "dependenciasDaAvaliacao",
+          "dependenciasDoFator"
+        ],
+        "type": "object",
+        "properties": {
+          "formulario": {
+            "$ref": "#/components/schemas/FormularioRenderizavel"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "comprovacaoDocumental": {
             "type": [
               "null",
@@ -20864,68 +21009,6 @@
               {
                 "$ref": "#/components/schemas/DependenciasDaAvaliacaoDto"
               }
-            ]
-          },
-          "faseId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "finalidade": {
-            "type": "string"
-          },
-          "titulo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "etapas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SecaoRenderizavel"
-            }
-          },
-          "termos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TermoRenderizavel"
-            }
-          },
-          "fatosColetados": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CampoRenderizavel"
-            }
-          },
-          "grupos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GrupoRenderizavel"
-            }
-          },
-          "regras": {
-            "$ref": "#/components/schemas/FormularioPortavel"
-          },
-          "pressupostos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PressupostoRenderizavel"
-            }
-          },
-          "dataReferenciaFatos": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "fusoDoEnvio": {
-            "type": [
-              "null",
-              "string"
             ]
           }
         }
@@ -21090,11 +21173,8 @@
           "ordem",
           "etapaCodigo",
           "rotulo",
-          "minimo",
-          "maximo",
-          "incluiCandidato",
-          "exibicao",
-          "obrigatoriedade",
+          "ocorrencias",
+          "regras",
           "subitens"
         ],
         "type": "object",
@@ -21115,34 +21195,11 @@
           "rotulo": {
             "type": "string"
           },
-          "minimo": {
-            "type": "integer",
-            "format": "int32"
+          "ocorrencias": {
+            "$ref": "#/components/schemas/OcorrenciasDoGrupoDto"
           },
-          "maximo": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "incluiCandidato": {
-            "type": "boolean"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
-              }
-            }
-          },
-          "obrigatoriedade": {
-            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          "regras": {
+            "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeDto"
           },
           "subitens": {
             "type": "array",
@@ -21157,12 +21214,8 @@
           "codigo",
           "ordem",
           "rotulo",
-          "etapaCodigo",
-          "minimo",
-          "maximo",
-          "exibicao",
-          "obrigatoriedade",
-          "predicadoObrigatoriedade",
+          "ocorrencias",
+          "regras",
           "subitens"
         ],
         "type": "object",
@@ -21177,52 +21230,25 @@
           "rotulo": {
             "type": "string"
           },
-          "etapaCodigo": {
-            "type": [
-              "null",
-              "string"
+          "ocorrencias": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OcorrenciasDoGrupoInput"
+              }
             ]
           },
-          "minimo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maximo": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+          "regras": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeInput"
               }
-            }
-          },
-          "obrigatoriedade": {
-            "type": [
-              "null",
-              "string"
             ]
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
           },
           "subitens": {
             "type": "array",
@@ -21230,9 +21256,11 @@
               "$ref": "#/components/schemas/FatoColetadoInput"
             }
           },
-          "incluiCandidato": {
-            "type": "boolean",
-            "default": false
+          "etapaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -21336,12 +21364,8 @@
       "GrupoPortavel": {
         "required": [
           "codigo",
-          "exibicao",
-          "obrigatoriedade",
-          "predicadoObrigatoriedade",
-          "minimo",
-          "maximo",
-          "incluiCandidato",
+          "ocorrencias",
+          "regras",
           "subitens"
         ],
         "type": "object",
@@ -21349,46 +21373,11 @@
           "codigo": {
             "type": "string"
           },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
+          "ocorrencias": {
+            "$ref": "#/components/schemas/OcorrenciasDoGrupoDto"
           },
-          "obrigatoriedade": {
-            "type": "string"
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "minimo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maximo": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "incluiCandidato": {
-            "type": "boolean"
+          "regras": {
+            "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeDto"
           },
           "subitens": {
             "type": "array",
@@ -21404,9 +21393,7 @@
           "ordem",
           "etapaCodigo",
           "rotulo",
-          "minimo",
-          "maximo",
-          "incluiCandidato",
+          "ocorrencias",
           "subitens"
         ],
         "type": "object",
@@ -21427,19 +21414,8 @@
           "rotulo": {
             "type": "string"
           },
-          "minimo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maximo": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "incluiCandidato": {
-            "type": "boolean"
+          "ocorrencias": {
+            "$ref": "#/components/schemas/OcorrenciasDoGrupoDto"
           },
           "subitens": {
             "type": "array",
@@ -21471,10 +21447,10 @@
             ]
           },
           "visivel": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "obrigatorio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "contagemValida": {
             "type": "boolean"
@@ -21730,6 +21706,100 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "IndeferimentoDoDocumentoDto": {
+        "required": [
+          "obrigatorio",
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDto"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoDocumentoInput": {
+        "required": [
+          "obrigatorio",
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalInput"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoGrupoDto": {
+        "required": [
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDto"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoGrupoInput": {
+        "type": "object",
+        "properties": {
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalInput"
+            }
           }
         }
       },
@@ -22405,96 +22475,62 @@
       },
       "ItemDocumentoExigidoInput": {
         "required": [
-          "exigidoNaFaseId",
-          "tipoDocumentoId",
+          "tipoDocumento",
+          "momento",
           "aplicabilidade",
-          "obrigatorio",
-          "consequenciaIndeferimento",
-          "condicoes",
-          "basesLegais",
-          "idadeMaximaEmissao",
-          "formatosPermitidos",
-          "tamanhoMaximoBytes"
+          "indeferimento",
+          "requisitos"
         ],
         "type": "object",
         "properties": {
-          "exigidoNaFaseId": {
-            "type": "string",
-            "format": "uuid"
+          "tipoDocumento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDocumentoDaExigenciaInput"
+              }
+            ]
           },
-          "tipoDocumentoId": {
-            "type": "string",
-            "format": "uuid"
+          "momento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MomentoDaExigenciaInput"
+              }
+            ]
           },
           "aplicabilidade": {
-            "type": "string"
-          },
-          "obrigatorio": {
-            "type": "boolean"
-          },
-          "consequenciaIndeferimento": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "condicoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CondicaoGatilhoInput"
-            }
-          },
-          "basesLegais": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalInput"
-            }
-          },
-          "idadeMaximaEmissao": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/IdadeMaximaEmissaoInput"
+                "$ref": "#/components/schemas/AplicabilidadeDaExigenciaInput"
               }
             ]
           },
-          "formatosPermitidos": {
+          "indeferimento": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/JsonElement"
+                "$ref": "#/components/schemas/IndeferimentoDoDocumentoInput"
               }
             ]
           },
-          "tamanhoMaximoBytes": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "exigidoNaEtapaId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "modeloId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "finalidade": {
-            "type": [
-              "null",
-              "string"
+          "requisitos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RequisitosDoDocumentoInput"
+              }
             ]
           },
           "fatosComprovados": {
@@ -22511,60 +22547,17 @@
       "ItemPortavel": {
         "required": [
           "fatoCodigo",
-          "exibicao",
-          "obrigatoriedade",
-          "predicadoObrigatoriedade",
-          "restricoes",
-          "impedimento",
-          "oferta"
+          "regras",
+          "oferta",
+          "formato"
         ],
         "type": "object",
         "properties": {
           "fatoCodigo": {
             "type": "string"
           },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "obrigatoriedade": {
-            "type": "string"
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "restricoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RestricaoValorInput"
-            }
-          },
-          "impedimento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImpedimentoInput"
-              }
-            ]
+          "regras": {
+            "$ref": "#/components/schemas/RegrasDoCampoDto"
           },
           "oferta": {
             "type": [
@@ -22606,10 +22599,10 @@
             ]
           },
           "visivel": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "obrigatorio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "restricoesVioladas": {
             "type": "array",
@@ -22618,7 +22611,7 @@
             }
           },
           "impedido": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "mensagemDoImpedimento": {
             "type": [
@@ -23179,6 +23172,18 @@
           }
         }
       },
+      "ModeloDaExigenciaInput": {
+        "required": [
+          "modeloId"
+        ],
+        "type": "object",
+        "properties": {
+          "modeloId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ModeloDeDocumentoDto": {
         "required": [
           "id",
@@ -23241,6 +23246,22 @@
           }
         }
       },
+      "ModeloDeOrigemDto": {
+        "required": [
+          "id",
+          "codigo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          }
+        }
+      },
       "ModeloDocumentalCertameDto": {
         "required": [
           "nomeArquivo",
@@ -23274,6 +23295,58 @@
           "atoIndividual"
         ],
         "type": "string"
+      },
+      "MomentoDaExigenciaDto": {
+        "required": [
+          "faseId",
+          "etapaId",
+          "finalidade"
+        ],
+        "type": "object",
+        "properties": {
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "etapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MomentoDaExigenciaInput": {
+        "required": [
+          "faseId"
+        ],
+        "type": "object",
+        "properties": {
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "etapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "MotivoDeDecisaoDto": {
         "required": [
@@ -23410,13 +23483,9 @@
           "id",
           "tipo",
           "documento",
-          "quantidadeMinima",
-          "consequencia",
-          "basesLegais",
+          "cardinalidade",
+          "indeferimento",
           "filhos",
-          "chaveDistincao",
-          "dataReferencia",
-          "ocorrenciasEsperadas",
           "repetePorEntidade"
         ],
         "type": "object",
@@ -23438,51 +23507,16 @@
               }
             ]
           },
-          "quantidadeMinima": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
+          "cardinalidade": {
+            "$ref": "#/components/schemas/CardinalidadeQualificadaDto"
           },
-          "consequencia": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "basesLegais": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalDto"
-            }
+          "indeferimento": {
+            "$ref": "#/components/schemas/IndeferimentoDoGrupoDto"
           },
           "filhos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NoExigenciaDto"
-            }
-          },
-          "chaveDistincao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "dataReferencia": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "ocorrenciasEsperadas": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
             }
           },
           "repetePorEntidade": {
@@ -23495,12 +23529,7 @@
       },
       "NoExigenciaInput": {
         "required": [
-          "tipo",
-          "documento",
-          "quantidadeMinima",
-          "consequencia",
-          "basesLegais",
-          "filhos"
+          "tipo"
         ],
         "type": "object",
         "properties": {
@@ -23517,27 +23546,25 @@
               }
             ]
           },
-          "quantidadeMinima": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "consequencia": {
-            "type": [
-              "null",
-              "string"
+          "cardinalidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardinalidadeQualificadaInput"
+              }
             ]
           },
-          "basesLegais": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalInput"
-            }
+          "indeferimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndeferimentoDoGrupoInput"
+              }
+            ]
           },
           "filhos": {
             "type": [
@@ -23546,28 +23573,6 @@
             ],
             "items": {
               "$ref": "#/components/schemas/NoExigenciaInput"
-            }
-          },
-          "chaveDistincao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "dataReferencia": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "ocorrenciasEsperadas": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
             }
           },
           "repetePorEntidade": {
@@ -23647,6 +23652,32 @@
               "type": "array",
               "items": {
                 "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          }
+        }
+      },
+      "ObrigatoriedadeInput": {
+        "required": [
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "predicado": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
               }
             }
           }
@@ -23855,6 +23886,59 @@
             "items": {
               "$ref": "#/components/schemas/OfertaEscolhidaDto"
             }
+          }
+        }
+      },
+      "OcorrenciasDoGrupoDto": {
+        "required": [
+          "minimo",
+          "maximo",
+          "incluiCandidato"
+        ],
+        "type": "object",
+        "properties": {
+          "minimo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "incluiCandidato": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OcorrenciasDoGrupoInput": {
+        "required": [
+          "minimo",
+          "incluiCandidato"
+        ],
+        "type": "object",
+        "properties": {
+          "minimo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "incluiCandidato": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "maximo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -24150,6 +24234,18 @@
           }
         }
       },
+      "OperadorCodigo": {
+        "enum": [
+          "IGUAL",
+          "EM",
+          "MAIOR_IGUAL",
+          "MENOR_IGUAL",
+          "DIFERENTE",
+          "NAO_EM"
+        ],
+        "type": "string",
+        "description": "Operador que compara o fato do candidato com o valor da condi\u00E7\u00E3o. Sobre fato multivalorado, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).\n\n- \u0060IGUAL\u0060: \u00E9 igual a\n- \u0060EM\u0060: \u00E9 um de\n- \u0060MAIOR_IGUAL\u0060: maior ou igual a\n- \u0060MENOR_IGUAL\u0060: menor ou igual a\n- \u0060DIFERENTE\u0060: \u00E9 diferente de\n- \u0060NAO_EM\u0060: n\u00E3o \u00E9 nenhum de"
+      },
       "OrigemCandidatos": {
         "enum": [
           "nenhuma",
@@ -24183,6 +24279,121 @@
         ],
         "type": "string",
         "description": "O que as bancas de um tipo fazem no processo seletivo. Cada tipo de banca cadastrado tem exatamente um papel; as regras da sele\u00E7\u00E3o decidem pelo papel, e n\u00E3o pelo c\u00F3digo do tipo.\n\n- \u0060AVALIA_O_MERITO\u0060: Avalia o m\u00E9rito\n- \u0060JULGA_A_PRIMEIRA_INSTANCIA\u0060: Julga o recurso em 1\u00AA inst\u00E2ncia\n- \u0060IMPORTA_AS_NOTAS_DO_INEP\u0060: Importa as notas do INEP\n- \u0060IMPORTA_CANDIDATOS\u0060: Importa candidatos\n- \u0060JULGA_A_SEGUNDA_INSTANCIA\u0060: Julga o recurso em 2\u00AA inst\u00E2ncia"
+      },
+      "ParametrosDoCriterioDesempateDto": {
+        "required": [
+          "etapaRef",
+          "idadeMinima",
+          "fato",
+          "operador",
+          "valor",
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "idadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operador": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OperadorCodigo"
+              }
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ParametrosDoCriterioDesempateInput": {
+        "required": [
+          "etapaRef",
+          "idadeMinima",
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "idadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operador": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OperadorCodigo"
+              }
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "ParametrosRegraAjusteDistribuicao": {
         "required": [
@@ -24606,9 +24817,13 @@
             ]
           },
           "tipoRenderizacao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+              }
             ]
           },
           "formato": {
@@ -24635,6 +24850,35 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "PressupostosDoFormulario": {
+        "required": [
+          "fatos",
+          "dataReferenciaFatos",
+          "fusoDoEnvio"
+        ],
+        "type": "object",
+        "properties": {
+          "fatos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PressupostoRenderizavel"
+            }
+          },
+          "dataReferenciaFatos": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "fusoDoEnvio": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -25337,6 +25581,25 @@
           }
         }
       },
+      "ProtecaoDeDadosDto": {
+        "required": [
+          "classificacao",
+          "finalidade",
+          "hipoteseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "classificacao": {
+            "type": "string"
+          },
+          "finalidade": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          }
+        }
+      },
       "PublicacoesDaEtapaDto": {
         "required": [
           "produtos",
@@ -25870,6 +26133,27 @@
           }
         }
       },
+      "ReferenciaRegraInput": {
+        "required": [
+          "codigo",
+          "versao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "versao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ReferenciaReservaDemograficaSnapshotDto": {
         "required": [
           "origemId",
@@ -26311,7 +26595,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoDerivacaoInput"
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
               }
             }
           }
@@ -26329,7 +26613,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
               }
             }
           },
@@ -26555,6 +26839,187 @@
             "items": {
               "$ref": "#/components/schemas/ProcedimentoDeRecursoInput"
             }
+          }
+        }
+      },
+      "RegrasDoCampoDto": {
+        "required": [
+          "exibicao",
+          "obrigatoriedade",
+          "restricoes",
+          "impedimento"
+        ],
+        "type": "object",
+        "properties": {
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          },
+          "restricoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestricaoValorDto"
+            }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoDto"
+              }
+            ]
+          }
+        }
+      },
+      "RegrasDoCampoInput": {
+        "required": [
+          "exibicao",
+          "obrigatoriedade"
+        ],
+        "type": "object",
+        "properties": {
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "obrigatoriedade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ObrigatoriedadeInput"
+              }
+            ]
+          },
+          "restricoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RestricaoValorInput"
+            }
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoInput"
+              }
+            ]
+          }
+        }
+      },
+      "RequisitosDoDocumentoDto": {
+        "required": [
+          "formatosPermitidos",
+          "tamanhoMaximoBytes",
+          "idadeMaximaEmissao",
+          "modelo"
+        ],
+        "type": "object",
+        "properties": {
+          "formatosPermitidos": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "tamanhoMaximoBytes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "idadeMaximaEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdadeMaximaEmissaoDto"
+              }
+            ]
+          },
+          "modelo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDaExigenciaDto"
+              }
+            ]
+          }
+        }
+      },
+      "RequisitosDoDocumentoInput": {
+        "required": [
+          "formatosPermitidos",
+          "tamanhoMaximoBytes",
+          "idadeMaximaEmissao",
+          "modelo"
+        ],
+        "type": "object",
+        "properties": {
+          "formatosPermitidos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "tamanhoMaximoBytes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "idadeMaximaEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdadeMaximaEmissaoInput"
+              }
+            ]
+          },
+          "modelo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDaExigenciaInput"
+              }
+            ]
           }
         }
       },
@@ -26834,9 +27299,7 @@
           "ordem",
           "tipo",
           "bloco",
-          "titulo",
-          "descricao",
-          "aviso"
+          "apresentacao"
         ],
         "type": "object",
         "properties": {
@@ -26862,20 +27325,8 @@
               "string"
             ]
           },
-          "titulo": {
-            "type": "string"
-          },
-          "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "aviso": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDaEtapaDto"
           }
         }
       },
@@ -26890,7 +27341,7 @@
             "type": "string"
           },
           "visivel": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           }
         }
       },
@@ -27028,17 +27479,8 @@
         "required": [
           "codigo",
           "ordem",
-          "termoId",
-          "versaoId",
-          "termoCodigo",
-          "versaoNumero",
-          "nome",
-          "texto",
-          "baseLegal",
-          "formaAceite",
-          "hashVersao",
-          "exibicao",
-          "obrigatoriedade"
+          "termo",
+          "regras"
         ],
         "type": "object",
         "properties": {
@@ -27049,50 +27491,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "termoId": {
-            "type": "string",
-            "format": "uuid"
+          "termo": {
+            "$ref": "#/components/schemas/VersaoDoTermoDto"
           },
-          "versaoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "termoCodigo": {
-            "type": "string"
-          },
-          "versaoNumero": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "nome": {
-            "type": "string"
-          },
-          "texto": {
-            "type": "string"
-          },
-          "baseLegal": {
-            "type": "string"
-          },
-          "formaAceite": {
-            "type": "string"
-          },
-          "hashVersao": {
-            "type": "string"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
-              }
-            }
-          },
-          "obrigatoriedade": {
-            "$ref": "#/components/schemas/ObrigatoriedadeDto"
+          "regras": {
+            "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeDto"
           }
         }
       },
@@ -27100,11 +27503,8 @@
         "required": [
           "codigo",
           "ordem",
-          "termoId",
-          "versaoId",
-          "exibicao",
-          "obrigatoriedade",
-          "predicadoObrigatoriedade"
+          "termo",
+          "regras"
         ],
         "type": "object",
         "properties": {
@@ -27115,81 +27515,40 @@
             "type": "integer",
             "format": "int32"
           },
-          "termoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "versaoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+          "termo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VersaoDoTermoInput"
               }
-            }
+            ]
           },
-          "obrigatoriedade": {
-            "type": "string"
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+          "regras": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeInput"
               }
-            }
+            ]
           }
         }
       },
       "TermoPortavel": {
         "required": [
           "codigo",
-          "exibicao",
-          "obrigatoriedade",
-          "predicadoObrigatoriedade"
+          "regras"
         ],
         "type": "object",
         "properties": {
           "codigo": {
             "type": "string"
           },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          },
-          "obrigatoriedade": {
-            "type": "string"
-          },
-          "predicadoObrigatoriedade": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
+          "regras": {
+            "$ref": "#/components/schemas/ExibicaoEObrigatoriedadeDto"
           }
         }
       },
@@ -27200,11 +27559,7 @@
           "ordem",
           "termoId",
           "versaoId",
-          "nome",
-          "texto",
-          "baseLegal",
-          "formaAceite",
-          "hashVersao"
+          "conteudo"
         ],
         "type": "object",
         "properties": {
@@ -27226,20 +27581,8 @@
             "type": "string",
             "format": "uuid"
           },
-          "nome": {
-            "type": "string"
-          },
-          "texto": {
-            "type": "string"
-          },
-          "baseLegal": {
-            "type": "string"
-          },
-          "formaAceite": {
-            "type": "string"
-          },
-          "hashVersao": {
-            "type": "string"
+          "conteudo": {
+            "$ref": "#/components/schemas/ConteudoDoTermoDto"
           }
         }
       },
@@ -27255,12 +27598,21 @@
             "type": "string"
           },
           "visivel": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           },
           "obrigatorio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TernarioCodigo"
           }
         }
+      },
+      "TernarioCodigo": {
+        "enum": [
+          "INDETERMINADO",
+          "VERDADEIRO",
+          "FALSO"
+        ],
+        "type": "string",
+        "description": "Resultado da avalia\u00E7\u00E3o de uma condi\u00E7\u00E3o: verdadeiro, falso ou indeterminado, que \u00E9 estado pr\u00F3prio e n\u00E3o equivale a falso nem a aus\u00EAncia.\n\n- \u0060INDETERMINADO\u0060: Indeterminado \u2014 N\u00E3o h\u00E1 como decidir ainda: nunca \u00E9 lido como verdadeiro nem como falso.\n- \u0060VERDADEIRO\u0060: Verdadeiro\n- \u0060FALSO\u0060: Falso"
       },
       "TipoCatalogadoCertameDto": {
         "required": [
@@ -27315,6 +27667,46 @@
           null
         ],
         "type": "string"
+      },
+      "TipoDocumentoDaExigenciaDto": {
+        "required": [
+          "id",
+          "codigo",
+          "nome",
+          "categoria",
+          "protecao"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "categoria": {
+            "type": "string"
+          },
+          "protecao": {
+            "$ref": "#/components/schemas/ProtecaoDeDadosDto"
+          }
+        }
+      },
+      "TipoDocumentoDaExigenciaInput": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
       },
       "TipoEtapaSnapshotDto": {
         "required": [
@@ -27392,6 +27784,20 @@
             "type": "string"
           }
         }
+      },
+      "TipoRenderizacaoCodigo": {
+        "enum": [
+          "NUMERO",
+          "BOOLEANO",
+          "SELECAO_UNICA",
+          "SELECAO_MULTIPLA",
+          "TEXTO",
+          "DATA",
+          "ENDERECO",
+          "MUNICIPIO"
+        ],
+        "type": "string",
+        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero\n- \u0060BOOLEANO\u0060: Sim ou n\u00E3o\n- \u0060SELECAO_UNICA\u0060: Escolha de um valor\n- \u0060SELECAO_MULTIPLA\u0060: Escolha de v\u00E1rios valores\n- \u0060TEXTO\u0060: Texto\n- \u0060DATA\u0060: Data\n- \u0060ENDERECO\u0060: Endere\u00E7o\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio"
       },
       "UnidadeAdministradoraCertameDto": {
         "required": [
@@ -27659,6 +28065,53 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "VersaoDoTermoDto": {
+        "required": [
+          "termoId",
+          "versaoId",
+          "termoCodigo",
+          "versaoNumero",
+          "conteudo"
+        ],
+        "type": "object",
+        "properties": {
+          "termoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "termoCodigo": {
+            "type": "string"
+          },
+          "versaoNumero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conteudo": {
+            "$ref": "#/components/schemas/ConteudoDoTermoDto"
+          }
+        }
+      },
+      "VersaoDoTermoInput": {
+        "required": [
+          "termoId",
+          "versaoId"
+        ],
+        "type": "object",
+        "properties": {
+          "termoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versaoId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },

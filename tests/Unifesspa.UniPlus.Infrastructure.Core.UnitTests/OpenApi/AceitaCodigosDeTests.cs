@@ -129,6 +129,14 @@ public sealed class AceitaCodigosDeTests
         DocumentoPublicado.Referencia(documento.Propriedade(nameof(PedidoPosicional), "naPropriedade").Campo("items")).Should().Be(ComponenteDosCodigos);
     }
 
+    [Fact(DisplayName = "O campo de texto de um registro de resposta marcado na propriedade referencia os códigos")]
+    public async Task RegistroDeResposta_AtributoNaPropriedade_ReferenciaOsCodigos()
+    {
+        DocumentoPublicado documento = await Controladores.Value;
+
+        DocumentoPublicado.Referencia(documento.Propriedade(nameof(RespostaTextualDeFase), "fase")).Should().Be(ComponenteDosCodigos);
+    }
+
     [Fact(DisplayName = "O parâmetro do construtor que o serializador usa carrega o atributo")]
     public async Task ParametroDoConstrutorUsado_CarregaOAtributo()
     {

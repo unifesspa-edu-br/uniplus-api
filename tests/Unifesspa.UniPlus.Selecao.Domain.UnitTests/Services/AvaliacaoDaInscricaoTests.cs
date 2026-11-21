@@ -191,11 +191,16 @@ public sealed class AvaliacaoDaInscricaoTests
         };
         if (ondeCursou is not null)
         {
-            respostas[OrigemEscolar.FatoFormaDeConclusao] = JsonSerializer.SerializeToElement(OrigemEscolar.Regular);
-            respostas[OrigemEscolar.FatoOndeCursou] = JsonSerializer.SerializeToElement(ondeCursou);
+            AdicionarOrigemEscolar(respostas, ondeCursou);
         }
 
         return respostas;
+    }
+
+    private static void AdicionarOrigemEscolar(Dictionary<string, JsonElement> respostas, string ondeCursou)
+    {
+        respostas[OrigemEscolar.FatoFormaDeConclusao] = JsonSerializer.SerializeToElement(OrigemEscolar.Regular);
+        respostas[OrigemEscolar.FatoOndeCursou] = JsonSerializer.SerializeToElement(ondeCursou);
     }
 
     private const string BaixaRenda = "BAIXA_RENDA";
@@ -208,55 +213,80 @@ public sealed class AvaliacaoDaInscricaoTests
 
     private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)
     {
-        PredicadoDnf soComBaixaRenda = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(1, CondicaoDnf.Criar(BaixaRenda, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        string[] perguntas = [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : municipioNoGrupo ? new[] { PedeOFator } : []];
-        PredicadoDnf soSePedeOFator = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(1, CondicaoDnf.Criar(PedeOFator, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        DerivacaoDoFato egresso = DerivacaoDoFato.CriarBooleana(
-            OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
-        FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
-            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-            f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo,
-            etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
+        string[] perguntas = PerguntasDa(rendaSoParaBaixaRenda, municipioDoBonus, municipioNoGrupo);
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
-        // Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o
-        // egresso pela regra do sistema.
-        List<DerivacaoDoFato> derivacoes = derivaModalidade
-            ? [.. DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
-                d.ParaDerivacaoDoFato([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!)]
-            : [egresso];
-
-        DefinicaoFormulario definicao = new(
-            [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(
-                f, rendaSoParaBaixaRenda && f == "CONCORRER_RENDA" ? soComBaixaRenda : f == MunicipioDoBonus ? soSePedeOFator : null, Obrigatoriedade.Sempre, []))])],
-            [],
-            derivacoes);
-        GrupoColetado[] grupos = [];
-        if (municipioNoGrupo)
-        {
-            FatoColetado membro = FatoColetado.Criar(
-                MunicipioDoBonus, 0, "Município", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-                OrigemValoresColeta.MunicipiosDoBonus).Value!;
-            grupos = [GrupoColetado.Criar(GrupoDeMunicipios, 1, Secao, "Municípios", 0, 3, null, Obrigatoriedade.Sempre, [membro], FinalidadeFormulario.Inscricao).Value!];
-            definicao = new DefinicaoFormulario(
-                [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
-                    [new DefinicaoGrupo(GrupoDeMunicipios, soSePedeOFator, Obrigatoriedade.Sempre, 0, 3,
-                        [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])])])],
-                [],
-                derivacoes);
-        }
+        List<DerivacaoDoFato> derivacoes = DerivacoesDa(derivaModalidade, ofertadas);
+        DefinicaoFormulario definicao = municipioNoGrupo
+            ? DefinicaoComGrupoDeMunicipios(perguntas, derivacoes)
+            : DefinicaoDasPerguntas(perguntas, rendaSoParaBaixaRenda, derivacoes);
+        GrupoColetado[] grupos = municipioNoGrupo ? [GrupoDeMunicipiosColetado()] : [];
 
         return new ConfiguracaoAvaliavel(
-            definicao,
-            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            ArvoreExigenciasCongelada.DeGrafoReidratado([]),
-            campos,
-            grupos,
-            ofertadas,
-            [],
-            []);
+            definicao, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), ArvoreExigenciasCongelada.DeGrafoReidratado([]),
+            CamposDe(perguntas), grupos, ofertadas, [], []);
     }
+
+    private static string[] PerguntasDa(bool rendaSoParaBaixaRenda, bool municipioDoBonus, bool municipioNoGrupo) =>
+        [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : municipioNoGrupo ? new[] { PedeOFator } : []];
+
+    private static PredicadoDnf QuandoEIgualATrue(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(1, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+
+    private static FatoColetado[] CamposDe(string[] perguntas) =>
+        [.. perguntas.Select(static (f, ordem) => FatoColetadoDeTeste.Coletando(f, ordem)
+            .ComRotulo($"Rótulo de {f}")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .ComOrigem(f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo)
+            .NaSecao(Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir())];
+
+    /// <summary>
+    /// Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o egresso pela
+    /// regra do sistema.
+    /// </summary>
+    private static List<DerivacaoDoFato> DerivacoesDa(bool derivaModalidade, ModalidadeSelecionada[] ofertadas) =>
+        derivaModalidade
+            ? [.. DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
+                d.ParaDerivacaoDoFato([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!)]
+            : [DerivacaoDoFato.CriarBooleana(OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!];
+
+    private static DefinicaoFormulario DefinicaoDasPerguntas(string[] perguntas, bool rendaSoParaBaixaRenda, List<DerivacaoDoFato> derivacoes) => new(
+        [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, ExibicaoDe(f, rendaSoParaBaixaRenda), Obrigatoriedade.Sempre, []))])],
+        [],
+        derivacoes);
+
+    private static PredicadoDnf? ExibicaoDe(string pergunta, bool rendaSoParaBaixaRenda)
+    {
+        if (rendaSoParaBaixaRenda && pergunta == "CONCORRER_RENDA")
+        {
+            return QuandoEIgualATrue(BaixaRenda);
+        }
+
+        return pergunta == MunicipioDoBonus ? QuandoEIgualATrue(PedeOFator) : null;
+    }
+
+    private static DefinicaoFormulario DefinicaoComGrupoDeMunicipios(string[] perguntas, List<DerivacaoDoFato> derivacoes) => new(
+        [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
+            [new DefinicaoGrupo(GrupoDeMunicipios, QuandoEIgualATrue(PedeOFator), Obrigatoriedade.Sempre, 0, 3,
+                [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
+        [],
+        derivacoes);
+
+    private static GrupoColetado GrupoDeMunicipiosColetado() => GrupoColetadoDeTeste.Agrupando(GrupoDeMunicipios, 1)
+        .NaSecao(Secao)
+        .ComRotulo("Municípios")
+        .ComOcorrencias(0, 3)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(FatoColetadoDeTeste.Coletando(MunicipioDoBonus, 0)
+            .ComRotulo("Município")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+            .Construir())
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     /// <summary>
     /// As modalidades da Lei de Cotas, com regras no molde das do cadastro: cada cota exige a opção

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -21,22 +22,31 @@ public sealed record AvaliacaoPortavel(
     {
         ArgumentNullException.ThrowIfNull(avaliacao);
         return new(
-            [.. avaliacao.Etapas.Select(static e => new EtapaAvaliada(e.Codigo, e.Visivel.ToCodigo()))],
+            [.. avaliacao.Etapas.Select(static e => new EtapaAvaliada(e.Codigo, e.Visivel.Codigo()))],
             [.. avaliacao.Itens.Select(i => Campo(i, avaliacao.Fatos))],
-            [.. avaliacao.Grupos.Select(static g => new GrupoAvaliado(
-                g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.Estado.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                [.. g.Ocorrencias.Select(static o => new OcorrenciaAvaliada(o.Id, o.Estado.ToCodigo(), [.. o.Itens.Select(i => Campo(i, o.Fatos))]))]))],
-            [.. avaliacao.Termos.Select(static t => new TermoAvaliado(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]);
+            [.. avaliacao.Grupos.Select(Grupo)],
+            [.. avaliacao.Termos.Select(static t => new TermoAvaliado(t.Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))]);
     }
+
+    private static GrupoAvaliado Grupo(AvaliacaoGrupo grupo) => new(
+        grupo.Codigo,
+        grupo.EtapaCodigo,
+        grupo.Estado.Codigo(),
+        new ExibicaoEObrigatoriedadeAvaliadas(grupo.Visivel.Codigo(), grupo.Obrigatorio.Codigo()),
+        new OcorrenciasAvaliadas(grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida, [.. grupo.Ocorrencias.Select(Ocorrencia)]));
+
+    private static OcorrenciaAvaliada Ocorrencia(AvaliacaoOcorrencia ocorrencia) =>
+        new(ocorrencia.Id, ocorrencia.Estado.Codigo(), [.. ocorrencia.Itens.Select(i => Campo(i, ocorrencia.Fatos))]);
 
     private static CampoAvaliado Campo(AvaliacaoItem item, IReadOnlyDictionary<string, FatoResolvido> fatos) => new(
         item.FatoCodigo,
         item.EtapaCodigo,
-        fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? fato) ? fato.Estado.ToCodigo() : EstadoFatoCodigo.Indeterminado,
-        item.Visivel.ToCodigo(),
-        item.Obrigatorio.ToCodigo(),
-        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.ToCodigo(),
+        fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? fato) ? fato.Estado.Codigo() : EstadoFato.Indeterminado.Codigo(),
+        new RegrasDoCampoAvaliadas(
+            item.Visivel.Codigo(),
+            item.Obrigatorio.Codigo(),
+            [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+            item.Impedido.Codigo()),
         item.Opcoes);
 }
 
@@ -45,38 +55,51 @@ public sealed record AvaliacaoPortavel(
 /// formulário e, no rascunho com campo ainda sem seção, a etapa da finalidade; os blocos que o sistema
 /// monta não têm regra e não entram.
 /// </summary>
-public sealed record EtapaAvaliada(string Codigo, string Visivel);
+public sealed record EtapaAvaliada(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
 
 /// <summary>
-/// Um campo avaliado: o estado do fato que ele produz, se aparece, se é obrigatório, as restrições que
-/// a resposta viola, se a resposta impede a inscrição e as opções vigentes do campo de escolha.
+/// Um campo avaliado: o estado do fato que ele produz, o que as regras do campo resultam e as opções
+/// vigentes do campo de escolha.
 /// </summary>
 public sealed record CampoAvaliado(
     string FatoCodigo,
     string EtapaCodigo,
-    string Estado,
-    string Visivel,
-    string Obrigatorio,
-    IReadOnlyList<string> RestricoesVioladas,
-    string Impedido,
+    [property: AceitaCodigosDe<EstadoFato>] string Estado,
+    RegrasDoCampoAvaliadas Regras,
     OpcoesVigentes? Opcoes);
 
 /// <summary>
-/// Um grupo repetível avaliado: se aparece e é obrigatório, o estado da lista, se a contagem e a
-/// ocorrência do próprio candidato valem, e cada ocorrência.
+/// O que as regras de um campo resultam: se aparece, se é obrigatório, as restrições que a resposta
+/// viola e se a resposta impede a inscrição.
 /// </summary>
+public sealed record RegrasDoCampoAvaliadas(
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
+    IReadOnlyList<string> RestricoesVioladas,
+    [property: AceitaCodigosDe<Ternario>] string Impedido);
+
+/// <summary>Um grupo repetível avaliado: o estado da lista, o que as regras resultam e as ocorrências.</summary>
 public sealed record GrupoAvaliado(
     string Codigo,
     string EtapaCodigo,
-    string Visivel,
-    string Obrigatorio,
-    string Estado,
+    [property: AceitaCodigosDe<EstadoFato>] string Estado,
+    ExibicaoEObrigatoriedadeAvaliadas Regras,
+    OcorrenciasAvaliadas Ocorrencias);
+
+/// <summary>O que as regras de um grupo resultam: se aparece e se é obrigatório.</summary>
+public sealed record ExibicaoEObrigatoriedadeAvaliadas([property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
+
+/// <summary>
+/// As ocorrências de um grupo avaliadas: se a contagem e a ocorrência do próprio candidato valem, e cada
+/// ocorrência.
+/// </summary>
+public sealed record OcorrenciasAvaliadas(
     bool ContagemValida,
     bool OcorrenciaDoCandidatoValida,
-    IReadOnlyList<OcorrenciaAvaliada> Ocorrencias);
+    IReadOnlyList<OcorrenciaAvaliada> Lista);
 
 /// <summary>Uma ocorrência avaliada: o estado dela e os campos.</summary>
-public sealed record OcorrenciaAvaliada(string Id, string Estado, IReadOnlyList<CampoAvaliado> Campos);
+public sealed record OcorrenciaAvaliada(string Id, [property: AceitaCodigosDe<EstadoFato>] string Estado, IReadOnlyList<CampoAvaliado> Campos);
 
 /// <summary>Um termo avaliado: se aparece e se é obrigatório.</summary>
-public sealed record TermoAvaliado(string Codigo, string Visivel, string Obrigatorio);
+public sealed record TermoAvaliado(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);

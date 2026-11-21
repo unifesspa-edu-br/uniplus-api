@@ -37,7 +37,7 @@ public sealed class ModeloFormularioTipoDeProcessoNormalizadoTests
         Guid id = await CriarAsync(client, ComTipoDeProcesso(Habilitacao(CodigoUnico()), $"PÓS_{sufixo}"));
 
         JsonObject lido = await ObterAsync(client, id);
-        lido["tipoProcessoCodigo"]!.GetValue<string>().Should().Be($"PÓS_{sufixo}");
+        lido["descritivo"]!["tipoProcessoCodigo"]!.GetValue<string>().Should().Be($"PÓS_{sufixo}");
         (await StatusAsync(client, HttpMethod.Get, $"{Base}/{id}")).Should().Be(HttpStatusCode.OK);
     }
 }

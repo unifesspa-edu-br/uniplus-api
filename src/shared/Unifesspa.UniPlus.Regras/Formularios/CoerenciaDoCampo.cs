@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -36,11 +37,18 @@ public static class CoerenciaDoCampo
             Texto when !multivalorado => TipoRenderizacao.Texto,
             Data when !multivalorado => TipoRenderizacao.Data,
             Endereco when !multivalorado => TipoRenderizacao.Endereco,
-            Categorico when municipio => multivalorado ? null : TipoRenderizacao.Municipio,
-            Categorico => multivalorado ? TipoRenderizacao.SelecaoMultipla : TipoRenderizacao.SelecaoUnica,
+            Categorico => TipoDoCategorico(municipio, multivalorado),
             _ => null,
         };
     }
+
+    private static TipoRenderizacao? TipoDoCategorico(bool municipio, bool multivalorado) => (municipio, multivalorado) switch
+    {
+        (true, true) => null,
+        (true, false) => TipoRenderizacao.Municipio,
+        (false, true) => TipoRenderizacao.SelecaoMultipla,
+        (false, false) => TipoRenderizacao.SelecaoUnica,
+    };
 
     /// <summary>Recusa o tipo de campo diferente do que o fato admite (<see cref="TipoDoFato"/>).</summary>
     public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade, string? fonteValores) =>
@@ -48,5 +56,5 @@ public static class CoerenciaDoCampo
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-                $"O tipo de campo '{tipoRenderizacao}' não é coerente com o domínio '{dominio}', a cardinalidade '{cardinalidade}' e a fonte de valores '{fonteValores ?? "nenhuma"}' do fato '{fatoCodigo}'.");
+                $"O tipo de campo '{tipoRenderizacao.Codigo()}' não é coerente com o domínio '{dominio}', a cardinalidade '{cardinalidade}' e a fonte de valores '{fonteValores ?? "nenhuma"}' do fato '{fatoCodigo}'.");
 }

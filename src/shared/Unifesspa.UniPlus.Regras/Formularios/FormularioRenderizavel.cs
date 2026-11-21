@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
-using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// Um valor que o candidato pode escolher num campo de seleção: o código, a descrição — o nome da
@@ -17,27 +19,22 @@ public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ord
 public sealed record CampoRenderizavel(
     string FatoCodigo,
     int Ordem,
-    string Rotulo,
-    string TipoRenderizacao,
-    IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis,
     string? EtapaCodigo,
+    ApresentacaoDoCampoDto Apresentacao,
     string? Formato,
-    string? Ajuda,
-    bool PedirConfirmacao);
+    IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis);
 
 /// <summary>
 /// Um grupo repetível pronto para renderização (UNI-REQ-0146): a posição na ordem dos itens, a seção,
-/// o rótulo, o mínimo e o máximo de ocorrências, se o próprio candidato é um dos membros e os campos
-/// que cada ocorrência responde. A exibição e a obrigatoriedade do grupo estão nas regras.
+/// o rótulo, as ocorrências que admite — mínimo, máximo e se o próprio candidato é um dos membros — e os
+/// campos que cada ocorrência responde. A exibição e a obrigatoriedade do grupo estão nas regras.
 /// </summary>
 public sealed record GrupoRenderizavel(
     string Codigo,
     int Ordem,
     string? EtapaCodigo,
     string Rotulo,
-    int Minimo,
-    int? Maximo,
-    bool IncluiCandidato,
+    OcorrenciasDoGrupoDto Ocorrencias,
     IReadOnlyList<CampoRenderizavel> Subitens);
 
 /// <summary>
@@ -51,7 +48,7 @@ public sealed record GrupoRenderizavel(
 public sealed record PressupostoRenderizavel(
     string FatoCodigo,
     string? Rotulo,
-    string? TipoRenderizacao,
+    [property: AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
     string? Formato,
     IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis,
     IReadOnlyList<string>? CalculadoDe);
@@ -66,9 +63,7 @@ public sealed record SecaoRenderizavel(
     int Ordem,
     string Tipo,
     string? Bloco,
-    string Titulo,
-    string? Descricao,
-    string? Aviso);
+    ApresentacaoDaEtapaDto Apresentacao);
 
 /// <summary>
 /// Um termo exigido pronto para renderização (UNI-REQ-0086): a versão escolhida no catálogo, com o
@@ -81,18 +76,30 @@ public sealed record TermoRenderizavel(
     int Ordem,
     Guid TermoId,
     Guid VersaoId,
-    string Nome,
-    string Texto,
-    string BaseLegal,
-    string FormaAceite,
-    string HashVersao);
+    ConteudoDoTermoDto Conteudo);
+
+/// <summary>Os campos e os grupos que o formulário pergunta ao candidato, na ordem de apresentação.</summary>
+public sealed record ColetaRenderizavel(
+    IReadOnlyList<CampoRenderizavel> Itens,
+    IReadOnlyList<GrupoRenderizavel> Grupos);
+
+/// <summary>
+/// O que o interpretador recebe como já conhecido: os fatos que as regras citam e o formulário não
+/// pergunta, a data em que os fatos que dependem do tempo, como a faixa etária, são calculados — nula
+/// quando o processo não declara referência temporal — e a zona, no identificador IANA, em que se conta
+/// o dia do envio, de que partem os limites da faixa de data: a do período de inscrição, nula no modelo,
+/// que não tem período de inscrição.
+/// </summary>
+public sealed record PressupostosDoFormulario(
+    IReadOnlyList<PressupostoRenderizavel> Fatos,
+    DateOnly? DataReferenciaFatos,
+    string? FusoDoEnvio);
 
 /// <summary>
 /// O formulário de uma finalidade pronto para o interpretador do front (UNI-REQ-0144, ADR-0139): a
-/// apresentação — título, seções, termos, campos e grupos —, as regras que o front interpreta e os
-/// pressupostos. É o mesmo formato para o certame divulgado, o rascunho do processo e o modelo, e o
-/// que a simulação importa e exporta. Aberto para o certame acrescentar o que só ele tem, como a
-/// comprovação documental.
+/// apresentação — título, seções, termos e a coleta de campos e grupos —, as regras que o front interpreta
+/// e os pressupostos. É o mesmo formato para o certame divulgado, o rascunho do processo e o modelo, e o
+/// que a simulação importa e exporta.
 /// </summary>
 /// <param name="Regras">
 /// A exibição e a obrigatoriedade de cada seção, campo, grupo e termo, as restrições, os impedimentos
@@ -100,79 +107,13 @@ public sealed record TermoRenderizavel(
 /// novo tudo o que recebe.
 /// </param>
 /// <param name="Pressupostos">
-/// Os fatos que as regras citam e o formulário não pergunta, que o interpretador recebe como já
-/// conhecidos.
+/// Os fatos que as regras citam e o formulário não pergunta, com a data de referência e o fuso do envio.
 /// </param>
-/// <param name="DataReferenciaFatos">
-/// A data em que os fatos que dependem do tempo, como a faixa etária, são calculados. Nula quando o
-/// processo não declara referência temporal.
-/// </param>
-/// <param name="FusoDoEnvio">
-/// A zona, no identificador IANA, em que se conta o dia do envio, de que partem os limites da faixa de
-/// data: a da janela de inscrição. Nula no modelo, que não tem janela.
-/// </param>
-public record FormularioRenderizavel(
+public sealed record FormularioRenderizavel(
     string Finalidade,
     string? Titulo,
     IReadOnlyList<SecaoRenderizavel> Etapas,
     IReadOnlyList<TermoRenderizavel> Termos,
-    IReadOnlyList<CampoRenderizavel> FatosColetados,
-    IReadOnlyList<GrupoRenderizavel> Grupos,
+    ColetaRenderizavel Coleta,
     FormularioPortavel Regras,
-    IReadOnlyList<PressupostoRenderizavel> Pressupostos,
-    DateOnly? DataReferenciaFatos,
-    string? FusoDoEnvio)
-{
-    /// <summary>
-    /// Monta o formulário a partir da apresentação, do recorte das regras da finalidade e do que
-    /// descreve os pressupostos: os campos dos outros formulários, que dão a apresentação do que eles
-    /// perguntam; a apresentação do catálogo, para o que nenhum formulário pergunta; e os agregados
-    /// sobre os grupos, que com os derivados do sistema dizem de que fatos cada fato calculado é
-    /// calculado.
-    /// </summary>
-    public static FormularioRenderizavel Montar(
-        string finalidade,
-        string? titulo,
-        IReadOnlyList<SecaoRenderizavel> etapas,
-        IReadOnlyList<TermoRenderizavel> termos,
-        IReadOnlyList<CampoRenderizavel> campos,
-        IReadOnlyList<GrupoRenderizavel> grupos,
-        RecorteDaFinalidade recorte,
-        IEnumerable<CampoRenderizavel> camposDosOutrosFormularios,
-        IReadOnlyDictionary<string, ApresentacaoDoFato> apresentacaoDosNaoPerguntados,
-        IEnumerable<DefinicaoAgregado> agregados,
-        DateOnly? dataReferenciaFatos,
-        string? fusoDoEnvio)
-    {
-        ArgumentNullException.ThrowIfNull(recorte);
-        ArgumentNullException.ThrowIfNull(camposDosOutrosFormularios);
-        ArgumentNullException.ThrowIfNull(apresentacaoDosNaoPerguntados);
-        ArgumentNullException.ThrowIfNull(agregados);
-
-        Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
-        foreach (DefinicaoAgregado agregado in agregados)
-        {
-            calculadoDe[agregado.Codigo] = [agregado.FatoDeMembro];
-        }
-
-        Dictionary<string, CampoRenderizavel> perguntados = new(StringComparer.Ordinal);
-        foreach (CampoRenderizavel campo in camposDosOutrosFormularios)
-        {
-            perguntados.TryAdd(campo.FatoCodigo, campo);
-        }
-
-        IReadOnlyList<PressupostoRenderizavel> pressupostos = [.. recorte.Pressupostos.Select(codigo =>
-            perguntados.TryGetValue(codigo, out CampoRenderizavel? campo)
-                ? new PressupostoRenderizavel(codigo, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.ValoresSelecionaveis, null)
-                : new PressupostoRenderizavel(
-                    codigo,
-                    apresentacaoDosNaoPerguntados.GetValueOrDefault(codigo)?.Rotulo,
-                    apresentacaoDosNaoPerguntados.GetValueOrDefault(codigo)?.TipoRenderizacao,
-                    null,
-                    null,
-                    calculadoDe.GetValueOrDefault(codigo)))];
-
-        return new FormularioRenderizavel(
-            finalidade, titulo, etapas, termos, campos, grupos, recorte.Regras, pressupostos, dataReferenciaFatos, fusoDoEnvio);
-    }
-}
+    PressupostosDoFormulario Pressupostos);

@@ -78,14 +78,15 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
 
     private static object DocumentoExigido(Guid faseId, Guid tipoDocumentoId, string fato) => new
     {
-        exigidoNaFaseId = faseId,
-        finalidade = "ISENCAO_TAXA",
-        tipoDocumentoId,
-        aplicabilidade = "CONDICIONAL",
-        obrigatorio = true,
-        condicoes = new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } },
-        basesLegais = Array.Empty<object>(),
-        formatosPermitidos = "QUALQUER",
+        tipoDocumento = new { id = tipoDocumentoId },
+        momento = new { faseId, finalidade = "ISENCAO_TAXA" },
+        aplicabilidade = new
+        {
+            tipo = "CONDICIONAL",
+            condicoes = new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } },
+        },
+        indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+        requisitos = new { formatosPermitidos = "QUALQUER" },
     };
 
     private async Task<Guid> SemearCatalogoAsync(string fato, string codigoDoDocumento)
@@ -127,7 +128,11 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
         processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa)).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.IsencaoTaxa,
-                [FatoColetado.Criar(fato, 0, "Elegível", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
+                [FatoColetadoDeTeste.Coletando(fato, 0)
+                    .ComRotulo("Elegível")
+                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                    .NaSecao(FormularioDeTeste.Secao)
+                    .Construir()])
             .IsSuccess.Should().BeTrue();
     }
 }

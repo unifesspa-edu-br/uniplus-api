@@ -37,48 +37,51 @@ public sealed class ValorDeCondicaoNoGetTests
 
     public ValorDeCondicaoNoGetTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "O valor categórico do critério de desempate volta como texto JSON, round-tripável pelo mesmo PUT")]
-    public async Task Get_ValorCategorico_VoltaComoTextoJson()
+    private static object[] CriterioPorPredicado(string? fato, string? operador, string? valor) =>
+    [
+        new
+        {
+            ordem = 1,
+            regra = new { codigo = "DESEMPATE-PREDICADO-FATO", versao = "v1" },
+            parametros = new { fato, operador, valor },
+        },
+    ];
+
+    private async Task<(HttpClient Client, Guid ProcessoId, JsonDocument Processo)> GravarCorPretaEObterAsync()
     {
         (HttpClient client, Guid processoId) = await SemearAsync();
 
-        object[] criterios =
-        [
-            new
-            {
-                ordem = 1,
-                regraCodigo = "DESEMPATE-PREDICADO-FATO",
-                regraVersao = "v1",
-                fato = "COR_RACA",
-                operador = "IGUAL",
-                valor = "PRETA",
-            },
-        ];
-
-        HttpResponseMessage gravacao = await PutAsync(client, processoId, "criterios-desempate", criterios);
+        HttpResponseMessage gravacao = await PutAsync(client, processoId, "criterios-desempate", CriterioPorPredicado("COR_RACA", "IGUAL", "PRETA"));
         gravacao.StatusCode.Should().Be(
             HttpStatusCode.NoContent,
             await gravacao.Content.ReadAsStringAsync());
 
-        using JsonDocument doc = await ObterAsync(client, processoId);
-        JsonElement criterio = doc.RootElement.GetProperty("criteriosDesempate")[0];
+        return (client, processoId, await ObterAsync(client, processoId));
+    }
 
-        criterio.GetProperty("valor").GetString().Should().Be(
+    [Fact(DisplayName = "O valor categórico do critério de desempate volta como texto JSON")]
+    public async Task Get_ValorCategorico_VoltaComoTextoJson()
+    {
+        (_, _, JsonDocument doc) = await GravarCorPretaEObterAsync();
+        using JsonDocument processo = doc;
+
+        JsonElement parametros = processo.RootElement.GetProperty("criteriosDesempate")[0].GetProperty("parametros");
+
+        parametros.GetProperty("valor").GetString().Should().Be(
             "\"PRETA\"", "é o mesmo texto JSON canônico que o gatilho da exigência documental usa");
+    }
 
-        // Round-trip: o que voltou é aceito de volta sem transformação do cliente.
-        object[] devolta =
-        [
-            new
-            {
-                ordem = 1,
-                regraCodigo = "DESEMPATE-PREDICADO-FATO",
-                regraVersao = "v1",
-                fato = criterio.GetProperty("fato").GetString(),
-                operador = criterio.GetProperty("operador").GetString(),
-                valor = criterio.GetProperty("valor").GetString(),
-            },
-        ];
+    [Fact(DisplayName = "O critério de desempate que voltou pelo GET é aceito de volta pelo mesmo PUT, sem transformação do cliente")]
+    public async Task Get_ValorCategorico_RoundTripPeloMesmoPut()
+    {
+        (HttpClient client, Guid processoId, JsonDocument doc) = await GravarCorPretaEObterAsync();
+        using JsonDocument processo = doc;
+        JsonElement parametros = processo.RootElement.GetProperty("criteriosDesempate")[0].GetProperty("parametros");
+
+        object[] devolta = CriterioPorPredicado(
+            parametros.GetProperty("fato").GetString(),
+            parametros.GetProperty("operador").GetString(),
+            parametros.GetProperty("valor").GetString());
 
         (await PutAsync(client, processoId, "criterios-desempate", devolta))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);

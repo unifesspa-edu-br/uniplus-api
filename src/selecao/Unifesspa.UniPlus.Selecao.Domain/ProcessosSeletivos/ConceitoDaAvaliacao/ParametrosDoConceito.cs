@@ -10,20 +10,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNumerica? Escala, IReadOnlyList<ValorCategorico> Valores)
 {
     /// <summary>Os parâmetros copiados, ou <see langword="null"/> com as recusas acumuladas em <paramref name="erros"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A natureza não é membro do enum, como num cast de inteiro.</exception>
     internal static ParametrosDoConceito? Conferir(
-        string? natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
+        NaturezaConceito natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
     {
-        if (!NaturezaConceitoCodigo.TentarConverter(natureza, out NaturezaConceito lida))
-        {
-            erros.Add(new("natureza", new DomainError(
-                ConceitoDaEtapaErrorCodes.NaturezaInvalida, "A natureza do conceito deve ser numerico ou categorico.")));
-            return null;
-        }
-
         int errosAntes = erros.Count;
-        ParametrosDoConceito? parametros = lida == NaturezaConceito.Numerico
-            ? DoNumerico(escala, valores, erros)
-            : DoCategorico(escala, valores, erros);
+        ParametrosDoConceito? parametros = natureza switch
+        {
+            NaturezaConceito.Numerico => DoNumerico(escala, valores, erros),
+            NaturezaConceito.Categorico => DoCategorico(escala, valores, erros),
+            _ => throw new ArgumentOutOfRangeException(nameof(natureza), natureza, "A natureza do conceito não é membro do enum de naturezas."),
+        };
         return erros.Count == errosAntes ? parametros : null;
     }
 

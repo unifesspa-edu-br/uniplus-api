@@ -27,7 +27,7 @@ internal static class RegraDeAplicabilidadeDaEntrada
             ModalidadeErrorCodes.RegraDeAplicabilidadeMalformada, "Uma condição da regra de aplicabilidade veio nula."));
         return predicado.IsSuccess
             ? Result<PredicadoDnf?>.Success(predicado.Value)
-            : Result<PredicadoDnf?>.ValidationFailure([new FieldError(Campo, predicado.Error!)]);
+            : Result<PredicadoDnf?>.ValidationFailure([.. predicado.Errors.Select(static e => new FieldError($"{Campo}{e.Field}", e.Error))]);
     }
 
     /// <summary>

@@ -9,6 +9,7 @@ using FluentValidation.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="DefinirDocumentosExigidosCommandValidator"/> para a base legal
@@ -25,19 +26,18 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
 {
     private static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
 
-    private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], basesLegais, null, Qualquer, null);
+    private static ItemDocumentoExigidoDeTeste ItemGeral() =>
+        ItemDocumentoExigidoDeTeste.Geral(Guid.CreateVersion7(), Guid.CreateVersion7());
+
+    private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) =>
+        ItemGeral().ComBasesLegais(basesLegais).Construir();
 
     private static ItemDocumentoExigidoInput ItemComIdade(
-        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, int? tamanhoMaximoBytes = null) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], [], idadeMaximaEmissao, Qualquer, tamanhoMaximoBytes);
+        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, int? tamanhoMaximoBytes = null) =>
+        ItemGeral().ComIdadeMaxima(idadeMaximaEmissao).ComTamanhoMaximo(tamanhoMaximoBytes).Construir();
 
-    private static ValidationResult Validar(ItemDocumentoExigidoInput item)
-    {
-        NoExigenciaInput no = new("FOLHA", item, null, null, null, null);
-        return new DefinirDocumentosExigidosCommandValidator().Validate(
-            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [no]));
-    }
+    private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
+        ValidarRaiz(NoExigenciaDeTeste.Folha(item).Construir());
 
     [Fact(DisplayName = "Item sem base legal (lista vazia) é aceito — a coerência com o gate é da publicação")]
     public void Aceita_SemBaseLegal() =>
@@ -117,8 +117,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     [Fact(DisplayName = "Item de base legal nulo na lista é rejeitado")]
     public void Rejeita_ItemDeBaseLegalNulo()
     {
-        ItemDocumentoExigidoInput item = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], [null!], null, null, null);
+        ItemDocumentoExigidoInput item = ItemGeral().ComBasesLegais([null!]).ComFormatos(null).Construir();
 
         ValidationResult resultado = Validar(item);
 
@@ -191,30 +190,77 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Aceita_TamanhoMaximoBytesPositivo() =>
         Validar(ItemComIdade(tamanhoMaximoBytes: 5_000_000)).IsValid.Should().BeTrue();
 
-    // ── Cardinalidade qualificada (Story #921) — NoExigenciaInputValidator.ChaveDistincao ──
+    // ── Cardinalidade qualificada — NoExigenciaInputValidator, chave da distinção ──
 
     private static ValidationResult ValidarRaiz(NoExigenciaInput raiz) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(
             new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz]));
 
-    [Theory(DisplayName = "chaveDistincao vazia ou em branco é rejeitada — nunca coagida silenciosamente pelo handler")]
+    [Theory(DisplayName = "A chave de distinção vazia ou em branco é rejeitada — nunca coagida silenciosamente pelo handler")]
     [InlineData("")]
     [InlineData("   ")]
     public void Rejeita_ChaveDistincaoVaziaOuEmBranco(string chaveInvalida)
     {
-        NoExigenciaInput raiz = new("FOLHA", ItemCom(), null, null, null, null, chaveInvalida);
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Folha(ItemCom()).ComDistincao(chaveInvalida).Construir();
 
         ValidationResult resultado = ValidarRaiz(raiz);
 
         resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("chaveDistincao", StringComparison.OrdinalIgnoreCase));
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("distincao.chave", StringComparison.OrdinalIgnoreCase));
     }
 
-    [Fact(DisplayName = "chaveDistincao do catálogo fechado é aceita")]
+    [Fact(DisplayName = "A chave de distinção do catálogo fechado é aceita")]
     public void Aceita_ChaveDistincaoValida()
     {
-        NoExigenciaInput raiz = new(
-            "FOLHA", ItemCom(), 1, null, null, null, "COMPETENCIA_MENSAL", new DateOnly(2026, 1, 1));
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Folha(ItemCom())
+            .ComQuantidadeMinima(1)
+            .ComDistincao("COMPETENCIA_MENSAL", new DateOnly(2026, 1, 1))
+            .Construir();
+
+        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Grupo E com quantidade mínima é rejeitado: só a folha e o grupo OU a declaram")]
+    public void Rejeita_QuantidadeMinimaEmGrupoE()
+    {
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("E", NoExigenciaDeTeste.Folha(ItemCom()).Construir()).ComQuantidadeMinima(2).Construir();
+
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("cardinalidade.quantidadeMinima", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Grupo OU com distinção das apresentações é rejeitado: a distinção é exclusiva da folha")]
+    public void Rejeita_DistincaoEmGrupoOu()
+    {
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(ItemCom()).Construir()).ComDistincao("OCORRENCIA").Construir();
+
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("distincao.chave", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Folha com consequência de indeferimento de grupo é rejeitada")]
+    public void Rejeita_IndeferimentoDeGrupoEmFolha()
+    {
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Folha(ItemCom()).ComIndeferimento("ELIMINA").Construir();
+
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("indeferimento.consequencia", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Grupo OU com bases legais sem consequência é rejeitado")]
+    public void Rejeita_BasesLegaisDeGrupoSemConsequencia()
+    {
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(ItemCom()).Construir())
+            .ComIndeferimento(null, new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
+            .Construir();
+
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("indeferimento.basesLegais", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Grupo OU com consequência do catálogo e bases legais é aceito")]
+    public void Aceita_GrupoOuComConsequenciaEBasesLegais()
+    {
+        NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(ItemCom()).Construir())
+            .ComQuantidadeMinima(1)
+            .ComIndeferimento("ELIMINA", new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
+            .Construir();
 
         ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }

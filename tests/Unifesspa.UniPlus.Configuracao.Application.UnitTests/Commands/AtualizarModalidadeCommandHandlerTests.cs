@@ -46,6 +46,18 @@ public sealed class AtualizarModalidadeCommandHandlerTests
                 PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null))
             .Value!;
 
+    private Task<Result> Atualizar(AtualizarModalidadeCommand comando) =>
+        AtualizarModalidadeCommandHandler.Handle(
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+
+    private Modalidade ExistenteNoRepositorio(string codigo = "PSVR_AMPLA")
+    {
+        Modalidade existente = Existente(codigo);
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        return existente;
+    }
+
     [Fact(DisplayName = "Modalidade inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()
     {
@@ -63,14 +75,12 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Atualização válida persiste e o código permanece imutável")]
     public async Task Handle_Valido_PersisteCodigoImutavel()
     {
-        Modalidade existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Modalidade existente = ExistenteNoRepositorio();
 
         var comando = new AtualizarModalidadeCommand(
             existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Codigo.Valor.Should().Be("PSVR_AMPLA", "o código é imutável — não há campo para alterá-lo");
@@ -81,15 +91,13 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Modalidade legal fixa recusa alteração estrutural antes de checar referências")]
     public async Task Handle_LegalFixa_RecusaSemChecarReferencias()
     {
-        Modalidade existente = Existente("LB_PPI");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Modalidade existente = ExistenteNoRepositorio("LB_PPI");
 
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC", RegraDeAplicabilidade: OptouPelasCotas(false));
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -101,8 +109,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Referência de remanejamento inexistente entre vivos retorna 422 sem persistir")]
     public async Task Handle_ReferenciaInexistente_Retorna422()
     {
-        Modalidade existente = Existente("SUP");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Modalidade existente = ExistenteNoRepositorio("SUP");
         _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
@@ -110,30 +117,27 @@ public sealed class AtualizarModalidadeCommandHandlerTests
             existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "XPTO", RegraDeAplicabilidade: OptouPelasCotas(false));
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// O payload é internamente incoerente (AMPLA não admite regra) E também tenta alterar a estrutura de uma
+    /// modalidade legal fixa: a guarda tem que vencer, não a coerência, mesmo com o pré-check do handler rodando
+    /// antes do fetch.
+    /// </summary>
     [Fact(DisplayName = "Legal fixa com payload internamente incoerente ainda responde estrutura protegida, não a coerência")]
     public async Task Handle_LegalFixaComPayloadIncoerente_RespondeEstruturaProtegida()
     {
-        Modalidade existente = Existente("LB_PPI");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        // Payload internamente incoerente (AMPLA não admite regra) E que também
-        // tenta alterar a estrutura de uma modalidade legal fixa — a guarda tem
-        // que vencer, não a coerência, mesmo com o pré-check do handler rodando
-        // antes do fetch.
+        Modalidade existente = ExistenteNoRepositorio("LB_PPI");
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
             RegraRemanejamento: "SEGUE_CASCATA", RegraDeAplicabilidade: Incondicional);
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -145,8 +149,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     {
         var comando = new AtualizarModalidadeCommand(Guid.CreateVersion7(), NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida);
@@ -160,10 +163,8 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato), FatoDesativado("PCD"), FatoDesativado("QUILOMBOLA")]);
         Modalidade existente = ExistenteQueJaCitaOFatoPcd();
 
-        Result jaCitado = await AtualizarModalidadeCommandHandler.Handle(
-            ComandoQueCita(existente.Id, "PCD"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
-        Result citacaoNova = await AtualizarModalidadeCommandHandler.Handle(
-            ComandoQueCita(existente.Id, "QUILOMBOLA"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result jaCitado = await Atualizar(ComandoQueCita(existente.Id, "PCD"));
+        Result citacaoNova = await Atualizar(ComandoQueCita(existente.Id, "QUILOMBOLA"));
 
         jaCitado.IsSuccess.Should().BeTrue();
         citacaoNova.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoDesativado);
@@ -191,13 +192,12 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         var comando = new AtualizarModalidadeCommand(
             Guid.CreateVersion7(), Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
 
-        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(comando);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("descricao", ModalidadeErrorCodes.DescricaoTamanho),
-            ("regraDeAplicabilidade", "ClausulaDnf.ClausulaVazia"),
+            ("regraDeAplicabilidade[0]", "ClausulaDnf.ClausulaVazia"),
         ]);
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
@@ -205,8 +205,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Legal fixa recusa a estrutura sem conferir a regra contra o catálogo")]
     public async Task Handle_LegalFixa_NaoConfereOCatalogo()
     {
-        Modalidade existente = Existente("LB_PPI");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Modalidade existente = ExistenteNoRepositorio("LB_PPI");
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
             new AtualizarModalidadeCommand(existente.Id, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[Condicao("PCD", true)]]),

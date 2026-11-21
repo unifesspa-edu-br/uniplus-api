@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -21,7 +22,7 @@ public sealed record EixosDoItemCongelado(
     public static EixosDoItemCongelado De(FatoColetado item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        return new(item.TipoRenderizacao.ToCodigo(), item.OrigemValores.ToCodigo(), item.Formato, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento);
+        return new(item.TipoRenderizacao.Codigo(), item.OrigemValores.ToCodigo(), item.Formato, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento);
     }
 
     /// <summary>A primeira diferença entre o publicado e o item que a retificação congelaria, na ordem dos seis eixos.</summary>

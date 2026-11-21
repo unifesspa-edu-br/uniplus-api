@@ -17,6 +17,8 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 
 public sealed class DefinirEtapasProdutosDaEtapaTests
 {
+    private const string Resultado = "RESULTADO_CLASSIFICACAO";
+
     /// <summary>
     /// A fase confere o ato contra o catálogo de Publicações; a etapa não conferia. O código
     /// declarado aqui vira o nome do produto no cronograma público — um código com erro de
@@ -25,35 +27,13 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
     [Fact(DisplayName = "Produto de etapa com ato fora do catálogo é recusado, como na fase")]
     public async Task Handle_ProdutoComAtoForaDoCatalogo_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        CenarioDaDefinicao cenario = CenarioDaDefinicao.Novo();
 
         // Catálogo que não conhece código algum: é o erro de digitação do payload chegando
         // sem correspondência, não uma indisponibilidade do módulo de Publicações.
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns((TipoAtoPublicadoView?)null);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        Result result = await cenario.DefinirAsync([EtapaDeProvaObjetiva(new ProdutoDaEtapaInput("RESULTADO_PRELMINAR", null))], CatalogoSemAto());
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELMINAR", null)], Bancas: [], Recursos: []),
-            ]);
-
-        Result result = await Executar(
-            command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo");
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        // A etapa já foi construída quando a recusa acontece. Não basta o handler deixar de
-        // chamar SalvarAlteracoesAsync: o SaveChanges automático do Wolverine roda DEPOIS do
-        // retorno e persistiria a mutação, e só o descarte do rastreamento a impede.
-        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await cenario.ConferirRecusaSemGravarAsync(result, "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo");
     }
 
     /// <summary>
@@ -63,36 +43,14 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
     [Fact(DisplayName = "Produto de etapa com papel sobre ato que não é resultado é recusado")]
     public async Task Handle_PapelEmAtoQueNaoEhResultado_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        CenarioDaDefinicao cenario = CenarioDaDefinicao.Novo();
 
         // O ato existe e está vigente — o que ele não é, é resultado. A recusa tem de vir da
         // segunda pergunta, não da primeira.
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(
-                "EDITAL_ABERTURA", "Edital de abertura", CongelaConfiguracao: true, UnicoPorObjeto: true,
-                EfeitoIrreversivel: false, EhResultado: false));
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        Result result = await cenario.DefinirAsync(
+            [EtapaDeProvaObjetiva(new ProdutoDaEtapaInput("EDITAL_ABERTURA", "PRELIMINAR"))], CatalogoComOEditalDeAbertura());
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("EDITAL_ABERTURA", "PRELIMINAR")], Bancas: [], Recursos: []),
-            ]);
-
-        Result result = await Executar(
-            command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado");
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        // Mesmo motivo do caso anterior: sem o descarte, o SaveChanges automático do Wolverine
-        // persistiria a etapa que a recusa acabou de invalidar.
-        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await cenario.ConferirRecusaSemGravarAsync(result, "ProdutoDaEtapa.PapelEmAtoQueNaoEhResultado");
     }
 
     /// <summary>
@@ -104,69 +62,25 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
     [Fact(DisplayName = "O catálogo é consultado uma vez por código, não uma vez por produto declarado")]
     public async Task Handle_MesmoAtoEmVariosProdutos_ConsultaOCatalogoUmaVezPorCodigo()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        CenarioDaDefinicao cenario = CenarioDaDefinicao.Novo();
+        ITipoAtoPublicadoReader catalogo = CatalogoComOResultado();
 
         // Quatro produtos, dois por etapa, todos do MESMO código: uma consulta basta.
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos:
-                    [
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
-                    ], Bancas: [], Recursos: []),
-                new EtapaProcessoInput(
-                    "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2,
-                    Produtos:
-                    [
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
-                    ], Bancas: [], Recursos: []),
-            ]);
-
-        Result result = await Executar(
-            command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
+        Result result = await cenario.DefinirAsync(
+            [EtapaDeProvaObjetiva(PreliminarEDefinitivo), EtapaDeRedacao(PreliminarEDefinitivo)], catalogo);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        await tipoAtoPublicadoReader.Received(1).ObterVigenteAsync(
-            "RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+        await catalogo.Received(1).ObterVigenteAsync(Resultado, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel pela etapa é recusado com ProcessoSeletivo.ResultadoDeclaradoSemPapel")]
     public async Task Handle_ResultadoSemPapel_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        CenarioDaDefinicao cenario = CenarioDaDefinicao.Novo();
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", null)], Bancas: [], Recursos: []),
-            ]);
+        Result result = await cenario.DefinirAsync([EtapaDeProvaObjetiva(new ProdutoDaEtapaInput(Resultado, null))], CatalogoComOResultado());
 
-        Result result = await Executar(
-            command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.ResultadoDeclaradoSemPapel");
-        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await cenario.ConferirRecusaSemGravarAsync(result, "ProcessoSeletivo.ResultadoDeclaradoSemPapel");
     }
 
     /// <summary>
@@ -180,57 +94,78 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
     [Fact(DisplayName = "Ato aposentado no catálogo não tranca a gravação da etapa que já o declarava")]
     public async Task Handle_AtoAposentadoJaDeclarado_NaoTrancaAColecao()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
-        ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
-
-        DefinirEtapasCommand primeiraGravacao = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos:
-                    [
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
-                    ],
-                    Bancas: [], Recursos: []),
-            ]);
-
-        (await Executar(primeiraGravacao, repository, unitOfWork, tipoAtoPublicadoReader: catalogoComOAto))
-            .IsSuccess.Should().BeTrue();
-
-        Guid etapaId = processo.Etapas.Single().Id;
+        CenarioDaDefinicao cenario = CenarioDaDefinicao.Novo();
+        (await cenario.DefinirAsync([EtapaDeProvaObjetiva(PreliminarEDefinitivo)], CatalogoComOResultado())).IsSuccess.Should().BeTrue();
+        Guid etapaId = cenario.Processo.Etapas.Single().Id;
 
         // O catálogo aposenta o ato: ObterVigenteAsync deixa de resolvê-lo.
-        ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns((TipoAtoPublicadoView?)null);
-
-        DefinirEtapasCommand segundaGravacao = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Prova Objetiva — 1ª fase", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    etapaId,
-                    Produtos:
-                    [
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
-                    ],
-                    Bancas: [], Recursos: []),
-            ]);
-
-        Result resultado = await Executar(
-            segundaGravacao, repository, unitOfWork, tipoAtoPublicadoReader: catalogoSemOAto);
+        Result resultado = await cenario.DefinirAsync(
+            [EtapaDeProvaObjetiva(PreliminarEDefinitivo) with { Nome = "Prova Objetiva — 1ª fase", Id = etapaId }], CatalogoSemAto());
 
         resultado.IsSuccess.Should().BeTrue(
             $"o produto já estava declarado e não é o que esta gravação muda — veio '{resultado.Error?.Code}'");
-        processo.Etapas.Single().Nome.Should().Be("Prova Objetiva — 1ª fase");
+        cenario.Processo.Etapas.Single().Nome.Should().Be("Prova Objetiva — 1ª fase");
+    }
+
+    private static ProdutoDaEtapaInput[] PreliminarEDefinitivo => [new(Resultado, "PRELIMINAR"), new(Resultado, "DEFINITIVO")];
+
+    private static EtapaProcessoInput EtapaDeProvaObjetiva(params ProdutoDaEtapaInput[] produtos) => new(
+        "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+        Produtos: produtos, Bancas: [], Recursos: []);
+
+    private static EtapaProcessoInput EtapaDeRedacao(params ProdutoDaEtapaInput[] produtos) => new(
+        "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2,
+        Produtos: produtos, Bancas: [], Recursos: []);
+
+    private static ITipoAtoPublicadoReader CatalogoSemAto()
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        return catalogo;
+    }
+
+    private static ITipoAtoPublicadoReader CatalogoComOResultado()
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync(Resultado, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado(Resultado));
+        return catalogo;
+    }
+
+    private static ITipoAtoPublicadoReader CatalogoComOEditalDeAbertura()
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView(
+                "EDITAL_ABERTURA", "Edital de abertura", CongelaConfiguracao: true, UnicoPorObjeto: true,
+                EfeitoIrreversivel: false, EhResultado: false));
+        return catalogo;
+    }
+
+    /// <summary>O certame sem etapas e os dublês de repositório e de unidade de trabalho que a definição das etapas usa.</summary>
+    private sealed record CenarioDaDefinicao(ProcessoSeletivo Processo, IProcessoSeletivoRepository Repositorio, IUnitOfWork UnitOfWork)
+    {
+        internal static CenarioDaDefinicao Novo()
+        {
+            ProcessoSeletivo processo = ProcessoSemEtapas();
+            IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+            repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+            return new(processo, repositorio, Substitute.For<IUnitOfWork>());
+        }
+
+        internal Task<Result> DefinirAsync(IReadOnlyList<EtapaProcessoInput> etapas, ITipoAtoPublicadoReader catalogo) =>
+            Executar(new DefinirEtapasCommand(Processo.Id, etapas), Repositorio, UnitOfWork, cadastros: new(Atos: catalogo));
+
+        // A etapa já foi construída quando a recusa acontece. Não basta o handler deixar de chamar
+        // SalvarAlteracoesAsync: o SaveChanges automático do Wolverine roda DEPOIS do retorno e
+        // persistiria a mutação, e só o descarte do rastreamento a impede.
+        internal async Task ConferirRecusaSemGravarAsync(Result result, string codigo)
+        {
+            result.IsFailure.Should().BeTrue();
+            result.Error!.Code.Should().Be(codigo);
+            await UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+            UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        }
     }
 }

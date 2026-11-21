@@ -27,51 +27,62 @@ public static class DefinirRegrasPadraoCommandHandler
         ArgumentNullException.ThrowIfNull(precedenciaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (command.Regras is null)
-        {
-            return Result.Failure(new DomainError(
-                FatoCandidatoErrorCodes.RegraPadraoMalformada, "A lista de regras é obrigatória; a lista vazia remove as regras."));
-        }
-
         Result<IReadOnlyList<RegraDerivacao>> regras = Montar(command.Regras);
-        if (regras.IsFailure)
-        {
-            return Result.ValidationFailure(regras.Errors);
-        }
 
+        return regras.IsFailure
+            ? Result.ValidationFailure(regras.Errors)
+            : await GravarConferidasAsync(
+                command.Id, regras.Value!, repository, precedenciaRepository, unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    private static async Task<Result> GravarConferidasAsync(
+        Guid id,
+        IReadOnlyList<RegraDerivacao> regras,
+        IFatoCandidatoRepository repository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         // Duas regravações simultâneas, cada uma sem ciclo contra o catálogo que leu, podiam fechar
         // um ciclo juntas: as escritas de regras padrão são serializadas.
         await repository.TravarRegrasPadraoParaEscritaAsync(cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
-        CatalogoDeFatos catalogo = new(fatos, precedencias);
+        CatalogoDeFatos catalogo = await CarregarCatalogoAsync(repository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
 
         return await MutacaoDoFato.AplicarAsync(
-            command.Id, fato => fato.DefinirRegrasPadrao(regras.Value!, catalogo), repository, unitOfWork, cancellationToken)
+            id, fato => fato.DefinirRegrasPadrao(regras, catalogo), repository, unitOfWork, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private static Result<IReadOnlyList<RegraDerivacao>> Montar(IReadOnlyList<RegraPadraoInput> entradas)
+    private static async Task<CatalogoDeFatos> CarregarCatalogoAsync(
+        IFatoCandidatoRepository repository, IPrecedenciaFaseRepository precedenciaRepository, CancellationToken cancellationToken)
     {
-        List<FieldError> erros = [];
-        List<RegraDerivacao> regras = [];
-        for (int i = 0; i < entradas.Count; i++)
-        {
-            Result<RegraDerivacao> regra = MontarRegra(entradas[i]);
-            if (regra.IsFailure)
-            {
-                erros.AddRange(regra.Errors.Select(e => new FieldError($"regras[{i}]", e.Error)));
-            }
-            else
-            {
-                regras.Add(regra.Value!);
-            }
-        }
+        IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
+
+        return new CatalogoDeFatos(fatos, precedencias);
+    }
+
+    private static Result<IReadOnlyList<RegraDerivacao>> Montar(IReadOnlyList<RegraPadraoInput>? entradas) =>
+        entradas is null
+            ? Result<IReadOnlyList<RegraDerivacao>>.Failure(new DomainError(
+                FatoCandidatoErrorCodes.RegraPadraoMalformada, "A lista de regras é obrigatória; a lista vazia remove as regras."))
+            : MontarTodas(entradas);
+
+    private static Result<IReadOnlyList<RegraDerivacao>> MontarTodas(IReadOnlyList<RegraPadraoInput> entradas)
+    {
+        List<Result<RegraDerivacao>> montadas = [.. entradas.Select(MontarRegra)];
+        List<FieldError> erros = [.. montadas.SelectMany(ErrosDaRegra)];
 
         return erros.Count > 0
             ? Result<IReadOnlyList<RegraDerivacao>>.ValidationFailure(erros)
-            : Result<IReadOnlyList<RegraDerivacao>>.Success(regras);
+            : Result<IReadOnlyList<RegraDerivacao>>.Success([.. montadas.Select(regra => regra.Value!)]);
     }
+
+    private static IEnumerable<FieldError> ErrosDaRegra(Result<RegraDerivacao> regra, int posicao) =>
+        regra.IsSuccess
+            ? []
+            : regra.Errors.Select(e => new FieldError($"regras[{posicao}]{e.Field}", e.Error));
 
     private static Result<RegraDerivacao> MontarRegra(RegraPadraoInput? entrada)
     {
@@ -83,7 +94,7 @@ public static class DefinirRegrasPadraoCommandHandler
         Result<PredicadoDnf> predicado = MontagemDoPredicado.Montar(entrada.Quando, RegraNula());
         if (predicado.IsFailure)
         {
-            return Result<RegraDerivacao>.Failure(predicado.Error!);
+            return Result<RegraDerivacao>.ValidationFailure([.. predicado.Errors.Select(e => new FieldError($".quando{e.Field}", e.Error))]);
         }
 
         return entrada.Contribui is null

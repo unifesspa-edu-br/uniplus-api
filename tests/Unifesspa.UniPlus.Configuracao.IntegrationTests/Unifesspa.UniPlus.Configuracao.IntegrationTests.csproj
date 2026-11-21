@@ -28,6 +28,9 @@
   <ItemGroup>
     <Compile Include="../Shared/ResultadoDeTeste.cs" Link="ResultadoDeTeste.cs" />
     <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />
+    <Compile Include="../Shared/ItemDoModeloDeTeste.cs" Link="ItemDoModeloDeTeste.cs" />
+    <Compile Include="../Shared/GrupoDoModeloDeTeste.cs" Link="GrupoDoModeloDeTeste.cs" />
+    <Compile Include="../Shared/TermoDoModeloDeTeste.cs" Link="TermoDoModeloDeTeste.cs" />
   </ItemGroup>
 
   <ItemGroup>

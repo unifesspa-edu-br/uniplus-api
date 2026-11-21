@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -32,7 +33,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
         ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, derivacoes ?? SemDerivacoes);
 
-    private static ItemDoModelo Opcional(string fato, int ordem = 0) => Item(fato, ordem) with { Obrigatoriedade = Obrigatoriedade.Nunca };
+    private static ItemDoModelo Opcional(string fato, int ordem = 0) => Item(fato, ordem).ComObrigatoriedade(Obrigatoriedade.Nunca);
 
     [Fact(DisplayName = "A regra do item que cita fato que o modelo não coleta é recusada, sem campo, no caminho do conteúdo")]
     public void Item_CitaFatoDesconhecido_Recusa()

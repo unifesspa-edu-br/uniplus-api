@@ -132,7 +132,7 @@ public static class ProjecaoDoFormularioDaVersao
 
         (DependenciasDaAvaliacaoDto? dependencias, DependenciasDaAvaliacaoDto? dependenciasDoFator) = DependenciasDaInscricao(lida, finalidade);
         return Result<FormularioRenderizavelDto?>.Success(
-            FormularioRenderizavelDto.De(formulario, comprovacao, dependencias, dependenciasDoFator, doFormulario.FaseId));
+            new FormularioRenderizavelDto(formulario, doFormulario.FaseId, comprovacao, dependencias, dependenciasDoFator));
     }
 
     private static (DependenciasDaAvaliacaoDto? Fatos, DependenciasDaAvaliacaoDto? Fator) DependenciasDaInscricao(

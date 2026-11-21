@@ -186,15 +186,20 @@ public sealed class IniciarInscricaoCommandHandlerTests
     }
 
     private static FatoColetado Fato(string codigo, int ordem, string rotulo, Obrigatoriedade obrigatoriedade, string classificacao) =>
-        FatoColetado.Criar(
-            codigo, ordem, rotulo, TipoRenderizacao.Texto, obrigatoriedade, null, classificacaoProtecao: classificacao, formato: "LIVRE",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo(rotulo)
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(obrigatoriedade)
+            .ComClassificacao(classificacao)
+            .Construir();
 
-    private static GrupoColetado GrupoComDocumento() => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",
-        minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
-        [Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR")],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado GrupoComDocumento() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+        .NaSecao(null)
+        .ComOcorrencias(0, null)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR"))
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     private static ConfiguracaoPublicada ConfiguracaoComDocumentoNoGrupo(ProcessoSeletivo processoBase) => new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),

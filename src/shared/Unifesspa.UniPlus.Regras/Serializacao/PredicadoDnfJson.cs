@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Regras.Serializacao;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -29,7 +29,7 @@ public static class PredicadoDnfJson
         return new JsonArray([.. predicado.Clausulas.Select(static c => (JsonNode)new JsonArray([.. c.Condicoes.Select(static d => (JsonNode)new JsonObject
         {
             ["fato"] = d.Fato,
-            ["operador"] = d.Operador.ToCodigo(),
+            ["operador"] = d.Operador.Codigo(),
             ["valor"] = JsonNode.Parse(d.Valor.GetRawText()),
         })]))]);
     }
@@ -78,7 +78,7 @@ public static class PredicadoDnfJson
             Result<CondicaoDnf> criada = LerCondicao(condicao);
             if (criada.IsFailure)
             {
-                return Result.ValidationFailure([new FieldError($"[{c}][{i}]{criada.Errors[0].Field}", criada.Error!)]);
+                return Result.ValidationFailure([.. criada.Errors.Select(erro => erro.NoCaminhoDe($"[{c}][{i}]"))]);
             }
 
             linhas.Add((c, criada.Value!));
@@ -104,27 +104,23 @@ public static class PredicadoDnfJson
         return CriarCondicao(condicao);
     }
 
-    private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao)
-    {
-        Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.GetProperty("fato").GetString()!,
-            OperadorCodigo.FromCodigo(condicao.GetProperty("operador").GetString()), condicao.GetProperty("valor"));
-        return criada.IsSuccess ? criada : Result<CondicaoDnf>.ValidationFailure(
-            [new FieldError(EntradaDeRegras.CampoDaCondicao(criada.Error!.Code), criada.Error)]);
-    }
+    private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao) =>
+        CondicaoDnf.CriarInformada(
+            condicao.GetProperty("fato").GetString(), condicao.GetProperty("operador").GetString(), condicao.GetProperty("valor"));
 
     private static string? CampoAusente(JsonElement condicao)
     {
         if (!condicao.TryGetProperty("fato", out JsonElement fato) || fato.ValueKind != JsonValueKind.String)
         {
-            return ".fato";
+            return "fato";
         }
 
         if (!condicao.TryGetProperty("operador", out JsonElement operador) || operador.ValueKind != JsonValueKind.String)
         {
-            return ".operador";
+            return "operador";
         }
 
-        return condicao.TryGetProperty("valor", out _) ? null : ".valor";
+        return condicao.TryGetProperty("valor", out _) ? null : "valor";
     }
 
     private static Result<CondicaoDnf> CondicaoInvalida(string campo) =>

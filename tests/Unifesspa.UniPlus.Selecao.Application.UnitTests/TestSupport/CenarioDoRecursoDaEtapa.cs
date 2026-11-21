@@ -122,5 +122,5 @@ internal sealed class CenarioDoRecursoDaEtapa
     private Task<Result> ExecutarComOCatalogo(EtapaProcessoInput etapa, ITipoAtoPublicadoReader catalogo) =>
         Executar(
             new DefinirEtapasCommand(Processo.Id, [etapa]), Repositorio, UnitOfWork,
-            regraCatalogoReader: Regras, tipoAtoPublicadoReader: catalogo, registroCodecs: Codecs);
+            cadastros: new(Regras: Regras, Atos: catalogo, Codecs: Codecs));
 }

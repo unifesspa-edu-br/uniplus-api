@@ -6,12 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
-using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -22,12 +19,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura do catálogo <c>fatos_do_candidato</c> — o catálogo de fatos do candidato
 /// (UNI-REQ-0077, UNI-REQ-0143, ADR-0136) —, e a manutenção pelo administrador do cadastro de fatos, com a permissão de
-/// manter: cadastro de fato declarado e de derivado por regra, edição de nome e descrição, desativação, valores de
-/// domínio, regras padrão do derivado e aceite da recomendação de ajuste que o Representante do controlador fez na
-/// proteção de dados do fato. O administrador do cadastro lê também os atos e as manifestações técnicas da proteção.
+/// manter: cadastro de fato declarado e de derivado por regra, edição de nome e descrição, definição, regras padrão
+/// do derivado, desativação e reativação. Os valores de domínio e a proteção de dados do fato têm controller próprio.
 /// </summary>
 [ApiController]
 [Authorize]
+[Tags("FatosCandidato")]
 public sealed class FatosCandidatoController : ControllerBase
 {
     private const string ResourceTagAdmin = "admin-fatos-candidato";
@@ -35,24 +32,23 @@ public sealed class FatosCandidatoController : ControllerBase
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
-    private readonly ITitularesDaPermissao _titulares;
 
-    public FatosCandidatoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper, ITitularesDaPermissao titulares)
+    public FatosCandidatoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
-        _titulares = titulares;
         _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
     }
 
     /// <summary>
-    /// Lista o catálogo de fatos do candidato, ordenado por código. É de baixo volume, portanto não
-    /// paginado; a manutenção tem lista própria, paginada e filtrável.
+    /// Lista o catálogo de fatos do candidato, ordenado por código, cada fato com os operadores que uma condição
+    /// pode usar sobre ele. É de baixo volume, portanto não paginado; a manutenção tem lista própria, paginada e
+    /// filtrável.
     /// </summary>
     [HttpGet("fatos-candidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<FatoCandidatoView>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<FatoDoCatalogoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Listar(CancellationToken cancellationToken)
     {
@@ -70,12 +66,12 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("fatos-candidato/{codigo}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(FatoCandidatoView), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FatoDoCatalogoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorCodigo(string codigo, CancellationToken cancellationToken)
     {
-        FatoCandidatoView? fato = await _queryBus
+        FatoDoCatalogoDto? fato = await _queryBus
             .Send(new ObterFatoCandidatoPorCodigoQuery(codigo), cancellationToken)
             .ConfigureAwait(false);
 
@@ -86,7 +82,7 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("admin/fatos-candidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<FatoCandidatoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<FatoDeManutencaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -112,14 +108,14 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("admin/fatos-candidato/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(FatoCandidatoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FatoDeManutencaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterParaManutencao(Guid id, CancellationToken cancellationToken)
     {
-        FatoCandidatoDto? fato = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
+        FatoDeManutencaoDto? fato = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
         return fato is null ? NotFound() : Ok(fato);
     }
@@ -214,6 +210,13 @@ public sealed class FatosCandidatoController : ControllerBase
     /// padrão, um agregado, um modelo de formulário ou a regra de uma modalidade é recusada, com a
     /// lista do que deixaria de valer. A versão publicada de um processo não muda.
     /// </summary>
+    /// <remarks>
+    /// O corpo é plano e cada campo vem da <c>definicao</c> da resposta do fato: <c>dominio</c>, <c>cardinalidade</c>,
+    /// <c>formato</c> e <c>escopo</c> têm o mesmo nome; <c>fonteValores</c> é <c>definicao.valores.fonte</c>;
+    /// <c>pontoResolucao</c> é <c>definicao.resolucao.pontoResolucao</c>; <c>classificacaoProtecao</c>,
+    /// <c>finalidadeTratamento</c> e <c>hipoteseLegal</c> são <c>definicao.protecao.classificacao</c>,
+    /// <c>definicao.protecao.finalidade</c> e <c>definicao.protecao.hipoteseLegal</c>.
+    /// </remarks>
     [HttpPut("admin/fatos-candidato/{id:guid}/definicao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
@@ -230,7 +233,10 @@ public sealed class FatosCandidatoController : ControllerBase
         return Enviar(new AlterarDefinicaoDoFatoCandidatoCommand(id, request), cancellationToken);
     }
 
-    /// <summary>Edita o nome e a descrição; os eixos têm a alteração própria, em <c>/definicao</c>.</summary>
+    /// <summary>
+    /// Edita o nome, a descrição e o componente de exibição; os eixos têm a alteração própria, em <c>/definicao</c>.
+    /// O corpo tem os campos do <c>descritivo</c> da resposta do fato.
+    /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
@@ -245,80 +251,6 @@ public sealed class FatosCandidatoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return Enviar(new AtualizarFatoCandidatoCommand(id, request.Nome, request.Descricao, request.ComponenteExibicao), cancellationToken);
-    }
-
-    /// <summary>
-    /// Aceita a classificação que o Representante do controlador recomendou no ajuste do fato, inclusive o de sistema e o
-    /// semeado: o fato fica aprovado com ela, sem nova solicitação, e os Representantes do controlador são avisados.
-    /// </summary>
-    [HttpPost("admin/fatos-candidato/{id:guid}/aceite-da-recomendacao")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> AceitarRecomendacao(Guid id, CancellationToken cancellationToken)
-    {
-        // Os destinatários do aviso vêm do módulo Autorização e são lidos antes do handler, que fica num único DbContext.
-        IReadOnlyList<string> destinatarios = await _titulares
-            .ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, cancellationToken)
-            .ConfigureAwait(false);
-
-        return await Enviar(new AceitarRecomendacaoDoFatoCandidatoCommand(id, destinatarios), cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
-    /// </summary>
-    [HttpGet("admin/fatos-candidato/{id:guid}/protecao/atos")]
-    [ExigePermissao<PermissaoConfiguracao>(
-        PermissaoConfiguracao.FatosCandidatoConsultar,
-        ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,
-        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
-    [VendorMediaType(Resource = "protecao-do-catalogo-ato", Versions = [1])]
-    [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
-            .Send(new ListarAtosDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
-            .ConfigureAwait(false);
-
-        return atos is null ? NotFound() : Ok(atos);
-    }
-
-    /// <summary>
-    /// Todas as manifestações técnicas sobre a proteção de dados do fato do candidato, de todos os ciclos, com o texto, o nome
-    /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem consulta o cadastro de fatos do candidato as lê sem poder se manifestar nem decidir; o Encarregado de dados, pela permissão de consultar a proteção de dados.
-    /// A leitura é registrada antes da resposta conforme a classe da permissão que a autorizou; sem o registro, é
-    /// recusada com 503.
-    /// </summary>
-    [HttpGet("admin/fatos-candidato/{id:guid}/protecao/manifestacoes")]
-    [ExigePermissao<PermissaoConfiguracao>(
-        PermissaoConfiguracao.FatosCandidatoConsultar,
-        ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,
-        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
-    [VendorMediaType(Resource = "protecao-do-catalogo-manifestacao", Versions = [1])]
-    [ProducesResponseType(typeof(IReadOnlyList<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> ListarManifestacoesDaProtecao(Guid id, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
-            .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
-            .ConfigureAwait(false);
-
-        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
     }
 
     /// <summary>Reativa o fato cadastrado pelo administrador do cadastro, que volta a aceitar vínculos novos.</summary>
@@ -348,91 +280,6 @@ public sealed class FatosCandidatoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> Desativar(Guid id, CancellationToken cancellationToken) =>
         Enviar(new DesativarFatoCandidatoCommand(id), cancellationToken);
-
-    /// <summary>Acrescenta um valor a um fato de fonte global do administrador.</summary>
-    [HttpPost("admin/fatos-candidato/{id:guid}/valores")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> AdicionarValor(Guid id, [FromBody] ValorDominioInput request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        return Enviar(new AdicionarValorDominioCommand(id, request.Codigo, request.Descricao, request.Ordem, request.Orientacao), cancellationToken);
-    }
-
-    /// <summary>
-    /// Corrige a descrição e a orientação de um valor do fato cadastrado pelo administrador do cadastro. O código do valor
-    /// não muda: mudar o sentido de uma opção é acrescentar outro valor e desativar o antigo.
-    /// </summary>
-    [HttpPut("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> CorrigirValor(Guid id, string codigo, [FromBody] CorrecaoDeValorDominioInput request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        return Enviar(new CorrigirValorDominioCommand(id, codigo, request.Descricao, request.Orientacao), cancellationToken);
-    }
-
-    /// <summary>
-    /// Reordena os valores do fato cadastrado pelo administrador do cadastro pela lista completa de códigos, ativos e
-    /// desativados. Fica fora de <c>valores/</c> porque colidiria com um valor de código ORDEM.
-    /// </summary>
-    [HttpPut("admin/fatos-candidato/{id:guid}/ordem-dos-valores")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> ReordenarValores(Guid id, [FromBody] OrdemDosValoresInput request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        return Enviar(new ReordenarValoresDominioCommand(id, request.Codigos), cancellationToken);
-    }
-
-    /// <summary>Reativa um valor do fato cadastrado pelo administrador do cadastro.</summary>
-    [HttpPost("admin/fatos-candidato/{id:guid}/valores/{codigo}/ativacao")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> ReativarValor(Guid id, string codigo, CancellationToken cancellationToken) =>
-        Enviar(new ReativarValorDominioCommand(id, codigo), cancellationToken);
-
-    /// <summary>
-    /// Desativa um valor do fato cadastrado pelo administrador do cadastro: condição nova que o cite é recusada, e a que já o
-    /// citava continua. O código do valor nunca é removido nem renomeado.
-    /// </summary>
-    [HttpDelete("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> DesativarValor(Guid id, string codigo, CancellationToken cancellationToken) =>
-        Enviar(new DesativarValorDominioCommand(id, codigo), cancellationToken);
 
     private async Task<IActionResult> Enviar(ICommand<Result> command, CancellationToken cancellationToken)
     {

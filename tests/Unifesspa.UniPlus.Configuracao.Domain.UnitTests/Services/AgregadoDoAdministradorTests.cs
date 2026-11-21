@@ -185,16 +185,24 @@ public sealed class AgregadoDoAdministradorTests
         FatoCandidato foraDoModelo = DeMembro("TRABALHA_NO_CAMPO");
         FatoCandidato agregado = Criar("EXISTE_MENOR_SOB_GUARDA", "MENOR_SOB_GUARDA", membro).Value!;
         FatoCandidato outro = Criar("EXISTE_TRABALHADOR_RURAL", "TRABALHA_NO_CAMPO", foraDoModelo).Value!;
-        GrupoDoModelo familia = new(
-            "COMPOSICAO_FAMILIAR", 0, "DADOS", "Composição familiar", 0, null, null, Regras.Formularios.Obrigatoriedade.Nunca,
-            [new ItemDoModelo("MENOR_SOB_GUARDA", 0, null, "Menor sob guarda", TipoRenderizacao.Booleano, null, null,
-                Regras.Formularios.Obrigatoriedade.Sempre, null, [], false)]);
+        GrupoDoModelo familia = ComposicaoFamiliarComMenorSobGuarda();
 
         IReadOnlyList<Regras.Formularios.DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos([membro, foraDoModelo, agregado, outro], [familia]);
 
         agregados.Should().ContainSingle().Which.Should().Be(new Regras.Formularios.DefinicaoAgregado(
             "EXISTE_MENOR_SOB_GUARDA", "COMPOSICAO_FAMILIAR", "MENOR_SOB_GUARDA", Regras.Formularios.OperacaoAgregado.Existe));
     }
+
+    private static GrupoDoModelo ComposicaoFamiliarComMenorSobGuarda() => new(
+        "COMPOSICAO_FAMILIAR", 0, "DADOS", "Composição familiar", new Regras.Formularios.OcorrenciasDoGrupo(0, null, IncluiCandidato: false),
+        new Regras.Formularios.ExibicaoEObrigatoriedade(null, Regras.Formularios.Obrigatoriedade.Nunca),
+        [new ItemDoModelo(
+            "MENOR_SOB_GUARDA",
+            0,
+            null,
+            new Regras.Formularios.ApresentacaoDoCampo("Menor sob guarda", TipoRenderizacao.Booleano),
+            null,
+            new Regras.Formularios.RegrasDoCampo(null, Regras.Formularios.Obrigatoriedade.Sempre, []))]);
 
     private static FatoCandidato DeMembroCategoricoComValorRural()
     {

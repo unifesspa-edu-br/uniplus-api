@@ -87,9 +87,11 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
 
     private static async Task<(Result<InscricaoDto> Resultado, IUnitOfWork UnitOfWork)> SalvarEnderecoAsync(IConferenciaEnderecoGeo geo)
     {
-        FatoColetado endereco = FatoColetado.Criar("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado endereco = FatoColetadoDeTeste.Coletando("ENDERECO_RESIDENCIAL", 0)
+            .ComRotulo("Endereço residencial")
+            .DoTipo(TipoRenderizacao.Endereco)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
         SalvarRespostaDeTeste cenario = SalvarRespostaDeTeste.ComItem(endereco);
         InscricaoRequest request = new(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
@@ -134,22 +136,34 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
     }
 
     private static FatoColetado Apelido(int? tamanhoMaximo, Obrigatoriedade? obrigatoriedade = null) =>
-        FatoColetado.Criar("APELIDO", 0, "Apelido", TipoRenderizacao.Texto, obrigatoriedade ?? Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: tamanhoMaximo is { } maximo ? [new TamanhoTexto(1, maximo)] : null,
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-            descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("APELIDO", 0)
+            .ComRotulo("Apelido")
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(obrigatoriedade ?? Obrigatoriedade.Sempre)
+            .ComRestricoes(tamanhoMaximo is { } maximo ? [new TamanhoTexto(1, maximo)] : null)
+            .Construir();
 
     private static FatoColetado DataDeNascimento() =>
-        FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            restricoes: [new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0))],
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 0)
+            .ComRotulo("Data de nascimento")
+            .DoTipo(TipoRenderizacao.Data)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComRestricoes(new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0)))
+            .Construir();
 
     private static GrupoColetado ComposicaoFamiliar() =>
-        GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("RG_NUMERO_MEMBRO", 0, "RG do membro", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)],
-                hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+            .ComOcorrencias(0, null)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("RG_NUMERO_MEMBRO", 0)
+                .ComRotulo("RG do membro")
+                .DeTexto("LIVRE")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComClassificacao("IDENTIFICADOR")
+                .ComRestricoes(new TamanhoTexto(1, 5))
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static InscricaoRequest ComRespostaDoMembro() => Resposta("APELIDO", "Nanda") with
     {

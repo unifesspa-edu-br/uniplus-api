@@ -38,32 +38,33 @@ public sealed class DefinirFatosColetadosEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ColetaValida_204SemEtag));
 
-        // O conjunto básico entra sem ser enviado, com as restrições dele; o item do cliente cita um
-        // dado básico como anterior.
-        object[] corpo =
-        [
-            new
-            {
-                fatoCodigo = "BAIXA_RENDA",
-                ordem = 0,
-                rotulo = "Baixa renda",
-                tipoRenderizacao = "BOOLEANO",
-                obrigatoriedade = "NUNCA",
-                precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
-            },
-        ];
-
-        HttpResponseMessage resposta = await ctx.PutFatosAsync(corpo);
+        HttpResponseMessage resposta = await ctx.PutFatosAsync(ItemQueCitaUmDadoBasicoComoAnterior());
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        List<FatoColetado> fatos = await db.Set<FatoColetado>().AsNoTracking()
-            .Where(f => f.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
+        List<FatoColetado> fatos = await FatosPersistidosAsync(ctx);
         fatos.Select(f => f.FatoCodigo).Should().BeEquivalentTo([.. ConjuntoBasicoDaInscricao.Fatos, "BAIXA_RENDA"]);
         fatos.Single(f => f.FatoCodigo == "NATURALIDADE_MUNICIPIO").Restricoes.Should().ContainSingle()
             .Which.Should().BeOfType<MunicipiosDaUf>().Which.FatoUf.Should().Be("NATURALIDADE_UF");
+    }
+
+    /// <summary>
+    /// O conjunto básico entra sem ser enviado, com as restrições dele; o item do cliente cita um dado básico
+    /// como anterior.
+    /// </summary>
+    private static object[] ItemQueCitaUmDadoBasicoComoAnterior() =>
+    [
+        FormularioDeInscricaoHttp.Item(
+            "BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA",
+            exibicao: new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } }),
+    ];
+
+    private static async Task<List<FatoColetado>> FatosPersistidosAsync(Contexto ctx)
+    {
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+
+        return await db.Set<FatoColetado>().AsNoTracking().Where(f => f.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
     }
 
     [Fact(DisplayName = "Fato fora do vocabulário é recusado com 422 sem tradução")]
@@ -72,7 +73,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDesconhecido_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "V", ordem = 0, rotulo = "V", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }]);
+            [FormularioDeInscricaoHttp.Item("V", 0, "V", "SELECAO_UNICA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -83,11 +84,11 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_PrecondicaoVazia_FieldPeloCorpo));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = Array.Empty<object>() }]);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", exibicao: Array.Empty<object>())]);
 
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
-            .Should().Equal("itens[0].precondicao");
+            .Should().Equal("itens[0].regras.exibicao");
     }
 
     [Fact(DisplayName = "Coletar um fato derivado (MODALIDADE) é recusado com 422")]
@@ -96,7 +97,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDerivado_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "MODALIDADE", ordem = 0, rotulo = "Modalidade", tipoRenderizacao = "SELECAO_MULTIPLA", obrigatoriedade = "NUNCA", precondicao = (object?)null }]);
+            [FormularioDeInscricaoHttp.Item("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -108,7 +109,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         await ctx.PublicarAsync();
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }]);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -117,7 +118,7 @@ public sealed class DefinirFatosColetadosEndpointTests
     public async Task Rascunho_ReplayIdempotente_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ReplayIdempotente_204));
-        object[] corpo = [new { fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "NUNCA", precondicao = (object?)null }];
+        object[] corpo = [FormularioDeInscricaoHttp.Item("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA")];
         string chave = MakeIdempotencyKey();
 
         (await ctx.PutFatosAsync(corpo, idempotencyKey: chave)).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -133,7 +134,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }], autenticar: Autenticacao.Nenhuma);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA")], autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -160,26 +161,28 @@ public sealed class DefinirFatosColetadosEndpointTests
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
 
+        private object CorpoDaPublicacao() => new
+        {
+            numero = "001/2026",
+            documentoEditalId = DocumentoId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataDoAto = Hoje(),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_ABERTURA",
+            },
+        };
+
         public async Task PublicarAsync()
         {
             using HttpRequestMessage publicar = new(
                 HttpMethod.Post,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/publicacao", UriKind.Relative))
             {
-                Content = JsonContent.Create(new
-                {
-                    numero = "001/2026",
-                    documentoEditalId = DocumentoId,
-                    ato = new
-                    {
-                        orgao = "CEPS",
-                        serie = "EDITAL",
-                        ano = 2026,
-                        dataDoAto = Hoje(),
-                        assinante = "Diretor do CEPS",
-                        tipoAtoCodigo = "EDITAL_ABERTURA",
-                    },
-                }),
+                Content = JsonContent.Create(CorpoDaPublicacao()),
             };
             Autenticar(publicar, Autenticacao.PlataformaAdmin);
             publicar.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
@@ -194,18 +197,19 @@ public sealed class DefinirFatosColetadosEndpointTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         HttpClient client = api.CreateClient();
 
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
-            processoId = processo.Id;
-            documentoId = documento.Id;
-        }
+        (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync(api, nome);
 
         return new Contexto(api, client, processoId, documentoId);
+    }
+
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoPublicavelAsync(CascadingApiFactory api, string nome)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+
+        return (processo.Id, documento.Id);
     }
 
     private static void Autenticar(HttpRequestMessage request, Autenticacao autenticacao)

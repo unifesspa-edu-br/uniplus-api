@@ -34,6 +34,18 @@
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
+    <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/GrupoColetadoDeTeste.cs" Link="GrupoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
+    <Compile Include="../Shared/CriterioDesempateDeTeste.cs" Link="CriterioDesempateDeTeste.cs" />
+    <Compile Include="../Shared/ItemDocumentoExigidoDeTeste.cs" Link="ItemDocumentoExigidoDeTeste.cs" />
+    <Compile Include="../Shared/NoExigenciaDeTeste.cs" Link="NoExigenciaDeTeste.cs" />
+    <Compile Include="../Shared/TipoEtapaViewDeTeste.cs" Link="TipoEtapaViewDeTeste.cs" />
+    <Compile Include="../Shared/BonusRegionalDeTeste.cs" Link="BonusRegionalDeTeste.cs" />
+    <Compile Include="../Shared/ExibicaoDeTeste.cs" Link="ExibicaoDeTeste.cs" />
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />

@@ -92,6 +92,8 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("Condicoes", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — recomputada, nunca persistida."),
                 ("OpcoesDoProcesso", "Derivada de OrigemValores — congelá-la duplicaria a fonte de verdade."),
                 ("Exibicao", "Derivada das Precondicoes — o predicado é recomputado, nunca persistido."),
+                ("Apresentacao", "Agrupa Rotulo, TipoRenderizacao, Ajuda e PedirConfirmacao, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
+                ("Regras", "Agrupa Precondicoes, Obrigatoriedade, Restricoes e Impedimento, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
             ]),
 
         // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os
@@ -102,6 +104,8 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
                 ("Condicoes", "Derivada das regras do grupo e dos campos — recomputada, nunca persistida."),
+                ("Ocorrencias", "Agrupa Minimo, Maximo e IncluiCandidato, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
+                ("Regras", "Agrupa Exibicao e Obrigatoriedade, já congeladas uma a uma — congelar o grupo duplicaria a fonte de verdade."),
             ]),
 
         // Opções declaradas pelo processo (issue #1619) — congeladas nos valores selecionáveis do

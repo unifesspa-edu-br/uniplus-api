@@ -150,7 +150,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
+        resultado.Value!.Formulario.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
     }
 
     [Fact(DisplayName = "O formulário da inscrição do candidato não traz a lista de comprovação: os documentos dele vêm da avaliação")]

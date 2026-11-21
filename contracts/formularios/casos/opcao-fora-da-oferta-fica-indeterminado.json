@@ -8,11 +8,15 @@
         "itens": [
           {
             "fatoCodigo": "TIPO_ENDERECO",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": [
               "ALDEIA",
               "URBANO"

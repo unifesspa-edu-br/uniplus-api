@@ -12583,8 +12583,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("rotulo");
 
-                    b.Property<int>("TipoRenderizacao")
-                        .HasColumnType("integer")
+                    b.Property<string>("TipoRenderizacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_renderizacao");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -14551,8 +14553,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-AVALIACAO-UNICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"categorico\",\"numerico\"]}",
-                            Hash = "7e1bd389e8de8efe97bcb8af08d4d8930d45f1acf00dca07d947fa6b6a96cf5f",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"CATEGORICO\",\"NUMERICO\"]}",
+                            Hash = "935e4e0fd8a06289cfa225672f293876c3ebb5058682583eaa81495f3d7190e5",
                             Invariantes = "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14563,8 +14565,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0097 (dupla correção) e edital do processo seletivo",
                             Codigo = "CONSOLIDACAO-CORRECAO-INDEPENDENTE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"numerico\"]}",
-                            Hash = "a2c2eca40be800aea8983c8a45aed3b5e350471b03982c3ba1069b220e5ebe1c",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"NUMERICO\"]}",
+                            Hash = "e258ddb6a1360104b1fdc3163397608c107452835db87582ec89d1bb2145c7ad",
                             Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14575,8 +14577,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-UNANIMIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
-                            Hash = "0c10af9a05f0da11e46508bdff914663826487580c78f6a2e2944b3c68cc1325",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
+                            Hash = "e741f7fefd96b00ed43aba1fc6d06827139231d980b84e8b30ce26fd5cf33482",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14587,8 +14589,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "db1fb6e72c023ba45414e6d679990995891c72392e53a8c54c61efa83b6a79db",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "99b97cf62ff6bed01054a52a2de44cbc3527020e58ccb4f803d42dbe2ad3b59d",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14599,8 +14601,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "194b514a5de402f43afb4c3b78d4bcc988e7d82f5a9ca59c538df8ebc342995a",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "f5e600cc2b88671b1b1c8ee0a0c696ef7bd654dce74ab6eb24abdda9d4168aaf",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"

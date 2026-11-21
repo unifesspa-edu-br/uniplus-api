@@ -30,15 +30,23 @@ public sealed class DefinicaoDoProcessoTests
             [DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "VERACIDADE"), DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Habilitacao, "VERACIDADE")]);
     }
 
+    private static GrupoColetado ComposicaoFamiliarNaSecaoFamilia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+        .NaSecao("FAMILIA")
+        .ComOcorrencias(1, null)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+            .ComRotulo("Parentesco")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir())
+        .DaFinalidade(FinalidadeFormulario.Habilitacao)
+        .Construir();
+
     [Fact(DisplayName = "A seção que só tem grupo entra na definição com o grupo")]
     public void Montar_SecaoSoComGrupo_EntraComOGrupo()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        GrupoColetado familia = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, "FAMILIA", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Habilitacao).Value!;
-        processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [familia]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [ComposicaoFamiliarNaSecaoFamilia()]).IsSuccess.Should().BeTrue();
 
         DefinicaoFormulario definicao = Montar(processo);
 
@@ -51,9 +59,13 @@ public sealed class DefinicaoDoProcessoTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens(
-            [FatoColetado.Criar(
-                "CPF_RESPONSAVEL", 0, "CPF do responsável", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Habilitacao, formato: "CPF", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            [FatoColetadoDeTeste.Coletando("CPF_RESPONSAVEL", 0)
+                .ComRotulo("CPF do responsável")
+                .DeTexto("CPF")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .NaSecao("DADOS")
+                .DaFinalidade(FinalidadeFormulario.Habilitacao)
+                .Construir()],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         DefinicaoItem item = Montar(processo).Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");

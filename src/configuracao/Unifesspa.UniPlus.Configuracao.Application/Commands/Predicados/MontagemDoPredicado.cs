@@ -1,12 +1,14 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Monta o predicado da entrada: o OU de cláusulas, cada uma o E de condições. A lista nula ou vazia
-/// é o predicado sem cláusula; a cláusula vazia e a condição nula são recusadas.
+/// é o predicado sem cláusula; a cláusula vazia e a condição nula são recusadas. As recusas de todas as
+/// cláusulas e condições saem acumuladas, cada uma no seu caminho <c>[cláusula][condição].campo</c>.
 /// </summary>
 internal static class MontagemDoPredicado
 {
@@ -14,33 +16,20 @@ internal static class MontagemDoPredicado
         IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? quando,
         DomainError condicaoNula)
     {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>> clausulas = quando ?? [];
-        for (int clausula = 0; clausula < clausulas.Count; clausula++)
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = EntradaDeRegras.Condicoes(Entrada(quando));
+        if (linhas.IsFailure)
         {
-            if (clausulas[clausula] is not { Count: > 0 } condicoes)
-            {
-                return Result<PredicadoDnf>.Failure(new DomainError(
-                    "ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
-            }
-
-            foreach (CondicaoDoPredicadoInput? condicao in condicoes)
-            {
-                if (condicao is null)
-                {
-                    return Result<PredicadoDnf>.Failure(condicaoNula);
-                }
-
-                Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
-                if (criada.IsFailure)
-                {
-                    return Result<PredicadoDnf>.Failure(criada.Error!);
-                }
-
-                linhas.Add((clausula, criada.Value!));
-            }
+            return Result<PredicadoDnf>.ValidationFailure([.. linhas.Errors.Select(recusa => TraduzirCondicaoNula(recusa, condicaoNula))]);
         }
 
-        return PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
+        return PredicadoDnf.CriarDeCondicoesAgrupadas(linhas.Value!);
     }
+
+    private static FieldError TraduzirCondicaoNula(FieldError recusa, DomainError condicaoNula) =>
+        recusa.Error.Code == PredicadoDnfErrorCodes.CondicaoNula ? recusa with { Error = condicaoNula } : recusa;
+
+    private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput?>?> Entrada(
+        IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? quando) =>
+        [.. (quando ?? []).Select(static clausula => (IReadOnlyList<CondicaoPrecondicaoInput?>?)
+            [.. (clausula ?? []).Select(static condicao => condicao is null ? null : new CondicaoPrecondicaoInput(condicao.Fato, condicao.Operador, condicao.Valor))])];
 }

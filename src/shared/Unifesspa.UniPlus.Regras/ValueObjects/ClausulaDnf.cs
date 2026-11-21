@@ -48,7 +48,6 @@ public sealed record ClausulaDnf
     public Ternario Avaliar(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
-
         bool algumaIndeterminada = false;
         foreach (CondicaoDnf condicao in Condicoes)
         {
@@ -58,12 +57,8 @@ public sealed record ClausulaDnf
                 return Ternario.Falso;
             }
 
-            if (resultado == EstadoAtomo.Indeterminado)
-            {
-                algumaIndeterminada = true;
-            }
+            algumaIndeterminada |= resultado == EstadoAtomo.Indeterminado;
         }
-
         return algumaIndeterminada ? Ternario.Indeterminado : Ternario.Verdadeiro;
     }
 
@@ -93,54 +88,50 @@ public sealed record ClausulaDnf
         // adaptador descuidado não deve derrubar a avaliação inteira, e "não sei" é a leitura
         // conservadora de uma entrada sem conteúdo — nunca "não se aplica", que dispensaria a
         // exigência por um defeito de montagem.
-        if (!fatosResolvidos.TryGetValue(condicao.Fato, out FatoResolvido? fato) || fato is null)
-        {
-            return EstadoAtomo.Indeterminado;
-        }
+        FatoResolvido? fato = fatosResolvidos.GetValueOrDefault(condicao.Fato);
 
-        if (fato.Estado == EstadoFato.NaoAplicavel)
-        {
-            return EstadoAtomo.NaoAplicavel;
-        }
+        return fato is { Estado: EstadoFato.Resolvido, Valor: { } valorCandidato }
+            ? AvaliarValor(condicao, valorCandidato)
+            : EstadoSemValorParaComparar(fato);
+    }
+
+    private static EstadoAtomo EstadoSemValorParaComparar(FatoResolvido? fato) => fato?.Estado switch
+    {
+        EstadoFato.NaoAplicavel => EstadoAtomo.NaoAplicavel,
 
         // Opcional em branco com a etapa concluída (UNI-REQ-0074): não há valor a comparar nem a
         // negar, então a condição é falsa para todo operador, inclusive DIFERENTE e NAO_EM — quem
         // não respondeu não satisfaz "diferente de X" por omissão.
-        if (fato.Estado == EstadoFato.NaoInformado)
-        {
-            return EstadoAtomo.Falso;
-        }
+        EstadoFato.NaoInformado => EstadoAtomo.Falso,
+        _ => EstadoAtomo.Indeterminado,
+    };
 
-        if (fato.Estado != EstadoFato.Resolvido || fato.Valor is not { } valorCandidato)
-        {
-            return EstadoAtomo.Indeterminado;
-        }
+    // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
+    // calculado sobre o operador positivo correspondente, e só invertido quando
+    // efetivamente resolvido (Ternario.Verdadeiro/Falso) — Indeterminado nunca inverte.
+    private static EstadoAtomo AvaliarValor(CondicaoDnf condicao, JsonElement valorCandidato)
+    {
+        Ternario resultadoBase = AvaliarOperadorBase(OperadorPositivo(condicao.Operador), valorCandidato, condicao.Valor);
 
-        // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
-        // calculado sobre o operador positivo correspondente, e só invertido quando
-        // efetivamente resolvido (Ternario.Verdadeiro/Falso) — Indeterminado nunca inverte.
-        Operador operadorBase = condicao.Operador switch
-        {
-            Operador.Igual => Operador.Igual,
-            Operador.Em => Operador.Em,
-            Operador.MaiorIgual => Operador.MaiorIgual,
-            Operador.MenorIgual => Operador.MenorIgual,
-            Operador.Diferente => Operador.Igual,
-            Operador.NaoEm => Operador.Em,
-            Operador.Nenhuma => throw new ArgumentOutOfRangeException(
-                nameof(condicao), condicao.Operador, "Operador.Nenhuma é sentinela e não é avaliável."),
-            _ => throw new ArgumentOutOfRangeException(nameof(condicao), condicao.Operador, "Operador desconhecido."),
-        };
-
-        Ternario resultadoBase = AvaliarOperadorBase(operadorBase, valorCandidato, condicao.Valor);
-        bool negar = condicao.Operador is Operador.Diferente or Operador.NaoEm;
-        if (!negar || resultadoBase == Ternario.Indeterminado)
-        {
-            return TernarioParaAtomo(resultadoBase);
-        }
-
-        return resultadoBase == Ternario.Verdadeiro ? EstadoAtomo.Falso : EstadoAtomo.Verdadeiro;
+        return condicao.Operador is Operador.Diferente or Operador.NaoEm
+            ? NegacaoDoAtomo(resultadoBase)
+            : TernarioParaAtomo(resultadoBase);
     }
+
+    private static Operador OperadorPositivo(Operador operador) => operador switch
+    {
+        Operador.Diferente => Operador.Igual,
+        Operador.NaoEm => Operador.Em,
+        Operador.Igual or Operador.Em or Operador.MaiorIgual or Operador.MenorIgual => operador,
+        _ => throw new ArgumentOutOfRangeException(nameof(operador), operador, "Operador desconhecido."),
+    };
+
+    private static EstadoAtomo NegacaoDoAtomo(Ternario resultadoBase) => resultadoBase switch
+    {
+        Ternario.Verdadeiro => EstadoAtomo.Falso,
+        Ternario.Falso => EstadoAtomo.Verdadeiro,
+        _ => EstadoAtomo.Indeterminado,
+    };
 
     /// <summary>
     /// Converte o resultado da comparação de valores — que é ternária, porque
@@ -162,26 +153,28 @@ public sealed record ClausulaDnf
     /// <see cref="Operador.NaoEm"/> nunca chegam aqui — <see cref="AvaliarCondicao"/> já os
     /// reduziu ao operador base correspondente.
     /// </summary>
-    private static Ternario AvaliarOperadorBase(Operador operadorBase, JsonElement valorCandidato, JsonElement valorConfigurado)
-    {
-        // Story #554 (PR #896): fato multivalorado — o candidato resolve para um CONJUNTO
-        // (array JSON), não um escalar. A forma do valor resolvido decide a semântica, sem
-        // precisar de metadado extra aqui: IGUAL passa a significar pertinência do valor
-        // configurado no conjunto do candidato; EM passa a significar interseção não vazia
-        // entre o conjunto do candidato e a lista configurada (ADR-0111). Fatos escalares
-        // (a maioria) continuam pelo ramo original, sem NENHUMA mudança de comportamento.
-        if (valorCandidato.ValueKind == JsonValueKind.Array)
-        {
-            return operadorBase switch
-            {
-                Operador.Igual => BoolParaTernario(valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, valorConfigurado))),
-                Operador.Em => BoolParaTernario(valorConfigurado.EnumerateArray()
-                    .Any(itemConfigurado => valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, itemConfigurado)))),
-                _ => Ternario.Indeterminado,
-            };
-        }
+    private static Ternario AvaliarOperadorBase(Operador operadorBase, JsonElement valorCandidato, JsonElement valorConfigurado) =>
+        valorCandidato.ValueKind == JsonValueKind.Array
+            ? AvaliarSobreConjunto(operadorBase, valorCandidato, valorConfigurado)
+            : AvaliarSobreEscalar(operadorBase, valorCandidato, valorConfigurado);
 
-        return operadorBase switch
+    /// <summary>
+    /// Fato multivalorado: o candidato resolve para um CONJUNTO (array JSON), não um escalar. A forma do valor
+    /// resolvido decide a semântica, sem metadado extra: IGUAL passa a significar pertinência do valor
+    /// configurado no conjunto do candidato; EM, interseção não vazia entre o conjunto do candidato e a lista
+    /// configurada (ADR-0111).
+    /// </summary>
+    private static Ternario AvaliarSobreConjunto(Operador operadorBase, JsonElement conjuntoCandidato, JsonElement valorConfigurado) =>
+        operadorBase switch
+        {
+            Operador.Igual => BoolParaTernario(conjuntoCandidato.EnumerateArray().Any(item => ValoresIguais(item, valorConfigurado))),
+            Operador.Em => BoolParaTernario(valorConfigurado.EnumerateArray()
+                .Any(itemConfigurado => conjuntoCandidato.EnumerateArray().Any(item => ValoresIguais(item, itemConfigurado)))),
+            _ => Ternario.Indeterminado,
+        };
+
+    private static Ternario AvaliarSobreEscalar(Operador operadorBase, JsonElement valorCandidato, JsonElement valorConfigurado) =>
+        operadorBase switch
         {
             Operador.Igual => CompararIgualdade(valorCandidato, valorConfigurado),
             Operador.Em => valorCandidato.ValueKind == JsonValueKind.String
@@ -191,7 +184,6 @@ public sealed record ClausulaDnf
             Operador.MenorIgual => CompararNumerico(valorCandidato, valorConfigurado, static comparacao => comparacao <= 0),
             _ => Ternario.Indeterminado,
         };
-    }
 
     /// <summary>
     /// Igualdade escalar ternária: tipo (<see cref="JsonValueKind"/>) incoerente entre o valor
@@ -204,25 +196,24 @@ public sealed record ClausulaDnf
     /// </summary>
     public static Ternario CompararIgualdade(JsonElement candidato, JsonElement configurado)
     {
-        bool candidatoBooleano = candidato.ValueKind is JsonValueKind.True or JsonValueKind.False;
-        bool configuradoBooleano = configurado.ValueKind is JsonValueKind.True or JsonValueKind.False;
-        if (candidatoBooleano && configuradoBooleano)
+        if (EhBooleano(candidato) && EhBooleano(configurado))
         {
             return BoolParaTernario(candidato.GetBoolean() == configurado.GetBoolean());
         }
 
-        if (candidato.ValueKind != configurado.ValueKind)
-        {
-            return Ternario.Indeterminado;
-        }
-
-        return candidato.ValueKind switch
-        {
-            JsonValueKind.String => BoolParaTernario(string.Equals(candidato.GetString(), configurado.GetString(), StringComparison.Ordinal)),
-            JsonValueKind.Number => BoolParaTernario(candidato.GetDecimal() == configurado.GetDecimal()),
-            _ => Ternario.Indeterminado,
-        };
+        return candidato.ValueKind != configurado.ValueKind
+            ? Ternario.Indeterminado
+            : IgualdadeDoMesmoTipo(candidato, configurado);
     }
+
+    private static bool EhBooleano(JsonElement valor) => valor.ValueKind is JsonValueKind.True or JsonValueKind.False;
+
+    private static Ternario IgualdadeDoMesmoTipo(JsonElement candidato, JsonElement configurado) => candidato.ValueKind switch
+    {
+        JsonValueKind.String => BoolParaTernario(string.Equals(candidato.GetString(), configurado.GetString(), StringComparison.Ordinal)),
+        JsonValueKind.Number => BoolParaTernario(candidato.GetDecimal() == configurado.GetDecimal()),
+        _ => Ternario.Indeterminado,
+    };
 
     private static bool ValoresIguais(JsonElement candidato, JsonElement configurado)
     {

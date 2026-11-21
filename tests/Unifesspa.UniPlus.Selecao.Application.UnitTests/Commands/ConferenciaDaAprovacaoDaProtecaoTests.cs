@@ -115,9 +115,9 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
     {
         ITipoDocumentoReader leitor = Substitute.For<ITipoDocumentoReader>();
         leitor.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
-        ItemDocumentoExigidoInput item = new(fase.Id, tipo.Id, "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: fatosComprovados);
+        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(fase.Id, tipo.Id).ComFatosComprovados(fatosComprovados);
         Result definido = await DefinicaoDosDocumentosExigidos.DefinirAsync(
-            processo, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], [],
+            processo, [NoExigenciaDeTeste.Folha(item).Construir()], [],
             new CadastrosDosDocumentosExigidos(leitor, Substitute.For<IFatoCandidatoReader>(), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IModeloDeDocumentoRepository>()),
             CancellationToken.None);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);

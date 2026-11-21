@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -15,44 +16,42 @@ public sealed class PredicadosDasPartesDoModeloTests
     private static readonly PredicadoDnf DaObrigatoriedade = Quando("DA_OBRIGATORIEDADE");
     private static readonly PredicadoDnf DoImpedimento = Quando("DO_IMPEDIMENTO");
 
-    [Fact(DisplayName = "O item enumera a precondição e o predicado de obrigatoriedade, nessa ordem")]
-    public void Item_PrecondicaoEObrigatoriedade_NaOrdem()
+    [Fact(DisplayName = "O item enumera, no caminho das regras, a exibição e o predicado de obrigatoriedade, nessa ordem")]
+    public void Item_ExibicaoEObrigatoriedade_NaOrdem()
     {
-        ItemDoModelo item = Item("CERTIFICADO", exibicao: Exibicao) with
-        {
-            Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade),
-            Impedimento = new Impedimento(DoImpedimento, "Já possui o certificado."),
-        };
+        ItemDoModelo item = Item("CERTIFICADO", exibicao: Exibicao)
+            .ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade))
+            .ComImpedimento(new Impedimento(DoImpedimento, "Já possui o certificado."));
 
         item.Predicados().Should().Equal(
-            new PredicadoNaEntrada("precondicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O item sem regras enumera os mesmos caminhos, sem predicado")]
     public void Item_SemRegras_MesmosCaminhosSemPredicado()
     {
         Item("RENDA").Predicados().Should().Equal(
-            new PredicadoNaEntrada("precondicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "O grupo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]
     public void Grupo_ExibicaoEObrigatoriedade_NaOrdem()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, Exibicao) with { Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade) };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, Exibicao).ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade));
 
         grupo.Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O grupo sem regras enumera os mesmos caminhos, sem predicado")]
     public void Grupo_SemRegras_MesmosCaminhosSemPredicado()
     {
         Grupo("COMPOSICAO").Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "A etapa enumera a exibição")]
@@ -70,19 +69,19 @@ public sealed class PredicadosDasPartesDoModeloTests
     [Fact(DisplayName = "O termo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]
     public void Termo_ExibicaoEObrigatoriedade_NaOrdem()
     {
-        TermoDoModelo termo = Termo("LGPD", exibicao: Exibicao) with { Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade) };
+        TermoDoModelo termo = Termo("LGPD", exibicao: Exibicao).ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade));
 
         termo.Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O termo sem regras enumera os mesmos caminhos, sem predicado")]
     public void Termo_SemRegras_MesmosCaminhosSemPredicado()
     {
         Termo("LGPD").Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "O documento enumera a condição que o torna exigido")]

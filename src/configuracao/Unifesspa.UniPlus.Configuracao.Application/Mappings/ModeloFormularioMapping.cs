@@ -1,15 +1,73 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 
-/// <summary>O modelo na forma de leitura, a mesma da manutenção e do leitor cross-módulo.</summary>
+/// <summary>
+/// O modelo nas duas formas de leitura: a da manutenção (<see cref="ModeloFormularioDto"/>) e a do leitor entre
+/// módulos (<see cref="ModeloFormularioView"/>), que traz o conteúdo na forma de entrada da escrita.
+/// </summary>
 public static class ModeloFormularioMapping
 {
+    /// <summary>O modelo na forma de leitura da manutenção, que volta à escrita sem transformação.</summary>
+    public static ModeloFormularioDto ToDto(this ModeloFormulario modelo)
+    {
+        ArgumentNullException.ThrowIfNull(modelo);
+        return new ModeloFormularioDto(
+            modelo.Id,
+            modelo.Codigo,
+            EstruturaFormulario.ParaToken(modelo.Finalidade),
+            modelo.Ativo,
+            new DescritivoDoModeloDto(modelo.Nome, modelo.Descricao, modelo.TipoProcessoCodigo),
+            modelo.Conteudo.ToDto());
+    }
+
+    /// <summary>O conteúdo do modelo na forma de leitura da manutenção.</summary>
+    public static ConteudoDoModeloDto ToDto(this ConteudoDoModelo conteudo)
+    {
+        ArgumentNullException.ThrowIfNull(conteudo);
+        return new ConteudoDoModeloDto(
+            conteudo.Titulo,
+            [.. conteudo.Etapas.Select(EtapaParaLeitura)],
+            [.. conteudo.Itens.Select(ItemParaLeitura)],
+            [.. conteudo.Termos.Select(TermoParaLeitura)],
+            conteudo.Pressupostos,
+            [.. conteudo.Grupos.Select(GrupoParaLeitura)],
+            [.. conteudo.Documentos.Select(DocumentoParaLeitura)]);
+    }
+
+    private static EtapaFormularioDto EtapaParaLeitura(EtapaDoModelo etapa) => new(
+        etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
+        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso), etapa.Exibicao is { } exibicao ? LeituraDeRegras.ToDto(exibicao) : null);
+
+    private static ItemDoModeloDto ItemParaLeitura(ItemDoModelo item) => new(
+        item.FatoCodigo, item.Ordem, item.EtapaCodigo, item.Apresentacao.ToDto(), item.Regras.ToDto());
+
+    private static TermoDoModeloDto TermoParaLeitura(TermoDoModelo termo) => new(
+        termo.Codigo, termo.Ordem, new VersaoDoTermoDoModeloDto(termo.TermoId, termo.VersaoId), termo.Regras.ToDto());
+
+    private static GrupoDoModeloDto GrupoParaLeitura(GrupoDoModelo grupo) => new(
+        grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias.ToDto(), grupo.Regras.ToDto(),
+        [.. grupo.Subitens.Select(ItemParaLeitura)]);
+
+    private static DocumentoExigidoDoModeloDto DocumentoParaLeitura(DocumentoExigidoDoModelo documento) => new(
+        documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, documento.Quando is { } quando ? LeituraDeRegras.ToDto(quando) : null,
+        documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaLeitura)], PorOpcaoParaLeitura(documento.PorOpcao));
+
+    private static BaseLegalDoModeloDto BaseLegalParaLeitura(BaseLegalDoDocumentoDoModelo baseLegal) =>
+        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
+
+    private static ExigenciaPorOpcaoDto? PorOpcaoParaLeitura(ExigenciaPorOpcao? porOpcao) =>
+        porOpcao is null ? null : new ExigenciaPorOpcaoDto(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);
+
+    /// <summary>O modelo na forma do leitor entre módulos, com o conteúdo na forma de entrada da escrita.</summary>
     public static ModeloFormularioView ToView(this ModeloFormulario modelo)
     {
         ArgumentNullException.ThrowIfNull(modelo);
@@ -40,21 +98,17 @@ public static class ModeloFormularioMapping
 
     private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
         etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
-        etapa.Titulo, etapa.Descricao, etapa.Aviso, EntradaDeRegras.ParaEntrada(etapa.Exibicao));
+        new ApresentacaoDaEtapaInput(etapa.Titulo, etapa.Descricao, etapa.Aviso), EntradaDeRegras.ParaEntrada(etapa.Exibicao));
 
     private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(
-        campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao.ToCodigo(), EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade),
-        EntradaDeRegras.ParaEntrada(campo.Exibicao), campo.EtapaCodigo, EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade.Predicado),
-        campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)], EntradaDeRegras.ParaEntrada(campo.Impedimento));
+        campo.FatoCodigo, campo.Ordem, EntradaDeRegras.ParaEntrada(campo.Apresentacao), EntradaDeRegras.ParaEntrada(campo.Regras), campo.EtapaCodigo);
 
     private static TermoExigidoInput TermoParaEntrada(TermoDoModelo termo) => new(
-        termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, EntradaDeRegras.ParaEntrada(termo.Exibicao),
-        EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade.Predicado));
+        termo.Codigo, termo.Ordem, new VersaoDoTermoInput(termo.TermoId, termo.VersaoId), EntradaDeRegras.ParaEntrada(termo.Regras));
 
     private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
-        grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.EtapaCodigo, grupo.Minimo, grupo.Maximo, EntradaDeRegras.ParaEntrada(grupo.Exibicao),
-        EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade.Predicado),
-        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.IncluiCandidato);
+        grupo.Codigo, grupo.Ordem, grupo.Rotulo, EntradaDeRegras.ParaEntrada(grupo.Ocorrencias), EntradaDeRegras.ParaEntrada(grupo.Regras),
+        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.EtapaCodigo);
 
     private static DocumentoExigidoDoModeloInput DocumentoParaEntrada(DocumentoExigidoDoModelo documento) => new(
         documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, EntradaDeRegras.ParaEntrada(documento.Quando),

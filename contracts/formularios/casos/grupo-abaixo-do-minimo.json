@@ -9,20 +9,30 @@
         "grupos": [
           {
             "codigo": "FAMILIA",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "minimo": 2,
-            "maximo": null,
-            "incluiCandidato": false,
+            "ocorrencias": {
+              "minimo": 2,
+              "maximo": null,
+              "incluiCandidato": false
+            },
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              }
+            },
             "subitens": [
               {
                 "fatoCodigo": "PARENTESCO",
-                "exibicao": null,
-                "obrigatoriedade": "SEMPRE",
-                "predicadoObrigatoriedade": null,
-                "restricoes": [],
-                "impedimento": null,
+                "regras": {
+                  "exibicao": null,
+                  "obrigatoriedade": {
+                    "tipo": "SEMPRE",
+                    "predicado": null
+                  },
+                  "restricoes": [],
+                  "impedimento": null
+                },
                 "oferta": null,
                 "formato": null
               }
@@ -52,8 +62,12 @@
     "grupos": [
       {
         "codigo": "FAMILIA",
-        "visivel": "VERDADEIRO",
-        "contagemValida": false
+        "regras": {
+          "visivel": "VERDADEIRO"
+        },
+        "ocorrencias": {
+          "contagemValida": false
+        }
       }
     ]
   }

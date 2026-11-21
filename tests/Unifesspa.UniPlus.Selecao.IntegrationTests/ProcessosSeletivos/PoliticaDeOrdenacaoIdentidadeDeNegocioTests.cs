@@ -106,7 +106,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
     public void GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente()
     {
         FatoColetado fatoB = FatoBooleanoPessoal("B_FATO", 0, null);
-        FatoColetado fatoA = FatoBooleanoPessoal("A_FATO", 1, [CondicaoPrecondicaoFato.Criar(0, "B_FATO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]);
+        FatoColetado fatoA = FatoBooleanoPessoal("A_FATO", 1, ExibicaoDeTeste.Quando("B_FATO", Operador.Igual, true));
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoA, fatoB]);
 
         JsonObject grafoJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["grafoDependencia"]!.AsObject();

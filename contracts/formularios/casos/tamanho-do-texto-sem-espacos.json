@@ -8,19 +8,23 @@
         "itens": [
           {
             "fatoCodigo": "SIGLA",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "TAMANHO_TEXTO",
-                "minimo": null,
-                "maximo": 3,
-                "entradas": null,
-                "fatos": null
-              }
-            ],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "TAMANHO_TEXTO",
+                  "minimo": null,
+                  "maximo": 3,
+                  "entradas": null,
+                  "fatos": null
+                }
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -43,7 +47,9 @@
       {
         "fatoCodigo": "SIGLA",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

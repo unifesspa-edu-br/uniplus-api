@@ -68,8 +68,7 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
         new DefinirEtapasCommand(processo.Id, [EtapaComRecursos(recursos)]),
         RepositorioCom(processo),
         Substitute.For<IUnitOfWork>(),
-        regraCatalogoReader: CatalogoComARegraDeRecurso(),
-        tipoAtoPublicadoReader: CatalogoComOAtoDeResultado());
+        cadastros: new(Regras: CatalogoComARegraDeRecurso(), Atos: CatalogoComOAtoDeResultado()));
 
     private static EtapaProcessoInput EtapaComRecursos(RecursoDaEtapaInput[] recursos) => new(
         "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,

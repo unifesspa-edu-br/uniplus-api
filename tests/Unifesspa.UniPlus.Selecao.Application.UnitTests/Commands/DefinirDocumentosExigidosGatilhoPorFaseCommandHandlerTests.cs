@@ -33,11 +33,10 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     public async Task Handle_GatilhoPorCampoDoGrupo_AceitoNaSubarvoreRepetida(bool herdadaDoAncestral)
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
-        ItemDocumentoExigidoInput item = new(
-            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
+        NoExigenciaDeTeste folha = NoExigenciaDeTeste.Folha(ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId));
         NoExigenciaInput raiz = herdadaDoAncestral
-            ? new("E", null, null, null, null, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], RepetePorEntidade: "COMPOSICAO_FAMILIAR")
-            : new("FOLHA", item, null, null, null, null, RepetePorEntidade: "COMPOSICAO_FAMILIAR");
+            ? NoExigenciaDeTeste.Grupo("E", folha.Construir()).RepetidoPor("COMPOSICAO_FAMILIAR").Construir()
+            : folha.RepetidoPor("COMPOSICAO_FAMILIAR").Construir();
 
         Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [raiz]));
 
@@ -49,11 +48,10 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     public async Task Handle_CampoDoGrupoForaDaRepeticao_Recusa()
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
-        ItemDocumentoExigidoInput item = new(
-            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
+        ItemDocumentoExigidoDeTeste item = ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId);
 
         Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]));
+            processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]));
 
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
     }
@@ -62,11 +60,10 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     public async Task Handle_RepeticaoPorGrupoInexistente_RecusaPeloGrupo()
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
-        ItemDocumentoExigidoInput item = new(
-            fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
+        ItemDocumentoExigidoDeTeste item = ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId);
 
         Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null, RepetePorEntidade: "PESSOAS_JURIDICAS")]));
+            processo.Id, [NoExigenciaDeTeste.Folha(item).RepetidoPor("PESSOAS_JURIDICAS").Construir()]));
 
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
@@ -132,9 +129,9 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucaoDoSexo)]));
         ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(faseDaExigenciaId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
 
-        return await HandleAsync(mocks, new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]));
+        return await HandleAsync(mocks, new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]));
     }
 
     [Fact(DisplayName = "Exigência da habilitação cita o grupo em que o candidato foi convocado")]
@@ -175,7 +172,13 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     private static DefinirDocumentosExigidosCommand ExigenciaPeloGrupoDaConvocacao(ProcessoSeletivo processo, Guid faseId, Guid tipoDocumentoId)
     {
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
-        ItemDocumentoExigidoInput item = new(faseId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null, Finalidade: "HABILITACAO");
-        return new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
+        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).Condicional(condicao).NaFinalidade("HABILITACAO");
+        return new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
     }
+
+    private static ItemDocumentoExigidoDeTeste ItemDoMembroMaiorDeIdade(Guid faseId, Guid tipoDocumentoId) =>
+        ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId)
+            .Condicional(new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true"))
+            .Facultativa()
+            .ComConsequencia("ELIMINA");
 }

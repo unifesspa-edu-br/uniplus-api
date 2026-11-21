@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>O modelo para manutenção, ativo ou desativado.</summary>
-public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<ModeloFormularioView?>;
+public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<ModeloFormularioDto?>;
 
 /// <summary>
 /// Lista de manutenção dos modelos, paginada, com filtros opcionais: o tipo de processo (traz os
@@ -22,17 +22,17 @@ public sealed record ListarModelosFormularioQuery(
     : IQuery<ListarModelosFormularioResult>;
 
 public sealed record ListarModelosFormularioResult(
-    IReadOnlyList<ModeloFormularioView> Items, Guid? AnteriorAfterId, Guid? ProximoAfterId);
+    IReadOnlyList<ModeloFormularioDto> Items, Guid? AnteriorAfterId, Guid? ProximoAfterId);
 
 public static class ObterModeloFormularioQueryHandler
 {
-    public static async Task<ModeloFormularioView?> Handle(
+    public static async Task<ModeloFormularioDto?> Handle(
         ObterModeloFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        return modelo?.ToView();
+        return modelo?.ToDto();
     }
 }
 
@@ -61,7 +61,7 @@ public static class ListarModelosFormularioQueryHandler
                 string.IsNullOrWhiteSpace(query.TipoProcessoCodigo) ? null : query.TipoProcessoCodigo.Trim(), finalidade, query.Ativo,
                 cancellationToken)
             .ConfigureAwait(false);
-        return new ListarModelosFormularioResult([.. itens.Select(static m => m.ToView())], anterior, proximo);
+        return new ListarModelosFormularioResult([.. itens.Select(static m => m.ToDto())], anterior, proximo);
     }
 
     // Finalidade desconhecida não filtra por nada que exista: a página é vazia, em vez de ignorar

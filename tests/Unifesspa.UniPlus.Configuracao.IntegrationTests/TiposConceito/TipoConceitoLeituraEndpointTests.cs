@@ -70,23 +70,38 @@ public sealed class TipoConceitoLeituraEndpointTests
         (await IdsDaPaginaAsync(segunda)).Should().NotBeEmpty().And.NotContain(daPrimeira);
     }
 
-    [Fact(DisplayName = "GET por id devolve o tipo numérico com a escala, sem valores, e os links")]
-    public async Task Obter_TipoNumerico_DevolveAEscala()
+    private async Task<JsonDocument> ObterNumericoCriadoAsync(string codigo)
     {
-        string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarAsync(client, Numerico(codigo));
 
         using HttpResponseMessage resposta = await ObterAsync(client, id);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument tipo = await LerAsync(resposta);
+        return await LerAsync(resposta);
+    }
+
+    [Fact(DisplayName = "GET por id devolve a identidade do tipo numérico, o estado ativo e os links")]
+    public async Task Obter_TipoNumerico_DevolveAIdentidadeEOsLinks()
+    {
+        string codigo = CodigoUnico();
+
+        using JsonDocument tipo = await ObterNumericoCriadoAsync(codigo);
+
         JsonElement raiz = tipo.RootElement;
-        (raiz.GetProperty("codigo").GetString(), raiz.GetProperty("natureza").GetString()).Should().Be((codigo, "numerico"));
-        raiz.GetProperty("ativo").GetBoolean().Should().BeTrue();
-        raiz.GetProperty("numerico").GetProperty("escalaMaxima").GetDecimal().Should().Be(10m);
-        Ausente(raiz, "valores").Should().BeTrue("o tipo numérico não tem valores categóricos");
+        (raiz.GetProperty("codigo").GetString(), raiz.GetProperty("ativo").GetBoolean()).Should().Be((codigo, true));
         raiz.TryGetProperty("_links", out _).Should().BeTrue("a leitura pública expõe HATEOAS nível 1");
+    }
+
+    [Fact(DisplayName = "GET por id devolve a definição do tipo numérico com a escala e sem valores")]
+    public async Task Obter_TipoNumerico_DevolveAEscala()
+    {
+        using JsonDocument tipo = await ObterNumericoCriadoAsync(CodigoUnico());
+
+        JsonElement definicao = tipo.RootElement.GetProperty("definicao");
+        definicao.GetProperty("natureza").GetProperty("codigo").GetString().Should().Be("NUMERICO");
+        definicao.GetProperty("numerico").GetProperty("escalaMaxima").GetDecimal().Should().Be(10m);
+        Ausente(definicao, "valores").Should().BeTrue("o tipo numérico não tem valores categóricos");
     }
 
     [Fact(DisplayName = "GET por id devolve o tipo categórico com os valores na ordem informada, sem escala")]
@@ -98,11 +113,11 @@ public sealed class TipoConceitoLeituraEndpointTests
         using HttpResponseMessage resposta = await ObterAsync(client, id);
 
         using JsonDocument tipo = await LerAsync(resposta);
-        JsonElement raiz = tipo.RootElement;
-        raiz.GetProperty("valores").EnumerateArray().Select(valor => valor.GetProperty("codigo").GetString())
+        JsonElement definicao = tipo.RootElement.GetProperty("definicao");
+        definicao.GetProperty("valores").EnumerateArray().Select(valor => valor.GetProperty("codigo").GetString())
             .Should().Equal("INDEFERIDO", "DEFERIDO");
-        raiz.GetProperty("valores")[1].GetProperty("contaComoAprovacao").GetBoolean().Should().BeTrue();
-        Ausente(raiz, "numerico").Should().BeTrue("o tipo categórico não tem escala");
+        definicao.GetProperty("valores")[1].GetProperty("contaComoAprovacao").GetBoolean().Should().BeTrue();
+        Ausente(definicao, "numerico").Should().BeTrue("o tipo categórico não tem escala");
     }
 
     [Fact(DisplayName = "GET por id inexistente retorna 404")]

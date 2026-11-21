@@ -28,7 +28,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
         EtapaProcessoInput etapa = EtapaInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1) with { Recursos = [RecursoEmAtoPublicado()] };
         DefinirEtapasCommand command = new(processo.Id, [etapa]);
 
-        Result result = await Executar(command, RepositorioCom(processo), unitOfWork, reader, regraCatalogoReader: CatalogoComARegraDeRecursoEmAto());
+        Result result = await Executar(command, RepositorioCom(processo), unitOfWork, reader, cadastros: new(Regras: CatalogoComARegraDeRecursoEmAto()));
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();

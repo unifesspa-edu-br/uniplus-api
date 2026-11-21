@@ -159,16 +159,24 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         EscalaNotaFinal = 100m,
     }).Value!;
 
+    /// <summary>
+    /// Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o rascunho
+    /// que chega por outro caminho.
+    /// </summary>
+    private static void AdicionarItensAcimaDoTetoDireto(ProcessoSeletivo processo) =>
+        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
+            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
+                .ComRotulo("Campo")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .NaSecao(FormularioDeTeste.Secao)
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir()));
+
     [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e Publicar recusa")]
     public void PreCanon_ItensAcimaDoTeto()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        // Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o
-        // rascunho que chega por outro caminho.
-        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
-            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
-                $"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!));
+        AdicionarItensAcimaDoTetoDireto(processo);
 
         SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");
 

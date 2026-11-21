@@ -35,7 +35,7 @@ public sealed class ModeloFormularioRenderizavelEndpointTests
 
         JsonObject formulario = await LerAsync(resposta);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.formulario.v2+json");
-        Textos(formulario["fatosColetados"]!, "fatoCodigo").Should().Contain("BAIXA_RENDA");
+        Textos(formulario["coleta"]!["itens"]!, "fatoCodigo").Should().Contain("BAIXA_RENDA");
         DasEtapasDasRegras(formulario, "itens", "fatoCodigo").Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
         (await StatusAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/renderizavel")).Should().Be(HttpStatusCode.NotFound);
     }
@@ -48,8 +48,8 @@ public sealed class ModeloFormularioRenderizavelEndpointTests
 
         JsonObject formulario = await RenderizavelAsync(client, id);
 
-        JsonNode grupo = Unico(formulario["grupos"]!, "codigo", "COMPOSICAO_FAMILIAR");
-        grupo["incluiCandidato"]!.GetValue<bool>().Should().BeTrue();
+        JsonNode grupo = Unico(formulario["coleta"]!["grupos"]!, "codigo", "COMPOSICAO_FAMILIAR");
+        grupo["ocorrencias"]!["incluiCandidato"]!.GetValue<bool>().Should().BeTrue();
         grupo["subitens"]!.AsArray().Should().NotBeEmpty();
         DasEtapasDasRegras(formulario, "grupos", "codigo").Should().Contain("COMPOSICAO_FAMILIAR");
     }
@@ -63,7 +63,7 @@ public sealed class ModeloFormularioRenderizavelEndpointTests
         JsonObject formulario = await RenderizavelAsync(client, id);
 
         Textos(formulario["etapas"]!, "codigo").Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
-        Textos(formulario["fatosColetados"]!, "fatoCodigo").Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+        Textos(formulario["coleta"]!["itens"]!, "fatoCodigo").Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         ConferirOpcaoPreta(formulario);
         ItensDaEtapaDasRegras(formulario, ConjuntoBasicoDaInscricao.CodigoDaSecao).Should().Contain(ConjuntoBasicoDaInscricao.Fatos, "as regras vão com a apresentação");
         ConferirPreVisualizacaoDoBasico(await PreVisualizacaoAsync(client, id, new Dictionary<string, object>()));

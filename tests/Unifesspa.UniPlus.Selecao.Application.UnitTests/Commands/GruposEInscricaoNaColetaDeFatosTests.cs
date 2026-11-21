@@ -32,10 +32,9 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
-                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS",
-                    Entradas: [new OpcoesCondicionadasInput([[Condicao("BAIXA_RENDA", "IGUAL", true)]], ["PRETA"])])]),
-            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", null),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS",
+                    Entradas: [new OpcoesCondicionadasInput([[Condicao("BAIXA_RENDA", "IGUAL", true)]], ["PRETA"])])]).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
@@ -49,8 +48,9 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         FatoColetadoInput[] dataDeNascimento = ordemDaData < 0
             ? []
-            : [new FatoColetadoInput("DATA_NASCIMENTO", ordemDaData, "Data de nascimento", "DATA", "SEMPRE", null)];
-        FatoColetadoInput maiorDeIdade = new("BAIXA_RENDA", ordemDoItem, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_ETARIA", "MAIOR_IGUAL", 18)]]);
+            : [EntradaDoFatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", ordemDaData).ComRotulo("Data de nascimento").DoTipo("DATA").Construir()];
+        FatoColetadoInput maiorDeIdade = EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", ordemDoItem).ComRotulo("Baixa renda")
+            .ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("FAIXA_ETARIA", "MAIOR_IGUAL", 18)]]).Construir();
 
         Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [.. dataDeNascimento, maiorDeIdade]);
 
@@ -64,7 +64,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_DE_RENDA", "IGUAL", "DE_18_A_59")]]),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("FAIXA_DE_RENDA", "IGUAL", "DE_18_A_59")]]).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
@@ -80,7 +80,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
-            [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao(null!, "IGUAL", true)]])]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao(null!, "IGUAL", true)]]).Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -93,7 +93,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
-            .Select(static i => new FatoColetadoInput($"FATO_{i}", i, "Campo", "BOOLEANO", "SEMPRE", null))];
+            .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"FATO_{i}", i).ComRotulo("Campo").Construir())];
 
         Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens));
 
@@ -121,7 +121,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         GrupoColetadoInput grupo = Composicao() with
         {
-            Subitens = [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null)],
+            Subitens = [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").Construir()],
         };
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
@@ -136,11 +136,39 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]] };
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("COR_RACA", "IGUAL", "VERDE")]]);
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].exibicao");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].regras.exibicao");
+    }
+
+    [Fact]
+    public async Task Handle_GrupoESubitemInvalidos_RecusaGrupoAntesDoSubitem()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("FATO_INEXISTENTE", "IGUAL", true)]]) with
+        {
+            Subitens = [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").Construir()],
+        };
+
+        Result resultado = await HandleAsync(NovosMocks(processo, processo.Id), ComGrupo(processo, grupo));
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("grupos[0].regras.exibicao", "grupos[0].subitens[0].fatoCodigo");
+    }
+
+    [Fact(DisplayName = "Grupo sem as regras é recusado na obrigatoriedade, no caminho das regras do grupo")]
+    public async Task Handle_GrupoSemRegras_RecusaAObrigatoriedadeAusente()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Regras = null };
+
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("grupos[0].regras.obrigatoriedade");
+        erro.Error.Code.Should().Be(FatoColetadoErrorCodes.ObrigatoriedadeInvalida);
     }
 
     [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato sem dependências declaradas é recusada, como nas demais regras")]
@@ -148,22 +176,65 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]] };
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]]);
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
         resultado.Errors.Should().Contain(static e => e.Field == "grupos[0]" && e.Error.Code == GrafoFormularioErrorCodes.CitaAtributoDoCandidato);
     }
 
-    private static GrupoColetadoInput GrupoComVariasRecusas() => Composicao() with
+    [Fact]
+    public async Task Handle_ExibicaoDoGrupoComDuasCondicoesInvalidas_RecusaCadaPosicao()
     {
-        Minimo = 5,
-        Maximo = 2,
-        Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]],
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("", "IGUAL", true), Condicao("COR_RACA", "XPTO", true)]]);
+
+        Result resultado = await HandleAsync(NovosMocks(processo, processo.Id), ComGrupo(processo, grupo));
+
+        resultado.Errors.Select(static e => e.Field).Should().Contain(
+            ["grupos[0].regras.exibicao[0][0].fato", "grupos[0].regras.exibicao[0][1].operador"]);
+    }
+
+    [Fact]
+    public async Task Handle_GrupoSemMinimoEComExibicaoInvalida_AcumulaRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("FATO_INEXISTENTE", "IGUAL", true)]]) with
+        {
+            Ocorrencias = new OcorrenciasDoGrupoInput(null, false, 10),
+            Codigo = " ",
+        };
+
+        Result resultado = await HandleAsync(NovosMocks(processo, processo.Id), ComGrupo(processo, grupo));
+
+        resultado.Errors.Select(static e => e.Field).Should().ContainInOrder(
+            "grupos[0].ocorrencias.minimo", "grupos[0].codigo", "grupos[0].regras.exibicao");
+        processo.GruposColetados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "As recusas de forma de todos os grupos saem antes das de semântica, e cada fase na ordem das ocorrências, regras e forma")]
+    public async Task Handle_DoisGruposComRecusasDeFormaESemantica_FormaDeTodosAntesDaSemantica()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        GrupoColetadoInput primeiro = ComExibicao(Composicao(), [[Condicao("FATO_INEXISTENTE", "IGUAL", true)]]);
+        GrupoColetadoInput segundo = Composicao() with { Codigo = " ", Ocorrencias = null, Ordem = 2 };
+
+        Result resultado = await HandleAsync(NovosMocks(processo, processo.Id), ComGrupo(processo, primeiro) with { Grupos = [primeiro, segundo] });
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal(
+            "grupos[1].ocorrencias.minimo", "grupos[1].ocorrencias.incluiCandidato", "grupos[1].codigo", "grupos[0].regras.exibicao");
+    }
+
+    private static GrupoColetadoInput ComExibicao(GrupoColetadoInput grupo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> exibicao) =>
+        grupo with { Regras = grupo.Regras! with { Exibicao = exibicao } };
+
+    private static GrupoColetadoInput GrupoComVariasRecusas() => ComExibicao(Composicao(), [[Condicao("COR_RACA", "IGUAL", "VERDE")]]) with
+    {
+        Ocorrencias = new OcorrenciasDoGrupoInput(5, false, 2),
         Subitens =
         [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null),
-            new FatoColetadoInput("MENOR_SOB_GUARDA", 1, "Menor sob guarda", "BOOLEANO", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1).ComRotulo("Menor sob guarda").NaSecao(FormularioDeTeste.Secao).Construir(),
         ],
     };
 
@@ -175,7 +246,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, GrupoComVariasRecusas()));
 
         resultado.Errors.Select(static e => e.Field).Should().Contain(
-            ["grupos[0].maximo", "grupos[0].exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
+            ["grupos[0].ocorrencias.maximo", "grupos[0].regras.exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
     }
 
     [Fact(DisplayName = "PUT sem grupos mantém os grupos do formulário")]
@@ -197,7 +268,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens - 2)
-            .Select(static i => new FatoColetadoInput($"ITEM_{i}", i, "Item", "BOOLEANO", "NUNCA", null))];
+            .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"ITEM_{i}", i).ComRotulo("Item").ComObrigatoriedade("NUNCA").Construir())];
 
         Result resultado = await HandleAsync(
             mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, [Composicao()]));
@@ -226,8 +297,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
         [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", [[Condicao("NACIONALIDADE", "DIFERENTE", "ESTRANGEIRO")]],
-                EtapaCodigo: FormularioDeTeste.Secao),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ExibidoQuando([[Condicao("NACIONALIDADE", "DIFERENTE", "ESTRANGEIRO")]]).NaSecao(FormularioDeTeste.Secao).Construir(),
         ]);
 
         Result resultado = await HandleAsync(mocks, command);
@@ -251,10 +321,16 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         processo.FatosColetados.Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
     }
 
+    private static FatoColetadoInput CorRacaSempreNunca()
+    {
+        FatoColetadoInput corRaca = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "COR_RACA");
+        return corRaca with { Regras = corRaca.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("NUNCA") } };
+    }
+
     private static FatoColetadoInput[] ItensComDadoBasicoAlteradoENaSecaoReservada() =>
     [
-        ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "COR_RACA") with { Obrigatoriedade = "NUNCA" },
-        new FatoColetadoInput("BAIXA_RENDA", 30, "Baixa renda", "BOOLEANO", "SEMPRE", null, EtapaCodigo: ConjuntoBasicoDaInscricao.CodigoDaSecao),
+        CorRacaSempreNunca(),
+        EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 30).ComRotulo("Baixa renda").NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao).Construir(),
     ];
 
     [Fact(DisplayName = "Na inscrição, o dado básico alterado e o item do cliente na seção reservada são recusados juntos")]
@@ -281,9 +357,8 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput(fatoDaUf, 0, "UF", "SELECAO_UNICA", "SEMPRE", null),
-            new FatoColetadoInput("NATURALIDADE_MUNICIPIO", 1, "Município de nascimento", "MUNICIPIO", "SEMPRE", null,
-                Restricoes: [new RestricaoValorInput("MUNICIPIOS_DA_UF", Fatos: [fatoDaUf])]),
+            EntradaDoFatoColetadoDeTeste.Coletando(fatoDaUf).ComRotulo("UF").DoTipo("SELECAO_UNICA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("NATURALIDADE_MUNICIPIO", 1).ComRotulo("Município de nascimento").DoTipo("MUNICIPIO").ComRestricoes([new RestricaoValorInput("MUNICIPIOS_DA_UF", Fatos: [fatoDaUf])]).Construir(),
         ]);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(aceito ? [] : [ItemFormularioErrorCodes.UfDoMunicipioInvalida]);
@@ -296,8 +371,8 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         FatoColetadoInput[] itens =
         [
-            new("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao),
-            new("OPCAO_CURSO_1", 2, "1ª opção", "SELECAO_UNICA", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").NaSecao(FormularioDeTeste.Secao).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_CURSO_1", 2).ComRotulo("1ª opção").DoTipo("SELECAO_UNICA").NaSecao(FormularioDeTeste.Secao).Construir(),
         ];
         (await DefinirNaInscricaoAsync(mocks, processo, itens, [Composicao()])).IsSuccess.Should().BeTrue();
         int ordemGravada = processo.GruposColetados.Single().Ordem;

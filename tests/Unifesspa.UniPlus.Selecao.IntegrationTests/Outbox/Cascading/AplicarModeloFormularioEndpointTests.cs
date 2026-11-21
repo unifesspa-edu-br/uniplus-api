@@ -130,7 +130,7 @@ public sealed class AplicarModeloFormularioEndpointTests
             new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
         ],
         [.. fatos.Select(static (fato, ordem) => new ItemDoModelo(
-            fato, ordem, "DADOS", fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false))],
+            fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])))],
         [],
         [], []);
 
@@ -140,8 +140,10 @@ public sealed class AplicarModeloFormularioEndpointTests
             Grupos =
             [
                 new GrupoDoModelo(
-                    "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-                    [new ItemDoModelo("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
+                    "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
+                    new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
+                    [new ItemDoModelo(
+                        "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]),
             ],
         };
 

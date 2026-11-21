@@ -573,9 +573,9 @@ definir_bonus_regional() {
     # o acréscimo quem o pede no formulário (item 1.6): a configuração cita o
     # pedido.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
-        \"aplica\": true, \"regraCodigo\": \"BONUS-MULTIPLICATIVO\", \"regraVersao\": \"v1\",
+        \"aplica\": true, \"regra\": {\"codigo\": \"BONUS-MULTIPLICATIVO\", \"versao\": \"v1\"},
         \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
-        \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
+        \"baseLegal\": {\"id\": \"$BASE_LEGAL_BONUS_ID\"}
     }" >/dev/null
     ok "Fator de Atenuação definido (acréscimo de 20%, itens 1.6 e 5.1)"
 }
@@ -588,9 +588,11 @@ definir_criterios_desempate() {
     # Resolução 805/2024, que a minuta não traz: fica a maior idade.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/criterios-desempate" '[
         {
-            "ordem": 1, "regraCodigo": "DESEMPATE-MAIOR-IDADE", "regraVersao": "v1",
-            "etapaRef": null, "idadeMinima": null, "fato": null, "operador": null, "valor": null,
-            "areas": null
+            "ordem": 1, "regra": {"codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1"},
+            "parametros": {
+                "etapaRef": null, "idadeMinima": null, "fato": null, "operador": null, "valor": null,
+                "areas": null
+            }
         }
     ]' >/dev/null
     ok "critério de desempate definido (maior idade)"
@@ -787,9 +789,9 @@ vincular_fase_do_formulario() {
         "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO/renderizavel")
     [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "GET formulário renderizável falhou: $(sed '$d' <<< "$renderizavel")"
     renderizavel=$(sed '$d' <<< "$renderizavel")
-    titulo=$(jq -r '.titulo' <<< "$renderizavel")
+    titulo=$(jq -r '.formulario.titulo' <<< "$renderizavel")
     [ -n "$titulo" ] && [ "$titulo" != "null" ] || fail "formulário INSCRICAO sem título — a aplicação do modelo falhou em silêncio?"
-    etapas=$(jq -c '[.etapas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, titulo, descricao, aviso, exibicao: null}]' <<< "$renderizavel")
+    etapas=$(jq -c '[.formulario.etapas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$renderizavel")
     [ "$(jq 'length' <<< "$etapas")" -gt 0 ] || fail "formulário INSCRICAO sem etapas — a aplicação do modelo falhou em silêncio?"
 
     api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO" "$(jq -nc \
@@ -819,9 +821,8 @@ definir_documentos_exigidos() {
     documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[(.raizesExigencia // [])[] | {
         tipo: "FOLHA",
         documento: (.documento | {
-            exigidoNaFaseId, tipoDocumentoId: .tipoDocumentoOrigemId, aplicabilidade, obrigatorio, consequenciaIndeferimento,
-            condicoes: [.condicoes[] | {clausula, fato, operador, valor}], basesLegais: $bases,
-            formatosPermitidos, finalidade
+            tipoDocumento: {id: .tipoDocumento.id}, momento, aplicabilidade,
+            indeferimento: (.indeferimento | .basesLegais = $bases), requisitos, fatosComprovados
         })
     }]' <<< "$processo")
     # O modelo com prova sempre traz os documentos do atendimento especializado; sem eles, a
@@ -836,9 +837,12 @@ definir_documentos_exigidos() {
         def folha($tipo; $condicoes): {
             tipo: "FOLHA",
             documento: {
-                exigidoNaFaseId: $fase, finalidade: "HABILITACAO", tipoDocumentoId: $tipo, aplicabilidade: "CONDICIONAL",
-                obrigatorio: true, consequenciaIndeferimento: "REMOVE_VANTAGEM",
-                condicoes: $condicoes, basesLegais: $basesLegais, formatosPermitidos: "QUALQUER"
+                tipoDocumento: {id: $tipo},
+                momento: {faseId: $fase, finalidade: "HABILITACAO"},
+                aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
+                indeferimento: {obrigatorio: true, consequencia: "REMOVE_VANTAGEM", basesLegais: $basesLegais},
+                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, idadeMaximaEmissao: null, modelo: null},
+                fatosComprovados: []
             }
         };
         def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
@@ -910,13 +914,13 @@ conferir_resultado() {
     # A projeção da vitrine é assíncrona — alguns segundos depois do 204.
     for tentativa in 1 2 3 4 5; do
         formulario=$(curl -sS "$API_URL/api/selecao/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO")
-        if jq -e '.etapas' <<< "$formulario" >/dev/null 2>&1; then
+        if jq -e '.formulario.etapas' <<< "$formulario" >/dev/null 2>&1; then
             ok "formulário público de inscrição responde (tentativa $tentativa)"
             break
         fi
         sleep 5
     done
-    jq -e '.etapas' <<< "$formulario" >/dev/null 2>&1 || fail "formulário público não respondeu como esperado: $(head -c 300 <<< "$formulario")"
+    jq -e '.formulario.etapas' <<< "$formulario" >/dev/null 2>&1 || fail "formulário público não respondeu como esperado: $(head -c 300 <<< "$formulario")"
 
     # GET certames/{id} aceita o Guid direto — evita depender da página em que
     # o processo cai em GET /certames (paginado por cursor).

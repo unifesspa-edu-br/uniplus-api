@@ -7,7 +7,8 @@ using AwesomeAssertions;
 
 /// <summary>
 /// A leitura que os testes de contrato dos vocabulários repetem: pede o vocabulário sem negociar o tipo de
-/// mídia, confere que a resposta é 200 no tipo de mídia da versão 1 do recurso e devolve os itens publicados.
+/// mídia, confere que a resposta é 200 no tipo de mídia da versão 1 do recurso, sem cabeçalho de cache, e devolve os itens
+/// publicados.
 /// </summary>
 internal static class ApoioDosVocabularios
 {
@@ -19,6 +20,7 @@ internal static class ApoioDosVocabularios
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be($"application/vnd.uniplus.{recurso}.v1+json");
+        response.Headers.CacheControl.Should().BeNull();
         return (await response.Content.ReadFromJsonAsync<T[]>())!;
     }
 }

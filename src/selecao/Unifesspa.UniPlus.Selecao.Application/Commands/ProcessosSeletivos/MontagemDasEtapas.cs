@@ -85,12 +85,13 @@ internal static class MontagemDasEtapas
         {
             TipoEtapaSnapshot congelado = conferida.Existente!.TipoEtapa;
             return Result<TipoEtapaSnapshot>.Success(conferida.TipoLido is { } relido
-                ? congelado.ComSinalizadores(relido.AdmitePontuacao, relido.AdmiteEliminacao, relido.ExigeCorrecaoIndependente)
+                ? congelado.ComSinalizadores(relido.Avaliacao.AdmitePontuacao, relido.Avaliacao.AdmiteEliminacao, relido.Avaliacao.ExigeCorrecaoIndependente)
                 : congelado);
         }
 
         TipoEtapaView tipo = conferida.TipoLido!;
         return TipoEtapaSnapshot.Criar(
-            tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem, tipo.ExigeCorrecaoIndependente);
+            tipo.Id, tipo.Codigo, tipo.Nome, tipo.Avaliacao.AdmitePontuacao, tipo.Avaliacao.AdmiteEliminacao,
+            tipo.Avaliacao.NotaDeOrigemNoEnem, tipo.Avaliacao.ExigeCorrecaoIndependente);
     }
 }

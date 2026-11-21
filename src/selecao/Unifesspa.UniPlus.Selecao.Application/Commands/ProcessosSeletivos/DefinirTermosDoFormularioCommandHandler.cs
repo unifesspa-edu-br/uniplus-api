@@ -35,70 +35,111 @@ public static class DefinirTermosDoFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(termoConsentimentoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return processo is null
+            ? ProcessoNaoEncontrado(command.ProcessoSeletivoId)
+            : await DefinirAsync(command, processo, fatoCandidatoReader, termoConsentimentoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
+    private static Result ProcessoNaoEncontrado(Guid processoSeletivoId) =>
+        Result.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado."));
+
+    private static async Task<Result> DefinirAsync(
+        DefinirTermosDoFormularioCommand command,
+        ProcessoSeletivo processo,
+        IFatoCandidatoReader fatoCandidatoReader,
+        ITermoConsentimentoReader termoConsentimentoReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        if (RecusaAntesDoCatalogo(command, processo) is { } recusa)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return recusa;
         }
 
-        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        TermosResolvidosNoCatalogo resolvidos =
+            await ResolverNoCatalogoAsync(command.Termos, processo, fatoCandidatoReader, termoConsentimentoReader, cancellationToken).ConfigureAwait(false);
+        return resolvidos.Erros.Count > 0
+            ? Result.ValidationFailure(resolvidos.Erros)
+            : await GravarAsync(command, processo, resolvidos, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Fora do rascunho a recusa vem antes de consultar cadastros; a lista de termos é obrigatória, e a vazia os remove.</summary>
+    private static Result? RecusaAntesDoCatalogo(DefinirTermosDoFormularioCommand command, ProcessoSeletivo processo)
+    {
         if (processo.MutacaoBloqueada() is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        if (command.Termos is not { } entradas)
-        {
-            return Result.Failure(new DomainError(
-                TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."));
-        }
+        return command.Termos is null
+            ? Result.Failure(new DomainError(
+                TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."))
+            : null;
+    }
 
-        // A forma vem antes das leituras externas; as recusas da forma, do catálogo e da unicidade
-        // acumulam no mesmo errors[] (ADR-0125).
+    /// <summary>
+    /// A forma vem antes das leituras externas; as recusas da forma, do catálogo e da unicidade acumulam no mesmo
+    /// <c>errors[]</c> (ADR-0125).
+    /// </summary>
+    private static async Task<TermosResolvidosNoCatalogo> ResolverNoCatalogoAsync(
+        IReadOnlyList<TermoExigidoInput?> entradas,
+        ProcessoSeletivo processo,
+        IFatoCandidatoReader fatoCandidatoReader,
+        ITermoConsentimentoReader termoConsentimentoReader,
+        CancellationToken cancellationToken)
+    {
         TermosLidos lidos = EscritaDosTermos.Ler(entradas);
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoConsentimentoReader
-            .ListarVersoesAsync([.. entradas.OfType<TermoExigidoInput>().Select(static t => t.VersaoId).Distinct()], cancellationToken)
+            .ListarVersoesAsync([.. entradas.OfType<TermoExigidoInput>().Select(static t => t.Termo?.VersaoId).OfType<Guid>().Distinct()], cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
-        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
+        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
+        (List<TermoExigidoFormulario> termos, List<FieldError> erros) =
+            EscritaDosTermos.Resolver(lidos, contexto, versoes.ToDictionary(static v => v.VersaoId), UniversoDeFatos(processo));
+        return new TermosResolvidosNoCatalogo(contexto, termos, erros);
+    }
 
-        // O formulário avalia a condição do termo com as respostas e os derivados do candidato:
-        // o universo são os fatos coletados, os derivados por regra do processo e os derivados do
-        // sistema cujas dependências o processo coleta.
+    /// <summary>
+    /// O formulário avalia a condição do termo com as respostas e os derivados do candidato: o universo são os fatos
+    /// coletados, os derivados por regra do processo e os derivados do sistema cujas dependências o processo coleta.
+    /// </summary>
+    private static HashSet<string> UniversoDeFatos(ProcessoSeletivo processo)
+    {
         HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        HashSet<string> universo = new(
+        return new(
             coletados.Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato)).Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)),
             StringComparer.Ordinal);
-        (List<TermoExigidoFormulario> termos, List<FieldError> erros) =
-            EscritaDosTermos.Resolver(lidos, contexto, versoes.ToDictionary(static v => v.VersaoId), universo);
+    }
 
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
-            contexto.Fatos,
-            ReferenciasVivas.Vinculos(processo.Declaracao()),
-            VinculosDeFatos.De([], termos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor))));
+    private static async Task<Result> GravarAsync(
+        DefinirTermosDoFormularioCommand command,
+        ProcessoSeletivo processo,
+        TermosResolvidosNoCatalogo resolvidos,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result vinculoNovo = ConferirVinculoNovo(processo, resolvidos);
         if (vinculoNovo.IsFailure)
         {
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definir = processo.DefinirTermosDoFormulario(command.Finalidade, termos);
-        if (definir.IsFailure)
+        Result definido = processo.DefinirTermosDoFormulario(command.Finalidade, resolvidos.Termos);
+        if (definido.IsFailure)
         {
-            return Result.ValidationFailure(definir.Errors);
+            return Result.ValidationFailure(definido.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
         return Result.Success();
     }
+
+    private static Result ConferirVinculoNovo(ProcessoSeletivo processo, TermosResolvidosNoCatalogo resolvidos) =>
+        ConferenciaDeVinculoNovo.Conferir(
+            resolvidos.Contexto.Fatos,
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
+            VinculosDeFatos.De([], resolvidos.Termos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor))));
+
+    /// <summary>Os termos resolvidos contra o catálogo, o contexto que os conferiu e as recusas de toda a leitura.</summary>
+    private sealed record TermosResolvidosNoCatalogo(ContextoDoCatalogo Contexto, List<TermoExigidoFormulario> Termos, List<FieldError> Erros);
 }

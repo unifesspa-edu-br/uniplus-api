@@ -39,7 +39,7 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
 
         builder.Property(b => b.Referencia).HasMaxLength(ReferenciaMaxLength).IsRequired();
 
-        // Mesmo mapeamento canônico de OperadorCodigo/ReferenciaTipoCodigo usado no wire —
+        // Mesmo mapeamento canônico de ReferenciaTipoCodigo usado no wire —
         // nunca enum.ToString() cru: a coluna carrega o mesmo token FEDERAL/ESTADUAL/.../
         // PENDENTE/RESOLVIDO que o PUT aceita e o GET devolve.
         builder.Property(b => b.Abrangencia)

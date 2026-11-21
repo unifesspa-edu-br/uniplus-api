@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// O formulário do modelo avaliado contra respostas simuladas: o que cada item, cada termo e cada grupo
 /// repetível faria diante delas. Os estados são <c>VERDADEIRO</c>, <c>FALSO</c> ou
@@ -12,7 +15,7 @@ public sealed record PreVisualizacaoDoModeloDto(
     IReadOnlyList<SecaoPreVisualizadaDto> Secoes);
 
 /// <summary>Uma seção do modelo avaliada: se ela aparece.</summary>
-public sealed record SecaoPreVisualizadaDto(string Codigo, string Visivel);
+public sealed record SecaoPreVisualizadaDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
 
 /// <summary>
 /// As opções que um campo de escolha deixa escolher diante das respostas: as que valem em definitivo e
@@ -27,8 +30,8 @@ public sealed record OpcoesPreVisualizadasDto(IReadOnlyList<string> Codigos, boo
 public sealed record GrupoPreVisualizadoDto(
     string Codigo,
     string EtapaCodigo,
-    string Visivel,
-    string Obrigatorio,
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     bool ContagemValida,
     bool OcorrenciaDoCandidatoValida,
     IReadOnlyList<OcorrenciaPreVisualizadaDto> Ocorrencias);
@@ -43,12 +46,12 @@ public sealed record OcorrenciaPreVisualizadaDto(string Id, IReadOnlyList<ItemPr
 public sealed record ItemPreVisualizadoDto(
     string FatoCodigo,
     string EtapaCodigo,
-    string Visivel,
-    string Obrigatorio,
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
-    string Impedido,
+    [property: AceitaCodigosDe<Ternario>] string Impedido,
     string? MensagemDoImpedimento,
     OpcoesPreVisualizadasDto? Opcoes);
 
 /// <summary>Um termo avaliado: se aparece e se é obrigatório.</summary>
-public sealed record TermoPreVisualizadoDto(string Codigo, string Visivel, string Obrigatorio);
+public sealed record TermoPreVisualizadoDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);

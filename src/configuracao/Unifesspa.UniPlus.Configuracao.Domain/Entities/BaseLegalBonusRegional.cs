@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -49,27 +50,28 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipios)
     {
         List<FieldError> erros = [];
-        TipoInstrumentoNormativo tipo = ConferirTipoInstrumento(tipoInstrumentoCodigo, erros);
+        TipoInstrumentoNormativo? tipo = ConferirTipoInstrumento(tipoInstrumentoCodigo, erros);
         string? identNorm = CampoIdentificacao.Obrigatorio(identificacao, "identificacao", BaseLegalBonusRegionalErrorCodes.IdentificacaoObrigatoria, erros);
         string? descNorm = CampoDescricao.Obrigatorio(descricao, "descricao", BaseLegalBonusRegionalErrorCodes.DescricaoObrigatoria, erros);
         IReadOnlyList<BaseLegalBonusRegionalMunicipio> validos = ConferirMunicipios(municipios, erros);
 
         return erros.Count > 0
             ? Result<CamposDaBaseLegalDoBonus>.ValidationFailure(erros)
-            : Result<CamposDaBaseLegalDoBonus>.Success(new(tipo, identNorm!, descNorm!, validos));
+            : Result<CamposDaBaseLegalDoBonus>.Success(new(tipo!.Value, identNorm!, descNorm!, validos));
     }
 
-    private static TipoInstrumentoNormativo ConferirTipoInstrumento(string? codigo, List<FieldError> erros)
+    private static TipoInstrumentoNormativo? ConferirTipoInstrumento(string? codigo, List<FieldError> erros)
     {
-        TipoInstrumentoNormativo tipo = TipoInstrumentoNormativoCodigo.FromCodigo(codigo);
-        if (tipo == TipoInstrumentoNormativo.Nenhum)
+        if (CatalogoDe<TipoInstrumentoNormativo>.TentarObter(codigo, out TipoInstrumentoNormativo tipo))
         {
-            erros.Add(new("tipoInstrumento", new DomainError(
-                BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,
-                "Tipo de instrumento normativo inválido ou não informado.")));
+            return tipo;
         }
 
-        return tipo;
+        string aceitos = string.Join(", ", CatalogoDe<TipoInstrumentoNormativo>.Todos().Select(static d => d.Codigo));
+        erros.Add(new("tipoInstrumento", new DomainError(
+            BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,
+            $"Tipo de instrumento normativo inválido ou não informado. Os tipos aceitos são {aceitos}.")));
+        return null;
     }
 
     private static IReadOnlyList<BaseLegalBonusRegionalMunicipio> ConferirMunicipios(
@@ -130,7 +132,7 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         string? identificacao) =>
         validacao.Errors.Any(e => e.Field is "tipoInstrumento" or "identificacao")
             ? null
-            : CodigoBaseLegalBonusRegional.Gerar(TipoInstrumentoNormativoCodigo.FromCodigo(tipoInstrumentoCodigo), identificacao?.Trim() ?? string.Empty);
+            : CodigoBaseLegalBonusRegional.Gerar(CatalogoDe<TipoInstrumentoNormativo>.Obter(tipoInstrumentoCodigo!), identificacao?.Trim() ?? string.Empty);
 
     public Result Atualizar(
         string? tipoInstrumentoCodigo,

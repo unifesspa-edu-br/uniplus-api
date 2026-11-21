@@ -22,6 +22,7 @@ internal static class ErrosDoItemDoFormulario
         new(ItemFormularioErrorCodes.RotuloObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.rotulo_obrigatorio", "O rótulo do item é obrigatório")),
         new(ItemFormularioErrorCodes.RotuloTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.rotulo_tamanho", "O rótulo do item excede o tamanho máximo")),
         new(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.tipo_renderizacao_obrigatorio", "O tipo de campo do item é obrigatório")),
+        new(ItemFormularioErrorCodes.TipoRenderizacaoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.tipo_renderizacao_invalido", "O tipo de campo do item não é reconhecido")),
         new(ItemFormularioErrorCodes.AjudaTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.ajuda_tamanho", "Ajuda do campo acima do tamanho máximo")),
         new(ItemFormularioErrorCodes.FormatoIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.formato_incoerente", "Formato do campo incoerente com o tipo de campo")),
         new(ItemFormularioErrorCodes.RegraAutorreferente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.regra_autorreferente", "Uma regra do item cita o próprio fato")),

@@ -20,7 +20,7 @@ internal sealed record PlanoDaRecopiaDoCatalogo(IReadOnlyList<(FatoColetado Item
             }
             else
             {
-                item.RecopiarDoCatalogo(copia);
+                item.CopiarDoCatalogo(copia);
             }
         }
     }

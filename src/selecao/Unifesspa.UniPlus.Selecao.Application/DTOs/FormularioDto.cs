@@ -1,48 +1,39 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-/// <summary>
-/// Uma etapa do formulário: seção ou bloco de sistema, em token canônico, com a exibição
-/// condicional da seção — nula quando ela sempre aparece.
-/// </summary>
-public sealed record EtapaFormularioDto(
-    string Codigo,
-    int Ordem,
-    string Tipo,
-    string? Bloco,
-    string Titulo,
-    string? Descricao,
-    string? Aviso,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
-/// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o
-/// rótulo, o mínimo e o máximo de ocorrências, se o próprio candidato é um dos membros, a
-/// exibição — nula quando sempre aparece —, a obrigatoriedade e os campos de cada ocorrência, na
-/// ordem dentro do grupo.
+/// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o rótulo, as
+/// ocorrências admitidas, a exibição — nula quando sempre aparece — e a obrigatoriedade em
+/// <see cref="Regras"/> e os campos de cada ocorrência, na ordem dentro do grupo.
 /// </summary>
 public sealed record GrupoColetadoDto(
     string Codigo,
     int Ordem,
     string? EtapaCodigo,
     string Rotulo,
-    int Minimo,
-    int? Maximo,
-    bool IncluiCandidato,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
-    ObrigatoriedadeDto Obrigatoriedade,
+    OcorrenciasDoGrupoDto Ocorrencias,
+    ExibicaoEObrigatoriedadeDto Regras,
     IReadOnlyList<FatoColetadoDto> Subitens);
 
+/// <summary>O modelo de formulário de que o formulário do processo partiu: o identificador e o código dele.</summary>
+public sealed record ModeloDeOrigemDto(Guid Id, string Codigo);
+
 /// <summary>
-/// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem, as etapas,
-/// os itens em ordem, os grupos repetíveis e os termos exigidos.
+/// O que o formulário coleta do candidato: os itens em ordem e os grupos repetíveis, na forma do corpo do PUT
+/// dos itens do formulário.
+/// </summary>
+public sealed record ColetaDoFormularioDto(IReadOnlyList<FatoColetadoDto> Itens, IReadOnlyList<GrupoColetadoDto> Grupos);
+
+/// <summary>
+/// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem — nulo quando o formulário não
+/// partiu de um modelo —, as etapas, o que ele coleta e os termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
     string Finalidade,
     Guid? FaseId,
     string? Titulo,
-    Guid? ModeloOrigemId,
-    string? ModeloOrigemCodigo,
+    ModeloDeOrigemDto? ModeloOrigem,
     IReadOnlyList<EtapaFormularioDto> Etapas,
-    IReadOnlyList<FatoColetadoDto> FatosColetados,
-    IReadOnlyList<TermoExigidoDto> Termos,
-    IReadOnlyList<GrupoColetadoDto> Grupos);
+    ColetaDoFormularioDto Coleta,
+    IReadOnlyList<TermoExigidoDto> Termos);

@@ -44,35 +44,41 @@ public sealed class FinalidadeDaExigenciaEndpointTests
         ProcessoSeletivo processo = await SemearProcessoAsync(bolsista);
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos", UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        request.Content = JsonContent.Create(new[]
-        {
-            new
-            {
-                tipo = "FOLHA",
-                documento = new
-                {
-                    exigidoNaFaseId = processo.CronogramaFases.Single().Id,
-                    finalidade = "INSCRICAO",
-                    tipoDocumentoId,
-                    aplicabilidade = "CONDICIONAL",
-                    obrigatorio = true,
-                    condicoes = new[] { new { clausula = 0, fato = bolsista, operador = "IGUAL", valor = "true" } },
-                    basesLegais = Array.Empty<object>(),
-                    formatosPermitidos = "QUALQUER",
-                },
-            },
-        });
-
-        HttpResponseMessage resposta = await client.SendAsync(request);
+        HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
+            client, processo.Id, [FolhaDaInscricaoCondicionadaA(bolsista, tipoDocumentoId, processo.CronogramaFases.Single().Id)]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade");
     }
+
+    private static async Task<HttpResponseMessage> PutDocumentosExigidosAsync(HttpClient client, Guid processoId, object[] corpo)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/selecao/processos-seletivos/{processoId}/documentos-exigidos", UriKind.Relative));
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        request.Content = JsonContent.Create(corpo);
+
+        return await client.SendAsync(request);
+    }
+
+    private static object FolhaDaInscricaoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId) => new
+    {
+        tipo = "FOLHA",
+        documento = new
+        {
+            tipoDocumento = new { id = tipoDocumentoId },
+            momento = new { faseId, finalidade = "INSCRICAO" },
+            aplicabilidade = new
+            {
+                tipo = "CONDICIONAL",
+                condicoes = new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } },
+            },
+            indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
+        },
+    };
 
     /// <summary>Grava no catálogo o fato da isenção e o tipo de documento; devolve o tipo de documento.</summary>
     private async Task<Guid> SemearCatalogoAsync(string fato, string codigoDoDocumento)
@@ -101,17 +107,23 @@ public sealed class FinalidadeDaExigenciaEndpointTests
         {
             Nome = $"Inscrição e isenção na mesma fase {Guid.CreateVersion7()}",
             ColetaSolicitacaoIsencao = true,
-            Complementar = p =>
-            {
-                Guid fase = p.CronogramaFases.Single().Id;
-                p.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
-                    .IsSuccess.Should().BeTrue();
-                p.DefinirFatosColetados(
-                        FinalidadeFormulario.IsencaoTaxa,
-                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
-                    .IsSuccess.Should().BeTrue();
-            }
+            Complementar = p => ColetarFatoNaIsencao(p, fatoDaIsencao),
         });
         return processo;
+    }
+
+    private static void ColetarFatoNaIsencao(ProcessoSeletivo processo, string fato)
+    {
+        processo.DefinirFormulario(
+                FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single().Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.IsencaoTaxa,
+                [FatoColetadoDeTeste.Coletando(fato, 0)
+                    .ComRotulo("Bolsista")
+                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                    .NaSecao(FormularioDeTeste.Secao)
+                    .Construir()])
+            .IsSuccess.Should().BeTrue();
     }
 }

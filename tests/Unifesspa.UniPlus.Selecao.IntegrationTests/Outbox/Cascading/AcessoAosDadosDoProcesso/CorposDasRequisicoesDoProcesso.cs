@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.AcessoAosD
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -24,14 +25,11 @@ internal static class CorposDasRequisicoesDoProcesso
         tipo = "FOLHA",
         documento = new
         {
-            exigidoNaFaseId = faseId,
-            finalidade = "INSCRICAO",
-            tipoDocumentoId,
-            aplicabilidade = "GERAL",
-            obrigatorio = false,
-            condicoes = Array.Empty<object>(),
-            basesLegais = Array.Empty<object>(),
-            formatosPermitidos = "QUALQUER",
+            tipoDocumento = new { id = tipoDocumentoId },
+            momento = new { faseId, finalidade = "INSCRICAO" },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
             fatosComprovados = comprova,
         },
     };
@@ -51,37 +49,15 @@ internal static class CorposDasRequisicoesDoProcesso
         },
     };
 
-    private static object ItemDoFatoSensivel() => new
-    {
-        fatoCodigo = FatosDoCenario.Sensivel,
-        ordem = PrimeiraOrdem,
-        rotulo = FatosDoCenario.Sensivel,
-        tipoRenderizacao = "BOOLEANO",
-        obrigatoriedade = "NUNCA",
-        precondicao = (object?)null,
-        etapaCodigo = FormularioDeInscricaoHttp.Secao,
-    };
+    private static object ItemDoFatoSensivel() =>
+        FormularioDeInscricaoHttp.Item(
+            FatosDoCenario.Sensivel, PrimeiraOrdem, FatosDoCenario.Sensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
-    private static object GrupoDeResponsaveis(string fatoDoGrupo) => new
-    {
-        codigo = FatosDoCenario.GrupoDeResponsaveis,
-        ordem = PrimeiraOrdem + 1,
-        rotulo = "Responsáveis legais",
-        etapaCodigo = FormularioDeInscricaoHttp.Secao,
-        minimo = 0,
-        maximo = 3,
-        exibicao = (object?)null,
-        obrigatoriedade = "NUNCA",
-        predicadoObrigatoriedade = (object?)null,
-        subitens = new object[] { RgDoResponsavel(fatoDoGrupo) },
-    };
+    private static object GrupoDeResponsaveis(string fatoDoGrupo) =>
+        FormularioDeInscricaoHttp.Grupo(
+            FatosDoCenario.GrupoDeResponsaveis, PrimeiraOrdem + 1, "Responsáveis legais", FormularioDeInscricaoHttp.Secao,
+            [RgDoResponsavel(fatoDoGrupo)], new OcorrenciasDoGrupoInput(0, false, 3));
 
-    private static object RgDoResponsavel(string fatoDoGrupo) => new
-    {
-        fatoCodigo = fatoDoGrupo,
-        ordem = 0,
-        rotulo = "RG do responsável",
-        tipoRenderizacao = "TEXTO",
-        obrigatoriedade = "NUNCA",
-    };
+    private static object RgDoResponsavel(string fatoDoGrupo) =>
+        FormularioDeInscricaoHttp.Item(fatoDoGrupo, 0, "RG do responsável", "TEXTO", "NUNCA");
 }

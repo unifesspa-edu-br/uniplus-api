@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -15,7 +16,7 @@ internal static class PredicadoDnfGravado
 {
     public static IReadOnlyList<IReadOnlyList<CondicaoGravada>> Gravar(PredicadoDnf predicado) =>
         [.. predicado.Clausulas.Select(static c => (IReadOnlyList<CondicaoGravada>)
-            [.. c.Condicoes.Select(static d => new CondicaoGravada(d.Fato, d.Operador.ToCodigo(), d.Valor))])];
+            [.. c.Condicoes.Select(static d => new CondicaoGravada(d.Fato, d.Operador.Codigo(), d.Valor))])];
 
     public static PredicadoDnf Remontar(IReadOnlyList<IReadOnlyList<CondicaoGravada>> clausulas)
     {
@@ -23,7 +24,7 @@ internal static class PredicadoDnfGravado
         for (int i = 0; i < clausulas.Count; i++)
         {
             linhas.AddRange(clausulas[i].Select(c =>
-                (i, Exigir(CondicaoDnf.Criar(c.Fato, OperadorCodigo.FromCodigo(c.Operador), c.Valor)))));
+                (i, Exigir(CondicaoDnf.Criar(c.Fato, CatalogoDe<Operador>.Obter(c.Operador), c.Valor)))));
         }
 
         return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(linhas));

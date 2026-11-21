@@ -126,9 +126,10 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         // ProcessoConforme já oferta atendimento vazio (sem condições) — só falta o fato coletável.
-        FatoColetado fato = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+            .ComRotulo("Você se enquadra em alguma condição de atendimento?")
+            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -141,9 +142,11 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     public void FatoColetadoTipoDeficienciaDoCadastro_NaoDependeDoAtendimentoEspecializado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        FatoColetado fato = FatoColetado.Criar(
-            "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
-            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
+            .ComRotulo("Qual o tipo de deficiência?")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComClassificacao("SENSIVEL")
+            .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(processo.Campos.Single(static c => c.FatoCodigo == "TIPO_DEFICIENCIA")).Should().Be(OrigemValoresColeta.Catalogo);
@@ -151,18 +154,22 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    /// <summary>
+    /// Com a condição PcD ofertada (pré-requisito da ADR-0067) e nenhum tipo de deficiência, só o fato de tipo de
+    /// deficiência fica sem valor para oferecer ao candidato.
+    /// </summary>
+    private static FatoColetado FatoDeTipoDeDeficienciaDoProcesso() => FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
+        .ComRotulo("Qual o tipo de deficiência?")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+        .Construir();
+
     [Fact(DisplayName = "TIPO_DEFICIENCIA com a origem do processo, copiada antes dos tipos do cadastro, segue com as opções da oferta: sem tipo ofertado, item vermelho e Publicar recusa")]
     public void PreCanon_FatoColetadoTipoDeficienciaDaOfertaSemValoresOfertados()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        // Condição PcD ofertada (pré-requisito da ADR-0067), mas nenhum TipoDeficiencia —
-        // só o fato de tipo de deficiência fica sem valor para oferecer ao candidato.
         processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
-        FatoColetado fato = FatoColetado.Criar(
-            "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
-            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL",
-            origemValores: OrigemValoresColeta.OpcoesDoProcesso, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoDeTipoDeDeficienciaDoProcesso()]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
@@ -170,9 +177,11 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
-    private static FatoColetado CampoRecursoAcessibilidade() => FatoColetado.Criar(
-        AtendimentoEspecializado.FatoRecursoAcessibilidade, 0, "De qual recurso de acessibilidade você vai precisar?",
-        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado CampoRecursoAcessibilidade() => FatoColetadoDeTeste.Coletando(AtendimentoEspecializado.FatoRecursoAcessibilidade, 0)
+        .ComRotulo("De qual recurso de acessibilidade você vai precisar?")
+        .DoTipo(TipoRenderizacao.SelecaoMultipla)
+        .ComClassificacao("SENSIVEL")
+        .Construir();
 
     [Fact(DisplayName = "Pré-canonicalização: fato coletável RECURSO_ACESSIBILIDADE sem nenhum recurso ofertado — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
     public void PreCanon_FatoColetadoRecursoAcessibilidadeSemValoresOfertados()
@@ -236,9 +245,10 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     public void PreCanon_FatoMultivalorado_NaoProvaExclusao()
     {
         ProcessoSeletivo processo = CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B");
-        FatoColetado condicao = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado condicao = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+            .ComRotulo("Você se enquadra em alguma condição de atendimento?")
+            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .Construir();
         processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
 
         ItemDaExclusividadeOk(processo).Should().BeFalse();

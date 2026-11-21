@@ -35,6 +35,18 @@ public sealed class CodigosDosEnumsNoDocumentoTests
         campos.Select(documento.Resolver).Should().OnlyContain(resolvido => ReferenceEquals(resolvido, documento.Componente("FaseCodigo")));
     }
 
+    [Fact(DisplayName = "A lista de valores com rótulo aponta os itens para o componente do enum e o código para o componente dos códigos")]
+    public async Task ListaDeCodigoComRotulo_ResolveParaOComponenteDoEnumEOsCodigos()
+    {
+        (DocumentoPublicado documento, _) = await GeradorDeDocumentoDeTeste.GerarDuasVezesAsync(static app =>
+            app.MapGet("/respostas", () => new RespostaComFases([CodigoComRotulo<Fase>.De(Fase.Inscricao, "Período de inscrição")])));
+
+        JsonNode itens = documento.Propriedade(nameof(RespostaComFases), "fases").Campo("items");
+
+        DocumentoPublicado.Referencia(itens).Should().Be("#/components/schemas/Fase");
+        DocumentoPublicado.Referencia(documento.Propriedade(nameof(Fase), "codigo")).Should().Be(ComponenteDosCodigos);
+    }
+
     [Fact(DisplayName = "Nenhum campo traz a lista de códigos embutida: o enum aparece só no componente dos códigos")]
     public async Task ListaDeCodigos_AparecePenasNoComponenteDosCodigos()
     {

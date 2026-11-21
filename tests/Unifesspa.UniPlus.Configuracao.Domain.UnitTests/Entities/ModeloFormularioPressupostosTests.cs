@@ -19,7 +19,7 @@ public sealed class ModeloFormularioPressupostosTests
     private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private static ItemDoModelo Item(string fato, int ordem, string? etapa = "DADOS") =>
-        new(fato, ordem, etapa, fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fato, ordem, etapa, new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, IReadOnlyList<GrupoDoModelo> grupos, params string[] pressupostos) =>
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, grupos);
@@ -46,7 +46,9 @@ public sealed class ModeloFormularioPressupostosTests
     [Fact(DisplayName = "Fato não é pressuposto e campo de grupo do mesmo modelo")]
     public void PressupostoTambemCampoDeGrupo_Recusa()
     {
-        GrupoDoModelo composicao = new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre, [Item("RENDA", 0, etapa: null)]);
+        GrupoDoModelo composicao = new(
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), [Item("RENDA", 0, etapa: null)]);
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [composicao], "RENDA"));
 

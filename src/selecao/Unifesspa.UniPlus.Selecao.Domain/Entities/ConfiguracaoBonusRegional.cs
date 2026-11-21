@@ -92,7 +92,7 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
     private static FieldError? RecusaDaRegra(ReferenciaRegra regra) =>
         regra.Codigo == RegraBonusCodigo.Multiplicativo
             ? null
-            : new("regraCodigo", new DomainError(
+            : new("regra.codigo", new DomainError(
                 "ConfiguracaoBonusRegional.RegraInvalida",
                 $"A regra do bônus precisa ser do código {RegraBonusCodigo.Multiplicativo}."));
 

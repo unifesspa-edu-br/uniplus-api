@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O formulário de inscrição coleta o conjunto básico do candidato numa seção reservada: o envio
@@ -41,14 +42,15 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
 
         ConjuntoBasicoDaInscricao.Fatos.Should().Contain(codigos);
         IReadOnlyList<FatoColetadoInput> itens = [.. codigos.Select(c => ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == c))];
-        itens.Select(static i => i.Rotulo).Should().Equal("Sexo biológico", "Sexo civil", "Identidade de gênero", "Orientação sexual");
-        itens.Should().OnlyContain(static i => i.Obrigatoriedade == PredicadoDnfJson.ObrigatoriedadeSempre && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        itens.Select(static i => i.Apresentacao!.Rotulo).Should().Equal("Sexo biológico", "Sexo civil", "Identidade de gênero", "Orientação sexual");
+        itens.Should().OnlyContain(static i => i.Regras!.Obrigatoriedade!.Tipo == PredicadoDnfJson.ObrigatoriedadeSempre && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "O grupo do cliente que colide com a seção sobe com os itens")]
     public void MesclarItens_GrupoQueColide_Sobe()
     {
-        GrupoColetadoInput grupo = new("COMPOSICAO", 1, "Composição familiar", "DADOS", 1, null, null, null, null, []);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1).Construir();
 
         (_, IReadOnlyList<GrupoColetadoInput> grupos, _) = ConjuntoBasicoDaInscricao.MesclarItens(
             [ItemDoCliente("QUILOMBOLA", 0)], [grupo], ConjuntoBasicoDaInscricao.Itens);
@@ -59,7 +61,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "Item e grupo do cliente na seção reservada são recusados, cada um no seu campo")]
     public void MesclarItens_ClienteNaSecaoReservada_Recusa()
     {
-        GrupoColetadoInput grupo = new("COMPOSICAO", 30, "Composição familiar", ConjuntoBasicoDaInscricao.CodigoDaSecao, 1, null, null, null, null, []);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 30).ComRotulo("Composição familiar")
+            .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao).ComOcorrencias(1).Construir();
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
             [ItemDoCliente("QUILOMBOLA", 30) with { EtapaCodigo = ConjuntoBasicoDaInscricao.CodigoDaSecao }], [grupo], ConjuntoBasicoDaInscricao.Itens);
@@ -77,25 +80,48 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
 
         (IReadOnlyList<FatoColetadoInput> itens, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
-            [nome with { Rotulo = $" {nome.Rotulo} ", Precondicao = [], Restricoes = [] }], [], ConjuntoBasicoDaInscricao.Itens);
+            [nome with
+            {
+                Apresentacao = nome.Apresentacao! with { Rotulo = $" {nome.Apresentacao.Rotulo} " },
+                Regras = nome.Regras! with { Exibicao = [], Restricoes = [] },
+            }],
+            [],
+            ConjuntoBasicoDaInscricao.Itens);
 
         erros.Should().BeEmpty();
         itens.Should().HaveCount(Teto);
     }
 
+    [Fact(DisplayName = "O item básico enviado sem regras repete o básico sempre obrigatório e sem condição")]
+    public void MesclarItens_BasicoSemRegras_Aceita()
+    {
+        FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
+
+        (IReadOnlyList<FatoColetadoInput> itens, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
+            [nome with { Regras = null }], [], ConjuntoBasicoDaInscricao.Itens);
+
+        erros.Should().BeEmpty();
+        itens.Single(static i => i.FatoCodigo == ConjuntoBasicoDaInscricao.Nome).Regras.Should().NotBeNull();
+    }
+
+    [Fact(DisplayName = "O item básico enviado sem apresentação é recusado como alteração: o tipo de campo é dele")]
+    public void MesclarItens_BasicoSemApresentacao_Recusa()
+    {
+        FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
+
+        (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
+            [nome with { Apresentacao = null }], [], ConjuntoBasicoDaInscricao.Itens);
+
+        erros.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.DadoBasicoAlterado);
+    }
+
     [Theory(DisplayName = "O item básico alterado é recusado na posição do envio")]
     [InlineData("obrigatoriedade")]
     [InlineData("secao")]
-    [InlineData("precondicao")]
+    [InlineData("exibicao")]
     public void MesclarItens_BasicoAlterado_Recusa(string alteracao)
     {
-        FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
-        FatoColetadoInput alterado = alteracao switch
-        {
-            "obrigatoriedade" => nome with { Obrigatoriedade = PredicadoDnfJson.ObrigatoriedadeNunca },
-            "secao" => nome with { EtapaCodigo = "DADOS" },
-            _ => nome with { Precondicao = [[new CondicaoPrecondicaoInput("NACIONALIDADE", "IGUAL", JsonSerializer.SerializeToElement("NATO"))]] },
-        };
+        FatoColetadoInput alterado = NomeAlterado(alteracao);
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
             [ItemDoCliente("QUILOMBOLA", 30), alterado], [], ConjuntoBasicoDaInscricao.Itens);
@@ -113,7 +139,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         FatoColetadoInput sexo = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO");
 
         (IReadOnlyList<FatoColetadoInput> itens, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
-            [sexo with { Ordem = 40, Rotulo = "Sexo" }], [], ConjuntoBasicoDaInscricao.Itens);
+            [sexo with { Ordem = 40, Apresentacao = sexo.Apresentacao! with { Rotulo = "Sexo" } }], [], ConjuntoBasicoDaInscricao.Itens);
 
         erros.Should().BeEmpty();
         itens.Should().HaveCount(Teto);
@@ -126,7 +152,9 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         FatoColetadoInput nomeSocial = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL");
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
-            [nomeSocial with { Precondicao = [[new CondicaoPrecondicaoInput("DESEJA_NOME_SOCIAL", "IGUAL", default)]] }], [], ConjuntoBasicoDaInscricao.Itens);
+            [nomeSocial with { Regras = nomeSocial.Regras! with { Exibicao = [[new CondicaoPrecondicaoInput("DESEJA_NOME_SOCIAL", "IGUAL", default)]] } }],
+            [],
+            ConjuntoBasicoDaInscricao.Itens);
 
         erros.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.DadoBasicoAlterado);
     }
@@ -134,13 +162,14 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "A referência é o item gravado na seção; o básico gravado fora dela não é referência")]
     public void Referencia_SoOGravadoNaSecao()
     {
-        FatoColetadoInput nomeNaSecao = ConjuntoBasicoDaInscricao.Itens[0] with { Ajuda = "Como está no documento." };
+        FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
+        FatoColetadoInput nomeNaSecao = nome with { Apresentacao = nome.Apresentacao! with { Ajuda = "Como está no documento." } };
         FatoColetadoInput sexoForaDaSecao = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO") with { EtapaCodigo = "DADOS" };
 
         IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia([nomeNaSecao, sexoForaDaSecao]);
 
         referencia.Should().HaveCount(Teto);
-        referencia[0].Ajuda.Should().Be("Como está no documento.");
+        referencia[0].Apresentacao!.Ajuda.Should().Be("Como está no documento.");
         referencia.Single(static i => i.FatoCodigo == "SEXO").EtapaCodigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
@@ -151,16 +180,14 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         string[] codigos = [.. ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo)];
         string[] sexoENoFim = [.. codigos.Where(static c => c != "SEXO"), "SEXO"];
         IEnumerable<FatoColetadoInput> gravados = sexoENoFim.Select((codigo, posicao) =>
-            ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == codigo)
-            with
-            { Ordem = inicio + posicao, Rotulo = codigo == "SEXO" ? "Sexo" : "Antigo", Ajuda = "Ajuda gravada." });
+            ComOrdemRotuloEAjuda(ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == codigo), inicio + posicao, codigo == "SEXO" ? "Sexo" : "Antigo", "Ajuda gravada."));
 
         IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia(gravados);
 
         referencia.Select(static i => i.FatoCodigo).Should().Equal(codigos);
         referencia.Select(static i => i.Ordem).Should().Equal(Enumerable.Range(inicio, Teto));
-        referencia.Select(static i => i.Rotulo).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.Rotulo));
-        referencia.Should().OnlyContain(static i => i.Ajuda == "Ajuda gravada.");
+        referencia.Select(static i => i.Apresentacao!.Rotulo).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.Apresentacao!.Rotulo));
+        referencia.Should().OnlyContain(static i => i.Apresentacao!.Ajuda == "Ajuda gravada.");
     }
 
     [Theory(DisplayName = "A seção omitida entra na primeira posição, e as etapas do cliente sobem só quando colidem")]
@@ -168,7 +195,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [InlineData(3, 3)]
     public void MesclarEtapas_SecaoOmitida_Entra(int ordemEnviada, int ordemGravada)
     {
-        EtapaFormularioInput dados = new("DADOS", ordemEnviada, EstruturaFormulario.TipoSecao, null, "Dados", null, null);
+        EtapaFormularioInput dados = new("DADOS", ordemEnviada, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados", null, null));
 
         (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([dados], ConjuntoBasicoDaInscricao.Secao);
 
@@ -182,7 +209,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [InlineData(true)]
     public void MesclarEtapas_SecaoEnviada_SoComoEsta(bool alterada)
     {
-        EtapaFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Titulo = "Identificação" } : ConjuntoBasicoDaInscricao.Secao;
+        EtapaFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Apresentacao = new ApresentacaoDaEtapaInput("Identificação", null, null) } : ConjuntoBasicoDaInscricao.Secao;
 
         (_, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([secao], ConjuntoBasicoDaInscricao.Secao);
 
@@ -259,31 +286,49 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         Item(avaliacao, fato).RestricoesVioladas.Any(static r => r is FaixaDeData).Should().Be(viola);
     }
 
+    private static FatoColetadoInput NomeAlterado(string alteracao)
+    {
+        FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
+        return alteracao switch
+        {
+            "obrigatoriedade" => nome with { Regras = nome.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput(PredicadoDnfJson.ObrigatoriedadeNunca) } },
+            "secao" => nome with { EtapaCodigo = "DADOS" },
+            _ => nome with
+            {
+                Regras = nome.Regras! with { Exibicao = [[new CondicaoPrecondicaoInput("NACIONALIDADE", "IGUAL", JsonSerializer.SerializeToElement("NATO"))]] },
+            },
+        };
+    }
+
     private static FatoColetadoInput ItemDoCliente(string fato, int ordem) =>
-        new(fato, ordem, fato, "BOOLEANO", PredicadoDnfJson.ObrigatoriedadeSempre, null, "DADOS");
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).NaSecao("DADOS").Construir();
+
+    private static FatoColetadoInput ComOrdemRotuloEAjuda(FatoColetadoInput item, int ordem, string rotulo, string ajuda) =>
+        item with { Ordem = ordem, Apresentacao = item.Apresentacao! with { Rotulo = rotulo, Ajuda = ajuda } };
 
     private static AvaliacaoItem Item(AvaliacaoFormulario avaliacao, string fato) => avaliacao.Itens.Single(i => i.FatoCodigo == fato);
 
     /// <summary>Avalia a seção como a constante a declara, lida pelo mesmo caminho da escrita.</summary>
     private AvaliacaoFormulario Avaliar(params (string Fato, object Valor)[] respostas) => Avaliar(envio: null, respostas);
 
-    private AvaliacaoFormulario Avaliar(EnvioDasRespostas? envio, params (string Fato, object Valor)[] respostas)
-    {
-        DefinicaoItem[] itens = [.. ConjuntoBasicoDaInscricao.Itens.Select(static item =>
-        {
-            PredicadoDnf? obrigatoriedade = EntradaDeRegras.Predicado(item.PredicadoObrigatoriedade).Value;
-            return new DefinicaoItem(
-                item.FatoCodigo,
-                EntradaDeRegras.Predicado(item.Precondicao).Value,
-                EntradaDeRegras.Obrigatoriedade(item.Obrigatoriedade, obrigatoriedade)!,
-                [.. (item.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]);
-        })];
-        DefinicaoFormulario definicao = new([new DefinicaoEtapa(ConjuntoBasicoDaInscricao.CodigoDaSecao, exibicao: null, itens)], termos: [], derivacoes: []);
-
-        return AvaliarDefinicao(definicao, new EntradaAvaliacaoFormulario(
+    private AvaliacaoFormulario Avaliar(EnvioDasRespostas? envio, params (string Fato, object Valor)[] respostas) =>
+        AvaliarDefinicao(DefinicaoDaSecao(), new EntradaAvaliacaoFormulario(
             respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             Envio: envio));
+
+    private static DefinicaoFormulario DefinicaoDaSecao() =>
+        new([new DefinicaoEtapa(ConjuntoBasicoDaInscricao.CodigoDaSecao, exibicao: null, [.. ConjuntoBasicoDaInscricao.Itens.Select(DefinicaoDoItem)])], termos: [], derivacoes: []);
+
+    private static DefinicaoItem DefinicaoDoItem(FatoColetadoInput item)
+    {
+        RegrasDoCampoInput regras = item.Regras!;
+        PredicadoDnf? obrigatoriedade = EntradaDeRegras.Predicado(regras.Obrigatoriedade!.Predicado).Value;
+        return new DefinicaoItem(
+            item.FatoCodigo,
+            EntradaDeRegras.Predicado(regras.Exibicao).Value,
+            EntradaDeRegras.Obrigatoriedade(regras.Obrigatoriedade.Tipo, obrigatoriedade)!,
+            [.. (regras.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]);
     }
 }

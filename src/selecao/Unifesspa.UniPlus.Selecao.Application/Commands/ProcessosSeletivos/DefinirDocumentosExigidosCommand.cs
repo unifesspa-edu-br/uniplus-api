@@ -7,139 +7,195 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Entrada de uma condição do gatilho DNF (Story #554, PR #896), usada por
-/// <see cref="ItemDocumentoExigidoInput"/>. <see cref="Operador"/>/<see cref="Valor"/>
-/// seguem o mesmo formato flat de wire de <c>CriterioDesempateInput</c> (tokens
-/// canônicos <see cref="Regras.Enums.OperadorCodigo"/>; <see cref="Valor"/> é texto,
+/// Entrada de uma condição do gatilho DNF, usada por <see cref="AplicabilidadeDaExigenciaInput"/>.
+/// <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato de <c>CondicaoPrecondicaoInput</c>
+/// (códigos declarados em <see cref="Regras.Enums.Operador"/>; <see cref="Valor"/> é texto,
 /// interpretado como JSON quando possível).
 /// </summary>
-public sealed record CondicaoGatilhoInput(int Clausula, string Fato, string Operador, string Valor);
+public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor);
 
 /// <summary>
-/// Entrada de uma base legal (Story #554, PR #898, issue #549, ADR-0074), usada por
-/// <see cref="ItemDocumentoExigidoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
+/// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
+/// <see cref="IndeferimentoDoGrupoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
 /// são tokens canônicos (<see cref="Domain.Enums.TipoAbrangenciaCodigo"/>/
 /// <see cref="Domain.Enums.StatusBaseLegalCodigo"/>). A validação de <b>gate</b> (≥1
 /// RESOLVIDO por exigência que determina resultado) é da publicação, não deste PUT —
 /// aqui só a forma de cada item é validada.
 /// </summary>
-public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Status, string? Observacao);
+public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Status, string? Observacao)
+{
+    /// <summary>O caminho da lista de bases legais no pedido, igual na exigência de documento e no grupo.</summary>
+    public const string CaminhoDaLista = "indeferimento.basesLegais";
+}
 
 /// <summary>
-/// Entrada da idade máxima de emissão (Story #554, PR #900, issue #893), usada por
-/// <see cref="ItemDocumentoExigidoInput"/>. Tudo-nulo (os 5 campos) é a variante "regra
-/// ausente" — mesmo padrão do comando de <c>DefinirReferenciaTemporalFatos</c> (PR #896), mas
-/// aninhado por item em vez de flat no comando, porque aqui a regra é 1 por exigência, não
-/// 1 por processo. <see cref="Unidade"/>/<see cref="ReferenciaTipo"/> são tokens canônicos
-/// (<see cref="Domain.Enums.UnidadeIdadeCodigo"/>/<see cref="Domain.Enums.ReferenciaTipoIdadeEmissaoCodigo"/>).
+/// Entrada da idade máxima de emissão, usada por <see cref="RequisitosDoDocumentoInput"/>. Tudo-nulo
+/// (os 5 campos) é a variante "regra ausente". <see cref="Unidade"/>/<see cref="ReferenciaTipo"/> são
+/// tokens canônicos (<see cref="Domain.Enums.UnidadeIdadeCodigo"/>/<see cref="Domain.Enums.ReferenciaTipoIdadeEmissaoCodigo"/>).
 /// </summary>
 public sealed record IdadeMaximaEmissaoInput(
     int? Valor, string? Unidade, string? ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
 
+/// <summary>O tipo de documento do catálogo que a exigência pede; o handler lê dele só a identidade.</summary>
+/// <param name="Id">Identidade do tipo de documento no catálogo.</param>
+public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
+
 /// <summary>
-/// Entrada de uma exigência documental, usada por
-/// <see cref="DefinirDocumentosExigidosCommand"/>. O handler resolve
-/// <see cref="TipoDocumentoId"/> contra o módulo Configuração e congela os
-/// atributos vigentes por valor (snapshot-copy, ADR-0061) — o cliente não os
-/// declara diretamente. <see cref="Condicoes"/> vazia é coerente com GERAL e com
-/// CONDICIONAL "exigida de ninguém" (CA-01). <see cref="BasesLegais"/> vazia é um estado
-/// válido na escrita — só vira pendência na publicação, quando a exigência determina
-/// resultado (PR #898, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="TamanhoMaximoBytes"/>
-/// (PR #900, issue #893) são aviso, não bloqueio de presença — congelados por chamada,
-/// sem gate de publicação.
+/// O momento em que o documento é coletado: a fase, a etapa dela quando a fase se subdivide e o formulário.
 /// </summary>
-/// <remarks>
-/// <see cref="ExigidoNaEtapaId"/> é opcional e refina <see cref="ExigidoNaFaseId"/>: diz em
-/// qual etapa daquela fase o documento é coletado, quando a fase se subdivide. Ausente, o
-/// documento é da fase inteira. A raiz confere que a etapa é do processo e acontece naquela
-/// fase; a âncora da exigência continua sendo a fase.
-/// </remarks>
-/// <remarks>
-/// <see cref="Finalidade"/> é o token do formulário a que o documento pertence
-/// (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>): obrigatório quando a fase
-/// responde algum formulário, e um dos que ela responde; ausente quando a fase não responde
-/// nenhum. Inscrição e isenção podem dividir a fase, e é a finalidade que diz em qual dos dois
-/// formulários o candidato apresenta o documento.
-/// </remarks>
-/// <remarks>
-/// <see cref="FatosComprovados"/> são os códigos dos fatos do próprio processo que o documento
-/// comprova, e só eles contam para conferir a proteção do tipo de documento: o fato que apenas
-/// aciona a exigência pelo gatilho não entra. A exigência copia a proteção do tipo no momento em
-/// que é gravada, e a publicação recusa a que ficar menos protegida que o fato mais protegido
-/// entre os comprovados.
-/// </remarks>
-/// <remarks>
-/// <see cref="FormatosPermitidos"/> (Story #918) é um valor JSON polimórfico — o mesmo
-/// tratamento já usado por <see cref="CondicaoGatilhoInput.Valor"/>/<c>CondicaoDnf.Valor</c>
-/// (ADR-0111): a string <c>"QUALQUER"</c> OU um array de <c>{formato, tamanhoMaximoBytesMax}</c>,
-/// nunca um DTO discriminado próprio. Campo agora OBRIGATÓRIO — <see langword="null"/>
-/// estrutural (propriedade ausente do JSON, ou <c>null</c> explícito) é distinto de "veio,
-/// mas em forma inválida": o handler produz <c>FormatosPermitidos.Obrigatorio</c> no
-/// primeiro caso, <c>FormatosPermitidos.FormaInvalida</c> no segundo.
-/// </remarks>
-public sealed record ItemDocumentoExigidoInput(
-    Guid ExigidoNaFaseId,
-    Guid TipoDocumentoId,
-    string Aplicabilidade,
-    bool Obrigatorio,
-    string? ConsequenciaIndeferimento,
-    IReadOnlyList<CondicaoGatilhoInput> Condicoes,
-    IReadOnlyList<BaseLegalInput> BasesLegais,
-    IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
+/// <param name="FaseId">Fase do cronograma que exige o documento. A raiz confere que ela é do processo.</param>
+/// <param name="EtapaId">
+/// Etapa dessa fase em que o documento é coletado; ausente, o documento é da fase inteira. A raiz confere
+/// que a etapa é do processo e acontece naquela fase.
+/// </param>
+/// <param name="Finalidade">
+/// O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>):
+/// obrigatória quando a fase responde algum formulário, e um dos que ela responde; ausente quando a fase não
+/// responde nenhum. É ela que diz em qual formulário o candidato apresenta o documento, porque inscrição e
+/// isenção podem dividir a fase.
+/// </param>
+public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, string? Finalidade = null)
+{
+    /// <summary>O caminho da finalidade no pedido.</summary>
+    public const string CaminhoDaFinalidade = "momento.finalidade";
+}
+
+/// <summary>
+/// A quem a exigência se aplica: <c>GERAL</c> ou <c>CONDICIONAL</c>. A lista de condições vazia ou ausente é
+/// coerente com <c>GERAL</c> e com <c>CONDICIONAL</c> "exigida de ninguém".
+/// </summary>
+/// <param name="Tipo">Token <c>GERAL</c> ou <c>CONDICIONAL</c>; ausente, o domínio recusa a exigência.</param>
+/// <param name="Condicoes">As condições do gatilho, em forma normal disjuntiva.</param>
+public sealed record AplicabilidadeDaExigenciaInput(string? Tipo, IReadOnlyList<CondicaoGatilhoInput>? Condicoes)
+{
+    /// <summary>O caminho do tipo da aplicabilidade no pedido.</summary>
+    public const string CaminhoDoTipo = "aplicabilidade.tipo";
+
+    /// <summary>O caminho da lista de condições no pedido.</summary>
+    public const string CaminhoDasCondicoes = "aplicabilidade.condicoes";
+}
+
+/// <summary>O que acontece quando o documento não é apresentado, e a base legal da obrigação.</summary>
+/// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir.</param>
+/// <param name="Consequencia">Token da consequência do indeferimento; ausente, a exigência não determina resultado.</param>
+/// <param name="BasesLegais">As bases legais da exigência; ausentes valem lista vazia, válida na escrita e pendente na publicação quando exigida.</param>
+public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais)
+{
+    /// <summary>O caminho da consequência no pedido.</summary>
+    public const string CaminhoDaConsequencia = "indeferimento.consequencia";
+}
+
+/// <summary>O modelo de documento que a exigência oferece ao candidato; o handler lê dele só a identidade.</summary>
+/// <param name="ModeloId">Identidade do modelo, que precisa ser deste processo.</param>
+public sealed record ModeloDaExigenciaInput(Guid ModeloId);
+
+/// <summary>
+/// O que restringe o arquivo que o candidato envia: formatos, tamanho, idade máxima de emissão e modelo. É
+/// aviso, não bloqueio de presença, e fica congelado por chamada.
+/// </summary>
+/// <param name="FormatosPermitidos">
+/// Valor JSON polimórfico: a string <c>"QUALQUER"</c> ou um array de itens, cada um um texto ou um objeto
+/// <c>{formato, tamanhoMaximoBytesMax}</c>. Ausente (propriedade ausente ou <c>null</c>) é recusado com
+/// <c>FormatosPermitidos.Obrigatorio</c>; presente em forma inválida, com <c>FormatosPermitidos.FormaInvalida</c>.
+/// </param>
+/// <param name="TamanhoMaximoBytes">Tamanho máximo do arquivo, em bytes, quando presente.</param>
+/// <param name="IdadeMaximaEmissao">Idade máxima de emissão do documento.</param>
+/// <param name="Modelo">Modelo que a exigência oferece; ausente, a exigência não tem modelo.</param>
+public sealed record RequisitosDoDocumentoInput(
     JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    Guid? ExigidoNaEtapaId = null,
-    Guid? ModeloId = null,
-    string? Finalidade = null,
+    IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
+    ModeloDaExigenciaInput? Modelo)
+{
+    /// <summary>O caminho do tamanho máximo no pedido.</summary>
+    public const string CaminhoDoTamanhoMaximo = "requisitos.tamanhoMaximoBytes";
+}
+
+/// <summary>
+/// Entrada de uma exigência documental, usada por <see cref="NoExigenciaInput"/>. O handler resolve o tipo
+/// de documento contra o módulo Configuração e congela os atributos vigentes por valor (ADR-0061): o cliente
+/// não os declara.
+/// </summary>
+/// <param name="TipoDocumento">O tipo de documento exigido.</param>
+/// <param name="Momento">Quando e em qual formulário o documento é coletado.</param>
+/// <param name="Aplicabilidade">A quem a exigência se aplica e sob qual gatilho.</param>
+/// <param name="Indeferimento">A obrigatoriedade, a consequência do indeferimento e as bases legais.</param>
+/// <param name="Requisitos">O que restringe o arquivo enviado.</param>
+/// <param name="FatosComprovados">
+/// Códigos dos fatos do próprio processo que o documento comprova; só eles contam para conferir a proteção do
+/// tipo de documento, e o fato que apenas aciona a exigência pelo gatilho não entra. A publicação recusa a
+/// exigência que ficar menos protegida que o fato mais protegido entre os comprovados.
+/// </param>
+public sealed record ItemDocumentoExigidoInput(
+    TipoDocumentoDaExigenciaInput? TipoDocumento,
+    MomentoDaExigenciaInput? Momento,
+    AplicabilidadeDaExigenciaInput? Aplicabilidade,
+    IndeferimentoDoDocumentoInput? Indeferimento,
+    RequisitosDoDocumentoInput? Requisitos,
     IReadOnlyList<string>? FatosComprovados = null);
 
 /// <summary>
-/// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo
-/// <c>GrupoSatisfacaoId</c> plano (correlação por Guid) por posição literal na árvore.
-/// <see cref="Tipo"/> ∈ {<c>FOLHA</c>, <c>E</c>, <c>OU</c>}: <c>FOLHA</c> exige
-/// <see cref="Documento"/> presente e os demais campos de grupo ausentes; <c>E</c>/<c>OU</c>
-/// exigem <see cref="Filhos"/> não-vazio e <see cref="Documento"/> ausente — <c>E</c> nunca
-/// carrega <see cref="QuantidadeMinima"/>/<see cref="Consequencia"/>/<see cref="BasesLegais"/>
-/// (transparente); <c>OU</c> aceita os três, todos opcionais (<see cref="QuantidadeMinima"/>
-/// ausente ⇒ default 1 no domínio; <see cref="BasesLegais"/> só quando <see cref="Consequencia"/>
-/// presente). O wire é uma árvore <b>por valor</b> — não expressa ciclo por construção (ver
+/// Como as apresentações da mesma exigência se distinguem, na forma do <see cref="DistincaoDasApresentacoes"/>
+/// do domínio: <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
+/// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/> opcional).
+/// </summary>
+/// <param name="Chave">Token canônico da chave de distinção (<see cref="Domain.Enums.ChaveDistincaoCodigo"/>).</param>
+/// <param name="DataReferencia">Data a partir da qual o calendário é derivado.</param>
+/// <param name="OcorrenciasEsperadas">Identificadores das ocorrências esperadas.</param>
+public sealed record DistincaoDasApresentacoesInput(string? Chave, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
+{
+    /// <summary>O caminho da distinção no pedido.</summary>
+    public const string Caminho = "cardinalidade.distincao";
+}
+
+/// <summary>
+/// Quantas apresentações a exigência pede. A quantidade conta APRESENTAÇÕES, não arquivos; a distinção é
+/// exclusiva de <c>FOLHA</c>. Ausente, a contagem é bruta, sem qualificação.
+/// </summary>
+/// <param name="QuantidadeMinima">Quantidade mínima de apresentações; ausente vale 1 no domínio.</param>
+/// <param name="Distincao">Como as apresentações se distinguem entre si.</param>
+public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null, DistincaoDasApresentacoesInput? Distincao = null);
+
+/// <summary>A consequência do indeferimento de um grupo <c>OU</c> e as bases legais dela.</summary>
+/// <param name="Consequencia">Token da consequência; só o grupo <c>OU</c> a declara.</param>
+/// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
+public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
+
+/// <summary>
+/// Entrada de um nó da árvore de satisfação, por posição literal na árvore. <see cref="Tipo"/> ∈ {<c>FOLHA</c>,
+/// <c>E</c>, <c>OU</c>}: <c>FOLHA</c> exige <see cref="Documento"/> presente e os demais campos de grupo
+/// ausentes; <c>E</c>/<c>OU</c> exigem <see cref="Filhos"/> não vazio e <see cref="Documento"/> ausente — o
+/// <c>E</c> nunca carrega quantidade mínima nem indeferimento (é transparente); o <c>OU</c> aceita a
+/// quantidade mínima (ausente vale 1) e o indeferimento, com bases legais só quando a consequência está
+/// presente. O pedido é uma árvore <b>por valor</b>, que não expressa ciclo por construção (ver
 /// <see cref="Domain.Entities.NoExigencia.CriarGrupo"/>).
 /// </summary>
-/// <remarks>
-/// Story #921 — cardinalidade qualificada, exclusiva de <c>FOLHA</c>: <see cref="QuantidadeMinima"/>
-/// conta APRESENTAÇÕES (não arquivos); <see cref="ChaveDistincao"/> (token canônico
-/// <see cref="Domain.Enums.ChaveDistincaoCodigo"/>) qualifica como elas se distinguem —
-/// <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
-/// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/>
-/// opcional). Ausente ⇒ contagem bruta, sem qualificação.
-/// </remarks>
-/// <remarks>
-/// <see cref="RepetePorEntidade"/> é o código de um grupo repetível dos formulários do processo
-/// (ADR-0138): marca esta subárvore (folha ou grupo <c>E</c>/<c>OU</c>) como repetida por
-/// ocorrência do grupo, nunca aninhada (uma subárvore marcada não pode conter outra). Grupo que o
-/// processo não tem é recusado como <c>NoExigencia.TipoEntidadeInvalido</c>. Ausente ⇒ nó não repete.
-/// </remarks>
+/// <param name="Tipo"><c>FOLHA</c>, <c>E</c> ou <c>OU</c>.</param>
+/// <param name="Documento">A exigência da folha.</param>
+/// <param name="Cardinalidade">A quantidade mínima de apresentações e como elas se distinguem.</param>
+/// <param name="Indeferimento">A consequência do indeferimento do grupo.</param>
+/// <param name="Filhos">Os nós filhos do grupo, na ordem.</param>
+/// <param name="RepetePorEntidade">
+/// Código de um grupo repetível dos formulários do processo (ADR-0138): marca esta subárvore como repetida por
+/// ocorrência do grupo, nunca aninhada. Grupo que o processo não tem é recusado como
+/// <c>NoExigencia.TipoEntidadeInvalido</c>. Ausente, o nó não repete.
+/// </param>
 public sealed record NoExigenciaInput(
     string Tipo,
-    ItemDocumentoExigidoInput? Documento,
-    int? QuantidadeMinima,
-    string? Consequencia,
-    IReadOnlyList<BaseLegalInput>? BasesLegais,
-    IReadOnlyList<NoExigenciaInput>? Filhos,
-    string? ChaveDistincao = null,
-    DateOnly? DataReferencia = null,
-    IReadOnlyList<string>? OcorrenciasEsperadas = null,
+    ItemDocumentoExigidoInput? Documento = null,
+    CardinalidadeQualificadaInput? Cardinalidade = null,
+    IndeferimentoDoGrupoInput? Indeferimento = null,
+    IReadOnlyList<NoExigenciaInput>? Filhos = null,
     string? RepetePorEntidade = null);
 
 /// <summary>
-/// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
-/// (Story #554 — núcleo da PR #895: fase, snapshot-copy do tipo de documento, aplicabilidade
-/// GERAL/CONDICIONAL, obrigatoriedade e consequência de indeferimento; gatilho DNF dinâmico/
-/// multivalorado da PR #896; base legal 1:N da PR #898; idade de emissão/formato/tamanho da
-/// PR #900; árvore E/OU substituindo o grupo plano na Story #920).
+/// Substitui integralmente a árvore de satisfação de documentos exigidos do processo: fase, cópia do tipo de
+/// documento, aplicabilidade, obrigatoriedade e consequência de indeferimento, gatilho DNF, bases legais,
+/// requisitos do arquivo e árvore E/OU.
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,

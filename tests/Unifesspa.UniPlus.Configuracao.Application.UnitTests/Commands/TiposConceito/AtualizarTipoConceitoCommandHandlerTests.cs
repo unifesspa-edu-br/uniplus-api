@@ -27,6 +27,12 @@ public sealed class AtualizarTipoConceitoCommandHandlerTests
     private Task<Result> Atualizar(AtualizarTipoConceitoCommand comando) =>
         AtualizarTipoConceitoCommandHandler.Handle(comando, _repository, _unitOfWork, CancellationToken.None);
 
+    private static AtualizarTipoConceitoCommand DefinicaoComNomeENaturezaInvalidos()
+    {
+        AtualizarTipoConceitoCommand valido = TiposConceitoDeTeste.AtualizarNumerico(Guid.NewGuid());
+        return valido with { Definicao = valido.Definicao! with { Nome = "", Natureza = "x" } };
+    }
+
     private TipoConceito TipoExistente(TipoConceito tipo)
     {
         _repository.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
@@ -67,9 +73,9 @@ public sealed class AtualizarTipoConceitoCommandHandlerTests
     [Fact(DisplayName = "Corpo inválido vence o não encontrado e não consulta o repositório")]
     public async Task Handle_CorpoInvalido_NaoConsultaORepositorio()
     {
-        Result resultado = await Atualizar(TiposConceitoDeTeste.AtualizarNumerico(Guid.NewGuid()) with { Nome = "", Natureza = "x" });
+        Result resultado = await Atualizar(DefinicaoComNomeENaturezaInvalidos());
 
-        resultado.Errors.Select(e => e.Field).Should().Equal("nome", "natureza");
+        resultado.Errors.Select(e => e.Field).Should().Equal("definicao.nome", "definicao.natureza");
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 

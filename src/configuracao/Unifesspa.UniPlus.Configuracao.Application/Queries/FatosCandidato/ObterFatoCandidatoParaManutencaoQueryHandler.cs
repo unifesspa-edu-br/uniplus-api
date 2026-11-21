@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 public static class ObterFatoCandidatoParaManutencaoQueryHandler
 {
-    public static async Task<FatoCandidatoDto?> Handle(
+    public static async Task<FatoDeManutencaoDto?> Handle(
         ObterFatoCandidatoParaManutencaoQuery query,
         IFatoCandidatoRepository repository,
         CancellationToken cancellationToken)

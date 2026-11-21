@@ -3387,6 +3387,11 @@
       "titulo": "O mínimo e o máximo de ocorrências do grupo são incoerentes"
     },
     {
+      "codigo": "uniplus.grupo_formulario.ocorrencias_obrigatorias",
+      "status": 422,
+      "titulo": "O grupo não declara o mínimo de ocorrências ou se o candidato é uma delas"
+    },
+    {
       "codigo": "uniplus.grupo_formulario.ordem_invalida",
       "status": 422,
       "titulo": "A ordem do grupo não pode ser negativa"
@@ -3545,6 +3550,11 @@
       "codigo": "uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio",
       "status": 422,
       "titulo": "O tipo de campo não é coerente com o domínio do fato"
+    },
+    {
+      "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+      "status": 422,
+      "titulo": "O tipo de campo do item não é reconhecido"
     },
     {
       "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
@@ -4435,11 +4445,6 @@
       "codigo": "uniplus.selecao.condicao_gatilho.clausula_invalida",
       "status": 422,
       "titulo": "O ordinal da cláusula não pode ser negativo"
-    },
-    {
-      "codigo": "uniplus.selecao.condicao_precondicao_fato.clausula_invalida",
-      "status": 422,
-      "titulo": "O ordinal da cláusula da pré-condição não pode ser negativo"
     },
     {
       "codigo": "uniplus.selecao.condicao_regra_derivacao.clausula_invalida",

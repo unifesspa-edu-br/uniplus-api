@@ -144,7 +144,7 @@ obter_fase_classificacao() {
 definir_etapa_nota_do_enem() {
     log "Definir a etapa de nota do ENEM"
     local tipo_id
-    tipo_id=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.notaDeOrigemNoEnem==true and .ativo==true) | .id' | head -1)
+    tipo_id=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.avaliacao.notaDeOrigemNoEnem==true and .ativo==true) | .id' | head -1)
     exigir_id "tipo de etapa com nota de origem no ENEM" "$tipo_id"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/etapas" "$(jq -nc --arg t "$tipo_id" '[{
         nome: "Nota do ENEM", carater: "ambas", tipoEtapaOrigemId: $t, peso: 1, notaMinima: null,
@@ -250,7 +250,7 @@ inscrever_personas() {
     log "Inscrever as personas candidatas (sem $PERSONA_NAO_INSCRITA)"
     local edicoes=(2025 2024 2025 2026) ofertas=("${OFERTAS_DISTRIBUIDAS[@]}") formulario candidatas pessoa i=0
     formulario=$(curl -sS "$API_URL/api/selecao/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO")
-    ACEITES=$(jq -c '[.termos[] | {codigo, versaoId, hashVersao}]' <<< "$formulario")
+    ACEITES=$(jq -c '[.formulario.termos[] | {codigo, versaoId, hashVersao: .conteudo.hashVersao}]' <<< "$formulario")
     # Lido antes do laço para que uma falha do jq derrube o roteiro em vez de
     # terminar com zero inscrições.
     candidatas=$(jq -c --arg fora "$PERSONA_NAO_INSCRITA" '.[] | select(.perfil == "candidato" and .username != $fora)' "$FAKE_PEOPLE")

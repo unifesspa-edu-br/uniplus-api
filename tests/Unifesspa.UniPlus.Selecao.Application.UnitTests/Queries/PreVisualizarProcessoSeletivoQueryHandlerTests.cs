@@ -73,13 +73,18 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         Exigidos(previa).Should().BeEquivalentTo(["PASSAPORTE"]);
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
             .Should().ContainSingle("a composição familiar não aparece a quem se declarou branco").Which.Situacao.Should().Be("NAO_EXIGIDO");
-        DocumentoSimuladoDto rg = previa.Documentos.Single(static d => d.TipoDocumentoCodigo == "RG");
-        rg.Alternativas.Should().ContainSingle("o RG está num grupo E dentro do grupo de alternativas da identidade")
-            .Which.Should().Be(previa.Documentos.Single(static d => d.TipoDocumentoCodigo == "PASSAPORTE").Alternativas.Single());
+        ConferirQueORgEOPassaporteSaoAlternativas(previa);
         FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade == "INSCRICAO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "RG_NUMERO").Visivel.Should().Be("FALSO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "NATURALIDADE_UF").Visivel.Should().Be("FALSO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Should().Be("VERDADEIRO");
+    }
+
+    private static void ConferirQueORgEOPassaporteSaoAlternativas(PreVisualizacaoDoProcessoDto previa)
+    {
+        DocumentoSimuladoDto rg = previa.Documentos.Single(static d => d.TipoDocumentoCodigo == "RG");
+        rg.Alternativas.Should().ContainSingle("o RG está num grupo E dentro do grupo de alternativas da identidade")
+            .Which.Should().Be(previa.Documentos.Single(static d => d.TipoDocumentoCodigo == "PASSAPORTE").Alternativas.Single());
     }
 
     [Fact(DisplayName = "Sem saber se a composição familiar aparece, o documento por membro sai indeterminado, sem ocorrência")]
@@ -150,13 +155,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     {
         const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PSIQ 2027");
-        FatoColetado parfor = FatoColetado.Criar(
-            "VINCULO_PARFOR", FormularioDeTeste.PrimeiraOrdemDeInscricao, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            etapaCodigo: FormularioDeTeste.Secao,
-            impedimento: new Impedimento(
-                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
-                Mensagem), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor])
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), VinculoParforComImpedimento(Mensagem)])
             .IsSuccess.Should().BeTrue();
 
         Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
@@ -165,6 +164,14 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         resultado.Value!.Formularios.Single(static f => f.Finalidade == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
             .Should().BeEquivalentTo(new { Impedido = impedido, MensagemDoImpedimento = Mensagem });
     }
+
+    private static FatoColetado VinculoParforComImpedimento(string mensagem) =>
+        FatoColetadoDeTeste.Coletando("VINCULO_PARFOR", FormularioDeTeste.PrimeiraOrdemDeInscricao)
+            .ComRotulo("Vínculo com o PARFOR")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .ComImpedimento(new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!, mensagem))
+            .Construir();
 
     [Fact(DisplayName = "Cada formulário avaliado diz de cada seção se ela aparece")]
     public async Task Handle_Secoes_DizemSeAparecem()
@@ -254,39 +261,48 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
-        GrupoColetado composicao = GrupoColetado.Criar(
-            Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", minimoDaComposicao, null,
-            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
-            Obrigatoriedade.Sempre,
-            [
-                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            ],
-            FinalidadeFormulario.Habilitacao).Value!;
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [composicao]).IsSuccess.Should().BeTrue();
-
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [ComposicaoFamiliar(minimoDaComposicao)]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, Json("INDIGENA")).Value!)]).Value!)],
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(DocumentosDaHabilitacaoDeMedicina(fase)).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos(
-        [
-            NoExigencia.CriarFolha(Documento(fase, "PERTENCIMENTO_INDIGENA",
-                Condicao(0, "MODALIDADE_CONVOCACAO", Operador.Em, new[] { "LB_PPI", "LI_PPI" }),
-                Condicao(0, "COR_RACA", Operador.Igual, "INDIGENA")), 0).Value!,
-            NoExigencia.CriarFolha(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, new[] { "RURAL" })), 1).Value!,
-            NoExigencia.CriarFolha(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, repetePorEntidade: Composicao).Value!,
-            NoExigencia.CriarGrupo(TipoNo.GrupoOu, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
-            [
-                NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, quantidadeMinima: null, consequencia: null, basesLegais: [],
-                    [NoExigencia.CriarFolha(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
-                NoExigencia.CriarFolha(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
-            ]).Value!,
-            NoExigencia.CriarFolha(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
-        ]).IsSuccess.Should().BeTrue();
         return processo;
     }
+
+    private static GrupoColetado ComposicaoFamiliar(int minimoDaComposicao) => GrupoColetadoDeTeste.Agrupando(Composicao, 0)
+        .ComOcorrencias(minimoDaComposicao, null)
+        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(
+            FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
+                .ComRotulo("Categoria de renda")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
+                .ComRotulo("Menor sob guarda")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir())
+        .DaFinalidade(FinalidadeFormulario.Habilitacao)
+        .Construir();
+
+    private static NoExigencia[] DocumentosDaHabilitacaoDeMedicina(Guid fase) =>
+    [
+        NoExigencia.CriarFolha(Documento(fase, "PERTENCIMENTO_INDIGENA",
+            Condicao(0, "MODALIDADE_CONVOCACAO", Operador.Em, new[] { "LB_PPI", "LI_PPI" }),
+            Condicao(0, "COR_RACA", Operador.Igual, "INDIGENA")), 0).Value!,
+        NoExigencia.CriarFolha(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, new[] { "RURAL" })), 1).Value!,
+        NoExigencia.CriarFolha(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, repetePorEntidade: Composicao).Value!,
+        NoExigencia.CriarGrupo(TipoNo.GrupoOu, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
+        [
+            NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, quantidadeMinima: null, consequencia: null, basesLegais: [],
+                [NoExigencia.CriarFolha(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
+            NoExigencia.CriarFolha(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
+        ]).Value!,
+        NoExigencia.CriarFolha(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
+    ];
 
     private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => DocumentoExigido.Criar(
         fase, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional,

@@ -126,7 +126,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
         Result result = processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA"), MaiorIdade(2), PorArea(3, "LINGUAGENS", "REDACAO")]);
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
-        (erro.Field, erro.Error.Code).Should().Be(("criterios[2].areas[1]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[2].parametros.areas[1]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
         erro.Error.Message.Should().Contain("REDACAO").And.Contain("ordem 1");
     }
 
@@ -138,7 +138,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
         Result result = processo.DefinirCriteriosDesempate([PorArea(2, "REDACAO"), PorArea(1, "REDACAO", "MATEMATICA")]);
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
-        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].areas[0]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].parametros.areas[0]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
         erro.Error.Message.Should().Contain("ordem 1");
     }
 

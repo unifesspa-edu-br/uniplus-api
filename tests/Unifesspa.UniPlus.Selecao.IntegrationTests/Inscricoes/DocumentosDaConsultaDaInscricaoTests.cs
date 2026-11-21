@@ -52,18 +52,19 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
         formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain("DECLARA_RENDA", "a resposta que decide o gatilho muda a avaliação");
     }
 
+    private static FatoColetado PerguntaSobreRenda(string codigo) => FatoColetadoDeTeste.Coletando(codigo, 1)
+        .ComRotulo("Você declara renda?")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .NaSecao(FormularioDeTeste.Secao)
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
+
     private static ProcessoSeletivo ProcessoComDocumentos()
     {
         const string declaraRenda = "DECLARA_RENDA";
         const string familia = "COMPOSICAO_FAMILIAR";
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(DocumentosDaConsultaDaInscricaoTests),
-            camposAdicionais:
-            [
-                FatoColetado.Criar(
-                    declaraRenda, 1, "Você declara renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                    classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            ]);
+            nameof(DocumentosDaConsultaDaInscricaoTests), camposAdicionais: [PerguntaSobreRenda(declaraRenda)]);
         Guid fase = processo.CronogramaFases.Single().Id;
         DefinirDocumentos(processo, fase, familia, declaraRenda);
         return processo;

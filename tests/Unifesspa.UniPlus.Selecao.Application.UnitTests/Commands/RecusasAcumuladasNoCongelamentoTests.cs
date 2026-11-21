@@ -191,8 +191,9 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     }
 
     private static FatoColetado ItemDaModalidade() =>
-        FatoColetado.Criar(
-            "MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-            descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
+            .ComRotulo("Modalidade")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 }

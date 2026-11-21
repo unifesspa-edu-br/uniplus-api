@@ -111,7 +111,7 @@ public sealed class FatoDeElegibilidadeGateTests
     private static void DefinirOFatoDoAcrescimo(ProcessoSeletivo processo)
     {
         Result itens = processo.DefinirItens(
-            [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]);
+            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Deseja solicitar o acréscimo?").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 

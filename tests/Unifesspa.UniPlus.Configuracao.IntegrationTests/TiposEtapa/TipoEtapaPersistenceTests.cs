@@ -37,26 +37,30 @@ public sealed class TipoEtapaPersistenceTests
 
         IReadOnlyList<TipoEtapaView> ativos = await new TipoEtapaReader(ctx).ListarAtivosAsync(CancellationToken.None);
 
-        ativos.Where(tipo => tipo.NotaDeOrigemNoEnem).Select(tipo => tipo.Codigo).Should().Equal("NOTA_ENEM");
+        ativos.Where(tipo => tipo.Avaliacao.NotaDeOrigemNoEnem).Select(tipo => tipo.Codigo).Should().Equal("NOTA_ENEM");
+    }
+
+    // A linha semeada é compartilhada pela coleção: a transação desfeita no fim a preserva mesmo que o CHECK deixe de
+    // recusar. A escrita contorna o domínio de propósito: o CHECK é defesa em profundidade contra escrita fora do fluxo
+    // da aplicação.
+    private async Task<Npgsql.PostgresException> RecusaDoBancoAoAtualizarAsync(string atualizacao)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(atualizacao);
+
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        await transacao.RollbackAsync();
+        return pg;
     }
 
     [Fact(DisplayName = "O banco recusa tirar a pontuação do tipo com nota de origem no ENEM")]
     public async Task CheckConstraint_NotaDeOrigemNoEnemSemPontuacao_Recusa()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        // A linha semeada é compartilhada pela coleção: a transação desfeita no fim a preserva
-        // mesmo que o CHECK deixe de recusar.
-        await using IDbContextTransaction transacao =
-            await ctx.Database.BeginTransactionAsync();
-
-        // Bypassa o domínio de propósito: o CHECK é defesa em profundidade contra escrita fora
-        // do fluxo da aplicação.
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
+        Npgsql.PostgresException pg = await RecusaDoBancoAoAtualizarAsync(
             "UPDATE configuracao.tipos_etapa SET admite_pontuacao = false WHERE codigo = 'NOTA_ENEM'");
 
-        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        await transacao.RollbackAsync();
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
         pg.ConstraintName.Should().Be("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao");
     }
@@ -68,20 +72,15 @@ public sealed class TipoEtapaPersistenceTests
 
         IReadOnlyList<TipoEtapaView> ativos = await new TipoEtapaReader(ctx).ListarAtivosAsync(CancellationToken.None);
 
-        ativos.Where(tipo => tipo.ExigeCorrecaoIndependente).Select(tipo => tipo.Codigo).Should().Equal("REDACAO");
+        ativos.Where(tipo => tipo.Avaliacao.ExigeCorrecaoIndependente).Select(tipo => tipo.Codigo).Should().Equal("REDACAO");
     }
 
     [Fact(DisplayName = "O banco recusa exigir correção independente no tipo com nota de origem no ENEM")]
     public async Task CheckConstraint_CorrecaoIndependenteComNotaDeOrigemNoEnem_Recusa()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
+        Npgsql.PostgresException pg = await RecusaDoBancoAoAtualizarAsync(
             "UPDATE configuracao.tipos_etapa SET exige_correcao_independente = true WHERE codigo = 'NOTA_ENEM'");
 
-        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        await transacao.RollbackAsync();
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
         pg.ConstraintName.Should().Be("ck_tipos_etapa_correcao_independente_sem_nota_do_enem");
     }

@@ -21,13 +21,13 @@ internal static class ConteudosDoModeloDeTeste
         new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, exibicao);
 
     public static ItemDoModelo Item(string fato, int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, "DADOS", fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, exibicao, [], false);
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     public static GrupoDoModelo Grupo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null, params ItemDoModelo[] campos) =>
-        new(codigo, ordem, "DADOS", "Grupo", 1, 10, exibicao, Obrigatoriedade.Sempre, campos);
+        new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);
 
     public static TermoDoModelo Termo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), exibicao, Obrigatoriedade.Sempre);
+        new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));
 
     public static DocumentoExigidoDoModelo Documento(string tipo, PredicadoDnf? quando = null, ExigenciaPorOpcao? porOpcao = null) =>
         new("INSCRICAO", tipo, false, quando, "REMOVE_VANTAGEM", [], porOpcao);

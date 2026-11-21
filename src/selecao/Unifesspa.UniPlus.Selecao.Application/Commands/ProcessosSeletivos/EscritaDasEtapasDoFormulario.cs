@@ -16,6 +16,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>As etapas lidas pela forma, sem leitura externa, com a exibição de cada posição da entrada.</summary>
 internal sealed record EtapasDoFormularioLidas(IReadOnlyList<EtapaFormulario> Etapas, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros);
 
+/// <summary>A etapa lida de uma posição da entrada: a etapa criada, a exibição lida e as recusas das duas.</summary>
+internal sealed record EtapaLida(EtapaFormulario? Etapa, PredicadoDnf? Exibicao, IReadOnlyList<FieldError> Erros);
+
 /// <summary>
 /// A escrita das etapas do formulário do processo, sem ler nem mudar o processo: a forma de cada
 /// etapa, sem I/O, e a semântica das exibições contra o catálogo. A estrutura por finalidade e a
@@ -26,39 +29,41 @@ internal static class EscritaDasEtapasDoFormulario
     public static EtapasDoFormularioLidas Ler(IReadOnlyList<EtapaFormularioInput?> entradas)
     {
         ArgumentNullException.ThrowIfNull(entradas);
-        List<FieldError> erros = [];
-        List<EtapaFormulario> etapas = [];
-        PredicadoDnf?[] exibicoes = new PredicadoDnf?[entradas.Count];
-        for (int i = 0; i < entradas.Count; i++)
+        List<EtapaLida> lidas = [.. entradas.Select((entrada, i) => LerEtapa(entrada, $"etapas[{i}]"))];
+        return new EtapasDoFormularioLidas(
+            [.. lidas.Select(static l => l.Etapa).OfType<EtapaFormulario>()],
+            [.. lidas.Select(static l => l.Exibicao)],
+            [.. lidas.SelectMany(static l => l.Erros)]);
+    }
+
+    /// <summary>
+    /// A etapa criada pela forma e a exibição lida, que a semântica confere depois contra o catálogo; as recusas da
+    /// exibição saem antes das da etapa.
+    /// </summary>
+    private static EtapaLida LerEtapa(EtapaFormularioInput? entrada, string campo)
+    {
+        if (entrada is null)
         {
-            if (entradas[i] is not { } entrada)
-            {
-                erros.Add(new($"etapas[{i}]", new DomainError(EstruturaFormularioErrorCodes.EtapaCodigoInvalido, "A etapa veio nula.")));
-                continue;
-            }
-
-            Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);
-            if (exibicao.IsFailure)
-            {
-                erros.Add(new($"etapas[{i}].exibicao", exibicao.Error!));
-            }
-
-            exibicoes[i] = exibicao.IsSuccess ? exibicao.Value : null;
-            Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-                entrada.Codigo, entrada.Ordem, EstruturaFormulario.TipoDoToken(entrada.Tipo), EstruturaFormulario.BlocoDoToken(entrada.Bloco),
-                entrada.Titulo, entrada.Descricao, entrada.Aviso, exibicoes[i]);
-            if (etapa.IsSuccess)
-            {
-                etapas.Add(etapa.Value!);
-            }
-            else
-            {
-                erros.AddRange(etapa.Errors.Select(e => new FieldError($"etapas[{i}].{e.Field}", e.Error)));
-            }
+            return new(null, null, [new(campo, new DomainError(EstruturaFormularioErrorCodes.EtapaCodigoInvalido, "A etapa veio nula."))]);
         }
 
-        return new EtapasDoFormularioLidas(etapas, exibicoes, erros);
+        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(entrada.Exibicao);
+        PredicadoDnf? lida = exibicao.IsSuccess ? exibicao.Value : null;
+        Result<EtapaFormulario> etapa = CriarEtapa(entrada, lida);
+        FieldError[] recusasDaExibicao = exibicao.IsFailure ? [new($"{campo}.exibicao", exibicao.Error!)] : [];
+        return new(etapa.IsSuccess ? etapa.Value : null, lida, [.. recusasDaExibicao, .. etapa.Errors.Select(erro => erro.NoCaminhoDe(campo))]);
     }
+
+    private static Result<EtapaFormulario> CriarEtapa(EtapaFormularioInput entrada, PredicadoDnf? exibicao) =>
+        EtapaFormulario.Criar(
+            entrada.Codigo,
+            entrada.Ordem,
+            EstruturaFormulario.TipoDoToken(entrada.Tipo),
+            EstruturaFormulario.BlocoDoToken(entrada.Bloco),
+            entrada.Apresentacao?.Titulo ?? string.Empty,
+            entrada.Apresentacao?.Descricao,
+            entrada.Apresentacao?.Aviso,
+            exibicao);
 
     /// <summary>A exibição de cada seção pelo vocabulário e pelos domínios do processo, sem fato calculado de atributos.</summary>
     public static IEnumerable<FieldError> ConferirExibicoes(EtapasDoFormularioLidas lidas, ContextoDoCatalogo contexto)

@@ -19,7 +19,7 @@ public sealed class ModeloFormularioAvaliacaoEndpointTests
 {
     private const string Avaliacoes = "/api/configuracao/admin/avaliacoes-de-formulario";
 
-    private static readonly string[] ChavesDoCampo = ["visivel", "obrigatorio", "impedido", "restricoesVioladas", "opcoes"];
+    private static readonly string[] ChavesDasRegrasDoCampo = ["visivel", "obrigatorio", "impedido", "restricoesVioladas"];
 
     private readonly ConfiguracaoEndpointFixture _fixture;
 
@@ -76,10 +76,12 @@ public sealed class ModeloFormularioAvaliacaoEndpointTests
 
     private static void ConferirCampo(JsonNode campo, JsonNode item)
     {
-        foreach (string chave in ChavesDoCampo)
+        foreach (string chave in ChavesDasRegrasDoCampo)
         {
-            (campo[chave]?.ToJsonString()).Should().Be(item[chave]?.ToJsonString(), $"'{chave}' do campo {item["fatoCodigo"]} é o mesmo nos dois caminhos");
+            (campo["regras"]![chave]?.ToJsonString()).Should().Be(item[chave]?.ToJsonString(), $"'{chave}' do campo {item["fatoCodigo"]} é o mesmo nos dois caminhos");
         }
+
+        (campo["opcoes"]?.ToJsonString()).Should().Be(item["opcoes"]?.ToJsonString(), $"'opcoes' do campo {item["fatoCodigo"]} é o mesmo nos dois caminhos");
     }
 
     private static void ConferirOpcoesDaFormaDeConclusao(JsonObject avaliacao, bool quilombola) =>

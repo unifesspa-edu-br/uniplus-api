@@ -9,40 +9,50 @@
         "grupos": [
           {
             "codigo": "FAMILIA",
-            "exibicao": null,
-            "obrigatoriedade": "NUNCA",
-            "predicadoObrigatoriedade": null,
-            "minimo": 0,
-            "maximo": null,
-            "incluiCandidato": false,
+            "ocorrencias": {
+              "minimo": 0,
+              "maximo": null,
+              "incluiCandidato": false
+            },
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "NUNCA",
+                "predicado": null
+              }
+            },
             "subitens": [
               {
                 "fatoCodigo": "NASCIMENTO_MEMBRO",
-                "exibicao": null,
-                "obrigatoriedade": "SEMPRE",
-                "predicadoObrigatoriedade": null,
-                "restricoes": [
-                  {
-                    "tipo": "FAIXA_DE_DATA",
-                    "minimo": null,
-                    "maximo": null,
-                    "entradas": null,
-                    "fatos": null,
-                    "dataMinima": {
-                      "ancora": "ENVIO",
-                      "data": null,
-                      "anos": -120,
-                      "dias": 0
-                    },
-                    "dataMaxima": {
-                      "ancora": "ENVIO",
-                      "data": null,
-                      "anos": 0,
-                      "dias": 0
+                "regras": {
+                  "exibicao": null,
+                  "obrigatoriedade": {
+                    "tipo": "SEMPRE",
+                    "predicado": null
+                  },
+                  "restricoes": [
+                    {
+                      "tipo": "FAIXA_DE_DATA",
+                      "minimo": null,
+                      "maximo": null,
+                      "entradas": null,
+                      "fatos": null,
+                      "dataMinima": {
+                        "ancora": "ENVIO",
+                        "data": null,
+                        "anos": -120,
+                        "dias": 0
+                      },
+                      "dataMaxima": {
+                        "ancora": "ENVIO",
+                        "data": null,
+                        "anos": 0,
+                        "dias": 0
+                      }
                     }
-                  }
-                ],
-                "impedimento": null,
+                  ],
+                  "impedimento": null
+                },
                 "oferta": null,
                 "formato": null
               }
@@ -82,29 +92,35 @@
     "grupos": [
       {
         "codigo": "FAMILIA",
-        "ocorrencias": [
-          {
-            "id": "m1",
-            "campos": [
-              {
-                "fatoCodigo": "NASCIMENTO_MEMBRO",
-                "estado": "RESOLVIDO",
-                "restricoesVioladas": []
-              }
-            ]
-          },
-          {
-            "id": "m2",
-            "campos": [
-              {
-                "fatoCodigo": "NASCIMENTO_MEMBRO",
-                "restricoesVioladas": [
-                  "FAIXA_DE_DATA"
-                ]
-              }
-            ]
-          }
-        ]
+        "ocorrencias": {
+          "lista": [
+            {
+              "id": "m1",
+              "campos": [
+                {
+                  "fatoCodigo": "NASCIMENTO_MEMBRO",
+                  "estado": "RESOLVIDO",
+                  "regras": {
+                    "restricoesVioladas": []
+                  }
+                }
+              ]
+            },
+            {
+              "id": "m2",
+              "campos": [
+                {
+                  "fatoCodigo": "NASCIMENTO_MEMBRO",
+                  "regras": {
+                    "restricoesVioladas": [
+                      "FAIXA_DE_DATA"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

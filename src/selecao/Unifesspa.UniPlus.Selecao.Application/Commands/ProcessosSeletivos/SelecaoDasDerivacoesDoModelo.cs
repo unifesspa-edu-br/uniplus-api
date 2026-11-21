@@ -27,42 +27,21 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
 {
     private const string FonteModalidade = "MODALIDADE";
 
+    // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações efetivas
+    // suprem enquanto o processo não grava outra é copiada como as demais: a cópia não pode depender de a
+    // oferta continuar com cota da lei.
+    private readonly Dictionary<string, ConfiguracaoDerivacaoFato> _derivados = DerivadosDoProcesso(processo);
+
     /// <summary>As derivações a copiar para o processo e as recusas do que o processo precisa configurar antes.</summary>
     public async Task<DerivacoesEscolhidas> EscolherAsync(string[] citados, CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao =
             await fatoCandidatoReader.ListarRegrasPadraoAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<string, ConfiguracaoDerivacaoFato> derivados = DerivadosDoProcesso();
-        HashSet<string> vistos = new(StringComparer.Ordinal);
-        Queue<string> pendentes = new(citados.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
-        List<ConfiguracaoDerivacaoInput> aCopiar = [];
-        List<FieldError> recusas = [];
-        while (pendentes.TryDequeue(out string? codigo))
-        {
-            if (!vistos.Add(codigo) || !contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato)
-                || !VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao))
-            {
-                continue;
-            }
+        List<Visita> visitas = [.. Visitas(citados, regrasPadrao)];
 
-            Visita visita = Visitar(codigo, derivados, regrasPadrao);
-            if (visita.Copiada is not null)
-            {
-                aCopiar.Add(visita.Copiada);
-            }
-
-            if (visita.Recusa is not null)
-            {
-                recusas.Add(visita.Recusa);
-            }
-
-            foreach (string dependencia in visita.Dependencias)
-            {
-                pendentes.Enqueue(dependencia);
-            }
-        }
-
-        return new DerivacoesEscolhidas(aCopiar, recusas);
+        return new DerivacoesEscolhidas(
+            [.. visitas.Select(static v => v.Copiada).OfType<ConfiguracaoDerivacaoInput>()],
+            [.. visitas.Select(static v => v.Recusa).OfType<FieldError>()]);
     }
 
     /// <summary>
@@ -84,49 +63,48 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     /// <summary>Resolve as derivações a copiar contra o universo de fatos da configuração final.</summary>
     public DerivacoesResolvidas Resolver(List<ConfiguracaoDerivacaoInput> aCopiar, IReadOnlySet<string> universo)
     {
-        List<ConfiguracaoDerivacaoFato> derivacoes = [];
-        List<FieldError> recusas = [];
-        foreach (ConfiguracaoDerivacaoInput derivacao in aCopiar)
-        {
-            Result<ConfiguracaoDerivacaoFato> resolvida = DefinirRegrasDerivacaoCommandHandler.ResolverConfiguracao(
-                derivacao, contexto.Fatos, contexto.Vocabulario, universo, contexto.DominiosDinamicos);
-            if (resolvida.IsSuccess)
-            {
-                derivacoes.Add(resolvida.Value!);
-            }
-            else
-            {
-                recusas.AddRange(resolvida.Errors.Select(e => e with { Field = $"derivacoes[{derivacao.CodigoFato}]" }));
-            }
-        }
+        List<ResolucaoDaDerivacao> resolucoes = [.. aCopiar.Select(d => DerivacaoInformada.De(d).Resolver(contexto, universo))];
+        List<FieldError> recusas = [.. ResolucaoDasDerivacoes.RecusasPorGrupo(
+            resolucoes, (erro, i) => erro with { Field = $"derivacoes[{aCopiar[i].CodigoFato}]" })];
 
-        return new DerivacoesResolvidas(derivacoes, recusas);
+        return new DerivacoesResolvidas([.. resolucoes.Select(static r => r.Configuracao).OfType<ConfiguracaoDerivacaoFato>()], recusas);
     }
 
-    // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações efetivas
-    // suprem enquanto o processo não grava outra é copiada como as demais: a cópia não pode depender de a
-    // oferta continuar com cota da lei.
-    private Dictionary<string, ConfiguracaoDerivacaoFato> DerivadosDoProcesso() =>
-        processo.DerivacoesEfetivas()
-            .Where(r => DerivacoesDaOferta.Deriva(r.CodigoFato)
-                || processo.RegrasDerivacao.Any(g => string.Equals(g.CodigoFato, r.CodigoFato, StringComparison.Ordinal)))
-            .ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
-
-    private Visita Visitar(
-        string codigo,
-        Dictionary<string, ConfiguracaoDerivacaoFato> derivados,
-        IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao)
+    private IEnumerable<Visita> Visitas(
+        string[] citados, IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao)
     {
-        if (derivados.TryGetValue(codigo, out ConfiguracaoDerivacaoFato? derivado))
+        HashSet<string> vistos = new(StringComparer.Ordinal);
+        Queue<string> pendentes = new(citados.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        while (pendentes.TryDequeue(out string? codigo))
         {
-            relatorio.Mantidas.Add(codigo);
-            return new Visita(null, null, DerivacoesDaOferta.Deriva(codigo) ? derivado.FatosCitados : []);
+            if (vistos.Add(codigo) && UsaRegraDeDerivacao(codigo))
+            {
+                Visita visita = Visitar(codigo, regrasPadrao);
+                visita.Dependencias.ToList().ForEach(pendentes.Enqueue);
+                yield return visita;
+            }
         }
+    }
 
+    private bool UsaRegraDeDerivacao(string codigo) =>
+        contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato) && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao);
+
+    private Visita Visitar(string codigo, IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao) =>
+        _derivados.TryGetValue(codigo, out ConfiguracaoDerivacaoFato? derivado)
+            ? Mantida(codigo, derivado)
+            : DoCatalogo(codigo, regrasPadrao);
+
+    private Visita Mantida(string codigo, ConfiguracaoDerivacaoFato derivado)
+    {
+        relatorio.Mantidas.Add(codigo);
+        return new Visita(null, null, DerivacoesDaOferta.Deriva(codigo) ? derivado.FatosCitados : []);
+    }
+
+    private Visita DoCatalogo(string codigo, IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao)
+    {
         if (string.Equals(codigo, OpcaoPelasCotasDaLei.Fato, StringComparison.Ordinal))
         {
-            return Visita.Recusada(Recusa(codigo, AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
-                $"O modelo cita '{codigo}', que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes."));
+            return Visita.Recusada(CotaDaLeiNaoOfertada(codigo));
         }
 
         // A modalidade sem modalidade ofertada: a recusa é a da distribuição de vagas que falta.
@@ -135,12 +113,13 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
             return Visita.Ignorada;
         }
 
-        if (!regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras))
-        {
-            return Visita.Recusada(Recusa(codigo, AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
-                $"O modelo cita '{codigo}', que o processo ainda não deriva e o catálogo não tem regra padrão; configure as regras de derivação dele no processo antes."));
-        }
+        return regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras)
+            ? Copiada(codigo, regras)
+            : Visita.Recusada(DerivadoSemRegraPadrao(codigo));
+    }
 
+    private Visita Copiada(string codigo, IReadOnlyList<RegraDerivacao> regras)
+    {
         relatorio.Copiadas.Add(codigo);
         return new Visita(
             new ConfiguracaoDerivacaoInput(codigo, [.. regras.Select(static (r, ordem) => new RegraDerivacaoInput(ordem, r.Contribui, Quando(r.Quando)))]),
@@ -148,14 +127,28 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
             regras.SelectMany(static r => r.FatosCitados));
     }
 
+    private static FieldError CotaDaLeiNaoOfertada(string codigo) => Recusa(
+        codigo,
+        AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
+        $"O modelo cita '{codigo}', que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes.");
+
+    private static FieldError DerivadoSemRegraPadrao(string codigo) => Recusa(
+        codigo,
+        AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
+        $"O modelo cita '{codigo}', que o processo ainda não deriva e o catálogo não tem regra padrão; configure as regras de derivação dele no processo antes.");
+
+    private static Dictionary<string, ConfiguracaoDerivacaoFato> DerivadosDoProcesso(ProcessoSeletivo processo) =>
+        processo.DerivacoesEfetivas()
+            .Where(r => DerivacoesDaOferta.Deriva(r.CodigoFato)
+                || processo.RegrasDerivacao.Any(g => string.Equals(g.CodigoFato, r.CodigoFato, StringComparison.Ordinal)))
+            .ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
+
     private static FieldError Recusa(string codigo, string codigoDoErro, string mensagem) =>
         new($"derivacoes[{codigo}]", new DomainError(codigoDoErro, mensagem));
 
-    // O predicado da regra padrão na forma da entrada de derivação; a regra âncora não tem condição.
-    private static IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>>? Quando(PredicadoDnf quando) =>
-        EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas
-            ? [.. clausulas.Select(static c => (IReadOnlyList<CondicaoDerivacaoInput>)[.. c.Select(static k => new CondicaoDerivacaoInput(k.Fato, k.Operador, k.Valor))])]
-            : null;
+    // O predicado da regra padrão na forma da entrada de derivação; a regra incondicional não tem condição.
+    private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando(PredicadoDnf quando) =>
+        EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas ? clausulas : null;
 
     // O que a visita a um derivado citado decidiu: copiá-lo do catálogo, recusá-lo, ou só seguir para os
     // derivados que ele cita.

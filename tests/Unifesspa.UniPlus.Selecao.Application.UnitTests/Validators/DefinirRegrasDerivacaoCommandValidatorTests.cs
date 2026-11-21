@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -14,7 +15,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
 {
     private static readonly DefinirRegrasDerivacaoCommandValidator Validator = new();
 
-    private static CondicaoDerivacaoInput Condicao() =>
+    private static CondicaoPrecondicaoInput Condicao() =>
         new("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirRegrasDerivacaoCommand Comando(params RegraDerivacaoInput[] regras) =>
@@ -28,7 +29,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Passa com regra âncora (Quando null)")]
+    [Fact(DisplayName = "Passa com regra incondicional (Quando null)")]
     public void Aceita_RegraAncora()
     {
         ValidationResult result = Validator.Validate(Comando(new RegraDerivacaoInput(0, "AC", null)));
@@ -44,7 +45,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a lista de regras é nula (achado de revisão: RuleForEach não cobre a coleção nula em si)")]
+    [Fact(DisplayName = "Falha quando a lista de regras é nula (o RuleForEach não cobre a coleção nula em si)")]
     public void Rejeita_RegrasNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
@@ -106,12 +107,12 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras[0].Quando");
     }
 
-    [Fact(DisplayName = "Falha quando o 'quando' tem uma condição nula ([[null]])")]
-    public void Rejeita_QuandoCondicaoNula()
+    [Fact(DisplayName = "Passa com cláusula vazia ou condição nula no 'quando': a leitura das condições recusa as duas")]
+    public void Aceita_ClausulaVaziaECondicaoNulaNoValidator()
     {
-        ValidationResult result = Validator.Validate(Comando(new RegraDerivacaoInput(0, "AC", [[null!]])));
+        ValidationResult result = Validator.Validate(Comando(
+            new RegraDerivacaoInput(0, "AC", [[]]), new RegraDerivacaoInput(1, "AC", [[null!]])));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras[0].Quando");
+        result.IsValid.Should().BeTrue();
     }
 }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -11,5 +12,5 @@ public sealed record ApresentacaoDoFato(string FatoCodigo, string Rotulo, string
 {
     /// <summary>A apresentação a partir dos tokens do catálogo.</summary>
     public static ApresentacaoDoFato DoCatalogo(string fatoCodigo, string nome, string dominio, string cardinalidade, string? fonteValores) =>
-        new(fatoCodigo, nome, CoerenciaDoCampo.TipoDoFato(dominio, cardinalidade, fonteValores)?.ToCodigo());
+        new(fatoCodigo, nome, CoerenciaDoCampo.TipoDoFato(dominio, cardinalidade, fonteValores)?.Codigo());
 }

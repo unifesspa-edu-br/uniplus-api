@@ -1,8 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -12,7 +10,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// A UF e o município de nascimento pelo HTTP, contra o Postgres (UNI-REQ-0145): o formulário de
@@ -32,27 +30,20 @@ public sealed class CampoDeMunicipioEndpointTests
     public async Task DefinirItens_Inscricao_GravaOMunicipioDeNascimento()
     {
         Guid processoId = await SemearProcessoAsync();
-
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage put = Requisicao(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens");
-        put.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        put.Content = JsonContent.Create(new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
-        HttpResponseMessage gravado = await client.SendAsync(put);
+
+        HttpResponseMessage gravado = await ProcessoSeletivoHttp.DefinirItensAsync(client, processoId, new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
         gravado.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravado.Content.ReadAsStringAsync());
 
-        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
-        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
-        HttpResponseMessage lido = await client.SendAsync(get);
-        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
+        using JsonDocument corpo = await ProcessoSeletivoHttp.ObterAsync(client, processoId);
+        ConferirMunicipioDeNascimento(FormularioNaRespostaDoProcesso.Item(FormularioNaRespostaDoProcesso.DeInscricao(corpo), "NATURALIDADE_MUNICIPIO"));
+    }
 
-        using JsonDocument corpo = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
-        JsonElement municipio = corpo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO")
-            .GetProperty("fatosColetados").EnumerateArray()
-            .Single(static f => f.GetProperty("fatoCodigo").GetString() == "NATURALIDADE_MUNICIPIO");
+    private static void ConferirMunicipioDeNascimento(JsonElement municipio)
+    {
         municipio.GetProperty("etapaCodigo").GetString().Should().Be("DADOS_BASICOS");
-        municipio.GetProperty("tipoRenderizacao").GetString().Should().Be("MUNICIPIO");
-        JsonElement restricao = municipio.GetProperty("restricoes").EnumerateArray().Single();
+        municipio.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("MUNICIPIO");
+        JsonElement restricao = municipio.GetProperty("regras").GetProperty("restricoes").EnumerateArray().Single();
         restricao.GetProperty("tipo").GetString().Should().Be("MUNICIPIOS_DA_UF");
         restricao.GetProperty("fatos").EnumerateArray().Single().GetString().Should().Be("NATURALIDADE_UF");
     }
@@ -63,13 +54,5 @@ public sealed class CampoDeMunicipioEndpointTests
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Campo de município {Guid.CreateVersion7()}" });
         return processo.Id;
-    }
-
-    private static HttpRequestMessage Requisicao(HttpMethod metodo, string rota)
-    {
-        HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        return request;
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -56,15 +57,15 @@ internal static class ConteudoDoModeloJson
         ["fatoCodigo"] = campo.FatoCodigo,
         ["ordem"] = campo.Ordem,
         ["etapaCodigo"] = campo.EtapaCodigo,
-        ["rotulo"] = campo.Rotulo,
-        ["tipoRenderizacao"] = campo.TipoRenderizacao.ToCodigo(),
+        ["rotulo"] = campo.Apresentacao.Rotulo,
+        ["tipoRenderizacao"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
         ["formato"] = campo.Formato,
-        ["ajuda"] = campo.Ajuda,
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Obrigatoriedade),
-        ["exibicao"] = PredicadoOpcionalParaJson(campo.Exibicao),
-        ["restricoes"] = RestricaoValorJson.ParaJson(campo.Restricoes),
-        ["pedirConfirmacao"] = campo.PedirConfirmacao,
-        ["impedimento"] = campo.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Impedimento),
+        ["ajuda"] = campo.Apresentacao.Ajuda,
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Regras.Obrigatoriedade),
+        ["exibicao"] = PredicadoOpcionalParaJson(campo.Regras.Exibicao),
+        ["restricoes"] = RestricaoValorJson.ParaJson(campo.Regras.Restricoes),
+        ["pedirConfirmacao"] = campo.Apresentacao.PedirConfirmacao,
+        ["impedimento"] = campo.Regras.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Regras.Impedimento),
     };
 
     private static JsonObject TermoParaJson(TermoDoModelo termo) => new()
@@ -73,8 +74,8 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = termo.Ordem,
         ["termoId"] = termo.TermoId,
         ["versaoId"] = termo.VersaoId,
-        ["exibicao"] = PredicadoOpcionalParaJson(termo.Exibicao),
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(termo.Obrigatoriedade),
+        ["exibicao"] = PredicadoOpcionalParaJson(termo.Regras.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(termo.Regras.Obrigatoriedade),
     };
 
     private static JsonObject GrupoParaJson(GrupoDoModelo grupo) => new()
@@ -83,11 +84,11 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = grupo.Ordem,
         ["etapaCodigo"] = grupo.EtapaCodigo,
         ["rotulo"] = grupo.Rotulo,
-        ["minimo"] = grupo.Minimo,
-        ["maximo"] = grupo.Maximo,
-        ["incluiCandidato"] = grupo.IncluiCandidato,
-        ["exibicao"] = PredicadoOpcionalParaJson(grupo.Exibicao),
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(grupo.Obrigatoriedade),
+        ["minimo"] = grupo.Ocorrencias.Minimo,
+        ["maximo"] = grupo.Ocorrencias.Maximo,
+        ["incluiCandidato"] = grupo.Ocorrencias.IncluiCandidato,
+        ["exibicao"] = PredicadoOpcionalParaJson(grupo.Regras.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(grupo.Regras.Obrigatoriedade),
         ["subitens"] = new JsonArray([.. grupo.Subitens.Select(CampoParaJson)]),
     };
 
@@ -154,14 +155,20 @@ internal static class ConteudoDoModeloJson
         campo.GetProperty("fatoCodigo").GetString()!,
         campo.GetProperty("ordem").GetInt32(),
         Texto(campo, "etapaCodigo"),
-        campo.GetProperty("rotulo").GetString()!,
-        TipoRenderizacaoCodigo.FromCodigo(campo.GetProperty("tipoRenderizacao").GetString()),
+        ApresentacaoDeJson(campo),
         Texto(campo, "formato"),
+        RegrasDeJson(campo));
+
+    private static ApresentacaoDoCampo ApresentacaoDeJson(JsonElement campo) => new(
+        campo.GetProperty("rotulo").GetString()!,
+        CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoRenderizacao").GetString()!),
         Texto(campo, "ajuda"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
+        campo.GetProperty("pedirConfirmacao").GetBoolean());
+
+    private static RegrasDoCampo RegrasDeJson(JsonElement campo) => new(
         Predicado(campo, "exibicao"),
+        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
-        campo.GetProperty("pedirConfirmacao").GetBoolean(),
         Remontar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default)));
 
     private static TermoDoModelo TermoDeJson(JsonElement termo) => new(
@@ -169,20 +176,19 @@ internal static class ConteudoDoModeloJson
         termo.GetProperty("ordem").GetInt32(),
         termo.GetProperty("termoId").GetGuid(),
         termo.GetProperty("versaoId").GetGuid(),
-        Predicado(termo, "exibicao"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade"))));
+        new ExibicaoEObrigatoriedade(
+            Predicado(termo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade")))));
 
     private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
         grupo.GetProperty("codigo").GetString()!,
         grupo.GetProperty("ordem").GetInt32(),
         Texto(grupo, "etapaCodigo"),
         grupo.GetProperty("rotulo").GetString()!,
-        grupo.GetProperty("minimo").GetInt32(),
-        InteiroOuNulo(grupo.GetProperty("maximo")),
-        Predicado(grupo, "exibicao"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade"))),
-        [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
-        grupo.GetProperty("incluiCandidato").GetBoolean());
+        new OcorrenciasDoGrupo(
+            grupo.GetProperty("minimo").GetInt32(), InteiroOuNulo(grupo.GetProperty("maximo")), grupo.GetProperty("incluiCandidato").GetBoolean()),
+        new ExibicaoEObrigatoriedade(
+            Predicado(grupo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade")))),
+        [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]);
 
     private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement raiz) =>
         raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)

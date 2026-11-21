@@ -117,7 +117,8 @@ public sealed class BaseLegalBonusRegionalEndpointTests
 
     private static void ConferirBaseLegalCriada(JsonElement root, string identificacao)
     {
-        root.GetProperty("tipoInstrumento").GetString().Should().Be("PORTARIA");
+        root.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("PORTARIA");
+        root.GetProperty("tipoInstrumento").GetProperty("rotulo").GetString().Should().Be("Portaria");
         root.GetProperty("identificacao").GetString().Should().Be(identificacao);
         root.GetProperty("codigo").GetString().Should().StartWith("PORTARIA_TESTE_");
         root.GetProperty("municipios").GetArrayLength().Should().Be(1);
@@ -138,7 +139,7 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("tipoInstrumento").GetString().Should().Be("EDITAL");
+        doc.RootElement.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("EDITAL");
     }
 
     [Fact(DisplayName = "POST sem nenhum município retorna 422 sem gravar")]
@@ -198,23 +199,8 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     public async Task Atualizar_IdDivergente_Retorna400()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid idNaUrl = Guid.NewGuid();
-        var body = new
-        {
-            id = Guid.NewGuid(),
-            tipoInstrumento = "PORTARIA",
-            identificacao = "Portaria X",
-            descricao = "Descricao",
-            municipios = new[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" } },
-        };
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Put, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{idNaUrl}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await EnviarPutAdmin(client, idNaUrl: Guid.NewGuid(), CorpoDaAtualizacao(id: Guid.NewGuid()));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -224,21 +210,8 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = Guid.NewGuid();
-        var body = new
-        {
-            id,
-            tipoInstrumento = "PORTARIA",
-            identificacao = "Portaria X",
-            descricao = "Descricao",
-            municipios = new[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" } },
-        };
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Put, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Content = JsonContent.Create(body);
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await EnviarPutAdminSemChave(client, id, CorpoDaAtualizacao(id));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -248,22 +221,8 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = Guid.NewGuid();
-        var body = new
-        {
-            id,
-            tipoInstrumento = "PORTARIA",
-            identificacao = "Portaria X",
-            descricao = "Descricao",
-            municipios = new[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" } },
-        };
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Put, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, CorpoDaAtualizacao(id));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -272,30 +231,14 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     public async Task Atualizar_ComAuthEIdempotency_Retorna204EPersiste()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, MunicipioCorpo());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarEObterIdAsync(client);
+        object atualizacao = CorpoDaAtualizacao(
+            id, "Portaria Unifesspa nº 2514/2023 (revisada)", "Descricao revisada", [new { codigoIbge = "1501402", nome = "Belém", uf = "PA" }]);
 
-        var atualizacao = new
-        {
-            id,
-            tipoInstrumento = "PORTARIA",
-            identificacao = "Portaria Unifesspa nº 2514/2023 (revisada)",
-            descricao = "Descricao revisada",
-            municipios = new[] { new { codigoIbge = "1501402", nome = "Belém", uf = "PA" } },
-        };
-
-        using HttpRequestMessage request = new(
-            HttpMethod.Put, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(atualizacao);
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, atualizacao);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        using JsonDocument doc = JsonDocument.Parse(await (await ObterPorId(client, id)).Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
         root.GetProperty("identificacao").GetString().Should().Be("Portaria Unifesspa nº 2514/2023 (revisada)");
         root.GetProperty("municipios").GetArrayLength().Should().Be(1);
@@ -319,9 +262,7 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     public async Task Remover_ComAuth_FazSoftDelete()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, MunicipioCorpo());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
+        Guid id = await CriarEObterIdAsync(client);
         using HttpRequestMessage remover = new(
             HttpMethod.Delete, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{id}", UriKind.Relative));
         AutenticarComoAdmin(remover);
@@ -329,11 +270,25 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         HttpResponseMessage response = await client.SendAsync(remover);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.NotFound,
+        (await ObterPorId(client, id)).StatusCode.Should().Be(HttpStatusCode.NotFound,
             "soft-delete tira o registro de circulação — o filtro global !IsDeleted esconde a linha");
     }
+
+    private static async Task<Guid> CriarEObterIdAsync(HttpClient client) =>
+        await (await EnviarPostAdmin(client, MunicipioCorpo())).Content.ReadFromJsonAsync<Guid>();
+
+    private static Task<HttpResponseMessage> ObterPorId(HttpClient client, Guid id) =>
+        client.GetAsync(new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
+
+    private static object CorpoDaAtualizacao(
+        Guid id, string identificacao = "Portaria X", string descricao = "Descricao", object[]? municipios = null) => new
+        {
+            id,
+            tipoInstrumento = "PORTARIA",
+            identificacao,
+            descricao,
+            municipios = municipios ?? [new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }],
+        };
 
     // O código da base legal é único entre as vivas e o banco do teste é compartilhado: cada criação usa um ato próprio.
     private static string IdentificacaoUnica() => $"Portaria Teste {Guid.NewGuid():N}";
@@ -353,6 +308,28 @@ public sealed class BaseLegalBonusRegionalEndpointTests
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid idNaUrl, object body)
+    {
+        using HttpRequestMessage request = RequisicaoPutAdmin(idNaUrl, body);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdminSemChave(HttpClient client, Guid idNaUrl, object body)
+    {
+        using HttpRequestMessage request = RequisicaoPutAdmin(idNaUrl, body);
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage RequisicaoPutAdmin(Guid idNaUrl, object body)
+    {
+        HttpRequestMessage request = new(
+            HttpMethod.Put, new Uri($"/api/configuracao/admin/base-legal-bonus-regional/{idNaUrl}", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Content = JsonContent.Create(body);
+        return request;
     }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

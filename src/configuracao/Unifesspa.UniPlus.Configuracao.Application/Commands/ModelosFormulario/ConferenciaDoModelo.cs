@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -94,11 +95,11 @@ internal static class ConferenciaDoModelo
         ItemDoModelo[] campos = [.. conteudo.Campos()];
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = conteudo.CondicoesDasRegras().Select(static c => (c.Fato, c.Valor));
         IEnumerable<(string Fato, string Valor)> opcoes = campos
-            .SelectMany(static i => i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
+            .SelectMany(static i => i.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
-            .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)))
+            .Concat(campos.SelectMany(static i => i.Regras.Restricoes.SelectMany(static r => r.FatosCitados)))
             .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
@@ -176,7 +177,7 @@ internal static class ConferenciaDoModelo
         CatalogoDoModelo catalogo,
         Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
     {
-        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao).Count > 0)
+        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Apresentacao.Rotulo).Count > 0)
         {
             return [];
         }
@@ -195,18 +196,18 @@ internal static class ConferenciaDoModelo
             .. ConferirTipoDoCampo(item, fato, codigo, caminho),
             .. ConferirPredicados(caminho, item.Predicados(), catalogo),
             .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
-                fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
-                .Select(restricao => restricao.NoCaminhoDe(caminho)),
+                fato, item.Apresentacao.TipoRenderizacao, item.Regras.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
+                .Select(restricao => restricao.NoCaminhoDe($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}")),
             .. ConferirImpedimentoDoItem(item, caminho, catalogo),
         ];
     }
 
     private static IEnumerable<FieldError> ConferirImpedimentoDoItem(ItemDoModelo item, string caminho, CatalogoDoModelo catalogo) =>
-        ConferirPredicado($"{caminho}.impedimento.quando", item.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
+        ConferirPredicado($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}.impedimento.quando", item.Regras.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
 
     private static IEnumerable<FieldError> ConferirTipoDoCampo(ItemDoModelo item, FatoDoCatalogo fato, string codigo, string caminho) =>
-        CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
-            ? [new FieldError($"{caminho}.tipoRenderizacao", incoerencia, codigo)]
+        CoerenciaDoCampo.Validar(codigo, item.Apresentacao.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
+            ? [new FieldError($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.tipoRenderizacao", incoerencia, codigo)]
             : [];
 
     private static IEnumerable<FieldError> ConferirVersaoDoTermo(
@@ -223,7 +224,7 @@ internal static class ConferenciaDoModelo
             return [];
         }
 
-        return [new FieldError($"{caminho}.versaoId", new DomainError(
+        return [new FieldError($"{caminho}.{TermoExigidoInput.CaminhoDoTermo}.versaoId", new DomainError(
             ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
             "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
             $"{termo.TermoId}/{termo.VersaoId}")];

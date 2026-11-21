@@ -26,13 +26,6 @@ internal static class ProcessoComMatrizDaLeiDeTeste
     /// </summary>
     internal static ProcessoSeletivo ProcessoComAMatrizNormativa(string nome)
     {
-        FatoColetado Booleano(string codigo, int ordem) => FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL",
-            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado Selecao(string codigo, int ordem) => FatoColetado.Criar(
-            codigo, ordem, $"Rótulo de {codigo}", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nome,
             camposAdicionais:
@@ -42,13 +35,27 @@ internal static class ProcessoComMatrizDaLeiDeTeste
                 Booleano("CONCORRER_Q", 6), Booleano("CONCORRER_RENDA", 7),
             ],
             modalidades: [.. RegrasDaLei.Select(static r => ModalidadeDaLei(r.Key, r.Value))]);
-        processo.DefinirRegrasDerivacao(
-        [
-            Configurada(DerivacaoDoFato.CriarBooleana(
-                OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!),
-        ]).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([Configurada(DerivacaoDoEgresso())]).IsSuccess.Should().BeTrue();
         return processo;
     }
+
+    private static DerivacaoDoFato DerivacaoDoEgresso() => DerivacaoDoFato.CriarBooleana(
+        OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
+
+    private static FatoColetado Booleano(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComClassificacao("SENSIVEL")
+        .NaSecao(FormularioDeTeste.Secao)
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
+
+    private static FatoColetado Selecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+        .ComRotulo($"Rótulo de {codigo}")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .NaSecao(FormularioDeTeste.Secao)
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     /// <summary>As opções da origem escolar que a publicação congela para as duas perguntas.</summary>
     internal static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> OpcoesDaOrigemEscolar() => new(StringComparer.Ordinal)
@@ -101,16 +108,15 @@ internal static class ProcessoComMatrizDaLeiDeTeste
 
     /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
     private static ConfiguracaoDerivacaoFato Configurada(DerivacaoDoFato derivacao) =>
-        ConfiguracaoDerivacaoFato.Criar(derivacao.CodigoFato,
-        [
-            .. derivacao.Regras.Select((regra, ordem) => RegraDerivacaoConfigurada.Criar(
-                ordem,
-                regra.Contribui,
-                regra.EhAncora
-                    ? null
-                    : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>
-                        CondicaoRegraDerivacao.Criar(indice + 1, c.Fato, c.Operador, c.Valor).Value!))]).Value!),
-        ]).Value!;
+        ConfiguracaoDerivacaoFato.Criar(
+            derivacao.CodigoFato,
+            [.. derivacao.Regras.Select((regra, ordem) => RegraDerivacaoConfigurada.Criar(ordem, regra.Contribui, CondicoesDaRegra(regra)).Value!)]).Value!;
+
+    private static List<CondicaoRegraDerivacao>? CondicoesDaRegra(RegraDerivacao regra) =>
+        regra.EhAncora
+            ? null
+            : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>
+                CondicaoRegraDerivacao.Criar(indice + 1, c.Fato, c.Operador, c.Valor).Value!))];
 
     internal static Dictionary<string, JsonElement> RespostasDaOrigemEDasCotas(string? ondeCursou, bool ep, bool ppi, bool renda)
     {
@@ -124,10 +130,15 @@ internal static class ProcessoComMatrizDaLeiDeTeste
         };
         if (ondeCursou is not null)
         {
-            respostas[OrigemEscolar.FatoFormaDeConclusao] = JsonSerializer.SerializeToElement(OrigemEscolar.Regular);
-            respostas[OrigemEscolar.FatoOndeCursou] = JsonSerializer.SerializeToElement(ondeCursou);
+            AdicionarOrigemEscolar(respostas, ondeCursou);
         }
 
         return respostas;
+    }
+
+    private static void AdicionarOrigemEscolar(Dictionary<string, JsonElement> respostas, string ondeCursou)
+    {
+        respostas[OrigemEscolar.FatoFormaDeConclusao] = JsonSerializer.SerializeToElement(OrigemEscolar.Regular);
+        respostas[OrigemEscolar.FatoOndeCursou] = JsonSerializer.SerializeToElement(ondeCursou);
     }
 }

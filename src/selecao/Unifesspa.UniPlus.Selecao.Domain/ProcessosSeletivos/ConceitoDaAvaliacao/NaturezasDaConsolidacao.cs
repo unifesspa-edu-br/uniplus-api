@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliaca
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -84,7 +85,7 @@ public static class NaturezasDaConsolidacao
     private static bool TentarLer(JsonElement declarada, List<NaturezaConceito> lidas)
     {
         string? token = declarada.ValueKind == JsonValueKind.String ? declarada.GetString() : null;
-        if (!NaturezaConceitoCodigo.TentarConverter(token, out NaturezaConceito natureza))
+        if (!CatalogoDe<NaturezaConceito>.TentarObter(token, out NaturezaConceito natureza))
         {
             return false;
         }

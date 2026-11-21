@@ -30,14 +30,14 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar("PS Coleta de Fatos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    private static CondicaoPrecondicaoFato Cond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
-
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. cita.Select(static c => (c, Operador.Igual, (object)true))]))
+            .Construir();
 
     private static FatoColetado Texto(string codigo, int ordem, string? formato) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: formato, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DeTexto(formato).Construir();
 
     [Fact(DisplayName = "A recópia do catálogo refaz a cópia do item novo e, no já coletado, só adota a descrição e o componente")]
     public void RecopiarItensDoCatalogo_RecopiaSoOQueNaoFoiColetado()
@@ -45,36 +45,38 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE")], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
-        CopiaDoItemNoCatalogo copia(string formato) => new(OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, "Descrição corrigida no catálogo.", "MOEDA");
 
         Result recopia = processo.RecopiarItensDoCatalogo(
-            new Dictionary<string, CopiaDoItemNoCatalogo> { ["CPF"] = copia("CPF"), ["RG"] = copia("LIVRE") },
+            new Dictionary<string, CopiaDoItemNoCatalogo> { ["CPF"] = CopiaCorrigida("CPF"), ["RG"] = CopiaCorrigida("LIVRE") },
             new HashSet<string>(["RG"], StringComparer.Ordinal));
 
         recopia.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Single(f => f.FatoCodigo == "CPF").ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
         processo.FatosColetados.Single(f => f.FatoCodigo == "RG").ClassificacaoProtecao.Should().Be("PESSOAL");
-
-        FatoColetado recopiado = processo.FatosColetados.Single(f => f.FatoCodigo == "CPF");
-        (recopiado.Descricao, recopiado.ComponenteExibicao).Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));
-        FatoColetado jaColetado = processo.FatosColetados.Single(f => f.FatoCodigo == "RG");
-        (jaColetado.Descricao, jaColetado.ComponenteExibicao).Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));
+        DescricaoEComponenteDe(processo, "CPF").Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));
+        DescricaoEComponenteDe(processo, "RG").Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));
     }
+
+    private static CopiaDoItemNoCatalogo CopiaCorrigida(string formato) => new(
+        OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, "Descrição corrigida no catálogo.", "MOEDA");
+
+    private static (string Descricao, string? ComponenteExibicao) DescricaoEComponenteDe(ProcessoSeletivo processo, string fatoCodigo)
+    {
+        FatoColetado fato = processo.FatosColetados.Single(f => f.FatoCodigo == fatoCodigo);
+
+        return (fato.Descricao, fato.ComponenteExibicao);
+    }
+
+    private static CopiaDoItemNoCatalogo CopiaIdentificadora(string? formato) => new(
+        OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, null);
 
     [Fact(DisplayName = "A recópia do catálogo recusa todo item de forma incoerente no lote e não muda nenhum")]
     public void ConferirCopiasDoCatalogo_FormatoIncoerente_AcumulaERecusaSemAlterar()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens(
-            [Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE"), Texto("NIS", 2, "LIVRE")], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE"), Texto("NIS", 2, "LIVRE")], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
-
-        Dictionary<string, CopiaDoItemNoCatalogo> catalogo = new()
-        {
-            ["CPF"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, null),
-            ["RG"] = new(OrigemValoresColeta.Catalogo, "LIVRE", "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, null),
-            ["NIS"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, null),
-        };
+        Dictionary<string, CopiaDoItemNoCatalogo> catalogo = new() { ["CPF"] = CopiaIdentificadora(null), ["RG"] = CopiaIdentificadora("LIVRE"), ["NIS"] = CopiaIdentificadora(null) };
         HashSet<string> nenhum = new(StringComparer.Ordinal);
 
         IReadOnlyList<RecusaDaCopiaDoItem> recusas = RegrasDaColeta.ConferirCopiasDoCatalogo(processo.Declaracao(), catalogo, nenhum);
@@ -114,10 +116,9 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     }
 
     private static FatoColetado ObrigatorioQuando(string codigo, int ordem, string citado, JsonElement? valor = null) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano,
-            Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!),
-            null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComObrigatoriedade(Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!))
+            .Construir();
 
     [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
     public void ObrigatoriedadeCitaFatoPosterior_Recusada()
@@ -193,7 +194,10 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao);
+        Result<FatoColetado> resultado = FatoColetadoDeTeste.Coletando("PCD", 0)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
+            .Criar();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);

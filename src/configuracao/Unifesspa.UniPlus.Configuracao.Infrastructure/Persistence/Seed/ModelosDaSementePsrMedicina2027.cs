@@ -266,16 +266,16 @@ internal static class ModelosDaSementePsrMedicina2027
     ];
 
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
-        new(Familia, 4, Familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
-            Obrigatoriedade.Sempre,
+        new(Familia, 4, Familia, "Membros da composição familiar",
+            new OcorrenciasDoGrupo(Minimo: 1, Maximo: null, IncluiCandidato: true),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [
                 Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoRenderizacao.SelecaoUnica, null),
                 Campo("CATEGORIA_RENDA", 2, null, "Fontes de renda desta pessoa", TipoRenderizacao.SelecaoMultipla,
                     "Marque todas. Elas definem os documentos de renda a apresentar."),
                 Campo("SOB_GUARDA", 3, null, "É menor de idade sob guarda?", TipoRenderizacao.Booleano,
                     "Sob a sua guarda ou a de alguém da família."),
-            ],
-            IncluiCandidato: true);
+            ]);
 
     private static EtapaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
         new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, titulo, descricao, null, null);
@@ -285,12 +285,12 @@ internal static class ModelosDaSementePsrMedicina2027
 
     private static ItemDoModelo Campo(
         string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, etapa, rotulo, tipo, null, ajuda, Obrigatoriedade.Sempre, exibicao, [], PedirConfirmacao: false);
+        new(fato, ordem, etapa, new ApresentacaoDoCampo(rotulo, tipo, ajuda), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo ComFormato(this ItemDoModelo item, string formato) => item with { Formato = formato };
 
     private static ItemDoModelo ComRestricoes(this ItemDoModelo item, IReadOnlyList<RestricaoValor> restricoes) =>
-        item with { Restricoes = restricoes };
+        item with { Regras = new RegrasDoCampo(item.Regras.Exibicao, item.Regras.Obrigatoriedade, restricoes, item.Regras.Impedimento) };
 
     /// <summary>
     /// Onde cursou oferece "Concluí por certificação" só a quem respondeu que concluiu por
@@ -305,7 +305,7 @@ internal static class ModelosDaSementePsrMedicina2027
         ]);
 
     private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
-        new(SqlDaSemente.CodigoDoTermo(termo, Declaracao), ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
+        new(SqlDaSemente.CodigoDoTermo(termo, Declaracao), ordem, termo.TermoId, termo.VersaoId, new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));
 
     /// <summary>A condição única "fato operador valor", como predicado de uma cláusula só.</summary>
     private static PredicadoDnf Se<T>(string fato, Operador operador, T valor) => SeAlguma([Condicao(fato, operador, valor)]);

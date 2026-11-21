@@ -34,7 +34,7 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
             bancasRequeridas: []).Value!;
 
     private static FatoColetado Item(string codigo) =>
-        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 
     private static (ProcessoSeletivo Processo, FaseCronograma Isencao) ProcessoComIsencaoAntesDaInscricao(bool inscricaoMarcada)
     {

@@ -93,12 +93,11 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
         new
         {
             aplica = true,
-            regraCodigo = RegraBonusCodigo.Multiplicativo,
-            regraVersao = "v1",
+            regra = new { codigo = RegraBonusCodigo.Multiplicativo, versao = "v1" },
             fator = 1.2000m,
             teto = 95.5000m,
             fatoElegibilidadeCodigo = FormularioDeTeste.FatoBooleanoDaInscricao,
-            baseLegalBonusRegionalId,
+            baseLegal = new { id = baseLegalBonusRegionalId },
         });
 
     public Task<HttpResponseMessage> PutTaxaInscricaoAsync() => EnviarAsync(
@@ -114,9 +113,9 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
     {
         object[] criterios =
         [
-            new { ordem = 1, regraCodigo = CriterioDesempateCodigo.Idoso, regraVersao = "v1", idadeMinima = 60, etapaRef = (Guid?)null, fato = (string?)null, @operador = (string?)null, valor = (string?)null },
-            new { ordem = 2, regraCodigo = CriterioDesempateCodigo.MaiorNotaEtapa, regraVersao = "v1", etapaRef = (Guid?)objetivaId, idadeMinima = (int?)null, fato = (string?)null, @operador = (string?)null, valor = (string?)null },
-            new { ordem = 3, regraCodigo = CriterioDesempateCodigo.MaiorIdade, regraVersao = "v1", etapaRef = (Guid?)null, idadeMinima = (int?)null, fato = (string?)null, @operador = (string?)null, valor = (string?)null },
+            new { ordem = 1, regra = new { codigo = CriterioDesempateCodigo.Idoso, versao = "v1" }, parametros = new { idadeMinima = 60 } },
+            new { ordem = 2, regra = new { codigo = CriterioDesempateCodigo.MaiorNotaEtapa, versao = "v1" }, parametros = new { etapaRef = objetivaId } },
+            new { ordem = 3, regra = new { codigo = CriterioDesempateCodigo.MaiorIdade, versao = "v1" } },
         ];
 
         return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios);

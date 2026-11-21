@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
 using System.Text.Json.Serialization;
 
+using Application.Commands.ProcessosSeletivos;
+
 using Controllers;
 
 /// <summary>
@@ -16,9 +18,8 @@ using Controllers;
 /// </remarks>
 public sealed record DefinirBonusRegionalRequest(
     [property: JsonRequired] bool Aplica,
-    string? RegraCodigo,
-    string? RegraVersao,
+    ReferenciaRegraInput? Regra,
     decimal? Fator,
     decimal? Teto,
     string? FatoElegibilidadeCodigo,
-    Guid? BaseLegalBonusRegionalId);
+    BaseLegalDoBonusInput? BaseLegal);

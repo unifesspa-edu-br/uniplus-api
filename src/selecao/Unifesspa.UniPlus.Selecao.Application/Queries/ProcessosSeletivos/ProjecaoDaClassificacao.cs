@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -34,20 +35,23 @@ internal static class ProjecaoDaClassificacao
                 classificacao.EscalaNotaFinal)
             : null;
 
-    private static CriterioDesempateDto ProjetarCriterioDeDesempate(CriterioDesempate criterio)
-    {
-        CriterioDesempateDto semParametros = new(
-            criterio.Id, criterio.Ordem, ProjecaoDoProcessoSeletivo.Referencia(criterio.Regra), null, null, null, null, null, null);
+    private static CriterioDesempateDto ProjetarCriterioDeDesempate(CriterioDesempate criterio) =>
+        new(criterio.Id, criterio.Ordem, ProjecaoDoProcessoSeletivo.Referencia(criterio.Regra), ProjetarParametrosDoDesempate(criterio.Parametros));
 
-        return criterio.Parametros switch
+    private static ParametrosDoCriterioDesempateDto ProjetarParametrosDoDesempate(ParametrosCriterioDesempate parametros) =>
+        parametros switch
         {
-            ParametrosDesempateMaiorNotaEtapa maiorNota => semParametros with { EtapaRef = maiorNota.EtapaRef },
-            ParametrosDesempateIdoso idoso => semParametros with { IdadeMinima = idoso.IdadeMinima },
-            ParametrosDesempatePredicadoFato { Condicao: var condicao } => semParametros with { Fato = condicao.Fato, Operador = condicao.Operador.ToCodigo(), Valor = ProjetarValorDaCondicao(condicao.Valor) },
-            ParametrosDesempateMaiorNotaAreaEnem areaEnem => semParametros with { Areas = [.. areaEnem.Areas] },
-            _ => semParametros,
+            ParametrosDesempateMaiorNotaEtapa etapa => new(etapa.EtapaRef, null, null, null, null, null),
+            ParametrosDesempateIdoso idoso => new(null, idoso.IdadeMinima, null, null, null, null),
+            ParametrosDesempatePredicadoFato predicado => new(
+                null, null,
+                predicado.Condicao.Fato,
+                predicado.Condicao.Operador.Codigo(),
+                ProjetarValorDaCondicao(predicado.Condicao.Valor),
+                null),
+            ParametrosDesempateMaiorNotaAreaEnem areaEnem => new(null, null, null, null, null, [.. areaEnem.Areas]),
+            _ => new(null, null, null, null, null, null),
         };
-    }
 
     /// <summary>
     /// <c>CondicaoDnf.Valor</c> como texto JSON canônico, o mesmo formato de

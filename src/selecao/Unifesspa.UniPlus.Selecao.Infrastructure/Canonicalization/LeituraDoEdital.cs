@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -61,29 +62,38 @@ internal static class LeituraDoEdital
 
     internal static DadosEdital? LerDadosEdital(LeitorEnvelope leitor, JsonObject payload, out string hashDocumento)
     {
-        hashDocumento = string.Empty;
-
-        JsonObject periodo = leitor.Objeto(payload, "periodo", "$");
-        leitor.ExigirChaves(periodo, "periodo", "numero", "inicio", "fim");
-        string? numero = leitor.TextoOpcional(periodo, "numero", "periodo", LimitesDoEnvelope.NumeroDoAto);
-        DateTimeOffset inicio = leitor.Instante(periodo, "inicio", "periodo");
-        DateTimeOffset fim = leitor.Instante(periodo, "fim", "periodo");
-
-        JsonObject hashes = leitor.Objeto(payload, "hashesEdital", "$");
-        leitor.ExigirChaves(hashes, "hashesEdital", "documentoEditalId", "hashSha256", "anexos");
-        Guid documentoId = leitor.Identificador(hashes, "documentoEditalId", "hashesEdital");
-        string hash = leitor.Texto(hashes, "hashSha256", "hashesEdital");
-        IReadOnlyList<AnexoDoEdital> anexos = LerAnexosDoEdital(leitor, hashes);
-
+        (string? numero, DateTimeOffset inicio, DateTimeOffset fim) = LerPeriodo(leitor, payload);
+        (Guid documentoId, string hash, IReadOnlyList<AnexoDoEdital> anexos) = LerHashesDoEdital(leitor, payload);
+        hashDocumento = leitor.Falhou ? string.Empty : hash;
         if (leitor.Falhou)
         {
             return null;
         }
 
-        hashDocumento = hash;
-
         Result<DadosEdital> dados = DadosEdital.Criar(numero, inicio, fim, documentoId, anexos);
         return dados.IsFailure ? leitor.Propagar<DadosEdital>(dados.Error!) : dados.Value;
+    }
+
+    private static (string? Numero, DateTimeOffset Inicio, DateTimeOffset Fim) LerPeriodo(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject periodo = leitor.Objeto(payload, "periodo", "$");
+        leitor.ExigirChaves(periodo, "periodo", "numero", "inicio", "fim");
+
+        return (
+            leitor.TextoOpcional(periodo, "numero", "periodo", LimitesDoEnvelope.NumeroDoAto),
+            leitor.Instante(periodo, "inicio", "periodo"),
+            leitor.Instante(periodo, "fim", "periodo"));
+    }
+
+    private static (Guid DocumentoId, string Hash, IReadOnlyList<AnexoDoEdital> Anexos) LerHashesDoEdital(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject hashes = leitor.Objeto(payload, "hashesEdital", "$");
+        leitor.ExigirChaves(hashes, "hashesEdital", "documentoEditalId", "hashSha256", "anexos");
+
+        return (
+            leitor.Identificador(hashes, "documentoEditalId", "hashesEdital"),
+            leitor.Texto(hashes, "hashSha256", "hashesEdital"),
+            LerAnexosDoEdital(leitor, hashes));
     }
 
     /// <summary>
@@ -93,13 +103,14 @@ internal static class LeituraDoEdital
     /// </summary>
     internal static List<AnexoDoEdital> LerAnexosDoEdital(LeitorEnvelope leitor, JsonObject hashes)
     {
-        List<AnexoDoEdital> anexos = [];
         JsonArray array = leitor.Array(hashes, "anexos", "hashesEdital");
-        if (leitor.Falhou)
-        {
-            return anexos;
-        }
 
+        return leitor.Falhou ? [] : LerAnexosDoArray(leitor, array);
+    }
+
+    private static List<AnexoDoEdital> LerAnexosDoArray(LeitorEnvelope leitor, JsonArray array)
+    {
+        List<AnexoDoEdital> anexos = [];
         for (int i = 0; i < array.Count; i++)
         {
             string path = $"hashesEdital.anexos[{i}]";
@@ -109,10 +120,8 @@ internal static class LeituraDoEdital
             {
                 return anexos;
             }
-
             anexos.Add(anexo);
         }
-
         return anexos;
     }
 
@@ -129,13 +138,16 @@ internal static class LeituraDoEdital
         {
             return null;
         }
-
-        FormatoDeDocumento? formato = FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia);
-        return formato is { } formatoValido && LeituraDasExigencias.EhSha256Hexadecimal(hash) && tamanho > 0
-            ? new AnexoDoEdital(anexoId, documentoId, nome, formatoValido, tamanho, hash)
-            : leitor.Recusar<AnexoDoEdital?>(
-                $"'{path}' com tipo de mídia fora dos aceitos, tamanho que não é positivo ou hash que não é SHA-256 em hexadecimal minúsculo.");
+        return FormatoAceito(tipoDeMidia, tamanho, hash) is { } formato
+            ? new AnexoDoEdital(anexoId, documentoId, nome, formato, tamanho, hash)
+            : leitor.Recusar<AnexoDoEdital?>(AnexoForaDoAceito(path));
     }
+
+    private static string AnexoForaDoAceito(string path) =>
+        $"'{path}' com tipo de mídia fora dos aceitos, tamanho que não é positivo ou hash que não é SHA-256 em hexadecimal minúsculo.";
+
+    private static FormatoDeDocumento? FormatoAceito(string tipoDeMidia, int tamanho, string hash) =>
+        tamanho > 0 && LeituraDasExigencias.EhSha256Hexadecimal(hash) ? FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) : null;
 
     /// <summary>
     /// A identidade da Unidade administradora: lida e validada para fechar a gramática, mas
@@ -218,29 +230,35 @@ internal static class LeituraDoEdital
     internal static Dictionary<string, ApresentacaoDoFato> LerApresentacaoDosPressupostos(LeitorEnvelope leitor, JsonObject payload)
     {
         Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
-        if (leitor.Falhou)
-        {
-            return apresentacao;
-        }
-
-        JsonArray array = leitor.Array(payload, "apresentacaoDosPressupostos", "$");
+        JsonArray array = leitor.Falhou ? new JsonArray() : leitor.Array(payload, "apresentacaoDosPressupostos", "$");
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            ApresentacaoDoFato? fato = LerApresentacao(
-                leitor, leitor.ItemObjeto(array, i, "apresentacaoDosPressupostos"), $"apresentacaoDosPressupostos[{i}]");
-            if (fato is null)
+            if (!AdicionarApresentacao(leitor, array, i, apresentacao))
             {
-                break;
-            }
-
-            if (!apresentacao.TryAdd(fato.FatoCodigo, fato))
-            {
-                leitor.Recusar<object>($"Envelope malformado em 'apresentacaoDosPressupostos': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
                 break;
             }
         }
 
         return apresentacao;
+    }
+
+    private static bool AdicionarApresentacao(
+        LeitorEnvelope leitor, JsonArray array, int posicao, Dictionary<string, ApresentacaoDoFato> apresentacao)
+    {
+        ApresentacaoDoFato? fato = LerApresentacao(
+            leitor, leitor.ItemObjeto(array, posicao, "apresentacaoDosPressupostos"), $"apresentacaoDosPressupostos[{posicao}]");
+        if (fato is null)
+        {
+            return false;
+        }
+
+        if (apresentacao.TryAdd(fato.FatoCodigo, fato))
+        {
+            return true;
+        }
+
+        leitor.Recusar<object>($"Envelope malformado em 'apresentacaoDosPressupostos': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
+        return false;
     }
 
     private static ApresentacaoDoFato? LerApresentacao(LeitorEnvelope leitor, JsonObject item, string path)
@@ -254,8 +272,12 @@ internal static class LeituraDoEdital
             return null;
         }
 
-        return tipo is not null && TipoRenderizacaoCodigo.FromCodigo(tipo) == TipoRenderizacao.Nenhuma
-            ? leitor.Recusar<ApresentacaoDoFato?>($"Envelope malformado em '{path}.tipoRenderizacao': '{tipo}' não é um tipo de campo.")
+        return tipo is not null && !CatalogoDe<TipoRenderizacao>.TentarObter(tipo, out _)
+            ? leitor.Recusar<ApresentacaoDoFato?>(TipoDeCampoForaDoCatalogo(path))
             : new ApresentacaoDoFato(fatoCodigo, rotulo, tipo);
     }
+
+    private static string TipoDeCampoForaDoCatalogo(string path) =>
+        $"Envelope malformado em '{path}.tipoRenderizacao': o tipo de campo não é um dos códigos aceitos: "
+        + $"{string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static d => d.Codigo))}.";
 }

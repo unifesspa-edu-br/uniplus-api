@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Dublês, fatos aprovados e montagem de comandos comuns aos testes do handler do modelo de formulário.</summary>
 public abstract class ModeloFormularioHandlerTestBase
@@ -71,7 +72,7 @@ public abstract class ModeloFormularioHandlerTestBase
 
     protected Task<Result<Guid>> CriarAsync(ConteudoDoModeloInput conteudo, string? tipo = null) =>
         CriarModeloFormularioCommandHandler.Handle(
-            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "Habilitação Medicina", null, "HABILITACAO", tipo, conteudo),
+            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "HABILITACAO", new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
             Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
 
     protected Task<Result> AtualizarAsync(ModeloFormulario existente, ConteudoDoModeloInput conteudo, string? tipo)
@@ -79,14 +80,15 @@ public abstract class ModeloFormularioHandlerTestBase
         ArgumentNullException.ThrowIfNull(existente);
         Repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         return AtualizarModeloFormularioCommandHandler.Handle(
-            new AtualizarModeloFormularioCommand(existente.Id, "Habilitação Medicina", null, tipo, conteudo),
+            new AtualizarModeloFormularioCommand(existente.Id, new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
             Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
     }
 
     /// <summary>O modelo gravado com o certificado como item, antes de qualquer mudança no catálogo.</summary>
     protected static ModeloFormulario Existente(string? tipo)
     {
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        ItemDoModelo item = new(
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
@@ -98,7 +100,10 @@ public abstract class ModeloFormularioHandlerTestBase
 
     protected static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
         "Habilitação",
-        [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+        ],
         itens,
         [],
         []);
@@ -106,13 +111,17 @@ public abstract class ModeloFormularioHandlerTestBase
     protected static ConteudoDoModeloInput ComComposicao(params FatoColetadoInput[] campos) =>
         Conteudo(Item("CERTIFICADO", 0)) with
         {
-            Grupos = [new GrupoColetadoInput("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos)],
+            Grupos = [EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+                .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir()],
         };
 
-    protected static FatoColetadoInput Campo(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
+    protected static FatoColetadoInput Campo(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();
 
-    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
-        new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
+    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).Construir();
+
+    /// <summary>O item na seção <c>DADOS</c>, ainda sem fechar, para o teste que lhe dá regras.</summary>
+    private protected static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "BOOLEANO") =>
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS");
 
     protected static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];

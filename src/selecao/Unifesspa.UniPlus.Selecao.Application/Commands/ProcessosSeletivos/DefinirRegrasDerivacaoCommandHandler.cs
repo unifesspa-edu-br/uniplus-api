@@ -8,6 +8,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -17,19 +18,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirRegrasDerivacaoCommand"/>: substitui integralmente as
-/// regras de derivação de um processo em rascunho, em duas passadas. A primeira confirma a
-/// <b>forma básica</b> de TODAS as configurações e regras (<see cref="ConfiguracaoDerivacaoFato.ValidarFormaBasica"/>/
-/// <see cref="RegraDerivacaoConfigurada.ValidarFormaBasica"/>) sem tocar o vocabulário
-/// cross-módulo, acumulando (ADR-0125) através de toda a lista. Só então a segunda resolve, na
-/// Application (que tem acesso ao vocabulário cross-módulo, ADR-0056), a semântica que o domínio
-/// não alcança: o fato alvo é <b>derivado com binding de regra de derivação</b>; cada condição
-/// <c>quando</c> valida operador × domínio × valor do fato citado, contra a oferta do próprio
-/// processo para os domínios dinâmicos; todo fato citado está disponível na configuração final
-/// (coletado ou derivado no processo); e o código contribuído pertence ao domínio do fato —
-/// parando na primeira configuração/regra que falhar, granularidade nunca coberta pelo
-/// FluentValidation. A modalidade do candidato e a opção pelas cotas da lei vêm da oferta de vagas
-/// e são recusadas na primeira passada. O guard de rascunho é do agregado
-/// (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
+/// regras de derivação de um processo em rascunho. A leitura e a conferência das derivações
+/// (<see cref="ResolucaoDasDerivacoes"/>) acumulam as recusas (ADR-0125) através de todas as configurações e
+/// regras: a forma da configuração, das regras e das condições e, na Application, que tem acesso ao vocabulário
+/// cross-módulo (ADR-0056), a semântica que o domínio não alcança — o fato alvo é <b>derivado com binding de
+/// regra de derivação</b>; cada condição <c>quando</c> valida operador × domínio × valor do fato citado, contra a
+/// oferta do próprio processo para os domínios dinâmicos; todo fato citado está disponível na configuração final
+/// (coletado ou derivado no processo); e o código contribuído pertence ao domínio do fato. A modalidade do
+/// candidato e a opção pelas cotas da lei vêm da oferta de vagas e são recusadas como forma. O guard de rascunho é
+/// do agregado (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
 /// </summary>
 public static class DefinirRegrasDerivacaoCommandHandler
 {
@@ -45,92 +42,54 @@ public static class DefinirRegrasDerivacaoCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
+        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // O bloqueio de mutação fora do rascunho vem ANTES da resolução do vocabulário cross-módulo. O mesmo guard
+    // continua dentro de DefinirRegrasDerivacao.
+    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
+        IProcessoSeletivoRepository repositorio, DefinirRegrasDerivacaoCommand command, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        // O bloqueio de mutação fora do rascunho vem ANTES da resolução do
-        // vocabulário cross-módulo. O mesmo guard continua dentro de DefinirRegrasDerivacao.
-        if (processo.MutacaoBloqueada() is { } bloqueio)
+        return processo.MutacaoBloqueada() is { } bloqueio
+            ? Result<ProcessoSeletivo>.Failure(bloqueio)
+            : Result<ProcessoSeletivo>.Success(processo);
+    }
+
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirRegrasDerivacaoCommand command,
+        IFatoCandidatoReader fatoCandidatoReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
+        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, fatos);
+        Result<List<ConfiguracaoDerivacaoFato>> configuracoes = ResolucaoDasDerivacoes.Resolver(processo, command.Configuracoes, contexto);
+        Result definido = configuracoes.IsFailure
+            ? Result.ValidationFailure(configuracoes.Errors)
+            : DefinirNoProcesso(processo, contexto.Fatos, configuracoes.Value!);
+        if (definido.IsSuccess)
         {
-            return Result.Failure(bloqueio);
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        // Acumula (ADR-0125) a forma básica de TODAS as configurações e regras numa primeira
-        // passada, ANTES de resolver o vocabulário cross-módulo — mesmo padrão de
-        // DefinirFatosColetadosCommandHandler: rodar depois da resolução semântica
-        // trocaria um código/contribuição vazios por um erro semântico menos específico, e uma
-        // violação de forma podia ser mascarada pelo erro semântico de outra configuração/regra
-        // do mesmo payload.
-        List<FieldError> formaErros = [];
-        for (int indiceConfig = 0; indiceConfig < command.Configuracoes.Count; indiceConfig++)
-        {
-            ConfiguracaoDerivacaoInput configInput = command.Configuracoes[indiceConfig];
-            List<FieldError> configErros = ConfiguracaoDerivacaoFato.ValidarFormaBasica(
-                configInput.CodigoFato, [.. configInput.Regras.Select(static r => (r.Ordem, r.Contribui))]);
-            formaErros.AddRange(configErros.Select(erro => erro with { Field = $"configuracoes[{indiceConfig}].{erro.Field}" }));
-            if (configInput.CodigoFato is { } codigoFato && DerivacoesDaOferta.Deriva(codigoFato.Trim()))
-            {
-                formaErros.Add(new($"configuracoes[{indiceConfig}].codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao(codigoFato.Trim())));
-            }
+        return definido;
+    }
 
-            for (int indiceRegra = 0; indiceRegra < configInput.Regras.Count; indiceRegra++)
-            {
-                RegraDerivacaoInput regraInput = configInput.Regras[indiceRegra];
-                List<FieldError> regraErros = RegraDerivacaoConfigurada.ValidarFormaBasica(regraInput.Ordem, regraInput.Contribui);
-                formaErros.AddRange(regraErros.Select(erro =>
-                    erro with { Field = $"configuracoes[{indiceConfig}].regras[{indiceRegra}].{erro.Field}" }));
-            }
-        }
-
-        if (formaErros.Count > 0)
-        {
-            return Result.ValidationFailure(formaErros);
-        }
-
-        (IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
-            IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
-            await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-
-        Dictionary<string, DominioDeValores> dominiosDinamicos =
-            VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
-
-        // Universo dos fatos disponíveis na configuração final: os coletados pelo processo, os
-        // derivados definidos neste mesmo comando (a substituição é integral) e os que a oferta supre
-        // quando o processo não configura nenhum — a modalidade, a opção pelas cotas e o egresso pela
-        // regra do sistema. Uma condição só pode citar um fato deste universo, coerente com a recusa
-        // de fato citado inexistente da publicação.
-        HashSet<string> universo = new(
-            DerivacoesDaOferta.Efetivas([], processo.DistribuicaoVagas).Select(static d => d.CodigoFato), StringComparer.Ordinal);
-        foreach (FatoColetado fato in processo.FatosColetados)
-        {
-            universo.Add(fato.FatoCodigo);
-        }
-
-        foreach (ConfiguracaoDerivacaoInput configInput in command.Configuracoes)
-        {
-            universo.Add(configInput.CodigoFato);
-        }
-
-        List<ConfiguracaoDerivacaoFato> configuracoes = [];
-        foreach (ConfiguracaoDerivacaoInput configInput in command.Configuracoes)
-        {
-            Result<ConfiguracaoDerivacaoFato> configResult =
-                ResolverConfiguracao(configInput, catalogo, vocabulario, universo, dominiosDinamicos);
-            if (configResult.IsFailure)
-            {
-                return Result.ValidationFailure(configResult.Errors);
-            }
-
-            configuracoes.Add(configResult.Value!);
-        }
-
+    private static Result DefinirNoProcesso(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, List<ConfiguracaoDerivacaoFato> configuracoes)
+    {
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             catalogo,
             ReferenciasVivas.Vinculos(processo.Declaracao()),
@@ -138,188 +97,9 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 configuracoes.Select(static c => c.CodigoFato),
                 configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),
                 configuracoes.SelectMany(static c => c.CodigosContribuidos)));
-        if (vinculoNovo.IsFailure)
-        {
-            return Result.Failure(vinculoNovo.Error!);
-        }
 
-        Result result = processo.DefinirRegrasDerivacao(configuracoes);
-        if (result.IsFailure)
-        {
-            return Result.Failure(result.Error!);
-        }
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result.Success();
+        return vinculoNovo.IsFailure ? Result.Failure(vinculoNovo.Error!) : processo.DefinirRegrasDerivacao(configuracoes);
     }
-
-    internal static Result<ConfiguracaoDerivacaoFato> ResolverConfiguracao(
-        ConfiguracaoDerivacaoInput configInput,
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
-    {
-        // Alvo: o fato tem de existir e ser derivado com o binding da própria regra de derivação
-        // (REGRA_DERIVACAO:{codigo}). Um fato declarado, ou derivado por outro mecanismo, não tem
-        // regras configuráveis.
-        if (!catalogo.TryGetValue(configInput.CodigoFato, out FatoCandidatoView? view))
-        {
-            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                DerivabilidadeDeFato.FatoDesconhecido,
-                $"O fato '{configInput.CodigoFato}' não pertence ao vocabulário de fatos do candidato."));
-        }
-
-        if (!DerivabilidadeDeFato.EhAlvoDeDerivacao(view))
-        {
-            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                DerivabilidadeDeFato.FatoNaoDerivavel,
-                $"O fato '{configInput.CodigoFato}' não é um alvo de derivação — só um fato categórico ou booleano "
-                + "derivado com binding de regra de derivação pode ter regras configuradas."));
-        }
-
-        List<RegraDerivacaoConfigurada> regras = [];
-        foreach (RegraDerivacaoInput regraInput in configInput.Regras)
-        {
-            Result<RegraDerivacaoConfigurada> regraResult =
-                ResolverRegra(regraInput, vocabulario, universo, dominiosDinamicos);
-            if (regraResult.IsFailure)
-            {
-                return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(regraResult.Errors);
-            }
-
-            regras.Add(regraResult.Value!);
-        }
-
-        Result<ConfiguracaoDerivacaoFato> configResult = ConfiguracaoDerivacaoFato.Criar(configInput.CodigoFato, regras);
-        if (configResult.IsFailure)
-        {
-            return configResult;
-        }
-
-        // O domínio do fato no catálogo decide a forma das regras, inclusive na fonte que o servidor
-        // não enumera: inferir o booleano só das regras deixaria um categórico sem código virar
-        // booleano.
-        bool alvoBooleano = string.Equals(view.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal);
-        if (configResult.Value!.Booleano != alvoBooleano)
-        {
-            return Result<ConfiguracaoDerivacaoFato>.Failure(new DomainError(
-                DerivabilidadeDeFato.ContribuicaoIncoerenteComODominio,
-                alvoBooleano
-                    ? $"O fato '{configInput.CodigoFato}' é booleano: as regras não contribuem código, e a ativa torna o derivado verdadeiro."
-                    : $"O fato '{configInput.CodigoFato}' é categórico: toda regra contribui um código do domínio do fato."));
-        }
-
-        // Domínio de contribuição: todo código contribuído pertence aos valores que o fato tem no
-        // processo, pela fonte (ADR-0136) — modalidades ofertadas, opções declaradas, municípios do
-        // bônus ou todos os valores do catálogo. O valor desativado do catálogo pertence ao domínio
-        // e é recusado adiante, como vínculo novo. A fonte que o servidor não enumera (Geo) não tem
-        // conferência aqui.
-        if (VocabularioDeFatos.DominioDeContribuicao(view, dominiosDinamicos) is { } dominio)
-        {
-            Result<DerivacaoDoFato> dominioResult = configResult.Value!.ParaDerivacaoDoFato(dominio);
-            if (dominioResult.IsFailure)
-            {
-                return Result<ConfiguracaoDerivacaoFato>.Failure(dominioResult.Error!);
-            }
-        }
-
-        return configResult;
-    }
-
-    /// <summary>
-    /// Monta e valida uma regra. A regra <b>âncora</b> (sem condições, sempre verdadeira) tem
-    /// <c>Quando</c> nulo. Cada condição valida a forma (<see cref="CondicaoDnf.Criar"/>) e, no
-    /// conjunto, a semântica do predicado (<see cref="PredicadoDnfValidador"/>) — fato citado no
-    /// vocabulário, disponível na configuração final, operador × domínio, valor × domínio.
-    /// </summary>
-    private static Result<RegraDerivacaoConfigurada> ResolverRegra(
-        RegraDerivacaoInput regraInput,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlySet<string> universo,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
-    {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        List<CondicaoRegraDerivacao> condicoes = [];
-        IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>> quando = regraInput.Quando ?? [];
-        for (int clausula = 0; clausula < quando.Count; clausula++)
-        {
-            foreach (CondicaoDerivacaoInput condicaoInput in quando[clausula])
-            {
-                // Defesa em profundidade: uma condição nula (JSON `[[null]]`) já é barrada pelo
-                // validator (400), mas nunca deve virar NullReferenceException/500 aqui.
-                if (condicaoInput is null)
-                {
-                    return Result<RegraDerivacaoConfigurada>.Failure(new DomainError(
-                        CondicaoRegraDerivacaoErrorCodes.ClausulaInvalida,
-                        "O predicado da regra contém uma condição nula."));
-                }
-
-                Operador operador = OperadorCodigo.FromCodigo(condicaoInput.Operador);
-
-                Result<CondicaoRegraDerivacao> condicaoResult =
-                    CondicaoRegraDerivacao.Criar(clausula, condicaoInput.Fato, operador, condicaoInput.Valor);
-                if (condicaoResult.IsFailure)
-                {
-                    return Result<RegraDerivacaoConfigurada>.Failure(condicaoResult.Error!);
-                }
-
-                condicoes.Add(condicaoResult.Value!);
-                linhas.Add((clausula, CondicaoDnf.Criar(condicaoInput.Fato, operador, condicaoInput.Valor).Value!));
-            }
-        }
-
-        if (linhas.Count > 0)
-        {
-            Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
-            if (predicadoResult.IsFailure)
-            {
-                return Result<RegraDerivacaoConfigurada>.Failure(predicadoResult.Error!);
-            }
-
-            Result validacao = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabulario, universo, dominiosDinamicos);
-            if (validacao.IsFailure)
-            {
-                return Result<RegraDerivacaoConfigurada>.Failure(validacao.Error!);
-            }
-        }
-
-        return RegraDerivacaoConfigurada.Criar(regraInput.Ordem, regraInput.Contribui, condicoes);
-    }
-
-    private static async Task<(
-        IReadOnlyDictionary<string, FatoCandidatoView> Catalogo,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario)> ResolverVocabularioAsync(
-        IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal);
-        Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
-        foreach (FatoCandidatoView fato in fatos)
-        {
-            catalogo[fato.Codigo] = fato;
-
-            TipoDominioFato? tipoDominio = VocabularioDeFatos.Classificar(fato);
-
-            if (tipoDominio is not { } tipo)
-            {
-                continue;
-            }
-
-            Result<DescritorFatoCandidato> descritorResult = DescritorFatoCandidato.Criar(fato.Codigo, tipo, fato.ValoresDominio);
-            if (descritorResult.IsSuccess)
-            {
-                vocabulario[fato.Codigo] = descritorResult.Value!;
-            }
-        }
-
-        return (catalogo, vocabulario);
-    }
-
 }
 
 /// <summary>

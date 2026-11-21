@@ -8,31 +8,35 @@
         "itens": [
           {
             "fatoCodigo": "DATA_HOJE",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": -120,
-                  "dias": 0
-                },
-                "dataMaxima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": 0,
-                  "dias": 0
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": -120,
+                    "dias": 0
+                  },
+                  "dataMaxima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": 0,
+                    "dias": 0
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -59,7 +63,9 @@
       {
         "fatoCodigo": "DATA_HOJE",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

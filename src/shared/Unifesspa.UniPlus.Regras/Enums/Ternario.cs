@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Resultado ternário fail-closed da avaliação de um <see cref="Regras.ValueObjects.PredicadoDnf"/>
 /// (ou de uma <see cref="Regras.ValueObjects.ClausulaDnf"/>) contra os fatos de um candidato
@@ -14,9 +16,15 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// inicializado (ex.: um campo esquecido) nunca é silenciosamente lido como
 /// <see cref="Verdadeiro"/>.
 /// </remarks>
+[DescricaoDoContrato("Resultado da avaliação de uma condição: verdadeiro, falso ou indeterminado, que é estado próprio e não equivale a falso nem a ausência.")]
 public enum Ternario
 {
+    [CodigoDeContrato("INDETERMINADO", "Indeterminado", Descricao = "Não há como decidir ainda: nunca é lido como verdadeiro nem como falso.")]
     Indeterminado = 0,
+
+    [CodigoDeContrato("VERDADEIRO", "Verdadeiro")]
     Verdadeiro = 1,
+
+    [CodigoDeContrato("FALSO", "Falso")]
     Falso = 2,
 }

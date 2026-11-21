@@ -193,11 +193,11 @@ public sealed class GravacaoDoModeloTests
 
     private Task<Result<Guid>> CriarAsync() =>
         CriarModeloFormularioCommandHandler.Handle(
-            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "Habilitação Medicina", null, "HABILITACAO", null, Conteudo(Item("CERTIFICADO", 0))),
+            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "HABILITACAO", new DescritivoDoModeloInput("Habilitação Medicina", null, null), Conteudo(Item("CERTIFICADO", 0))),
             _repository, _fatos, _termos, _tipos, _unitOfWork, CancellationToken.None);
 
     private Task<Result> AtualizarAsync(Guid id, ConteudoDoModeloInput conteudo, string nome = "Habilitação Medicina") =>
         AtualizarModeloFormularioCommandHandler.Handle(
-            new AtualizarModeloFormularioCommand(id, nome, null, null, conteudo),
+            new AtualizarModeloFormularioCommand(id, new DescritivoDoModeloInput(nome, null, null), conteudo),
             _repository, _fatos, _termos, _tipos, _unitOfWork, CancellationToken.None);
 }

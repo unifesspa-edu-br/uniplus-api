@@ -28,6 +28,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     public const int DescricaoMaxLength = 1000;
     public const int TipoProcessoCodigoMaxLength = 64;
 
+    /// <summary>O caminho do descritivo — nome, descrição e tipo de processo — no corpo da escrita, onde as recusas dele se apontam.</summary>
+    public const string CaminhoDoDescritivo = "descritivo";
+
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
@@ -151,13 +154,19 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static List<FieldError> ValidarDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
     [
-        .. TextoGravavel.Recusar("nome", nome),
-        .. TextoGravavel.Recusar("descricao", descricao),
-        .. TextoGravavel.Recusar("tipoProcessoCodigo", tipoProcessoCodigo),
-        .. ValidarNome(nome),
-        .. ValidarDescricao(descricao),
-        .. ValidarTipoProcesso(tipoProcessoCodigo),
+        .. NoDescritivo(
+        [
+            .. TextoGravavel.Recusar("nome", nome),
+            .. TextoGravavel.Recusar("descricao", descricao),
+            .. TextoGravavel.Recusar("tipoProcessoCodigo", tipoProcessoCodigo),
+            .. ValidarNome(nome),
+            .. ValidarDescricao(descricao),
+            .. ValidarTipoProcesso(tipoProcessoCodigo),
+        ]),
     ];
+
+    private static IEnumerable<FieldError> NoDescritivo(IEnumerable<FieldError> erros) =>
+        erros.Select(static e => e.NoCaminhoDe(CaminhoDoDescritivo));
 
     private static IEnumerable<FieldError> ValidarNome(string? nome)
     {

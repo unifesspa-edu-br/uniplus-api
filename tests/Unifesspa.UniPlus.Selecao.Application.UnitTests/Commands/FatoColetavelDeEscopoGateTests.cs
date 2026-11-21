@@ -32,9 +32,10 @@ public sealed class FatoColetavelDeEscopoGateTests
     private static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetado.Criar(
-        "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+        .ComRotulo("Você se enquadra em alguma condição de atendimento?")
+        .DoTipo(TipoRenderizacao.SelecaoMultipla)
+        .Construir();
 
     [Fact(DisplayName = "Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar()

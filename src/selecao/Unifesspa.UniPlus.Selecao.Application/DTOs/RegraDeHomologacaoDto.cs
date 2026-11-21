@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Regras.Leituras;
+
 /// <summary>
 /// Projeção de leitura de uma condição da regra de homologação das inscrições, na mesma forma da escrita: o cliente devolve o que leu.
 /// </summary>

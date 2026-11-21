@@ -13,8 +13,6 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public enum TipoDominioFato
 {
-    Nenhuma = 0,
-
     /// <summary>Escalar sim/não — só aceita o operador <see cref="Operador.Igual"/>.</summary>
     Booleano = 1,
 

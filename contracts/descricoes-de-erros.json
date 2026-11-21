@@ -10879,6 +10879,26 @@
       ]
     },
     {
+      "codigo": "uniplus.grupo_formulario.ocorrencias_obrigatorias",
+      "requisitos": [
+        "UNI-REQ-0146"
+      ],
+      "oQueAconteceu": [
+        "Um grupo repetível declara quantas vezes se repete: o mínimo de ocorrências, se o candidato é uma delas e, opcionalmente, o máximo (UNI-REQ-0146). O bloco `ocorrencias` do grupo não traz `minimo` ou não traz `incluiCandidato`, e a API não assume valor por quem enviou, porque os dois mudam quantas ocorrências o candidato precisa informar.",
+        "A mensagem é \"O mínimo de ocorrências do grupo é obrigatório.\" (`field` igual a `grupos[i].ocorrencias.minimo`) ou \"É obrigatório declarar se o candidato é uma das ocorrências do grupo.\" (`field` igual a `grupos[i].ocorrencias.incluiCandidato`). Com o bloco `ocorrencias` ausente, saem as duas. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. A recusa vem na lista `errors`, junto das demais recusas do grupo, e nada é gravado.",
+        "Na avaliação de um formulário portável, o bloco `ocorrencias` ausente ou nulo produz uma recusa com `field` igual a `etapas[i].grupos[j].ocorrencias`."
+      ],
+      "comoResolver": [
+        "Envie `ocorrencias` com `minimo` (0 ou mais) e `incluiCandidato` (verdadeiro ou falso). O `maximo` é opcional: sem ele, o grupo aceita qualquer quantidade a partir do mínimo. Se o grupo inclui o candidato como membro, o `minimo` é ao menos 1."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário",
+        "Gravação dos itens do formulário",
+        "Avaliação de um formulário portável"
+      ]
+    },
+    {
       "codigo": "uniplus.grupo_formulario.ordem_invalida",
       "requisitos": [
         "UNI-REQ-0146"
@@ -11447,6 +11467,24 @@
         "Aplicação de modelo de formulário",
         "Publicação inicial do processo seletivo",
         "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+      "requisitos": [
+        "UNI-REQ-0145"
+      ],
+      "oQueAconteceu": [
+        "O item do formulário declara o tipo de campo em `apresentacao.tipoRenderizacao` com um código que a API não reconhece. A lista dos códigos aceitos está no componente `TipoRenderizacaoCodigo` do contrato da API; a mensagem lista os códigos e não repete o valor enviado.",
+        "A recusa vem na lista `errors`, com `field` igual a `itens[i].apresentacao.tipoRenderizacao` (ou `grupos[g].subitens[j].apresentacao.tipoRenderizacao`, no campo de um grupo). Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Troque `apresentacao.tipoRenderizacao` por um dos códigos listados na mensagem, com letras maiúsculas e sublinhado, como na lista do contrato."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário",
+        "Gravação dos itens do formulário"
       ]
     },
     {
@@ -14495,18 +14533,6 @@
       ],
       "comoResolver": [
         "Ajuste a posição da cláusula para zero ou um número maior, conforme o agrupamento das condições."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.condicao_precondicao_fato.clausula_invalida",
-      "requisitos": [
-        "UNI-REQ-0078"
-      ],
-      "oQueAconteceu": [
-        "A condição para coletar o fato tem um número de cláusula negativo."
-      ],
-      "comoResolver": [
-        "Corrija a posição da cláusula para zero ou um número maior na configuração da coleta."
       ]
     },
     {

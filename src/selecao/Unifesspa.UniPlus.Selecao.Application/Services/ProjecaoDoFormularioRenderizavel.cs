@@ -6,9 +6,11 @@ using Domain.Entities;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// O formulário renderizável de uma finalidade a partir da configuração do processo — a congelada na
@@ -35,27 +37,55 @@ public static class ProjecaoDoFormularioRenderizavel
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(termos);
 
-        if (formularios.FirstOrDefault(f => f.Finalidade == finalidade) is not { } formulario)
-        {
-            return null;
-        }
+        return formularios.FirstOrDefault(f => f.Finalidade == finalidade) is { } formulario
+            ? Formulario(finalidade, formulario, avaliavel, fatos, grupos, termos, dataReferenciaFatos)
+            : null;
+    }
 
+    private static FormularioRenderizavel Formulario(
+        FinalidadeFormulario finalidade,
+        FormularioProcesso formulario,
+        DefinicaoAvaliavel avaliavel,
+        IReadOnlyCollection<FatoColetado> fatos,
+        IReadOnlyCollection<GrupoColetado> grupos,
+        IReadOnlyCollection<TermoExigidoFormulario> termos,
+        DateOnly? dataReferenciaFatos)
+    {
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = avaliavel.ValoresSelecionaveis;
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas);
 
-        return FormularioRenderizavel.Montar(
+        return new FormularioRenderizavel(
             EstruturaFormulario.ParaToken(finalidade),
             formulario.Titulo,
             [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(e => Secao(finalidade, e))],
             [.. termos.Where(t => t.Finalidade == finalidade).OrderBy(static t => t.Ordem).Select(t => Termo(finalidade, t))],
-            [.. fatos.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => Campo(f, valores))],
-            [.. grupos.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => Grupo(g, valores))],
-            RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas),
-            fatos.Where(f => f.Finalidade != finalidade).Select(f => Campo(f, valores)),
-            avaliavel.ApresentacaoDosPressupostos,
-            avaliavel.Definicao.Agregados,
-            dataReferenciaFatos,
-            FusoInstitucional.ZoneId);
+            Coleta(finalidade, fatos, grupos, valores),
+            recorte.Regras,
+            Pressupostos(finalidade, fatos, avaliavel, recorte, dataReferenciaFatos));
     }
+
+    private static PressupostosDoFormulario Pressupostos(
+        FinalidadeFormulario finalidade,
+        IReadOnlyCollection<FatoColetado> fatos,
+        DefinicaoAvaliavel avaliavel,
+        RecorteDaFinalidade recorte,
+        DateOnly? dataReferenciaFatos)
+    {
+        DescricaoDosPressupostos descricao = new(
+            [.. fatos.Where(f => f.Finalidade != finalidade).Select(f => Campo(f, avaliavel.ValoresSelecionaveis))],
+            avaliavel.ApresentacaoDosPressupostos,
+            avaliavel.Definicao.Agregados);
+
+        return new PressupostosDoFormulario(descricao.Descrever(recorte.Pressupostos), dataReferenciaFatos, FusoInstitucional.ZoneId);
+    }
+
+    private static ColetaRenderizavel Coleta(
+        FinalidadeFormulario finalidade,
+        IReadOnlyCollection<FatoColetado> fatos,
+        IReadOnlyCollection<GrupoColetado> grupos,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
+        [.. fatos.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => Campo(f, valores))],
+        [.. grupos.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => Grupo(g, valores))]);
 
     private static SecaoRenderizavel Secao(FinalidadeFormulario finalidade, EtapaFormulario etapa) => new(
         etapa.Codigo,
@@ -63,9 +93,7 @@ public static class ProjecaoDoFormularioRenderizavel
         etapa.Ordem,
         EstruturaFormulario.ParaToken(etapa.Tipo),
         EstruturaFormulario.ParaToken(etapa.Bloco),
-        etapa.Titulo,
-        etapa.Descricao,
-        etapa.Aviso);
+        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
     private static TermoRenderizavel Termo(FinalidadeFormulario finalidade, TermoExigidoFormulario termo) => new(
         termo.Codigo,
@@ -73,11 +101,7 @@ public static class ProjecaoDoFormularioRenderizavel
         termo.Ordem,
         termo.TermoId,
         termo.VersaoId,
-        termo.Nome,
-        termo.Texto,
-        termo.BaseLegal,
-        termo.FormaAceite,
-        termo.HashVersao);
+        new ConteudoDoTermoDto(termo.Nome, termo.Texto, termo.BaseLegal, termo.FormaAceite, termo.HashVersao));
 
     private static GrupoRenderizavel Grupo(
         GrupoColetado grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
@@ -85,9 +109,7 @@ public static class ProjecaoDoFormularioRenderizavel
         grupo.Ordem,
         grupo.EtapaCodigo,
         grupo.Rotulo,
-        grupo.Minimo,
-        grupo.Maximo,
-        grupo.IncluiCandidato,
+        new OcorrenciasDoGrupoDto(grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato),
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, valores))]);
 
     /// <summary>O campo, com os valores selecionáveis na ordem de apresentação quando é de seleção.</summary>
@@ -95,14 +117,15 @@ public static class ProjecaoDoFormularioRenderizavel
         FatoColetado fato, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
         fato.FatoCodigo,
         fato.Ordem,
-        fato.Rotulo,
-        fato.TipoRenderizacao.ToCodigo(),
+        fato.EtapaCodigo,
+        new ApresentacaoDoCampoDto(
+            fato.Rotulo,
+            fato.TipoRenderizacao.Codigo(),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade, fato.FatoCodigo, fato.Ajuda),
+            fato.PedirConfirmacao),
+        ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
         valores.GetValueOrDefault(fato.FatoCodigo) is { } doCampo
             ? [.. doCampo.OrderBy(static v => v.Ordem).ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))]
-            : null,
-        fato.EtapaCodigo,
-        ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
-        ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade, fato.FatoCodigo, fato.Ajuda),
-        fato.PedirConfirmacao);
+            : null);
 }

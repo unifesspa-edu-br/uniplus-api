@@ -35,5 +35,10 @@ public sealed class CampoDeMunicipioTests
         Conferir(TipoRenderizacao.Municipio, [new MunicipiosDaUf("NATURALIDADE_UF")]).Should().BeEmpty();
 
     private static List<FieldError> Conferir(TipoRenderizacao tipo, IReadOnlyList<RestricaoValor> restricoes) =>
-        FormaDoItem.Conferir("NATURALIDADE_MUNICIPIO", 1, "Município de nascimento", tipo, null, null, [], Obrigatoriedade.Sempre, restricoes);
+        FormaDoItem.Conferir(
+            "NATURALIDADE_MUNICIPIO",
+            1,
+            new ApresentacaoDoCampo("Município de nascimento", tipo),
+            formato: null,
+            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes));
 }

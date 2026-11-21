@@ -19,23 +19,15 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 
 public sealed class DefinirEtapasVersaoPublicadaTests
 {
+    private const string Resultado = "RESULTADO_CLASSIFICACAO";
+
     [Fact(DisplayName = "Tipo já declarado na versão publicada vale pela classificação congelada: o catálogo que passou a congelar não recusa a etapa")]
     public async Task Handle_TipoJaDeclaradoQueOCatalogoPassouACongelar_AceitaPelaClassificacaoCongelada()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        VersaoPublicadaDeTeste.Publicar(
-            processo, repository, codecs,
-            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
-        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
+        CenarioDaVersaoPublicada cenario = CenarioDaVersaoPublicada.Publicando(
+            new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 
-        Result resultado = await Executar(
-            ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
-            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+        Result resultado = await cenario.DefinirUmProdutoDefinitivoAsync(CatalogoQueCongelaOResultado());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -43,20 +35,10 @@ public sealed class DefinirEtapasVersaoPublicadaTests
     [Fact(DisplayName = "Tipo declarado pela primeira vez continua conferido pelo catálogo, mesmo com versão publicada")]
     public async Task Handle_TipoNovoEmProcessoPublicado_ConfereOCatalogo()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        VersaoPublicadaDeTeste.Publicar(
-            processo, repository, codecs,
+        CenarioDaVersaoPublicada cenario = CenarioDaVersaoPublicada.Publicando(
             new TipoDeAtoCongelado("OUTRO_ATO", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false));
-        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
 
-        Result resultado = await Executar(
-            ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
-            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+        Result resultado = await cenario.DefinirUmProdutoDefinitivoAsync(CatalogoQueCongelaOResultado());
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
     }
@@ -64,29 +46,59 @@ public sealed class DefinirEtapasVersaoPublicadaTests
     [Fact(DisplayName = "Versão publicada que o codec não lê é recusada com a falha do codec, sem cair no catálogo")]
     public async Task Handle_VersaoPublicadaIlegivel_RecusaComAFalhaDoCodec()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        VersaoPublicadaDeTeste.PublicarIlegivel(
-            processo, repository, codecs, new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."));
-        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+        CenarioDaVersaoPublicada cenario = CenarioDaVersaoPublicada.PublicandoIlegivel(
+            new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."));
 
-        Result resultado = await Executar(
-            ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
-            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+        Result resultado = await cenario.DefinirUmProdutoDefinitivoAsync(CatalogoComOResultado());
 
         resultado.Error!.Code.Should().Be("Envelope.CodecDesconhecido");
     }
 
-    private static DefinirEtapasCommand ComUmProdutoDefinitivo(ProcessoSeletivo processo) => new(
-        processo.Id,
-        [
-            new EtapaProcessoInput(
-                "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO")],
-                Bancas: [], Recursos: []),
-        ]);
+    private static ITipoAtoPublicadoReader CatalogoComOResultado(bool congelaConfiguracao = false)
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync(Resultado, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado(Resultado) with { CongelaConfiguracao = congelaConfiguracao });
+        return catalogo;
+    }
+
+    private static ITipoAtoPublicadoReader CatalogoQueCongelaOResultado() => CatalogoComOResultado(congelaConfiguracao: true);
+
+    /// <summary>O certame sem etapas, com a versão publicada e o registro de codecs que a lê.</summary>
+    private sealed record CenarioDaVersaoPublicada(ProcessoSeletivo Processo, IProcessoSeletivoRepository Repositorio, IRegistroCodecsEnvelope Codecs)
+    {
+        internal static CenarioDaVersaoPublicada Publicando(TipoDeAtoCongelado tipoDeAto)
+        {
+            CenarioDaVersaoPublicada cenario = Novo();
+            VersaoPublicadaDeTeste.Publicar(cenario.Processo, cenario.Repositorio, cenario.Codecs, tipoDeAto);
+            return cenario;
+        }
+
+        internal static CenarioDaVersaoPublicada PublicandoIlegivel(DomainError falhaDoCodec)
+        {
+            CenarioDaVersaoPublicada cenario = Novo();
+            VersaoPublicadaDeTeste.PublicarIlegivel(cenario.Processo, cenario.Repositorio, cenario.Codecs, falhaDoCodec);
+            return cenario;
+        }
+
+        internal Task<Result> DefinirUmProdutoDefinitivoAsync(ITipoAtoPublicadoReader catalogo) => Executar(
+            ComUmProdutoDefinitivo(Processo), Repositorio, Substitute.For<IUnitOfWork>(), cadastros: new(Atos: catalogo, Codecs: Codecs));
+
+        private static CenarioDaVersaoPublicada Novo()
+        {
+            ProcessoSeletivo processo = ProcessoSemEtapas();
+            IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+            repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+            return new(processo, repositorio, Substitute.For<IRegistroCodecsEnvelope>());
+        }
+
+        private static DefinirEtapasCommand ComUmProdutoDefinitivo(ProcessoSeletivo processo) => new(
+            processo.Id,
+            [
+                new EtapaProcessoInput(
+                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [new ProdutoDaEtapaInput(Resultado, "DEFINITIVO")],
+                    Bancas: [], Recursos: []),
+            ]);
+    }
 }

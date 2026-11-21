@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.Serializacao;
 
 /// <summary>
@@ -32,7 +33,7 @@ public sealed class FormularioPortavelTests
     {
         FormularioPortavel formulario = Formulario(
             Item("TIPO_ENDERECO", oferta: ["URBANO", "ALDEIA"]),
-            Item("NOME_ALDEIA", exibicao: [[new CondicaoPrecondicaoInput("TIPO_ENDERECO", "IGUAL", Texto("ALDEIA"))]]));
+            Item("NOME_ALDEIA", exibicao: [[new CondicaoPrecondicaoDto("TIPO_ENDERECO", "IGUAL", Texto("ALDEIA"))]]));
 
         AvaliacaoFormulario dentro = Avaliar(formulario, Respostas(("TIPO_ENDERECO", Texto("ALDEIA"))));
         AvaliacaoFormulario fora = Avaliar(formulario, Respostas(("TIPO_ENDERECO", Texto("QUILOMBO"))));
@@ -51,6 +52,8 @@ public sealed class FormularioPortavelTests
         definicao.IsFailure.Should().BeTrue();
         definicao.Error!.Code.Should().Be(codigo);
     }
+
+    private static readonly JsonSerializerOptions OpcoesDoFio = new(JsonSerializerDefaults.Web);
 
     public static readonly TheoryData<FormularioPortavel, string> Malformados = new()
     {
@@ -112,7 +115,7 @@ public sealed class FormularioPortavelTests
             "Um campo do formulário não tem o código do fato."
         },
         {
-            Formulario(Item("RENDA")) with { Termos = [new TermoPortavel("", null, "NUNCA", null)] },
+            Formulario(Item("RENDA")) with { Termos = [new TermoPortavel("", Nunca())] },
             FormularioPortavelErrorCodes.EstruturaInvalida,
             "Um termo do formulário não tem código."
         },
@@ -152,18 +155,18 @@ public sealed class FormularioPortavelTests
             "Um agregado do formulário não tem código."
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorInput(RestricaoValorJson.FaixaNumerica, Minimo: 10, Maximo: 1))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.FaixaNumerica, 10, 1, null, null, null, null))),
             RestricaoValorErrorCodes.LimitesIncoerentes,
             "O mínimo (10) é maior que o máximo (1)."
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorInput(RestricaoValorJson.OpcoesDasRespostas, Fatos: []))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesDasRespostas, null, null, null, [], null, null))),
             RestricaoValorErrorCodes.FatosVazios,
             "As opções formadas pelas respostas precisam citar ao menos um fato."
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorInput(
-                RestricaoValorJson.OpcoesPermitidas, Entradas: [new OpcoesCondicionadasInput(null, [])]))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(
+                RestricaoValorJson.OpcoesPermitidas, null, null, [new OpcoesCondicionadasDto(null, [])], null, null, null))),
             RestricaoValorErrorCodes.OpcoesVazias,
             "Um grupo de opções precisa de valores não vazios."
         },
@@ -190,7 +193,7 @@ public sealed class FormularioPortavelTests
         {
             Formulario(Item("RENDA", obrigatoriedade: "QUANDO")) with
             {
-                Termos = [new TermoPortavel("TERMO", [[new CondicaoPrecondicaoInput("X", "IGUAL", default)]], "NUNCA", null)],
+                Termos = [new TermoPortavel("TERMO", Nunca([[new CondicaoPrecondicaoDto("X", "IGUAL", default)]]))],
             },
             FormularioPortavelErrorCodes.ObrigatoriedadeInvalida,
             "A obrigatoriedade do campo 'RENDA' é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele."
@@ -206,7 +209,7 @@ public sealed class FormularioPortavelTests
             "Um campo do formulário não tem o código do fato."
         },
         {
-            Formulario(Item("RENDA"), Item("RENDA")) with { Termos = [new TermoPortavel("", null, "NUNCA", null)] },
+            Formulario(Item("RENDA"), Item("RENDA")) with { Termos = [new TermoPortavel("", Nunca())] },
             FormularioPortavelErrorCodes.EstruturaInvalida,
             "Um termo do formulário não tem código."
         },
@@ -226,18 +229,100 @@ public sealed class FormularioPortavelTests
     }
 
     private static GrupoPortavel Grupo(string codigo, string subitem) =>
-        new(codigo, null, "NUNCA", null, 0, null, false, [Item(subitem)]);
+        new(codigo, new OcorrenciasDoGrupoDto(0, null, false), Nunca(), [Item(subitem)]);
 
     private static FormularioPortavel ComGrupos(params GrupoPortavel[] grupos) =>
         new([new EtapaPortavel("INSCRICAO:DADOS", null, [], grupos)], [], [], []);
 
     private static FormularioPortavel ComGrupo(int minimo, int? maximo) =>
         new(
-            [new EtapaPortavel("INSCRICAO:DADOS", null, [], [new GrupoPortavel("FAMILIA", null, "NUNCA", null, minimo, maximo, false, [Item("NOME")])])],
+            [new EtapaPortavel("INSCRICAO:DADOS", null, [], [new GrupoPortavel("FAMILIA", new OcorrenciasDoGrupoDto(minimo, maximo, false), Nunca(), [Item("NOME")])])],
             [], [], []);
 
-    private static ItemPortavel ItemComRestricao(RestricaoValorInput restricao) =>
-        Item("RENDA") with { Restricoes = [restricao] };
+    private static ItemPortavel ItemComRestricao(RestricaoValorDto restricao)
+    {
+        ItemPortavel item = Item("RENDA");
+        return item with { Regras = item.Regras with { Restricoes = [restricao] } };
+    }
+
+    private static ExibicaoEObrigatoriedadeDto Nunca(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao = null) =>
+        new(exibicao, new ObrigatoriedadeDto("NUNCA", null));
+
+    [Theory(DisplayName = "Elemento nulo dentro do bloco de regras é recusado com o caminho aninhado")]
+    [MemberData(nameof(NulosAninhados))]
+    public void ElementoNuloNoBlocoDeRegras_RecusadoComOCaminhoAninhado(FormularioPortavel formulario, string caminho)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        Result<DefinicaoFormulario> definicao = formulario.ParaDefinicao();
+
+        definicao.Error!.Code.Should().Be(FormularioPortavelErrorCodes.EstruturaInvalida);
+        definicao.Error.Message.Should().Contain($"'{caminho}'");
+    }
+
+    public static readonly TheoryData<FormularioPortavel, string> NulosAninhados = new()
+    {
+        { Formulario(Item("RENDA", exibicao: [null!])), "etapas[0].itens[0].regras.exibicao[0]" },
+        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, Quando([[null!]]), [], null))), "etapas[0].itens[0].regras.obrigatoriedade.predicado[0][0]" },
+        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, new ObrigatoriedadeDto("NUNCA", null), [], new ImpedimentoDto([null!], "Mensagem")))), "etapas[0].itens[0].regras.impedimento.quando[0]" },
+        {
+            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesPermitidas, null, null, [null!], null, null, null))),
+            "etapas[0].itens[0].regras.restricoes[0].entradas[0]"
+        },
+        {
+            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesDasRespostas, null, null, null, [null!], null, null))),
+            "etapas[0].itens[0].regras.restricoes[0].fatos[0]"
+        },
+        { Formulario(Item("RENDA")) with { Termos = [new TermoPortavel("TERMO", Nunca([null!]))] }, "termos[0].regras.exibicao[0]" },
+        {
+            ComGrupos(Grupo("FAMILIA", "NOME") with { Regras = new ExibicaoEObrigatoriedadeDto(null, Quando([null!])) }),
+            "etapas[0].grupos[0].regras.obrigatoriedade.predicado[0]"
+        },
+    };
+
+    [Fact(DisplayName = "Item sem o bloco de regras é recusado como obrigatoriedade inválida")]
+    public void ParaDefinicao_ItemSemRegras_RecusaComoObrigatoriedadeInvalida()
+    {
+        FormularioPortavel formulario = Formulario(Item("RENDA") with { Regras = null! });
+
+        Result<DefinicaoFormulario> definicao = formulario.ParaDefinicao();
+
+        definicao.Error!.Code.Should().Be(FormularioPortavelErrorCodes.ObrigatoriedadeInvalida);
+        definicao.Error.Message.Should().Be("A obrigatoriedade do campo 'RENDA' é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele.");
+    }
+
+    [Theory(DisplayName = "Grupo sem ocorrências é recusado no caminho do bloco")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ParaDefinicao_GrupoSemOcorrencias_RecusaNoCaminho(bool explicito)
+    {
+        string ocorrencias = explicito ? "\"ocorrencias\":null," : "";
+        string json = "{\"etapas\":[{\"codigo\":\"INSCRICAO:DADOS\",\"itens\":[],\"grupos\":[{\"codigo\":\"FAMILIA\"," +
+            ocorrencias + "\"regras\":{\"obrigatoriedade\":{\"tipo\":\"NUNCA\"}},\"subitens\":[]}]}],\"termos\":[],\"derivacoes\":[],\"agregados\":[]}";
+        FormularioPortavel formulario = JsonSerializer.Deserialize<FormularioPortavel>(json, OpcoesDoFio)!;
+
+        Result<DefinicaoFormulario> resultado = formulario.ParaDefinicao();
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "etapas[0].grupos[0].ocorrencias" && e.Error.Code == GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+    }
+
+    [Fact]
+    public void Avaliar_GrupoSemOcorrencias_PreservaOCaminho()
+    {
+        FormularioPortavel formulario = new([new EtapaPortavel("DADOS", null, [],
+            [new GrupoPortavel("FAMILIA", null!, Nunca(), [])])], [], [], []);
+        EntradaAvaliacaoFormulario entrada = new(new Dictionary<string, JsonElement>(), new HashSet<string>(),
+            new Dictionary<string, Regras.ValueObjects.FatoResolvido>(), null);
+
+        Result<AvaliacaoFormulario> resultado = formulario.Avaliar(entrada);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].grupos[0].ocorrencias");
+    }
+
+    private static ItemPortavel ItemComRegras(RegrasDoCampoDto regras) => Item("RENDA") with { Regras = regras };
+
+    private static ObrigatoriedadeDto Quando(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> predicado) => new("QUANDO", predicado);
 
     [Fact(DisplayName = "Elemento nulo dentro das regras é recusado com o caminho dele, sem estourar")]
     public void ElementoNulo_RecusadoComOCaminho()
@@ -263,10 +348,10 @@ public sealed class FormularioPortavelTests
 
     private static ItemPortavel Item(
         string fato,
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? exibicao = null,
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao = null,
         string obrigatoriedade = "NUNCA",
         IReadOnlyList<string>? oferta = null) =>
-        new(fato, exibicao, obrigatoriedade, null, [], null, oferta);
+        new(fato, new RegrasDoCampoDto(exibicao, new ObrigatoriedadeDto(obrigatoriedade, null), [], null), oferta, null);
 
     private static Dictionary<string, JsonElement> Respostas(params (string Fato, JsonElement Valor)[] respostas) =>
         respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal);

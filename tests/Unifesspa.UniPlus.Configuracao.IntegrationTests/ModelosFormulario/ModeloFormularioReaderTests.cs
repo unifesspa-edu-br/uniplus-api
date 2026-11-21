@@ -50,8 +50,8 @@ public sealed class ModeloFormularioReaderTests
         lido!.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
         GrupoColetadoInput grupo = lido.Conteudo.Grupos!.Single();
         grupo.Subitens.Select(static s => s.FatoCodigo).Should().Equal(CandidatoComoMembro.FatoParentesco, "MAIOR_IDADE");
-        grupo.Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
-        grupo.IncluiCandidato.Should().BeTrue();
+        grupo.Ocorrencias!.Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
+        grupo.Ocorrencias.IncluiCandidato.Should().BeTrue();
     }
 
     [Fact(DisplayName = "O identificador sem modelo não devolve nada")]
@@ -88,17 +88,17 @@ public sealed class ModeloFormularioReaderTests
                 new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
                 new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
-            [new ItemDoModelo("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)],
+            [new ItemDoModelo("CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
             [],
             [],
             [GrupoDeComposicaoFamiliar()]);
 
     private static GrupoDoModelo GrupoDeComposicaoFamiliar() =>
         new(
-            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, null, IncluiCandidato: true),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [
-                new(CandidatoComoMembro.FatoParentesco, 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false),
-                new("MAIOR_IDADE", 1, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
-            ],
-            IncluiCandidato: true);
+                new(CandidatoComoMembro.FatoParentesco, 0, null, new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.SelecaoUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
+                new("MAIOR_IDADE", 1, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
+            ]);
 }

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Reader cross-módulo dos tipos ativos; não expõe itens desativados.</summary>
 internal sealed class TipoEtapaReader : ITipoEtapaReader
@@ -51,8 +52,9 @@ internal sealed class TipoEtapaReader : ITipoEtapaReader
     }
 
     private static TipoEtapaView ParaView(TipoEtapa tipo) =>
-        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem,
-            tipo.ExigeCorrecaoIndependente,
-            [.. tipo.ConceitosAdmitidos.Select(conceito => new ConceitoAdmitidoView(
-                conceito.Codigo, conceito.Nome, NaturezasConceito.ParaContrato(conceito.Natureza)))]);
+        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao,
+            new AvaliacaoDasEtapasView(
+                tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem, tipo.ExigeCorrecaoIndependente,
+                [.. tipo.ConceitosAdmitidos.Select(conceito => new ConceitoAdmitidoView(
+                    conceito.Codigo, conceito.Nome, conceito.Natureza.Codigo()))]));
 }

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -10,17 +9,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfiguration<BaseLegalBonusRegional>
 {
-    // Mesmo mapeamento canônico usado por AbrangenciaConverter/StatusConverter
-    // (DocumentoExigidoBaseLegalConfiguration) — nunca enum.ToString() cru: a coluna
-    // carrega o mesmo token UPPER_SNAKE que o CHECK constraint e o wire aceitam, não o
-    // nome do membro C# (que o CHECK sempre rejeitaria).
-    private static readonly ValueConverter<TipoInstrumentoNormativo, string> TipoInstrumentoConverter =
-        new(tipo => tipo.ToCodigo(), codigo => TipoInstrumentoNormativoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<BaseLegalBonusRegional> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -36,11 +29,10 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
             .IsRequired();
 
         builder.Property(e => e.TipoInstrumento)
-            .HasConversion(TipoInstrumentoConverter)
             .HasMaxLength(30)
             .IsRequired();
 
-        builder.ToTable(t => t.HasCheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')"));
+        builder.ToTable(t => t.HasCheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", $"tipo_instrumento IN ({CodigosDoTipoDeInstrumentoEmSql()})"));
 
         builder.Property(e => e.Identificacao).HasMaxLength(500).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(2000).IsRequired();
@@ -68,4 +60,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
 
         builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("ix_bases_legais_do_bonus_regional_tipo_instrumento");
     }
+
+    private static string CodigosDoTipoDeInstrumentoEmSql() =>
+        string.Join(",", CatalogoDe<TipoInstrumentoNormativo>.Todos().Select(static d => $"'{d.Codigo}'"));
 }

@@ -21,9 +21,9 @@ public sealed class TipoEtapaMappingTests
     {
         TipoEtapaDto dto = TipoComConceitos(TiposConceitoDeTeste.Numerico(), TiposConceitoDeTeste.Categorico()).ToDto();
 
-        dto.ConceitosAdmitidos.Should().Equal(
-            new ConceitoAdmitidoDto("NOTA_ENTREVISTA", "Nota da entrevista", "numerico"),
-            new ConceitoAdmitidoDto("PARECER_ANALISE", "Parecer da análise", "categorico"));
+        dto.Avaliacao.ConceitosAdmitidos.Select(static c => (c.Codigo, c.Nome, c.Natureza.Codigo, c.Natureza.Rotulo)).Should().Equal(
+            ("NOTA_ENTREVISTA", "Nota da entrevista", "NUMERICO", "Numérico"),
+            ("PARECER_ANALISE", "Parecer da análise", "CATEGORICO", "Categórico"));
     }
 
     [Fact(DisplayName = "O DTO do tipo sem conceito admitido traz lista vazia, não nula")]
@@ -31,6 +31,6 @@ public sealed class TipoEtapaMappingTests
     {
         TipoEtapaDto dto = TipoComConceitos().ToDto();
 
-        dto.ConceitosAdmitidos.Should().NotBeNull().And.BeEmpty();
+        dto.Avaliacao.ConceitosAdmitidos.Should().NotBeNull().And.BeEmpty();
     }
 }

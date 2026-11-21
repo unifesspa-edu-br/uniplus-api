@@ -69,16 +69,18 @@ internal sealed class CenarioDeFormularioPublicado
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
-        processo.DefinirItens([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ]).IsSuccess.Should().BeTrue();
-
+        processo.DefinirItens([CorRacaDeSelecaoUnica()]).IsSuccess.Should().BeTrue();
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)])
-            .IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
+
+    private static FatoColetado CorRacaDeSelecaoUnica() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+        .ComRotulo("Cor ou raça")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .Construir();
 
     /// <summary>
     /// Publica o processo e grava o processo, a versão publicada e a divulgação. No caminho real a

@@ -8,11 +8,15 @@
         "itens": [
           {
             "fatoCodigo": "DETALHE",
-            "exibicao": [],
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": [],
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -32,8 +36,10 @@
     "campos": [
       {
         "fatoCodigo": "DETALHE",
-        "visivel": "FALSO",
-        "estado": "NAO_APLICAVEL"
+        "estado": "NAO_APLICAVEL",
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }

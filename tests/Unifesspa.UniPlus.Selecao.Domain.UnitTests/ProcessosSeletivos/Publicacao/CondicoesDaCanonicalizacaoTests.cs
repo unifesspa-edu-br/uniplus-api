@@ -55,8 +55,10 @@ public sealed class CondicoesDaCanonicalizacaoTests
         new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
         exibicao: null, Obrigatoriedade.Sempre).Value!;
 
-    private static FatoColetado FatoDosMunicipiosDoBonus() => FatoColetado.Criar(
-        "MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.MunicipiosDoBonus, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-        finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado FatoDosMunicipiosDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
+        .ComRotulo("Município")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+        .Construir();
 }

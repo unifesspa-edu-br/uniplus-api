@@ -19,14 +19,16 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
     private static readonly EixosDoMetadadoCongelado Booleano = new("BOOLEANO", "ESCALAR", "INSCRICAO");
     private static readonly EixosDoMetadadoCongelado Categorico = new("CATEGORICO", "ESCALAR", "INSCRICAO");
 
+    private static FatosDasVersoesPublicadas VersaoPublicadaComTemRendaEHaMembro() => FatosDasVersoesPublicadas.De(
+        [VersoesPublicadasDeTeste.Versao([], [Fato("TEM_RENDA", 0)])],
+        [new EixosDeVersaoPublicada(
+            new Dictionary<string, EixosDoMetadadoCongelado> { ["TEM_RENDA"] = Booleano },
+            new Dictionary<string, string> { ["HA_MEMBRO"] = "EXISTE" })]);
+
     [Fact(DisplayName = "O metadado e a operação congelados só recusam quando a versão nova os congela diferentes")]
     public void MetadadoEOperacao_ComparaComOQueAVersaoNovaCongela()
     {
-        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.De(
-            [VersoesPublicadasDeTeste.Versao([], [Fato("TEM_RENDA", 0)])],
-            [new EixosDeVersaoPublicada(
-                new Dictionary<string, EixosDoMetadadoCongelado> { ["TEM_RENDA"] = Booleano },
-                new Dictionary<string, string> { ["HA_MEMBRO"] = "EXISTE" })]);
+        FatosDasVersoesPublicadas publicadas = VersaoPublicadaComTemRendaEHaMembro();
         Dictionary<string, string> operacoes = new() { ["HA_MEMBRO"] = "EXISTE" };
 
         publicadas.EixosCongeladosTrocados(new Dictionary<string, EixosDoMetadadoCongelado> { ["TEM_RENDA"] = Booleano }, operacoes)
@@ -38,8 +40,7 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
         publicadas.EixosCongeladosTrocados(
             new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string> { ["HA_MEMBRO"] = "VALORES_PRESENTES" })
             .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Fato = "HA_MEMBRO", Eixo = "operação do agregado" });
-        publicadas.EixosCongeladosTrocados(
-            new Dictionary<string, EixosDoMetadadoCongelado> { ["NAO_COLETADO"] = Categorico }, operacoes)
+        publicadas.EixosCongeladosTrocados(new Dictionary<string, EixosDoMetadadoCongelado> { ["NAO_COLETADO"] = Categorico }, operacoes)
             .Should().BeEmpty("o fato que nenhuma versão coletou não é afetado");
     }
 
@@ -61,5 +62,5 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
     }
 
     private static FatoColetado Fato(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 }

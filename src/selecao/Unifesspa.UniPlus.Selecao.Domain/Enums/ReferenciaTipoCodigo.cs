@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento único entre <see cref="ReferenciaTipo"/> e o código textual canônico
-/// UPPER_SNAKE do wire de comando (mesma convenção de <see cref="OperadorCodigo"/>) —
+/// UPPER_SNAKE do wire de comando (mesma convenção do código declarado em <see cref="Unifesspa.UniPlus.Regras.Enums.Operador"/>) —
 /// fonte de verdade única do wire format.
 /// </summary>
 public static class ReferenciaTipoCodigo

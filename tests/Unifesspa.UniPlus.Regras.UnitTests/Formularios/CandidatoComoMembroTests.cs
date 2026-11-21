@@ -13,25 +13,16 @@ public sealed class CandidatoComoMembroTests
 
     [Theory]
     [InlineData("valido", null)]
-    [InlineData("minimoZero", "minimo")]
+    [InlineData("minimoZero", "ocorrencias.minimo")]
+    [InlineData("minimoNaoDeclarado", null)]
     [InlineData("semParentesco", "subitens")]
     [InlineData("parentescoOpcional", "subitens[0]")]
     [InlineData("parentescoComExibicao", "subitens[0]")]
-    [InlineData("opcoesSemOCandidato", "subitens[0].restricoes")]
-    [InlineData("opcoesDasRespostas", "subitens[0].restricoes")]
+    [InlineData("opcoesSemOCandidato", "subitens[0].regras.restricoes")]
+    [InlineData("opcoesDasRespostas", "subitens[0].regras.restricoes")]
     public void Conferir_GrupoQueIncluiOCandidato_RecusaOQueNaoIdentificaAOcorrenciaDele(string caso, string? campoRecusado)
     {
-        Subitem parentesco = new(Parentesco, false, Obrigatoriedade.Sempre, []);
-        (int minimo, Subitem[] subitens) = caso switch
-        {
-            "minimoZero" => (0, new[] { parentesco }),
-            "semParentesco" => (1, [new Subitem("SEM_RENDA", false, Obrigatoriedade.Sempre, [])]),
-            "parentescoOpcional" => (1, [parentesco with { Obrigatoriedade = Obrigatoriedade.Nunca }]),
-            "parentescoComExibicao" => (1, [parentesco with { TemExibicao = true }]),
-            "opcoesSemOCandidato" => (1, [parentesco with { Restricoes = [Opcoes("PAI_OU_MAE")] }]),
-            "opcoesDasRespostas" => (1, [parentesco with { Restricoes = [new OpcoesDasRespostas(["PARENTESCOS_DECLARADOS"])] }]),
-            _ => (1, [parentesco with { Restricoes = [Opcoes(CandidatoComoMembro.ProprioCandidato, "PAI_OU_MAE")] }]),
-        };
+        (int? minimo, Subitem[] subitens) = Caso(caso);
 
         List<FieldError> erros = CandidatoComoMembro.Conferir(
             minimo, [.. subitens.Select(static s => (s.FatoCodigo, s.TemExibicao, s.Obrigatoriedade, s.Restricoes))]);
@@ -49,6 +40,22 @@ public sealed class CandidatoComoMembroTests
 
         CandidatoComoMembro.EhDoCandidato(respostas).Should().Be(esperado);
         CandidatoComoMembro.EhDoCandidato(new Dictionary<string, System.Text.Json.JsonElement>()).Should().BeFalse("sem parentesco não há como saber");
+    }
+
+    private static (int? Minimo, Subitem[] Subitens) Caso(string caso)
+    {
+        Subitem parentesco = new(Parentesco, false, Obrigatoriedade.Sempre, []);
+        return caso switch
+        {
+            "minimoZero" => (0, [parentesco]),
+            "minimoNaoDeclarado" => (null, [parentesco]),
+            "semParentesco" => (1, [new Subitem("SEM_RENDA", false, Obrigatoriedade.Sempre, [])]),
+            "parentescoOpcional" => (1, [parentesco with { Obrigatoriedade = Obrigatoriedade.Nunca }]),
+            "parentescoComExibicao" => (1, [parentesco with { TemExibicao = true }]),
+            "opcoesSemOCandidato" => (1, [parentesco with { Restricoes = [Opcoes("PAI_OU_MAE")] }]),
+            "opcoesDasRespostas" => (1, [parentesco with { Restricoes = [new OpcoesDasRespostas(["PARENTESCOS_DECLARADOS"])] }]),
+            _ => (1, [parentesco with { Restricoes = [Opcoes(CandidatoComoMembro.ProprioCandidato, "PAI_OU_MAE")] }]),
+        };
     }
 
     private static OpcoesPermitidas Opcoes(params string[] valores) => new([new OpcoesCondicionadas(null, valores)]);

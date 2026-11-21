@@ -21,7 +21,7 @@ public sealed class FatosDasVersoesPublicadasTests
         FormularioProcesso.Criar(finalidade, null, null, FormularioDeTeste.Etapas(finalidade)).Value!;
 
     private static FatoColetado Item(string codigo, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
-        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, finalidade: finalidade, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).DaFinalidade(finalidade).Construir();
 
     [Fact(DisplayName = "Fato coletado em todas as versões é garantido; o que só a versão base coleta, não")]
     public void Garante_SoOQueTodasAsVersoesColetaram()
@@ -59,10 +59,11 @@ public sealed class FatosDasVersoesPublicadasTests
     [Fact(DisplayName = "O código do grupo e os campos dele contam como coletados pela finalidade")]
     public void Garante_GrupoECamposDoGrupo()
     {
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "FAMILIA", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MEMBRO_RENDA", 0, "Renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("FAMILIA", 1)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MEMBRO_RENDA", 0).ComRotulo("Renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
         FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")], [grupo])]);
 

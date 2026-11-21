@@ -19,14 +19,24 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDoDesempate
 {
+    private static readonly string[] CodigosDeCriterioAceitos =
+    [
+        CriterioDesempateCodigo.MaiorNotaEtapa,
+        CriterioDesempateCodigo.MaiorIdade,
+        CriterioDesempateCodigo.Idoso,
+        CriterioDesempateCodigo.PredicadoFato,
+        CriterioDesempateCodigo.MaiorNotaAreaEnem,
+    ];
+
     internal static IReadOnlyList<CriterioDesempate> LerCriteriosDesempate(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "criteriosDesempate", "$");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
 
+        return leitor.Falhou ? [] : LerCriteriosDoArray(leitor, array);
+    }
+
+    private static List<CriterioDesempate> LerCriteriosDoArray(LeitorEnvelope leitor, JsonArray array)
+    {
         List<CriterioDesempate> criterios = [];
         for (int i = 0; i < array.Count; i++)
         {
@@ -45,24 +55,17 @@ internal static class LeituraDoDesempate
     private static CriterioDesempate? LerCriterio(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(item, path, "ordem", "regra", "parametros");
-
         int ordem = leitor.Inteiro(item, "ordem", path);
-        ReferenciaRegra regra = leitor.Regra(
-            item,
-            "regra",
-            path,
-            CriterioDesempateCodigo.MaiorNotaEtapa,
-            CriterioDesempateCodigo.MaiorIdade,
-            CriterioDesempateCodigo.Idoso,
-            CriterioDesempateCodigo.PredicadoFato,
-            CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        ReferenciaRegra regra = leitor.Regra(item, "regra", path, CodigosDeCriterioAceitos);
         JsonObject parametros = leitor.Objeto(item, "parametros", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
 
-        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, regra.Codigo, parametros, $"{path}.parametros");
+        return leitor.Falhou ? null : CriarCriterio(leitor, ordem, regra, parametros, $"{path}.parametros");
+    }
+
+    private static CriterioDesempate? CriarCriterio(
+        LeitorEnvelope leitor, int ordem, ReferenciaRegra regra, JsonObject parametros, string path)
+    {
+        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, regra.Codigo, parametros, path);
         if (leitor.Falhou)
         {
             return null;
@@ -114,22 +117,22 @@ internal static class LeituraDoDesempate
         return leitor.Falhou ? null : new ParametrosDesempateIdoso(idadeMinima);
     }
 
-    // A forma (fato não vazio, operador reconhecido, valor coerente com o operador) é conferida pela mesma
-    // factory que o caminho de comando usa. O decoder não revalida a semântica, porque o congelamento dos
+    // O operador é reconhecido por `LerOperador`; a forma (fato não vazio, valor coerente com o operador) é conferida
+    // pela mesma factory que o caminho de comando usa. O decoder não revalida a semântica, porque o congelamento dos
     // parâmetros na publicação proíbe reinterpretar um predicado já congelado contra um catálogo que
     // pode ter mudado.
     private static ParametrosCriterioDesempate? LerPredicadoFato(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
         leitor.ExigirChaves(parametros, path, "fato", "operador", "valor");
         string fato = leitor.TextoNaoVazio(parametros, "fato", path);
-        string operadorCodigo = leitor.TextoNaoVazio(parametros, "operador", path);
+        Operador operador = LeituraDasCondicoes.LerOperador(leitor, parametros, path);
         System.Text.Json.JsonElement valor = leitor.Valor(parametros, "valor", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, OperadorCodigo.FromCodigo(operadorCodigo), valor);
+        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
         return condicao.IsFailure
             ? leitor.Propagar<ParametrosCriterioDesempate>(condicao.Error!)
             : new ParametrosDesempatePredicadoFato(condicao.Value!);

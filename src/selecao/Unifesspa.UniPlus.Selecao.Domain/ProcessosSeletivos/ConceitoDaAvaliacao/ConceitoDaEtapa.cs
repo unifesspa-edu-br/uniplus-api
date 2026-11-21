@@ -38,13 +38,13 @@ public sealed record ConceitoDaEtapa
     public IReadOnlyList<ValorCategorico> Valores { get; }
 
     /// <summary>
-    /// Confere a cópia e acumula as recusas (ADR-0125). <paramref name="natureza"/> é o token do catálogo
-    /// (<see cref="NaturezaConceitoCodigo"/>).
+    /// Confere a cópia e acumula as recusas (ADR-0125). <paramref name="natureza"/> já é o valor do enum:
+    /// quem lê o código do catálogo de tipos de conceito ou do conteúdo congelado o converte antes, com a recusa do seu canal.
     /// </summary>
     public static Result<ConceitoDaEtapa> Criar(
         string? codigo,
         string? nome,
-        string? natureza,
+        NaturezaConceito natureza,
         EscalaInformada? escala,
         IReadOnlyList<ValorCategoricoInformado?>? valores)
     {

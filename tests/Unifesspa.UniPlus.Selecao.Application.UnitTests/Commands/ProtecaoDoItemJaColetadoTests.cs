@@ -22,9 +22,7 @@ public sealed class ProtecaoDoItemJaColetadoTests
     public void Recopia_NormalizaAFinalidade()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Proteção do item", out _);
-        FatoColetado item = FatoColetado.Criar(
-            "CPF", 0, "CPF", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
-            ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, formato: "CPF").Value!;
+        FatoColetado item = FatoColetadoDeTeste.Coletando("CPF", 0).DeTexto("CPF").Construir();
         processo.DefinirItens([item]).IsSuccess.Should().BeTrue();
         IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "CPF"
             ? f with { HipoteseLegal = " EXECUCAO_POLITICAS_PUBLICAS ", FinalidadeTratamento = "  Identifica\u00e7\u00e3o: a\u0301.  " }
@@ -41,9 +39,7 @@ public sealed class ProtecaoDoItemJaColetadoTests
     public void Retificacao_AdotaADescricaoCorrigidaDoFatoJaColetado()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Proteção do item", out _);
-        FatoColetado item = FatoColetado.Criar(
-            "CPF", 0, "CPF", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
-            ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, formato: "CPF").Value!;
+        FatoColetado item = FatoColetadoDeTeste.Coletando("CPF", 0).DeTexto("CPF").Construir();
         processo.DefinirItens([item]).IsSuccess.Should().BeTrue();
         IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "CPF"
             ? f with { Descricao = "Descrição corrigida no catálogo.", ComponenteExibicao = "MOEDA", FinalidadeTratamento = "Outra finalidade." }

@@ -88,7 +88,7 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
         processo = ProcessoSemEtapas();
         return Executar(
             new DefinirEtapasCommand(processo.Id, [etapa]), RepositorioDe(processo), Substitute.For<IUnitOfWork>(),
-            tipoAtoPublicadoReader: CatalogoDeResultados());
+            cadastros: new(Atos: CatalogoDeResultados()));
     }
 
     private static (string? Campo, string Codigo)[] Recusas(Result resultado) =>
@@ -166,7 +166,7 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
             processo, repository, codecs, new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."));
         Result resultado = await Executar(
             new DefinirEtapasCommand(processo.Id, TresEtapasComPapelDesconhecidoECatalogoIlegivelNaSegunda()), repository, Substitute.For<IUnitOfWork>(),
-            tipoAtoPublicadoReader: CatalogoDeResultados(), registroCodecs: codecs);
+            cadastros: new(Atos: CatalogoDeResultados(), Codecs: codecs));
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].produtos[0].papel", "ProdutoDaEtapa.PapelDesconhecido"),

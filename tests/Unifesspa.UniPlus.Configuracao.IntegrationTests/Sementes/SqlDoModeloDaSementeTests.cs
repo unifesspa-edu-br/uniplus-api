@@ -142,8 +142,8 @@ public sealed class SqlDoModeloDaSementeTests
             new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
             new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
         ],
-        [new ItemDoModelo("QUILOMBOLA", 0, "DADOS", "Quilombola", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)],
-        [.. pares.Select(static (par, i) => new TermoDoModelo($"TERMO_{i}", i, par.TermoId, par.VersaoId, null, Obrigatoriedade.Sempre))],
+        [new ItemDoModelo("QUILOMBOLA", 0, "DADOS", new ApresentacaoDoCampo("Quilombola", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
+        [.. pares.Select(static (par, i) => new TermoDoModelo($"TERMO_{i}", i, par.TermoId, par.VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre)))],
         [],
         []);
 

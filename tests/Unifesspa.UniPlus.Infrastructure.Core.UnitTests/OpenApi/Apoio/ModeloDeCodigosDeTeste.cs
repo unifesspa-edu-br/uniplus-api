@@ -32,6 +32,10 @@ public static class ModeloDeCodigosDeTeste
 
     public sealed record RespostaDeFase(CodigoComRotulo<Fase> Fase, CodigoComDescricao<Fase> FaseComDescricao);
 
+    public sealed record RespostaTextualDeFase([property: AceitaCodigosDe<Fase>] string Fase);
+
+    public sealed record RespostaComFases(IReadOnlyList<CodigoComRotulo<Fase>> Fases);
+
     public sealed class PedidoDeFase
     {
         [AceitaCodigosDe<Fase>]

@@ -27,31 +27,11 @@ public class ImpedimentoTests : TestesDeAvaliacao
     [InlineData(true, true, null, Ternario.Indeterminado)]
     public void Avaliar_Impedimento(bool parfor, bool exibido, bool? licenciatura, Ternario impedido)
     {
-        PredicadoDnf exibicao = Predicado(("EXIBE_PARFOR", true));
-        DefinicaoFormulario formulario = new(
-            [
-                new DefinicaoEtapa(Etapa, exibicao: null,
-                [
-                    Item("EXIBE_PARFOR"),
-                    Item("LICENCIATURA"),
-                    new DefinicaoItem("VINCULO_PARFOR", exibicao, Obrigatoriedade.Sempre, [],
-                        new Impedimento(Predicado(("VINCULO_PARFOR", true), ("LICENCIATURA", true)), Mensagem)),
-                ]),
-            ],
-            termos: [],
-            derivacoes: []);
-        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
-        {
-            ["EXIBE_PARFOR"] = JsonSerializer.SerializeToElement(exibido),
-            ["VINCULO_PARFOR"] = JsonSerializer.SerializeToElement(parfor),
-        };
-        if (licenciatura is { } valor)
-        {
-            respostas["LICENCIATURA"] = JsonSerializer.SerializeToElement(valor);
-        }
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
-            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), Envio: null));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioComVinculoImpeditivo(), new EntradaAvaliacaoFormulario(
+            RespostasDoVinculo(parfor, exibido, licenciatura),
+            new HashSet<string>(StringComparer.Ordinal),
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            Envio: null));
 
         avaliacao.Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR").Impedido.Should().Be(impedido);
     }
@@ -74,28 +54,25 @@ public class ImpedimentoTests : TestesDeAvaliacao
             (1, Condicao("LICENCIATURA", true)),
         ]).Value!;
 
-        List<FieldError> erros = FormaDoItem.Conferir(
-            "NOME", 0, "Nome", TipoRenderizacao.Texto, "NOME_PESSOA", null, [], Obrigatoriedade.Sempre, [],
-            new Impedimento(semOProprioCampo, "  "));
+        List<FieldError> erros = ConferirCampo("NOME", TipoRenderizacao.Texto, "NOME_PESSOA", new Impedimento(semOProprioCampo, "  "));
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("impedimento", ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo),
-            ("impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo),
-            ("impedimento.mensagem", ItemFormularioErrorCodes.ImpedimentoMensagemInvalida),
+            ("regras.impedimento", ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo),
+            ("regras.impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo),
+            ("regras.impedimento.mensagem", ItemFormularioErrorCodes.ImpedimentoMensagemInvalida),
         ]);
     }
 
     [Fact(DisplayName = "Impedimento sem cláusula é recusado: a condição é obrigatória")]
     public void Conferir_ImpedimentoSemClausula_Recusa()
     {
-        List<FieldError> erros = FormaDoItem.Conferir(
-            "VINCULO_PARFOR", 0, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, null, null, [], Obrigatoriedade.Sempre, [],
-            new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
+        List<FieldError> erros = ConferirCampo(
+            "VINCULO_PARFOR", TipoRenderizacao.Booleano, formato: null, new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "impedimento.quando",
+            Field = "regras.impedimento.quando",
             Error = new { Code = ItemFormularioErrorCodes.ImpedimentoSemCondicao },
         });
     }
@@ -105,9 +82,8 @@ public class ImpedimentoTests : TestesDeAvaliacao
     [InlineData(501, false)]
     public void Conferir_TamanhoDaMensagem(int tamanho, bool aceita)
     {
-        List<FieldError> erros = FormaDoItem.Conferir(
-            "VINCULO_PARFOR", 0, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, null, null, [], Obrigatoriedade.Sempre, [],
-            new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
+        List<FieldError> erros = ConferirCampo(
+            "VINCULO_PARFOR", TipoRenderizacao.Booleano, formato: null, new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
 
         erros.Should().HaveCount(aceita ? 0 : 1);
     }
@@ -116,14 +92,51 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void ConferirGrupo_CampoComImpedimento_Recusa()
     {
         List<FieldError> erros = FormaDoGrupo.Conferir(
-            "COMPOSICAO", 1, "Composição familiar", 0, null, [("PARENTESCO", null, true)], [], Obrigatoriedade.Sempre);
+            "COMPOSICAO", 1, "Composição familiar", new OcorrenciasDoGrupo(0, null, IncluiCandidato: false), [("PARENTESCO", null, true)], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "subitens[0].impedimento",
+            Field = "subitens[0].regras.impedimento",
             Error = new { Code = GrupoFormularioErrorCodes.CampoComImpedimento },
         });
     }
+
+    private static DefinicaoFormulario FormularioComVinculoImpeditivo() =>
+        new(
+            [
+                new DefinicaoEtapa(Etapa, exibicao: null,
+                [
+                    Item("EXIBE_PARFOR"),
+                    Item("LICENCIATURA"),
+                    new DefinicaoItem("VINCULO_PARFOR", Predicado(("EXIBE_PARFOR", true)), Obrigatoriedade.Sempre, [],
+                        new Impedimento(Predicado(("VINCULO_PARFOR", true), ("LICENCIATURA", true)), Mensagem)),
+                ]),
+            ],
+            termos: [],
+            derivacoes: []);
+
+    private static Dictionary<string, JsonElement> RespostasDoVinculo(bool parfor, bool exibido, bool? licenciatura)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["EXIBE_PARFOR"] = JsonSerializer.SerializeToElement(exibido),
+            ["VINCULO_PARFOR"] = JsonSerializer.SerializeToElement(parfor),
+        };
+        if (licenciatura is { } valor)
+        {
+            respostas["LICENCIATURA"] = JsonSerializer.SerializeToElement(valor);
+        }
+
+        return respostas;
+    }
+
+    private static List<FieldError> ConferirCampo(string fato, TipoRenderizacao tipo, string? formato, Impedimento impedimento) =>
+        FormaDoItem.Conferir(
+            fato,
+            0,
+            new ApresentacaoDoCampo("Rótulo do campo", tipo),
+            formato,
+            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, [], impedimento));
 
     private static DefinicaoItem Item(string fato) => new(fato, null, Obrigatoriedade.Nunca, []);
 

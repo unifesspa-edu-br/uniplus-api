@@ -79,10 +79,18 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     private static FatoColetado CriarFato(string codigo, string classificacao, TipoRenderizacao tipo, MetadadosDoFatoDeTeste metadados)
     {
-        Result<FatoColetado> fato = FatoColetado.Criar(codigo, metadados.Ordem, $"Rótulo de {codigo}", tipo, Obrigatoriedade.Nunca, null,
-            classificacao, metadados.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, metadados.Descricao ?? $"Descrição de {codigo}",
-            metadados.OrigemValores, metadados.Secao, FinalidadeFormulario.Inscricao, metadados.Formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null),
-            metadados.Ajuda, restricoes: metadados.Restricoes, componenteExibicao: metadados.Componente);
+        CopiaDoItemNoCatalogo copia = new(
+            metadados.OrigemValores, metadados.Formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), classificacao, metadados.HipoteseLegal,
+            ProtecaoDoFatoDeTeste.Finalidade, metadados.Descricao ?? $"Descrição de {codigo}", metadados.Componente);
+        Result<FatoColetado> fato = FatoColetadoDeTeste.Coletando(codigo, metadados.Ordem)
+            .ComRotulo($"Rótulo de {codigo}")
+            .DoTipo(tipo)
+            .ComCopia(copia)
+            .NaSecao(metadados.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .ComAjuda(metadados.Ajuda)
+            .ComRestricoes(metadados.Restricoes)
+            .Criar();
         return fato.IsSuccess ? fato.Value! : throw new InvalidOperationException(string.Join("; ", fato.Errors.Select(e => e.Error.Message)));
     }
 

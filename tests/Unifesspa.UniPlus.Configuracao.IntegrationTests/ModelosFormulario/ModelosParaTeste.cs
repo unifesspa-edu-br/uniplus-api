@@ -46,31 +46,53 @@ internal static class ModelosParaTeste
         ]);
 
     internal static object Edicao(string nome, JsonNode? conteudo) =>
-        new { nome, descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo };
+        new { descritivo = new { nome, descricao = (string?)null, tipoProcessoCodigo = (string?)null }, conteudo };
 
     internal static Dictionary<string, object?> ComTipoDeProcesso(object modelo, string tipoProcessoCodigo)
     {
         Dictionary<string, object?> campos = new(JsonSerializer.SerializeToNode(modelo)!.AsObject()
             .Select(static p => KeyValuePair.Create(p.Key, (object?)p.Value?.DeepClone())));
-        campos["tipoProcessoCodigo"] = tipoProcessoCodigo;
+        JsonObject descritivo = campos["descritivo"] is JsonObject atual ? atual : new JsonObject();
+        descritivo["tipoProcessoCodigo"] = tipoProcessoCodigo;
+        campos["descritivo"] = descritivo;
         return campos;
     }
 
     private static object Montar(string codigo, string nome, string finalidade, string titulo, object[] itens) =>
-        new { codigo, nome, finalidade, conteudo = new { titulo, etapas = Etapas(), itens } };
+        new
+        {
+            codigo,
+            finalidade,
+            descritivo = new { nome, descricao = (string?)null, tipoProcessoCodigo = (string?)null },
+            conteudo = new { titulo, etapas = Etapas(), itens },
+        };
 
     private static object[] Etapas() =>
     [
-        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
-        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
+        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, apresentacao = new { titulo = "Dados", descricao = (string?)null, aviso = (string?)null } },
+        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", apresentacao = new { titulo = "Revisão", descricao = (string?)null, aviso = (string?)null } },
     ];
 
     private static object Item(
-        string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object? precondicao = null, string obrigatoriedade = "SEMPRE") =>
-        new { fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicao, etapaCodigo = "DADOS" };
+        string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object? exibicao = null, string obrigatoriedade = "SEMPRE") =>
+        new
+        {
+            fatoCodigo,
+            ordem,
+            etapaCodigo = "DADOS",
+            apresentacao = new { rotulo, tipoRenderizacao },
+            regras = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
+        };
 
     private static object ItemComRestricoes(string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object restricoes) =>
-        new { fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS", restricoes };
+        new
+        {
+            fatoCodigo,
+            ordem,
+            etapaCodigo = "DADOS",
+            apresentacao = new { rotulo, tipoRenderizacao },
+            regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = "SEMPRE" }, restricoes },
+        };
 
     private static object[][] Condicao(string fato, object valor) =>
         [[new { fato, operador = "IGUAL", valor }]];

@@ -7,8 +7,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// O modelo de formulário no formato que o certame divulgado e o rascunho do processo servem
@@ -65,18 +67,18 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
     {
         ConteudoDoModelo conteudo = simulacao.Conteudo;
         RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(simulacao.Definicao(), simulacao.Ofertas);
-        return FormularioRenderizavel.Montar(
+        DescricaoDosPressupostos descricao = new([], VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos), [.. simulacao.Agregados]);
+
+        return new FormularioRenderizavel(
             EstruturaFormulario.ParaToken(finalidade),
             conteudo.Titulo,
             [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,
-            [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
-            [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(finalidade, g, simulacao.Opcoes))],
-            recorte,
-            camposDosOutrosFormularios: [],
-            VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos),
-            simulacao.Agregados,
-            dataReferenciaFatos: null, fusoDoEnvio: null);
+            new ColetaRenderizavel(
+                [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
+                [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(finalidade, g, simulacao.Opcoes))]),
+            recorte.Regras,
+            new PressupostosDoFormulario(descricao.Descrever(recorte.Pressupostos), null, null));
     }
 
     private static async Task<IReadOnlyList<TermoRenderizavel>> TermosAsync(
@@ -103,9 +105,8 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             throw new InvalidOperationException($"A versão {termo.VersaoId} do termo '{termo.Codigo}' do modelo {modeloId} não está no catálogo.");
         }
 
-        return new TermoRenderizavel(
-            termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, doCatalogo.Nome, versao.Texto, versao.BaseLegal,
-            FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash);
+        ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash);
+        return new TermoRenderizavel(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
     }
 
     private static SecaoRenderizavel Secao(EtapaDoModelo etapa) => new(
@@ -114,9 +115,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         etapa.Ordem,
         EstruturaFormulario.ParaToken(etapa.Tipo),
         EstruturaFormulario.ParaToken(etapa.Bloco),
-        etapa.Titulo,
-        etapa.Descricao,
-        etapa.Aviso);
+        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
     private static GrupoRenderizavel Grupo(
         FinalidadeFormulario finalidade, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
@@ -124,20 +123,19 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         grupo.Ordem,
         grupo.EtapaCodigo,
         grupo.Rotulo,
-        grupo.Minimo,
-        grupo.Maximo,
-        grupo.IncluiCandidato,
+        new OcorrenciasDoGrupoDto(grupo.Ocorrencias.Minimo, grupo.Ocorrencias.Maximo, grupo.Ocorrencias.IncluiCandidato),
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
 
     private static CampoRenderizavel Campo(
         FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
-        item.Rotulo,
-        item.TipoRenderizacao.ToCodigo(),
-        opcoes.GetValueOrDefault(item.FatoCodigo),
         item.EtapaCodigo,
+        new ApresentacaoDoCampoDto(
+            item.Apresentacao.Rotulo,
+            item.Apresentacao.TipoRenderizacao.Codigo(),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Apresentacao.Ajuda),
+            item.Apresentacao.PedirConfirmacao),
         item.Formato,
-        ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Ajuda),
-        item.PedirConfirmacao);
+        opcoes.GetValueOrDefault(item.FatoCodigo));
 }
