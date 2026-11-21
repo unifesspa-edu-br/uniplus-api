@@ -2,14 +2,20 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReservaDemografica;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
 {
@@ -20,7 +26,7 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static ReferenciaReservaDemografica Existente() =>
-        ReferenciaReservaDemografica.Criar("2022", 78.50m, 1.20m, 8.40m, BaseLegal).Value!;
+        ReferenciaReservaDemografica.Criar("2022", 78.50m, 1.20m, 8.40m, BaseLegal).ValorEsperado();
 
     [Fact(DisplayName = "Referência inexistente retorna NaoEncontrada")]
     public async Task Handle_NaoEncontrada_RetornaErro()
@@ -34,7 +40,7 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.NaoEncontrada);
+        resultado.Error?.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.NaoEncontrada);
     }
 
     [Fact(DisplayName = "Edição válida persiste e mantém sucesso")]
@@ -64,7 +70,7 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste);
+        resultado.Error?.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -76,8 +82,26 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa);
+        resultado.Error?.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa);
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Corrida no índice do Censo na gravação da edição retorna CensoJaExiste")]
+    public async Task Handle_CorridaNoIndiceDoCenso_RetornaConflito()
+    {
+        ReferenciaReservaDemografica existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ReferenciaDemograficaCensoVivo)));
+
+        Result resultado = await AtualizarReferenciaReservaDemograficaCommandHandler.Handle(
+            new AtualizarReferenciaReservaDemograficaCommand(existente.Id, "2022", 79m, 1.3m, 8.5m, BaseLegal),
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error?.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 }
