@@ -41,4 +41,18 @@ public sealed class OcorrenciasDoGrupoTests
     [InlineData(0, 5)]
     public void Conferir_Coerente_NaoRecusa(int minimo, int? maximo) =>
         new OcorrenciasDoGrupo(minimo, maximo).Conferir().Should().BeEmpty();
+
+    [Fact(DisplayName = "O grupo que não inclui o candidato não tem a identificação dele conferida, mesmo sem parentesco")]
+    public void ConferirCandidatoComoMembro_SemCandidato_NaoRecusa() =>
+        new OcorrenciasDoGrupo(0, 5).ConferirCandidatoComoMembro([("RENDA", false, Obrigatoriedade.Nunca, [])]).Should().BeEmpty();
+
+    [Fact(DisplayName = "O grupo que inclui o candidato recusa a falta do parentesco que o identifica")]
+    public void ConferirCandidatoComoMembro_ComCandidatoSemParentesco_Recusa()
+    {
+        List<FieldError> erros = [.. new OcorrenciasDoGrupo(1, 5, IncluiCandidato: true).ConferirCandidatoComoMembro([("RENDA", false, Obrigatoriedade.Sempre, [])])];
+
+        FieldError erro = erros.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("subitens");
+        erro.Error.Code.Should().Be(GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
+    }
 }

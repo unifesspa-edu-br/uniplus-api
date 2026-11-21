@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -54,75 +56,78 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
 
     private GrupoColetado() { }
 
+    private GrupoColetado(
+        string? codigo, int ordem, string? etapaCodigo, string? rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
+    {
+        Codigo = (codigo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+        Ordem = ordem;
+        EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(NormalizationForm.FormC);
+        Rotulo = (rotulo ?? string.Empty).Trim();
+        Minimo = ocorrencias.Minimo;
+        Maximo = ocorrencias.Maximo;
+        IncluiCandidato = ocorrencias.IncluiCandidato;
+        Exibicao = regras.Exibicao;
+        Obrigatoriedade = regras.Obrigatoriedade;
+        AdotarCampos(subitens);
+    }
+
+    /// <summary>As ocorrências que o grupo admite, calculadas do estado gravado.</summary>
+    public OcorrenciasDoGrupo Ocorrencias => new(Minimo, Maximo, IncluiCandidato);
+
+    /// <summary>A exibição e a obrigatoriedade do grupo, calculadas do estado gravado.</summary>
+    public ExibicaoEObrigatoriedade Regras => new(Exibicao, Obrigatoriedade);
+
+    /// <summary>Os fatos que a exibição e a obrigatoriedade do grupo citam, sem repetição.</summary>
+    public IReadOnlyCollection<string> FatosCitados => Regras.FatosCitados;
+
     /// <summary>
     /// Acumula as violações da forma do grupo e, quando ele inclui o candidato, as da identificação
     /// da ocorrência dele (ADR-0125); a citação dos campos e a posição do grupo são do formulário
-    /// inteiro, conferidas pelo processo.
+    /// inteiro, conferidas pelo processo. O grupo adota a finalidade dos campos, que têm de ser a
+    /// mesma: o processo vincula a do formulário depois, e o envelope remonta os campos com a lida.
     /// </summary>
+    /// <exception cref="ArgumentException">Os campos são de finalidades diferentes.</exception>
     public static Result<GrupoColetado> Criar(
         string codigo,
         int ordem,
         string? etapaCodigo,
         string rotulo,
-        int minimo,
-        int? maximo,
-        PredicadoDnf? exibicao,
-        Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<FatoColetado> subitens,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
-        bool incluiCandidato = false)
+        OcorrenciasDoGrupo ocorrencias,
+        ExibicaoEObrigatoriedade regras,
+        IReadOnlyList<FatoColetado> subitens)
     {
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentNullException.ThrowIfNull(ocorrencias);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(subitens);
 
-        List<FieldError> erros = FormaDoGrupo.Conferir(
-            codigo,
-            ordem,
-            rotulo,
-            new OcorrenciasDoGrupo(minimo, maximo),
-            [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))],
-            exibicao?.FatosCitados ?? [],
-            obrigatoriedade);
-        if (incluiCandidato)
-        {
-            erros.AddRange(ConferirCandidatoComoMembro(minimo, subitens));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<GrupoColetado>.ValidationFailure(erros);
-        }
-
-        GrupoColetado grupo = new()
-        {
-            Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
-            Ordem = ordem,
-            EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
-            Rotulo = (rotulo ?? string.Empty).Trim(),
-            Minimo = minimo,
-            Maximo = maximo,
-            Exibicao = exibicao,
-            Obrigatoriedade = obrigatoriedade,
-            IncluiCandidato = incluiCandidato,
-        };
-        foreach (FatoColetado subitem in subitens)
-        {
-            subitem.VincularGrupo(grupo.Id);
-            grupo._subitens.Add(subitem);
-        }
-
-        // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
-        grupo.VincularFinalidade(finalidade);
-        return Result<GrupoColetado>.Success(grupo);
+        List<FieldError> erros = ConferirForma(codigo, ordem, rotulo, ocorrencias, regras, subitens);
+        return erros.Count > 0
+            ? Result<GrupoColetado>.ValidationFailure(erros)
+            : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem, etapaCodigo, rotulo, ocorrencias, regras, subitens));
     }
 
-    /// <summary>A identificação da ocorrência do candidato no grupo que o inclui, pelos campos montados.</summary>
-    private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IEnumerable<FatoColetado> subitens) =>
-        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]);
+    private static List<FieldError> ConferirForma(
+        string codigo, int ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens) =>
+    [
+        .. FormaDoGrupo.Conferir(
+            codigo, ordem, rotulo, ocorrencias, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))], regras),
+        .. ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]),
+    ];
 
-    /// <summary>Os fatos que a exibição e a obrigatoriedade do grupo citam, sem repetição.</summary>
-    public IReadOnlyCollection<string> FatosCitados =>
-        [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
+    private void AdotarCampos(IReadOnlyList<FatoColetado> subitens)
+    {
+        Finalidade = FinalidadeComumDos(subitens);
+        foreach (FatoColetado subitem in subitens)
+        {
+            subitem.VincularGrupo(Id);
+            _subitens.Add(subitem);
+        }
+    }
+
+    private static FinalidadeFormulario FinalidadeComumDos(IReadOnlyList<FatoColetado> campos) =>
+        campos.Select(static c => c.Finalidade).Distinct().ToList() is [var comum]
+            ? comum
+            : throw new ArgumentException("Os campos do grupo são de finalidades diferentes: o grupo tem a finalidade dos seus campos.", nameof(campos));
 
     /// <summary>O grupo no que o grafo do formulário confere.</summary>
     public GrupoDoGrafo ParaGrafo() =>
@@ -135,9 +140,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// As condições das regras do grupo e dos campos dele, para os vínculos e as referências a valor
     /// do processo.
     /// </summary>
-    public IEnumerable<CondicaoDnf> Condicoes =>
-        (Exibicao?.Clausulas ?? []).Concat(Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
-            .Concat(_subitens.SelectMany(static s => s.Condicoes));
+    public IEnumerable<CondicaoDnf> Condicoes => Regras.Condicoes.Concat(_subitens.SelectMany(static s => s.Condicoes));
 
     /// <summary>O grupo e os campos dele pertencem ao processo.</summary>
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId)

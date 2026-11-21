@@ -97,7 +97,7 @@ internal static class ReconferenciaDasCopiasDoItem
         // O grupo cujos campos já foram todos coletados está congelado como eles.
         IEnumerable<FieldError> doGrupo = grupo.Campos.All(c => jaColetados.Contains(c.Item.FatoCodigo))
             ? []
-            : ConferenciaDoItemNoCatalogo.DoGrupo(grupo.Grupo.Exibicao, grupo.Grupo.Obrigatoriedade, contexto).Select(erro => Decorar(
+            : ConferenciaDoItemNoCatalogo.DoGrupo(grupo.Grupo.Regras, contexto).Select(erro => Decorar(
                 erro, grupo.Caminho, $"Grupo '{grupo.Grupo.Rotulo}' ('{grupo.Grupo.Codigo}')", OrientacaoDoGrupo));
 
         return [.. doGrupo, .. grupo.Campos.SelectMany(c => Conferir(c.Item, c.Caminho, contexto, jaColetados, daForma))];

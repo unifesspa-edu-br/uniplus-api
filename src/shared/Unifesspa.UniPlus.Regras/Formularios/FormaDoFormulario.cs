@@ -195,19 +195,17 @@ public static class FormaDoGrupo
         string? rotulo,
         OcorrenciasDoGrupo ocorrencias,
         IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
-        IEnumerable<string> fatosCitadosPelaExibicao,
-        Obrigatoriedade obrigatoriedade)
+        ExibicaoEObrigatoriedade regras)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
         ArgumentNullException.ThrowIfNull(subitens);
-        ArgumentNullException.ThrowIfNull(fatosCitadosPelaExibicao);
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentNullException.ThrowIfNull(regras);
 
         return
         [
             .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo), .. ocorrencias.Conferir(),
             .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
-            .. RecusasDeRegraQueCitaOGrupo(codigo?.Trim() ?? string.Empty, subitens, fatosCitadosPelaExibicao, obrigatoriedade),
+            .. RecusasDeRegraQueCitaOGrupo(codigo?.Trim() ?? string.Empty, subitens, regras),
         ];
     }
 
@@ -270,14 +268,13 @@ public static class FormaDoGrupo
     private static IEnumerable<FieldError> RecusasDeRegraQueCitaOGrupo(
         string codigoAparado,
         IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
-        IEnumerable<string> fatosCitadosPelaExibicao,
-        Obrigatoriedade obrigatoriedade)
+        ExibicaoEObrigatoriedade regras)
     {
         HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);
         return
         [
-            .. RecusasDaRegraQueCitaOGrupo("exibicao", fatosCitadosPelaExibicao, doGrupo),
-            .. RecusasDaRegraQueCitaOGrupo("predicadoObrigatoriedade", obrigatoriedade.FatosCitados, doGrupo),
+            .. RecusasDaRegraQueCitaOGrupo("exibicao", regras.Exibicao?.FatosCitados ?? [], doGrupo),
+            .. RecusasDaRegraQueCitaOGrupo("predicadoObrigatoriedade", regras.Obrigatoriedade.FatosCitados, doGrupo),
         ];
     }
 

@@ -92,7 +92,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void ConferirGrupo_CampoComImpedimento_Recusa()
     {
         List<FieldError> erros = FormaDoGrupo.Conferir(
-            "COMPOSICAO", 1, "Composição familiar", new OcorrenciasDoGrupo(0, null), [("PARENTESCO", null, true)], [], Obrigatoriedade.Sempre);
+            "COMPOSICAO", 1, "Composição familiar", new OcorrenciasDoGrupo(0, null), [("PARENTESCO", null, true)], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {

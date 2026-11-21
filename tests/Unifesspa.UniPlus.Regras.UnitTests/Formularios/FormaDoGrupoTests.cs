@@ -46,7 +46,7 @@ public sealed class FormaDoGrupoTests
     {
         List<FieldError> erros = naObrigatoriedade
             ? Conferir(obrigatoriedade: Obrigatoriedade.Quando(Predicado(citado)))
-            : Conferir(citados: [citado]);
+            : Conferir(exibicao: Predicado(citado));
 
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Error.Code.Should().Be(GrupoFormularioErrorCodes.RegraAutorreferente);
@@ -56,7 +56,7 @@ public sealed class FormaDoGrupoTests
     [Fact]
     public void Conferir_ViolacoesIndependentes_SaemJuntas()
     {
-        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, new OcorrenciasDoGrupo(2, 1), [], [], Obrigatoriedade.Sempre);
+        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, new OcorrenciasDoGrupo(2, 1), [], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         erros.Select(static e => e.Error.Code).Should().BeEquivalentTo(
         [
@@ -78,7 +78,7 @@ public sealed class FormaDoGrupoTests
         int minimo = 0,
         int? maximo = 5,
         IReadOnlyList<(string?, string?, bool)>? subitens = null,
-        IEnumerable<string>? citados = null,
+        PredicadoDnf? exibicao = null,
         Obrigatoriedade? obrigatoriedade = null) =>
         FormaDoGrupo.Conferir(
             "COMPOSICAO",
@@ -86,8 +86,7 @@ public sealed class FormaDoGrupoTests
             "Composição familiar",
             new OcorrenciasDoGrupo(minimo, maximo),
             subitens ?? [("PARENTESCO", null, false)],
-            citados ?? [],
-            obrigatoriedade ?? Obrigatoriedade.Sempre);
+            new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre));
 
     private static PredicadoDnf Predicado(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

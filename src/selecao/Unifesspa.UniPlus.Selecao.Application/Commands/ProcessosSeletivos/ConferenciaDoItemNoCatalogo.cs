@@ -81,15 +81,15 @@ internal static class ConferenciaDoItemNoCatalogo
     /// A semântica da exibição e da obrigatoriedade do grupo contra o catálogo e a recusa de citar
     /// atributo do candidato, como na gravação do grupo. O campo vazio é o grupo inteiro.
     /// </summary>
-    public static List<FieldError> DoGrupo(PredicadoDnf? exibicao, Obrigatoriedade obrigatoriedade, ContextoDoCatalogo contexto)
+    public static List<FieldError> DoGrupo(ExibicaoEObrigatoriedade regras, ContextoDoCatalogo contexto)
     {
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(contexto);
         return
         [
-            .. SemanticaDoPredicado("exibicao", exibicao, contexto),
-            .. SemanticaDoPredicado("predicadoObrigatoriedade", obrigatoriedade.Predicado, contexto),
-            .. RecusaDeAtributoDoCandidato((exibicao?.FatosCitados ?? []).Concat(obrigatoriedade.FatosCitados), contexto),
+            .. SemanticaDoPredicado("exibicao", regras.Exibicao, contexto),
+            .. SemanticaDoPredicado("predicadoObrigatoriedade", regras.Obrigatoriedade.Predicado, contexto),
+            .. RecusaDeAtributoDoCandidato(regras.FatosCitados, contexto),
         ];
     }
 

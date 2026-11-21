@@ -2,13 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using System.Text.Json;
 
-using Enums;
-
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma condição da pré-condição de um <see cref="FatoColetado"/> (Story #926) — a forma
@@ -42,29 +38,6 @@ public sealed class CondicaoPrecondicaoFato : EntityBase
     private CondicaoPrecondicaoFato() { }
 
     /// <summary>
-    /// Cria a condição validando a <b>forma</b> via <see cref="CondicaoDnf.Criar"/>. A validação
-    /// semântica — fato no vocabulário fechado, operador × domínio, valor × domínio — é do
-    /// <see cref="Regras.Services.PredicadoDnfValidador"/>, resolvido pela Application, que tem acesso ao
-    /// vocabulário cross-módulo. A validação <b>estrutural</b> do grafo (fato citado existe na
-    /// coleta, é anterior, e não fecha ciclo) é do agregado, em
-    /// <see cref="ProcessoSeletivo.DefinirFatosColetados"/>.
-    /// </summary>
-    public static Result<CondicaoPrecondicaoFato> Criar(int clausula, string fato, Operador operador, JsonElement valor)
-    {
-        if (clausula < 0)
-        {
-            return Result<CondicaoPrecondicaoFato>.Failure(new DomainError(
-                CondicaoPrecondicaoFatoErrorCodes.ClausulaInvalida,
-                "O ordinal da cláusula não pode ser negativo."));
-        }
-
-        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
-        return condicao.IsFailure
-            ? Result<CondicaoPrecondicaoFato>.Failure(condicao.Error!)
-            : Result<CondicaoPrecondicaoFato>.Success(DaClausula(clausula, condicao.Value!, Guid.Empty));
-    }
-
-    /// <summary>
     /// As condições que representam a exibição de um fato coletado, uma linha por condição, com o
     /// ordinal da cláusula na ordem do predicado. A exibição já tem a forma das condições provada.
     /// </summary>
@@ -81,12 +54,6 @@ public sealed class CondicaoPrecondicaoFato : EntityBase
         Valor = condicao.Valor,
     };
 
-    /// <summary>Reconstrói o VO já validado — a forma foi provada em <see cref="Criar"/>.</summary>
+    /// <summary>Reconstrói o VO já validado: a forma veio provada pela exibição de que a linha saiu.</summary>
     internal CondicaoDnf ParaCondicaoDnf() => CondicaoDnf.Criar(Fato, Operador, Valor).Value!;
-}
-
-/// <summary>Códigos de erro de <see cref="CondicaoPrecondicaoFato"/>.</summary>
-public static class CondicaoPrecondicaoFatoErrorCodes
-{
-    public const string ClausulaInvalida = "CondicaoPrecondicaoFato.ClausulaInvalida";
 }

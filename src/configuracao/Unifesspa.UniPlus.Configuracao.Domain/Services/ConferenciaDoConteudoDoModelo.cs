@@ -96,22 +96,27 @@ public static class ConferenciaDoConteudoDoModelo
             caminho);
 
     /// <summary>A forma do grupo, a do candidato como membro quando ele o inclui e a de cada campo do grupo.</summary>
-    private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho) =>
-    [
-        .. NoCaminho(
-            FormaDoGrupo.Conferir(
-                grupo.Codigo, grupo.Ordem, grupo.Rotulo, new OcorrenciasDoGrupo(grupo.Minimo, grupo.Maximo),
-                [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Regras.Impedimento is not null))],
-                grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade),
-            caminho),
-        .. grupo.IncluiCandidato ? ConferirCandidatoComoMembro(grupo, caminho) : [],
-        .. grupo.Subitens.SelectMany((campo, j) => ConferirCampo(campo, $"{caminho}.subitens[{j}]")),
-    ];
+    private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho)
+    {
+        OcorrenciasDoGrupo ocorrencias = new(grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato);
+        return
+        [
+            .. NoCaminho(
+                FormaDoGrupo.Conferir(
+                    grupo.Codigo, grupo.Ordem, grupo.Rotulo, ocorrencias,
+                    [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Regras.Impedimento is not null))],
+                    new ExibicaoEObrigatoriedade(grupo.Exibicao, grupo.Obrigatoriedade)),
+                caminho),
+            .. ConferirCandidatoComoMembro(ocorrencias, grupo.Subitens, caminho),
+            .. grupo.Subitens.SelectMany((campo, j) => ConferirCampo(campo, $"{caminho}.subitens[{j}]")),
+        ];
+    }
 
-    private static IEnumerable<FieldError> ConferirCandidatoComoMembro(GrupoDoModelo grupo, string caminho) =>
+    private static IEnumerable<FieldError> ConferirCandidatoComoMembro(
+        OcorrenciasDoGrupo ocorrencias, IReadOnlyList<ItemDoModelo> campos, string caminho) =>
         NoCaminho(
-            CandidatoComoMembro.Conferir(
-                grupo.Minimo, [.. grupo.Subitens.Select(static s => (s.FatoCodigo, s.Regras.Exibicao is not null, s.Regras.Obrigatoriedade, s.Regras.Restricoes))]),
+            ocorrencias.ConferirCandidatoComoMembro(
+                [.. campos.Select(static s => (s.FatoCodigo, s.Regras.Exibicao is not null, s.Regras.Obrigatoriedade, s.Regras.Restricoes))]),
             caminho);
 
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>

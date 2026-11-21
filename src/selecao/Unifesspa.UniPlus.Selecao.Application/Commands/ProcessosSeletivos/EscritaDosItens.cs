@@ -28,14 +28,14 @@ internal sealed record ConfiguracaoDoItem(TipoRenderizacao TipoRenderizacao, Obr
     public RegrasDoCampo RegrasComExibicao(PredicadoDnf? exibicao) => new(exibicao, Obrigatoriedade, Restricoes, Impedimento);
 }
 
-/// <summary>A exibição e a obrigatoriedade de um grupo cuja forma foi aceita.</summary>
-internal sealed record ConfiguracaoDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade);
-
 /// <summary>A exibição e a obrigatoriedade lidas de um grupo, com as recusas da leitura; a parte recusada fica ausente.</summary>
 internal sealed record RegrasLidasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade? Obrigatoriedade, IReadOnlyList<FieldError> Erros)
 {
-    /// <summary>A configuração do grupo; nula quando alguma parte foi recusada.</summary>
-    public ConfiguracaoDoGrupo? Configuracao => Erros.Count == 0 ? new ConfiguracaoDoGrupo(Exibicao, Obrigatoriedade!) : null;
+    /// <summary>As regras do grupo; nulas quando alguma parte foi recusada.</summary>
+    public ExibicaoEObrigatoriedade? Configuracao => Erros.Count == 0 ? ParaAConferenciaDaForma : null;
+
+    /// <summary>As regras lidas, com <c>Nunca</c> no lugar da obrigatoriedade recusada, para a forma do grupo ser conferida mesmo assim.</summary>
+    public ExibicaoEObrigatoriedade ParaAConferenciaDaForma => new(Exibicao, Obrigatoriedade ?? Obrigatoriedade.Nunca);
 }
 
 /// <summary>
@@ -43,7 +43,12 @@ internal sealed record RegrasLidasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedad
 /// aceita, os campos lidos como os itens e todas as recusas da leitura, as do grupo e as dos campos.
 /// </summary>
 internal sealed record GrupoLido(
-    GrupoColetadoInput Entrada, ConfiguracaoDoGrupo? Configuracao, bool FormaValida, ItensLidos Campos, IReadOnlyList<FieldError> Erros);
+    GrupoColetadoInput Entrada,
+    OcorrenciasDoGrupo Ocorrencias,
+    ExibicaoEObrigatoriedade? Configuracao,
+    bool FormaValida,
+    ItensLidos Campos,
+    IReadOnlyList<FieldError> Erros);
 
 /// <summary>Os grupos lidos pela forma, com as recusas da leitura de todos.</summary>
 internal sealed record GruposLidos(IReadOnlyList<GrupoLido> Grupos, IReadOnlyList<FieldError> Erros);
@@ -129,6 +134,7 @@ internal static class EscritaDosItens
     private static GrupoLido LerGrupo(GrupoColetadoInput input, string caminho)
     {
         RegrasLidasDoGrupo regras = LerRegrasDoGrupo(input, caminho);
+        OcorrenciasDoGrupo ocorrencias = new(input.Minimo, input.Maximo, input.IncluiCandidato);
 
         // A identificação da ocorrência do candidato depende só do mínimo e da forma lida dos
         // campos, e sai no mesmo lote das demais recusas, mesmo com campo recusado (ADR-0125).
@@ -136,10 +142,10 @@ internal static class EscritaDosItens
         List<FieldError> erros =
         [
             .. regras.Erros,
-            .. ConferirFormaDoGrupo(input, regras, caminho),
-            .. input.IncluiCandidato ? NoCaminho(ConferirCandidatoComoMembro(input.Minimo, input.Subitens ?? [], campos), caminho) : [],
+            .. ConferirFormaDoGrupo(input, ocorrencias, regras, caminho),
+            .. NoCaminho(ConferirCandidatoComoMembro(ocorrencias, input.Subitens ?? [], campos), caminho),
         ];
-        return new GrupoLido(input, regras.Configuracao, erros.Count == 0, campos, [.. erros, .. campos.Erros]);
+        return new GrupoLido(input, ocorrencias, regras.Configuracao, erros.Count == 0, campos, [.. erros, .. campos.Erros]);
     }
 
     private static RegrasLidasDoGrupo LerRegrasDoGrupo(GrupoColetadoInput input, string caminho)
@@ -156,13 +162,13 @@ internal static class EscritaDosItens
         return new RegrasLidasDoGrupo(exibicao.IsSuccess ? exibicao.Value : null, obrigatoriedade, erros);
     }
 
-    private static IEnumerable<FieldError> ConferirFormaDoGrupo(GrupoColetadoInput input, RegrasLidasDoGrupo regras, string caminho) =>
+    private static IEnumerable<FieldError> ConferirFormaDoGrupo(
+        GrupoColetadoInput input, OcorrenciasDoGrupo ocorrencias, RegrasLidasDoGrupo regras, string caminho) =>
         NoCaminho(
             FormaDoGrupo.Conferir(
-                input.Codigo, input.Ordem, input.Rotulo, new OcorrenciasDoGrupo(input.Minimo, input.Maximo),
+                input.Codigo, input.Ordem, input.Rotulo, ocorrencias,
                 [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Regras?.Impedimento is not null))],
-                regras.Exibicao?.FatosCitados ?? [],
-                regras.Obrigatoriedade ?? Obrigatoriedade.Nunca),
+                regras.ParaAConferenciaDaForma),
             caminho);
 
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
@@ -172,8 +178,9 @@ internal static class EscritaDosItens
     /// O candidato como membro pela forma lida dos campos. O campo de forma recusada já tem a
     /// própria recusa e conta aqui como conforme, para que só a falta do parentesco seja acusada.
     /// </summary>
-    private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
-        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
+    private static IEnumerable<FieldError> ConferirCandidatoComoMembro(
+        OcorrenciasDoGrupo ocorrencias, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
+        ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
             ? (subitem.FatoCodigo, subitem.Regras?.Exibicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
             : (subitem.FatoCodigo, false, Obrigatoriedade.Sempre, (IReadOnlyList<RestricaoValor>)[]))]);
 
@@ -200,17 +207,15 @@ internal static class EscritaDosItens
             return (null, dosCampos);
         }
 
-        List<FieldError> doGrupo = [.. ConferenciaDoItemNoCatalogo.DoGrupo(configuracao.Exibicao, configuracao.Obrigatoriedade, contexto).Select(erro => erro.NoCaminhoDe(caminho))];
+        List<FieldError> doGrupo = [.. ConferenciaDoItemNoCatalogo.DoGrupo(configuracao, contexto).Select(erro => erro.NoCaminhoDe(caminho))];
         bool recusado = doGrupo.Count > 0 || !lido.FormaValida || dosCampos.Count > 0 || lido.Campos.Erros.Count > 0;
-        return (recusado ? null : CriarGrupo(lido.Entrada, configuracao, campos), [.. dosCampos, .. doGrupo]);
+        return (recusado ? null : CriarGrupo(lido, configuracao, campos), [.. dosCampos, .. doGrupo]);
     }
 
     // A forma do grupo e a identificação do candidato já foram conferidas na leitura; a fábrica as
     // repete e devolve o grupo.
-    private static GrupoColetado CriarGrupo(GrupoColetadoInput input, ConfiguracaoDoGrupo configuracao, List<FatoColetado> campos) =>
-        GrupoColetado.Criar(
-            input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, configuracao.Exibicao, configuracao.Obrigatoriedade, campos,
-            incluiCandidato: input.IncluiCandidato).Value!;
+    private static GrupoColetado CriarGrupo(GrupoLido lido, ExibicaoEObrigatoriedade configuracao, List<FatoColetado> campos) =>
+        GrupoColetado.Criar(lido.Entrada.Codigo, lido.Entrada.Ordem, lido.Entrada.EtapaCodigo, lido.Entrada.Rotulo, lido.Ocorrencias, configuracao, campos).Value!;
 
     /// <summary>
     /// Os itens de forma válida conferidos contra o catálogo, com as recusas da forma e da semântica
