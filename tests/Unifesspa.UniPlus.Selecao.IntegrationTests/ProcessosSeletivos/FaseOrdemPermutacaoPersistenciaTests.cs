@@ -45,19 +45,36 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
         Guid processoId = await SemearProcessoComDuasFasesAsync();
 
         await using UniPlusDbContext troca = fixture.CreateDbContext();
-        List<FaseCronograma> fases = await troca.Set<FaseCronograma>()
+        List<FaseCronograma> fases = await CarregarAsDuasFasesPorOrdemAsync(troca, processoId);
+        TrocarAOrdemDasDuasFases(troca, fases);
+
+        await AfirmarQueSaveChangesRecusaADependenciaCircularAsync(troca);
+
+        await AfirmarOrdemOriginalNoBancoAsync(processoId);
+    }
+
+    private static async Task<List<FaseCronograma>> CarregarAsDuasFasesPorOrdemAsync(UniPlusDbContext db, Guid processoId)
+    {
+        List<FaseCronograma> fases = await db.Set<FaseCronograma>()
             .Where(f => f.ProcessoSeletivoId == processoId)
             .OrderBy(f => f.Ordem)
             .ToListAsync();
 
         fases.Should().HaveCount(2);
+        return fases;
+    }
 
+    private static void TrocarAOrdemDasDuasFases(UniPlusDbContext db, List<FaseCronograma> fases)
+    {
         // A@1, B@2 → A@2, B@1. Nenhuma ordem de UPDATE resolve isso sozinha: a primeira linha
         // a mudar quer o valor que a segunda ainda ocupa.
-        troca.Entry(fases[0]).Property(nameof(FaseCronograma.Ordem)).CurrentValue = 2;
-        troca.Entry(fases[1]).Property(nameof(FaseCronograma.Ordem)).CurrentValue = 1;
+        db.Entry(fases[0]).Property(nameof(FaseCronograma.Ordem)).CurrentValue = 2;
+        db.Entry(fases[1]).Property(nameof(FaseCronograma.Ordem)).CurrentValue = 1;
+    }
 
-        Func<Task> gravar = async () => await troca.SaveChangesAsync();
+    private static async Task AfirmarQueSaveChangesRecusaADependenciaCircularAsync(UniPlusDbContext db)
+    {
+        Func<Task> gravar = async () => await db.SaveChangesAsync();
 
         // É esta exceção que o guard de domínio existe para evitar: ela escapa do Result
         // pattern e chega ao operador como 500, sem dizer o que ele fez de errado. O trecho
@@ -68,8 +85,11 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
                 "*circular dependency*",
                 "o EF ordena comandos, e nenhuma ordem resolve duas linhas que trocam o mesmo valor "
                 + "coberto por índice único — é a premissa que sustenta o guard de permutação cíclica");
+    }
 
-        // E o estado no banco não mudou: a transação inteira não chegou a ser emitida.
+    // O estado no banco não mudou: a transação inteira não chegou a ser emitida.
+    private async Task AfirmarOrdemOriginalNoBancoAsync(Guid processoId)
+    {
         await using UniPlusDbContext leitura = fixture.CreateDbContext();
         Dictionary<string, int> ordemPorCodigo = await leitura.Set<FaseCronograma>()
             .Where(f => f.ProcessoSeletivoId == processoId)
@@ -82,14 +102,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
     private async Task<Guid> SemearProcessoComDuasFasesAsync()
     {
         await using UniPlusDbContext escrita = fixture.CreateDbContext();
-
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"Certame de permutação {Guid.CreateVersion7()}",
-            TiposDeProcessoDeTeste.SiSU,
-            OrigemCandidatos.InscricaoPropria,
-            Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = NovoProcesso();
 
         processo.DefinirCronogramaFases(
             [Fase(1, "INSCRICAO"), Fase(2, "AVALIACAO")], [])
@@ -99,6 +112,14 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
         await escrita.SaveChangesAsync();
         return processo.Id;
     }
+
+    private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
+        $"Certame de permutação {Guid.CreateVersion7()}",
+        TiposDeProcessoDeTeste.SiSU,
+        OrigemCandidatos.InscricaoPropria,
+        Guid.CreateVersion7(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

@@ -29,17 +29,8 @@ public sealed class VocabulariosEndpointTests
     [Fact(DisplayName = "GET /fundamentos-isencao devolve os dois fundamentos com código, nome e descrição, sem exigir autenticação")]
     public async Task ListarFundamentos_DevolveVocabularioCompleto()
     {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/selecao/fundamentos-isencao", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.fundamento-isencao.v1+json");
-
-        FundamentoIsencaoDto[] fundamentos =
-            (await response.Content.ReadFromJsonAsync<FundamentoIsencaoDto[]>())!;
+        FundamentoIsencaoDto[] fundamentos = await LerVocabularioAsync<FundamentoIsencaoDto>(
+            "/api/selecao/fundamentos-isencao", "application/vnd.uniplus.fundamento-isencao.v1+json");
 
         // A lista é afirmada por extenso, e não derivada do enum, de propósito:
         // é o contrato publicado que está sob teste, e derivá-lo da mesma fonte
@@ -56,17 +47,8 @@ public sealed class VocabulariosEndpointTests
     [Fact(DisplayName = "GET /campos-divulgacao marca o número de inscrição como obrigatório e o nome completo como dependente de justificativa")]
     public async Task ListarCamposDivulgacao_DevolveFlagsQueDecidemATela()
     {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/selecao/campos-divulgacao", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.campo-divulgacao.v1+json");
-
-        CampoDivulgacaoDto[] campos =
-            (await response.Content.ReadFromJsonAsync<CampoDivulgacaoDto[]>())!;
+        CampoDivulgacaoDto[] campos = await LerVocabularioAsync<CampoDivulgacaoDto>(
+            "/api/selecao/campos-divulgacao", "application/vnd.uniplus.campo-divulgacao.v1+json");
 
         // A ordem vai do piso à forma mais identificadora do candidato — é a leitura que
         // importa para quem decide o que publicar, e não a alfabética.
@@ -75,12 +57,7 @@ public sealed class VocabulariosEndpointTests
             ConfiguracaoDivulgacao.NomeAbreviado,
             ConfiguracaoDivulgacao.Nome);
 
-        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.NumeroInscricao)
-            .Obrigatorio.Should().BeTrue("é o piso da divulgação e nenhuma configuração o remove");
-        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.Nome)
-            .ExigeJustificativa.Should().BeTrue("publicar o nome integral exige justificativa (UNI-REQ-0050)");
-        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.NomeAbreviado)
-            .ExigeJustificativa.Should().BeFalse();
+        AfirmarFlagsDeObrigatoriedadeEJustificativa(campos);
     }
 
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
@@ -112,5 +89,26 @@ public sealed class VocabulariosEndpointTests
         HttpResponseMessage response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+    }
+
+    private static void AfirmarFlagsDeObrigatoriedadeEJustificativa(CampoDivulgacaoDto[] campos)
+    {
+        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.NumeroInscricao)
+            .Obrigatorio.Should().BeTrue("é o piso da divulgação e nenhuma configuração o remove");
+        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.Nome)
+            .ExigeJustificativa.Should().BeTrue("publicar o nome integral exige justificativa (UNI-REQ-0050)");
+        campos.Single(c => c.Codigo == ConfiguracaoDivulgacao.NomeAbreviado)
+            .ExigeJustificativa.Should().BeFalse();
+    }
+
+    private async Task<T[]> LerVocabularioAsync<T>(string rota, string mediaTypeEsperada)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(new Uri(rota, UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Be(mediaTypeEsperada);
+        return (await response.Content.ReadFromJsonAsync<T[]>())!;
     }
 }

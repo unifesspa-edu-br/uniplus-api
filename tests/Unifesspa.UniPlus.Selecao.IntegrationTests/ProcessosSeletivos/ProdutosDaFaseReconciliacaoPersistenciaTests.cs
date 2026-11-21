@@ -34,52 +34,14 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
     public async Task RedefinirCronograma_MesmoAtoComOutroPapel_ReusaALinhaEPreservaOId()
     {
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
-        Guid processoId;
-        Guid produtoIdAntes;
+        ProcessoSeletivo gravado = await GravarProcessoComCronogramaAsync($"PS produtos {Guid.CreateVersion7()}", faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", papel: null)]);
+        Guid produtoIdAntes = gravado.CronogramaFases.Single().Produtos.Single().Id;
 
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS produtos {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", papel: null)])],
-                []).IsSuccess.Should().BeTrue();
+        // O mesmo ato_codigo com outro papel, mais a publicação definitiva da mesma
+        // matéria: é a edição comum de quem passa a declarar o ciclo recursal da fase.
+        await RedefinirCronogramaAsync(gravado.Id, faseCanonicaOrigemId, PreliminarEDefinitivaDaHomologacao());
 
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
-
-            processoId = processo.Id;
-            produtoIdAntes = processo.CronogramaFases.Single().Produtos.Single().Id;
-        }
-
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-            // O mesmo ato_codigo com outro papel, mais a publicação definitiva da mesma
-            // matéria: é a edição comum de quem passa a declarar o ciclo recursal da fase.
-            Result redefinicao = processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId,
-                [
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
-                ])],
-                []);
-
-            redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
-            await db.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
-
-            produtos.Should().HaveCount(2);
-            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar)
-                .Which.Should().Match<ProdutoDaFase>(p =>
-                    p.Id == produtoIdAntes && p.AtoCodigo == "RESULTADO_HOMOLOGACAO",
-                    "o produto que permanece é retargetado na linha rastreada, não recriado — é o Id dele que o ato publicado usa para achar a configuração de recurso");
-        }
+        AfirmarQuePreliminarReusouALinhaRastreada(await ObterProdutosDaFaseAsync(gravado.Id), produtoIdAntes);
     }
 
     /// <summary>
@@ -93,94 +55,87 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
     public async Task RedefinirCronograma_MesmaMateriaEmDoisPapeis_PersisteAsDuas()
     {
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
-        Guid processoId;
-        Guid definitivaIdAntes;
 
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            // Começa só com a definitiva porque a fase que publica preliminar precisa de quem
-            // conclua o ciclo: o estado intermediário de um par pela metade o agregado recusa.
-            ProcessoSeletivo processo = NovoProcesso($"PS matéria {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                []).IsSuccess.Should().BeTrue();
+        // Começa só com a definitiva porque a fase que publica preliminar precisa de quem
+        // conclua o ciclo: o estado intermediário de um par pela metade o agregado recusa.
+        ProcessoSeletivo gravado = await GravarProcessoComCronogramaAsync($"PS matéria {Guid.CreateVersion7()}", faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)]);
+        Guid definitivaIdAntes = gravado.CronogramaFases.Single().Produtos.Single().Id;
 
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
+        await RedefinirCronogramaAsync(gravado.Id, faseCanonicaOrigemId, PreliminarEDefinitivaDaHomologacao());
 
-            processoId = processo.Id;
-            definitivaIdAntes = processo.CronogramaFases.Single().Produtos.Single().Id;
-        }
-
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-            Result redefinicao = processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId,
-                [
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
-                ])],
-                []);
-
-            redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
-            await db.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
-
-            produtos.Should().HaveCount(2);
-            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Definitivo)
-                .Which.Id.Should().Be(definitivaIdAntes,
-                    "a publicação que já existia é a mesma linha — a que chegou é a outra, e a reconciliação não pode trocar uma pela outra");
-            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar);
-            produtos.Select(p => p.AtoCodigo).Distinct().Should().ContainSingle();
-        }
+        AfirmarQueDefinitivaPreexistenteSobreviveEPreliminarChegou(await ObterProdutosDaFaseAsync(gravado.Id), definitivaIdAntes);
     }
 
     [Fact(DisplayName = "Produto que sai da declaração é removido da tabela, sem sobrar linha órfã")]
     public async Task RedefinirCronograma_ProdutoRemovido_SaiDaTabela()
     {
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
-        Guid processoId;
+        ProcessoSeletivo gravado = await GravarProcessoComCronogramaAsync(
+            $"PS produtos removidos {Guid.CreateVersion7()}", faseCanonicaOrigemId, PreliminarEDefinitivaDaHomologacao());
 
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS produtos removidos {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId,
-                [
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
-                ])],
-                []).IsSuccess.Should().BeTrue();
+        await RedefinirCronogramaAsync(
+            gravado.Id, faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)]);
 
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
-            processoId = processo.Id;
-        }
+        (await ObterProdutosDaFaseAsync(gravado.Id)).Should().ContainSingle()
+            .Which.Papel.Should().Be(PapelProdutoFase.Definitivo);
+    }
 
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                []).IsSuccess.Should().BeTrue();
+    private static void AfirmarQuePreliminarReusouALinhaRastreada(
+        IReadOnlyCollection<ProdutoDaFase> produtos, Guid produtoIdAntes)
+    {
+        produtos.Should().HaveCount(2);
+        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar)
+            .Which.Should().Match<ProdutoDaFase>(p =>
+                p.Id == produtoIdAntes && p.AtoCodigo == "RESULTADO_HOMOLOGACAO",
+                "o produto que permanece é retargetado na linha rastreada, não recriado — é o Id dele que o ato publicado usa para achar a configuração de recurso");
+    }
 
-            await db.SaveChangesAsync();
-        }
+    private static void AfirmarQueDefinitivaPreexistenteSobreviveEPreliminarChegou(
+        IReadOnlyCollection<ProdutoDaFase> produtos, Guid definitivaIdAntes)
+    {
+        produtos.Should().HaveCount(2);
+        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Definitivo)
+            .Which.Id.Should().Be(definitivaIdAntes,
+                "a publicação que já existia é a mesma linha — a que chegou é a outra, e a reconciliação não pode trocar uma pela outra");
+        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar);
+        produtos.Select(p => p.AtoCodigo).Distinct().Should().ContainSingle();
+    }
 
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+    private static List<ProdutoDaFase> PreliminarEDefinitivaDaHomologacao() =>
+    [
+        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+    ];
 
-            processo.CronogramaFases.Single().Produtos.Should().ContainSingle()
-                .Which.Papel.Should().Be(PapelProdutoFase.Definitivo);
-        }
+    private async Task<ProcessoSeletivo> GravarProcessoComCronogramaAsync(
+        string nome, Guid faseCanonicaOrigemId, IReadOnlyList<ProdutoDaFase> produtos)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = NovoProcesso(nome);
+        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, produtos)], []).IsSuccess.Should().BeTrue();
+
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.SaveChangesAsync();
+        return processo;
+    }
+
+    private async Task RedefinirCronogramaAsync(
+        Guid processoId, Guid faseCanonicaOrigemId, IReadOnlyList<ProdutoDaFase> produtos)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+
+        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, produtos)], []);
+
+        redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<IReadOnlyCollection<ProdutoDaFase>> ObterProdutosDaFaseAsync(Guid processoId)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+        return processo.CronogramaFases.Single().Produtos;
     }
 
     private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(

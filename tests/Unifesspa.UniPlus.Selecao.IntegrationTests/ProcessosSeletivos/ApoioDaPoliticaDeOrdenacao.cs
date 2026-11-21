@@ -23,6 +23,12 @@ internal static class ApoioDaPoliticaDeOrdenacao
 {
     internal static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
 
+    internal static JsonArray ArrayCanonicalizado(ProcessoSeletivo processo, string caminho) =>
+        ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))[caminho]!.AsArray();
+
+    internal static TipoEtapaSnapshot TipoEtapaDeProvaObjetiva() =>
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
@@ -136,7 +142,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
             cronogramaFases ?? [FaseMinima()], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(etapas ?? [
             EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo),
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaDeProvaObjetiva(), Ordem: 1, FaseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();
     }

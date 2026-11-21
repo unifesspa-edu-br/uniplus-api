@@ -51,23 +51,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Formularios.Select(static f => f.Finalidade)
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
-
-        // Cada condição ofertada pede o seu documento a quem solicita atendimento: o laudo, inclusive para
-        // a condição que o modelo não conhece, e a certidão da criança para a lactante; a pessoa idosa não
-        // apresenta nada. Todos obrigatórios.
-        processo.DocumentosExigidos.Select(static d => (d.TipoDocumentoCodigo, CondicaoDe(d))).Should().BeEquivalentTo(
-        [
-            ("LAUDO_MEDICO", SementePsrMedicina2027.CondicaoForaDaLista),
-            ("LAUDO_MEDICO", "VISAO_MONOCULAR"),
-            ("CERTIDAO_NASCIMENTO", "LACTANTE"),
-        ]);
-        processo.DocumentosExigidos.Should().OnlyContain(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao);
-        processo.DocumentosExigidos.SelectMany(static d => d.Condicoes).Where(static c => c.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO")
-            .Should().HaveCount(3, "sem pedir atendimento não há exigência");
-        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
-            ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
-        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
-            ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
+        AfirmarDocumentosDoAtendimento(processo);
+        AfirmarCamposDoBonusEDoAtendimento(processo);
     }
 
     [Fact(DisplayName = "A inscrição sem prova e a habilitação são aplicadas ao processo PSR que oferta atendimento, sem pergunta de atendimento nem documento do atendimento")]
@@ -86,51 +71,88 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     [Fact(DisplayName = "No processo sem prova e sem atendimento especializado, o tipo de deficiência da inscrição oferece os tipos ativos do cadastro")]
     public async Task ModeloSemProva_SemAtendimentoEspecializado_TipoDeficienciaOfereceOsTiposDoCadastro()
     {
-        string prefixo = $"DEF_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
-        TipoDeficiencia ativo = TipoDeficiencia.Criar($"{prefixo}_ATIVO", "Tipo ativo", "Descrição de teste").Value!;
-        TipoDeficiencia removido = TipoDeficiencia.Criar($"{prefixo}_REMOVIDO", "Tipo removido", "Descrição de teste").Value!;
-        await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            db.TiposDeficiencia.AddRange(ativo, removido);
-            await db.SaveChangesAsync();
-            db.TiposDeficiencia.Remove(removido);
-            await db.SaveChangesAsync();
-        }
-
+        (TipoDeficiencia ativo, TipoDeficiencia removido) = await SemearUmTipoAtivoEUmRemovidoAsync();
         try
         {
             ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
             processo.AtendimentoEspecializado.Should().BeNull();
-
-            string[] tiposAtivos;
-            await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
-            {
-                UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-                tiposAtivos = [.. (await db.TiposDeficiencia.AsNoTracking().ToListAsync())
-                    .Select(static t => t.Codigo.Valor).Order(StringComparer.Ordinal)];
-            }
-
-            using HttpClient client = _fixture.Factory.CreateClient();
-            using HttpRequestMessage request = new(
-                HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/renderizavel", UriKind.Relative));
-            Autenticar(request);
-            HttpResponseMessage resposta = await client.SendAsync(request);
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-
-            JsonElement campo = (await resposta.Content.ReadFromJsonAsync<JsonElement>())
-                .GetProperty("fatosColetados").EnumerateArray()
-                .Single(static c => c.GetProperty("fatoCodigo").GetString() == "TIPO_DEFICIENCIA");
-            string[] opcoes = [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
+            string[] tiposAtivos = await ListarCodigosDosTiposAtivosAsync();
+            string[] opcoes = await ListarOpcoesDoTipoDeficienciaDaInscricaoAsync(processo.Id);
             opcoes.Should().Equal(tiposAtivos);
             opcoes.Should().Contain(ativo.Codigo.Valor).And.NotContain(removido.Codigo.Valor);
         }
         finally
         {
-            await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            await db.TiposDeficiencia.IgnoreQueryFilters().Where(t => t.Id == ativo.Id || t.Id == removido.Id).ExecuteDeleteAsync();
+            await ApagarTiposDeDeficienciaAsync(ativo.Id, removido.Id);
         }
+    }
+
+    private static void AfirmarDocumentosDoAtendimento(ProcessoSeletivo processo)
+    {
+        // Cada condição ofertada pede o seu documento a quem solicita atendimento: o laudo, inclusive para
+        // a condição que o modelo não conhece, e a certidão da criança para a lactante; a pessoa idosa não
+        // apresenta nada. Todos obrigatórios.
+        processo.DocumentosExigidos.Select(static d => (d.TipoDocumentoCodigo, CondicaoDe(d))).Should().BeEquivalentTo(
+        [
+            ("LAUDO_MEDICO", SementePsrMedicina2027.CondicaoForaDaLista),
+            ("LAUDO_MEDICO", "VISAO_MONOCULAR"),
+            ("CERTIDAO_NASCIMENTO", "LACTANTE"),
+        ]);
+        processo.DocumentosExigidos.Should().OnlyContain(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao);
+        processo.DocumentosExigidos.SelectMany(static d => d.Condicoes).Where(static c => c.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO")
+            .Should().HaveCount(3, "sem pedir atendimento não há exigência");
+    }
+
+    private static void AfirmarCamposDoBonusEDoAtendimento(ProcessoSeletivo processo)
+    {
+        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
+            ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
+        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
+            ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
+    }
+
+    private async Task<(TipoDeficiencia Ativo, TipoDeficiencia Removido)> SemearUmTipoAtivoEUmRemovidoAsync()
+    {
+        string prefixo = $"DEF_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
+        TipoDeficiencia ativo = TipoDeficiencia.Criar($"{prefixo}_ATIVO", "Tipo ativo", "Descrição de teste").Value!;
+        TipoDeficiencia removido = TipoDeficiencia.Criar($"{prefixo}_REMOVIDO", "Tipo removido", "Descrição de teste").Value!;
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.TiposDeficiencia.AddRange(ativo, removido);
+        await db.SaveChangesAsync();
+        db.TiposDeficiencia.Remove(removido);
+        await db.SaveChangesAsync();
+        return (ativo, removido);
+    }
+
+    private async Task<string[]> ListarCodigosDosTiposAtivosAsync()
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        return [.. (await db.TiposDeficiencia.AsNoTracking().ToListAsync())
+            .Select(static t => t.Codigo.Valor).Order(StringComparer.Ordinal)];
+    }
+
+    private async Task<string[]> ListarOpcoesDoTipoDeficienciaDaInscricaoAsync(Guid processoId)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/renderizavel", UriKind.Relative));
+        Autenticar(request);
+        HttpResponseMessage resposta = await client.SendAsync(request);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+
+        JsonElement campo = (await resposta.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("fatosColetados").EnumerateArray()
+            .Single(static c => c.GetProperty("fatoCodigo").GetString() == "TIPO_DEFICIENCIA");
+        return [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
+    }
+
+    private async Task ApagarTiposDeDeficienciaAsync(Guid ativoId, Guid removidoId)
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.TiposDeficiencia.IgnoreQueryFilters().Where(t => t.Id == ativoId || t.Id == removidoId).ExecuteDeleteAsync();
     }
 
     private async Task<ProcessoSeletivo> AplicarInscricaoEHabilitacaoAsync(string modeloDeInscricao, bool ofertarAtendimento = true)
@@ -138,11 +160,20 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Guid processoId = await SemearProcessoPsrAsync(ofertarAtendimento);
 
         // A habilitação pressupõe a forma de conclusão do ensino médio, que a inscrição coleta.
-        HttpResponseMessage inscricao = await AplicarAsync(processoId, await ModeloAsync(modeloDeInscricao));
-        inscricao.StatusCode.Should().Be(HttpStatusCode.OK, await inscricao.Content.ReadAsStringAsync());
-        HttpResponseMessage habilitacao = await AplicarAsync(processoId, await ModeloAsync(SementePsrMedicina2027.ModeloDeHabilitacao));
-        habilitacao.StatusCode.Should().Be(HttpStatusCode.OK, await habilitacao.Content.ReadAsStringAsync());
+        await AplicarModeloEAfirmarSucessoAsync(processoId, modeloDeInscricao);
+        await AplicarModeloEAfirmarSucessoAsync(processoId, SementePsrMedicina2027.ModeloDeHabilitacao);
 
+        return await CarregarProcessoComFormulariosAsync(processoId);
+    }
+
+    private async Task AplicarModeloEAfirmarSucessoAsync(Guid processoId, string codigoDoModelo)
+    {
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await ModeloAsync(codigoDoModelo));
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+    }
+
+    private async Task<ProcessoSeletivo> CarregarProcessoComFormulariosAsync(Guid processoId)
+    {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.ProcessosSeletivos.AsNoTracking()
@@ -178,21 +209,79 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     /// </summary>
     private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
     {
-        Result distribuida = processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [
-                    Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30),
-                    Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.CriarDeCondicoesAgrupadas(
-                        [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!, 10),
-                ] },
-                new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!],
-            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo);
-        distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
+        DefinirDistribuicaoComCotaDaLei(processo);
+        DefinirBonusRegionalEmMaraba(processo);
+        DefinirClassificacaoPelasNotasDoEnem(processo);
 
+        if (ofertarAtendimento)
+        {
+            DefinirAtendimentoEspecializadoOfertado(processo);
+        }
+
+        DefinirFaseDeInscricaoNoCronograma(processo);
+    }
+
+    private static void DefinirDistribuicaoComCotaDaLei(ProcessoSeletivo processo)
+    {
+        Result distribuida = processo.DefinirDistribuicaoVagas(
+            [DistribuicaoComAmplaEComCotaDaLei()], Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo);
+        distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
+    }
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoComAmplaEComCotaDaLei() =>
+        ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
+                Modalidades = [ModalidadeAmpla(), ModalidadeDeCotaDaLei()],
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!;
+
+    private static ModalidadeSelecionada ModalidadeAmpla() =>
+        Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30);
+
+    private static ModalidadeSelecionada ModalidadeDeCotaDaLei() =>
+        Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.CriarDeCondicoesAgrupadas([(0, OpcaoPelasCotasDaLeiMarcada())]).Value!, 10);
+
+    private static CondicaoDnf OpcaoPelasCotasDaLeiMarcada() =>
+        CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!;
+
+    private static void DefinirBonusRegionalEmMaraba(ProcessoSeletivo processo)
+    {
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
         Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+    }
 
+    // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
+    // não teria o que oferecer.
+    private static void DefinirClassificacaoPelasNotasDoEnem(ProcessoSeletivo processo)
+    {
+        Result classificada = processo.DefinirClassificacao(ClassificacaoPelasNotasDoEnem());
+        classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
+        Result edicoes = processo.DefinirOpcoesDeclaradas(
+            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!]);
+        edicoes.IsSuccess.Should().BeTrue(edicoes.Error?.Message);
+    }
+
+    private static ConfiguracaoClassificacao ClassificacaoPelasNotasDoEnem() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
+
+    private static void DefinirAtendimentoEspecializadoOfertado(ProcessoSeletivo processo)
+    {
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
             [
                 CondicaoOfertada.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica"),
@@ -202,32 +291,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             ],
             [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
             []).Value!;
-        // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
-        // não teria o que oferecer.
-        Result classificada = processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
-                RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
-                CasasArredondamento = 2,
-                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
-                BaseadoEmEnem = true,
-                ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
-                QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
-                EscalaNotaFinal = 100m,
-            }).Value!);
-        classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
-        Result edicoes = processo.DefinirOpcoesDeclaradas(
-            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!]);
-        edicoes.IsSuccess.Should().BeTrue(edicoes.Error?.Message);
+        Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento);
+        ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
+    }
 
-        if (ofertarAtendimento)
-        {
-            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento);
-            ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
-        }
-
-        // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
+    // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
+    private static void DefinirFaseDeInscricaoNoCronograma(ProcessoSeletivo processo)
+    {
         FaseCronograma inscricao = FaseDeInscricao();
         Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], []);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
