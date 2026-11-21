@@ -15,11 +15,14 @@ using Mappings;
 /// </summary>
 internal static class ProjecaoDaFaseDoCronograma
 {
+    internal static IReadOnlyList<FaseCronogramaDto> ProjetarCronograma(ProcessoSeletivo processo) =>
+        [.. processo.CronogramaFases.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarFase)];
+
     internal static FaseCronogramaDto ProjetarFase(FaseCronograma fase) => new(
         fase.Id,
         fase.Codigo,
         ProjetarFaseCanonica(fase),
-        ProjetarCronograma(fase),
+        ProjetarCronogramaDaFase(fase),
         ProjetarPublicacoes(fase),
         ProjetarBancasRequeridas(fase));
 
@@ -31,7 +34,7 @@ internal static class ProjecaoDaFaseDoCronograma
         ColetaInscricao: fase.ColetaInscricao,
         ColetaSolicitacaoIsencao: fase.ColetaSolicitacaoIsencao);
 
-    private static CronogramaDaFaseDto ProjetarCronograma(FaseCronograma fase) => new(
+    private static CronogramaDaFaseDto ProjetarCronogramaDaFase(FaseCronograma fase) => new(
         Ordem: fase.Ordem,
         Inicio: fase.Inicio,
         Fim: fase.Fim,

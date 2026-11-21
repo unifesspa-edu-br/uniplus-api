@@ -14,6 +14,9 @@ using Mappings;
 /// </summary>
 internal static class ProjecaoDaEtapaDoProcesso
 {
+    internal static IReadOnlyList<EtapaProcessoDto> ProjetarEtapas(ProcessoSeletivo processo) =>
+        [.. processo.Etapas.OrderBy(static e => e.Ordem).Select(ProjetarEtapa)];
+
     internal static EtapaProcessoDto ProjetarEtapa(EtapaProcesso etapa) => new(
         etapa.Id,
         ProjetarIdentificacao(etapa),
