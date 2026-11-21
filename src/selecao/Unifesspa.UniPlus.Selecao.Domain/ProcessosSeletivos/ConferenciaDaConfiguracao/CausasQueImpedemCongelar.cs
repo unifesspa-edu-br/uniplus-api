@@ -93,7 +93,8 @@ internal static class CausasQueImpedemCongelar
     // Os candidatos atendidos são recusa da declaração da banca e já saem junto das declarações.
     private static IEnumerable<FieldError> Bancas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
-        .. ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas),
+        .. QuemJulgaORecurso.SemBanca(cronograma, etapas),
+        .. QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, corretores),

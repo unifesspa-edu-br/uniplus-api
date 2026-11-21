@@ -5,6 +5,7 @@ using System.Collections.Frozen;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -88,6 +89,9 @@ public sealed record FaseDeclarada
     public BancasDaFase Bancas { get; }
 
     public IReadOnlyList<FieldError> Recusas { get; }
+
+    /// <summary>Se a declaração recusou algum tipo de decisão da fase: não se sabe quais decisões ela produz.</summary>
+    public bool TiposDeDecisaoRecusados => TiposDeDecisaoDeclarados.TemRecusa(Recusas);
 
     /// <summary>
     /// Se a leitura do documento recusou alguma parte da fase, pelo caminho dela relativo à fase: a lista (<see cref="ListaDosProdutos"/>,

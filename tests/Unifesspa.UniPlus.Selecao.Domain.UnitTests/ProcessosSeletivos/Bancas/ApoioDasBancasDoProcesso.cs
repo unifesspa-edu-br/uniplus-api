@@ -74,7 +74,7 @@ internal static class ApoioDasBancasDoProcesso
         new(porRegra.ToDictionary(static par => par.Regra, static par => CorretoresDaRegra.SemNovoCorretor(par.Numero)));
 
     internal static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
-        ConferenciaDasBancas.ConferirRecursosSemBanca(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))
+        QuemJulgaORecurso.SemBanca(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))
             .Concat(CronogramaDoProcesso.Do(processo.CronogramaFases).RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos))
             .Concat(ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas)))
             .Concat(Minimo(processo, corretores ?? CorretoresDeTeste.SemConsolidacao))

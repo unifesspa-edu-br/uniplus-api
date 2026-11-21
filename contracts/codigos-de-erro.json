@@ -4342,6 +4342,11 @@
       "titulo": "O tipo de banca exige duas ou mais bancas, e há só uma"
     },
     {
+      "codigo": "uniplus.selecao.banca.tipo_nao_admite_instancia_superior",
+      "status": 422,
+      "titulo": "O recurso admite instância superior, mas o item avaliado se encerra na 1ª instância"
+    },
+    {
       "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
       "status": 422,
       "titulo": "A votação do recurso está incompleta"

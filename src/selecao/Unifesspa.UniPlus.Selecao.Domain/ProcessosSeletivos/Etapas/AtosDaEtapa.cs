@@ -14,6 +14,7 @@ public sealed record AtosDaEtapa
         EmiteParecerIndividual = publicacoes.EmiteParecerIndividual;
         TiposDeDecisao = TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao);
         TemRecursos = publicacoes.Recursos.Count > 0;
+        Recursos = [.. publicacoes.Recursos.Select(RecursoDeclarado.Da)];
         TemRecursoEmAto = publicacoes.Recursos.Any(static recurso => recurso.Ancora == AncoraDoRecurso.AtoPublicado);
         Produtos = [.. publicacoes.Produtos.Select(static (produto, posicao) => (posicao, produto.AtoCodigo, produto.Papel))];
     }
@@ -23,6 +24,9 @@ public sealed record AtosDaEtapa
     public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao { get; }
 
     public bool TemRecursos { get; }
+
+    /// <summary>Os recursos que a etapa abre, na ordem em que o campo <c>recursos[j]</c> os aponta.</summary>
+    public IReadOnlyList<RecursoDeclarado> Recursos { get; }
 
     public bool TemRecursoEmAto { get; }
 

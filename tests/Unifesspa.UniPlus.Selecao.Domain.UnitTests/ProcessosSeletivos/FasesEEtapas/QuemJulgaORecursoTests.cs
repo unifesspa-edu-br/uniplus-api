@@ -3,167 +3,179 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.CenarioDeProcesso;
-using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.DeclaracoesAdotadasDeTeste;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.RecursosParaQuemJulga;
 
 using Nivel = Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas.QuemJulgaORecurso.Nivel;
 
-/// <summary>Quem julga o recurso de cada fase e de cada etapa: a banca da etapa, a da fase em que ela acontece, ou ninguém.</summary>
+/// <summary>
+/// Quem julga em 1ª instância cada item recorrido, na ordem decidida: a banca com papel que julga recurso da etapa, a da fase em
+/// que ela acontece e as bancas que avaliaram o item. O primeiro nível que tem banca decide.
+/// </summary>
 public sealed class QuemJulgaORecursoTests
 {
-    private static ModeloDeFase FaseQueAdmiteRecurso(string codigo, params BancaRequerida[] bancas)
-    {
-        ProdutoDaFase preliminar = ModeloDeFase.Preliminar("RESULTADO");
+    private const string Fase = "AVALIACAO";
 
-        return new ModeloDeFase(codigo, 1) { Produtos = [preliminar], RegraRecurso = ModeloDeFase.RecursoAncoradoEm(preliminar.Id), Bancas = bancas };
+    private static readonly ProcedimentoDeRecursoDeclarado[] DaNota = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa)];
+
+    private static readonly TipoDeBancaCopiado Entrevista = Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa);
+
+    private static IReadOnlyList<QuemJulgaORecurso.ItemJulgado> Itens(ModeloDeFase fase, params ModeloDeEtapa[] etapas) =>
+        QuemJulgaORecurso.Itens(Fases(fase), Etapas(etapas));
+
+    private static ModeloDeFase FaseSemRecurso() => new(Fase, 1);
+
+    [Fact(DisplayName = "O recurso da etapa é julgado pela banca de recursos da etapa, mesmo que a fase também tenha a sua")]
+    public void RecursoDaEtapa_ComBancaDeRecursosNaEtapaENaFase_JulgaABancaDaEtapa()
+    {
+        ModeloDeFase fase = FaseSemRecurso() with { Bancas = [BancasDeTeste.DeRecursosDaFase()] };
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, false, BancasDeTeste.DeRecursosDaEtapa());
+
+        Itens(fase, etapa).Single().Nivel.Should().Be(Nivel.BancaDeRecursosDaEtapa);
     }
 
-    private static ModeloDeEtapa EtapaQueAbreRecurso(string nome, string codigoDaFase, params BancaDaEtapa[] bancas) =>
-        new(nome)
-        {
-            FaseCodigo = codigoDaFase,
-            Recursos = [RecursoModelo.NaCiencia()],
-            EmiteParecerIndividual = true,
-            Bancas = bancas,
-        };
-
-    [Fact(DisplayName = "O recurso da fase é julgado pela banca de recursos da fase, e sem ela por ninguém")]
-    public void NivelDoRecursoDaFase_JulgaSoABancaDaFase()
+    [Fact(DisplayName = "Sem banca de recursos própria, a banca de recursos da fase julga, e a avaliadora da etapa fica dispensada")]
+    public void RecursoDaEtapa_SemBancaPropria_JulgaABancaDaFaseEADispensaAAvaliadora()
     {
-        QuemJulgaORecurso.NivelDoRecursoDaFase(faseTemBanca: true).Should().Be(Nivel.BancaDeRecursosDaFase);
-        QuemJulgaORecurso.NivelDoRecursoDaFase(faseTemBanca: false).Should().Be(Nivel.Ninguem);
+        ModeloDeFase fase = FaseSemRecurso() with { Bancas = [BancasDeTeste.DeRecursosDaFase()] };
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, false, NaEtapa(Entrevista));
+
+        QuemJulgaORecurso.ItemJulgado item = Itens(fase, etapa).Single();
+
+        item.Nivel.Should().Be(Nivel.BancaDeRecursosDaFase);
+        item.Avaliadoras.Should().HaveCount(1);
+        QuemJulgaORecurso.AvaliadorasQueJulgam([item]).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O recurso da etapa é julgado pela banca da etapa; sem ela, pela da fase; sem nenhuma, por ninguém")]
-    public void NivelDoRecursoDaEtapa_ONivelMaisProximoDecide()
+    [Fact(DisplayName = "Sem banca de recursos, a banca da etapa que avaliou o item julga o recurso dele")]
+    public void RecursoDaEtapa_SemBancaDeRecursos_JulgaAAvaliadoraDoItem()
     {
-        QuemJulgaORecurso.NivelDoRecursoDaEtapa(etapaTemBanca: true, faseTemBanca: true).Should().Be(Nivel.BancaDeRecursosDaEtapa);
-        QuemJulgaORecurso.NivelDoRecursoDaEtapa(etapaTemBanca: true, faseTemBanca: false).Should().Be(Nivel.BancaDeRecursosDaEtapa);
-        QuemJulgaORecurso.NivelDoRecursoDaEtapa(etapaTemBanca: false, faseTemBanca: true).Should().Be(Nivel.BancaDeRecursosDaFase);
-        QuemJulgaORecurso.NivelDoRecursoDaEtapa(etapaTemBanca: false, faseTemBanca: false).Should().Be(Nivel.Ninguem);
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, false, NaEtapa(Entrevista));
+
+        QuemJulgaORecurso.ItemJulgado item = Itens(FaseSemRecurso(), etapa).Single();
+
+        item.Nivel.Should().Be(Nivel.BancasQueAvaliaramOItem);
+        QuemJulgaORecurso.AvaliadorasQueJulgam([item]).Should().BeEquivalentTo(item.Avaliadoras);
     }
 
-    [Fact(DisplayName = "As fases que admitem recurso entram com a posição no cronograma e quem as julga; a fase sem recurso não entra")]
-    public void DasFases_SoAsQueAdmitemRecurso()
+    [Fact(DisplayName = "Com duas avaliadoras do item, as duas julgam: cada uma o recurso da outra")]
+    public void RecursoDaEtapa_ComDuasAvaliadoras_TodasJulgam()
     {
-        CronogramaDoProcesso cronograma = Fases(
-            new ModeloDeFase("INSCRICAO", 1),
-            FaseQueAdmiteRecurso("RESULTADO", BancasDeTeste.DeRecursosDaFase()) with { Ordem = 2 },
-            FaseQueAdmiteRecurso("CLASSIFICACAO") with { Ordem = 3 });
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, false, NaEtapa(Entrevista), NaEtapa(Entrevista));
 
-        QuemJulgaORecurso.DasFases(cronograma)
-            .Select(static recurso => (recurso.Fase.Codigo, recurso.Posicao, recurso.Nivel))
-            .Should().Equal(("RESULTADO", 1, Nivel.BancaDeRecursosDaFase), ("CLASSIFICACAO", 2, Nivel.Ninguem));
+        QuemJulgaORecurso.ItemJulgado item = Itens(FaseSemRecurso(), etapa).Single();
+
+        QuemJulgaORecurso.AvaliadorasQueJulgam([item]).Should().HaveCount(2);
     }
 
-    [Fact(DisplayName = "A etapa com banca de recursos própria é julgada por ela, mesmo que a fase também tenha a sua")]
-    public void DasEtapas_ComBancaPropriaEDeFase_JulgaABancaDaEtapa()
+    [Fact(DisplayName = "A banca de outro tipo de decisão não avaliou o item: o recurso fica sem banca que o julgue")]
+    public void RecursoDaEtapa_AvaliadoraDeOutroTipoDeDecisao_NaoJulga()
     {
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
-        EtapasDoProcesso etapas = Etapas(EtapaQueAbreRecurso("Redação", "AVALIACAO", BancasDeTeste.DeRecursosDaEtapa()));
+        TipoDeBancaCopiado documental = Avaliadora(TipoDeBanca.AnaliseDocumental, false, TipoMotivoDeDecisao.AnaliseDocumental);
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, false, NaEtapa(documental));
 
-        QuemJulgaORecurso.DasEtapas(cronograma, etapas).Single().Nivel.Should().Be(Nivel.BancaDeRecursosDaEtapa);
+        Itens(FaseSemRecurso(), etapa).Single().Nivel.Should().Be(Nivel.Ninguem);
     }
 
-    [Fact(DisplayName = "A etapa sem banca de recursos própria é julgada pela banca de recursos da fase em que acontece")]
-    public void DasEtapas_SemBancaPropria_JulgaABancaDaFase()
+    [Fact(DisplayName = "A cópia que lista o tipo de decisão julga, e a de outra cópia do mesmo tipo que não o lista não julga")]
+    public void RecursoDaEtapa_CopiasDiferentesDoMesmoTipo_CadaBancaPelaPropriaCopia()
     {
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
-        EtapasDoProcesso etapas = Etapas(EtapaQueAbreRecurso("Redação", "AVALIACAO"));
+        TipoDeBancaCopiado antiga = Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa);
+        TipoDeBancaCopiado nova = Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa, TipoMotivoDeDecisao.AnaliseDocumental);
+        ProcedimentoDeRecursoDeclarado[] daAnalise = [Procedimento(TipoMotivoDeDecisao.AnaliseDocumental)];
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, daAnalise, false, NaEtapa(antiga), NaEtapa(nova));
 
-        QuemJulgaORecurso.DasEtapas(cronograma, etapas).Single().Nivel.Should().Be(Nivel.BancaDeRecursosDaFase);
+        QuemJulgaORecurso.ItemJulgado item = Itens(FaseSemRecurso(), etapa).Single();
+
+        item.Avaliadoras.Should().ContainSingle().Which.PosicaoNoTipo.Should().Be(2);
     }
 
-    [Fact(DisplayName = "A banca de recursos de outra fase não julga a etapa")]
-    public void DasEtapas_BancaDeOutraFase_NaoJulga()
+    [Fact(DisplayName = "A banca com papel que avalia o mérito nunca é banca de recursos: a de importação também não julga")]
+    public void RecursoDaEtapa_SoBancaDeImportacao_NinguemJulga()
     {
-        CronogramaDoProcesso cronograma = Fases(
-            new ModeloDeFase("AVALIACAO", 1),
-            new ModeloDeFase("RESULTADO", 2) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
-        EtapasDoProcesso etapas = Etapas(EtapaQueAbreRecurso("Redação", "AVALIACAO"));
+        ModeloDeEtapa etapa = EtapaComRecurso(
+            "Redação", Fase, DaNota, false, BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.Regra()));
 
-        QuemJulgaORecurso.DasEtapas(cronograma, etapas).Single().Nivel.Should().Be(Nivel.Ninguem);
+        Itens(FaseSemRecurso(), etapa).Single().Nivel.Should().Be(Nivel.Ninguem);
     }
 
-    [Fact(DisplayName = "A etapa sem recurso não entra, e a posição é a da lista das etapas")]
-    public void DasEtapas_SoComRecurso_ComAPosicaoDaLista()
+    [Fact(DisplayName = "O recurso da fase sem alvo é julgado pela avaliadora do item que está só numa etapa da fase")]
+    public void RecursoDaFase_SemAlvo_JulgaAAvaliadoraDeUmaEtapaDaFase()
     {
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1));
-        EtapasDoProcesso etapas = Etapas(
-            EtapaNaFase("AVALIACAO", "Prova"),
-            EtapaQueAbreRecurso("Redação", "AVALIACAO"));
+        ModeloDeFase fase = FaseComRecurso(Fase, DaNota);
+        ModeloDeEtapa etapa = EtapaNaFase(Fase) with { Bancas = [NaEtapa(Entrevista)] };
 
-        QuemJulgaORecurso.DasEtapas(cronograma, etapas)
-            .Select(static recurso => (recurso.Etapa.Nome, recurso.Posicao))
-            .Should().Equal(("Redação", 1));
+        Itens(fase, etapa).Single().Nivel.Should().Be(Nivel.BancasQueAvaliaramOItem);
     }
 
-    [Theory(DisplayName = "A etapa cuja lista das bancas ou dos recursos tem parte recusada tem julgadora indeterminada e não entra")]
-    [InlineData("etapas[1].bancas")]
-    [InlineData("etapas[1].recursos")]
-    public void DasEtapas_ListaRecusadaNaEtapa_JulgadoraIndeterminadaFicaDeFora(string colecaoRecusada)
+    [Fact(DisplayName = "O recurso da fase com alvo em item de avaliação procura a avaliadora só na etapa que contém o alvo")]
+    public void RecursoDaFase_ComAlvoEmItem_ProcuraSoNaEtapaDoAlvo()
     {
-        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([new ModeloDeFase("AVALIACAO", 1).Adotada()]);
-        EtapaProcesso[] etapas =
-        [
-            EtapaQueAbreRecurso("Redação", "AVALIACAO").Adotada(),
-            EtapaQueAbreRecurso("Entrevista", "AVALIACAO").Adotada(),
-        ];
-        EtapasDoProcesso comParteRecusada = EtapasDoProcesso.Das(etapas, ComPartesRecusadas(colecaoRecusada));
+        Guid item = Guid.CreateVersion7();
+        ProcedimentoDeRecursoDeclarado[] doItem = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa, AlvoDoProcedimentoDeRecurso.DoItem(item))];
+        ModeloDeEtapa doAlvo = EtapaNaFase(Fase, "Com alvo") with { Itens = [new ItemDeAvaliacaoDeclarado(item, "Item", 10m)] };
+        ModeloDeEtapa outra = EtapaNaFase(Fase, "Outra") with { Bancas = [NaEtapa(Entrevista)] };
 
-        QuemJulgaORecurso.DasEtapas(cronograma, comParteRecusada).Select(static recurso => recurso.Etapa.Nome).Should().Equal("Redação");
-        QuemJulgaORecurso.JulgadoraIndeterminada(cronograma, comParteRecusada.Etapas[1]).Should().BeTrue();
-        QuemJulgaORecurso.JulgadoraIndeterminada(cronograma, comParteRecusada.Etapas[0]).Should().BeFalse();
+        Itens(FaseComRecurso(Fase, doItem), doAlvo, outra).Single().Nivel.Should().Be(Nivel.Ninguem);
+        Itens(FaseComRecurso(Fase, doItem), doAlvo with { Bancas = [NaEtapa(Entrevista)] }, outra).Single().Nivel.Should().Be(Nivel.BancasQueAvaliaramOItem);
     }
 
-    [Fact(DisplayName = "A etapa de fase com a lista das bancas recusada, ou de fase recusada na leitura, tem julgadora indeterminada")]
-    public void JulgadoraIndeterminada_FaseComListaRecusadaOuRecusadaNaLeitura()
+    [Fact(DisplayName = "O recurso com alvo em área do ENEM não tem avaliadora: só a banca com papel que julga recurso o julga")]
+    public void RecursoDaFase_ComAlvoEmAreaDoEnem_SoABancaDeRecursosJulga()
     {
-        EtapasDoProcesso etapas = EtapasDoProcesso.Das([EtapaQueAbreRecurso("Redação", "AVALIACAO").Adotada()]);
-        CronogramaDoProcesso comListaRecusada = CronogramaDoProcesso.Do([new ModeloDeFase("AVALIACAO", 1).Adotada()], ComPartesRecusadas("fases[0].bancasRequeridas"));
-        CronogramaDoProcesso comFaseRecusada = CronogramaDoProcesso.Do([], ComPartesRecusadas("fases"));
-        CronogramaDoProcesso semRecusa = CronogramaDoProcesso.Do([new ModeloDeFase("AVALIACAO", 1).Adotada()]);
+        ProcedimentoDeRecursoDeclarado[] daArea = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica))];
+        ModeloDeEtapa etapa = EtapaNaFase(Fase) with { Bancas = [NaEtapa(Entrevista)] };
 
-        QuemJulgaORecurso.JulgadoraIndeterminada(comListaRecusada, etapas.Etapas[0]).Should().BeTrue();
-        QuemJulgaORecurso.JulgadoraIndeterminada(comFaseRecusada, etapas.Etapas[0]).Should().BeTrue();
-        QuemJulgaORecurso.JulgadoraIndeterminada(semRecusa, etapas.Etapas[0]).Should().BeFalse();
+        Itens(FaseComRecurso(Fase, daArea), etapa).Single().Nivel.Should().Be(Nivel.Ninguem);
     }
 
-    [Fact(DisplayName = "O recurso que ninguém julga é recusado como sem banca, a fase antes da etapa, na posição de cada uma")]
-    public void SemBanca_RecusaFaseEEtapaSemQuemJulgue()
+    [Fact(DisplayName = "O recurso sem procedimento só tem a banca com papel que julga recurso: a avaliadora não basta")]
+    public void RecursoSemProcedimento_SoABancaDeRecursosJulga()
     {
-        CronogramaDoProcesso cronograma = Fases(FaseQueAdmiteRecurso("AVALIACAO"));
-        EtapasDoProcesso etapas = Etapas(EtapaQueAbreRecurso("Redação", "AVALIACAO"));
+        ModeloDeEtapa semProcedimento = EtapaComRecurso("Redação", Fase, [], false, NaEtapa(Entrevista));
+        ModeloDeEtapa comDedicada = EtapaComRecurso("Prova", Fase, [], false, BancasDeTeste.DeRecursosDaEtapa());
 
-        IReadOnlyList<FieldError> recusas = QuemJulgaORecurso.SemBanca(cronograma, etapas);
-
-        Causas(recusas).Should().Equal(
-            ("fases[0].bancasRequeridas", "Cronograma.RecursoSemBanca"),
-            ("etapas[0].bancas", "Cronograma.RecursoSemBanca"));
-        recusas[0].Error.Message.Should().Be("A fase 'AVALIACAO' admite recurso, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel 'Julga o recurso em 1ª instância'. Acrescente essa banca.");
-        recusas[1].Error.Message.Should().Be("A etapa na posição 1 admite recurso, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase 'AVALIACAO', em que ela acontece, têm banca com o papel 'Julga o recurso em 1ª instância'. Acrescente essa banca.");
+        Itens(FaseSemRecurso(), semProcedimento).Single().Nivel.Should().Be(Nivel.Ninguem);
+        Itens(FaseSemRecurso(), comDedicada).Single().Nivel.Should().Be(Nivel.BancaDeRecursosDaEtapa);
     }
 
-    [Fact(DisplayName = "O recurso julgado por alguma banca, ou de julgadora indeterminada, não é recusado")]
-    public void SemBanca_JulgadoOuIndeterminado_SemRecusa()
+    [Fact(DisplayName = "Cada procedimento é um item, na ordem canônica, e os da fase vêm antes dos das etapas")]
+    public void Itens_UmPorProcedimento_FasesAntesDasEtapas()
     {
-        CronogramaDoProcesso comBanca = Fases(FaseQueAdmiteRecurso("AVALIACAO", BancasDeTeste.DeRecursosDaFase()));
-        CronogramaDoProcesso semBanca = Fases(new ModeloDeFase("AVALIACAO", 1));
-        EtapasDoProcesso etapas = Etapas(EtapaQueAbreRecurso("Redação", "AVALIACAO"));
+        ProcedimentoDeRecursoDeclarado[] doisTipos = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa), Procedimento(TipoMotivoDeDecisao.AnaliseDocumental)];
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota);
 
-        QuemJulgaORecurso.SemBanca(comBanca, etapas).Should().BeEmpty();
-        QuemJulgaORecurso.SemBanca(semBanca, EtapasDoProcesso.Das([EtapaQueAbreRecurso("Redação", "AVALIACAO").Adotada()], ComPartesRecusadas("etapas[0].bancas"))).Should().BeEmpty();
+        Itens(FaseComRecurso(Fase, doisTipos), etapa)
+            .Select(static item => (item.Recurso.Onde, item.Procedimento?.TipoDeDecisao))
+            .Should().Equal(
+                ($"fase '{Fase}'", TipoMotivoDeDecisao.AnaliseDocumental),
+                ($"fase '{Fase}'", TipoMotivoDeDecisao.NotaDaEtapa),
+                ("etapa na posição 1", TipoMotivoDeDecisao.NotaDaEtapa));
+    }
+
+    [Fact(DisplayName = "As etapas julgadas pela banca da fase são as de recurso julgado nesse nível, na fase dela, sem repetir")]
+    public void EtapasJulgadasPelaFase_SoAsDoNivelDaFase()
+    {
+        ModeloDeFase fase = FaseSemRecurso() with { Bancas = [BancasDeTeste.DeRecursosDaFase()] };
+        ModeloDeEtapa daFase = EtapaComRecurso("Redação", Fase, [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa), Procedimento(TipoMotivoDeDecisao.Classificacao)]);
+        ModeloDeEtapa propria = EtapaComRecurso("Prova", Fase, DaNota, false, BancasDeTeste.DeRecursosDaEtapa());
+        CronogramaDoProcesso cronograma = Fases(fase);
+
+        IReadOnlyList<QuemJulgaORecurso.ItemJulgado> itens = QuemJulgaORecurso.Itens(cronograma, Etapas(daFase, propria));
+
+        QuemJulgaORecurso.EtapasJulgadasPelaFase(itens, cronograma.Fases[0]).Select(static etapa => etapa.Posicao).Should().Equal(0);
     }
 }

@@ -83,10 +83,10 @@ public sealed class SuspensaoPorParteRecusadaDaEtapaTests
         CronogramaDoProcesso fase = CronogramaDoProcesso.Do([new ModeloDeFase("RESULTADO", 1).Janela(1, 5).Adotada()]);
         CronogramaDoProcesso faseComListaRecusada = CronogramaDoProcesso.Do([new ModeloDeFase("RESULTADO", 1).Janela(1, 5).Adotada()], ComPartesRecusadas("fases[0].bancasRequeridas"));
 
-        ConferenciaDasBancas.ConferirRecursosSemBanca(fase, EtapasDoProcesso.Das(etapas)).Should().ContainSingle();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(fase, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].bancas"))).Should().BeEmpty();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(fase, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].recursos"))).Should().BeEmpty();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(faseComListaRecusada, EtapasDoProcesso.Das(etapas)).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(fase, EtapasDoProcesso.Das(etapas)).Should().ContainSingle();
+        QuemJulgaORecurso.SemBanca(fase, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].bancas"))).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(fase, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].recursos"))).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(faseComListaRecusada, EtapasDoProcesso.Das(etapas)).Should().BeEmpty();
     }
 
     private static ItemConformidade ItemDaBanca(EtapasDoProcesso etapas) =>

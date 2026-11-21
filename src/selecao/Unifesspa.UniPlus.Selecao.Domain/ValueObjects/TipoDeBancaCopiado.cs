@@ -71,6 +71,16 @@ public sealed record TipoDeBancaCopiado
     /// <summary>Se o papel da banca julga recurso.</summary>
     public bool JulgaRecurso => PapeisQueJulgamRecurso.Contem(Papel);
 
+    /// <summary>Se o papel da banca é o de julgar o recurso em 1ª instância: é só o que ordena quem a julga.</summary>
+    public bool JulgaAPrimeiraInstancia => Papel == PapelDaBanca.JulgaAPrimeiraInstancia;
+
+    /// <summary>
+    /// Se a banca é avaliadora do tipo de decisão: o papel avalia o mérito e o tipo de decisão está entre os que o tipo julga. É o
+    /// único critério de quem avaliou um item, para quem julga o recurso dele e para a exigência da banca de cada decisão.
+    /// </summary>
+    public bool AvaliaODecisao(TipoMotivoDeDecisao tipoDeDecisao) =>
+        AvaliaOMerito && _tiposDeDecisaoJulgados.Contains(tipoDeDecisao);
+
     /// <inheritdoc />
     public bool Equals(TipoDeBancaCopiado? outro) =>
         outro is not null

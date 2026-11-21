@@ -14137,6 +14137,26 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.tipo_nao_admite_instancia_superior",
+      "requisitos": [
+        "UNI-REQ-0454",
+        "UNI-REQ-0478"
+      ],
+      "oQueAconteceu": [
+        "O período de recurso da fase ou da etapa declara que admite instância superior,\nmas a banca que avaliou o item recorrido é de um tipo que encerra o recurso na\n1ª instância (UNI-REQ-0478). Para esses tipos, o recurso é julgado em 1ª\ninstância, por banca diferente da que avaliou, e a decisão é final no Uni+; o\nsistema não exige banca nem prazo de 2ª instância nesse período. Por isso o\nedital não pode declarar o contrário.",
+        "A característica \"encerra o recurso na 1ª instância\" é do cadastro do tipo e\nfica registrada no processo quando a banca é criada. Mudar o cadastro depois não\naltera uma banca já configurada. Se mais de uma banca avaliou o item e alguma\ndelas tem a característica, o recurso é recusado.",
+        "A mensagem cita a fase pelo código, ou a etapa pela posição, a banca pelo nome do\ntipo e pelo número dela, e o tipo de decisão do item. A recusa vem na\npublicação e na retificação em ato único, como o código desta página no corpo da\nresposta, e não na lista `errors[]`. O campo apontado é\n`fases[i].regraRecurso.admiteInstanciaSuperior` na fase e\n`etapas[i].recursos[j].admiteInstanciaSuperior` na etapa."
+      ],
+      "comoResolver": [
+        "Declare que o recurso não admite instância superior. Com isso, o período não\nprecisa de banca de 2ª instância nem de prazo de 2ª instância.",
+        "Exemplo: o período de recurso da heteroidentificação do \"PSR 2027\" declara\n\"admite instância superior\" e é recusado. Com \"não admite instância superior\",\na publicação é aceita, e a decisão da banca de 1ª instância é final no Uni+.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_instancia_superior_admitida_pelo_tipo_de_banca`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
       "requisitos": [
         "UNI-REQ-0275",

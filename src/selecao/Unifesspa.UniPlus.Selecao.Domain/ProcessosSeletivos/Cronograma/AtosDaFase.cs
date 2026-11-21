@@ -14,6 +14,7 @@ public sealed record AtosDaFase
     {
         EmiteParecerIndividual = publicacoes.EmiteParecerIndividual;
         AdmiteRecurso = publicacoes.RegraRecurso is not null;
+        Recurso = publicacoes.RegraRecurso is { } regra ? RecursoDeclarado.Da(regra) : null;
         TiposDeDecisao = TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao);
         RegraDeHomologacao = publicacoes.RegraDeHomologacao;
         Produtos = [.. publicacoes.Produtos.Select(static (produto, posicao) => (posicao, produto.AtoCodigo, produto.Papel))];
@@ -24,6 +25,9 @@ public sealed record AtosDaFase
     public bool EmiteParecerIndividual { get; }
 
     public bool AdmiteRecurso { get; }
+
+    /// <summary>O recurso que a fase admite; ausente quando a fase não admite recurso.</summary>
+    public RecursoDeclarado? Recurso { get; }
 
     public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao { get; }
 

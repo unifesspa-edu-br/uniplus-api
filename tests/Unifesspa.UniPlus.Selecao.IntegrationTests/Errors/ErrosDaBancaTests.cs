@@ -32,6 +32,7 @@ public sealed class ErrosDaBancaTests
     [InlineData("Banca.RegraDeDeliberacaoObrigatoria", "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria")]
     [InlineData("Banca.IntegrantesAbaixoDoMinimo", "uniplus.selecao.banca.integrantes_abaixo_do_minimo")]
     [InlineData("EtapaProcesso.RegraDeConsolidacaoNaoResolvida", "uniplus.selecao.etapa_processo.regra_de_consolidacao_nao_resolvida")]
+    [InlineData("Banca.TipoNaoAdmiteInstanciaSuperior", "uniplus.selecao.banca.tipo_nao_admite_instancia_superior")]
     [InlineData("Banca.CandidatosAtendidosEmBancaDeRecursos", "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos")]
     [InlineData("Cronograma.RecursoSemBanca", "uniplus.selecao.cronograma.recurso_sem_banca")]
     public void Recusa_MapeadaPara422ComOCodigoEstavel(string codigoDoDominio, string codigoNoFio)
