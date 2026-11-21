@@ -29,7 +29,14 @@ public sealed record FatoCandidatoDto(
     bool Ativo,
     IReadOnlyList<FatoValorDominioDto> Valores,
     IReadOnlyList<RegraPadraoDto> RegrasPadrao,
-    AprovacaoDaProtecaoDto Aprovacao);
+    AprovacaoDaProtecaoDto Aprovacao,
+    IReadOnlyList<OperadorAdmitidoDto> OperadoresAdmitidos);
+
+/// <summary>
+/// Um operador que uma condição sobre o fato aceita, com o rótulo no sentido que a cardinalidade do fato dá a ele:
+/// "é igual a" sobre um valor, "inclui" sobre um conjunto.
+/// </summary>
+public sealed record OperadorAdmitidoDto(string Codigo, string Rotulo);
 
 /// <summary>Um valor de domínio de um fato de fonte global.</summary>
 public sealed record FatoValorDominioDto(string Codigo, string? Descricao, int Ordem, bool Ativo, string? Orientacao);

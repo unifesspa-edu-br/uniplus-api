@@ -48,6 +48,18 @@ public sealed class VocabularioDoCatalogoTests
         vocabulario["BOOLEANO"].ValoresDominio.Should().BeNull();
     }
 
+    [Theory(DisplayName = "A cardinalidade do vocabulário é conjunto para o multivalorado e valor único para os demais")]
+    [InlineData(CardinalidadeFato.Multivalorado, CardinalidadeDoFato.Conjunto)]
+    [InlineData(CardinalidadeFato.Escalar, CardinalidadeDoFato.ValorUnico)]
+    public void CardinalidadeNoVocabulario_TraduzACardinalidadeDoFato(CardinalidadeFato cardinalidade, CardinalidadeDoFato esperada)
+    {
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
+            "CATEGORICO", "Categórico", "Descrição do fato.", DominioFato.Categorico, cardinalidade, FonteValoresFato.Global, null,
+            "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+
+        VocabularioDoCatalogo.CardinalidadeNoVocabulario(fato).Should().Be(esperada);
+    }
+
     [Fact(DisplayName = "O categórico global sem valores ainda não é citável")]
     public void Descritores_CategoricoGlobalSemValores_FicaDeFora()
     {

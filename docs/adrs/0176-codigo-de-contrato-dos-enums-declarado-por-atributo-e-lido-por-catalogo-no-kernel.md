@@ -69,3 +69,7 @@ Testes de unidade do catálogo, do OpenAPI e dos pares de cada enum, a conferên
 
 - Relacionadas: [ADR-0022](0022-contrato-rest-canonico-umbrella.md), [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md), [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md), [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md).
 - Primeiro uso: a situação do acesso do perfil de acesso, no módulo Autorização.
+
+## Emenda 1 (2026-11-20) — rótulo do operador conforme o eixo do recurso
+
+O sentido de um operador depende de um eixo do recurso que o consulta: a cardinalidade do fato. "Igual a" sobre um único valor compara, e sobre um conjunto significa que o conjunto inclui o valor. Por isso o enum `Operador` declara dois rótulos: o de valor único no `CodigoDeContrato` e o de conjunto num atributo próprio do projeto de regras (`RotuloSobreConjunto`), lido por reflexão uma vez. A resposta do recurso, e não a tela, traz os operadores admitidos com o rótulo no sentido certo: o web não escolhe sentido. Os operadores admitidos vêm da regra pura `OperadoresDoFato`, a mesma que o validador do predicado usa, e são calculados na resposta, nunca gravados.

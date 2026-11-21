@@ -21,11 +21,13 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum Operador
 {
     /// <summary>Igualdade — aceito nos três domínios.</summary>
-    [CodigoDeContrato("IGUAL", "igual a")]
+    [CodigoDeContrato("IGUAL", "é igual a")]
+    [RotuloSobreConjunto("inclui")]
     Igual = 1,
 
     /// <summary>Pertencimento a uma lista — só aceito para domínio categórico.</summary>
-    [CodigoDeContrato("EM", "pertence a")]
+    [CodigoDeContrato("EM", "é um de")]
+    [RotuloSobreConjunto("inclui algum de")]
     Em = 2,
 
     /// <summary>Maior ou igual — só aceito para domínio numérico.</summary>
@@ -41,13 +43,15 @@ public enum Operador
     /// <see cref="Igual"/> vale. Sobre fato multivalorado significa que nenhum elemento do
     /// conjunto é igual ao valor configurado.
     /// </summary>
-    [CodigoDeContrato("DIFERENTE", "diferente de")]
+    [CodigoDeContrato("DIFERENTE", "é diferente de")]
+    [RotuloSobreConjunto("não inclui")]
     Diferente = 5,
 
     /// <summary>
     /// Negação de <see cref="Em"/> (Story #916) — só aceito onde <see cref="Em"/> vale.
     /// Sobre fato multivalorado significa interseção vazia com a lista configurada.
     /// </summary>
-    [CodigoDeContrato("NAO_EM", "não pertence a")]
+    [CodigoDeContrato("NAO_EM", "não é nenhum de")]
+    [RotuloSobreConjunto("não inclui nenhum de")]
     NaoEm = 6,
 }

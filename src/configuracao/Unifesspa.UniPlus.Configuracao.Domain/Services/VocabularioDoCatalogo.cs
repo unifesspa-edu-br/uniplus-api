@@ -63,7 +63,11 @@ public static class VocabularioDoCatalogo
         return DescritorFatoCandidato.Criar(fato.Codigo, tipo, valores) is { IsSuccess: true } descritor ? descritor.Value : null;
     }
 
-    private static TipoDominioFato? TipoNoVocabulario(FatoCandidato fato) =>
+    /// <summary>
+    /// O domínio do fato na matriz de operadores das regras, ou nulo quando o fato não é citável em regra configurada
+    /// (texto, data e endereço).
+    /// </summary>
+    public static TipoDominioFato? TipoNoVocabulario(FatoCandidato fato) =>
         fato switch
         {
             { Dominio: DominioFato.Booleano } => TipoDominioFato.Booleano,
@@ -72,6 +76,18 @@ public static class VocabularioDoCatalogo
             { Dominio: DominioFato.Categorico } => TipoDominioFato.CategoricoDinamico,
             _ => null,
         };
+
+    /// <summary>
+    /// A cardinalidade do fato na matriz de operadores das regras: o multivalorado é um conjunto; os
+    /// demais, um valor único.
+    /// </summary>
+    public static CardinalidadeDoFato CardinalidadeNoVocabulario(FatoCandidato fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return fato.Cardinalidade == CardinalidadeFato.Multivalorado
+            ? CardinalidadeDoFato.Conjunto
+            : CardinalidadeDoFato.ValorUnico;
+    }
 
     /// <summary>
     /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência

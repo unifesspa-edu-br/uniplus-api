@@ -133,13 +133,13 @@ public static class PredicadoDnfValidador
     }
 
     private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor) =>
-        OperadoresDoDominio.Admite(descritor.TipoDominio, condicao.Operador)
+        OperadoresDoFato.Admite(descritor.TipoDominio, condicao.Operador)
             ? Result.Success()
             : Result.Failure(new DomainError(PredicadoDnfErrorCodes.OperadorIncompativelComDominio, MensagemDoOperadorIncompativel(condicao, descritor)));
 
     private static string MensagemDoOperadorIncompativel(CondicaoDnf condicao, DescritorFatoCandidato descritor)
     {
-        string admitidos = string.Join(", ", OperadoresDoDominio.Admitidos(descritor.TipoDominio).Select(static o => o.Codigo()));
+        string admitidos = string.Join(", ", OperadoresDoFato.Admitidos(descritor.TipoDominio).Select(static o => o.Codigo()));
         return $"O operador {condicao.Operador.Codigo()} não é compatível com o fato '{condicao.Fato}', de domínio {DominioPorExtenso(descritor.TipoDominio)}. "
             + $"Os operadores admitidos são {admitidos}.";
     }

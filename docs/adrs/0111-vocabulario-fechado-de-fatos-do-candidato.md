@@ -506,7 +506,7 @@ repetida como número fixo em texto de ADR.
 A identidade persistida do operador é o **código declarado** no próprio enum `Operador` (ADR-0176): `IGUAL`,
 `EM`, `MAIOR_IGUAL`, `MENOR_IGUAL`, `DIFERENTE` e `NAO_EM`. A numeração do enum não é gravada em coluna,
 documento ou envelope e não serve de peso de ordenação; o item 1.4, que chamava a numeração de "identidade de
-persistência", fica substituído por esta emenda. A matriz do item 1.1 é a regra pura `OperadoresDoDominio` do projeto
+persistência", fica substituído por esta emenda. A matriz do item 1.1 é a regra pura `OperadoresDoFato` do projeto
 compartilhado de regras, usada pelo validador do predicado. O valor desconhecido não vira "nenhum operador": a
 escrita do pedido o recusa como `CondicaoDnf.OperadorInvalido` (422), acumulado com as demais recusas da condição, e a
 leitura do que já foi gravado falha.
