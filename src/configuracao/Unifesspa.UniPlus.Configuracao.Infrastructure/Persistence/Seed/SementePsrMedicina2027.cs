@@ -109,19 +109,19 @@ public static class SementePsrMedicina2027
     /// <inheritdoc cref="CaminhoPeloEnsinoMedio"/>
     public const string CaminhoPelaResidencia = "RESIDENCIA";
 
-    private static TermoDaSemente Termo(int n, string codigo, string nome, string texto, string baseLegal) =>
-        new(Id(TabelaTermo, n), Id(TabelaVersaoDoTermo, n), codigo, nome, texto, baseLegal);
+    private static TermoDaSemente Termo(int n, string nome, string texto, string baseLegal) =>
+        new(Id(TabelaTermo, n), Id(TabelaVersaoDoTermo, n), nome, texto, baseLegal);
 
     /// <summary>Os termos que a inscrição de Medicina exige (edital, item 1.10). Os textos são proposta.</summary>
     public static IReadOnlyList<TermoDaSemente> Termos { get; } =
     [
-        Termo(1, "USO_DAS_NOTAS_DO_ENEM", "Uso das notas do ENEM e dos dados da inscrição",
+        Termo(1, "Uso das notas do ENEM e dos dados da inscrição",
             "Autorizo a Unifesspa a utilizar meus resultados no Exame Nacional do Ensino Médio (ENEM), nas edições admitidas pelo edital, e os dados que informo nesta inscrição, exclusivamente para as finalidades deste processo seletivo.",
             "Lei nº 13.709/2018 (LGPD), art. 7º, inciso I; edital do processo seletivo."),
-        Termo(2, "NORMAS_DO_EDITAL", "Concordância com as normas do edital",
+        Termo(2, "Concordância com as normas do edital",
             "Declaro que li e concordo com as normas do edital deste processo seletivo e que as informações que presto são verdadeiras, sob as penas da lei.",
             "Edital do processo seletivo."),
-        Termo(3, "CONSULTA_AO_BANCO_CENTRAL", "Autorização de consulta ao Banco Central",
+        Termo(3, "Autorização de consulta ao Banco Central",
             "Autorizo a Unifesspa a consultar, junto ao Banco Central do Brasil, as informações financeiras em meu nome e no dos membros da minha composição familiar, para a verificação da renda que declaro ao concorrer às vagas reservadas por critério de renda.",
             "Lei nº 12.711/2012; Lei nº 13.709/2018 (LGPD), art. 7º, inciso I; edital do processo seletivo."),
     ];
@@ -218,13 +218,12 @@ public static class SementePsrMedicina2027
     /// Os comandos SQL que gravam o tipo de processo, os termos e os fatos, na ordem das chaves
     /// estrangeiras. Cada inserção ignora a linha que já existe: reaplicar não duplica nem altera.
     /// </summary>
-    public static IReadOnlyList<string> ComandosDoTipoTermosEFatos()
-    {
-        List<string> comandos = [ComandoDoTipoProcesso()];
-        comandos.AddRange(Termos.SelectMany(static t => SqlDaSemente.ComandosDoTermo(t, Declaracao)));
-        comandos.AddRange(ComandosDosFatos(Fatos));
-        return comandos;
-    }
+    internal static IReadOnlyList<ComandoDaSemente> ComandosDoTipoTermosEFatos() =>
+    [
+        ComandoDaSemente.SemItem(ComandoDoTipoProcesso()),
+        .. Termos.SelectMany(static t => SqlDaSemente.ComandosDoTermo(t, Declaracao)),
+        .. ComandosDosFatos(Fatos).Select(ComandoDaSemente.SemItem),
+    ];
 
     /// <summary>
     /// Os comandos que gravam os fatos e os valores deles, construídos pelas factories do domínio:
@@ -271,7 +270,7 @@ public static class SementePsrMedicina2027
     /// O modelo de inscrição é gravado com a seção dos dados básicos, mesclada como a escrita do
     /// modelo a mescla, para as regras dele poderem citar os dados básicos, como a cor ou raça.
     /// </remarks>
-    public static IReadOnlyList<string> ComandosDosModelos() =>
+    internal static IReadOnlyList<ComandoDaSemente> ComandosDosModelos() =>
     [
         ComandoDoModelo(4, ModeloDeInscricaoSemProva, "Inscrição — PSR sem prova",
             "Formulário de inscrição do Processo Seletivo Regular Unificado sem aplicação de prova, que classifica pela nota do ENEM.",
@@ -307,7 +306,7 @@ public static class SementePsrMedicina2027
             .Concat(VocabularioDoCatalogo.Formatos(Construir(Fatos).Select(static c => c.Fato)))
             .ToDictionary(StringComparer.Ordinal);
 
-    private static string ComandoDoModelo(
+    private static ComandoDaSemente ComandoDoModelo(
         int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
