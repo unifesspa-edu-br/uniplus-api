@@ -52,7 +52,7 @@ public sealed class DistincaoDasApresentacoesTests
         distincao.Chave.Should().BeNull();
         distincao.DataReferencia.Should().Be(referencia);
         distincao.OcorrenciasEsperadas.Should().Equal("a");
-        distincao.SlotsEsperados(1).Should().BeNull();
+        distincao.IdentificacoesDasApresentacoesExigidas(1).Should().BeNull();
         distincao.AtendidaPor([new(Guid.CreateVersion7())], 1).Should().BeTrue();
     }
 }
