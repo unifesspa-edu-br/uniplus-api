@@ -22,7 +22,7 @@ A umbrella [ADR-0022](0022-contrato-rest-canonico-umbrella.md) define como princ
 - **LGPD baseline (umbrella, princípio 3).** O formato escolhido precisa permitir que `detail`, `instance` e mensagens de validação sejam emitidos sem PII e sem ecoar o valor rejeitado.
 - **Rastreabilidade legal.** Erros que decorrem de regra normativa (Lei 12.711/2012, Lei 14.723/2023, resoluções Unifesspa, cláusula de edital) precisam de campo opcional para vincular o erro à norma — auditores externos (CGU, TCU) e integradores institucionais (PROEG, jurídico) consomem essa informação.
 - **Trace context distribuído.** Toda resposta de erro precisa carregar `traceId` no formato W3C trace context para correlação entre `uniplus-api`, `uniplus-web`, OpenTelemetry collector e dashboards Grafana ([ADR-0018](0018-opentelemetry-para-instrumentacao-do-backend.md)).
-- **Conformidade com `Microsoft.AspNetCore.OpenApi`.** O formato escolhido precisa ser emitido nativamente pelo .NET 10 sem adapter custom, ou o pipeline contract-first ([ADR-0030](0030-openapi-3-1-contract-first.md)) fica mais frágil.
+- **Conformidade com `Microsoft.AspNetCore.OpenApi`.** O formato escolhido precisa ser emitido nativamente pelo .NET 10 sem adapter custom, ou o pipeline contract-first ([ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)) fica mais frágil.
 
 ## Opções consideradas
 
@@ -54,7 +54,7 @@ Extensions obrigatórias em toda resposta de erro:
 
 Extensions condicionais:
 
-- **`errors`** (array) — presente sempre que a violação é atribuível a campo, em qualquer status 4xx; ausente quando a violação não tem campo. Cada elemento contém `field` (caminho dot-notation, ex.: `inscricao.candidato.cpf`), `code` (próprio do nível de campo, mesma taxonomia do `code` raiz) e `message` (pt-BR genérica). **Nunca** carrega `value` ou qualquer reflexo do dado rejeitado.
+- **`errors`** (array) — presente, em qualquer status, quando há mais de uma causa ou quando alguma causa aponta um campo; uma única causa sem campo não leva `errors[]` (emenda de 2026-11-17, abaixo). Cada elemento contém `field` (o campo que a causa aponta: caminho em notação de pontos, ex.: `inscricao.candidato.cpf`, ou, nos endpoints do documento da configuração, o ponteiro JSON descrito na emenda abaixo; sai sem a chave quando a causa não aponta campo), `code` (próprio do nível de campo, mesma taxonomia do `code` raiz) e `message` (pt-BR genérica). **Nunca** carrega `value` ou qualquer reflexo do dado rejeitado.
 - **`legal_reference`** (objeto) — presente quando o erro decorre de regra normativa rastreável. Campos: `norma_id` (ex.: `lei-14.723-2023`), `artigo` (ex.: `art.5,§2`), `clausula_edital` (ex.: `edital-2026-1.cap-3.item-7`), `edital_snapshot_id` (referência ao snapshot congelado dos parâmetros do edital). Todos os subcampos são opcionais entre si — basta um para a extension fazer sentido.
 
 > **Emenda (2026-11-17) — a presença do `errors[]`, o item sem `field` e o `field` como ponteiro JSON nos endpoints do documento da configuração.**
@@ -78,12 +78,20 @@ Extensions condicionais:
 > - A chave inexistente tem um código geral, que serve a todas as partes do documento; o que distingue a parte é o campo apontado.
 > - Não bloqueiam o salvamento do rascunho: aparecem no diagnóstico e recusam a publicação.
 > - A falta de `field` continua só para a causa que não nasce de um campo do documento.
+>
+> **Emenda (2026-11-20) — a identificação do item nas recusas da configuração.**
+>
+> **Contexto.** Nas recusas da publicação e da retificação, o `field` aponta o item da lista pela posição (emenda de 2026-11-17, acima). Entre a recusa e a nova leitura, outra pessoa pode gravar o processo e mudar as posições, e o cliente passa a apontar outro item.
+>
+> **Decisão.** Nas recusas da publicação e da retificação, que saem da conferência da configuração ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)), cada item de `errors[]` cujo `field` passa por uma fase do cronograma, uma etapa ou um recurso da etapa traz o membro `identificadores`: uma lista de objetos `{ "lista": ..., "identificador": ... }`, um para cada um desses itens, na ordem em que aparecem no `field`. `lista` é o nome da lista como aparece no `field` (`fases`, `etapas`, `recursos`). `identificador` é o código do tipo de fase, para a fase, e o identificador opaco do item, para a etapa e o recurso; nenhum identificador é reaproveitado para outro item. Exemplos: `[{"lista":"fases","identificador":"INSCRICAO"}]` e `[{"lista":"etapas","identificador":"<id da etapa>"},{"lista":"recursos","identificador":"<id do recurso>"}]`. O identificador nunca é dado pessoal. O `field` continua sendo o ponteiro com a posição e sem chave de negócio, e o item de outra lista no caminho continua identificado só pela posição. O item cujo `field` não passa por nenhum desses três, a raiz da resposta e os demais endpoints não trazem o membro, que sai omitido, nunca `null` nem lista vazia. Esta emenda acrescenta o membro ao item de `errors[]` descrito acima (`field`, `code` e `message`) e é a decisão que a regra das extensões adicionais, abaixo, exige; vale só para este membro.
+>
+> **Consequências.** O cliente localiza a fase, a etapa ou o recurso mesmo depois de outra gravação. O identificador que não existe mais não aponta outro item, porque nenhum é reaproveitado: a recusa vai para o item anterior do caminho que ainda existe (a etapa, para o recurso retirado) ou, se nenhum existir, para a lista. O componente `ProblemDetails` do OpenAPI passa a descrever o item de `errors[]`, com `field`, `code`, `message` e `identificadores`, como a [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) exige para as extensões desta ADR.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 
 ### Mensagens em pt-BR e mascaramento
 
-`title`, `detail` e `errors[].message` são em português do Brasil. Identificadores técnicos (`code`, `traceId`, nomes de campo em `errors[].field`) permanecem em inglês/identificadores. Quando o erro ocorre em campo que naturalmente conteria PII (CPF, email, nome), a mensagem nunca ecoa o valor — só descreve a regra violada.
+`title`, `detail` e `errors[].message` são em português do Brasil. `code` e `traceId` são identificadores técnicos; `errors[].field` usa o nome que o corpo do pedido ou o esquema publicado do documento dá ao campo. Quando o erro ocorre em campo que naturalmente conteria PII (CPF, email, nome), a mensagem nunca ecoa o valor — só descreve a regra violada.
 
 ### Esta ADR não decide
 
@@ -100,7 +108,7 @@ Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extens
 - **Parser único no consumidor.** `uniplus-web` consolida o tratamento via `ApiErrorHandlerService` evoluído para 9457 e os integradores externos não precisam de parser custom.
 - **Rastreabilidade fim-a-fim.** `code` + `traceId` + `instance` cobrem três níveis distintos: causa (taxonomia), span de tracing distribuído e instância única para suporte.
 - **Auditabilidade legal.** `legal_reference` é o gancho que permite ao auditor ou à PROEG/jurídico cruzar resposta de erro com norma sem ler código-fonte.
-- **Suporte nativo do .NET 10.** `Microsoft.AspNetCore` emite ProblemDetails sem adapter custom; transformer pipeline da OpenAPI propaga as extensions adotadas para o spec ([ADR-0030](0030-openapi-3-1-contract-first.md)).
+- **Suporte nativo do .NET 10.** `Microsoft.AspNetCore` emite ProblemDetails sem adapter custom; transformer pipeline da OpenAPI propaga as extensions adotadas para o spec ([ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)).
 
 ### Negativas
 
@@ -115,7 +123,7 @@ Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extens
 
 ## Confirmação
 
-1. **Spectral rule no CI.** Toda response com status `4xx` ou `5xx` no spec OpenAPI deve referenciar o schema `ProblemDetails` definido com as extensions desta ADR. Detalhamento da pipeline na [ADR-0030](0030-openapi-3-1-contract-first.md).
+1. **Spectral rule no CI.** Toda response com status `4xx` ou `5xx` no spec OpenAPI deve referenciar o schema `ProblemDetails` definido com as extensions desta ADR. Detalhamento da pipeline na [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md).
 2. **PII regex linter no CI.** Escaneia o spec OpenAPI por padrões `value`, `cpf`, `email` em response shapes de erro — falha o build se aparecer ([umbrella ADR-0022](0022-contrato-rest-canonico-umbrella.md), princípio 3).
 3. **Smoke test Postman/Newman.** Suite no CI dispara cenários de erro conhecidos e verifica `Content-Type: application/problem+json`, presença de `code` válido (regex), `traceId` (32 hex chars) e ausência de PII no `detail`.
 4. **Fitness test ArchUnit.** Verificação de que controllers retornam apenas `ProblemDetails` (via `IDomainErrorMapper`) ou o tipo do recurso — detalhamento na [ADR-0024](0024-mapeamento-domain-error-http.md).
