@@ -4337,14 +4337,14 @@
       "titulo": "O número de suplentes da banca não pode ser negativo"
     },
     {
+      "codigo": "uniplus.selecao.banca.tipo_exige_mais_de_uma_banca",
+      "status": 422,
+      "titulo": "O tipo de banca exige duas ou mais bancas, e há só uma"
+    },
+    {
       "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
       "status": 422,
       "titulo": "A votação do recurso está incompleta"
-    },
-    {
-      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados",
-      "status": 422,
-      "titulo": "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos"
     },
     {
       "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios",

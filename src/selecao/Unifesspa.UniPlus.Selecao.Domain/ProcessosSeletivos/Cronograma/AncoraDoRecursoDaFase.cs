@@ -37,7 +37,6 @@ public static class AncoraDoRecursoDaFase
     /// exatamente assim que a conferência da reidratação passou a valer meia invariante.
     /// </remarks>
     public static FieldError? Violacao(
-        string codigoDaFase,
         IReadOnlyList<ProdutoDaFase> produtos,
         RegraRecursoFase? regraRecurso)
     {
@@ -50,8 +49,8 @@ public static class AncoraDoRecursoDaFase
             [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
 
         return preliminares.Count == 0
-            ? FaseSemProdutoPreliminar(codigoDaFase)
-            : AncoraForaDosPreliminares(codigoDaFase, preliminares, regraRecurso);
+            ? FaseSemProdutoPreliminar()
+            : AncoraForaDosPreliminares(preliminares, regraRecurso);
     }
 
     /// <summary>
@@ -89,13 +88,12 @@ public static class AncoraDoRecursoDaFase
         }
     }
 
-    private static FieldError FaseSemProdutoPreliminar(string codigoDaFase) =>
+    private static FieldError FaseSemProdutoPreliminar() =>
         new("produtos", new DomainError(
             FaseSemPreliminar,
-            $"A fase '{codigoDaFase}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo do recurso começa."));
+            "A fase admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo do recurso começa."));
 
     private static FieldError? AncoraForaDosPreliminares(
-        string codigoDaFase,
         List<ProdutoDaFase> preliminares,
         RegraRecursoFase regraRecurso)
     {
@@ -106,6 +104,6 @@ public static class AncoraDoRecursoDaFase
 
         return new("regraRecurso.atoAncoraCodigo", new DomainError(
             AncoraForaDoPreliminar,
-            $"A regra de recurso da fase '{codigoDaFase}' não tem o prazo contado a partir de nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))})."));
+            $"A regra de recurso da fase não tem o prazo contado a partir de nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))})."));
     }
 }

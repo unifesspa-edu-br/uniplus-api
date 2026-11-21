@@ -60,9 +60,9 @@ internal static class ConferenciaDaDeclaracaoDaFase
     // A âncora congelada é reposta como estava, pelo mesmo predicado de Criar: uma âncora reposta sobre
     // produto definitivo é tão incoerente quanto uma escrita assim pela primeira vez.
     internal static void ExigirAncoraCoerente(
-        string codigo, IReadOnlyList<ProdutoDaFase> produtos, RegraRecursoFase? regraRecurso)
+        IReadOnlyList<ProdutoDaFase> produtos, RegraRecursoFase? regraRecurso)
     {
-        if (AncoraDoRecursoDaFase.Violacao(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
+        if (AncoraDoRecursoDaFase.Violacao(produtos, regraRecurso) is { } violacaoDaAncora)
         {
             throw new ArgumentException(violacaoDaAncora.Error.Message, nameof(regraRecurso));
         }
@@ -70,9 +70,9 @@ internal static class ConferenciaDaDeclaracaoDaFase
 
     // Pelo mesmo predicado de Criar: candidatos atendidos repostos que não distinguem duas bancas do mesmo tipo são tão
     // incoerentes quanto os escritos assim pela primeira vez.
-    internal static void ExigirCandidatosAtendidosCoerentes(string codigo, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    internal static void ExigirCandidatosAtendidosCoerentes(IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
-        if (CandidatosAtendidosPelasBancas.Violacoes(codigo, bancasRequeridas) is [{ } violacaoDosCandidatosAtendidos, ..])
+        if (CandidatosAtendidosPelasBancas.Violacoes(bancasRequeridas) is [{ } violacaoDosCandidatosAtendidos, ..])
         {
             throw new ArgumentException(violacaoDosCandidatosAtendidos.Error.Message, nameof(bancasRequeridas));
         }
@@ -88,11 +88,11 @@ internal static class ConferenciaDaDeclaracaoDaFase
         IReadOnlySet<string> colecoesComParteRecusada) =>
     [
         .. JanelaDaFase.Violacoes(origem.OrigemData, cronograma),
-        .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
+        .. ViolacoesDasPublicacoes(publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
-        .. CandidatosAtendidosPelasBancas.Violacoes(origem.Codigo, bancasRequeridas),
-        .. CandidatosAtendidosEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
+        .. CandidatosAtendidosPelasBancas.Violacoes(bancasRequeridas),
+        .. CandidatosAtendidosEmBancaDeRecursos(bancasRequeridas),
         .. IdentificadorDasBancas.Repetidos(bancasRequeridas, FaseDeclarada.ListaDasBancasRequeridas, IdentificadorDasBancas.DaFase),
     ];
 
@@ -105,13 +105,13 @@ internal static class ConferenciaDaDeclaracaoDaFase
         return recusa is null ? [] : [recusa];
     }
 
-    private static IEnumerable<FieldError> CandidatosAtendidosEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    private static IEnumerable<FieldError> CandidatosAtendidosEmBancaDeRecursos(IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
         IReadOnlyList<int> posicoes = PosicaoDasBancasNoTipo.Calcular(bancasRequeridas.Select(static banca => banca.Tipo.Codigo));
         for (int indice = 0; indice < bancasRequeridas.Count; indice++)
         {
             BancaRequerida banca = bancasRequeridas[indice];
-            if (ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(codigoDaFase, banca.Tipo, posicoes[indice], banca.CandidatosAtendidos.Count) is { } recusa)
+            if (ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(banca.Tipo, posicoes[indice], banca.CandidatosAtendidos.Count) is { } recusa)
             {
                 yield return new FieldError(CandidatosAtendidosPelasBancas.CampoDosCandidatosAtendidos(indice), recusa);
             }
@@ -128,38 +128,38 @@ internal static class ConferenciaDaDeclaracaoDaFase
 
     // O ato repetido entre os produtos que ficaram continua repetido; o parecer sem resultado e a âncora do recurso leem a
     // lista inteira, e uma parte recusada pode ser o resultado ou o preliminar que falta.
-    private static List<FieldError> ViolacoesDasPublicacoes(string codigo, PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
+    private static List<FieldError> ViolacoesDasPublicacoes(PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
     {
         FieldError?[] daLista =
         [
-            produtosComParteRecusada ? null : ParecerIndividualSemResultado(codigo, publicacoes),
-            produtosComParteRecusada ? null : AncoraDoRecursoDaFase.Violacao(codigo, publicacoes.Produtos, publicacoes.RegraRecurso),
+            produtosComParteRecusada ? null : ParecerIndividualSemResultado(publicacoes),
+            produtosComParteRecusada ? null : AncoraDoRecursoDaFase.Violacao(publicacoes.Produtos, publicacoes.RegraRecurso),
         ];
 
-        return [.. AtosDuplicados(codigo, publicacoes.Produtos), .. daLista.OfType<FieldError>()];
+        return [.. AtosDuplicados(publicacoes.Produtos), .. daLista.OfType<FieldError>()];
     }
 
     // A chave natural do produto é o par ato e papel, e o índice único da tabela a espelha. Não é o ato
     // sozinho porque o catálogo nomeia a matéria: o mesmo código é publicado como preliminar, que abre o
     // ciclo recursal, e como definitivo, que o encerra.
-    private static IEnumerable<FieldError> AtosDuplicados(string codigo, IReadOnlyList<ProdutoDaFase> produtos) =>
+    private static IEnumerable<FieldError> AtosDuplicados(IReadOnlyList<ProdutoDaFase> produtos) =>
         ProdutosPublicados.PosicoesRepetidas(produtos, static ato => ato)
-            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(codigo, produtos[posicao].AtoCodigo)));
+            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(produtos[posicao].AtoCodigo)));
 
     /// <summary>A recusa do par ato e papel repetido, que a leitura do documento reconhece para recusar a lista inteira.</summary>
     internal static bool EhAtoDuplicado(FieldError recusa) => recusa.Error.Code == CodigoDoAtoDuplicado;
 
-    private static DomainError AtoDuplicado(string codigo, string atoCodigo) =>
+    private static DomainError AtoDuplicado(string atoCodigo) =>
         new(
             CodigoDoAtoDuplicado,
-            $"A fase '{codigo}' declara o ato '{atoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
+            $"Na fase, o ato '{atoCodigo}' é declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
 
     // O parecer individual é o fundamento do recurso: sem publicação de resultado não há decisão a
     // contestar, e a promessa ficaria sem objeto.
-    private static FieldError? ParecerIndividualSemResultado(string codigo, PublicacoesDaFase publicacoes) =>
+    private static FieldError? ParecerIndividualSemResultado(PublicacoesDaFase publicacoes) =>
         publicacoes.EmiteParecerIndividual && !publicacoes.Produtos.Any(static p => p.Papel is not null)
             ? new FieldError("emiteParecerIndividual", new DomainError(
                 "FaseCronograma.ParecerIndividualSemResultado",
-                $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar."))
+                "Na fase, há promessa de parecer individual, mas nenhum resultado é publicado — não haveria decisão a fundamentar."))
             : null;
 }

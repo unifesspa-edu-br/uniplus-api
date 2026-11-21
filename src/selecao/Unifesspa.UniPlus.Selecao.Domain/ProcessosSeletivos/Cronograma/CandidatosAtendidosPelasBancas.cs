@@ -2,142 +2,99 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
 /// <summary>
-/// Os candidatos atendidos pelas bancas requeridas por uma fase: quando declará-los é obrigatório e quando
-/// duas bancas atendem os mesmos candidatos.
+/// Os candidatos atendidos pelas bancas requeridas por uma fase: quando declará-los é obrigatório e quando a declaração se
+/// contradiz.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Declarar os candidatos atendidos só é obrigatório onde o tipo não basta.</b> Com uma banca por
-/// tipo, o próprio tipo já diz de quem é o parecer, e exigi-los pediria informação que não acrescenta
-/// nada. Com mais de uma, o tipo empata: são os candidatos atendidos que dizem qual delas julga renda e
-/// qual julga o requisito étnico-racial, e sem eles o certame publica duas linhas iguais onde há dois
-/// responsáveis distintos. Candidatos atendidos IDÊNTICOS entre duas bancas do mesmo tipo caem em
-/// recusa própria por não distinguirem nada: é o defeito que declará-los existe para fechar, e aceitá-los
-/// seria cumprir a letra da exigência sem cumprir o efeito.
+/// <b>Bancas do mesmo tipo que atendem os mesmos candidatos julgam em paralelo.</b> Formam um grupo
+/// (<see cref="GrupoDeCandidatosAtendidos"/>), e repetir o conjunto de categorias entre elas não é defeito: é o que o tipo que exige
+/// duas ou mais bancas pede. As bancas sem categoria atendem todos os candidatos e formam um grupo só.
 /// </para>
 /// <para>
-/// <b>O agrupamento é pelo código congelado, não pelo id de origem.</b> É o código que aparece no
-/// edital publicado, e é por ele que quem lê distingue uma banca da outra; dois ids de origem distintos
-/// que congelaram o mesmo código produzem, no documento, exatamente a ambiguidade que esta invariante
-/// recusa. O critério é estritamente mais forte que o do id: bancas de mesmo id de origem congelam
-/// sempre o mesmo código.
+/// <b>Só é recusado o que não deixa saber quem julga quem.</b> Banca sem categoria ao lado de banca com categoria, no mesmo
+/// tipo, porque a primeira atende todos os candidatos e a segunda só alguns; e a mesma categoria declarada duas vezes na mesma
+/// banca. O agrupamento é pelo tipo, que é o que o edital publicado mostra, e não pelo cadastro de origem do tipo.
 /// </para>
 /// </remarks>
 public static class CandidatosAtendidosPelasBancas
 {
     private const string CategoriaRepetida = "BancaRequerida.CategoriaRepetidaNosCandidatosAtendidos";
     private const string CandidatosAtendidosObrigatoriosCodigo = "BancaRequerida.CandidatosAtendidosObrigatorios";
-    private const string CandidatosAtendidosDuplicadosCodigo = "BancaRequerida.CandidatosAtendidosDuplicados";
 
     /// <summary>Os códigos das recusas dos candidatos atendidos, para quem os projeta num item só.</summary>
     internal static readonly IReadOnlySet<string> Codigos =
-        new HashSet<string>([CategoriaRepetida, CandidatosAtendidosObrigatoriosCodigo, CandidatosAtendidosDuplicadosCodigo], StringComparer.Ordinal);
+        new HashSet<string>([CategoriaRepetida, CandidatosAtendidosObrigatoriosCodigo], StringComparer.Ordinal);
 
     /// <summary>
-    /// As violações dos candidatos atendidos pelas bancas requeridas pela fase, vazio quando cada banca é
-    /// identificável dentro dela. Vêm primeiro as de categoria repetida, por índice, e depois as dos
-    /// grupos de bancas de mesmo código.
+    /// As violações dos candidatos atendidos pelas bancas requeridas pela fase, vazio quando cada banca atende candidatos que se
+    /// sabe quais são. Vêm primeiro as de categoria repetida e depois as de banca sem categoria ao lado de banca com categoria,
+    /// cada uma por posição.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>Predicado único, quatro chamadores</b>: <see cref="FaseCronograma.Criar"/>,
     /// <see cref="FaseCronograma.Reidratar"/>, o decodificador do envelope e <c>ProcessoSeletivo</c>, no
     /// gate de publicação e no item de conformidade. Escrito uma vez, nenhum deles pode divergir dos
     /// outros. Sem I/O e sem navegação: só o que já está em memória.
+    /// </para>
+    /// <para>
+    /// As mensagens não citam o código da fase: o decodificador do envelope o recebe como foi lido, sem conferi-lo contra o
+    /// cadastro, e a mensagem não repete texto recebido (ADR-0023). A banca se identifica pelo rótulo do tipo e pela posição.
+    /// </para>
     /// </remarks>
-    public static IReadOnlyList<FieldError> Violacoes(
-        string codigoDaFase,
-        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    public static IReadOnlyList<FieldError> Violacoes(IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
+        IReadOnlyList<BancaDeclarada> declaradas = BancaDeclarada.De([.. bancasRequeridas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao))]);
+
         return
         [
-            .. CategoriasRepetidas(codigoDaFase, bancasRequeridas),
-            .. CandidatosAtendidosDosGruposDeMesmoCodigo(codigoDaFase, bancasRequeridas),
+            .. IndicesComCategoriaRepetida(bancasRequeridas).Select(indice => CategoriaRepetidaNaBanca(declaradas[indice], indice)),
+            .. IndicesSemCategoriasAoLadoDeBancasComCategorias(bancasRequeridas).Select(indice => CandidatosAtendidosObrigatorios(declaradas[indice], indice)),
         ];
     }
 
-    private static IEnumerable<FieldError> CategoriasRepetidas(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
-    {
-        for (int indice = 0; indice < bancasRequeridas.Count; indice++)
-        {
-            BancaRequerida banca = bancasRequeridas[indice];
-            if (banca.CandidatosAtendidos.Count != banca.ChaveDosCandidatosAtendidos().Count)
-            {
-                yield return new(CampoDosCandidatosAtendidos(indice), new DomainError(
-                    CategoriaRepetida,
-                    $"A banca '{banca.Tipo.Codigo.Codigo()}' da fase '{codigoDaFase}' declara a mesma categoria de documento mais de uma vez nos candidatos atendidos."));
-            }
-        }
-    }
+    /// <summary>Os tipos de banca cujos candidatos atendidos a fase recusa: o agrupamento das bancas deles não é confiável.</summary>
+    internal static IReadOnlySet<TipoDeBanca> TiposRecusados(IReadOnlyList<BancaRequerida> bancasRequeridas) =>
+        IndicesComCategoriaRepetida(bancasRequeridas)
+            .Concat(IndicesSemCategoriasAoLadoDeBancasComCategorias(bancasRequeridas))
+            .Select(indice => bancasRequeridas[indice].Tipo.Codigo)
+            .ToHashSet();
 
-    // Índices agrupados pelo código congelado, a chave da ambiguidade. Um grupo de um item só não pede
-    // candidato atendido algum.
-    private static IEnumerable<FieldError> CandidatosAtendidosDosGruposDeMesmoCodigo(
-        string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas) =>
-        Enumerable.Range(0, bancasRequeridas.Count)
-            .GroupBy(i => bancasRequeridas[i].Tipo.Codigo)
-            .Where(static g => g.Count() > 1)
-            .SelectMany(grupo => CandidatosAtendidosDoGrupoQueNaoDistinguem(codigoDaFase, bancasRequeridas, grupo));
-
-    /// <summary>
-    /// Os candidatos atendidos já vistos no grupo são comparados como CONJUNTO. Concatená-los num texto de assinatura
-    /// seria mais barato e dependeria de nenhum código de categoria conter o separador escolhido:
-    /// premissa que vale para o cadastro, cujo código é UPPER_SNAKE, mas não para um envelope
-    /// decodificado, que traz texto livre dentro do limite da coluna.
-    /// </summary>
-    private static List<FieldError> CandidatosAtendidosDoGrupoQueNaoDistinguem(
-        string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas, IEnumerable<int> indicesDoGrupo)
-    {
-        List<HashSet<string>> candidatosAtendidosJaDeclarados = [];
-        List<FieldError> violacoes = [];
-
-        foreach (int indice in indicesDoGrupo)
-        {
-            if (ViolacaoDosCandidatosAtendidos(codigoDaFase, bancasRequeridas[indice], indice, candidatosAtendidosJaDeclarados) is { } violacao)
-            {
-                violacoes.Add(violacao);
-            }
-        }
-
-        return violacoes;
-    }
-
-    /// <summary>
-    /// A violação dos candidatos atendidos da banca diante dos já declarados no grupo; quando não há, eles
-    /// passam a contar como declarados.
-    /// </summary>
-    private static FieldError? ViolacaoDosCandidatosAtendidos(
-        string codigoDaFase, BancaRequerida banca, int indice, List<HashSet<string>> candidatosAtendidosJaDeclarados)
-    {
-        IReadOnlyList<string> chave = banca.ChaveDosCandidatosAtendidos();
-        if (chave.Count == 0)
-        {
-            return CandidatosAtendidosObrigatorios(codigoDaFase, banca, indice);
-        }
-
-        HashSet<string> atendidos = new(chave, StringComparer.Ordinal);
-        if (candidatosAtendidosJaDeclarados.Exists(anterior => anterior.SetEquals(atendidos)))
-        {
-            return CandidatosAtendidosDuplicados(codigoDaFase, banca, indice);
-        }
-
-        candidatosAtendidosJaDeclarados.Add(atendidos);
-        return null;
-    }
-
-    private static FieldError CandidatosAtendidosObrigatorios(string codigoDaFase, BancaRequerida banca, int indice) =>
-        new(CampoDosCandidatosAtendidos(indice), new DomainError(
-            CandidatosAtendidosObrigatoriosCodigo,
-            $"Na fase '{codigoDaFase}', a banca '{banca.Tipo.Codigo.Codigo()}' não define candidatos atendidos, e a fase requer mais de uma banca desse tipo. Defina as categorias de documento de cada banca desse tipo."));
-
-    private static FieldError CandidatosAtendidosDuplicados(string codigoDaFase, BancaRequerida banca, int indice) =>
-        new(CampoDosCandidatosAtendidos(indice), new DomainError(
-            CandidatosAtendidosDuplicadosCodigo,
-            $"Na fase '{codigoDaFase}', a banca '{banca.Tipo.Codigo.Codigo()}' atende os mesmos candidatos que outra banca do mesmo tipo. Defina categorias de documento diferentes para cada banca desse tipo."));
+    internal static IReadOnlyList<GrupoDeCandidatosAtendidos> Grupos(IReadOnlyList<BancaRequerida> bancasRequeridas) =>
+        GrupoDeCandidatosAtendidos.Agrupar([.. bancasRequeridas.Select(static banca => (banca.Tipo.Codigo, banca.ChaveDosCandidatosAtendidos()))]);
 
     internal static string CampoDosCandidatosAtendidos(int indice) => $"{FaseDeclarada.ListaDasBancasRequeridas}[{indice}].categoriasDocumentoIds";
+
+    private static IEnumerable<int> IndicesComCategoriaRepetida(IReadOnlyList<BancaRequerida> bancasRequeridas) =>
+        Enumerable.Range(0, bancasRequeridas.Count)
+            .Where(indice => bancasRequeridas[indice].CandidatosAtendidos.Count != bancasRequeridas[indice].ChaveDosCandidatosAtendidos().Count);
+
+    private static IEnumerable<int> IndicesSemCategoriasAoLadoDeBancasComCategorias(IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        IReadOnlyList<GrupoDeCandidatosAtendidos> grupos = Grupos(bancasRequeridas);
+        IReadOnlySet<TipoDeBanca> misturados = GrupoDeCandidatosAtendidos.TiposComBancasComESemCategorias(grupos);
+
+        return grupos
+            .Where(grupo => grupo.AtendeTodosOsCandidatos && misturados.Contains(grupo.Tipo))
+            .SelectMany(static grupo => grupo.Posicoes)
+            .Order();
+    }
+
+    private static FieldError CategoriaRepetidaNaBanca(BancaDeclarada banca, int indice) =>
+        new(CampoDosCandidatosAtendidos(indice), new DomainError(
+            CategoriaRepetida,
+            $"Na fase, a banca '{banca.Citacao}' declara a mesma categoria de documento mais de uma vez nos candidatos atendidos."));
+
+    private static FieldError CandidatosAtendidosObrigatorios(BancaDeclarada banca, int indice) =>
+        new(CampoDosCandidatosAtendidos(indice), new DomainError(
+            CandidatosAtendidosObrigatoriosCodigo,
+            $"Na fase, bancas do tipo '{banca.Tipo.Codigo.Rotulo()}' definem candidatos atendidos, e a banca '{banca.Citacao}' não define. Defina as categorias de cada banca desse tipo, ou retire-as de todas."));
 }

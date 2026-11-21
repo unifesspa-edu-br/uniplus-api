@@ -22,11 +22,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A coincidência entre a conferência de publicação e o item de conformidade dos candidatos atendidos
-/// pelas bancas requeridas. <c>FaseCronograma.Criar</c> recusa duas bancas do
-/// mesmo tipo que não se distinguem, mas esse estado é <b>materializável</b>: o EF hidrata
+/// pelas bancas requeridas. <c>FaseCronograma.Criar</c> recusa a banca sem candidatos atendidos ao lado de
+/// banca do mesmo tipo com candidatos atendidos, mas esse estado é <b>materializável</b>: o EF hidrata
 /// <c>bancas_requeridas</c> e <c>categorias_julgadas</c> direto das linhas, sem passar pela
-/// fábrica, e nada no banco obriga uma banca a ter candidatos atendidos nem impede duas do mesmo tipo de
-/// terem os mesmos.
+/// fábrica, e nada no banco obriga uma banca a ter candidatos atendidos quando outra do mesmo tipo os tem.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -44,8 +43,8 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("a712345678", 7))[..64];
 
     /// <summary>
-    /// O tipo de banca é o MESMO nas duas bancas da fase semeada — é esse empate que faz os
-    /// candidatos atendidos serem o único separador entre elas.
+    /// O tipo de banca é o MESMO nas duas bancas da fase semeada: os candidatos atendidos dizem se elas
+    /// julgam em paralelo ou se uma atende todos os candidatos ao lado da outra.
     /// </summary>
     private static readonly Guid TipoBancaOrigemId = Guid.CreateVersion7();
 
@@ -67,7 +66,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
 
         publicacao.IsFailure.Should().BeTrue(
-            "linha legada não pode congelar um edital em que duas bancas do mesmo tipo são a mesma linha repetida");
+            "linha legada não pode congelar um edital em que uma banca atende todos os candidatos e outra do mesmo tipo só alguns");
         publicacao.Error!.Code.Should().Be("BancaRequerida.CandidatosAtendidosObrigatorios");
     }
 
@@ -82,18 +81,18 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
 
-    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com os MESMOS candidatos atendidos marcam o item pendente e recusam a publicação")]
-    public async Task CandidatosAtendidosIguais_ItemPendenteEPublicacaoRecusada()
+    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com os MESMOS candidatos atendidos julgam em paralelo: item conforme e publica")]
+    public async Task CandidatosAtendidosIguais_BancasParalelas_ItemConformeEPublica()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 candidatos atendidos iguais {Guid.CreateVersion7()}");
         await UniformizarCandidatosAtendidosAsync(processoId);
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
         ConferirQueAsBancasDocumentaisSeguemComCandidatosAtendidos(processo);
-        ItemDosCandidatosAtendidosDasBancas(processo).Ok.Should().BeFalse();
+
+        ItemDosCandidatosAtendidosDasBancas(processo).Ok.Should().BeTrue();
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
-        publicacao.IsFailure.Should().BeTrue();
-        publicacao.Error!.Code.Should().Be("BancaRequerida.CandidatosAtendidosDuplicados");
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
     }
 
     [Fact(DisplayName = "Contraprova: a mesma configuração com candidatos atendidos distintos tem o item conforme e publica")]
@@ -129,8 +128,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
         linhasEsperadas: 1);
 
     /// <summary>
-    /// Faz as duas bancas do mesmo tipo julgarem a MESMA categoria: cada uma tem candidatos atendidos, então a
-    /// checagem de ausência sozinha não veria o defeito — o que some é a distinção.
+    /// Faz as duas bancas do mesmo tipo julgarem a MESMA categoria: as duas formam um grupo de bancas em paralelo.
     /// </summary>
     private Task UniformizarCandidatosAtendidosAsync(Guid processoId) => ExecutarAsync(
         """

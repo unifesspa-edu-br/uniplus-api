@@ -150,12 +150,12 @@ internal static class LeituraDoCronograma
         PublicacoesDaFase publicacoes,
         IReadOnlyList<BancaRequerida> bancas)
     {
-        if (AncoraDoRecursoDaFase.Violacao(origem.Codigo, publicacoes.Produtos, publicacoes.RegraRecurso) is { } violacaoDaAncora)
+        if (AncoraDoRecursoDaFase.Violacao(publicacoes.Produtos, publicacoes.RegraRecurso) is { } violacaoDaAncora)
         {
             return Result<FaseCronograma>.Failure(violacaoDaAncora.Error);
         }
 
-        return CandidatosAtendidosPelasBancas.Violacoes(origem.Codigo, bancas) is [{ } violacaoDosCandidatosAtendidos, ..]
+        return CandidatosAtendidosPelasBancas.Violacoes(bancas) is [{ } violacaoDosCandidatosAtendidos, ..]
             ? Result<FaseCronograma>.Failure(violacaoDosCandidatosAtendidos.Error)
             : Reidratar(id, origem, decisoes, publicacoes, bancas);
     }

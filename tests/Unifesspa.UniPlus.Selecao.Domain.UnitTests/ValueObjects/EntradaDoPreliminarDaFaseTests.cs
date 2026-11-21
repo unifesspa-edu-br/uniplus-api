@@ -142,6 +142,15 @@ public sealed class EntradaDoPreliminarDaFaseTests
         ComBanca(encerraNaPrimeira: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
     }
 
+    [Fact(DisplayName = "Trocar as regras entre duas bancas do mesmo tipo e dos mesmos candidatos atendidos muda a entrada")]
+    public void RegrasTrocadasEntreBancasDoMesmoTipo_MudamAEntrada() =>
+        Fase(bancas: [
+                Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 5, quorum: 3)),
+                Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 7, quorum: 4))]).EntradaDoPreliminar()
+            .Should().NotBe(Fase(bancas: [
+                Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 5, quorum: 4)),
+                Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 7, quorum: 3))]).EntradaDoPreliminar());
+
     [Fact(DisplayName = "Os candidatos atendidos da banca entram na entrada, pelas origens das categorias")]
     public void CandidatosAtendidosDaBanca_MudamAEntrada()
     {

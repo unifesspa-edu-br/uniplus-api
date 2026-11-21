@@ -86,15 +86,13 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// Os candidatos atendidos separam duas bancas do mesmo tipo na mesma fase. Onde o tipo já identifica sozinho, declará-los é
-    /// dispensável, e por isso a obrigatoriedade só existe no arranjo ambíguo. Candidatos atendidos iguais entre duas dessas bancas
-    /// caem na recusa irmã: cumprem a letra da exigência sem distinguir nada.
+    /// Os candidatos atendidos dizem quais candidatos cada banca julga. Bancas do mesmo tipo que atendem os mesmos candidatos
+    /// julgam em paralelo; só se recusa a banca sem categoria ao lado de banca com categoria e a categoria repetida na banca.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CandidatosAtendidosDasBancas() =>
     [
         new("BancaRequerida.CategoriaRepetidaNosCandidatosAtendidos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos", "A banca repete uma categoria de documento nos candidatos atendidos")),
         new("BancaRequerida.CandidatosAtendidosObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios", "Bancas do mesmo tipo: umas definem os candidatos atendidos e outra não")),
-        new("BancaRequerida.CandidatosAtendidosDuplicados", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados", "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos")),
     ];
 
     /// <summary>

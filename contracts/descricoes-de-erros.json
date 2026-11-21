@@ -14115,6 +14115,28 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.tipo_exige_mais_de_uma_banca",
+      "requisitos": [
+        "UNI-REQ-0470",
+        "UNI-REQ-0476"
+      ],
+      "oQueAconteceu": [
+        "O cadastro de tipos de banca diz, para alguns tipos, que o tipo exige duas ou\nmais bancas na fase ou na etapa em que é usado (UNI-REQ-0476). O edital usa um\ndesses tipos e prevê só uma banca dele. A publicação é recusada.",
+        "Há dois casos:",
+        "- **Falta no lugar.** A fase ou a etapa tem uma única banca do tipo. A mensagem\n  cita a fase pelo código, ou a etapa pela posição, e a banca pelo nome do tipo\n  e pelo número dela, por exemplo \"Banca de heteroidentificação 1\".\n- **Falta no grupo (só na fase).** As bancas do tipo atendem candidatos\n  diferentes, isto é, cada uma declara as suas categorias de documento\n  (UNI-REQ-0470), e um dos grupos de candidatos atendidos fica com uma banca só.\n  Nesse caso a exigência vale para cada grupo, e não para a fase inteira.",
+        "A característica \"exige duas ou mais bancas\" é do cadastro do tipo e fica\nregistrada no processo quando a banca é criada. Mudar o cadastro depois não\naltera uma banca que já está configurada: a regra olha o que foi registrado em\ncada banca, e a recusa cita a primeira banca que traz a exigência. A conferência\nconta todas as bancas do mesmo tipo.",
+        "A conferência é de completude: o rascunho é salvo com uma banca só, e a recusa\nvem na publicação e na retificação em ato único. A recusa vem como o código\ndesta página no corpo da resposta, e não na lista `errors[]`. O campo apontado é\n`fases[i].bancasRequeridas[p]` na fase e `etapas[i].bancas[p]` na etapa, com a\nidentificação da banca para a tela ligar a recusa à banca certa."
+      ],
+      "comoResolver": [
+        "Acrescente outra banca do mesmo tipo ao lugar. Quando a falta é no grupo,\nacrescente a banca com as mesmas categorias de documento do grupo, para que as\nduas atendam os mesmos candidatos e julguem em paralelo.",
+        "Exemplo: o edital do \"PSR 2027\" prevê só a \"Banca de heteroidentificação 1\". A\npublicação é aceita depois que a \"Banca de heteroidentificação 2\" é acrescentada.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_tipo_de_banca_com_o_minimo_de_bancas`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
       "requisitos": [
         "UNI-REQ-0275",
@@ -14133,21 +14155,6 @@
       ],
       "ondeAparece": [
         "- Definição do cronograma de fases do processo seletivo\n- Definição de etapas do processo seletivo\n- Leitura do documento de configuração do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos: declaram o\nmesmo conjunto de categorias de documento.",
-        "Os candidatos atendidos de uma banca são as categorias de documento que ela julga.\nQuando duas bancas do mesmo tipo julgam as mesmas categorias, o parecer que o\ncandidato recebe não diz qual delas o julgou, e o recurso não sabe contra qual\nbanca se dirige. Por isso a repetição é recusada.",
-        "A comparação é feita como conjunto: a ordem em que as categorias são declaradas\nnão importa. A mensagem cita a fase pelo código e a banca pelo número dela, e o\ncampo apontado é `fases[i].bancasRequeridas[p].categoriasDocumentoIds`."
-      ],
-      "comoResolver": [
-        "Defina categorias de documento diferentes para cada banca desse tipo, de modo que\ncada candidato seja atendido por uma só banca."
-      ],
-      "ondeAparece": [
-        "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {

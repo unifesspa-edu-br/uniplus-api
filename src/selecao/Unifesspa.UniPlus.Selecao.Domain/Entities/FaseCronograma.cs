@@ -207,8 +207,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     {
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
         ConferenciaDaDeclaracaoDaFase.ExigirIdCongelado(id);
-        ConferenciaDaDeclaracaoDaFase.ExigirAncoraCoerente(origem.Codigo, publicacoes.Produtos, publicacoes.RegraRecurso);
-        ConferenciaDaDeclaracaoDaFase.ExigirCandidatosAtendidosCoerentes(origem.Codigo, bancasRequeridas);
+        ConferenciaDaDeclaracaoDaFase.ExigirAncoraCoerente(publicacoes.Produtos, publicacoes.RegraRecurso);
+        ConferenciaDaDeclaracaoDaFase.ExigirCandidatosAtendidosCoerentes(bancasRequeridas);
 
         FaseCronograma fase = new() { Id = id };
         fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);

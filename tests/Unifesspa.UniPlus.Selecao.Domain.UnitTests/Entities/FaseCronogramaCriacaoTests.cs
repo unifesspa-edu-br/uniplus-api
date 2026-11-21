@@ -21,6 +21,31 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.FaseDeTesteDaAt
 /// </summary>
 public sealed class FaseCronogramaCriacaoTests
 {
+    private const string CodigoDigitado = "  FASE_DIGITADA  ";
+
+    [Theory(DisplayName = "As recusas da fase não repetem o código recebido")]
+    [InlineData(0, "FaseCronograma.AtoDuplicadoNaFase", "ato")]
+    [InlineData(0, "FaseCronograma.ParecerIndividualSemResultado", "parecer individual")]
+    [InlineData(0, "RegraRecursoFase.FaseSemProdutoPreliminar", "preliminar")]
+    [InlineData(1, "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase", "preliminares")]
+    [InlineData(2, "Banca.CandidatosAtendidosEmBancaDeRecursos", "candidatos atendidos")]
+    public void Criar_DeclaracaoRecusada_NaoRepeteOCodigo(int caso, string codigoErro, string assunto)
+    {
+        Result<FaseCronograma> resultado = Criar(DadosRecusados(caso));
+
+        string mensagem = resultado.Errors.Single(erro => erro.Error.Code == codigoErro).Error.Message;
+        Assert.DoesNotContain(CodigoDigitado, mensagem);
+        Assert.DoesNotContain(CodigoDigitado.Trim(), mensagem);
+        mensagem.Should().Contain(assunto);
+    }
+
+    private static DadosDaFase DadosRecusados(int caso) => caso switch
+    {
+        0 => new() { Codigo = CodigoDigitado, Produtos = [ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("COMUNICADO", null)], EmiteParecerIndividual = true, RegraRecurso = Recurso(Guid.CreateVersion7()) },
+        1 => new() { Codigo = CodigoDigitado, Produtos = [Preliminar(Resultado)], RegraRecurso = Recurso(Guid.CreateVersion7()) },
+        _ => new() { Codigo = CodigoDigitado, Bancas = [Banca(TipoDeBanca.AnaliseDeRecursos, "RENDA")] },
+    };
+
     // ── Criar: ordem das recusas acumuladas ──
 
     private static Result<FaseCronograma> FaseComJanelaInvertidaEPublicacoesECandidatosAtendidosRecusados() => Criar(new()
@@ -30,7 +55,7 @@ public sealed class FaseCronogramaCriacaoTests
         Produtos = [ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("COMUNICADO", null)],
         EmiteParecerIndividual = true,
         RegraRecurso = Recurso(Guid.CreateVersion7()),
-        Bancas = [Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental)],
+        Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental)],
     });
 
     [Fact(DisplayName = "As recusas acumuladas seguem a ordem: janela, publicações, âncora do recurso e candidatos atendidos")]
@@ -43,11 +68,11 @@ public sealed class FaseCronogramaCriacaoTests
             ("produtos[1]", "FaseCronograma.AtoDuplicadoNaFase"),
             ("emiteParecerIndividual", "FaseCronograma.ParecerIndividualSemResultado"),
             ("produtos", "RegraRecursoFase.FaseSemProdutoPreliminar"),
-            ("bancasRequeridas[0].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"),
-            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"));
+            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"),
+            ("bancasRequeridas[2].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"));
     }
 
-    [Fact(DisplayName = "A janela obrigatória antecede a âncora, e a categoria repetida nos candidatos atendidos antecede os candidatos atendidos duplicados")]
+    [Fact(DisplayName = "A janela obrigatória antecede a âncora, e a categoria repetida nos candidatos atendidos antecede os candidatos atendidos obrigatórios")]
     public void Criar_JanelaObrigatoriaAncoraECategoriaRepetida_SeguemAOrdem()
     {
         Result<FaseCronograma> resultado = Criar(new()
@@ -55,14 +80,14 @@ public sealed class FaseCronogramaCriacaoTests
             OrigemData = OrigemDataFase.NoEdital,
             Produtos = [Preliminar(Resultado)],
             RegraRecurso = Recurso(Guid.CreateVersion7()),
-            Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.Entrevista, "RENDA", "RENDA")],
+            Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.Entrevista, "RENDA", "RENDA")],
         });
 
         Recusas(resultado).Should().Equal(
             (null, "FaseCronograma.JanelaObrigatoriaEmDataNoEdital"),
             ("regraRecurso.atoAncoraCodigo", "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase"),
             ("bancasRequeridas[2].categoriasDocumentoIds", "BancaRequerida.CategoriaRepetidaNosCandidatosAtendidos"),
-            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosDuplicados"));
+            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"));
     }
 
     [Fact(DisplayName = "O par repetido A, B, A recusa só o terceiro produto, e o primeiro A segue valendo")]
@@ -205,8 +230,8 @@ public sealed class FaseCronogramaCriacaoTests
         (fase.Id, fase.Codigo, produto.FaseCronogramaId).Should().Be((id, "FASE_TESTE", id));
     }
 
-    [Fact(DisplayName = "Reidratar com âncora incoerente lança com o código citado como veio")]
-    public void Reidratar_AncoraIncoerenteComCodigoComEspacos_LancaCitandoOCodigoComoVeio()
+    [Fact(DisplayName = "Reidratar com âncora incoerente lança sem repetir o código")]
+    public void Reidratar_AncoraIncoerenteComCodigoComEspacos_LancaSemRepetirOCodigo()
     {
         ProdutoDaFase produto = Preliminar(Resultado);
 
@@ -218,7 +243,7 @@ public sealed class FaseCronogramaCriacaoTests
         });
 
         act.Should().Throw<ArgumentException>().WithParameterName("regraRecurso")
-            .Which.Message.Should().Contain("'  FASE_TESTE  '");
+            .Which.Message.Should().NotContain("FASE_TESTE");
     }
 
     [Theory(DisplayName = "Criar e Reidratar com código em branco lançam, sem acumular recusa")]

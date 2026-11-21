@@ -20,8 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// documental pode requerer duas bancas do mesmo tipo — uma que analisa critério de renda,
 /// outra que analisa requisito étnico-racial para fins de cota —, e sem
 /// <see cref="CandidatosAtendidos"/> as duas são a mesma linha repetida. Quando declará-los
-/// é obrigatório e quando duas bancas atendem os mesmos candidatos é invariante da FASE, que enxerga
-/// todas as bancas de uma vez:
+/// é obrigatório é invariante da FASE, que enxerga todas as bancas de uma vez:
 /// <see cref="ProcessosSeletivos.Cronograma.CandidatosAtendidosPelasBancas.Violacoes"/>.
 /// </para>
 /// </remarks>

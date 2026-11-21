@@ -190,16 +190,17 @@ public sealed class ConferenciaDasBancasTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, Etapas(ComRecurso("AVALIACAO")), NenhumLido).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Os quatro itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
-    public void Itens_Conformes_QuatroVerdesNaOrdem()
+    [Fact(DisplayName = "Os cinco itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
+    public void Itens_Conformes_CincoVerdesNaOrdem()
     {
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
 
         IReadOnlyList<ItemConformidade> itens = ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido);
 
         itens.Select(static item => item.Codigo).Should().Equal(
-            "cronograma_recurso_com_banca_que_julga",
             "cronograma_banca_de_recursos_sem_candidatos_atendidos",
+            "cronograma_recurso_com_banca_que_julga",
+            "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
             "cronograma_banca_com_regra_de_deliberacao",
             "cronograma_banca_com_o_minimo_de_integrantes");
         itens.Should().OnlyContain(static item => item.Ok);
@@ -224,6 +225,6 @@ public sealed class ConferenciaDasBancasTests
 
         ConferenciaDasBancas.Itens(cronograma, etapas, TresCorretores).Where(static item => !item.Ok).Select(static item => item.Codigo)
             .Should().Equal("cronograma_banca_com_regra_de_deliberacao", "cronograma_banca_com_o_minimo_de_integrantes");
-        ConferenciaDasBancas.Itens(Fases(FaseComRecurso("AVALIACAO", 1)), Etapas(), NenhumLido)[0].Ok.Should().BeFalse();
+        ConferenciaDasBancas.Itens(Fases(FaseComRecurso("AVALIACAO", 1)), Etapas(), NenhumLido)[1].Ok.Should().BeFalse();
     }
 }

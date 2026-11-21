@@ -211,7 +211,7 @@ public sealed record CronogramaDoProcesso
 
     public ItemConformidade ItemDosCandidatosAtendidos() => ItemSemRecusa(
         "cronograma_candidatos_atendidos_das_bancas",
-        "Cronograma: bancas do mesmo tipo na mesma fase declaram candidatos atendidos distintos",
+        "Cronograma: bancas do mesmo tipo na mesma fase declaram candidatos atendidos sem categoria repetida e sem misturar bancas com e sem categorias",
         CandidatosAtendidosPelasBancas.Codigos);
 
     public IReadOnlyList<ItemConformidade> ItensDaCompletude(TimeZoneInfo? fuso) => CompletudeDoCronograma.Itens(this, fuso);

@@ -40,15 +40,15 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
                 && e.Field == "bancasRequeridas[0].categoriasDocumentoIds");
     }
 
-    [Fact(DisplayName = "Reidratar um envelope com duas bancas do mesmo tipo sem candidatos atendidos lança — o estado não é escrevível")]
-    public void Reidratar_MesmoTipoSemCandidatosAtendidos_Lanca()
+    [Fact(DisplayName = "Reidratar um envelope com banca sem candidatos atendidos ao lado de banca com candidatos atendidos do mesmo tipo lança — o estado não é escrevível")]
+    public void Reidratar_MesmoTipoMisturandoComESemCandidatosAtendidos_Lanca()
     {
         Action act = () => Reidratar(
             produtos: [],
             regraRecurso: null,
             bancasRequeridas:
             [
-                Banca(TipoDeBanca.AnaliseDocumental),
+                Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
                 Banca(TipoDeBanca.AnaliseDocumental),
             ]);
 

@@ -9,22 +9,26 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O que falta nas bancas declaradas: a banca de análise de recursos que todo recurso exige, a regra de deliberação de cada
-/// banca e o mínimo de integrantes que o quórum e os corretores das etapas julgadas pedem. As causas saem na posição da fase
+/// O que falta nas bancas declaradas: a banca de análise de recursos que todo recurso exige, o mínimo de bancas do tipo que exige
+/// duas ou mais, a regra de deliberação de cada banca e o mínimo de integrantes que o quórum e os corretores das etapas julgadas pedem. As causas saem na posição da fase
 /// ou da etapa que declara a banca, as das fases antes das das etapas.
 /// </summary>
 public static class ConferenciaDasBancas
 {
     private static readonly ItemDaBanca[] ItensDaBanca =
     [
-        new("cronograma_recurso_com_banca_que_julga",
-            "Cronograma: todo recurso tem a banca que o julga em 1ª instância, na fase ou na etapa",
-            static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas),
-            static (cronograma, etapas) => ConjuntoDeEtapasJulgadasIndeterminado(cronograma, etapas)),
         new("cronograma_banca_de_recursos_sem_candidatos_atendidos",
             "Cronograma: a banca que julga recurso não define candidatos atendidos",
             static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos),
             static (_, _) => false),
+        new("cronograma_recurso_com_banca_que_julga",
+            "Cronograma: todo recurso tem a banca que o julga em 1ª instância, na fase ou na etapa",
+            static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas),
+            static (cronograma, etapas) => ConjuntoDeEtapasJulgadasIndeterminado(cronograma, etapas)),
+        new("cronograma_tipo_de_banca_com_o_minimo_de_bancas",
+            "Cronograma: o tipo de banca que exige duas ou mais bancas tem ao menos duas, na fase ou na etapa e em cada grupo de candidatos atendidos",
+            static (cronograma, etapas, _) => ConferirMinimoDeBancasPorTipo(cronograma, etapas),
+            static (cronograma, etapas) => MinimoDeBancasIndeterminado(cronograma, etapas)),
         new("cronograma_banca_com_regra_de_deliberacao",
             "Cronograma: toda banca declara a regra de deliberação e, se julga recurso por ato individual, a votação do recurso",
             static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas),
@@ -41,6 +45,18 @@ public static class ConferenciaDasBancas
         ArgumentNullException.ThrowIfNull(etapas);
 
         return QuemJulgaORecurso.SemBanca(cronograma, etapas);
+    }
+
+    /// <summary>
+    /// O tipo que exige duas ou mais bancas e tem só uma no lugar, e, na fase, só uma no grupo de candidatos atendidos. As das
+    /// fases saem antes das das etapas, cada uma na posição da banca que ficou sozinha.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ConferirMinimoDeBancasPorTipo(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
+    {
+        ArgumentNullException.ThrowIfNull(cronograma);
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        return [.. cronograma.Fases.SelectMany(FaltasDaFase), .. etapas.Etapas.SelectMany(FaltasDaEtapa)];
     }
 
     public static IReadOnlyList<FieldError> ConferirRegrasDeDeliberacao(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
@@ -94,6 +110,34 @@ public static class ConferenciaDasBancas
         FaseOuEtapaRecusadaNaLeitura(cronograma, etapas)
         || ListaDasBancasDasFasesComParteRecusada(cronograma)
         || etapas.Etapas.Any(static etapa => etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas));
+
+    // Com a lista das bancas parcialmente recusada, ou com os candidatos atendidos de algum tipo recusados, não se sabe quantas
+    // bancas o lugar ou o grupo tem de verdade: o item fica pendente em vez de aprovado por omissão.
+    private static bool MinimoDeBancasIndeterminado(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+        BancasIndeterminadas(cronograma, etapas)
+        || cronograma.RecusasDasDeclaracoes(CandidatosAtendidosPelasBancas.Codigos).Count > 0;
+
+    private static IEnumerable<FieldError> FaltasDaFase(FaseDeclarada fase, int posicao)
+    {
+        if (fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas))
+        {
+            return [];
+        }
+
+        return MinimoDeBancasPorTipo.Faltas(fase.Bancas.Declaradas, fase.Bancas.Grupos).Select(falta => CronogramaDoProcesso.NaFase(
+            posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{falta.Banca.Posicao}]", MinimoDeBancasPorTipo.Recusa(falta, $"fase '{fase.Codigo}'")));
+    }
+
+    private static IEnumerable<FieldError> FaltasDaEtapa(EtapaDeclarada etapa, int posicao)
+    {
+        if (etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas))
+        {
+            return [];
+        }
+
+        return MinimoDeBancasPorTipo.Faltas(etapa.Bancas.Declaradas, []).Select(falta => EtapasDoProcesso.NaEtapa(
+            posicao, $"{EtapaDeclarada.ListaDasBancas}[{falta.Banca.Posicao}]", MinimoDeBancasPorTipo.Recusa(falta, EtapaNaPosicao(posicao))));
+    }
 
     private static bool FaseOuEtapaRecusadaNaLeitura(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         cronograma.TemParteRecusadaNaListaDeFases || etapas.LeituraRecusouEtapa;

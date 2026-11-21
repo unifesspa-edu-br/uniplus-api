@@ -42,14 +42,16 @@ public sealed class ItensDaFaseNoCronogramaTests
         Cronograma(ancoraErrada).ItemDaAncoraDoRecurso().Ok.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Os candidatos atendidos ficam vermelhos quando duas bancas do mesmo código não se distinguem")]
-    public void ItemDosCandidatosAtendidos_BancasIndistinguiveis_FicaVermelho()
+    [Fact(DisplayName = "Os candidatos atendidos ficam vermelhos quando uma banca atende todos os candidatos ao lado de outra do mesmo tipo que atende só alguns")]
+    public void ItemDosCandidatosAtendidos_BancaSemCategoriaAoLadoDeBancaComCategoria_FicaVermelho()
     {
-        FaseDeclarada indistinguiveis = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental)] }.Declarar();
+        FaseDeclarada misturadas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental, "RENDA")] }.Declarar();
         FaseDeclarada distintas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "ETNICO_RACIAL")] }.Declarar();
+        FaseDeclarada paralelas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "RENDA")] }.Declarar();
 
-        Cronograma(indistinguiveis).ItemDosCandidatosAtendidos().Ok.Should().BeFalse();
+        Cronograma(misturadas).ItemDosCandidatosAtendidos().Ok.Should().BeFalse();
         Cronograma(distintas).ItemDosCandidatosAtendidos().Should().Match<ItemConformidade>(
             static item => item.Ok && item.Codigo == "cronograma_candidatos_atendidos_das_bancas");
+        Cronograma(paralelas).ItemDosCandidatosAtendidos().Ok.Should().BeTrue();
     }
 }

@@ -25,6 +25,7 @@ public sealed class SuspensaoDasBancasPorFaseOuEtapaRecusadaTests
     [Theory(DisplayName = "A lista de fases recusada na leitura deixa pendente o item das bancas, e sem recusa o item é aprovado")]
     [InlineData("cronograma_banca_com_regra_de_deliberacao")]
     [InlineData("cronograma_recurso_com_banca_que_julga")]
+    [InlineData("cronograma_tipo_de_banca_com_o_minimo_de_bancas")]
     public void ListaDeFasesRecusada_ItemFicaPendente(string item)
     {
         EtapasDoProcesso semEtapas = EtapasDoProcesso.Das([]);
@@ -36,6 +37,7 @@ public sealed class SuspensaoDasBancasPorFaseOuEtapaRecusadaTests
     [Theory(DisplayName = "A lista de etapas recusada na leitura deixa pendente o item das bancas, e sem recusa o item é aprovado")]
     [InlineData("cronograma_banca_com_regra_de_deliberacao")]
     [InlineData("cronograma_recurso_com_banca_que_julga")]
+    [InlineData("cronograma_tipo_de_banca_com_o_minimo_de_bancas")]
     public void ListaDeEtapasRecusada_ItemFicaPendente(string item)
     {
         CronogramaDoProcesso semFases = CronogramaDoProcesso.Do([]);
