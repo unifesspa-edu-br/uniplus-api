@@ -58,6 +58,25 @@ public static class OrdemCanonicaDaConfiguracao
             .ThenBy(static produto => ChaveDoPapel(produto.Papel), StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// Os recursos da etapa, pelo tipo de evento que inicia o prazo, pelo ato do produto em que o prazo se baseia, pela regra, pelo produto e, por último, pela identidade.
+    /// </summary>
+    public static IOrderedEnumerable<RecursoDaEtapa> RecursosDaEtapa(IEnumerable<RecursoDaEtapa> recursos, IEnumerable<ProdutoDaEtapa> produtos)
+    {
+        ArgumentNullException.ThrowIfNull(recursos);
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        Dictionary<Guid, string> atoDoProduto = produtos.DistinctBy(static produto => produto.Id)
+            .ToDictionary(static produto => produto.Id, static produto => $"{ChaveDoAto(produto.AtoCodigo)}\u001f{ChaveDoPapel(produto.Papel)}");
+
+        return recursos.OrderBy(static recurso => recurso.Ancora)
+            .ThenBy(recurso => atoDoProduto.GetValueOrDefault(recurso.ProdutoAncoraId, string.Empty), StringComparer.Ordinal)
+            .ThenBy(static recurso => HashCanonicalComputer.NormalizeNfc(recurso.Regra.Codigo), StringComparer.Ordinal)
+            .ThenBy(static recurso => HashCanonicalComputer.NormalizeNfc(recurso.Regra.Versao), StringComparer.Ordinal)
+            .ThenBy(static recurso => recurso.ProdutoAncoraId)
+            .ThenBy(static recurso => recurso.Id);
+    }
+
     /// <summary>As bancas que a fase requer, pelo tipo e pelo código; <paramref name="banca"/> acha a banca em cada item.</summary>
     public static IOrderedEnumerable<T> BancasDaFase<T>(IEnumerable<T> itens, Func<T, BancaRequerida> banca)
     {

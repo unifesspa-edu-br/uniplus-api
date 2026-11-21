@@ -98,8 +98,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>As bancas que a etapa requer (0..*).</summary>
     public IReadOnlyCollection<BancaDaEtapa> Bancas => _bancas.AsReadOnly();
 
-    /// <summary>As janelas recursais que a etapa abre (0..*).</summary>
-    public IReadOnlyCollection<RecursoDaEtapa> Recursos => _recursos.AsReadOnly();
+    /// <summary>Os prazos de recurso que a etapa abre (0..*), em ordem canônica: a do documento e a do registro publicado.</summary>
+    public IReadOnlyCollection<RecursoDaEtapa> Recursos => [.. OrdemCanonicaDaConfiguracao.RecursosDaEtapa(_recursos, _produtos)];
 
     /// <summary>Tudo o que a etapa publica, com o papel de cada publicação (0..*).</summary>
     public IReadOnlyCollection<ProdutoDaEtapa> Produtos => _produtos.AsReadOnly();
@@ -345,7 +345,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
             [.. ItensDeAvaliacao.Select(static item => new ItemDeAvaliacaoDeclarado(item.Id, item.Rotulo, item.PontuacaoMaxima))],
             null),
         new JanelaDeTempo(Inicio, Fim),
-        new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. _recursos], [.. _tiposDeDecisao]),
+        new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. Recursos], [.. _tiposDeDecisao]),
         [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)],
         colecoesComParteRecusada);
 

@@ -120,11 +120,6 @@ internal static class SerializacaoDasEtapas
 
     private static JsonArray SerializarRecursos(EtapaProcesso etapa) =>
         new([.. etapa.Recursos
-            .OrderBy(static r => r.Ancora)
-            .ThenBy(r => ChaveDoProdutoAncora(etapa, r.ProdutoAncoraId), StringComparer.Ordinal)
-            .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Codigo), StringComparer.Ordinal)
-            .ThenBy(static r => HashCanonicalComputer.NormalizeNfc(r.Regra.Versao), StringComparer.Ordinal)
-            .ThenBy(static r => r.ProdutoAncoraId)
             .Select(static r => (JsonNode)new JsonObject
             {
                 ["ancora"] = r.Ancora.ToString(),
@@ -142,19 +137,6 @@ internal static class SerializacaoDasEtapas
                 ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
                 ["papel"] = p.Papel?.ToString(),
             })]);
-
-    private static string ChaveDoProdutoAncora(EtapaProcesso etapa, Guid produtoAncoraId)
-    {
-        if (produtoAncoraId == Guid.Empty)
-        {
-            return string.Empty;
-        }
-
-        ProdutoDaEtapa? ancora = etapa.Produtos.FirstOrDefault(p => p.Id == produtoAncoraId);
-        return ancora is null
-            ? string.Empty
-            : $"{HashCanonicalComputer.NormalizeNfc(ancora.AtoCodigo)}\u001f{ancora.Papel?.ToString() ?? string.Empty}";
-    }
 
     private static JsonObject SerializarTipoEtapa(EtapaProcesso etapa) => new()
     {
