@@ -12,10 +12,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoProcessoConformeSemeado;
 
 /// <summary>
 /// Variantes de <see cref="ProcessoSeletivoPublicavelSeeder"/> — cada método isola UM defeito
@@ -25,10 +24,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class ProcessoSeletivoPendenciasSeeder
 {
-    // 64 caracteres hex minúsculos — shape de SHA-256 exigido por
-    // HashCanonicalComputer.IsValidHashShape; valor arbitrário (não é recomputado).
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-
     /// <summary>
     /// Igual a <see cref="ProcessoSeletivoPublicavelSeeder.SemearAsync"/>, exceto que a única
     /// fase do cronograma NÃO coleta inscrição — com <c>OrigemCandidatos.InscricaoPropria</c>,
@@ -39,9 +34,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCronogramaNaoConformeAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome);
 
-        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: false)]);
+        DefinirCronogramaEEtapaDaFase(processo, [FaseDeResultadoFinal(coletaInscricao: false)]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -54,7 +49,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComFaseSemUnidadeResponsavelAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out _);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome);
 
         FaseCronograma faseSemUnidade = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
@@ -82,9 +77,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
     {
         ConfiguracaoDistribuicaoVagas distribuicao = DistribuicaoComCascataForaDoRegimeFederal(db);
 
-        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder, distribuicao: [distribuicao]);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, distribuicao: [distribuicao]);
 
-        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
+        DefinirCronogramaEEtapaDaFase(processo, [FaseDeResultadoFinal(coletaInscricao: true)]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -98,8 +93,8 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComPreCanonicalizacaoNaoConformeAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder);
-        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome);
+        DefinirCronogramaEEtapaDaFase(processo, [FaseDeResultadoFinal(coletaInscricao: true)]);
 
         ExigirCertidaoComCondicionalVazia(processo);
 
@@ -122,191 +117,12 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCadastroProprioNaoConformeAsync(
         UniPlusDbContext db, string nome, bool documentoConfirmado = true)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder, definirAtendimentoEspecializado: false);
-        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, definirAtendimentoEspecializado: false);
+        DefinirCronogramaEEtapaDaFase(processo, [FaseDeResultadoFinal(coletaInscricao: true)]);
 
         return documentoConfirmado
             ? await PersistirComDocumentoConfirmadoAsync(db, processo)
             : await PersistirComDocumentoPendenteAsync(db, processo);
-    }
-
-    /// <summary>Código do tipo de etapa que a regra exige e o processo base não tem.</summary>
-    public const string TipoEtapaNaoOfertada = "ENTREVISTA_NAO_OFERTADA";
-
-    /// <summary>
-    /// Semeia uma obrigatoriedade legal universal (Story #853) que exige uma etapa que o
-    /// processo base (<see cref="ProcessoSeletivoPublicavelSeeder"/>) não tem — a publicação
-    /// recusa por <c>ProcessoSeletivo.ConformidadeLegalInsuficiente</c> com o checklist
-    /// ESTRUTURAL 100% verde (CA-05/CA-07: <c>obrigatoriedadesReprovadas</c> aparece,
-    /// <c>pendencias</c> não).
-    /// </summary>
-    /// <remarks>
-    /// O tipo de etapa exigido precisa estar vivo no cadastro de Configuração
-    /// (<see cref="TiposDeEtapaSeeder"/>): a publicação recusa antes de avaliar quando a
-    /// regra referencia código inexistente, e a recusa seria por outro motivo — a regra
-    /// ficaria inavaliável em vez de reprovada.
-    /// </remarks>
-    public static async Task<Guid> SemearObrigatoriedadeNaoAtendidaAsync(UniPlusDbContext db, string regraCodigo)
-    {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
-            CategoriaObrigatoriedade.Outros,
-            regraCodigo,
-            new EtapaObrigatoria(TipoEtapaNaoOfertada),
-            new TextoNormativo("Etapa de entrevista obrigatória (teste de integração issue #1096)", "Base legal de teste", null, null),
-            new DateOnly(2020, 1, 1),
-            null).Value!;
-
-        ObrigatoriedadeLegalRepository repository = new(db, TimeProvider.System);
-        await repository.AdicionarAsync(regra, CancellationToken.None);
-        await db.SaveChangesAsync();
-
-        return regra.Id;
-    }
-
-    private delegate FaseCronograma FaseCronogramaBuilder(bool coletaInscricao);
-
-    /// <summary>
-    /// Igual à base, com classificação baseada em ENEM que calcula a média pelos pesos por área
-    /// e uma oferta com ou sem grupo de área. Com grupo, o processo é conforme e publica; sem
-    /// ele, fica vermelho só "Grupo de área do ENEM congelado em toda oferta", e
-    /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.ConformidadeInsuficiente</c>.
-    /// </summary>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearEnemComCalculoLocalAsync(
-        UniPlusDbContext db, string nome, bool ofertaComGrupo)
-    {
-        ProcessoSeletivo processo = ProcessoBaseConforme(
-            db, nome, out FaseCronogramaBuilder faseBuilder,
-            distribuicao: [DistribuicaoAmplaPadrao(db, ofertaComGrupo ? ("TECNOLOGICA", "Tecnológica") : null)]);
-
-        DefinirClassificacaoEnem(processo, db);
-
-        AdmitirEdicaoDoEnem(processo);
-
-        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
-
-        Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)]);
-        itensResult.IsSuccess.Should().BeTrue(itensResult.Error?.Message);
-
-        return await PersistirComDocumentoConfirmadoAsync(db, processo);
-    }
-
-    private static void DefinirClassificacaoEnem(ProcessoSeletivo processo, UniPlusDbContext db)
-    {
-        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.FormulaMediaPonderada),
-            RegraArredondamento = RegraDoCatalogo(db, RegraArredondamentoCodigo.PrecisaoTruncar),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        });
-        classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        processo.DefinirClassificacao(classificacaoResult.Value!).IsSuccess.Should().BeTrue();
-
-    }
-
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao(UniPlusDbContext db, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
-    {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
-            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-    }
-
-    private static void DefinirCronogramaEEtapaDaFase(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
-    {
-        Result cronogramaResult = processo.DefinirCronogramaFases(fases, []);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
-    }
-
-    private static void DefinirEtapaDaFase(ProcessoSeletivo processo)
-    {
-        Result etapasResult = processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]);
-        etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
-    }
-
-    private static FaseCronograma FaseDeResultadoFinal(bool coletaInscricao) => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: coletaInscricao,
-            ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
-
-    private static ProcessoSeletivo ProcessoBaseConforme(
-        UniPlusDbContext db, string nome,
-        out FaseCronogramaBuilder faseBuilder,
-        bool definirAtendimentoEspecializado = true,
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
-    {
-        ProcessoSeletivo processo = ProcessoComAtendimento(nome, definirAtendimentoEspecializado);
-
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao(db)];
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, FatosDeModalidadeDeTeste.DoCatalogo);
-        distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
-
-        DefinirClassificacaoImportada(processo, db);
-
-        faseBuilder = FaseDeResultadoFinal;
-
-        DefinirTaxaSemCobranca(processo);
-        processo.DefinirCriteriosDesempate([CriterioDesempate.Criar(1, RegraDoCatalogo(db, CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
-
-        return processo;
-    }
-
-    private static ReferenciaRegra RegraDoCatalogo(UniPlusDbContext db, string codigo) =>
-        db.RolDeRegras.Single(r => r.Codigo == codigo && r.Versao == "v1").Referencia();
-
-    private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoConfirmadoAsync(
-        UniPlusDbContext db, ProcessoSeletivo processo)
-    {
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        await db.ProcessosSeletivos.AddAsync(processo);
-        await MotivosDaHomologacaoSemeados.EscolherAsync(db, processo);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
-        confirmarResult.IsSuccess.Should().BeTrue(confirmarResult.Error?.Message);
-        await db.DocumentosAPublicar.AddAsync(documento);
-
-        await db.SaveChangesAsync();
-        processo.DequeueDomainEvents();
-
-        return (processo, documento);
-    }
-
-    private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoPendenteAsync(
-        UniPlusDbContext db, ProcessoSeletivo processo)
-    {
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        await db.ProcessosSeletivos.AddAsync(processo);
-        await MotivosDaHomologacaoSemeados.EscolherAsync(db, processo);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        await db.DocumentosAPublicar.AddAsync(documento);
-
-        await db.SaveChangesAsync();
-        processo.DequeueDomainEvents();
-
-        return (processo, documento);
     }
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoComCascataForaDoRegimeFederal(UniPlusDbContext db)
@@ -320,7 +136,6 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return distribuicaoResult.Value!;
     }
 
-
     private static ModalidadeSelecionada AmplaDaOfertaNaoFederal()
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
@@ -333,7 +148,6 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return ampla;
     }
 
-
     private static ModalidadeSelecionada CotaComCascataForaDoRegimeFederal()
     {
         ModalidadeSelecionada cotaSegueCascataForaDoFederal = ModalidadeSelecionada.Criar(
@@ -345,7 +159,6 @@ internal static class ProcessoSeletivoPendenciasSeeder
             quantidadeDeclarada: 2).Value!;
         return cotaSegueCascataForaDoFederal;
     }
-
 
     private static void ExigirCertidaoComCondicionalVazia(ProcessoSeletivo processo)
     {
@@ -361,91 +174,4 @@ internal static class ProcessoSeletivoPendenciasSeeder
             [NoExigencia.CriarFolha(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);
     }
-
-
-    private static void DefinirClassificacaoLocalDoEnem(ProcessoSeletivo processo)
-    {
-        Result<ConfiguracaoClassificacao> classificacaoResult = ClassificacaoLocalDoEnem();
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
-        classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
-
-    }
-
-
-    private static void AdmitirEdicaoDoEnem(ProcessoSeletivo processo)
-    {
-        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
-        Result opcoesResult = processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!]);
-        opcoesResult.IsSuccess.Should().BeTrue(opcoesResult.Error?.Message);
-    }
-
-
-    private static void DefinirAtendimento(ProcessoSeletivo processo, bool definirAtendimentoEspecializado)
-    {
-        if (definirAtendimentoEspecializado)
-        {
-            Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
-                AtendimentoEspecializado.Criar([], [], []).Value!);
-            atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
-        }
-    }
-
-
-    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo, UniPlusDbContext db)
-    {
-        ReferenciaRegra regraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.ClassificacaoImportada);
-        ReferenciaRegra regraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = regraCalculo,
-            RegraOrdemAlocacao = regraOrdemAlocacao,
-        });
-        classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
-        classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
-    }
-
-
-    private static void DefinirTaxaSemCobranca(ProcessoSeletivo processo)
-    {
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
-        // aqui para que cada método desta classe continue isolando SÓ o defeito que se propõe
-        // a isolar (issue #1096).
-        Result taxaResult = processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!);
-        taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-    }
-
-
-    private static Result<ConfiguracaoClassificacao> ClassificacaoLocalDoEnem()
-    {
-        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        });
-        classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        return classificacaoResult;
-    }
-
-
-    private static ProcessoSeletivo ProcessoComAtendimento(string nome, bool definirAtendimentoEspecializado)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        DefinirAtendimento(processo, definirAtendimentoEspecializado);
-
-        return processo;
-    }
-
 }

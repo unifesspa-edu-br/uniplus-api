@@ -25,6 +25,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDasCotasFederaisNaConformidade;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
 public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 {
@@ -252,7 +254,6 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
                  RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
                 []).Value!).IsSuccess.Should().BeTrue();
     }
-
 
     private static ProcessoSeletivo ProcessoComReferenciaAFaseRemovida()
     {

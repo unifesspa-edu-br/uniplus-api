@@ -24,6 +24,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDasCotasFederaisNaConformidade;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoEnemComCalculoLocal;
 
 public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTests
 {
@@ -355,7 +357,6 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         }).Value!);
     }
 
-
     private static void DeclararDesempatePorAreaSemQuadro(ProcessoSeletivo processo)
     {
         ConfiguracaoClassificacao classificacao = processo.Classificacao!;
@@ -368,7 +369,6 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         propriedadeClassificacao.SetValue(processo, classificacao);
 
     }
-
 
     private static void AdicionarCriterioComAreasMalFormadas(ProcessoSeletivo processo, string[] areas)
     {
