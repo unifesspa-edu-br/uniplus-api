@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Domain.ProcessosSeletivos.OrdemCanonica;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
@@ -16,7 +17,7 @@ using Mappings;
 internal static class ProjecaoDaFaseDoCronograma
 {
     internal static IReadOnlyList<FaseCronogramaDto> ProjetarCronograma(ProcessoSeletivo processo) =>
-        [.. processo.CronogramaFases.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarFase)];
+        [.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases).Select(ProjetarFase)];
 
     internal static FaseCronogramaDto ProjetarFase(FaseCronograma fase) => new(
         fase.Id,
@@ -53,18 +54,13 @@ internal static class ProjecaoDaFaseDoCronograma
         RegraDeHomologacao: fase.RegraDeHomologacao is { } regraDeHomologacao ? ProjetarRegraDeHomologacao(regraDeHomologacao) : null);
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>
-        [.. fase.Produtos
-            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
+        [.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos)
             .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, p.Papel.ToCodigo()))];
 
-    // As bancas são ordenadas porque o código do tipo deixou de identificá-las sozinho: duas do mesmo
-    // tipo convivem na mesma fase, e sem ordem a resposta sairia na sequência arbitrária em que o EF
-    // materializou as linhas.
+    // As bancas saem na ordem canônica: duas do mesmo tipo convivem na mesma fase, e sem ordem a resposta sairia
+    // na sequência arbitrária em que o EF materializou as linhas.
     private static BancaRequeridaDto[] ProjetarBancasRequeridas(FaseCronograma fase) =>
-        [.. fase.BancasRequeridas
-            .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
-            .ThenBy(static b => b.Id)
-            .Select(ProjetarBancaRequerida)];
+        [.. OrdemCanonicaDaConfiguracao.BancasDaFase(fase.BancasRequeridas).Select(ProjetarBancaRequerida)];
 
     private static BancaRequeridaDto ProjetarBancaRequerida(BancaRequerida banca) => new(
         banca.Id,
@@ -72,8 +68,7 @@ internal static class ProjecaoDaFaseDoCronograma
         banca.Codigo,
         banca.Nome,
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
-        [.. banca.RecorteDeCompetencia
-            .OrderBy(static c => c.Codigo, StringComparer.Ordinal)
+        [.. OrdemCanonicaDaConfiguracao.RecorteDeCompetencia(banca.RecorteDeCompetencia)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);
 
     private static RegraDeHomologacaoDto ProjetarRegraDeHomologacao(RegraDeHomologacaoDasInscricoes regra) => new(
