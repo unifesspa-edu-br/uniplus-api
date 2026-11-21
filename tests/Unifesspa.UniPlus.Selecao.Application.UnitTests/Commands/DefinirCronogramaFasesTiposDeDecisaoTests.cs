@@ -81,7 +81,7 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FaseCronogramaDto dto = ProjecaoDaFaseDoCronograma.ProjetarFase(cenario.Processo.CronogramaFases.Single());
-        dto.Publicacoes.TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao, Isencao);
+        dto.Publicacoes.TiposDeDecisao.Select(static tipo => tipo.Codigo).Should().Equal(Classificacao, Heteroidentificacao, Isencao);
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

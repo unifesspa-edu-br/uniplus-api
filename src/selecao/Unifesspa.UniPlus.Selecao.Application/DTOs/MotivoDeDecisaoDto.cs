@@ -3,14 +3,17 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
-/// DTO de leitura de um motivo do cadastro único de motivos de decisão (UNI-REQ-0283). Tipo e
-/// sentido saem como código textual canônico, e não como número do enum: o contrato não muda de
+/// DTO de leitura de um motivo do cadastro único de motivos de decisão (UNI-REQ-0283). O tipo sai
+/// com código e rótulo, e o sentido como código textual canônico, e não como número do enum: o contrato não muda de
 /// significado porque alguém reordenou a declaração no C#.
 /// </summary>
 public sealed record MotivoDeDecisaoDto(
     Guid Id,
-    string Tipo,
+    CodigoComRotulo<TipoMotivoDeDecisao> Tipo,
     string Codigo,
     string Descricao,
     string? Subclassificacao,

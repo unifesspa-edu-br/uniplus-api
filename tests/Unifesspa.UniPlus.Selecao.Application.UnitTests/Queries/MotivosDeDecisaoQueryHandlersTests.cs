@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -19,7 +20,7 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
 {
     private readonly IMotivoDeDecisaoRepository _repository = Substitute.For<IMotivoDeDecisaoRepository>();
 
-    [Fact(DisplayName = "A listagem repassa o filtro e projeta tipo, subclassificação e sentido como código")]
+    [Fact(DisplayName = "A listagem repassa o filtro e projeta o tipo com código e rótulo, a subclassificação e o sentido como código")]
     public async Task Listar_RepassaFiltroEProjeta()
     {
         MotivoDeDecisao motivo = Motivo();
@@ -30,7 +31,7 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
         resultado.Items.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             motivo.Id,
-            Tipo = TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(),
+            Tipo = CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa),
             Codigo = "RENDA_ACIMA_DO_LIMITE",
             Subclassificacao = FundamentoIsencaoCodigo.CadastroUnico,
             Sentido = SentidoDoMotivoCodigo.Favoravel,
@@ -57,6 +58,7 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
             new ObterMotivoDeDecisaoQuery(motivo.Id), _repository, CancellationToken.None);
 
         lido!.Codigo.Should().Be("RENDA_ACIMA_DO_LIMITE");
+        lido.Tipo.Should().Be(CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa));
     }
 
     private async Task<ListarMotivosDeDecisaoResult> ListarAsync(FiltroDosMotivos filtro, MotivoDeDecisao motivo)

@@ -83,12 +83,12 @@ public sealed record JanelaDaEtapaDto(DateTimeOffset? Inicio, DateTimeOffset? Fi
 /// <param name="Produtos">Os atos que a etapa publica, com o papel de cada publicação.</param>
 /// <param name="EmiteParecerIndividual">Se a etapa promete parecer individual por candidato.</param>
 /// <param name="Recursos">Os recursos que a etapa admite, cada um ancorado num produto dela.</param>
-/// <param name="TiposDeDecisao">Os tipos de decisão que a etapa declara produzir, em ordem alfabética ordinal e sem repetição.</param>
+/// <param name="TiposDeDecisao">Os tipos de decisão que a etapa declara produzir, cada um com código e rótulo, em ordem alfabética ordinal do código e sem repetição.</param>
 public sealed record PublicacoesDaEtapaDto(
     IReadOnlyList<ProdutoDaEtapaDto> Produtos,
     bool EmiteParecerIndividual,
     IReadOnlyList<RecursoDaEtapaDto> Recursos,
-    IReadOnlyList<string> TiposDeDecisao);
+    IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisao);
 
 /// <summary>Projeção de leitura de <c>ItemDeAvaliacao</c>.</summary>
 public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima);

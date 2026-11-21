@@ -154,6 +154,17 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         grupo.Should().BeEquivalentTo(PublicacoesEsperadas(etapa.Recursos.Single()));
     }
 
+    [Fact(DisplayName = "Os tipos de decisão da etapa saem com código e rótulo, em ordem alfabética do código")]
+    public void ProjetarEtapa_TiposDeDecisao_SaemComCodigoERotulo()
+    {
+        IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> tipos = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(EtapaCompleta()).Publicacoes.TiposDeDecisao;
+
+        tipos.Select(static t => t.Codigo).Should().Equal(
+            TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo());
+        tipos.Select(static t => t.Rotulo).Should().Equal(
+            TipoMotivoDeDecisao.Classificacao.Rotulo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Rotulo());
+    }
+
     [Fact(DisplayName = "A etapa sem janela, sem avaliação e sem escala mantém os grupos e anula só o que é ausente")]
     public void ProjetarEtapa_SemJanelaNemEscala_GruposNuncaNulos()
     {
@@ -182,7 +193,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
                 "RESULTADO_PRELIMINAR",
                 []),
         ],
-        TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]);
+        TiposDeDecisao: [CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.Classificacao), CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa)]);
 
     private static ParametrosRegraPrazoRecursoDto ParametrosEsperados() => new(
         2m,

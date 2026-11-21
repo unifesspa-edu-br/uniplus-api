@@ -54,7 +54,7 @@ internal static class ProjecaoDaFaseDoCronograma
         ProduzResultado: fase.ProduzResultado,
         EmiteParecerIndividual: fase.EmiteParecerIndividual,
         RegraRecurso: fase.RegraRecurso is { } regraRecurso ? ProjetarRegraDeRecurso(regraRecurso) : null,
-        TiposDeDecisao: [.. fase.TiposDeDecisao.Select(static tipo => tipo.Codigo())],
+        TiposDeDecisao: [.. fase.TiposDeDecisao.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
         RegraDeHomologacao: fase.RegraDeHomologacao is { } regraDeHomologacao ? ProjetarRegraDeHomologacao(regraDeHomologacao) : null);
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>

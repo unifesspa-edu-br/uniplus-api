@@ -123,12 +123,12 @@ public sealed record CronogramaDaFaseDto(
 /// </param>
 /// <param name="EmiteParecerIndividual">Se a fase emite parecer individual.</param>
 /// <param name="RegraRecurso">A regra de recurso da fase, ou nulo quando a fase não admite recurso.</param>
-/// <param name="TiposDeDecisao">Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</param>
+/// <param name="TiposDeDecisao">Os tipos de decisão que a fase declara produzir, cada um com código e rótulo, em ordem alfabética ordinal do código e sem repetição.</param>
 /// <param name="RegraDeHomologacao">A regra com que a fase homologa as inscrições, ou nulo quando a fase não homologa.</param>
 public sealed record PublicacoesDaFaseDto(
     IReadOnlyList<ProdutoDaFaseDto> Produtos,
     bool ProduzResultado,
     bool EmiteParecerIndividual,
     RegraRecursoFaseDto? RegraRecurso,
-    IReadOnlyList<string> TiposDeDecisao,
+    IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisao,
     RegraDeHomologacaoDto? RegraDeHomologacao);
