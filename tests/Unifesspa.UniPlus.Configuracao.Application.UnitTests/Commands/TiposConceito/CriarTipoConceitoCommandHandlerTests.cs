@@ -60,9 +60,13 @@ public sealed class CriarTipoConceitoCommandHandlerTests
     [Fact(DisplayName = "Corpo inválido acumula as violações sem consultar a unicidade nem persistir")]
     public async Task Handle_CorpoInvalido_AcumulaSemConsultarNemPersistir()
     {
-        Result<Guid> resultado = await Criar(TiposConceitoDeTeste.CriarNumerico() with { Codigo = "", Nome = "" });
+        Result<Guid> resultado = await Criar(TiposConceitoDeTeste.CriarNumerico() with
+        {
+            Codigo = "",
+            Definicao = TiposConceitoDeTeste.CriarNumerico().Definicao! with { Nome = "" },
+        });
 
-        resultado.Errors.Select(e => e.Field).Should().Equal("codigo", "nome");
+        resultado.Errors.Select(e => e.Field).Should().Equal("codigo", "definicao.nome");
         await _repository.DidNotReceive().CodigoExisteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -70,14 +74,15 @@ public sealed class CriarTipoConceitoCommandHandlerTests
     [Fact(DisplayName = "Valor nulo na lista do corpo volta como erro do índice dele, sem derrubar a requisição")]
     public async Task Handle_ValorNulo_VoltaComoErroDoIndice()
     {
-        CriarTipoConceitoCommand comando = TiposConceitoDeTeste.CriarCategorico() with
+        CriarTipoConceitoCommand categorico = TiposConceitoDeTeste.CriarCategorico();
+        CriarTipoConceitoCommand comando = categorico with
         {
-            Valores = [new ValorCategoricoCommand("DEFERIDO", "Deferido", true), null!],
+            Definicao = categorico.Definicao! with { Valores = [new ValorCategoricoCommand("DEFERIDO", "Deferido", true), null!] },
         };
 
         Result<Guid> resultado = await Criar(comando);
 
-        resultado.Errors.Select(e => e.Field).Should().Equal("valores[1].codigo", "valores[1].rotulo", "valores[1].contaComoAprovacao");
+        resultado.Errors.Select(e => e.Field).Should().Equal("definicao.valores[1].codigo", "definicao.valores[1].rotulo", "definicao.valores[1].contaComoAprovacao");
     }
 
     [Fact(DisplayName = "Corrida no índice único do código vira conflito e descarta o rastreamento")]

@@ -35,9 +35,10 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
-        FatoColetado fato = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+            .ComRotulo("Você se enquadra em alguma condição de atendimento?")
+            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(
@@ -53,9 +54,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         ProcessoSeletivo processo = ProcessoConforme();
         // Mesmo código de fato da conferência, mas TipoRenderizacao fora de {SelecaoUnica, SelecaoMultipla}
         // — a conferência só se aplica a campo com opções, que é o que fica vazio sem oferta.
-        FatoColetado fato = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Possui alguma condição de atendimento?",
-            TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0).ComRotulo("Possui alguma condição de atendimento?").Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(

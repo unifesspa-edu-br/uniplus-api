@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Services;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -131,34 +132,24 @@ public static class PredicadoDnfValidador
         return operadorResult.IsFailure ? (operadorResult, null) : ValidarValor(condicao, descritor, dominiosDinamicos);
     }
 
-    private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor)
-    {
-        // Story #916: DIFERENTE acompanha IGUAL em todo domínio onde IGUAL já vale — inclusive
-        // booleano/numérico (a letra da spec: "DIFERENTE só onde IGUAL vale", sem exceção de
-        // domínio). NAO_EM acompanha EM, que só vale nos dois ramos categóricos — booleano e
-        // numérico nunca tiveram EM.
-        return OperadorCompativel(condicao.Operador, descritor.TipoDominio)
+    private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor) =>
+        OperadoresDoFato.Admite(descritor.TipoDominio, condicao.Operador)
             ? Result.Success()
-            : Result.Failure(new DomainError(
-                PredicadoDnfErrorCodes.OperadorIncompativelComDominio,
-                $"O operador {condicao.Operador} não é compatível com o domínio {descritor.TipoDominio} do fato '{condicao.Fato}'."));
+            : Result.Failure(new DomainError(PredicadoDnfErrorCodes.OperadorIncompativelComDominio, MensagemDoOperadorIncompativel(condicao, descritor)));
+
+    private static string MensagemDoOperadorIncompativel(CondicaoDnf condicao, DescritorFatoCandidato descritor)
+    {
+        string admitidos = string.Join(", ", OperadoresDoFato.Admitidos(descritor.TipoDominio).Select(static o => o.Codigo()));
+        return $"O operador {condicao.Operador.Codigo()} não é compatível com o fato '{condicao.Fato}', de domínio {DominioPorExtenso(descritor.TipoDominio)}. "
+            + $"Os operadores admitidos são {admitidos}.";
     }
 
-    private static bool OperadorCompativel(Operador operador, TipoDominioFato dominio) => dominio switch
+    private static string DominioPorExtenso(TipoDominioFato dominio) => dominio switch
     {
-        TipoDominioFato.Booleano => OperadorBooleano(operador),
-        TipoDominioFato.Numerico => OperadorNumerico(operador),
-        TipoDominioFato.CategoricoEstatico or TipoDominioFato.CategoricoDinamico => OperadorCategorico(operador),
-        _ => false,
+        TipoDominioFato.Booleano => "booleano",
+        TipoDominioFato.Numerico => "numérico",
+        _ => "categórico",
     };
-
-    private static bool OperadorBooleano(Operador operador) => operador is Operador.Igual or Operador.Diferente;
-
-    private static bool OperadorNumerico(Operador operador) =>
-        OperadorBooleano(operador) || operador is Operador.MaiorIgual or Operador.MenorIgual;
-
-    private static bool OperadorCategorico(Operador operador) =>
-        OperadorBooleano(operador) || operador is Operador.Em or Operador.NaoEm;
 
     private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ValidarValor(
         CondicaoDnf condicao,

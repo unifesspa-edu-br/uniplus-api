@@ -168,10 +168,11 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     private static CopiaDeModeloDeFormulario Copia(FinalidadeFormulario finalidade, params FatoColetado[] itens) =>
         new(finalidade, "Formulário", FormularioDeTeste.Etapas(), itens, [], [], [], ModeloId, "INSCRICAO_MEDICINA");
 
-    private static FatoColetado Item(string fato, int ordem, string? exibidoQuando = null) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,
-        exibidoQuando is null ? null : [CondicaoPrecondicaoFato.Criar(0, exibidoQuando, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-        etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado Item(string fato, int ordem, string? exibidoQuando = null) => FatoColetadoDeTeste.Coletando(fato, ordem)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(exibidoQuando is null ? null : ExibicaoDeTeste.Quando(exibidoQuando, Operador.Igual, true))
+        .NaSecao(FormularioDeTeste.Secao)
+        .Construir();
 
     private static ConfiguracaoDerivacaoFato Derivacao(string fato, string citado) => ConfiguracaoDerivacaoFato.Criar(
         fato,

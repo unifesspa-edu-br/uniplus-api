@@ -333,20 +333,18 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     }
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
-    private static DefinicaoFormulario DefinicaoDoFormularioDaInscricao(PredicadoDnf? exibicaoDaFamilia)
-    {
-        string etapa = DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao);
-
-        return new DefinicaoFormulario(
+    private static DefinicaoFormulario DefinicaoDoFormularioDaInscricao(PredicadoDnf? exibicaoDaFamilia) =>
+        new(
             [new DefinicaoEtapa(
-                etapa,
+                DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao),
                 null,
                 [new DefinicaoItem(BaixaRenda, null, Obrigatoriedade.Sempre, []), new DefinicaoItem(PediuFator, null, Obrigatoriedade.Sempre, [])],
-                [new DefinicaoGrupo(
-                    Familia, exibicaoDaFamilia, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])])])],
+                [DefinicaoDoGrupoDaFamilia(exibicaoDaFamilia)])],
             [],
             []);
-    }
+
+    private static DefinicaoGrupo DefinicaoDoGrupoDaFamilia(PredicadoDnf? exibicao) => new(
+        Familia, exibicao, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false);
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
     private static ConfiguracaoAvaliavel ComRaizes(IReadOnlyList<NoExigencia> raizes, PredicadoDnf? exibicaoDaFamilia = null) =>
@@ -355,16 +353,29 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             ArvoreExigenciasCongelada.DeGrafoReidratado(raizes),
             [Campo(BaixaRenda), Campo(PediuFator)],
-            [GrupoColetado.Criar(Familia, 1, Secao, "Família", 0, null, null, Obrigatoriedade.Sempre, [Campo(RendaDoMembro, etapa: null)], FinalidadeFormulario.Inscricao).Value!],
+            [GrupoDaFamilia()],
             [],
             [FaseDaInscricao, FaseDaHabilitacao],
             [Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao), Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);
 
+    private static GrupoColetado GrupoDaFamilia() =>
+        GrupoColetadoDeTeste.Agrupando(Familia, 1)
+            .NaSecao(Secao)
+            .ComRotulo("Família")
+            .ComOcorrencias(0, null)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(Campo(RendaDoMembro, etapa: null))
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
+
     /// <param name="etapa">A seção do campo; o subitem de grupo segue a do grupo, e não tem a sua.</param>
     private static FatoColetado Campo(string fato, string? etapa = Secao) =>
-        FatoColetado.Criar(
-            fato, 0, $"Rótulo de {fato}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "PESSOAL",
-            etapaCodigo: etapa, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, 0)
+            .ComRotulo($"Rótulo de {fato}")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(etapa)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         DocumentoExigido.Criar(

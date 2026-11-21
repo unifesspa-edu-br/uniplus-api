@@ -10,10 +10,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Desfecho = (bool Aprovada, string? Motivo, string? Aviso);
+
 /// <summary>
 /// Avalia um conjunto de <see cref="ObrigatoriedadeLegal"/> já resolvido
 /// (vigente para o tipo do processo, na data de corte) contra o estado vivo
-/// de um <see cref="ProcessoSeletivo"/> (Story #853 §3.1/§3.2). Domain
+/// de um <see cref="ProcessoSeletivo"/>. Domain
 /// service <b>puro</b>: recebe a lista de regras já filtrada pelo chamador
 /// (Application, que tem o repositório — ADR-0042) e nunca lê relógio
 /// (ADR-0068) nem I/O.
@@ -25,8 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <c>ConfiguracaoBonusRegional</c> é global ao processo, sem lista de
 /// modalidades, tornando a variante incompatível com o agregado real.
 /// <b>Correção sobre o xmldoc de <see cref="PredicadoObrigatoriedade"/></b>:
-/// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c> (ex.
-/// <see cref="Unifesspa.UniPlus.Regras.Enums.TipoDominioFatoCodigo"/>)
+/// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c>
 /// não se aplica aqui — o Roslyn não prova exaustividade de switch sobre uma
 /// hierarquia de classes/records aberta (mesmo com todo derivado
 /// <c>sealed</c>), só sobre o conjunto fechado de valores de um <c>enum</c>.
@@ -67,45 +68,37 @@ public static class AvaliadorConformidadeLegal
         ArgumentNullException.ThrowIfNull(identidades);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
-        List<RegraAvaliada> avaliadas = new(regras.Count);
-        List<string> avisos = [];
+        List<(RegraAvaliada Avaliada, string? Aviso)> resultados =
+            [.. regras.Select(regra => AvaliarRegra(processo, tipoProcessoCodigoAvaliado, identidades, fatosDeModalidade, regra))];
 
-        foreach (ObrigatoriedadeLegal regra in regras)
-        {
-            (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidades, fatosDeModalidade, regra.Predicado);
+        return new ResultadoConformidade(
+            [.. resultados.Select(static r => r.Avaliada)],
+            [.. resultados.Select(static r => r.Aviso).OfType<string>()]);
+    }
 
-            avaliadas.Add(new RegraAvaliada(
-                regra.Id,
-                regra.RegraCodigo,
-                regra.Categoria,
-                tipoProcessoCodigoAvaliado,
-                regra.Predicado,
-                aprovada,
-                motivo,
-                regra.BaseLegal,
-                regra.AtoNormativoUrl,
-                regra.PortariaInternaCodigo,
-                regra.DescricaoHumana,
-                regra.VigenciaInicio,
-                regra.VigenciaFim,
-                regra.Hash));
+    private static (RegraAvaliada Avaliada, string? Aviso) AvaliarRegra(
+        ProcessoSeletivo processo,
+        string tipoProcessoCodigoAvaliado,
+        IdentidadesDeCadastro identidades,
+        FatosDeModalidade fatosDeModalidade,
+        ObrigatoriedadeLegal regra)
+    {
+        (bool aprovada, string? motivo, string? aviso) = AvaliarPredicado(processo, identidades, fatosDeModalidade, regra.Predicado);
+        RegraAvaliada avaliada = new(
+            regra.Id, regra.RegraCodigo, regra.Categoria, tipoProcessoCodigoAvaliado, regra.Predicado,
+            aprovada, motivo, regra.BaseLegal, regra.AtoNormativoUrl, regra.PortariaInternaCodigo,
+            regra.DescricaoHumana, regra.VigenciaInicio, regra.VigenciaFim, regra.Hash);
 
-            if (aviso is not null)
-            {
-                avisos.Add($"{regra.RegraCodigo}: {aviso}");
-            }
-        }
-
-        return new ResultadoConformidade(avaliadas, avisos);
+        return (avaliada, aviso is null ? null : $"{regra.RegraCodigo}: {aviso}");
     }
 
     /// <summary>
-    /// Devolve o veredicto, um motivo nomeado quando reprova (CA-02/CA-03/CA-09 — a razão
+    /// Devolve o veredicto, um motivo nomeado quando reprova (a razão
     /// específica, não só um booleano) e, quando aplicável, uma mensagem de aviso informativo
     /// independente da aprovação — nunca lança, mesmo para payload malformado de
     /// <see cref="Customizado"/>.
     /// </summary>
-    private static (bool Aprovada, string? Motivo, string? Aviso) AvaliarPredicado(
+    private static Desfecho AvaliarPredicado(
         ProcessoSeletivo processo,
         IdentidadesDeCadastro identidades,
         FatosDeModalidade fatosDeModalidade,
@@ -122,324 +115,207 @@ public static class AvaliadorConformidadeLegal
                 $"Predicado {predicado.GetType().Name} não é uma das 7 variantes reconhecidas por este avaliador."),
         };
 
-    /// <summary>
-    /// Desfecho do confronto entre a referência que a regra cita por código e as
-    /// contrapartes congeladas no processo, decidido por identidade (ADR-0129).
-    /// </summary>
-    private enum Casamento
-    {
-        /// <summary>Alguma contraparte designa o mesmo item de catálogo que a regra exige.</summary>
-        Casa,
+    private static Desfecho Aprovada => (true, null, null);
 
-        /// <summary>
-        /// Nenhuma contraparte designa o item exigido, mas alguma carrega o mesmo código
-        /// apontando para outro item — o código foi reatribuído depois que a regra foi escrita.
-        /// </summary>
-        CodigoReatribuido,
+    private static Desfecho Reprovada(string motivo) => (false, motivo, null);
 
-        /// <summary>Nenhuma contraparte corresponde, nem por identidade nem por código.</summary>
-        NaoCasa,
-    }
+    private static string CodigoReatribuidoDepoisDaRegra => " — o código foi reatribuído depois que a regra foi escrita";
 
-    /// <summary>
-    /// Confronta o código citado pela regra com as contrapartes congeladas, decidindo por
-    /// identidade e reservando o código apenas para explicar o que houve.
-    /// </summary>
-    /// <param name="identidadeViva">Código para identificador, do cadastro vivo.</param>
-    /// <param name="codigoExigido">O que a regra cita.</param>
-    /// <param name="queSatisfazem">
-    /// Contrapartes que, casando, aprovam a regra. Nem sempre são todas: a exigência
-    /// documental só satisfaz quando cobre a modalidade incondicionalmente.
-    /// </param>
-    /// <param name="todasAsContrapartes">
-    /// Universo consultado apenas para o diagnóstico de reatribuição — uma exigência que
-    /// carrega o código mas não satisfaz ainda assim explica por que o editor a vê na tela.
-    /// </param>
-    /// <param name="origemDe">Identidade congelada da contraparte.</param>
-    /// <param name="codigoDe">Código congelado da contraparte.</param>
-    private static Casamento Casar<T>(
-        IReadOnlyDictionary<string, Guid> identidadeViva,
-        string? codigoExigido,
-        IEnumerable<T> queSatisfazem,
-        IEnumerable<T> todasAsContrapartes,
-        Func<T, Guid> origemDe,
-        Func<T, string> codigoDe)
-    {
-        // Código ausente do mapa não designa item vivo algum: não casa, e não há identidade
-        // sobre a qual diagnosticar reatribuição.
-        if (!identidadeViva.TryGetValue(codigoExigido ?? string.Empty, out Guid identidadeExigida))
-        {
-            return Casamento.NaoCasa;
-        }
-
-        if (queSatisfazem.Any(c => origemDe(c) == identidadeExigida))
-        {
-            return Casamento.Casa;
-        }
-
-        // Contraparte sem identidade não prova reatribuição: ela apenas não diz a que item
-        // pertence, e afirmar reatribuição ali seria um fato que o dado não sustenta.
-        return todasAsContrapartes.Any(c =>
-            origemDe(c) != Guid.Empty
-            && origemDe(c) != identidadeExigida
-            && string.Equals(codigoDe(c), codigoExigido, StringComparison.Ordinal))
-            ? Casamento.CodigoReatribuido
-            : Casamento.NaoCasa;
-    }
-
-    private static (bool, string?, string?) AvaliarEtapaObrigatoria(
+    private static Desfecho AvaliarEtapaObrigatoria(
         ProcessoSeletivo processo,
         IdentidadesDeCadastro identidades,
         EtapaObrigatoria predicado)
     {
-        Casamento casamento = Casar(
-            identidades.TiposEtapa,
-            predicado.TipoEtapaCodigo,
-            processo.Etapas,
-            processo.Etapas,
-            static e => e.TipoEtapa.OrigemId,
-            static e => e.TipoEtapa.Codigo);
+        Casamento casamento = CasamentoPorIdentidade.Casar(
+            identidades.TiposEtapa, predicado.TipoEtapaCodigo, processo.Etapas, processo.Etapas,
+            static e => e.TipoEtapa.OrigemId, static e => e.TipoEtapa.Codigo);
 
         return casamento switch
         {
-            Casamento.Casa => (true, null, null),
-            Casamento.CodigoReatribuido => (
-                false,
-                $"a etapa do tipo '{predicado.TipoEtapaCodigo}' é de outro tipo — o código foi reatribuído depois que a regra foi escrita",
-                null),
-            _ => (false, $"etapa do tipo '{predicado.TipoEtapaCodigo}' ausente", null),
+            Casamento.Casa => Aprovada,
+            Casamento.CodigoReatribuido => Reprovada(
+                $"a etapa do tipo '{predicado.TipoEtapaCodigo}' é de outro tipo{CodigoReatribuidoDepoisDaRegra}"),
+            _ => Reprovada($"etapa do tipo '{predicado.TipoEtapaCodigo}' ausente"),
         };
     }
 
     /// <summary>
-    /// §3.1: avalia POR OFERTA — aprova sse TODA <c>ConfiguracaoDistribuicaoVagas</c>
+    /// Avalia POR OFERTA — aprova sse TODA <c>ConfiguracaoDistribuicaoVagas</c>
     /// contém todas as modalidades exigidas. Sem nenhuma oferta cadastrada, não há
     /// o que reprovar (contraprova de indistinguibilidade do processo de
-    /// importação externa, Story #851 §3.4) — aprova vazio.
+    /// importação externa) — aprova vazio.
     /// </summary>
-    private static (bool, string?, string?) AvaliarModalidadesMinimas(
+    private static Desfecho AvaliarModalidadesMinimas(
         ProcessoSeletivo processo,
+        IdentidadesDeCadastro identidades,
+        ModalidadesMinimas predicado) =>
+        processo.DistribuicaoVagas
+            .Select(oferta => AvaliarOferta(oferta, identidades, predicado))
+            .FirstOrDefault(static desfecho => !desfecho.Aprovada, Aprovada);
+
+    private static Desfecho AvaliarOferta(
+        ConfiguracaoDistribuicaoVagas oferta,
         IdentidadesDeCadastro identidades,
         ModalidadesMinimas predicado)
     {
-        foreach (ConfiguracaoDistribuicaoVagas oferta in processo.DistribuicaoVagas)
+        (List<string> ausentes, List<string> reatribuidos) = CasamentoPorIdentidade.Classificar(
+            predicado.Codigos, identidades.Modalidades, oferta.Modalidades,
+            static m => m.ModalidadeOrigemId, static m => m.Codigo);
+        if (reatribuidos.Count > 0)
         {
-            List<string> ausentes = [];
-            List<string> reatribuidos = [];
-
-            foreach (string codigo in predicado.Codigos)
-            {
-                switch (Casar(
-                    identidades.Modalidades,
-                    codigo,
-                    oferta.Modalidades,
-                    oferta.Modalidades,
-                    static m => m.ModalidadeOrigemId,
-                    static m => m.Codigo))
-                {
-                    case Casamento.Casa:
-                        break;
-                    case Casamento.CodigoReatribuido:
-                        reatribuidos.Add(codigo);
-                        break;
-                    default:
-                        ausentes.Add(codigo);
-                        break;
-                }
-            }
-
-            if (reatribuidos.Count > 0)
-            {
-                return (
-                    false,
-                    $"na oferta {oferta.Id}, a(s) modalidade(s) {string.Join(", ", reatribuidos)} designa(m) outra modalidade — o código foi reatribuído depois que a regra foi escrita",
-                    null);
-            }
-
-            if (ausentes.Count > 0)
-            {
-                return (false, $"oferta {oferta.Id} não contém a(s) modalidade(s) {string.Join(", ", ausentes)}", null);
-            }
+            return Reprovada(
+                $"na oferta {oferta.Id}, a(s) modalidade(s) {string.Join(", ", reatribuidos)} designa(m) outra modalidade{CodigoReatribuidoDepoisDaRegra}");
         }
 
-        return (true, null, null);
+        return ausentes.Count > 0
+            ? Reprovada($"oferta {oferta.Id} não contém a(s) modalidade(s) {string.Join(", ", ausentes)}")
+            : Aprovada;
     }
 
     /// <summary>
-    /// Story #554 (PR #903, issue #548): gate real, substitui a reprovação conservadora que
-    /// vigorou enquanto o bloco <c>documentosExigidos.exigencias</c> era stub (guarda
-    /// B-01, removida junto desta task). Aprova sse existir uma <see cref="DocumentoExigido"/>
-    /// do tipo pedido que cubra a modalidade INCONDICIONALMENTE.
+    /// Aprova sse existir uma <see cref="DocumentoExigido"/> do tipo pedido que cubra a modalidade
+    /// INCONDICIONALMENTE. Modalidade não ofertada em nenhuma oferta do processo: nada a exigir, aprova
+    /// vazio (mesmo espírito de <see cref="AvaliarModalidadesMinimas"/> sem nenhuma oferta cadastrada).
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// "Incondicionalmente" é a parte que faz este gate diferente do resolvedor de
-    /// exigências documentais (que avalia contra um candidato REAL, com todos os fatos
-    /// dele resolvidos): aqui não há candidato — só a modalidade em si. Uma exigência
-    /// GERAL cobre qualquer modalidade, por definição. Uma CONDICIONAL só cobre a
-    /// modalidade avaliada se o predicado DNF casar usando <b>somente</b> os fatos cujos
-    /// valores são modalidades, todos iguais a <c>predicado.Modalidade</c> (a modalidade de
-    /// concorrência e o grupo da convocação) — se a exigência também depender de outro
-    /// fato (ex.: <c>FAIXA_ETARIA</c>), <see cref="PredicadoDnf.Avaliar"/> trata esse fato
-    /// como ausente e reprova a cláusula (conservador, nunca lança): nem todo candidato da
-    /// modalidade seria coberto, e é exatamente essa parcialidade que a obrigação legal —
-    /// "a modalidade X DEVE exigir o documento Y", sem exceção — não admite.
-    /// </para>
-    /// <para>
-    /// Modalidade não ofertada em nenhuma oferta do processo: nada a exigir, aprova vazio
-    /// (mesmo espírito de <see cref="AvaliarModalidadesMinimas"/> sem nenhuma oferta
-    /// cadastrada).
-    /// </para>
+    /// "Incondicionalmente" é a parte que faz esta verificação diferente do resolvedor de exigências
+    /// documentais (que avalia contra um candidato REAL, com todos os fatos dele resolvidos): aqui não há
+    /// candidato — só a modalidade em si. Uma exigência GERAL cobre qualquer modalidade, por definição.
+    /// Uma CONDICIONAL só cobre a modalidade avaliada se o predicado DNF casar usando <b>somente</b> os
+    /// fatos cujos valores são modalidades, todos iguais a <c>predicado.Modalidade</c> — se a exigência
+    /// também depender de outro fato (ex.: <c>FAIXA_ETARIA</c>), <see cref="PredicadoDnf.Avaliar"/> trata
+    /// esse fato como ausente e reprova a cláusula (conservador, nunca lança): nem todo candidato da
+    /// modalidade seria coberto, e é essa parcialidade que a obrigação legal não admite. O tipo da
+    /// exigência é conferido pela IDENTIDADE congelada, e não pelo código: renomear o tipo faria a
+    /// exigência legítima deixar de casar, e reciclar o código faria outro documento passar por ele. Sem oferta
+    /// da modalidade exigida não há o que exigir, inclusive para o código reatribuído, porque a oferta que o
+    /// carrega é outra modalidade. Código de tipo ausente do mapa não designa tipo vivo algum: a conferência de
+    /// referências recusa a regra antes de chegar aqui, e a ausência apenas não casa.
     /// </remarks>
-    private static (bool, string?, string?) AvaliarDocumentoObrigatorioParaModalidade(
+    private static Desfecho AvaliarDocumentoObrigatorioParaModalidade(
         ProcessoSeletivo processo,
         IdentidadesDeCadastro identidades,
         FatosDeModalidade fatosDeModalidade,
         DocumentoObrigatorioParaModalidade predicado)
     {
-        // Sem oferta da modalidade exigida não há o que exigir. Vale também para o código
-        // reatribuído: a oferta que o carrega é outra modalidade, e cobrar o documento
-        // cobraria de uma modalidade que o processo não tem.
-        if (!identidades.Modalidades.TryGetValue(predicado.Modalidade ?? string.Empty, out Guid identidadeDaModalidade))
+        if (!identidades.Modalidades.TryGetValue(predicado.Modalidade ?? string.Empty, out Guid identidadeDaModalidade)
+            || CodigosCongeladosDaModalidade(processo, identidadeDaModalidade) is not { Length: > 0 } codigosCongelados)
         {
-            return (true, null, null);
+            return Aprovada;
         }
 
-        // O código congelado no atendimento especializado, não o da regra: uma exigência CONDICIONAL guarda a
-        // condição com o código que valia quando foi configurada, e alimentar o fato com o
-        // código novo da regra faria a cláusula não casar — reprovando exatamente o processo
-        // conforme cuja renomeação esta avaliação passou a acomodar. Atendimentos congelados em
-        // momentos diferentes podem carregar códigos diferentes para a mesma identidade;
-        // basta uma cobrir.
-        string[] codigosCongelados = [.. processo.DistribuicaoVagas
+        if (!identidades.TiposDocumento.TryGetValue(predicado.TipoDocumento ?? string.Empty, out Guid identidadeExigida))
+        {
+            return SemCoberturaIncondicional(predicado);
+        }
+
+        return CobreIncondicionalmente(processo, fatosDeModalidade, codigosCongelados, identidadeExigida)
+            ? Aprovada
+            : DiagnosticoDaFaltaDeCobertura(processo, predicado, identidadeExigida);
+    }
+
+    /// <summary>
+    /// Os códigos congelados na distribuição de vagas, não o da regra: uma exigência CONDICIONAL guarda a
+    /// condição com o código que valia quando foi configurada, e alimentar o fato com o código novo da
+    /// regra reprovaria o processo conforme cuja renomeação esta avaliação acomoda. Ofertas congeladas em
+    /// momentos diferentes podem carregar códigos diferentes para a mesma identidade; basta uma cobrir.
+    /// </summary>
+    private static string[] CodigosCongeladosDaModalidade(ProcessoSeletivo processo, Guid identidadeDaModalidade) =>
+        [.. processo.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)
             .Where(m => m.ModalidadeOrigemId == identidadeDaModalidade)
             .Select(static m => m.Codigo)
             .Distinct(StringComparer.Ordinal)];
 
-        if (codigosCongelados.Length == 0)
+    /// <summary>
+    /// Só a exigência que casa por tipo, determina o resultado (é obrigatória ou tem consequência de
+    /// indeferimento) e é certamente aplicável (<see cref="Ternario.Verdadeiro"/>) prova a cobertura: a
+    /// meramente opcional não satisfaz a obrigação legal, e o indeterminado conta como não provado.
+    /// </summary>
+    private static bool CobreIncondicionalmente(
+        ProcessoSeletivo processo,
+        FatosDeModalidade fatosDeModalidade,
+        string[] codigosCongelados,
+        Guid identidadeExigida) =>
+        codigosCongelados.Any(codigo =>
         {
-            return (true, null, null);
-        }
-
-        // Achado de revisão (Story #554, PR #903): uma exigência que casa por tipo e cobre a
-        // modalidade incondicionalmente, mas não DeterminaResultado() (não é obrigatória
-        // nem tem consequência de indeferimento), é meramente opcional — não satisfaz a
-        // obrigação legal "a modalidade X DEVE exigir o documento Y".
-        // Story #916: AplicavelPara agora é ternário — só Verdadeiro (certamente aplicável)
-        // prova cobertura incondicional; Indeterminado conta como "não provado", mesma
-        // conclusão que Falso já dava, sem mudança de comportamento observável aqui.
-        // A regra cita o tipo por código; a exigência congelou a IDENTIDADE do tipo no
-        // momento em que foi configurada. Casar pelo código compararia dois retratos
-        // tirados em instantes diferentes de algo que muda: renomear o tipo faria a
-        // exigência legítima deixar de casar, e reciclar o código faria um documento
-        // diferente passar por ele.
-        //
-        // Um código ausente do mapa não designa tipo vivo algum. A conferência de
-        // referências recusa a regra antes de chegar aqui, e na consulta pública ela já
-        // vem marcada como inavaliável — aqui a ausência apenas não casa, sem inventar
-        // diagnóstico sobre uma identidade que não existe.
-        if (!identidades.TiposDocumento.TryGetValue(predicado.TipoDocumento ?? string.Empty, out Guid identidadeExigida))
-        {
-            return (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
-        }
-
-        bool cobertaIncondicionalmente = codigosCongelados.Any(codigo =>
-        {
-            // Só os fatos cujos valores são modalidades entram, todos com a modalidade avaliada:
-            // quem foi convocado nela também concorre nela. Na publicação não há candidato, e
-            // todo outro fato é legitimamente desconhecido. Ausência resolve INDETERMINADO, que
-            // aqui significa "cobertura não provada" — o que se quer. Materializá-los como
-            // NAO_APLICAVEL faria a cláusula colapsar em FALSO e afirmaria algo que não se sabe.
-            FatoResolvido modalidade = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(codigo));
-            Dictionary<string, FatoResolvido> fatoDaModalidade = fatosDeModalidade.Codigos
-                .ToDictionary(static fato => fato, _ => modalidade, StringComparer.Ordinal);
+            Dictionary<string, FatoResolvido> fatos = FatosDaModalidade(fatosDeModalidade, codigo);
 
             return processo.DocumentosExigidos.Any(e =>
                 e.TipoDocumentoOrigemId == identidadeExigida
                 && e.DeterminaResultado()
-                && e.AplicavelPara(fatoDaModalidade) == Ternario.Verdadeiro);
+                && e.AplicavelPara(fatos) == Ternario.Verdadeiro);
         });
 
-        if (cobertaIncondicionalmente)
-        {
-            return (true, null, null);
-        }
+    /// <summary>
+    /// Só os fatos cujos valores são modalidades entram, todos com a modalidade avaliada: quem foi
+    /// convocado nela também concorre nela. Na publicação não há candidato, e todo outro fato é
+    /// legitimamente desconhecido: a ausência resolve INDETERMINADO, que aqui significa cobertura não
+    /// provada. Materializá-los como NAO_APLICAVEL colapsaria a cláusula em FALSO e afirmaria algo que
+    /// não se sabe.
+    /// </summary>
+    private static Dictionary<string, FatoResolvido> FatosDaModalidade(FatosDeModalidade fatosDeModalidade, string codigo)
+    {
+        FatoResolvido modalidade = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(codigo));
 
-        // Distinguir "não há exigência" de "há, mas para outro documento": a segunda só
-        // acontece quando o código foi reatribuído depois que a regra foi escrita, e
-        // mandar procurar uma exigência ausente faria o editor caçar o que está na tela.
-        // A exigência sem identidade não prova reatribuição nenhuma: ela apenas não diz a
-        // que documento pertence. Diagnosticar "o código foi reatribuído" ali seria afirmar
-        // um fato que o dado não sustenta. O decoder do envelope recusa identificador
-        // vazio e a factory também, então este é caminho residual — mas o diagnóstico
-        // errado seria pior que o genérico.
-        bool casaPeloCodigoMasNaoPelaIdentidade = processo.DocumentosExigidos.Any(e =>
-            string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
-            && e.TipoDocumentoOrigemId != Guid.Empty
-            && e.TipoDocumentoOrigemId != identidadeExigida);
-
-        return casaPeloCodigoMasNaoPelaIdentidade
-            ? (false, $"a exigência documental do tipo '{predicado.TipoDocumento}' designa outro documento — o código foi reatribuído depois que a regra foi escrita", null)
-            : (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
+        return fatosDeModalidade.Codigos.ToDictionary(static fato => fato, _ => modalidade, StringComparer.Ordinal);
     }
 
-    private static (bool, string?, string?) AvaliarDesempateDeveIncluir(ProcessoSeletivo processo, DesempateDeveIncluir predicado)
+    /// <summary>
+    /// Distingue "não há exigência" de "há, mas para outro documento": a segunda só acontece quando o
+    /// código foi reatribuído depois que a regra foi escrita. A exigência sem identidade não prova
+    /// reatribuição nenhuma, e o diagnóstico errado seria pior que o genérico.
+    /// </summary>
+    private static Desfecho DiagnosticoDaFaltaDeCobertura(
+        ProcessoSeletivo processo, DocumentoObrigatorioParaModalidade predicado, Guid identidadeExigida)
+    {
+        bool reatribuido = CasamentoPorIdentidade.CarregaOCodigoDeOutroItem(
+            processo.DocumentosExigidos, predicado.TipoDocumento, identidadeExigida,
+            static e => e.TipoDocumentoOrigemId, static e => e.TipoDocumentoCodigo);
+
+        return reatribuido
+            ? Reprovada($"a exigência documental do tipo '{predicado.TipoDocumento}' designa outro documento{CodigoReatribuidoDepoisDaRegra}")
+            : SemCoberturaIncondicional(predicado);
+    }
+
+    private static Desfecho SemCoberturaIncondicional(DocumentoObrigatorioParaModalidade predicado) =>
+        Reprovada($"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'");
+
+    private static Desfecho AvaliarDesempateDeveIncluir(ProcessoSeletivo processo, DesempateDeveIncluir predicado)
     {
         bool aprovada = processo.CriteriosDesempate.Any(
             c => string.Equals(c.Regra.Codigo, predicado.Criterio, StringComparison.Ordinal));
         return (aprovada, aprovada ? null : $"critério de desempate '{predicado.Criterio}' ausente", null);
     }
 
-    private static (bool, string?, string?) AvaliarAtendimentoDisponivel(
+    private static Desfecho AvaliarAtendimentoDisponivel(
         ProcessoSeletivo processo,
+        IdentidadesDeCadastro identidades,
+        AtendimentoDisponivel predicado) =>
+        processo.AtendimentoEspecializado is { } atendimento
+            ? AvaliarNecessidades(atendimento.TiposDeficiencia, identidades, predicado)
+            : Reprovada("nenhum atendimento especializado cadastrado");
+
+    private static Desfecho AvaliarNecessidades(
+        IReadOnlyCollection<DeficienciaAtendida> ofertados,
         IdentidadesDeCadastro identidades,
         AtendimentoDisponivel predicado)
     {
-        if (processo.AtendimentoEspecializado is null)
-        {
-            return (false, "nenhum atendimento especializado cadastrado", null);
-        }
-
-        IReadOnlyCollection<DeficienciaAtendida> ofertados = processo.AtendimentoEspecializado.TiposDeficiencia;
-        List<string> ausentes = [];
-        List<string> reatribuidos = [];
-
-        foreach (string necessidade in predicado.Necessidades)
-        {
-            switch (Casar(
-                identidades.TiposDeficiencia,
-                necessidade,
-                ofertados,
-                ofertados,
-                static t => t.TipoDeficienciaOrigemId,
-                static t => t.TipoDeficienciaCodigo))
-            {
-                case Casamento.Casa:
-                    break;
-                case Casamento.CodigoReatribuido:
-                    reatribuidos.Add(necessidade);
-                    break;
-                default:
-                    ausentes.Add(necessidade);
-                    break;
-            }
-        }
-
+        (List<string> ausentes, List<string> reatribuidos) = CasamentoPorIdentidade.Classificar(
+            predicado.Necessidades, identidades.TiposDeficiencia, ofertados,
+            static t => t.TipoDeficienciaOrigemId, static t => t.TipoDeficienciaCodigo);
         if (reatribuidos.Count > 0)
         {
-            return (
-                false,
-                $"o atendimento ofertado para {string.Join(", ", reatribuidos)} é de outro tipo de deficiência — o código foi reatribuído depois que a regra foi escrita",
-                null);
+            return Reprovada(
+                $"o atendimento ofertado para {string.Join(", ", reatribuidos)} é de outro tipo de deficiência{CodigoReatribuidoDepoisDaRegra}");
         }
 
         return ausentes.Count == 0
-            ? (true, null, null)
-            : (false, $"necessidade(s) de atendimento não ofertada(s): {string.Join(", ", ausentes)}", null);
+            ? Aprovada
+            : Reprovada($"necessidade(s) de atendimento não ofertada(s): {string.Join(", ", ausentes)}");
     }
 
-    private static (bool, string?, string?) AvaliarConcorrenciaDuplaObrigatoria(ProcessoSeletivo processo)
+    private static Desfecho AvaliarConcorrenciaDuplaObrigatoria(ProcessoSeletivo processo)
     {
         bool aprovada = RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(processo.Declaracao());
         return (aprovada, aprovada ? null : "nenhuma modalidade de cota reservada (CotaReservada) cadastrada", null);

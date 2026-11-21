@@ -26,11 +26,13 @@ public sealed class ResolvedorEstadoFatosTests
 
     private static JsonElement Cor(string valor) => JsonSerializer.SerializeToElement(valor);
 
-    private static CondicaoPrecondicaoFato Cond(string fato, Operador operador, JsonElement valor) =>
-        CondicaoPrecondicaoFato.Criar(0, fato, operador, valor).Value!;
+    private static (string Fato, Operador Operador, object Valor) Cond(string fato, Operador operador, JsonElement valor) => (fato, operador, valor);
 
-    private static FatoColetado Fato(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado Fato(string codigo, int ordem, params (string Fato, Operador Operador, object Valor)[] condicoes) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(condicoes.Length == 0 ? null : ExibicaoDeTeste.QuandoTodas(condicoes))
+            .Construir();
 
     /// <summary>
     /// A tabela normativa de coleta. O gate de escola pública abre as subcotas; a dimensão PcD é a
@@ -42,21 +44,20 @@ public sealed class ResolvedorEstadoFatosTests
         Fato("PCD", 0),
         Fato("EGRESSO_ESCOLA_PUBLICA", 1),
         Fato("CONCORRER_PCD", 2, Cond("PCD", Operador.Igual, Sim)),
-        Fato("CONCORRER_EP", 3, Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim)),
-        Fato("COR_RACA", 4, Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim)),
-        Fato("CONCORRER_PPI", 5,
-            Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim),
-            Cond("COR_RACA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "INDIGENA", "PRETA", "PARDA" }))),
-        Fato("QUILOMBOLA", 6,
-            Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim),
-            Cond("COR_RACA", Operador.Diferente, Cor("INDIGENA"))),
-        Fato("CONCORRER_Q", 7,
-            Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim),
-            Cond("QUILOMBOLA", Operador.Igual, Sim)),
-        Fato("BAIXA_RENDA", 8, Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim)),
-        Fato("CONCORRER_RENDA", 9,
-            Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim),
-            Cond("BAIXA_RENDA", Operador.Igual, Sim)),
+        .. SubcotasDoGateDeEscolaPublica(),
+    ];
+
+    private static (string Fato, Operador Operador, object Valor) EgressoDeEscolaPublica() => Cond("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim);
+
+    private static FatoColetado[] SubcotasDoGateDeEscolaPublica() =>
+    [
+        Fato("CONCORRER_EP", 3, EgressoDeEscolaPublica()),
+        Fato("COR_RACA", 4, EgressoDeEscolaPublica()),
+        Fato("CONCORRER_PPI", 5, EgressoDeEscolaPublica(), Cond("COR_RACA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "INDIGENA", "PRETA", "PARDA" }))),
+        Fato("QUILOMBOLA", 6, EgressoDeEscolaPublica(), Cond("COR_RACA", Operador.Diferente, Cor("INDIGENA"))),
+        Fato("CONCORRER_Q", 7, EgressoDeEscolaPublica(), Cond("QUILOMBOLA", Operador.Igual, Sim)),
+        Fato("BAIXA_RENDA", 8, EgressoDeEscolaPublica()),
+        Fato("CONCORRER_RENDA", 9, EgressoDeEscolaPublica(), Cond("BAIXA_RENDA", Operador.Igual, Sim)),
     ];
 
     /// <summary>As cores ofertadas ao candidato: o vocabulário normativo inteiro.</summary>
@@ -71,12 +72,20 @@ public sealed class ResolvedorEstadoFatosTests
 
     private static IReadOnlyDictionary<string, FatoResolvido> ResolverComOferta(
         IReadOnlyDictionary<string, IReadOnlySet<string>> oferta, params (string Fato, JsonElement Valor)[] respostas) =>
+        ResolverFatos(TabelaNormativa(), respostas, oferta: oferta);
+
+    private static IReadOnlyDictionary<string, FatoResolvido> ResolverFatos(
+        IReadOnlyList<FatoColetado> fatos,
+        (string Fato, JsonElement Valor)[] respostas,
+        IReadOnlyList<FormularioProcesso>? formularios = null,
+        IReadOnlyList<DerivacaoDoFato>? derivacoes = null,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? oferta = null) =>
         ResolvedorEstadoFatos.Resolver(
-            [],
-            TabelaNormativa(),
-            [],
+            formularios ?? [],
+            fatos,
+            derivacoes ?? [],
             respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal),
-            oferta);
+            oferta ?? new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
 
     [Fact(DisplayName = "Valor fora da oferta do processo não vale e nunca satisfaz condição")]
     public void RespostaForaDaOferta_NaoSatisfazCondicao()
@@ -95,24 +104,24 @@ public sealed class ResolvedorEstadoFatosTests
             EstadoFato.Resolvido, "a condição cita INDIGENA, mas o valor não é ofertado e por isso não a satisfaz");
     }
 
-    [Fact(DisplayName = "Resposta fora das opções vigentes, condicionadas à resposta anterior, não vale")]
-    public void RespostaForaDasOpcoesVigentes_NaoVale()
+    private static FatoColetado CorRacaComOpcoesPorEgresso()
     {
         PredicadoDnf egresso = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!)]).Value!;
-        FatoColetado[] fatos =
-        [
-            Fato("EGRESSO_ESCOLA_PUBLICA", 0),
-            FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
-                restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])])], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ];
 
-        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
-            [],
-            fatos,
-            [],
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["COR_RACA"] = Cor("PRETA") },
-            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+        return FatoColetadoDeTeste.Coletando("COR_RACA", 1)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])]))
+            .Construir();
+    }
+
+    [Fact(DisplayName = "Resposta fora das opções vigentes, condicionadas à resposta anterior, não vale")]
+    public void RespostaForaDasOpcoesVigentes_NaoVale()
+    {
+        FatoColetado[] fatos = [Fato("EGRESSO_ESCOLA_PUBLICA", 0), CorRacaComOpcoesPorEgresso()];
+
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(fatos, [("EGRESSO_ESCOLA_PUBLICA", Nao), ("COR_RACA", Cor("PRETA"))]);
 
         estados["COR_RACA"].Estado.Should().Be(EstadoFato.Indeterminado, "PRETA só é opção para quem é egresso de escola pública");
     }
@@ -129,12 +138,7 @@ public sealed class ResolvedorEstadoFatosTests
             Fato("CONCORRER_EP", 1, Cond("MODALIDADE", Operador.Igual, Cor("LB_EP"))),
         ];
 
-        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
-            [],
-            fatos,
-            [modalidade],
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao },
-            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(fatos, [("EGRESSO_ESCOLA_PUBLICA", Nao)], derivacoes: [modalidade]);
 
         estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "quem não é egresso de escola pública não deriva LB_EP");
         estados.Keys.Should().BeEquivalentTo(["EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"], "o derivado é avaliado, mas não é fato coletado");
@@ -143,22 +147,20 @@ public sealed class ResolvedorEstadoFatosTests
     [Fact(DisplayName = "Seção oculta pela exibição leva os seus campos a não aplicável")]
     public void SecaoOculta_CamposNaoAplicaveis()
     {
-        FormularioProcesso formulario = FormularioComSecaoDeCotas();
-        FatoColetado[] fatos =
-        [
-            FatoColetado.Criar("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("CONCORRER_EP", 1, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "COTAS", finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ];
-
-        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
-            [formulario],
-            fatos,
-            [],
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = Nao, ["CONCORRER_EP"] = Sim },
-            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(
+            [CampoNaSecao("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", "DADOS"), CampoNaSecao("CONCORRER_EP", 1, "Concorrer", "COTAS")],
+            [("EGRESSO_ESCOLA_PUBLICA", Nao), ("CONCORRER_EP", Sim)],
+            formularios: [FormularioComSecaoDeCotas()]);
 
         estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "a seção de cotas só aparece para quem é egresso de escola pública");
     }
+
+    private static FatoColetado CampoNaSecao(string codigo, int ordem, string rotulo, string secao) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo(rotulo)
+            .NaSecao(secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static FormularioProcesso FormularioComSecaoDeCotas()
     {
@@ -173,21 +175,25 @@ public sealed class ResolvedorEstadoFatosTests
             ]).Value!;
     }
 
+    private static FatoColetado DeclaracaoDePertencimentoDaHabilitacao() => FatoColetadoDeTeste.Coletando("DECLARACAO_PERTENCIMENTO", 0)
+        .ComRotulo("Declaração")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, Cor("PRETA")))
+        .DaFinalidade(FinalidadeFormulario.Habilitacao)
+        .Construir();
+
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
     public void DoisFormularios_ResolvemJuntos()
     {
-        FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado declaracao = FatoColetado.Criar(
-            "DECLARACAO_PERTENCIMENTO", 0, "Declaração", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,
-            [Cond("COR_RACA", Operador.Igual, Cor("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
-        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
-            [],
-            [declaracao, corRaca],
-            [],
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["COR_RACA"] = Cor("BRANCA") },
-            CoresOfertadas);
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(
+            [DeclaracaoDePertencimentoDaHabilitacao(), corRaca], [("COR_RACA", Cor("BRANCA"))], oferta: CoresOfertadas);
 
         estados["COR_RACA"].Estado.Should().Be(EstadoFato.Resolvido);
         estados["DECLARACAO_PERTENCIMENTO"].Estado.Should().Be(
@@ -305,17 +311,16 @@ public sealed class ResolvedorEstadoFatosTests
         estados.Should().HaveCount(10, "o resultado tem exatamente os fatos coletados pelo processo");
     }
 
+    /// <summary>
+    /// A coleção chega embaralhada: CONCORRER_PCD (ordem 2, depende de PCD) vem ANTES de PCD (ordem 0) na lista, e
+    /// o candidato respondeu PCD = NÃO. Na ordem certa (por coleta), PCD resolve primeiro, a pré-condição
+    /// PCD IGUAL SIM avalia falso e CONCORRER_PCD é NÃO_APLICÁVEL. Na ordem errada (por coleção), CONCORRER_PCD é
+    /// avaliado com PCD ainda ausente e resolve INDETERMINADO. Os dois estados são distintos, e é isso que dá poder
+    /// de detecção ao teste.
+    /// </summary>
     [Fact(DisplayName = "O resolvedor avalia na ordem de coleta, não na ordem em que os fatos chegam na coleção")]
     public void Resolver_RespeitaOrdemDeColeta_NaoOrdemDaColecao()
     {
-        // A coleção chega embaralhada: CONCORRER_PCD (ordem 2, depende de PCD) vem ANTES de PCD
-        // (ordem 0) na lista. O candidato respondeu PCD = NÃO.
-        //
-        // Ordem CERTA (por coleta): PCD resolve primeiro, com valor NÃO; a pré-condição
-        // PCD IGUAL SIM avalia falso; CONCORRER_PCD é NÃO_APLICÁVEL.
-        // Ordem ERRADA (por coleção): CONCORRER_PCD é avaliado com PCD ainda ausente; a
-        // pré-condição fica indeterminada e CONCORRER_PCD resolve INDETERMINADO.
-        // Os dois estados são distintos — é isso que dá poder de detecção ao teste.
         IReadOnlyList<FatoColetado> embaralhado =
         [
             Fato("CONCORRER_PCD", 2, Cond("PCD", Operador.Igual, Sim)),
@@ -323,12 +328,7 @@ public sealed class ResolvedorEstadoFatosTests
             Fato("PCD", 0),
         ];
 
-        IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
-            [],
-            embaralhado,
-            [],
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["PCD"] = Nao },
-            CoresOfertadas);
+        IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(embaralhado, [("PCD", Nao)], oferta: CoresOfertadas);
 
         estados["CONCORRER_PCD"].Estado.Should().Be(
             EstadoFato.NaoAplicavel,
@@ -348,14 +348,8 @@ public sealed class ResolvedorEstadoFatosTests
     public void PerfilCompleto_TudoResolvido()
     {
         IReadOnlyDictionary<string, FatoResolvido> estados = Resolver(
-            ("PCD", Nao),
-            ("EGRESSO_ESCOLA_PUBLICA", Sim),
-            ("COR_RACA", Cor("PARDA")),
-            ("CONCORRER_EP", Nao),
-            ("CONCORRER_PPI", Sim),
-            ("QUILOMBOLA", Nao),
-            ("BAIXA_RENDA", Sim),
-            ("CONCORRER_RENDA", Sim));
+            ("PCD", Nao), ("EGRESSO_ESCOLA_PUBLICA", Sim), ("COR_RACA", Cor("PARDA")), ("CONCORRER_EP", Nao),
+            ("CONCORRER_PPI", Sim), ("QUILOMBOLA", Nao), ("BAIXA_RENDA", Sim), ("CONCORRER_RENDA", Sim));
 
         estados["CONCORRER_PPI"].Estado.Should().Be(EstadoFato.Resolvido);
         estados["CONCORRER_RENDA"].Estado.Should().Be(EstadoFato.Resolvido);

@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -35,7 +36,7 @@ public sealed partial record CodigoBaseLegalBonusRegional
             ? Result<CodigoBaseLegalBonusRegional>.Failure(new DomainError(
                 BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido,
                 "A identificação precisa ter ao menos uma letra ou um dígito para formar o código da base legal."))
-            : LimitarTamanho(ComporComOTipo(tipoInstrumento.ToCodigo(), normalizada));
+            : LimitarTamanho(ComporComOTipo(tipoInstrumento.Codigo(), normalizada));
     }
 
     /// <summary>Valida um código já formado, vindo de uma referência do documento ou do banco.</summary>

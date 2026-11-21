@@ -30,7 +30,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
     public static Result<IReadOnlyList<CondicaoGatilho>> Resolver(
         ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao)
     {
-        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(folha.Condicoes, fatos, UniversoDaFolha(processo, fatos, grupoDaRepeticao));
+        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(folha.Condicoes(), fatos, UniversoDaFolha(processo, fatos, grupoDaRepeticao));
         if (condicoes.IsFailure || condicoes.Value!.Count == 0)
         {
             return condicoes;
@@ -55,31 +55,43 @@ internal static class ConferenciaDasCondicoesDaExigencia
         }
 
         Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = Linhas(declaradas);
-        Result validacao = linhas.IsFailure ? Result.Failure(linhas.Error!) : Validar(linhas.Value!, fatos, universo);
-        if (validacao.IsFailure)
-        {
-            return Result<IReadOnlyList<CondicaoGatilho>>.Failure(validacao.Error!);
-        }
+        return linhas.IsFailure
+            ? Result<IReadOnlyList<CondicaoGatilho>>.ValidationFailure(linhas.Errors)
+            : Conferidas(linhas.Value!, fatos, universo);
+    }
 
-        return Gatilhos(linhas.Value!);
+    private static Result<IReadOnlyList<CondicaoGatilho>> Conferidas(
+        List<(int Clausula, CondicaoDnf Condicao)> linhas, FatosDoGatilho fatos, IReadOnlySet<string> universo)
+    {
+        Result validacao = Validar(linhas, fatos, universo);
+        return validacao.IsFailure
+            ? Result<IReadOnlyList<CondicaoGatilho>>.Failure(validacao.Error!)
+            : Gatilhos(linhas);
     }
 
     private static Result<List<(int Clausula, CondicaoDnf Condicao)>> Linhas(IReadOnlyList<CondicaoGatilhoInput> declaradas)
     {
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        foreach (CondicaoGatilhoInput declarada in declaradas)
+        List<FieldError> recusas = [];
+        for (int i = 0; i < declaradas.Count; i++)
         {
-            Result<CondicaoDnf> condicao = CondicaoDnf.Criar(
-                declarada.Fato, OperadorCodigo.FromCodigo(declarada.Operador), InterpretarValor(declarada.Valor));
-            if (condicao.IsFailure)
-            {
-                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Failure(condicao.Error!);
-            }
-
-            linhas.Add((declarada.Clausula, condicao.Value!));
+            LerCondicao(declaradas[i], i, linhas, recusas);
         }
 
-        return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
+        return recusas.Count > 0
+            ? Result<List<(int Clausula, CondicaoDnf Condicao)>>.ValidationFailure(recusas)
+            : Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
+    }
+
+    private static void LerCondicao(
+        CondicaoGatilhoInput declarada, int posicao, List<(int Clausula, CondicaoDnf Condicao)> linhas, List<FieldError> recusas)
+    {
+        Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(declarada.Fato, declarada.Operador, InterpretarValor(declarada.Valor));
+        recusas.AddRange(condicao.Errors.Select(recusa => recusa.NoCaminhoDe($"{AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes}[{posicao}]")));
+        if (condicao.IsSuccess)
+        {
+            linhas.Add((declarada.Clausula, condicao.Value!));
+        }
     }
 
     // O universo de fatos que o processo resolve entra aqui, e não nulo: um gatilho que cita fato que o
@@ -118,10 +130,10 @@ internal static class ConferenciaDasCondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade);
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                configuracao, c.Fato, folha.ExigidoNaFaseId, finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
+                configuracao, c.Fato, folha.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
             .FirstOrDefault(static r => r is not null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }

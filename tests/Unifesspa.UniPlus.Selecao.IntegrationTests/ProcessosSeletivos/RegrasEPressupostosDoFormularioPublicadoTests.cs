@@ -87,7 +87,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
             select (cor, faixa, trabalhaNoCampo))
         {
             EntradaAvaliacaoFormulario entradaDaAvaliacao = Respostas(corRaca, renda, rural);
-            JsonSerializer.Serialize(lido.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web).Should().Be(
+            JsonSerializer.Serialize(lido.Formulario.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web).Should().Be(
                 JsonSerializer.Serialize(esperado.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web),
                 $"o envelope preserva cada regra, a oferta e os agregados (cor {corRaca ?? "sem resposta"}, renda {renda ?? "sem resposta"}, campo {rural})");
         }
@@ -95,11 +95,11 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
     private static void ConferirConteudo(FormularioRenderizavelDto lido, RecorteDaFinalidade esperado, ProcessoSeletivo processo)
     {
-        lido.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
-        lido.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
-        lido.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
+        lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
+        lido.Formulario.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
+        lido.Formulario.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
         processo.DerivacoesEfetivas().Should().HaveCount(5);
-        lido.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
+        lido.Formulario.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
     }
 
     [Fact(DisplayName = "O município de residência sai com o rótulo e o tipo do catálogo congelados na publicação; renomear o fato depois muda o rascunho, não o publicado")]
@@ -133,10 +133,15 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
-                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("ATENDIMENTO_NO_MUNICIPIO", 1)
+                .ComRotulo("Deseja atendimento no município?")
+                .ExibidoQuando(ExibicaoDeTeste.Quando("MUNICIPIO_RESIDENCIA", Operador.Igual, "1504208"))
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
     }
 
@@ -170,16 +175,16 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
     private static void ConferirPressupostosDaHabilitacao(FormularioRenderizavelDto lido)
     {
-        lido.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
-        PressupostoRenderizavel corRaca = lido.Pressupostos[0];
+        lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
+        PressupostoRenderizavel corRaca = lido.Formulario.Pressupostos.Fatos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
         corRaca.TipoRenderizacao.Should().Be("SELECAO_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
-        PressupostoRenderizavel faixaEtaria = lido.Pressupostos[1];
+        PressupostoRenderizavel faixaEtaria = lido.Formulario.Pressupostos.Fatos[1];
         faixaEtaria.Rotulo.Should().Be("Faixa etária", "nenhum formulário a pergunta, e o rótulo é o do catálogo congelado na versão");
         faixaEtaria.TipoRenderizacao.Should().Be("NUMERO");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
-        lido.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a âncora da faixa etária é a congelada na publicação");
+        lido.Formulario.Pressupostos.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a data de referência da faixa etária é a congelada na publicação");
     }
 
     private static void DefinirHabilitacao(ProcessoSeletivo processo)
@@ -198,18 +203,22 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         Result itens = processo.DefinirItens(
         [
-            FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
+                .ComRotulo("Certificado emitido")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("DECLARACAO_MAIORIDADE", 1)
+                .ComRotulo("Declaração de maioridade")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("FAIXA_ETARIA", Operador.MaiorIgual, 18))
+                .Construir(),
         ], finalidade: FinalidadeFormulario.Habilitacao);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
     private static PressupostoRenderizavel Municipio(FormularioRenderizavelDto formulario) =>
-        formulario.Pressupostos.Single(static p => p.FatoCodigo == "MUNICIPIO_RESIDENCIA");
+        formulario.Formulario.Pressupostos.Fatos.Single(static p => p.FatoCodigo == "MUNICIPIO_RESIDENCIA");
 
     private static IReadOnlyList<FatoCandidatoView> CatalogoComOMunicipio(string nomeDoMunicipio) => CatalogoDoConjuntoBasico.Com(
     [

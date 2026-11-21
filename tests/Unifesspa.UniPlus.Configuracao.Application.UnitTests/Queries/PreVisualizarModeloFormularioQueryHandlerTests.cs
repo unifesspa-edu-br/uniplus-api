@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A pré-visualização avalia o modelo contra respostas simuladas pelo avaliador da inscrição
@@ -74,7 +75,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "A resposta que viola restrição aparece com o tipo da restrição")]
     public async Task Handle_RespostaForaDaRestricao_DevolveOTipoDaRestricao()
     {
-        ItemDoModelo idade = Item("IDADE", 0, TipoRenderizacao.Numero) with { Restricoes = [RestricoesDeValor.Faixa(0, 10).Value!] };
+        ItemDoModelo idade = Item("IDADE", 0, TipoRenderizacao.Numero).ComRestricoes([RestricoesDeValor.Faixa(0, 10).Value!]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(Modelo([idade]), respostas: new() { ["IDADE"] = 20 }))!;
 
@@ -101,7 +102,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "O termo aparece conforme as respostas")]
     public async Task Handle_TermoCondicionado_SegueAsRespostas()
     {
-        TermoDoModelo termo = new("BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), Quando("CERTIFICADO", true), Obrigatoriedade.Sempre);
+        TermoDoModelo termo = new(
+            "BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(Quando("CERTIFICADO", true), Obrigatoriedade.Sempre));
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], termos: [termo]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = false }))!;
@@ -169,7 +171,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         OpcoesPermitidas filtro = new([new OpcoesCondicionadas(Quando("CERTIFICADO", true), ["COM_CERTIFICADO"])]);
         ModeloFormulario modelo = Modelo([
             Item("CERTIFICADO", 0),
-            new ItemDoModelo("SITUACAO", 1, "DADOS", "Situação", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Nunca, null, [filtro], false),
+            Item("SITUACAO", 1, TipoRenderizacao.SelecaoUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
         ]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
@@ -183,7 +185,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_OcorrenciaSemIdentidade_Recusa()
     {
         GrupoDoModelo familia = new(
-            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 0, null, null, Obrigatoriedade.Nunca, [Subitem("TRABALHA_NO_CAMPO", 0)]);
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(0, null, IncluiCandidato: false),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [Subitem("TRABALHA_NO_CAMPO", 0)]);
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
 
         Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await ResultadoDaPreVisualizacaoAsync(
@@ -236,16 +239,17 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     }
 
     private static ItemDoModelo Item(string fato, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, "DADOS", fato, tipo, null, null, Obrigatoriedade.Sempre, exibicao, [], false);
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, tipo), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, null, fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, exibicao, [], false);
+        new(fato, ordem, null, new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
 
     private static GrupoDoModelo ComposicaoFamiliar(int minimo, int maximo) => new(
-        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", minimo, maximo, null, Obrigatoriedade.Sempre,
+        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false),
+        new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
         [Subitem("TRABALHA_NO_CAMPO", 0), Subitem("DECLARACAO_RURAL", 1, exibicao: Quando("TRABALHA_NO_CAMPO", true))]);
 
     private static IReadOnlyList<OcorrenciaRecebida> TrabalhaNoCampoEDeixaDeTrabalhar() =>

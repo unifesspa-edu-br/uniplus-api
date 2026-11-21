@@ -9,11 +9,13 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Condicoes = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Regras.Entradas.CondicaoPrecondicaoInput>>;
 using Recusa = (string Campo, string Codigo, string Mensagem);
@@ -101,7 +103,7 @@ public sealed class ConteudoLidoTests
         [ItemValido(), ElementoNulo<FatoColetadoInput>(), ItemValido()],
         [ElementoNulo<TermoExigidoInput>(), TermoValido()],
         [],
-        [GrupoValido(), GrupoValido() with { Obrigatoriedade = "TALVEZ" }, GrupoValido()],
+        [GrupoValido(), GrupoValido() with { Regras = new ExibicaoEObrigatoriedadeInput(null, new ObrigatoriedadeInput("TALVEZ")) }, GrupoValido()],
         [DocumentoValido(), ElementoNulo<DocumentoExigidoDoModeloInput>(), DocumentoValido() with { FaseCodigo = string.Empty }, DocumentoValido()]);
 
     private static EquivalencyOptions<ConteudoDoModelo> PorMembros(EquivalencyOptions<ConteudoDoModelo> opcoes) => opcoes
@@ -113,7 +115,7 @@ public sealed class ConteudoLidoTests
         [.. RecusasDasEtapas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos()];
 
     private static EtapaFormularioInput[] EtapasRecusadas() =>
-        [ElementoNulo<EtapaFormularioInput>(), new("DADOS", 1, "SECAO", null, "Dados", null, null, PredicadoSemCondicao)];
+        [ElementoNulo<EtapaFormularioInput>(), EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 1).ComTitulo("Dados").ExibidaQuando(PredicadoSemCondicao).Construir()];
 
     private static Recusa[] RecusasDasEtapas() =>
         [Malformada("etapas[0]", EntradaNula), ClausulaVazia("etapas[1].exibicao")];
@@ -121,43 +123,42 @@ public sealed class ConteudoLidoTests
     private static FatoColetadoInput[] ItensRecusados() =>
     [
         ElementoNulo<FatoColetadoInput>(),
-        Item("CERTIFICADO", 1) with
-        {
-            Precondicao = PredicadoSemCondicao,
-            Obrigatoriedade = "QUANDO",
-            PredicadoObrigatoriedade = PredicadoSemCondicao,
-            Restricoes = [ElementoNulo<RestricaoValorInput>(), new RestricaoValorInput("DESCONHECIDA")],
-            Impedimento = new ImpedimentoInput(PredicadoSemCondicao, null),
-        },
-        Item("MAIOR_IDADE", 2) with { Obrigatoriedade = "QUANDO", Impedimento = new ImpedimentoInput(null, null) },
+        Item("CERTIFICADO", 1)
+            .ExibidoQuando(PredicadoSemCondicao)
+            .ComObrigatoriedade("QUANDO", PredicadoSemCondicao)
+            .ComRestricoes(ElementoNulo<RestricaoValorInput>(), new RestricaoValorInput("DESCONHECIDA"))
+            .ComImpedimento(new ImpedimentoInput(PredicadoSemCondicao, null))
+            .Construir(),
+        Item("MAIOR_IDADE", 2).ComObrigatoriedade("QUANDO").ComImpedimento(new ImpedimentoInput(null, null)).Construir(),
     ];
 
     private static Recusa[] RecusasDosItens() =>
     [
         Malformada("itens[0]", EntradaNula),
-        ClausulaVazia("itens[1].precondicao"),
-        ClausulaVazia("itens[1].predicadoObrigatoriedade"),
-        ("itens[1].restricoes[0]", RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."),
-        ("itens[1].restricoes[1]", RestricaoValorErrorCodes.TipoDesconhecido,
+        ClausulaVazia("itens[1].regras.exibicao"),
+        ClausulaVazia("itens[1].regras.obrigatoriedade.predicado"),
+        ("itens[1].regras.restricoes[0]", RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."),
+        ("itens[1].regras.restricoes[1]", RestricaoValorErrorCodes.TipoDesconhecido,
             "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS, MUNICIPIOS_DA_UF ou FAIXA_DE_DATA."),
-        ClausulaVazia("itens[1].impedimento.quando"),
-        ("itens[2].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
-        ("itens[2].impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."),
+        ClausulaVazia("itens[1].regras.impedimento.quando"),
+        ("itens[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ("itens[2].regras.impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."),
     ];
 
     private static TermoExigidoInput[] TermosRecusados() =>
     [
         ElementoNulo<TermoExigidoInput>(),
-        new("TERMO_USO", 1, TermoId, VersaoId, PredicadoSemCondicao, "QUANDO", PredicadoSemCondicao),
-        new("TERMO_USO", 2, TermoId, VersaoId, null, "TALVEZ", null),
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 1).DaVersao(TermoId, VersaoId).ExibidoQuando(PredicadoSemCondicao)
+            .ComObrigatoriedade("QUANDO", PredicadoSemCondicao).Construir(),
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 2).DaVersao(TermoId, VersaoId).ComObrigatoriedade("TALVEZ").Construir(),
     ];
 
     private static Recusa[] RecusasDosTermos() =>
     [
         Malformada("termos[0]", EntradaNula),
-        ClausulaVazia("termos[1].exibicao"),
-        ClausulaVazia("termos[1].predicadoObrigatoriedade"),
-        ("termos[2].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ClausulaVazia("termos[1].regras.exibicao"),
+        ClausulaVazia("termos[1].regras.obrigatoriedade.predicado"),
+        ("termos[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
     ];
 
     private static GrupoColetadoInput[] GruposRecusados() =>
@@ -165,22 +166,20 @@ public sealed class ConteudoLidoTests
         ElementoNulo<GrupoColetadoInput>(),
         GrupoValido() with
         {
-            Exibicao = PredicadoSemCondicao,
-            Obrigatoriedade = "QUANDO",
-            PredicadoObrigatoriedade = PredicadoSemCondicao,
-            Subitens = [ElementoNulo<FatoColetadoInput>(), Item("MAIOR_IDADE", 1) with { Precondicao = PredicadoSemCondicao }],
+            Regras = new ExibicaoEObrigatoriedadeInput(PredicadoSemCondicao, new ObrigatoriedadeInput("QUANDO", PredicadoSemCondicao)),
+            Subitens = [ElementoNulo<FatoColetadoInput>(), Item("MAIOR_IDADE", 1).ExibidoQuando(PredicadoSemCondicao).Construir()],
         },
-        GrupoValido() with { Obrigatoriedade = "TALVEZ" },
+        GrupoValido() with { Regras = new ExibicaoEObrigatoriedadeInput(null, new ObrigatoriedadeInput("TALVEZ")) },
     ];
 
     private static Recusa[] RecusasDosGrupos() =>
     [
         Malformada("grupos[0]", EntradaNula),
-        ClausulaVazia("grupos[1].exibicao"),
-        ClausulaVazia("grupos[1].predicadoObrigatoriedade"),
+        ClausulaVazia("grupos[1].regras.exibicao"),
+        ClausulaVazia("grupos[1].regras.obrigatoriedade.predicado"),
         Malformada("grupos[1].subitens[0]", EntradaNula),
-        ClausulaVazia("grupos[1].subitens[1].precondicao"),
-        ("grupos[2].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ClausulaVazia("grupos[1].subitens[1].regras.exibicao"),
+        ("grupos[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
     ];
 
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
@@ -201,29 +200,49 @@ public sealed class ConteudoLidoTests
         Malformada("documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
     ];
 
-    private static EtapaFormularioInput EtapaValida() => new("DADOS", 0, "SECAO", null, "Dados", "Descrição", "Aviso", Quando("CERTIFICADO"));
+    private static EtapaFormularioInput EtapaValida() =>
+        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Descrição").ComAviso("Aviso").ExibidaQuando(Quando("CERTIFICADO")).Construir();
 
     private static EtapaDoModelo EtapaEsperada() =>
         new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
 
     private static FatoColetadoInput ItemValido() =>
-        new("CPF_RESPONSAVEL", 0, "CPF do responsável", "TEXTO", "QUANDO", Quando("CERTIFICADO"), "DADOS", Quando("MAIOR_IDADE"), "Ajuda", true,
-            [new RestricaoValorInput("TAMANHO_TEXTO", 11, 11)], new ImpedimentoInput(Quando("SEM_RENDA"), "Mensagem"));
+        EntradaDoFatoColetadoDeTeste.Coletando("CPF_RESPONSAVEL")
+            .ComRotulo("CPF do responsável").DoTipo("TEXTO").ComAjuda("Ajuda").PedindoConfirmacao().NaSecao("DADOS")
+            .ExibidoQuando(Quando("CERTIFICADO"))
+            .ComObrigatoriedade("QUANDO", Quando("MAIOR_IDADE"))
+            .ComRestricoes(new RestricaoValorInput("TAMANHO_TEXTO", 11, 11))
+            .ComImpedimento(new ImpedimentoInput(Quando("SEM_RENDA"), "Mensagem"))
+            .Construir();
 
     private static ItemDoModelo ItemEsperado() =>
-        new("CPF_RESPONSAVEL", 0, "DADOS", "CPF do responsável", TipoRenderizacao.Texto, "CPF", "Ajuda", Obrigatoriedade.Quando(Predicado("MAIOR_IDADE")),
-            Predicado("CERTIFICADO"), [RestricoesDeValor.Tamanho(11, 11).Value!], true, new Impedimento(Predicado("SEM_RENDA"), "Mensagem"));
+        new(
+            "CPF_RESPONSAVEL",
+            0,
+            "DADOS",
+            new ApresentacaoDoCampo("CPF do responsável", TipoRenderizacao.Texto, "Ajuda", pedirConfirmacao: true),
+            "CPF",
+            new RegrasDoCampo(
+                Predicado("CERTIFICADO"),
+                Obrigatoriedade.Quando(Predicado("MAIOR_IDADE")),
+                [RestricoesDeValor.Tamanho(11, 11).Value!],
+                new Impedimento(Predicado("SEM_RENDA"), "Mensagem")));
 
-    private static TermoExigidoInput TermoValido() => new("TERMO_USO", 0, TermoId, VersaoId, Quando("CERTIFICADO"), "NUNCA", null);
+    private static TermoExigidoInput TermoValido() =>
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).ExibidoQuando(Quando("CERTIFICADO")).ComObrigatoriedade("NUNCA").Construir();
 
-    private static TermoDoModelo TermoEsperado() => new("TERMO_USO", 0, TermoId, VersaoId, Predicado("CERTIFICADO"), Obrigatoriedade.Nunca);
+    private static TermoDoModelo TermoEsperado() =>
+        new("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Nunca));
 
     private static GrupoColetadoInput GrupoValido() =>
-        new("COMPOSICAO", 1, "Composição", "DADOS", 1, 5, Quando("CERTIFICADO"), "SEMPRE", null, [Item("MAIOR_IDADE", 0)], true);
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").NaSecao("DADOS").ComOcorrencias(1, 5).IncluindoOCandidato()
+            .ExibidoQuando(Quando("CERTIFICADO")).ComObrigatoriedade("SEMPRE").ComCampos(Item("MAIOR_IDADE", 0).Construir()).Construir();
 
     private static GrupoDoModelo GrupoEsperado() =>
-        new("COMPOSICAO", 1, "DADOS", "Composição", 1, 5, Predicado("CERTIFICADO"), Obrigatoriedade.Sempre,
-            [new ItemDoModelo("MAIOR_IDADE", 0, null, "MAIOR_IDADE", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)], true);
+        new("COMPOSICAO", 1, "DADOS", "Composição", new OcorrenciasDoGrupo(1, 5, true),
+            new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Sempre),
+            [new ItemDoModelo(
+                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO"), "REMOVE_VANTAGEM",
@@ -233,15 +252,15 @@ public sealed class ConteudoLidoTests
         new("INSCRICAO", "LAUDO_MEDICO", true, Predicado("CERTIFICADO"), "REMOVE_VANTAGEM",
             [new BaseLegalDoDocumentoDoModelo("Lei 12.711/2012", "TODOS", "VIGENTE", null)], new ExigenciaPorOpcao("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
-    private static FatoColetadoInput Item(string fato, int ordem) => new(fato, ordem, fato, "BOOLEANO", "SEMPRE", null, EtapaCodigo: null);
+    private static EntradaDoFatoColetadoDeTeste Item(string fato, int ordem) => EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem);
 
     private static Condicoes Quando(string fato) =>
-        [[new CondicaoPrecondicaoInput(fato, OperadorCodigo.Igual, JsonSerializer.SerializeToElement(true))]];
+        [[new CondicaoPrecondicaoInput(fato, Operador.Igual.Codigo(), JsonSerializer.SerializeToElement(true))]];
 
     private static PredicadoDnf Predicado(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
-    private static Recusa ClausulaVazia(string campo) => (campo, "ClausulaDnf.ClausulaVazia", ClausulaSemCondicao);
+    private static Recusa ClausulaVazia(string campo) => ($"{campo}[0]", "ClausulaDnf.ClausulaVazia", ClausulaSemCondicao);
 
     private static Recusa Malformada(string campo, string mensagem) => (campo, ModeloFormularioErrorCodes.EntradaMalformada, mensagem);
 

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
 {
@@ -25,7 +26,7 @@ internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
             new ReferenciasDoPredicado(tipoEtapaReader, modalidadeReader, tipoDocumentoReader, tipoDeficienciaReader, regraCatalogoReader));
 
     internal static ITipoEtapaReader TipoEtapaReaderAtivo() =>
-        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, false, []));
+        TipoEtapaReaderComResposta(TipoEtapaViewDeTeste.Com(Guid.CreateVersion7(), TipoEtapaCodigo).Chamado("Prova Objetiva").Construir());
 
     /// <summary>Leitor que dá por viva qualquer modalidade consultada — o caso comum dos testes de outro assunto.</summary>
     internal static IModalidadeReader ModalidadeReaderViva()

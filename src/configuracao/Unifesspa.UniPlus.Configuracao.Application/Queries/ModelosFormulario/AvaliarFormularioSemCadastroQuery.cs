@@ -47,20 +47,23 @@ public static class AvaliarFormularioSemCadastroQueryHandler
         Result<EnvioDasRespostas?> envio = EntradaDeRegras.Envio(simulacao.Envio);
         erros.AddRange(envio.Errors);
 
-        if (erros.Count > 0)
-        {
-            return Result<AvaliacaoPortavel>.ValidationFailure(erros);
-        }
+        return erros.Count > 0
+            ? Result<AvaliacaoPortavel>.ValidationFailure(erros)
+            : Avaliar(simulacao, envio.Value, ocorrencias);
+    }
 
+    private static Result<AvaliacaoPortavel> Avaliar(
+        AvaliacaoSemCadastroInput simulacao, EnvioDasRespostas? envio, IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias)
+    {
         Result<AvaliacaoFormulario> avaliacao = simulacao.Regras.Avaliar(new EntradaAvaliacaoFormulario(
             simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
             new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
             RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-            envio.Value,
+            envio,
             ocorrencias));
 
         return avaliacao.IsSuccess
             ? Result<AvaliacaoPortavel>.Success(AvaliacaoPortavel.De(avaliacao.Value!))
-            : Result<AvaliacaoPortavel>.Failure(avaliacao.Error!);
+            : Result<AvaliacaoPortavel>.ValidationFailure(avaliacao.Errors);
     }
 }

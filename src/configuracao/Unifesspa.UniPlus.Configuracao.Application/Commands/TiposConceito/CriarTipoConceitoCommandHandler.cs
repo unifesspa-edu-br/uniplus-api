@@ -23,7 +23,7 @@ public static class CriarTipoConceitoCommandHandler
 
         Result<TipoConceito> criar = TipoConceito.Criar(command.Codigo, DefinicaoDoComando.De(command));
         return criar.IsFailure
-            ? Result<Guid>.ValidationFailure(criar.Errors)
+            ? Result<Guid>.ValidationFailure(DefinicaoDoComando.NoCaminhoDaDefinicao(criar.Errors))
             : await RegistrarSeInedito(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 

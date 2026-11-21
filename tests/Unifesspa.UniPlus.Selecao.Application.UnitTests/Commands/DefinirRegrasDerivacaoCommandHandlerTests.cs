@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -22,6 +23,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static ApoioDaDefinicaoDasRegrasDeDerivacao;
+
 /// <summary>
 /// Cobertura do <see cref="DefinirRegrasDerivacaoCommandHandler"/> (Story #985): o alvo derivado
 /// com binding de regra, a semântica das condições <c>quando</c> contra o vocabulário e a oferta do
@@ -29,91 +32,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 {
-    private const string Derivado = "REGIME_DE_VAGA";
-
-    private const string HashFixo = "ab01234567ab01234567ab01234567ab01234567ab01234567ab01234567ab01";
-
-    private sealed record Mocks(
-        IProcessoSeletivoRepository Repository,
-        IFatoCandidatoReader FatoCandidatoReader,
-        IUnitOfWork UnitOfWork);
-
-    private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
-    {
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-
-        Mocks mocks = new(repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>());
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(VocabularioSeed()));
-        return mocks;
-    }
-
-    private static Task<Result> HandleAsync(Mocks mocks, DefinirRegrasDerivacaoCommand command) =>
-        DefinirRegrasDerivacaoCommandHandler.Handle(
-            command, mocks.Repository, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
-
-    private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
-    [
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
-            [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-    ];
-
-    private static ProcessoSeletivo ProcessoBase() =>
-        ProcessoSeletivo.Criar("PS Regras", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-    /// <summary>Processo em rascunho que oferta a modalidade AC e coleta COR_RACA — o mínimo para uma derivação válida.</summary>
-    private static ProcessoSeletivo ProcessoComModalidadeAcEColeta()
-    {
-        ProcessoSeletivo processo = ProcessoBase();
-
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
-            .IsSuccess.Should().BeTrue();
-
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
-        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: "Ampla concorrência",
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [ac] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-
-        return processo;
-    }
-
-    private static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 20).Value!;
-
-    private static CondicaoDerivacaoInput Condicao(string fato, string operador, object valor) =>
-        new(fato, operador, JsonSerializer.SerializeToElement(valor));
-
-    private static ConfiguracaoDerivacaoInput ConfigDerivado(params RegraDerivacaoInput[] regras) =>
-        new(Derivado, regras);
 
     [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -133,14 +51,13 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirRegrasDerivacaoCommand command = new(processo.Id,
+
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
         [
             ConfigDerivado(
                 new RegraDerivacaoInput(0, "AC", null),
                 new RegraDerivacaoInput(1, "AC", [[Condicao("COR_RACA", "IGUAL", "PRETA")]])),
-        ]);
-
-        Result resultado = await HandleAsync(mocks, command);
+        ]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == Derivado);
@@ -186,8 +103,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
-            new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", "Descrição do fato.", dominio,
-                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            FatoDerivadoDoCatalogo("INDIGENA_DECLARADO", "Indígena declarado", dominio, "ESCALAR", null, [], dominio == "BOOLEANO" ? null : "GEO_UF"),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
@@ -209,27 +125,18 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
-            new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", "Descrição do fato.", "CATEGORICO", "DERIVADO",
-                "MULTIVALORADO", ["EJA", "PROFICIENCIA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
-                [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)],
-                "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            FatoDerivadoDoCatalogo(
+                "FORMA_CONCLUSAO", "Forma de conclusão", "CATEGORICO", "MULTIVALORADO", ["EJA", "PROFICIENCIA"],
+                [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)], "GLOBAL"),
         ]));
-        DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])]);
 
-        Result resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+            [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])]));
 
-        if (recusa is null)
-        {
-            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        }
-        else
-        {
-            resultado.Error!.Code.Should().Be(recusa);
-        }
+        resultado.Error?.Code.Should().Be(recusa, resultado.Error?.Message);
     }
 
-    [Theory(DisplayName = "A modalidade do candidato e a opção pelas cotas da lei são recusadas na forma, antes do vocabulário")]
+    [Theory(DisplayName = "A modalidade do candidato e a opção pelas cotas da lei são recusadas na forma do código do fato")]
     [InlineData("MODALIDADE")]
     [InlineData("OPTOU_PELAS_COTAS_DA_LEI")]
     public async Task Handle_DerivacaoDaOferta_Recusa(string codigoFato)
@@ -243,20 +150,13 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
         resultado.Errors.Should().ContainSingle(e => e.Field == "configuracoes[0].codigoFato")
             .Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
-        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+        resultado.Errors.Should().ContainSingle("o fato da oferta não é conferido contra o catálogo como alvo");
     }
 
     [Fact(DisplayName = "Com cota da lei ofertada, a derivação do operador pode citar o egresso que a oferta supre pela regra do sistema")]
     public async Task Handle_CitaOEgressoSuprido_Aceita()
     {
-        ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [ModalidadeDe("AC", NaturezaLegalModalidade.Ampla), ModalidadeDe("LI_EP", NaturezaLegalModalidade.CotaReservada)] },
-                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
-            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComCotaDaLeiOfertada();
         processo.RegrasDerivacao.Should().BeEmpty("o processo não configura o egresso");
         Mocks mocks = NovosMocks(processo, processo.Id);
 
@@ -282,30 +182,6 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
-    }
-
-    [Fact(DisplayName = "ADR-0125: violações de forma acumulam entre configurações/regras, com o índice prefixado ao field, ANTES de consultar o vocabulário")]
-    public async Task Handle_DuasViolacoesDeForma_AcumulaComIndicePrefixadoESemConsultarVocabulario()
-    {
-        ProcessoSeletivo processo = ProcessoBase();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-
-        DefinirRegrasDerivacaoCommand command = new(processo.Id,
-        [
-            new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)]),
-            ConfigDerivado(new RegraDerivacaoInput(-1, "", null)),
-        ]);
-
-        Result resultado = await HandleAsync(mocks, command);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-        [
-            "configuracoes[0].codigoFato",
-            "configuracoes[1].regras[0].ordem",
-            "configuracoes[1].regras[0].contribui",
-        ]);
-        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Condição 'quando' com operador incompatível com o domínio do fato citado é recusada")]

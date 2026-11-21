@@ -97,7 +97,7 @@ public sealed class AdocaoDaVersaoDivulgadaPeloRascunhoTests
         await using UniPlusDbContext db = _cenario.CriarDbContext();
         Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
-        formulario.Value!.FatosColetados.Select(static c => c.FatoCodigo).Should().Contain("NOVA").And.NotContain("ANTIGA");
+        formulario.Value!.Formulario.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Contain("NOVA").And.NotContain("ANTIGA");
         Result<AvaliacaoDaInscricaoDto> avaliacao = await _cenario.AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), null);
         avaliacao.Value!.Modalidades.Situacao.Should().Be("FALTA_RESPONDER", "só a versão nova deriva a modalidade da resposta a CONCORRER_PCD");
     }

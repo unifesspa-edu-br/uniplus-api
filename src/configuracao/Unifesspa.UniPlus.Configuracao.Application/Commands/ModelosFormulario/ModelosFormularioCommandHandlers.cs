@@ -41,16 +41,17 @@ public static class CriarModeloFormularioCommandHandler
         CriarModeloFormularioCommand command, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(command.Finalidade);
+        DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
         (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
-            command.Conteudo, finalidade, command.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);
+            command.Conteudo, finalidade, descritivo.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);
         if (conteudo.Erros.Count > 0)
         {
-            erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, command.Nome, command.Descricao, command.TipoProcessoCodigo, finalidade));
+            erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo, finalidade));
             return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
         Result<ModeloFormulario> criar = ModeloFormulario.Criar(
-            command.Codigo, command.Nome, command.Descricao, finalidade, command.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
+            command.Codigo, descritivo.Nome, descritivo.Descricao, finalidade, descritivo.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
         erros.AddRange(criar.Errors);
         return erros.Count > 0 ? Result<ModeloFormulario>.ValidationFailure(erros) : criar;
     }
@@ -86,16 +87,17 @@ public static class AtualizarModeloFormularioCommandHandler
     private static async Task<Result> ConferirEAtualizarAsync(
         AtualizarModeloFormularioCommand command, ModeloFormulario modelo, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
+        DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
         (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
-            command.Conteudo, modelo.Finalidade, command.TipoProcessoCodigo, ModeloGravado.De(modelo), cancellationToken).ConfigureAwait(false);
+            command.Conteudo, modelo.Finalidade, descritivo.TipoProcessoCodigo, ModeloGravado.De(modelo), cancellationToken).ConfigureAwait(false);
         if (conteudo.Erros.Count > 0)
         {
-            erros.AddRange(ModeloFormulario.ConferirDescritivo(command.Nome, command.Descricao, command.TipoProcessoCodigo));
+            erros.AddRange(ModeloFormulario.ConferirDescritivo(descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo));
             return Result.ValidationFailure(erros);
         }
 
         Result atualizar = modelo.Atualizar(
-            command.Nome, command.Descricao, command.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
+            descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
         erros.AddRange(atualizar.Errors);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }

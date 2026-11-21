@@ -32,16 +32,25 @@ public abstract class ProtecaoDoCatalogoTestBase
 
     private protected ConfiguracaoEndpointFixture Fixture { get; }
 
-    private protected static object DefinicaoDe(JsonElement fato, string? dominio = null, string? hipoteseLegal = null) => new
+    private protected static object DefinicaoDe(JsonElement fato, string? dominio = null, string? hipoteseLegal = null)
     {
-        pontoResolucao = fato.GetProperty("pontoResolucao").GetString(),
-        classificacaoProtecao = fato.GetProperty("classificacaoProtecao").GetString(),
-        finalidadeTratamento = fato.GetProperty("finalidadeTratamento").GetString(),
-        hipoteseLegal = hipoteseLegal ?? fato.GetProperty("hipoteseLegal").GetString(),
-        dominio = dominio ?? fato.GetProperty("dominio").GetString(),
-        cardinalidade = fato.GetProperty("cardinalidade").GetString(),
-        escopo = fato.GetProperty("escopo").GetString(),
-    };
+        JsonElement definicao = fato.GetProperty("definicao");
+        JsonElement protecao = definicao.GetProperty("protecao");
+        return new
+        {
+            pontoResolucao = definicao.GetProperty("resolucao").GetProperty("pontoResolucao").GetString(),
+            classificacaoProtecao = protecao.GetProperty("classificacao").GetString(),
+            finalidadeTratamento = protecao.GetProperty("finalidade").GetString(),
+            hipoteseLegal = hipoteseLegal ?? protecao.GetProperty("hipoteseLegal").GetString(),
+            dominio = dominio ?? definicao.GetProperty("dominio").GetString(),
+            cardinalidade = definicao.GetProperty("cardinalidade").GetString(),
+            escopo = definicao.GetProperty("escopo").GetString(),
+        };
+    }
+
+    /// <summary>A proteção de dados do fato, como a resposta do fato a traz dentro da definição.</summary>
+    private protected static JsonElement ProtecaoDoFato(JsonElement fato) =>
+        fato.GetProperty("definicao").GetProperty("protecao");
 
     // Caroline, a pessoa do token padrão, é Representante do controlador e aprova a proteção do catálogo.
     private protected async Task TornarCarolineRepresentanteAsync()
@@ -130,7 +139,7 @@ public abstract class ProtecaoDoCatalogoTestBase
     {
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Fatos}/{id}");
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        return (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("fato");
     }
 
     private protected static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null)

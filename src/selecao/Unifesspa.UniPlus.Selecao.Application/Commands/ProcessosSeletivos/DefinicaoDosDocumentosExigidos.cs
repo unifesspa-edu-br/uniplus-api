@@ -21,20 +21,10 @@ internal static class DefinicaoDosDocumentosExigidos
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
-        // A forma da árvore inteira vence qualquer leitura externa (ADR-0125). O grupo da repetição vem antes
-        // dos gatilhos: um gatilho que cita campo de grupo inexistente seria recusado como fato fora do
-        // processo, e a recusa que orienta é a do grupo.
-        List<FieldError> formaErros = EscritaDaArvoreDeExigencias.Conferir(entradas);
-        if (formaErros.Count > 0)
+        Result forma = ConferirForma(processo, entradas);
+        if (forma.IsFailure)
         {
-            return Result.ValidationFailure(formaErros);
-        }
-
-        DomainError? semGrupo = ValidadorRepeticaoPorGrupo.PrimeiroGrupoInexistente(
-            ArvoreDeEntradaDasExigencias.GruposDaRepeticao(entradas), processo.GruposColetados);
-        if (semGrupo is not null)
-        {
-            return Result.Failure(semGrupo);
+            return forma;
         }
 
         ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, entradas, cadastros, cancellationToken).ConfigureAwait(false);
@@ -43,6 +33,22 @@ internal static class DefinicaoDosDocumentosExigidos
         return raizes.IsFailure
             ? Result.ValidationFailure(raizes.Errors)
             : DefinirNoProcesso(processo, mantidas, raizes.Value!, contexto.Fatos);
+    }
+
+    // A forma da árvore inteira vence qualquer leitura externa (ADR-0125). O grupo da repetição vem antes
+    // dos gatilhos: um gatilho que cita campo de grupo inexistente seria recusado como fato fora do
+    // processo, e a recusa que orienta é a do grupo.
+    private static Result ConferirForma(ProcessoSeletivo processo, IReadOnlyList<NoExigenciaInput> entradas)
+    {
+        List<FieldError> formaErros = EscritaDaArvoreDeExigencias.Conferir(entradas);
+        if (formaErros.Count > 0)
+        {
+            return Result.ValidationFailure(formaErros);
+        }
+
+        DomainError? semGrupo = ValidadorRepeticaoPorGrupo.PrimeiroGrupoInexistente(
+            ArvoreDeEntradaDasExigencias.GruposDaRepeticao(entradas), processo.GruposColetados);
+        return semGrupo is null ? Result.Success() : Result.Failure(semGrupo);
     }
 
     private static int ProximaOrdemDaRaiz(IReadOnlyList<NoExigencia> mantidas) =>

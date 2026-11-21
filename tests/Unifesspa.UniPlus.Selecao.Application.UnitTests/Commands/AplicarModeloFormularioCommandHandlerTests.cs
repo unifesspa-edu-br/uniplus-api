@@ -64,8 +64,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
             [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64))]);
-        TermoExigidoInput termo = new(
-            "CONSULTA", 0, termoId, versaoId, [[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]], "SEMPRE", null);
+        TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("CONSULTA").DaVersao(termoId, versaoId)
+            .ExibidoQuando([[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]]).Construir();
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
 
         // Na habilitação, que não tem a seção do conjunto básico, a data de nascimento é coletada só se o modelo a pede.
@@ -113,7 +113,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Item de fato desativado e termo de versão removida saem da cópia e voltam no relatório")]
     public async Task Handle_PartesQueOCatalogoMudou_DescartaERelata()
     {
-        TermoExigidoInput termo = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
+        TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
         ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Item("QUILOMBOLA", 1)], termos: [termo]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
@@ -151,11 +151,11 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "A recusa de um item aponta a posição dele no modelo, mesmo depois de um descarte")]
     public async Task Handle_RecusaDepoisDeDescarte_ApontaAPosicaoNoModelo()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Item("QUILOMBOLA", 1) with { Rotulo = "" }]);
+        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Montar("QUILOMBOLA", 1).ComRotulo("").Construir()]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.itens[1].rotulo");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.itens[1].apresentacao.rotulo");
     }
 
     [Fact(DisplayName = "A recusa do estado final aponta o termo pela posição no modelo, depois de um descarte")]
@@ -166,8 +166,9 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", "LEITURA_E_ACEITE", "hash")]);
-        TermoExigidoInput removido = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
-        TermoExigidoInput citaIsencao = new("IMAGEM", 1, termoId, versaoId, [[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]], "SEMPRE", null);
+        TermoExigidoInput removido = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
+        TermoExigidoInput citaIsencao = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(termoId, versaoId)
+            .ExibidoQuando([[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]]).Construir();
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(
             Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));

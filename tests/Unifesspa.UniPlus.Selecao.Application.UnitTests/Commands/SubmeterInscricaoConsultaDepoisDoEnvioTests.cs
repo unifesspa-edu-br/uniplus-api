@@ -73,13 +73,17 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
 
     private static GrupoColetado Locais()
     {
-        FatoColetado observacao = FatoColetado.Criar(
-            "OBSERVACAO_DE_BELEM", 1, "Observação", TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
-            [CondicaoPrecondicaoFato.Criar(0, "LOCAL_MUNICIPIO", Operador.Igual, JsonSerializer.SerializeToElement(Belem)).Value!],
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        return GrupoColetado.Criar("LOCAIS", 1, FormularioDeTeste.Secao, "Locais", minimo: 0, maximo: null,
-            exibicao: null, Obrigatoriedade.Nunca, [GrupoMunicipal().Subitens.First(), observacao], FinalidadeFormulario.Inscricao).Value!;
+        FatoColetado observacao = FatoColetadoDeTeste.Coletando("OBSERVACAO_DE_BELEM", 1)
+            .ComRotulo("Observação")
+            .DeTexto("LIVRE")
+            .ExibidoQuando(ExibicaoDeTeste.Quando("LOCAL_MUNICIPIO", Operador.Igual, Belem))
+            .Construir();
+        return GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)
+            .ComRotulo("Locais")
+            .ComOcorrencias(0, null)
+            .ComCampos(GrupoMunicipal().Subitens.First(), observacao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
     }
 
     private static DocumentoExigido DocumentoCondicional(Guid fase, string codigo, string fato, JsonElement valor) =>

@@ -133,21 +133,35 @@ internal static class CorpusEnvelopeDadosDoEdital
     /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
     /// o máximo nulo; o grupo inclui o candidato, identificado pelo parentesco.
     /// </summary>
-    internal static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 1, null,
-        PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
-        Obrigatoriedade.Nunca,
-        Ordem([
-            FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            // Classificação Identificador só para provar que o codec a carrega também em subitem de
-            // grupo — não tem relação com o conteúdo real do fato (#1857).
-            FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "TRABALHADOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!,
-            ], classificacaoProtecao: "IDENTIFICADOR", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar(CandidatoComoMembro.FatoParentesco, 2, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], permutar),
-        incluiCandidato: true).Value!;
+    internal static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 2)
+        .ComOcorrencias(1, null)
+        .IncluindoOCandidato()
+        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!)
+        .ComCampos(Ordem([TrabalhadorRural(), MenorSobGuarda(), Parentesco()], permutar))
+        .Construir();
+
+    private static FatoColetado TrabalhadorRural() => FatoColetadoDeTeste.Coletando("TRABALHADOR_RURAL", 0)
+        .ComRotulo("Trabalha no campo")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .Construir();
+
+    /// <summary>
+    /// A classificação Identificador existe só para provar que o codec a carrega também em subitem de grupo: não tem
+    /// relação com o conteúdo real do fato.
+    /// </summary>
+    private static FatoColetado MenorSobGuarda() => FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
+        .ComRotulo("Menor sob guarda")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(ExibicaoDeTeste.Quando("TRABALHADOR_RURAL", Operador.Igual, false))
+        .ComClassificacao("IDENTIFICADOR")
+        .Construir();
+
+    private static FatoColetado Parentesco() => FatoColetadoDeTeste.Coletando(CandidatoComoMembro.FatoParentesco, 2)
+        .ComRotulo("Parentesco")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .Construir();
 
     /// <summary>
     /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>

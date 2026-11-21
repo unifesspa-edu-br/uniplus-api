@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -23,23 +24,24 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
     [InlineData("CANDIDATO", false)]
     public void Conferir_CampoDeGrupo_ExigeFatoDeMembro(string escopo, bool coletavel)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FatoColetado campo = FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [campo]).Value!;
+        ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS Grupo", OrigemCandidatos.ImportacaoExterna);
+        FatoColetado campo = FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+            .ComRotulo("Parentesco")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO", 0).ComCampos(campo).Construir();
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+
+        Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, ParentescoNoCatalogo(escopo));
+
+        resultado.IsSuccess.Should().Be(coletavel);
+    }
+
+    private static Dictionary<string, FatoCandidatoView> ParentescoNoCatalogo(string escopo) =>
+        new(StringComparer.Ordinal)
         {
             ["PARENTESCO"] = new(
                 Guid.CreateVersion7(), "PARENTESCO", "Parentesco", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
                 "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: escopo, ProtecaoAprovada: true),
         };
-
-        Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogo);
-
-        resultado.IsSuccess.Should().Be(coletavel);
-    }
 }

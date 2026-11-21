@@ -30,37 +30,11 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// mais de uma fase que coleta inscrição.
 /// </param>
 public sealed record FormularioRenderizavelDto(
-    string Finalidade,
-    string? Titulo,
-    IReadOnlyList<SecaoRenderizavel> Etapas,
-    IReadOnlyList<TermoRenderizavel> Termos,
-    IReadOnlyList<CampoRenderizavel> FatosColetados,
-    IReadOnlyList<GrupoRenderizavel> Grupos,
-    FormularioPortavel Regras,
-    IReadOnlyList<PressupostoRenderizavel> Pressupostos,
-    DateOnly? DataReferenciaFatos,
-    string? FusoDoEnvio,
+    FormularioRenderizavel Formulario,
+    Guid? FaseId,
     IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental,
     DependenciasDaAvaliacaoDto? DependenciasDaAvaliacao,
-    DependenciasDaAvaliacaoDto? DependenciasDoFator,
-    Guid? FaseId)
-    : FormularioRenderizavel(Finalidade, Titulo, Etapas, Termos, FatosColetados, Grupos, Regras, Pressupostos, DataReferenciaFatos, FusoDoEnvio)
-{
-    /// <summary>O formulário do processo a partir do renderizável comum e da comprovação documental.</summary>
-    public static FormularioRenderizavelDto De(
-        FormularioRenderizavel formulario,
-        IReadOnlyList<ExigenciaDocumentalCertameDto>? comprovacaoDocumental,
-        DependenciasDaAvaliacaoDto? dependenciasDaAvaliacao,
-        DependenciasDaAvaliacaoDto? dependenciasDoFator,
-        Guid? faseId)
-    {
-        ArgumentNullException.ThrowIfNull(formulario);
-        return new(
-            formulario.Finalidade, formulario.Titulo, formulario.Etapas, formulario.Termos, formulario.FatosColetados, formulario.Grupos,
-            formulario.Regras, formulario.Pressupostos, formulario.DataReferenciaFatos, formulario.FusoDoEnvio, comprovacaoDocumental,
-            dependenciasDaAvaliacao, dependenciasDoFator, faseId);
-    }
-}
+    DependenciasDaAvaliacaoDto? DependenciasDoFator);
 
 /// <summary>Os códigos dos campos — o subitem de grupo como <c>GRUPO.FATO</c> — e dos grupos de que a avaliação da inscrição depende.</summary>
 public sealed record DependenciasDaAvaliacaoDto(IReadOnlyList<string> Fatos, IReadOnlyList<string> Grupos);

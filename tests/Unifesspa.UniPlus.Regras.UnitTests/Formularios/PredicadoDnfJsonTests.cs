@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -15,6 +16,36 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class PredicadoDnfJsonTests
 {
+    [Theory(DisplayName = "O documento escreve cada operador pelo código declarado")]
+    [InlineData(Operador.Igual, "IGUAL", "true")]
+    [InlineData(Operador.Em, "EM", "[\"A\"]")]
+    [InlineData(Operador.MaiorIgual, "MAIOR_IGUAL", "18")]
+    [InlineData(Operador.MenorIgual, "MENOR_IGUAL", "60")]
+    [InlineData(Operador.Diferente, "DIFERENTE", "true")]
+    [InlineData(Operador.NaoEm, "NAO_EM", "[\"A\"]")]
+    public void ParaJson_Operador_EscrevePeloCodigo(Operador operador, string codigo, string valor)
+    {
+        using JsonDocument documento = JsonDocument.Parse(valor);
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("FATO", operador, documento.RootElement).Value!)]).Value!;
+
+        PredicadoDnfJson.ParaJson(predicado).ToJsonString()
+            .Should().Be($$"""[[{"fato":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
+    }
+
+    [Theory(DisplayName = "O documento com operador fora do catálogo é recusado no campo do operador, sem virar operador nenhum")]
+    [InlineData("QUASE_IGUAL")]
+    [InlineData("igual")]
+    [InlineData("NENHUMA")]
+    public void DeJson_OperadorForaDoCatalogo_RecusaNoCampoDoOperador(string operador)
+    {
+        using JsonDocument documento = JsonDocument.Parse($$"""[[{"fato":"FATO","operador":"{{operador}}","valor":true}]]""");
+
+        Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(documento.RootElement);
+
+        lido.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("[0][0].operador", "CondicaoDnf.OperadorInvalido"));
+    }
+
     [Theory(DisplayName = "O predicado fora da forma esperada é recusado como forma inválida")]
     [InlineData("""{"fato":"IDADE"}""")]
     [InlineData("""[[]]""")]

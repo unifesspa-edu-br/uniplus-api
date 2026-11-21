@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -40,33 +41,38 @@ internal static class ConversaoDoPortavel
 
     private static Result<DefinicaoGrupo> Grupo(GrupoPortavel grupo)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(grupo.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(grupo.Obrigatoriedade, grupo.PredicadoObrigatoriedade, $"grupo '{grupo.Codigo}'");
+        Result<PredicadoDnf?> exibicao = DoFio(grupo.Regras?.Exibicao);
+        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(grupo.Regras?.Obrigatoriedade, $"grupo '{grupo.Codigo}'");
+        OcorrenciasDoGrupoDto ocorrencias = grupo.Ocorrencias;
         List<DefinicaoItem> subitens = [];
         DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? Ler(grupo.Subitens, Item, subitens)
-            ?? Recusa(DefinicaoGrupo.Violacao(grupo.Codigo, grupo.Minimo, grupo.Maximo));
+            ?? Recusa(DefinicaoGrupo.Violacao(grupo.Codigo, ocorrencias.Minimo, ocorrencias.Maximo));
 
         return Montado(erro, () => new DefinicaoGrupo(
-            grupo.Codigo, exibicao.Value, obrigatoriedade.Value!, grupo.Minimo, grupo.Maximo, subitens, grupo.IncluiCandidato));
+            grupo.Codigo, exibicao.Value, obrigatoriedade.Value!, ocorrencias.Minimo, ocorrencias.Maximo, subitens, ocorrencias.IncluiCandidato));
     }
 
     private static Result<DefinicaoItem> Item(ItemPortavel item)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(item.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(item.Obrigatoriedade, item.PredicadoObrigatoriedade, $"campo '{item.FatoCodigo}'");
-        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(item.Impedimento);
+        RegrasDoCampoDto? regras = item.Regras;
+        Result<PredicadoDnf?> exibicao = DoFio(regras?.Exibicao);
+        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(regras?.Obrigatoriedade, $"campo '{item.FatoCodigo}'");
+        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(LeituraDeRegras.ParaEntrada(regras?.Impedimento));
         List<RestricaoValor> restricoes = [];
         DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? impedimento.Error
-            ?? Ler(item.Restricoes, EntradaDeRegras.Restricao, restricoes) ?? Recusa(DefinicaoItem.Violacao(item.FatoCodigo, item.Formato));
+            ?? Ler(regras?.Restricoes, Restricao, restricoes) ?? Recusa(DefinicaoItem.Violacao(item.FatoCodigo, item.Formato));
 
         return Montado(erro, () => new DefinicaoItem(
             item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value, item.Formato));
     }
 
+    private static Result<RestricaoValor> Restricao(RestricaoValorDto restricao) =>
+        EntradaDeRegras.Restricao(LeituraDeRegras.ParaEntrada(restricao));
+
     private static Result<DefinicaoTermo> Termo(TermoPortavel termo)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(termo.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(termo.Obrigatoriedade, termo.PredicadoObrigatoriedade, $"termo '{termo.Codigo}'");
+        Result<PredicadoDnf?> exibicao = DoFio(termo.Regras?.Exibicao);
+        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(termo.Regras?.Obrigatoriedade, $"termo '{termo.Codigo}'");
         DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? Recusa(DefinicaoTermo.Violacao(termo.Codigo));
 
         return Montado(erro, () => new DefinicaoTermo(termo.Codigo, exibicao.Value, obrigatoriedade.Value!));
@@ -123,24 +129,23 @@ internal static class ConversaoDoPortavel
             : Result<DerivacaoDoFato>.Failure(new DomainError(FormularioPortavelErrorCodes.DerivacaoInvalida, lida.Error!.Message));
     }
 
-    private static Result<Obrigatoriedade> Obrigatoriedade(
-        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado, string dono)
+    private static Result<Obrigatoriedade> Obrigatoriedade(ObrigatoriedadeDto? obrigatoriedade, string dono)
     {
-        Result<PredicadoDnf?> quando = DoFio(predicado);
+        Result<PredicadoDnf?> quando = DoFio(obrigatoriedade?.Predicado);
         if (quando.IsFailure)
         {
             return Result<Obrigatoriedade>.Failure(quando.Error!);
         }
 
-        return EntradaDeRegras.Obrigatoriedade(token, quando.Value) is { } obrigatoriedade
-            ? Result<Obrigatoriedade>.Success(obrigatoriedade)
+        return EntradaDeRegras.Obrigatoriedade(obrigatoriedade?.Tipo, quando.Value) is { } valida
+            ? Result<Obrigatoriedade>.Success(valida)
             : Result<Obrigatoriedade>.Failure(new DomainError(
                 FormularioPortavelErrorCodes.ObrigatoriedadeInvalida,
                 $"A obrigatoriedade do {dono} é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele."));
     }
 
     /// <summary>O predicado do fio: nulo é sem condição, e a lista vazia é o predicado sem cláusula.</summary>
-    private static Result<PredicadoDnf?> DoFio(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas)
+    private static Result<PredicadoDnf?> DoFio(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? clausulas)
     {
         if (clausulas is { Count: 0 })
         {
@@ -148,7 +153,7 @@ internal static class ConversaoDoPortavel
             return Result<PredicadoDnf?>.Success(semClausula.Value);
         }
 
-        return EntradaDeRegras.Predicado(clausulas);
+        return EntradaDeRegras.Predicado(LeituraDeRegras.ParaEntrada(clausulas));
     }
 
     /// <summary>Converte cada elemento para o destino, na ordem, e devolve a primeira recusa; lista nula é lista vazia.</summary>

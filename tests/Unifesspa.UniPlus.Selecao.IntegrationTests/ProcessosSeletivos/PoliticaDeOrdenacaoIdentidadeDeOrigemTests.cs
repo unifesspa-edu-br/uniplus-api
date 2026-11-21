@@ -124,8 +124,8 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     [Fact(DisplayName = "fatosColetados: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]
     public void FatosColetados_OrdemGovernaSobreConteudo()
     {
-        FatoColetado fatoZeta = FatoColetado.Criar("ZETA_FATO", 0, "Rótulo Zeta", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado fatoAlfa = FatoColetado.Criar("ALFA_FATO", 1, "Rótulo Alfa", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fatoZeta = FatoColetadoDeTeste.Coletando("ZETA_FATO", 0).ComRotulo("Rótulo Zeta").Construir();
+        FatoColetado fatoAlfa = FatoColetadoDeTeste.Coletando("ALFA_FATO", 1).ComRotulo("Rótulo Alfa").Construir();
 
         new[] { fatoZeta, fatoAlfa }.OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal).Select(static f => f.FatoCodigo)
             .Should().Equal(["ALFA_FATO", "ZETA_FATO"]);

@@ -119,48 +119,66 @@ public sealed class EnvelopeLidoFormulariosTests
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            [FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
+                .ComRotulo("Certificado emitido")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+                .Construir()],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirItensComBolsa(ProcessoSeletivo processo)
-    {
+    private static void DefinirItensComBolsa(ProcessoSeletivo processo) =>
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            SelecaoObrigatoria("COR_RACA", 0, "Cor ou raça").Construir(),
+            SelecaoObrigatoria("RENDA", 1, "Faixa de renda familiar").Construir(),
             FatoDaBolsa(),
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
-            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            ConcorrerEscolaPublica(4),
         ], grupos: []).IsSuccess.Should().BeTrue();
-    }
+
+    private static FatoColetadoDeTeste SelecaoObrigatoria(string codigo, int ordem, string rotulo) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo(rotulo)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre);
+
+    private static FatoColetado ConcorrerEscolaPublica(int ordem) =>
+        FatoColetadoDeTeste.Coletando(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, ordem)
+            .ComRotulo("Deseja concorrer às vagas de escola pública?")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     private static FatoColetado FatoDaBolsa() =>
-        FatoColetado.Criar(
-                "TEM_BOLSA", 2, "Tem bolsa", TipoRenderizacao.Booleano,
-                Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
-                    [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
-                null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("TEM_BOLSA", 2)
+            .ComRotulo("Tem bolsa")
+            .ComObrigatoriedade(Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!))
+            .ComAjuda("Renda por pessoa da família")
+            .PedindoConfirmacao()
+            .Construir();
 
-    private static void DefinirCamposDeTexto(ProcessoSeletivo processo)
-    {
+    private static void DefinirCamposDeTexto(ProcessoSeletivo processo) =>
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            SelecaoObrigatoria("COR_RACA", 0, "Cor ou raça").Construir(),
+            SelecaoObrigatoria("RENDA", 1, "Faixa de renda familiar")
+                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("NOME_SOCIAL", 2).ComRotulo("Nome social").DeTexto("NOME_PESSOA").Construir(),
+            ObrigatorioDoTipo("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data),
+            ObrigatorioDoTipo("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco),
             FormularioDeTeste.CampoDaEdicaoDoEnem(5),
-            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            ConcorrerEscolaPublica(6),
         ], grupos: []).IsSuccess.Should().BeTrue();
-    }
+
+    private static FatoColetado ObrigatorioDoTipo(string codigo, int ordem, string rotulo, TipoRenderizacao tipo) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo(rotulo)
+            .DoTipo(tipo)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     private static void ConferirDerivacoesDoRecortePublico(VersaoConfiguracao versao)
     {

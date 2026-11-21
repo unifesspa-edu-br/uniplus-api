@@ -143,7 +143,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
 
         JsonElement campo = (await resposta.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("fatosColetados").EnumerateArray()
+            .GetProperty("formulario").GetProperty("coleta").GetProperty("itens").EnumerateArray()
             .Single(static c => c.GetProperty("fatoCodigo").GetString() == "TIPO_DEFICIENCIA");
         return [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
     }

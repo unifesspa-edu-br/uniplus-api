@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.ValueObjects;
 
-/// <summary>Projeção de leitura de uma modalidade selecionada (Story #773).</summary>
+using Unifesspa.UniPlus.Regras.Leituras;
+
+/// <summary>Projeção de leitura de uma modalidade selecionada.</summary>
 public sealed record ModalidadeSelecionadaDto(
     Guid Id,
     Guid ModalidadeOrigemId,
@@ -10,7 +12,7 @@ public sealed record ModalidadeSelecionadaDto(
     string? Descricao,
     // Os três tokens abaixo saem em UPPER_SNAKE, o vocabulário que
     // `GET /api/configuracao/modalidades` publica para a modalidade de origem: é a mesma
-    // modalidade descrita por duas rotas, e o cliente cruza as duas (issue #1294).
+    // modalidade descrita por duas rotas, e o cliente cruza as duas.
     string NaturezaLegal,
     string ComposicaoVagas,
     string? ComposicaoOrigemCodigo,
@@ -26,10 +28,10 @@ public sealed record ModalidadeSelecionadaDto(
     string BaseLegal,
     int? QuantidadeDeclarada);
 
-/// <summary>Projeção de leitura de uma referência a regra do catálogo de regras (Story #772).</summary>
+/// <summary>Projeção de leitura de uma referência a regra do catálogo de regras.</summary>
 public sealed record ReferenciaRegraDto(string Codigo, string Versao, string Hash);
 
-/// <summary>Projeção de leitura do snapshot de referência de reserva demográfica (Story #773).</summary>
+/// <summary>Projeção de leitura do snapshot de referência de reserva demográfica.</summary>
 public sealed record ReferenciaReservaDemograficaSnapshotDto(
     Guid OrigemId,
     string CensoReferencia,
@@ -41,7 +43,7 @@ public sealed record ReferenciaReservaDemograficaSnapshotDto(
 /// <summary>Grupo de área do ENEM congelado na distribuição de vagas, com código e rótulo.</summary>
 public sealed record GrupoAreaEnemSnapshotDto(string Codigo, string Rotulo);
 
-/// <summary>Projeção de leitura de uma linha do quadro de vagas (issue #848/ADR-0115).</summary>
+/// <summary>Projeção de leitura de uma linha do quadro de vagas.</summary>
 public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string ModalidadeCodigo, int Quantidade);
 
 /// <summary>As vagas que o quadro da Lei de Cotas deu à reserva legal frente ao que a lei nomina (ADR-0115).</summary>
@@ -60,8 +62,8 @@ public sealed record AjusteDoQuadroFixadoDto(
     int TotalDeVagasRetiradas);
 
 /// <summary>
-/// Projeção de leitura de <c>ConfiguracaoDistribuicaoVagas</c> (Story #773).
-/// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre materializado junto da
+/// Projeção de leitura de <c>ConfiguracaoDistribuicaoVagas</c>.
+/// O quadro de vagas é output derivado, sempre materializado junto da
 /// configuração: <see cref="Quadro"/> e o que o acompanha refletem exatamente o que foi congelado. Cada
 /// ramo descreve só o que é dele: <see cref="ConferenciaDaReservaLegal"/> na Lei de Cotas (e
 /// <see cref="PercentualDaReservaLegal"/>), <see cref="AjusteDoQuadroFixado"/> no quadro fixado no

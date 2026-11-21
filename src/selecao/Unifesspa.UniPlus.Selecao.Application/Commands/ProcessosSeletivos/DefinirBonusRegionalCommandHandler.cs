@@ -39,27 +39,40 @@ public static class DefinirBonusRegionalCommandHandler
         ArgumentNullException.ThrowIfNull(baseLegalBonusRegionalReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirAsync(command, obtido.Value!, regraCatalogoReader, baseLegalBonusRegionalReader, unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    // Fora do rascunho a recusa vem antes de consultar cadastros.
+    internal static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
+        IProcessoSeletivoRepository repositorio, Guid processoSeletivoId, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (processo is null)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(processoSeletivoId));
         }
 
-        // Fora do rascunho a recusa vem antes de consultar cadastros.
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
+        return processo.MutacaoBloqueada() is { } bloqueio
+            ? Result<ProcessoSeletivo>.Failure(bloqueio)
+            : Result<ProcessoSeletivo>.Success(processo);
+    }
 
-        return command.Aplica
+    private static async Task<Result> DefinirAsync(
+        DefinirBonusRegionalCommand command,
+        ProcessoSeletivo processo,
+        IRegraCatalogoReader regraCatalogoReader,
+        IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken) =>
+        command.Aplica
             ? await AplicarAsync(command, processo, regraCatalogoReader, baseLegalBonusRegionalReader, unitOfWork, cancellationToken)
                 .ConfigureAwait(false)
             : await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false);
-    }
 
     private static async Task<Result> NaoAplicarAsync(
         DefinirBonusRegionalCommand command,
@@ -174,13 +187,13 @@ public static class DefinirBonusRegionalCommandHandler
     }
 
     private static DomainError RecusaDaDeclaracaoIncompleta(DefinirBonusRegionalCommand command) =>
-        command.RegraCodigo is null
+        command.Regra?.Codigo is null
             ? new(
                 ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
                 "O processo que aplica o bônus regional precisa da configuração do bônus.")
             : new(
                 "ConfiguracaoBonusRegional.CamposObrigatorios",
-                "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado.");
+                "A versão da regra, o fator e a base legal são obrigatórios quando o código da regra é informado.");
 
     private static Result<T> Falha<T>(string codigo, string mensagem) => Result<T>.Failure(new DomainError(codigo, mensagem));
 
@@ -203,8 +216,8 @@ public static class DefinirBonusRegionalCommandHandler
         Guid BaseLegalId)
     {
         public static ConfiguracaoDeclarada? De(DefinirBonusRegionalCommand command) =>
-            command is { RegraCodigo: { } codigo, RegraVersao: { } versao, Fator: { } fator, BaseLegalBonusRegionalId: { } baseLegalId }
-                ? new(codigo, versao, fator, command.Teto, command.FatoElegibilidadeCodigo, baseLegalId)
+            command is { Regra: { Codigo: { } codigo, Versao: { } versao }, Fator: { } fator, BaseLegal: { } baseLegal }
+                ? new(codigo, versao, fator, command.Teto, command.FatoElegibilidadeCodigo, baseLegal.Id)
                 : null;
     }
 }

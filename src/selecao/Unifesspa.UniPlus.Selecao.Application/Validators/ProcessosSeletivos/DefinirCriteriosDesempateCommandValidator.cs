@@ -11,7 +11,7 @@ using FluentValidation;
 /// <summary>
 /// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
 /// identificador de rota; a lista de critérios e cada item não podem ser nulos — o handler
-/// desreferencia sem checagem defensiva. <c>RegraCodigo</c>/<c>RegraVersao</c> nunca chegam
+/// desreferencia sem checagem defensiva. O código e a versão da regra nunca chegam
 /// crus a <c>CriterioDesempate.Criar</c> — só alimentam a leitura do <c>regras_do_catalogo</c>
 /// (<c>IRegraCatalogoReader</c>). <c>Ordem</c> já tem equivalente completo em
 /// <c>CriterioDesempate.ValidarOrdem</c>/<c>Criar</c> e ficou fora daqui.
@@ -24,6 +24,11 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
+        RegrasDaLista();
+    }
+
+    private void RegrasDaLista()
+    {
         // Lista vazia é válida na gravação (remove todos os critérios), diferente de
         // DefinirEtapas/DefinirDistribuicaoVagas: a exigência de ao menos um critério com
         // inscrição própria é da publicação, não do rascunho.
@@ -36,22 +41,33 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
 
         // Acima do teto os itens não são conferidos aqui: a lista é recusada inteira pelo
         // agregado, e conferir cada item faria a resposta crescer com a entrada.
-        When(static x => x.Criterios is not null && x.Criterios.Count <= RegrasDoDesempate.CriteriosDesempateMaximo, () =>
+        When(static x => x.Criterios is not null && x.Criterios.Count <= RegrasDoDesempate.CriteriosDesempateMaximo, RegrasDosCriterios);
+    }
+
+    private void RegrasDosCriterios()
+    {
+        RuleForEach(x => x.Criterios)
+            .NotNull()
+            .WithMessage("Item de critério de desempate não pode ser nulo.");
+
+        RuleForEach(x => x.Criterios).ChildRules(item =>
         {
-            RuleForEach(x => x.Criterios)
+            item.RuleFor(c => c.Regra)
                 .NotNull()
-                .WithMessage("Item de critério de desempate não pode ser nulo.");
+                .WithMessage("Regra de desempate é obrigatória.");
 
-            RuleForEach(x => x.Criterios).ChildRules(item =>
-            {
-                item.RuleFor(c => c.RegraCodigo)
-                    .NotEmpty()
-                    .WithMessage("Código da regra de desempate é obrigatório.");
-
-                item.RuleFor(c => c.RegraVersao)
-                    .NotEmpty()
-                    .WithMessage("Versão da regra de desempate é obrigatória.");
-            });
+            item.RuleFor(c => c.Regra!).ChildRules(RegrasDaReferenciaDaRegra);
         });
+    }
+
+    private static void RegrasDaReferenciaDaRegra(InlineValidator<ReferenciaRegraInput> regra)
+    {
+        regra.RuleFor(r => r.Codigo)
+            .NotEmpty()
+            .WithMessage("Código da regra de desempate é obrigatório.");
+
+        regra.RuleFor(r => r.Versao)
+            .NotEmpty()
+            .WithMessage("Versão da regra de desempate é obrigatória.");
     }
 }

@@ -66,6 +66,10 @@ public sealed class TiposConceitoController : ControllerBase
         return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
     }
 
+    /// <summary>
+    /// Cria um tipo de conceito. O corpo leva o <c>codigo</c>, que não muda depois, e a <c>definicao</c>, na forma que a
+    /// resposta devolve, com <c>natureza</c> pelo código.
+    /// </summary>
     [HttpPost("admin/tipos-conceito")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposConceitoManter, ResourceTipo = ResourceTiposConfiguracao.TipoConceito)]
     [RequiresIdempotencyKey]
@@ -81,6 +85,11 @@ public sealed class TiposConceitoController : ControllerBase
         return resultado.IsSuccess ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
+    /// <summary>
+    /// Substitui a definição do tipo de conceito; o código é imutável. O corpo leva o <c>id</c> da rota e a <c>definicao</c>,
+    /// que é a mesma que a resposta devolve, com <c>natureza</c> igual a <c>definicao.natureza.codigo</c>. Os valores
+    /// categóricos enviados substituem em bloco os gravados: o que não vier é removido.
+    /// </summary>
     [HttpPut("admin/tipos-conceito/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposConceitoManter, ResourceTipo = ResourceTiposConfiguracao.TipoConceito)]
     [RequiresIdempotencyKey]

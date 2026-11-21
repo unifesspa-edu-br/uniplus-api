@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -107,12 +108,23 @@ public sealed class PredicadoDnfValidadorTests
         Validar(condicao).IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "A recusa do operador cita os códigos e lista os admitidos pelo domínio, sem nome de membro")]
+    public void PredicadoDnfValidador_OperadorIncompativel_CitaCodigosEDominioPorExtenso()
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar("PCD", Operador.MaiorIgual, Json("1")).Value!;
+
+        Result resultado = Validar(condicao);
+
+        resultado.Error!.Message.Should().Be(
+            "O operador MAIOR_IGUAL não é compatível com o fato 'PCD', de domínio booleano. Os operadores admitidos são IGUAL, DIFERENTE.");
+    }
+
     [Theory(DisplayName = "PredicadoDnfValidador_Aceita_Numerico_Com_Comparacao")]
     [InlineData("MAIOR_IGUAL")]
     [InlineData("MENOR_IGUAL")]
     public void PredicadoDnfValidador_Aceita_Numerico_Com_Comparacao(string operadorCodigo)
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar("FAIXA_ETARIA", OperadorCodigo.FromCodigo(operadorCodigo), Json("60")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("FAIXA_ETARIA", CatalogoDe<Operador>.Obter(operadorCodigo), Json("60")).Value!;
 
         Validar(condicao).IsSuccess.Should().BeTrue();
     }

@@ -16,11 +16,11 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
     private static readonly string[] AdmitidosNotaEAptoInapto = ["NOTA", "APTO_INAPTO"];
 
     private static ConceitoDaEtapa Nota() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceitoCodigo.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ConceitoDaEtapa AptoInapto() =>
         ConceitoDaEtapa.Criar(
-            "APTO_INAPTO", "Apto ou inapto", NaturezaConceitoCodigo.Categorico, null,
+            "APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, null,
             [new ValorCategoricoInformado("APTO", "Apto", true), new ValorCategoricoInformado("INAPTO", "Inapto", false)]).Value!;
 
     private static DeclaracaoDaAvaliacaoDaEtapa Declaracao(

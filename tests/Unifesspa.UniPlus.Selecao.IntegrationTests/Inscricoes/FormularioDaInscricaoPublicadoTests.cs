@@ -42,7 +42,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         formulario.Value!.DependenciasDaAvaliacao.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["CONCORRER_PCD"], []));
         JsonSerializer.Serialize(formulario.Value!.DependenciasDaAvaliacao).Should().NotContain("AC", "a matriz e o que ela contribui não saem");
-        formulario.Value!.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
+        formulario.Value!.Formulario.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
             "a derivação da modalidade não vai ao navegador");
     }
 

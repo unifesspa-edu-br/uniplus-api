@@ -443,8 +443,9 @@ api admin PUT "/api/configuracao/admin/tipos-documento/$TD_ID" "$(corpo -c --arg
   formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao: $c, finalidadeTratamento, hipoteseLegal}')"
 espera 204 "" "6.5 admin muda a classificação do tipo de documento da semente"
 api admin GET "/api/configuracao/admin/fatos-candidato/$FATO_ID"
-api admin PUT "/api/configuracao/admin/fatos-candidato/$FATO_ID/definicao" "$(corpo -c --arg c "$CLASSE_NOVA" '{pontoResolucao,
-  classificacaoProtecao: $c, finalidadeTratamento, hipoteseLegal, dominio, cardinalidade, fonteValores, formato, escopo}')"
+api admin PUT "/api/configuracao/admin/fatos-candidato/$FATO_ID/definicao" "$(corpo -c --arg c "$CLASSE_NOVA" '.fato.definicao | {pontoResolucao: .resolucao.pontoResolucao,
+  classificacaoProtecao: $c, finalidadeTratamento: .protecao.finalidade, hipoteseLegal: .protecao.hipoteseLegal,
+  dominio, cardinalidade, fonteValores: .valores.fonte, formato, escopo}')"
 espera 204 "" "6.5 admin muda a classificação do fato da semente"
 api admin POST /api/configuracao/admin/protecao-do-catalogo/solicitacoes \
   "$(jq -nc --arg td "$TD_ID" --arg f "$FATO_ID" '{itens: [{cadastro: "TIPO_DOCUMENTO", id: $td}, {cadastro: "FATO", id: $f}]}')"

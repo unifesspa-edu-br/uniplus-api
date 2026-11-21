@@ -70,9 +70,7 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         ], grupos: []).IsSuccess.Should().BeTrue();
 
     private static FatoColetado Campo(string codigo, int ordem, TipoRenderizacao tipo) =>
-        FatoColetado.Criar(codigo, ordem, "Campo de teste", tipo, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComRotulo("Campo de teste").DoTipo(tipo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static void ConferirValores(IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores)
     {

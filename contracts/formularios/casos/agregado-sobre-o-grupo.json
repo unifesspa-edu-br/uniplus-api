@@ -8,19 +8,23 @@
         "itens": [
           {
             "fatoCodigo": "DECLARACAO_RURAL",
-            "exibicao": [
-              [
-                {
-                  "fato": "RURAL_NA_FAMILIA",
-                  "operador": "IGUAL",
-                  "valor": true
-                }
-              ]
-            ],
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": [
+                [
+                  {
+                    "fato": "RURAL_NA_FAMILIA",
+                    "operador": "IGUAL",
+                    "valor": true
+                  }
+                ]
+              ],
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -28,20 +32,30 @@
         "grupos": [
           {
             "codigo": "FAMILIA",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "minimo": 1,
-            "maximo": null,
-            "incluiCandidato": false,
+            "ocorrencias": {
+              "minimo": 1,
+              "maximo": null,
+              "incluiCandidato": false
+            },
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              }
+            },
             "subitens": [
               {
                 "fatoCodigo": "TRABALHADOR_RURAL",
-                "exibicao": null,
-                "obrigatoriedade": "SEMPRE",
-                "predicadoObrigatoriedade": null,
-                "restricoes": [],
-                "impedimento": null,
+                "regras": {
+                  "exibicao": null,
+                  "obrigatoriedade": {
+                    "tipo": "SEMPRE",
+                    "predicado": null
+                  },
+                  "restricoes": [],
+                  "impedimento": null
+                },
                 "oferta": null,
                 "formato": null
               }
@@ -85,36 +99,40 @@
       {
         "codigo": "FAMILIA",
         "estado": "RESOLVIDO",
-        "contagemValida": true,
-        "ocorrencias": [
-          {
-            "id": "m1",
-            "estado": "RESOLVIDO",
-            "campos": [
-              {
-                "fatoCodigo": "TRABALHADOR_RURAL",
-                "estado": "RESOLVIDO"
-              }
-            ]
-          },
-          {
-            "id": "m2",
-            "estado": "RESOLVIDO",
-            "campos": [
-              {
-                "fatoCodigo": "TRABALHADOR_RURAL",
-                "estado": "RESOLVIDO"
-              }
-            ]
-          }
-        ]
+        "ocorrencias": {
+          "contagemValida": true,
+          "lista": [
+            {
+              "id": "m1",
+              "estado": "RESOLVIDO",
+              "campos": [
+                {
+                  "fatoCodigo": "TRABALHADOR_RURAL",
+                  "estado": "RESOLVIDO"
+                }
+              ]
+            },
+            {
+              "id": "m2",
+              "estado": "RESOLVIDO",
+              "campos": [
+                {
+                  "fatoCodigo": "TRABALHADOR_RURAL",
+                  "estado": "RESOLVIDO"
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "campos": [
       {
         "fatoCodigo": "DECLARACAO_RURAL",
-        "visivel": "VERDADEIRO",
-        "obrigatorio": "VERDADEIRO"
+        "regras": {
+          "visivel": "VERDADEIRO",
+          "obrigatorio": "VERDADEIRO"
+        }
       }
     ]
   }

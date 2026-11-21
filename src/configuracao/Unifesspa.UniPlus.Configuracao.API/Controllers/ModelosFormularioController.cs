@@ -52,7 +52,7 @@ public sealed class ModelosFormularioController : ControllerBase
     [HttpGet("admin/modelos-formulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<ModeloFormularioView>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ModeloFormularioDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -79,14 +79,14 @@ public sealed class ModelosFormularioController : ControllerBase
     [HttpGet("admin/modelos-formulario/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
-    [ProducesResponseType(typeof(ModeloFormularioView), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ModeloFormularioDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
-        ModeloFormularioView? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
+        ModeloFormularioDto? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
         return modelo is null ? NotFound() : Ok(modelo);
     }
 
@@ -178,7 +178,11 @@ public sealed class ModelosFormularioController : ControllerBase
             : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Substitui o nome, a descrição, o tipo de processo e o conteúdo do modelo.</summary>
+    /// <summary>
+    /// Substitui o descritivo e o conteúdo do modelo. O corpo é o <c>descritivo</c> e o <c>conteudo</c> da leitura
+    /// do modelo, e o conteúdo substitui o gravado em bloco; <c>id</c>, <c>codigo</c>, <c>finalidade</c> e
+    /// <c>ativo</c> são ignorados.
+    /// </summary>
     [HttpPut("admin/modelos-formulario/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioManter, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [RequiresIdempotencyKey]
@@ -193,7 +197,7 @@ public sealed class ModelosFormularioController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return Enviar(
-            new AtualizarModeloFormularioCommand(id, request.Nome, request.Descricao, request.TipoProcessoCodigo, request.Conteudo),
+            new AtualizarModeloFormularioCommand(id, request.Descritivo, request.Conteudo),
             cancellationToken);
     }
 

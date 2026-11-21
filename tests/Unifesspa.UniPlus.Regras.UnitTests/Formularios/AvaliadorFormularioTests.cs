@@ -8,10 +8,10 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static ApoioDaAvaliacaoDoFormulario;
+
 public class AvaliadorFormularioTests : TestesDeAvaliacao
 {
-    private const string Etapa = "DADOS";
-
     [Theory]
     [InlineData(true, Ternario.Verdadeiro, EstadoFato.Indeterminado)]
     [InlineData(false, Ternario.Falso, EstadoFato.NaoInformado)]
@@ -75,185 +75,42 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         avaliacao.Fatos["DERIVADO"].Valor!.Value.GetArrayLength().Should().Be(0);
     }
 
+    private static DefinicaoFormulario FormularioComEtapaDoDocumentoEstrangeiro() => new(
+        [
+            new DefinicaoEtapa(Etapa, exibicao: null, [Item("ESTRANGEIRO")]),
+            new DefinicaoEtapa("DOCUMENTO_ESTRANGEIRO", Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)), [Item("PASSAPORTE")]),
+        ],
+        termos: [],
+        derivacoes: []);
+
     [Fact]
     public void EtapaOculta_LevaSeusItensANaoAplicavel_MesmoComRespostaGravada()
     {
-        DefinicaoFormulario formulario = new(
-            [
-                new DefinicaoEtapa(Etapa, exibicao: null, [Item("ESTRANGEIRO")]),
-                new DefinicaoEtapa(
-                    "DOCUMENTO_ESTRANGEIRO",
-                    Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)),
-                    [Item("PASSAPORTE")]),
-            ],
-            termos: [],
-            derivacoes: []);
-
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("ESTRANGEIRO", false), ("PASSAPORTE", "AB123")));
+            FormularioComEtapaDoDocumentoEstrangeiro(), Entrada(etapaConcluida: true, ("ESTRANGEIRO", false), ("PASSAPORTE", "AB123")));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Falso);
         avaliacao.Fatos["PASSAPORTE"].Estado.Should().Be(EstadoFato.NaoAplicavel);
     }
 
+    private static DefinicaoFormulario FormularioComModalidadeDerivadaDePcd() => new(
+        [
+            new DefinicaoEtapa(Etapa, exibicao: null, [Item("PCD")]),
+            new DefinicaoEtapa(
+                "LAUDO",
+                exibicao: null,
+                [Item("LAUDO_MEDICO", exibicao: Predicado(Condicao("MODALIDADE", Operador.Em, new[] { "AC_PCD" })))]),
+        ],
+        termos: [],
+        [Derivacao("MODALIDADE", Predicado(Condicao("PCD", Operador.Igual, true)), "AC_PCD")]);
+
     [Fact]
     public void Derivado_EhResolvidoEntreOsItens_AntesDoItemQueOCita()
     {
-        DefinicaoFormulario formulario = new(
-            [
-                new DefinicaoEtapa(Etapa, exibicao: null, [Item("PCD")]),
-                new DefinicaoEtapa(
-                    "LAUDO",
-                    exibicao: null,
-                    [Item("LAUDO_MEDICO", exibicao: Predicado(Condicao("MODALIDADE", Operador.Em, new[] { "AC_PCD" })))]),
-            ],
-            termos: [],
-            [Derivacao("MODALIDADE", Predicado(Condicao("PCD", Operador.Igual, true)), "AC_PCD")]);
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("PCD", true)));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioComModalidadeDerivadaDePcd(), Entrada(etapaConcluida: false, ("PCD", true)));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Verdadeiro);
         avaliacao.Itens.Select(static i => i.FatoCodigo).Should().Equal("PCD", "LAUDO_MEDICO");
-    }
-
-    [Theory]
-    [InlineData("\"MED\"", EstadoFato.Resolvido, 0)]
-    [InlineData("\"ENF\"", EstadoFato.NaoInformado, 1)]
-    public void OpcaoFormadaPelasRespostas_RespostaForaDasOpcoesNaoVale(
-        string listaDeEspera, EstadoFato estadoEsperado, int violacoes)
-    {
-        DefinicaoFormulario formulario = Formulario(
-            Item("CURSOS"),
-            Item("LISTA_ESPERA", obrigatoriedade: Obrigatoriedade.Nunca, restricoes: [new OpcoesDasRespostas(["CURSOS"])]));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario,
-            Entrada(
-                etapaConcluida: true,
-                ("CURSOS", new[] { "MED" }),
-                ("LISTA_ESPERA", JsonDocument.Parse(listaDeEspera).RootElement)));
-
-        avaliacao.Fatos["LISTA_ESPERA"].Estado.Should().Be(estadoEsperado);
-        avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
-    }
-
-    [Theory]
-    [InlineData("PA", "1504208", EstadoFato.Resolvido, 0)]
-    [InlineData("MA", "1504208", EstadoFato.NaoInformado, 1)]
-    [InlineData(null, "1504208", EstadoFato.NaoInformado, 1)]
-    [InlineData("PA", "9904208", EstadoFato.NaoInformado, 1)]
-    public void MunicipioDaUf_ValeSoComMunicipioDaUfRespondida(string? uf, string municipio, EstadoFato estadoEsperado, int violacoes)
-    {
-        DefinicaoFormulario formulario = Formulario(
-            Item("NATURALIDADE_UF", obrigatoriedade: Obrigatoriedade.Nunca),
-            Item("NATURALIDADE_MUNICIPIO", obrigatoriedade: Obrigatoriedade.Nunca, restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
-        (string, object)[] respostas = uf is null
-            ? [("NATURALIDADE_MUNICIPIO", municipio)]
-            : [("NATURALIDADE_UF", uf), ("NATURALIDADE_MUNICIPIO", municipio)];
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, respostas));
-
-        avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(estadoEsperado);
-        avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
-    }
-
-    [Theory(DisplayName = "A resposta fora do formato do campo de texto viola a restrição de formato; a válida passa")]
-    [InlineData("CPF", "111.111.111-11", false)]
-    [InlineData("CPF", "529.982.247-25", true)]
-    [InlineData("EMAIL", "sem-arroba", false)]
-    [InlineData("EMAIL", "candidato@unifesspa.edu.br", true)]
-    [InlineData("LIVRE", "qualquer texto", true)]
-    public void CampoDeTexto_RespostaForaDoFormato_ViolaORestricaoDeFormato(string formato, string resposta, bool atende)
-    {
-        DefinicaoFormulario formulario = Formulario(
-            new DefinicaoItem("CONTATO", null, Obrigatoriedade.Sempre, [], formato: formato));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, ("CONTATO", resposta)));
-
-        avaliacao.Fatos["CONTATO"].Estado.Should().Be(atende ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
-        avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
-            atende ? [] : [TipoRestricaoValor.FormatoTexto]);
-    }
-
-    [Theory(DisplayName = "O NOME de um formulário congelado em NOME_PESSOA não é conferido pelo formato; o nome da mãe segue conferido")]
-    [InlineData("NOME", "Maria S. Silva", true)]
-    [InlineData("NOME", "Madonna", true)]
-    [InlineData("NOME_MAE", "Maria S. Silva", false)]
-    public void CampoDeNome_FormatoCongelado_SoConfereForaDoNomeCivil(string fato, string resposta, bool atende)
-    {
-        DefinicaoFormulario formulario = Formulario(
-            new DefinicaoItem(fato, null, Obrigatoriedade.Sempre, [], formato: "NOME_PESSOA"));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, (fato, resposta)));
-
-        avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
-            atende ? [] : [TipoRestricaoValor.FormatoTexto]);
-    }
-
-    [Fact]
-    public void MunicipioDaUf_ComUfIndeterminada_FicaIndeterminado()
-    {
-        DefinicaoFormulario formulario = Formulario(
-            Item("NATURALIDADE_UF"),
-            Item("NATURALIDADE_MUNICIPIO", restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
-
-        avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado);
-        avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void OpcoesFiltradasPorRespostaAnterior_RecusamOpcaoDeOutroFiltro()
-    {
-        OpcoesPermitidas municipios = new(
-        [
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["MARABA", "BELEM"]),
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "AM")), ["MANAUS"]),
-        ]);
-        DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("UF", "PA"), ("MUNICIPIO", "MANAUS")));
-
-        avaliacao.Itens[1].RestricoesVioladas.Should().ContainSingle();
-        avaliacao.Fatos["MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado, "o campo é obrigatório e a resposta não vale");
-    }
-
-    [Theory(DisplayName = "As opções vigentes do campo são as do filtro da resposta anterior; sem ela, ainda não são todas")]
-    [InlineData("PA", new[] { "BELEM", "MARABA" }, true)]
-    [InlineData(null, new string[0], false)]
-    public void OpcoesVigentes_SeguemARespostaAnterior(string? uf, string[] esperadas, bool definitivas)
-    {
-        OpcoesPermitidas municipios = new(
-        [
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["MARABA", "BELEM"]),
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "AM")), ["MANAUS"]),
-        ]);
-        DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
-        (string, object)[] respostas = uf is null ? [] : [("UF", uf)];
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, respostas));
-
-        avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal(esperadas);
-        avaliacao.Itens[1].Opcoes!.Definitivas.Should().Be(definitivas);
-        avaliacao.Itens[0].Opcoes.Should().BeNull("o campo sem restrição de opções não limita a escolha");
-    }
-
-    [Fact(DisplayName = "A entrada que ainda depende de resposta mas não traz opção nova não deixa as opções provisórias")]
-    public void OpcoesVigentes_EntradaPendenteSemOpcaoNova_Definitivas()
-    {
-        OpcoesPermitidas opcoes = new(
-        [
-            new OpcoesCondicionadas(null, ["A", "B"]),
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["A"]),
-        ]);
-        DefinicaoFormulario formulario = Formulario(Item("UF"), Item("ESCOLHA", restricoes: [opcoes]));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false));
-
-        avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal("A", "B");
-        avaliacao.Itens[1].Opcoes!.Definitivas.Should().BeTrue("a resposta pendente só poderia acrescentar A, que já vale");
     }
 
     [Fact(DisplayName = "A avaliação diz de cada seção se ela aparece")]
@@ -270,27 +127,6 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("TIPO_ENDERECO", "URBANO")));
 
         avaliacao.Etapas.Select(static e => (e.Codigo, e.Visivel)).Should().Equal(("DADOS", Ternario.Verdadeiro), ("ALDEIA", Ternario.Falso));
-    }
-
-    [Theory]
-    [InlineData("\"BRASIL\"", EstadoFato.Resolvido)]
-    [InlineData("\"MARABA\"", EstadoFato.Indeterminado)]
-    public void OpcoesComGrupoAindaIndeterminado_SoPendemPelaOpcaoQueDependeDele(string municipio, EstadoFato esperado)
-    {
-        OpcoesPermitidas opcoes = new(
-        [
-            new OpcoesCondicionadas(quando: null, ["BRASIL"]),
-            new OpcoesCondicionadas(Predicado(Condicao("UF", Operador.Igual, "PA")), ["MARABA"]),
-        ]);
-        DefinicaoFormulario formulario = Formulario(
-            Item("UF", obrigatoriedade: Obrigatoriedade.Nunca),
-            Item("LOCAL", restricoes: [opcoes]));
-
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: false, ("LOCAL", JsonDocument.Parse(municipio).RootElement)));
-
-        avaliacao.Fatos["LOCAL"].Estado.Should().Be(esperado);
-        avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();
     }
 
     [Fact]
@@ -338,226 +174,5 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
 
         avaliacao.Fatos["A"].Estado.Should().Be(EstadoFato.Indeterminado);
         avaliacao.Fatos["B"].Estado.Should().Be(EstadoFato.Indeterminado);
-    }
-
-    [Fact]
-    public void Grupo_AvaliaCadaOcorrencia_PelasRespostasDela()
-    {
-        DefinicaoGrupo grupo = Grupo(
-            Obrigatoriedade.Sempre, minimo: 1, maximo: 5,
-            Item("PARENTESCO"),
-            Item("SOB_GUARDA", exibicao: Predicado(Condicao("PARENTESCO", Operador.Igual, "FILHO"))));
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
-            ComGrupo(grupo),
-            EntradaComGrupo(etapaConcluida: false, [Ocorrencia("m1", ("PARENTESCO", "FILHO")), Ocorrencia("m2", ("PARENTESCO", "MAE"))])).Grupos.Single();
-
-        avaliacao.Ocorrencias.Select(static o => o.Itens[1].Visivel).Should().Equal(Ternario.Verdadeiro, Ternario.Falso);
-        avaliacao.Ocorrencias.Select(static o => o.Estado).Should().Equal(EstadoFato.Indeterminado, EstadoFato.Resolvido);
-        avaliacao.Estado.Should().Be(EstadoFato.Indeterminado, "o grupo só resolve quando todas as ocorrências resolvem");
-    }
-
-    [Fact]
-    public void Grupo_OsFatosDeMembroNaoEntramNosFatosDoCandidato()
-    {
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))]));
-
-        avaliacao.Fatos.Should().NotContainKey("PARENTESCO");
-        avaliacao.Grupos.Single().Estado.Should().Be(EstadoFato.Resolvido);
-        avaliacao.Grupos.Single().Ocorrencias.Single().Fatos["PARENTESCO"].Estado.Should().Be(EstadoFato.Resolvido);
-    }
-
-    [Theory]
-    [InlineData(1, false)]
-    [InlineData(2, true)]
-    [InlineData(3, true)]
-    [InlineData(4, false)]
-    public void Grupo_ContagemForaDoIntervalo_NaoValeComoResposta(int quantas, bool valida)
-    {
-        DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 2, maximo: 3, Item("PARENTESCO"));
-        (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, quantas).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
-
-        avaliacao.ContagemValida.Should().Be(valida);
-        avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
-    }
-
-    [Fact]
-    public void Grupo_SemMaximo_AceitaQualquerQuantidadeDeOcorrencias()
-    {
-        DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: null, Item("PARENTESCO"));
-        (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, 1000).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
-
-        avaliacao.ContagemValida.Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData(0, EstadoFato.Resolvido)]
-    [InlineData(1, EstadoFato.Indeterminado)]
-    public void GrupoObrigatorio_ListaVazia_ResolveSoComMinimoZero(int minimo, EstadoFato esperado)
-    {
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
-            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [])).Grupos.Single();
-
-        avaliacao.Estado.Should().Be(esperado);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void GrupoOpcional_ListaVazia_EhNaoInformado_MesmoComMinimoAcimaDeZero(bool etapaConcluida)
-    {
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
-            ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 2, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida, [])).Grupos.Single();
-
-        avaliacao.ContagemValida.Should().BeTrue("o opcional aceita zero ocorrência");
-        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado, "a lista vazia é resposta, mesmo com a etapa aberta");
-    }
-
-    [Theory]
-    [InlineData(true, EstadoFato.NaoInformado)]
-    [InlineData(false, EstadoFato.Indeterminado)]
-    public void GrupoOpcional_SemResposta_SoViraNaoInformadoComAEtapaConcluida(bool etapaConcluida, EstadoFato esperado)
-    {
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
-            ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 0, maximo: 5, Item("PARENTESCO"))),
-            Entrada(etapaConcluida)).Grupos.Single();
-
-        avaliacao.Estado.Should().Be(esperado);
-    }
-
-    [Fact]
-    public void Grupo_OcorrenciasComAMesmaIdentidade_SaoRecusadas()
-    {
-        Action avaliar = () => AvaliarDefinicao(
-            ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE")), Ocorrencia("m1", ("PARENTESCO", "PAI"))]));
-
-        avaliar.Should().Throw<ArgumentException>().WithMessage("*'m1'*");
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Ocorrencia_SemIdentidade_EhRecusada(string id)
-    {
-        Action criar = () => _ = new OcorrenciaRespondida(id, new Dictionary<string, JsonElement>(StringComparer.Ordinal));
-
-        criar.Should().Throw<ArgumentException>();
-    }
-
-    [Theory]
-    [InlineData(new[] { "PROPRIO_CANDIDATO", "PAI_OU_MAE" }, true)]
-    [InlineData(new[] { "PAI_OU_MAE" }, false)]
-    [InlineData(new[] { "PROPRIO_CANDIDATO", "PROPRIO_CANDIDATO" }, false)]
-    public void GrupoQueIncluiOCandidato_ValeSoComExatamenteUmaOcorrenciaDele(string[] parentescos, bool valida)
-    {
-        DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Sempre, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
-        (string, (string, object)[])[] ocorrencias = [.. parentescos.Select((p, i) => Ocorrencia($"m{i}", ("PARENTESCO", p)))];
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
-
-        avaliacao.OcorrenciaDoCandidatoValida.Should().Be(valida);
-        avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
-    }
-
-    [Fact]
-    public void GrupoOpcionalQueIncluiOCandidato_ListaVazia_EhNaoInformado()
-    {
-        DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Nunca, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: false, [])).Grupos.Single();
-
-        avaliacao.OcorrenciaDoCandidatoValida.Should().BeTrue("a lista vazia não tem ocorrência do candidato a conferir");
-        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado);
-    }
-
-    [Fact]
-    public void GrupoOculto_EhNaoAplicavel_MesmoComOcorrenciaGravada()
-    {
-        DefinicaoGrupo grupo = new(
-            "COMPOSICAO",
-            Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)),
-            Obrigatoriedade.Sempre,
-            minimo: 1,
-            maximo: 5,
-            [Item("PARENTESCO")]);
-        DefinicaoFormulario formulario = new(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [Item("CONCORRER_RENDA")], [grupo])], termos: [], derivacoes: []);
-
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(
-            formulario,
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))], ("CONCORRER_RENDA", false))).Grupos.Single();
-
-        avaliacao.Visivel.Should().Be(Ternario.Falso);
-        avaliacao.Estado.Should().Be(EstadoFato.NaoAplicavel);
-        avaliacao.Ocorrencias.Should().BeEmpty();
-    }
-
-    private static DefinicaoGrupo Grupo(Obrigatoriedade obrigatoriedade, int minimo, int? maximo, params DefinicaoItem[] subitens) =>
-        new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens);
-
-    private static DefinicaoFormulario ComGrupo(DefinicaoGrupo grupo) =>
-        new([new DefinicaoEtapa(Etapa, exibicao: null, [], [grupo])], termos: [], derivacoes: []);
-
-    private static (string Id, (string Fato, object Valor)[] Respostas) Ocorrencia(string id, params (string Fato, object Valor)[] respostas) =>
-        (id, respostas);
-
-    /// <summary>A entrada com as ocorrências do grupo <c>COMPOSICAO</c>, na ordem dada, e as respostas do candidato.</summary>
-    private static EntradaAvaliacaoFormulario EntradaComGrupo(
-        bool etapaConcluida,
-        IReadOnlyList<(string Id, (string Fato, object Valor)[] Respostas)> ocorrencias,
-        params (string Fato, object Valor)[] respostas) =>
-        Entrada(etapaConcluida, respostas) with
-        {
-            RespostasDosGrupos = new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
-            {
-                ["COMPOSICAO"] = [.. ocorrencias.Select(static o => new OcorrenciaRespondida(o.Id, Respostas(o.Respostas)))],
-            },
-        };
-
-    private static DefinicaoFormulario Formulario(params DefinicaoItem[] itens) =>
-        new([new DefinicaoEtapa(Etapa, exibicao: null, itens)], termos: [], derivacoes: []);
-
-    private static DefinicaoItem Item(
-        string fato,
-        PredicadoDnf? exibicao = null,
-        Obrigatoriedade? obrigatoriedade = null,
-        IReadOnlyList<RestricaoValor>? restricoes = null) =>
-        new(fato, exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, restricoes ?? []);
-
-    private static EntradaAvaliacaoFormulario Entrada(bool etapaConcluida, params (string Fato, object Valor)[] respostas) =>
-        new(
-            Respostas(respostas),
-            etapaConcluida ? new HashSet<string>([Etapa], StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            Envio: null);
-
-    private static Dictionary<string, JsonElement> Respostas((string Fato, object Valor)[] respostas) =>
-        respostas.ToDictionary(
-            static r => r.Fato,
-            static r => r.Valor is JsonElement json ? json : JsonSerializer.SerializeToElement(r.Valor),
-            StringComparer.Ordinal);
-
-    private static CondicaoDnf Condicao(string fato, Operador operador, object valor) =>
-        CondicaoDnf.Criar(
-            fato,
-            operador,
-            valor is JsonElement json ? json : JsonSerializer.SerializeToElement(valor)).Value!;
-
-    private static PredicadoDnf Predicado(params CondicaoDnf[] condicoes) =>
-        PredicadoDnf.CriarDeCondicoesAgrupadas([.. condicoes.Select(static c => (0, c))]).Value!;
-
-    private static DerivacaoDoFato Derivacao(string fato, PredicadoDnf quando, string contribui)
-    {
-        RegraDerivacao regra = RegraDerivacao.Criar(quando, contribui).Value!;
-        return DerivacaoDoFato.Criar(fato, [regra], regra.FatosCitados, [contribui]).Value!;
     }
 }

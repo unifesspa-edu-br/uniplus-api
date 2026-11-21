@@ -1,8 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -12,7 +10,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -40,21 +38,9 @@ public sealed class ImpedimentoEndpointTests
         HttpResponseMessage gravado = await DefinirItensAsync(client, processoId, Mensagem);
         gravado.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravado.Content.ReadAsStringAsync());
 
-        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
-        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
-        HttpResponseMessage lido = await client.SendAsync(get);
-        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
-
-        using JsonDocument corpo = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
-        JsonElement impedimento = corpo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO")
-            .GetProperty("fatosColetados").EnumerateArray()
-            .Single(static f => f.GetProperty("fatoCodigo").GetString() == "QUILOMBOLA")
-            .GetProperty("impedimento");
-        impedimento.GetProperty("mensagem").GetString().Should().Be(Mensagem);
-        JsonElement condicao = impedimento.GetProperty("quando").EnumerateArray().Single().EnumerateArray().Single();
-        condicao.GetProperty("fato").GetString().Should().Be("QUILOMBOLA");
-        condicao.GetProperty("valor").GetBoolean().Should().BeTrue();
+        using JsonDocument corpo = await ProcessoSeletivoHttp.ObterAsync(client, processoId);
+        JsonElement quilombola = FormularioNaRespostaDoProcesso.Item(FormularioNaRespostaDoProcesso.DeInscricao(corpo), "QUILOMBOLA");
+        ConferirImpedimentoDoQuilombola(quilombola.GetProperty("regras").GetProperty("impedimento"));
     }
 
     [Fact(DisplayName = "O impedimento sem mensagem é recusado no campo da mensagem")]
@@ -67,32 +53,32 @@ public sealed class ImpedimentoEndpointTests
 
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         string corpo = await recusado.Content.ReadAsStringAsync();
-        corpo.Should().Contain("itens[0].impedimento.mensagem").And.Contain("uniplus.item_formulario.impedimento_mensagem_invalida");
+        corpo.Should().Contain("itens[0].regras.impedimento.mensagem").And.Contain("uniplus.item_formulario.impedimento_mensagem_invalida");
     }
 
-    private static async Task<HttpResponseMessage> DefinirItensAsync(HttpClient client, Guid processoId, string? mensagem)
+    private static void ConferirImpedimentoDoQuilombola(JsonElement impedimento)
     {
-        using HttpRequestMessage put = Requisicao(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens");
-        put.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        put.Content = JsonContent.Create(new
-        {
-            itens = new[]
-            {
-                new
-                {
-                    fatoCodigo = "QUILOMBOLA",
-                    ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao,
-                    rotulo = "Quilombola",
-                    tipoRenderizacao = "BOOLEANO",
-                    obrigatoriedade = "SEMPRE",
-                    etapaCodigo = FormularioDeTeste.Secao,
-                    impedimento = new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, mensagem },
-                },
-            },
-            grupos = Array.Empty<object>(),
-        });
-        return await client.SendAsync(put);
+        impedimento.GetProperty("mensagem").GetString().Should().Be(Mensagem);
+        JsonElement condicao = impedimento.GetProperty("quando").EnumerateArray().Single().EnumerateArray().Single();
+        condicao.GetProperty("fato").GetString().Should().Be("QUILOMBOLA");
+        condicao.GetProperty("valor").GetBoolean().Should().BeTrue();
     }
+
+    private static Task<HttpResponseMessage> DefinirItensAsync(HttpClient client, Guid processoId, string? mensagem) =>
+        ProcessoSeletivoHttp.DefinirItensAsync(client, processoId, new { itens = new[] { QuilombolaComImpedimento(mensagem) }, grupos = Array.Empty<object>() });
+
+    private static object QuilombolaComImpedimento(string? mensagem) => new
+    {
+        fatoCodigo = "QUILOMBOLA",
+        ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao,
+        etapaCodigo = FormularioDeTeste.Secao,
+        apresentacao = new { rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO" },
+        regras = new
+        {
+            obrigatoriedade = new { tipo = "SEMPRE" },
+            impedimento = new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, mensagem },
+        },
+    };
 
     private async Task<Guid> SemearProcessoAsync()
     {
@@ -100,13 +86,5 @@ public sealed class ImpedimentoEndpointTests
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Impedimento {Guid.CreateVersion7()}" });
         return processo.Id;
-    }
-
-    private static HttpRequestMessage Requisicao(HttpMethod metodo, string rota)
-    {
-        HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        return request;
     }
 }

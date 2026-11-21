@@ -100,10 +100,10 @@ internal static class ModeloFormularioHttp
         lista.AsArray().Select(e => e![chave]!.GetValue<string>());
 
     internal static JsonNode OpcaoDoFato(JsonObject formulario, string fatoCodigo, string codigo) =>
-        Unico(Unico(formulario["fatosColetados"]!, "fatoCodigo", fatoCodigo)["valoresSelecionaveis"]!, "codigo", codigo);
+        Unico(Unico(formulario["coleta"]!["itens"]!, "fatoCodigo", fatoCodigo)["valoresSelecionaveis"]!, "codigo", codigo);
 
     internal static List<string> Opcoes(JsonObject formulario, string fatoCodigo) =>
-        [.. Textos(Unico(formulario["fatosColetados"]!, "fatoCodigo", fatoCodigo)["valoresSelecionaveis"]!, "codigo")];
+        [.. Textos(Unico(formulario["coleta"]!["itens"]!, "fatoCodigo", fatoCodigo)["valoresSelecionaveis"]!, "codigo")];
 
     internal static IEnumerable<string> DasEtapasDasRegras(JsonObject formulario, string colecao, string chave) =>
         formulario["regras"]!["etapas"]!.AsArray()

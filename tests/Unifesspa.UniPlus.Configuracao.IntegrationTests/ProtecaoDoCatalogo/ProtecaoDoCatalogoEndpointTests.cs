@@ -164,7 +164,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
             client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new[] { new { cadastro = "FATO", id = IdDeQuilombola } } });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await ObterFatoAsync(client, IdDeQuilombola)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        ProtecaoDoFato(await ObterFatoAsync(client, IdDeQuilombola)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(quilombola))).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 

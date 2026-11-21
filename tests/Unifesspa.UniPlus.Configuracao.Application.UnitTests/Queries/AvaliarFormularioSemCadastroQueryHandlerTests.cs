@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// A avaliação sem cadastro das regras de um formulário renderizável: a recusa da ocorrência sem
@@ -19,8 +20,8 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 {
     private static readonly FormularioPortavel Regras = new(
         [new EtapaPortavel("DADOS", null, [
-            new ItemPortavel("TIPO_ENDERECO", null, "SEMPRE", null, [], null, ["URBANO", "ALDEIA"]),
-            new ItemPortavel("NOME_ALDEIA", [[new CondicaoPrecondicaoInput("TIPO_ENDERECO", "IGUAL", JsonSerializer.SerializeToElement("ALDEIA"))]], "SEMPRE", null, [], null, null),
+            new ItemPortavel("TIPO_ENDERECO", Sempre(), ["URBANO", "ALDEIA"], null),
+            new ItemPortavel("NOME_ALDEIA", Sempre([[new CondicaoPrecondicaoDto("TIPO_ENDERECO", "IGUAL", JsonSerializer.SerializeToElement("ALDEIA"))]]), null, null),
         ], [])],
         [],
         [],
@@ -34,6 +35,18 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos.FAMILIA[0].id");
+    }
+
+    [Fact]
+    public void Handle_GrupoSemOcorrencias_PreservaOCaminho()
+    {
+        FormularioPortavel regras = new([new EtapaPortavel("DADOS", null, [],
+            [new GrupoPortavel("FAMILIA", null!, new ExibicaoEObrigatoriedadeDto(null, new ObrigatoriedadeDto("NUNCA", null)), [])])], [], [], []);
+
+        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(
+            new AvaliarFormularioSemCadastroQuery(new(regras, null, null, null, null)));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].grupos[0].ocorrencias");
     }
 
     [Fact(DisplayName = "Envio simulado numa zona que o ambiente não reconhece é recusado no fuso")]
@@ -67,10 +80,20 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 
     private static readonly FormularioPortavel RegrasComFaixaDeData = new(
         [new EtapaPortavel("DADOS", null, [
-            new ItemPortavel("DATA_NASCIMENTO", null, "SEMPRE", null,
-                [new RestricaoValorInput("FAIXA_DE_DATA", DataMinima: new LimiteDeDataInput("ENVIO", Anos: -120, Dias: 0))], null, null),
+            new ItemPortavel(
+                "DATA_NASCIMENTO",
+                new RegrasDoCampoDto(
+                    null,
+                    new ObrigatoriedadeDto("SEMPRE", null),
+                    [new RestricaoValorDto("FAIXA_DE_DATA", null, null, null, null, new LimiteDeDataDto("ENVIO", null, -120, 0), null)],
+                    null),
+                null,
+                null),
         ], [])],
         [],
         [],
         []);
+
+    private static RegrasDoCampoDto Sempre(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? exibicao = null) =>
+        new(exibicao, new ObrigatoriedadeDto("SEMPRE", null), [], null);
 }

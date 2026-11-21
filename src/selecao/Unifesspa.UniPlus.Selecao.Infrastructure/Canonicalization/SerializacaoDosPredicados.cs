@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -18,6 +19,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.Enums.Operador Operador, System.Text.Json.JsonElement Valor);
+
 /// <summary>
 /// Projeta no envelope os predicados em forma normal disjuntiva: as condições, os valores de átomo
 /// e o predicado de obrigatoriedade.
@@ -28,29 +31,22 @@ internal static class SerializacaoDosPredicados
         predicado.Clausulas.SelectMany(static (clausula, indice) =>
             clausula.Condicoes.Select(condicao => (indice, condicao.Fato, condicao.Operador, condicao.Valor)));
 
-    internal static JsonArray? SerializarDnf(
-        IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes)
+    internal static JsonArray? SerializarDnf(IEnumerable<LinhaDoPredicado> condicoes)
     {
-        List<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> lista = [.. condicoes];
-        if (lista.Count == 0)
-        {
-            return null;
-        }
+        List<LinhaDoPredicado> lista = [.. condicoes];
 
-        List<JsonArray> clausulas = [];
-        foreach (IGrouping<int, (int Clausula, string Fato, Operador Operador, JsonElement Valor)> clausula
-            in lista.GroupBy(static c => c.Clausula))
-        {
-            clausulas.Add(EscritaCanonica.OrdenarPorConteudo(clausula.Select(static c => new JsonObject
-            {
-                ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
-                ["operador"] = c.Operador.ToCodigo(),
-                ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
-            })));
-        }
-
-        return EscritaCanonica.OrdenarPorConteudo(clausulas);
+        return lista.Count == 0
+            ? null
+            : EscritaCanonica.OrdenarPorConteudo([.. lista.GroupBy(static c => c.Clausula).Select(SerializarClausula)]);
     }
+
+    private static JsonArray SerializarClausula(IGrouping<int, LinhaDoPredicado> clausula) =>
+        EscritaCanonica.OrdenarPorConteudo(clausula.Select(static c => new JsonObject
+        {
+            ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
+            ["operador"] = c.Operador.Codigo(),
+            ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
+        }));
 
     internal static JsonNode? SerializarValorDeAtomo(Operador operador, JsonElement valor)
     {
@@ -59,40 +55,18 @@ internal static class SerializacaoDosPredicados
             return JsonNode.Parse(valor.GetRawText());
         }
 
-        List<JsonValue> alternativas = [];
-        foreach (JsonElement item in valor.EnumerateArray())
-        {
-            if (JsonNode.Parse(item.GetRawText()) is not JsonValue alternativa)
-            {
-                throw new InvalidOperationException(
-                    $"O operador {operador.ToCodigo()} carrega uma alternativa que não é um valor escalar — " +
-                    "PredicadoDnfValidador já deveria ter recusado a condição antes da publicação.");
-            }
-
-            alternativas.Add(alternativa);
-        }
-
-        return EscritaCanonica.OrdenarPorConteudo(alternativas);
+        return EscritaCanonica.OrdenarPorConteudo([.. valor.EnumerateArray().Select(item => AlternativaEscalar(operador, item))]);
     }
+
+    private static JsonValue AlternativaEscalar(Operador operador, JsonElement item) =>
+        JsonNode.Parse(item.GetRawText()) as JsonValue
+        ?? throw new InvalidOperationException(
+            $"O operador {operador.Codigo()} carrega uma alternativa que não é um valor escalar — " +
+            "PredicadoDnfValidador já deveria ter recusado a condição antes da publicação.");
 
     internal static JsonObject SerializarPredicadoObrigatoriedade(PredicadoObrigatoriedade predicado)
     {
-        (string tipo, JsonObject parametros) = predicado switch
-        {
-            EtapaObrigatoria p => ("etapaObrigatoria", new JsonObject { ["tipoEtapaCodigo"] = HashCanonicalComputer.NormalizeNfc(p.TipoEtapaCodigo) }),
-            ModalidadesMinimas p => ("modalidadesMinimas", new JsonObject { ["codigos"] = EscritaCanonica.TextosEmOrdemCanonica(p.Codigos) }),
-            DesempateDeveIncluir p => ("desempateDeveIncluir", new JsonObject { ["criterio"] = HashCanonicalComputer.NormalizeNfc(p.Criterio) }),
-            DocumentoObrigatorioParaModalidade p => ("documentoObrigatorioParaModalidade", new JsonObject
-            {
-                ["modalidade"] = HashCanonicalComputer.NormalizeNfc(p.Modalidade),
-                ["tipoDocumento"] = HashCanonicalComputer.NormalizeNfc(p.TipoDocumento),
-            }),
-            AtendimentoDisponivel p => ("atendimentoDisponivel", new JsonObject { ["necessidades"] = EscritaCanonica.TextosEmOrdemCanonica(p.Necessidades) }),
-            ConcorrenciaDuplaObrigatoria => ("concorrenciaDuplaObrigatoria", []),
-            Customizado p => ("customizado", new JsonObject { ["parametros"] = JsonNode.Parse(p.Parametros.GetRawText()) }),
-            _ => throw new InvalidOperationException(
-                $"Variante de {nameof(PredicadoObrigatoriedade)} não reconhecida: {predicado.GetType()}."),
-        };
+        (string tipo, JsonObject parametros) = TipoEParametros(predicado);
 
         return new JsonObject
         {
@@ -100,4 +74,23 @@ internal static class SerializacaoDosPredicados
             ["parametros"] = parametros,
         };
     }
+
+    private static (string Tipo, JsonObject Parametros) TipoEParametros(PredicadoObrigatoriedade predicado) => predicado switch
+    {
+        EtapaObrigatoria p => ("etapaObrigatoria", new JsonObject { ["tipoEtapaCodigo"] = HashCanonicalComputer.NormalizeNfc(p.TipoEtapaCodigo) }),
+        ModalidadesMinimas p => ("modalidadesMinimas", new JsonObject { ["codigos"] = EscritaCanonica.TextosEmOrdemCanonica(p.Codigos) }),
+        DesempateDeveIncluir p => ("desempateDeveIncluir", new JsonObject { ["criterio"] = HashCanonicalComputer.NormalizeNfc(p.Criterio) }),
+        DocumentoObrigatorioParaModalidade p => ("documentoObrigatorioParaModalidade", ParametrosDoDocumentoPorModalidade(p)),
+        AtendimentoDisponivel p => ("atendimentoDisponivel", new JsonObject { ["necessidades"] = EscritaCanonica.TextosEmOrdemCanonica(p.Necessidades) }),
+        ConcorrenciaDuplaObrigatoria => ("concorrenciaDuplaObrigatoria", []),
+        Customizado p => ("customizado", new JsonObject { ["parametros"] = JsonNode.Parse(p.Parametros.GetRawText()) }),
+        _ => throw new InvalidOperationException(
+            $"Variante de {nameof(PredicadoObrigatoriedade)} não reconhecida: {predicado.GetType()}."),
+    };
+
+    private static JsonObject ParametrosDoDocumentoPorModalidade(DocumentoObrigatorioParaModalidade p) => new()
+    {
+        ["modalidade"] = HashCanonicalComputer.NormalizeNfc(p.Modalidade),
+        ["tipoDocumento"] = HashCanonicalComputer.NormalizeNfc(p.TipoDocumento),
+    };
 }

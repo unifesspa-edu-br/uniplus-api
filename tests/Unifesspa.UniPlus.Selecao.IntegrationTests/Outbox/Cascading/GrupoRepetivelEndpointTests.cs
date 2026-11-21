@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -18,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -44,21 +46,11 @@ public sealed class GrupoRepetivelEndpointTests
         HttpResponseMessage gravado = await DefinirGrupoAsync(client, processoId, campo, comParentesco: true);
         gravado.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravado.Content.ReadAsStringAsync());
 
-        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
-        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
-        HttpResponseMessage lido = await client.SendAsync(get);
-        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
-
-        using JsonDocument corpo = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
-        JsonElement inscricao = corpo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO");
-        JsonElement grupo = inscricao.GetProperty("grupos").EnumerateArray().Single();
-        grupo.GetProperty("codigo").GetString().Should().Be("COMPOSICAO_FAMILIAR");
-        grupo.GetProperty("maximo").ValueKind.Should().Be(JsonValueKind.Null);
-        grupo.GetProperty("incluiCandidato").GetBoolean().Should().BeTrue();
-        grupo.GetProperty("subitens").EnumerateArray().Select(static s => s.GetProperty("fatoCodigo").GetString())
-            .Should().Equal(CandidatoComoMembro.FatoParentesco, campo);
-        inscricao.GetProperty("fatosColetados").EnumerateArray().Select(static f => f.GetProperty("fatoCodigo").GetString())
+        using JsonDocument corpo = await LerProcessoAsync(client, processoId);
+        JsonElement inscricao = FormularioDeInscricao(corpo);
+        JsonElement coleta = inscricao.GetProperty("coleta");
+        ConferirGrupoDaComposicaoFamiliar(coleta.GetProperty("grupos").EnumerateArray().Single(), campo);
+        coleta.GetProperty("itens").EnumerateArray().Select(static f => f.GetProperty("fatoCodigo").GetString())
             .Should().NotContain(campo, "o campo do grupo não é item do formulário");
     }
 
@@ -74,7 +66,57 @@ public sealed class GrupoRepetivelEndpointTests
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await recusado.Content.ReadAsStringAsync());
         problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
-            .Should().Contain(["grupos[0].rotulo", "grupos[0].minimo", "grupos[0].subitens", "grupos[0].subitens[0].rotulo"]);
+            .Should().Contain(["grupos[0].rotulo", "grupos[0].ocorrencias.minimo", "grupos[0].subitens", "grupos[0].subitens[0].apresentacao.rotulo"]);
+    }
+
+    [Fact(DisplayName = "O grupo sem as ocorrências é recusado com o código novo no mínimo e na inclusão do candidato, acumulado com as demais recusas")]
+    public async Task DefinirItens_GrupoSemOcorrencias_RecusaMinimoEInclusaoJuntoDasDemais()
+    {
+        string campo = await SemearFatoDeMembroAsync();
+        Guid processoId = await SemearProcessoAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage recusado = await EnviarAsync(
+            client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", CorpoComGrupoSemOcorrencias(campo), exigeSucesso: false);
+
+        recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await recusado.Content.ReadAsStringAsync());
+        JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().Contain(
+            ["grupos[0].ocorrencias.minimo", "grupos[0].ocorrencias.incluiCandidato", "grupos[0].rotulo"]);
+        erros.Where(static e => e.GetProperty("field").GetString()!.StartsWith("grupos[0].ocorrencias.", StringComparison.Ordinal))
+            .Should().OnlyContain(static e => e.GetProperty("code").GetString() == "uniplus.grupo_formulario.ocorrencias_obrigatorias");
+    }
+
+    private static object CorpoComGrupoSemOcorrencias(string campo)
+    {
+        object[] subitens = [FormularioDeInscricaoHttp.Item(campo, 0, "Trabalha no campo", "BOOLEANO")];
+        JsonObject grupo = JsonSerializer.SerializeToNode(FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, "", "DADOS", subitens))!.AsObject();
+        grupo.Remove("ocorrencias");
+        return new { itens = Array.Empty<object>(), grupos = new[] { grupo } };
+    }
+
+    private static async Task<JsonDocument> LerProcessoAsync(HttpClient client, Guid processoId)
+    {
+        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
+        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
+        HttpResponseMessage lido = await client.SendAsync(get);
+        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
+        return JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
+    }
+
+    private static JsonElement FormularioDeInscricao(JsonDocument processo) =>
+        processo.RootElement.GetProperty("formularios").EnumerateArray()
+            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO");
+
+    private static void ConferirGrupoDaComposicaoFamiliar(JsonElement grupo, string campo)
+    {
+        grupo.GetProperty("codigo").GetString().Should().Be("COMPOSICAO_FAMILIAR");
+        JsonElement ocorrencias = grupo.GetProperty("ocorrencias");
+        ocorrencias.GetProperty("maximo").ValueKind.Should().Be(JsonValueKind.Null);
+        ocorrencias.GetProperty("incluiCandidato").GetBoolean().Should().BeTrue();
+        grupo.GetProperty("subitens").EnumerateArray().Select(static s => s.GetProperty("fatoCodigo").GetString())
+            .Should().Equal(CandidatoComoMembro.FatoParentesco, campo);
     }
 
     /// <summary>O PUT dos itens com a composição familiar sem máximo que inclui o candidato.</summary>
@@ -85,21 +127,14 @@ public sealed class GrupoRepetivelEndpointTests
         object[] subitens =
         [
             .. comParentesco
-                ? new object[] { new { fatoCodigo = CandidatoComoMembro.FatoParentesco, ordem = 0, rotulo = "Parentesco", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } }
+                ? new object[] { FormularioDeInscricaoHttp.Item(CandidatoComoMembro.FatoParentesco, 0, "Parentesco", "SELECAO_UNICA") }
                 : [],
-            new { fatoCodigo = campo, ordem = 1, rotulo = rotuloDoCampo, tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" },
+            FormularioDeInscricaoHttp.Item(campo, 1, rotuloDoCampo, "BOOLEANO"),
         ];
         return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
         {
             itens = Array.Empty<object>(),
-            grupos = new[]
-            {
-                new
-                {
-                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo, etapaCodigo = "DADOS",
-                    minimo, maximo = (int?)null, incluiCandidato = true, obrigatoriedade = "NUNCA", subitens,
-                },
-            },
+            grupos = new[] { FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, rotulo, "DADOS", subitens, new OcorrenciasDoGrupoInput(minimo, true)) },
         }, exigeSucesso: false);
     }
 
@@ -112,46 +147,13 @@ public sealed class GrupoRepetivelEndpointTests
         string membro = $"CATEGORIA_RENDA_{sufixo}";
         string agregado = $"CATEGORIAS_FAMILIA_{sufixo}";
         Guid tipoDocumentoId = await SemearCatalogoDoAgregadoAsync(membro, agregado, sufixo);
-        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearProcessoPublicavelAsync();
-        Guid faseId = processo.CronogramaFases.Single().Id;
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/fatos/{membro}/opcoes", new
-        {
-            opcoes = new[] { new { codigo = "RURAL", rotulo = "Trabalhador rural" }, new { codigo = "URBANA", rotulo = "Trabalhador urbano" } },
-        });
-        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/itens", new
-        {
-            itens = Array.Empty<object>(),
-            grupos = new[]
-            {
-                new
-                {
-                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
-                    minimo = 1, maximo = 10, obrigatoriedade = obrigatoriedadeDoGrupo,
-                    subitens = new[] { new { fatoCodigo = membro, ordem = 0, rotulo = "Categoria de renda", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } },
-                },
-            },
-        });
-        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos", new[]
-        {
-            new
-            {
-                tipo = "FOLHA",
-                documento = new
-                {
-                    exigidoNaFaseId = faseId,
-                    finalidade = "INSCRICAO",
-                    tipoDocumentoId,
-                    aplicabilidade = "CONDICIONAL",
-                    obrigatorio = true,
-                    condicoes = new[] { new { clausula = 0, fato = agregado, operador = "EM", valor = "[\"RURAL\"]" } },
-                    basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
-                    formatosPermitidos = "QUALQUER",
-                },
-            },
-        });
+        await DefinirOpcoesDeCategoriaDeRendaAsync(client, processo.Id, membro);
+        await DefinirGrupoDeUmCampoAsync(
+            client, processo.Id, FormularioDeInscricaoHttp.Item(membro, 0, "Categoria de renda", "SELECAO_UNICA"), obrigatoriedadeDoGrupo);
+        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (agregado, "EM", "[\"RURAL\"]"));
 
         HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
         publicado.StatusCode.Should().Be(esperado, await publicado.Content.ReadAsStringAsync());
@@ -162,51 +164,62 @@ public sealed class GrupoRepetivelEndpointTests
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         string sobGuarda = $"SOB_GUARDA_{sufixo}";
-        FatoCandidato campoDeMembro = CriacaoDoFato.CriarDoAdministrador(
-            sobGuarda, "Sob guarda", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        FatoCandidato campoDeMembro = FatoBooleanoDeMembro(sobGuarda, "Sob guarda", "RESULTADO_FINAL");
         Guid tipoDocumentoId = await SemearNoCatalogoAsync(campoDeMembro, $"CERT_GUARDA_{sufixo}", "Certidão de guarda");
-        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearProcessoPublicavelAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/itens", new
-        {
-            itens = Array.Empty<object>(),
-            grupos = new[]
-            {
-                new
-                {
-                    codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
-                    minimo = 1, maximo = 10, obrigatoriedade = "SEMPRE",
-                    subitens = new[] { new { fatoCodigo = sobGuarda, ordem = 0, rotulo = "Sob guarda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" } },
-                },
-            },
-        });
-        await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos", new[]
-        {
-            new
-            {
-                tipo = "FOLHA",
-                repetePorEntidade = "COMPOSICAO_FAMILIAR",
-                documento = new
-                {
-                    exigidoNaFaseId = processo.CronogramaFases.Single().Id,
-                    finalidade = "INSCRICAO",
-                    tipoDocumentoId,
-                    aplicabilidade = "CONDICIONAL",
-                    obrigatorio = true,
-                    condicoes = new[] { new { clausula = 0, fato = sobGuarda, operador = "IGUAL", valor = "true" } },
-                    basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
-                    formatosPermitidos = "QUALQUER",
-                },
-            },
-        });
+        await DefinirGrupoDeUmCampoAsync(client, processo.Id, FormularioDeInscricaoHttp.Item(sobGuarda, 0, "Sob guarda", "BOOLEANO"), "SEMPRE");
+        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (sobGuarda, "IGUAL", "true"), repetePorEntidade: "COMPOSICAO_FAMILIAR");
 
         HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
         publicado.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicado.Content.ReadAsStringAsync());
     }
+
+    private static Task<HttpResponseMessage> DefinirOpcoesDeCategoriaDeRendaAsync(HttpClient client, Guid processoId, string fato) =>
+        EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/fatos/{fato}/opcoes", new
+        {
+            opcoes = new[] { new { codigo = "RURAL", rotulo = "Trabalhador rural" }, new { codigo = "URBANA", rotulo = "Trabalhador urbano" } },
+        });
+
+    /// <summary>O PUT dos itens com a composição familiar de um só campo, de uma a dez ocorrências.</summary>
+    private static Task<HttpResponseMessage> DefinirGrupoDeUmCampoAsync(HttpClient client, Guid processoId, object campo, string obrigatoriedade) =>
+        EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
+        {
+            itens = Array.Empty<object>(),
+            grupos = new[]
+            {
+                FormularioDeInscricaoHttp.Grupo(
+                    "COMPOSICAO_FAMILIAR", 0, "Composição familiar", "DADOS", [campo], new OcorrenciasDoGrupoInput(1, false, 10), obrigatoriedade),
+            },
+        });
+
+    /// <summary>
+    /// A exigência da folha na fase do processo, para quem cumpre a <paramref name="condicao"/> — fato, operador e valor —,
+    /// repetida por membro quando o grupo é dado em <paramref name="repetePorEntidade"/>.
+    /// </summary>
+    private static Task<HttpResponseMessage> ExigirDocumentoAsync(
+        HttpClient client, ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao, string? repetePorEntidade = null) =>
+        EnviarAsync(
+            client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos",
+            new[] { new { tipo = "FOLHA", repetePorEntidade, documento = DocumentoDaFolha(processo, tipoDocumentoId, condicao) } });
+
+    private static object DocumentoDaFolha(ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao) => new
+    {
+        tipoDocumento = new { id = tipoDocumentoId },
+        momento = new { faseId = processo.CronogramaFases.Single().Id, finalidade = "INSCRICAO" },
+        aplicabilidade = new
+        {
+            tipo = "CONDICIONAL",
+            condicoes = new[] { new { clausula = 0, fato = condicao.Fato, operador = condicao.Operador, valor = condicao.Valor } },
+        },
+        indeferimento = new
+        {
+            obrigatorio = true,
+            basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
+        },
+        requisitos = new { formatosPermitidos = "QUALQUER" },
+    };
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId) =>
         EnviarAsync(client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", exigeSucesso: false, corpo: new
@@ -254,6 +267,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
         return await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Agregado do grupo {Guid.CreateVersion7()}" });
     }
 
@@ -271,13 +285,16 @@ public sealed class GrupoRepetivelEndpointTests
         return resposta;
     }
 
+    private static FatoCandidato FatoBooleanoDeMembro(string codigo, string nome, string pontoResolucao) =>
+        CriacaoDoFato.CriarDoAdministrador(
+            codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
+            pontoResolucao, EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+
     private async Task<string> SemearFatoDeMembroAsync()
     {
         string codigo = $"MEMBRO_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
-        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            codigo, "Trabalha no campo", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        FatoCandidato fato = FatoBooleanoDeMembro(codigo, "Trabalha no campo", "INSCRICAO");
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Add(fato);

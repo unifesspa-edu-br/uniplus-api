@@ -8,61 +8,69 @@
         "itens": [
           {
             "fatoCodigo": "NASCIMENTO_A",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": -120,
-                  "dias": 0
-                },
-                "dataMaxima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": 0,
-                  "dias": 0
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": -120,
+                    "dias": 0
+                  },
+                  "dataMaxima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": 0,
+                    "dias": 0
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "NASCIMENTO_B",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": -120,
-                  "dias": 0
-                },
-                "dataMaxima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": 0,
-                  "dias": 0
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": -120,
+                    "dias": 0
+                  },
+                  "dataMaxima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": 0,
+                    "dias": 0
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -90,13 +98,17 @@
       {
         "fatoCodigo": "NASCIMENTO_A",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       },
       {
         "fatoCodigo": "NASCIMENTO_B",
-        "restricoesVioladas": [
-          "FAIXA_DE_DATA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_DE_DATA"
+          ]
+        }
       }
     ]
   }

@@ -34,29 +34,51 @@ public sealed class DesempatePorAreaEnemEndpointTests
 
     public DesempatePorAreaEnemEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A ordem de áreas do quadro congelado é gravada e volta pelo GET por código, na ordem, round-tripável")]
+    private static async Task<JsonDocument> GravarOrdemDeAreasEObterAsync(Contexto ctx, params string[] areas)
+    {
+        HttpResponseMessage gravacao = await ctx.PutAsync("criterios-desempate", CorpoPorArea(areas));
+        gravacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravacao.Content.ReadAsStringAsync());
+        return await ctx.ObterAsync();
+    }
+
+    private static string[] AreasDoPrimeiroCriterio(JsonDocument processo) =>
+        [.. processo.RootElement.GetProperty("criteriosDesempate")[0].GetProperty("parametros").GetProperty("areas")
+            .EnumerateArray().Select(static a => a.GetString()!)];
+
+    [Fact(DisplayName = "A ordem de áreas do quadro congelado é gravada e volta pelo GET por código, na ordem")]
     public async Task AreasDoQuadro_GravaEVoltaPeloGet()
     {
         Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AreasDoQuadro_GravaEVoltaPeloGet));
 
-        HttpResponseMessage gravacao = await ctx.PutAsync("criterios-desempate", CorpoPorArea("REDACAO", "MATEMATICA"));
-        gravacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravacao.Content.ReadAsStringAsync());
+        using JsonDocument doc = await GravarOrdemDeAreasEObterAsync(ctx, "REDACAO", "MATEMATICA");
 
-        using JsonDocument doc = await ctx.ObterAsync();
-        JsonElement criterio = doc.RootElement.GetProperty("criteriosDesempate")[0];
-        criterio.GetProperty("regra").GetProperty("codigo").GetString().Should().Be(CriterioDesempateCodigo.MaiorNotaAreaEnem);
-        string[] areas = [.. criterio.GetProperty("areas").EnumerateArray().Select(static a => a.GetString()!)];
-        areas.Should().Equal("REDACAO", "MATEMATICA");
+        doc.RootElement.GetProperty("criteriosDesempate")[0].GetProperty("regra").GetProperty("codigo").GetString()
+            .Should().Be(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        AreasDoPrimeiroCriterio(doc).Should().Equal("REDACAO", "MATEMATICA");
+    }
 
-        // O rótulo não mora no critério: está no quadro da própria classificação.
+    [Fact(DisplayName = "O rótulo da área não mora no critério: está no quadro da própria classificação")]
+    public async Task AreasDoQuadro_RotuloVemDoQuadroDaClassificacao()
+    {
+        Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AreasDoQuadro_RotuloVemDoQuadroDaClassificacao));
+
+        using JsonDocument doc = await GravarOrdemDeAreasEObterAsync(ctx, "REDACAO", "MATEMATICA");
+
         doc.RootElement.GetProperty("classificacao").GetProperty("quadroPesoAreaEnem")[0]
             .GetProperty("areas").EnumerateArray()
             .Should().Contain(area =>
                 area.GetProperty("codigo").GetString() == "MATEMATICA"
                 && area.GetProperty("rotulo").GetString() == "Matemática e suas Tecnologias");
+    }
 
-        (await ctx.PutAsync("criterios-desempate", CorpoPorArea(areas)))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent, "o que voltou é aceito de volta pelo mesmo PUT");
+    [Fact(DisplayName = "A ordem de áreas que voltou pelo GET é aceita de volta pelo mesmo PUT")]
+    public async Task AreasDoQuadro_VoltaRoundTripavelPeloMesmoPut()
+    {
+        Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AreasDoQuadro_VoltaRoundTripavelPeloMesmoPut));
+        using JsonDocument doc = await GravarOrdemDeAreasEObterAsync(ctx, "REDACAO", "MATEMATICA");
+
+        (await ctx.PutAsync("criterios-desempate", CorpoPorArea(AreasDoPrimeiroCriterio(doc))))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact(DisplayName = "Área fora do quadro congelado é recusada com 422 que lista os códigos aceitos com o rótulo")]
@@ -88,7 +110,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         string[] textos = [.. Textos(problema.RootElement)];
         textos.Should().Contain("uniplus.selecao.criterio_desempate.area_repetida");
-        textos.Should().Contain("criterios[0].areas[2]");
+        textos.Should().Contain("criterios[0].parametros.areas[2]");
     }
 
     [Fact(DisplayName = "Desmarcar ENEM na classificação havendo desempate por área é recusado com 422")]
@@ -114,14 +136,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
     public async Task AcimaDoTeto_422ComUmErroMapeado()
     {
         Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AcimaDoTeto_422ComUmErroMapeado));
-        object[] criterios = [.. Enumerable.Range(1, 10_000).Select(static ordem => (object)new
-        {
-            ordem,
-            regraCodigo = string.Empty,
-            regraVersao = string.Empty,
-        })];
-
-        HttpResponseMessage resposta = await ctx.PutAsync("criterios-desempate", criterios);
+        HttpResponseMessage resposta = await ctx.PutAsync("criterios-desempate", CriteriosAcimaDoTeto());
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -144,14 +159,20 @@ public sealed class DesempatePorAreaEnemEndpointTests
         Textos(problema.RootElement).Should().Contain("uniplus.selecao.processo_seletivo.desempate_area_enem_sem_quadro");
     }
 
+    private static object[] CriteriosAcimaDoTeto() =>
+        [.. Enumerable.Range(1, 10_000).Select(static ordem => (object)new
+        {
+            ordem,
+            regra = new { codigo = string.Empty, versao = string.Empty },
+        })];
+
     private static object[] CorpoPorArea(params string[] areas) =>
     [
         new
         {
             ordem = 1,
-            regraCodigo = CriterioDesempateCodigo.MaiorNotaAreaEnem,
-            regraVersao = "v1",
-            areas,
+            regra = new { codigo = CriterioDesempateCodigo.MaiorNotaAreaEnem, versao = "v1" },
+            parametros = new { areas },
         },
     ];
 

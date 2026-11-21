@@ -48,52 +48,61 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
     {
         if (no.Documento is not { } folha)
         {
-            return Result<NoExigencia>.Failure(new DomainError(
-                "NoExigencia.DocumentoObrigatorioEmFolha",
-                "Um nó do tipo FOLHA precisa declarar 'documento'."));
+            return Result<NoExigencia>.Failure(DocumentoAusenteNaFolha());
         }
 
         Result<DocumentoExigido> documento = await documentos.MontarAsync(folha, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
         return documento.IsFailure
             ? Result<NoExigencia>.ValidationFailure(documento.Errors)
-            : NoExigencia.CriarFolha(
-                documento.Value!,
-                ordem,
-                no.QuantidadeMinima,
-                no.ChaveDistincao is null ? null : ChaveDistincaoCodigo.FromCodigo(no.ChaveDistincao),
-                no.DataReferencia,
-                no.OcorrenciasEsperadas,
-                no.RepetePorEntidade);
+            : CriarFolha(no, documento.Value!, ordem);
     }
+
+    private static Result<NoExigencia> CriarFolha(NoExigenciaInput no, DocumentoExigido documento, int ordem) =>
+        NoExigencia.CriarFolha(
+            documento,
+            ordem,
+            no.QuantidadeMinima(),
+            no.Distincao()?.Chave is { } chave ? ChaveDistincaoCodigo.FromCodigo(chave) : null,
+            no.Distincao()?.DataReferencia,
+            no.Distincao()?.OcorrenciasEsperadas,
+            no.RepetePorEntidade);
 
     private async Task<Result<NoExigencia>> GrupoAsync(
         NoExigenciaInput no, int ordem, string? grupoDaRepeticao, CancellationToken cancellationToken)
     {
-        TipoNo tipo = no.Tipo switch
-        {
-            "E" => TipoNo.GrupoE,
-            "OU" => TipoNo.GrupoOu,
-            _ => TipoNo.Nenhum,
-        };
+        TipoNo tipo = TipoDoGrupo(no.Tipo);
         if (tipo == TipoNo.Nenhum)
         {
-            return Result<NoExigencia>.Failure(new DomainError(
-                "NoExigencia.TipoInvalido",
-                $"Tipo de nó '{no.Tipo}' inválido — esperado FOLHA, E ou OU."));
+            return Result<NoExigencia>.Failure(TipoDeNoInvalido(no.Tipo));
         }
 
         Result<List<NoExigencia>> filhos = await FilhosAsync(no, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
-        if (filhos.IsFailure)
-        {
-            return Result<NoExigencia>.ValidationFailure(filhos.Errors);
-        }
+        return filhos.IsFailure
+            ? Result<NoExigencia>.ValidationFailure(filhos.Errors)
+            : CriarGrupo(no, tipo, ordem, filhos.Value!);
+    }
 
-        Result<IReadOnlyList<NoExigenciaBaseLegal>> basesLegais = BasesLegaisDoGrupo(no.BasesLegais ?? []);
+    private static Result<NoExigencia> CriarGrupo(NoExigenciaInput no, TipoNo tipo, int ordem, List<NoExigencia> filhos)
+    {
+        Result<IReadOnlyList<NoExigenciaBaseLegal>> basesLegais = BasesLegaisDoGrupo(no.BasesLegaisDoGrupo());
         return basesLegais.IsFailure
             ? Result<NoExigencia>.ValidationFailure(basesLegais.Errors)
             : NoExigencia.CriarGrupo(
-                tipo, ordem, no.QuantidadeMinima, no.Consequencia, basesLegais.Value!, filhos.Value!, no.RepetePorEntidade);
+                tipo, ordem, no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), basesLegais.Value!, filhos, no.RepetePorEntidade);
     }
+
+    private static TipoNo TipoDoGrupo(string tipo) => tipo switch
+    {
+        "E" => TipoNo.GrupoE,
+        "OU" => TipoNo.GrupoOu,
+        _ => TipoNo.Nenhum,
+    };
+
+    private static DomainError DocumentoAusenteNaFolha() =>
+        new("NoExigencia.DocumentoObrigatorioEmFolha", "Um nó do tipo FOLHA precisa declarar 'documento'.");
+
+    private static DomainError TipoDeNoInvalido(string tipo) =>
+        new("NoExigencia.TipoInvalido", $"Tipo de nó '{tipo}' inválido — esperado FOLHA, E ou OU.");
 
     private async Task<Result<List<NoExigencia>>> FilhosAsync(
         NoExigenciaInput grupo, string? grupoDaRepeticao, CancellationToken cancellationToken)

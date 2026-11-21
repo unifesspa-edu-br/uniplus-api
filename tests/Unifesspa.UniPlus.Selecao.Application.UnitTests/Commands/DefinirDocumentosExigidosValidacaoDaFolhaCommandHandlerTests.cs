@@ -31,7 +31,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_BaseLegalInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        ItemDocumentoExigidoInput folha = cenario.ItemGeral() with { BasesLegais = [new("", "FEDERAL", "RESOLVIDO", null)] };
+        ItemDocumentoExigidoInput folha = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("", "FEDERAL", "RESOLVIDO", null)).Construir();
 
         Result resultado = await HandleAsync(cenario.Mocks, GrupoOuComUmaFolha(cenario, folha));
 
@@ -43,7 +43,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_AplicabilidadeInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        ItemDocumentoExigidoInput folha = cenario.ItemGeral() with { Aplicabilidade = "INVALIDA" };
+        ItemDocumentoExigidoInput folha = cenario.ItemGeral().ComAplicabilidade("INVALIDA").Construir();
 
         Result resultado = await HandleAsync(cenario.Mocks, GrupoOuComUmaFolha(cenario, folha));
 
@@ -56,9 +56,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { Finalidade = "MATRICULA" });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("MATRICULA"));
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("momento.finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
         await cenario.Mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 
@@ -69,11 +69,11 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         BaseLegalInput baseSemReferencia = new("", "FEDERAL", "RESOLVIDO", null);
         BaseLegalInput baseSemAbrangencia = new("Lei X", "", "RESOLVIDO", null);
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { BasesLegais = [baseSemReferencia, baseSemAbrangencia] });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComBasesLegais(baseSemReferencia, baseSemAbrangencia));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["basesLegais[0].referencia", "basesLegais[1].abrangencia"]);
+            ["indeferimento.basesLegais[0].referencia", "indeferimento.basesLegais[1].abrangencia"]);
     }
 
     [Fact(DisplayName = "CA-08: âncora de fase de IdadeMaximaEmissao que não pertence ao processo é recusada")]
@@ -82,7 +82,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, Guid.CreateVersion7());
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { IdadeMaximaEmissao = idade });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComIdadeMaxima(idade));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
@@ -95,15 +95,63 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, cenario.Fase.Id);
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { IdadeMaximaEmissao = idade });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComIdadeMaxima(idade));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
     }
 
+    [Fact(DisplayName = "A aplicabilidade ausente é recusada com código no campo aplicabilidade.tipo, antes de consultar TipoDocumento")]
+    public async Task Handle_AplicabilidadeAusente_RecusaNoCampoDoTipo()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
+
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComAplicabilidade(null));
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+            [("aplicabilidade.tipo", "DocumentoExigido.AplicabilidadeObrigatoria")]);
+        await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
+    }
+
+    [Fact(DisplayName = "A consequência inválida e o tamanho não positivo acumulam, cada um no seu campo do pedido")]
+    public async Task Handle_ConsequenciaETamanhoInvalidos_AcumulamNosCamposDoPedido()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
+
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComConsequencia("TALVEZ").ComTamanhoMaximo(0));
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("indeferimento.consequencia", "DocumentoExigido.ConsequenciaIndeferimentoInvalida"),
+            ("requisitos.tamanhoMaximoBytes", "DocumentoExigido.TamanhoMaximoBytesInvalido"),
+        ]);
+    }
+
+    [Fact(DisplayName = "A exigência geral com condição é recusada no campo aplicabilidade.condicoes")]
+    public async Task Handle_GeralComCondicao_RecusaNoCampoDasCondicoes()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
+        ItemDocumentoExigidoDeTeste item = cenario.ItemCondicional(new(0, "SEXO", "IGUAL", "\"MASCULINO\"")).ComAplicabilidade("GERAL");
+
+        Result resultado = await cenario.DefinirAsync(item);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+            [("aplicabilidade.condicoes", "DocumentoExigido.GeralComCondicao")]);
+    }
+
+    [Fact(DisplayName = "Sem o objeto dos requisitos, os formatos permitidos ausentes são recusados com código")]
+    public async Task Handle_SemRequisitos_RecusaFormatosPermitidosObrigatorio()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase();
+
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().SemRequisitos());
+
+        resultado.Error!.Code.Should().Be("FormatosPermitidos.Obrigatorio");
+    }
+
     /// <summary>O grupo (nó raiz) é visitado antes da folha, mas não tem bases legais próprias: a travessia recursa até a violação na folha.</summary>
     private static DefinirDocumentosExigidosCommand GrupoOuComUmaFolha(CenarioDaExigencia cenario, ItemDocumentoExigidoInput folha) =>
-        new(cenario.Processo.Id, [new NoExigenciaInput("OU", null, 1, "ELIMINA", [], [new NoExigenciaInput("FOLHA", folha, null, null, null, null)])]);
+        new(cenario.Processo.Id, [NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(folha).Construir()).ComQuantidadeMinima(1).ComIndeferimento("ELIMINA").Construir()]);
 
     private static async Task ConferirQueNenhumLeitorFoiConsultado(Mocks mocks)
     {

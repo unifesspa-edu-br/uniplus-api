@@ -44,11 +44,18 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
         ProcessoSeletivo? processo = await repository.ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        if (processo is null)
-        {
-            return NaoEncontrado(query.ProcessoSeletivoId);
-        }
+        return processo is null
+            ? NaoEncontrado(query.ProcessoSeletivoId)
+            : await ProjetarAsync(processo, query.Finalidade, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<FormularioRenderizavelDto>> ProjetarAsync(
+        ProcessoSeletivo processo,
+        FinalidadeFormulario finalidade,
+        IFatoCandidatoReader fatoCandidatoReader,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        CancellationToken cancellationToken)
+    {
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
@@ -57,19 +64,19 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
 
         IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogo);
-        if (avaliavel.IsFailure)
-        {
-            return Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!);
-        }
-
-        return ProjecaoDoFormularioRenderizavel.Projetar(
-                query.Finalidade, avaliavel.Value!, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-                ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso.Value!)) is { } formulario
-            ? Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(
-                formulario, comprovacaoDocumental: null, dependenciasDaAvaliacao: null, dependenciasDoFator: null,
-                processo.Formularios.FirstOrDefault(f => f.Finalidade == query.Finalidade)?.FaseId))
-            : NaoEncontrado(query.ProcessoSeletivoId);
+        return avaliavel.IsFailure
+            ? Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!)
+            : Projetar(processo, finalidade, avaliavel.Value!, fuso.Value!);
     }
+
+    private static Result<FormularioRenderizavelDto> Projetar(
+        ProcessoSeletivo processo, FinalidadeFormulario finalidade, DefinicaoAvaliavel avaliavel, TimeZoneInfo fuso) =>
+        ProjecaoDoFormularioRenderizavel.Projetar(
+            finalidade, avaliavel, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
+            ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso)) is { } formulario
+            ? Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
+                formulario, processo.Formularios.FirstOrDefault(f => f.Finalidade == finalidade)?.FaseId, null, null, null))
+            : NaoEncontrado(processo.Id);
 
     private static Result<FormularioRenderizavelDto> NaoEncontrado(Guid processoSeletivoId) =>
         Result<FormularioRenderizavelDto>.Failure(new DomainError(

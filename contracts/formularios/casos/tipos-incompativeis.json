@@ -8,29 +8,37 @@
         "itens": [
           {
             "fatoCodigo": "IDADE",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "DECLARACAO",
-            "exibicao": [
-              [
-                {
-                  "fato": "IDADE",
-                  "operador": "IGUAL",
-                  "valor": 18
-                }
-              ]
-            ],
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": [
+                [
+                  {
+                    "fato": "IDADE",
+                    "operador": "IGUAL",
+                    "valor": 18
+                  }
+                ]
+              ],
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -52,7 +60,9 @@
     "campos": [
       {
         "fatoCodigo": "DECLARACAO",
-        "visivel": "INDETERMINADO"
+        "regras": {
+          "visivel": "INDETERMINADO"
+        }
       }
     ]
   }

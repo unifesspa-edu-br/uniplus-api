@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A escrita do modelo de formulário recusa só o vínculo novo a fato, termo ou tipo desativado ou
@@ -32,22 +33,28 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTestBase
 {
+    private static ModeloFormulario ExistenteComOTermo(TermoDoModelo termo)
+    {
+        ItemDoModelo item = new(
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        return ModeloFormulario.Criar(
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
+            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [termo], [], []),
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+    }
+
     [Fact(DisplayName = "Termo que o catálogo já não traz continua no modelo que o escolheu; o termo novo é recusado")]
     public async Task Termo_RecusaSoOVinculoNovo()
     {
-        TermoDoModelo gravado = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
-        ModeloFormulario existente = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [gravado], [], []),
-            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
-        TermoExigidoInput mantido = new(gravado.Codigo, 0, gravado.TermoId, gravado.VersaoId, null, "SEMPRE", null);
-        TermoExigidoInput novo = new("IMAGEM", 1, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
+        TermoDoModelo gravado = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
+        ModeloFormulario existente = ExistenteComOTermo(gravado);
+        TermoExigidoInput mantido = EntradaDoTermoExigidoDeTeste.Exigindo(gravado.Codigo).DaVersao(gravado.TermoId, gravado.VersaoId).Construir();
+        TermoExigidoInput novo = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
         Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)) with { Termos = [mantido, novo] }, tipo: null);
 
         editar.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.termos[1].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
+            new FieldError("conteudo.termos[1].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 
@@ -106,7 +113,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         FatoCandidato opcao = OpcaoComUmValor();
         FatoCandidato perfil = PerfilDerivadoDesativado(opcao);
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Certificado, opcao, perfil]);
-        FatoColetadoInput comOpcoes = Item("OPCAO", 1, "SELECAO_UNICA") with { Restricoes = [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])] };
+        FatoColetadoInput comOpcoes = Montar("OPCAO", 1, "SELECAO_UNICA").ComRestricoes(new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
 
@@ -125,10 +132,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Obrigatoriedade QUANDO sem predicado é recusada na leitura")]
     public async Task Criar_QuandoSemPredicado_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0) with { Obrigatoriedade = "QUANDO" }));
+        Result<Guid> resultado = await CriarAsync(Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.itens[0].obrigatoriedade", new DomainError(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, string.Empty)),
+            new FieldError("conteudo.itens[0].regras.obrigatoriedade", new DomainError(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message));
     }
 
@@ -145,14 +152,14 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     public async Task Criar_RecusaDeLeitura_AcumulaAsDoCadastro()
     {
         CriarModeloFormularioCommand command = new(
-            "", "Habilitação", null, "XYZ", null, Conteudo(Item("CERTIFICADO", 0) with { Obrigatoriedade = "QUANDO" }));
+            "", "XYZ", new DescritivoDoModeloInput("Habilitação", null, null), Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
             command, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("conteudo.itens[0].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida),
+            ("conteudo.itens[0].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida),
             ("codigo", ModeloFormularioErrorCodes.CodigoObrigatorio),
             ("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida),
         ]);

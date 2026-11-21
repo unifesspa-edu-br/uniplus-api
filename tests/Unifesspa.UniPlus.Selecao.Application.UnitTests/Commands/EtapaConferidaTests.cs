@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class EtapaConferidaTests
 {
@@ -25,8 +26,8 @@ public sealed class EtapaConferidaTests
     private static EtapaProcessoInput Declarada(EtapaProcesso existente, CaraterEtapa carater) => new(
         existente.Nome, carater, TipoOrigemId, 1m, null, 1, Id: existente.Id, Produtos: [], Bancas: [], Recursos: []);
 
-    private static TipoEtapaView TipoLido(bool exigeCorrecaoIndependente) => new(
-        TipoOrigemId, "PROVA", "Prova", null, true, true, false, exigeCorrecaoIndependente, []);
+    private static TipoEtapaView TipoLido(bool exigeCorrecaoIndependente) =>
+        TipoEtapaViewDeTeste.Com(TipoOrigemId, "PROVA").Chamado("Prova").ComCorrecaoIndependente(exigeCorrecaoIndependente).Construir();
 
     [Fact(DisplayName = "A etapa de vínculo igual e caráter trocado exige correção independente conforme o tipo relido")]
     public void ExigeCorrecaoIndependente_VinculoIgualComTipoRelido_UsaOTipoRelido()

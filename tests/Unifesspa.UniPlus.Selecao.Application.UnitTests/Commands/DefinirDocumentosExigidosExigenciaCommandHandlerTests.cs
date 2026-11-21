@@ -62,7 +62,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         cenario.Mocks.Modelos.ListarDoProcessoAsync(cenario.Processo.Id, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(doProcesso ? [modelo] : []);
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { ModeloId = modelo.Id });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComModelo(modelo.Id));
 
         (resultado.Error?.Code).Should().Be(recusa);
         ConferirModeloCopiadoQuandoAceito(cenario.Processo, modelo, aceito: recusa is null);
@@ -86,7 +86,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase().ComTipoDeDocumento(LaudoMedico);
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { FatosComprovados = ["TIPO_DEFICIENCIA"] });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComFatosComprovados("TIPO_DEFICIENCIA"));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         DocumentoExigido exigencia = cenario.Processo.DocumentosExigidos.Should().ContainSingle().Which;
@@ -121,7 +121,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase().ComTipoDeDocumento(LaudoMedico);
         FatoCandidatoView fato = FatoTipoDeficiencia() with { ProtecaoAprovada = estado != "pendente", Ativo = estado != "desativado" };
-        DefinirDocumentosExigidosCommand command = cenario.Comando(cenario.ItemGeral() with { FatosComprovados = ["TIPO_DEFICIENCIA"] });
+        DefinirDocumentosExigidosCommand command = cenario.Comando(cenario.ItemGeral().ComFatosComprovados("TIPO_DEFICIENCIA"));
 
         Result novo = await HandleComCatalogoAsync(cenario, command, [fato]);
 
@@ -140,8 +140,8 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        ItemDocumentoExigidoInput item = new(fase.Id, Guid.CreateVersion7(), "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: ["A", "A"]);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
+        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(fase.Id, Guid.CreateVersion7()).ComFatosComprovados("A", "A");
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -153,10 +153,10 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
     public async Task Handle_MesmaReferenciaDocumental_BasesDistintasPorExigencia()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        ItemDocumentoExigidoInput primeira = cenario.ItemGeral() with { BasesLegais = [new("Lei Federal X", "FEDERAL", "RESOLVIDO", null)] };
-        ItemDocumentoExigidoInput segunda = cenario.ItemGeral() with { BasesLegais = [new("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null)] };
+        ItemDocumentoExigidoDeTeste primeira = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("Lei Federal X", "FEDERAL", "RESOLVIDO", null));
+        ItemDocumentoExigidoDeTeste segunda = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null));
         DefinirDocumentosExigidosCommand command = new(
-            cenario.Processo.Id, [new NoExigenciaInput("FOLHA", primeira, null, null, null, null), new NoExigenciaInput("FOLHA", segunda, null, null, null, null)]);
+            cenario.Processo.Id, [NoExigenciaDeTeste.Folha(primeira).Construir(), NoExigenciaDeTeste.Folha(segunda).Construir()]);
 
         Result resultado = await HandleAsync(cenario.Mocks, command);
 

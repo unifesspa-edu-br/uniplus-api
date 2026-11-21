@@ -33,12 +33,13 @@ public static class CriarTipoEtapaCommandHandler
     private static async Task<Result<TipoEtapa>> Montar(
         CriarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
     {
+        AvaliacaoDasEtapasInput avaliacao = command.Avaliacao ?? AvaliacaoDasEtapasInput.Ausente;
         Result<TipoEtapa> criar = TipoEtapa.Criar(
             command.Codigo, command.Nome, command.Descricao,
-            command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
+            avaliacao.AdmitePontuacao, avaliacao.AdmiteEliminacao, avaliacao.ExigeCorrecaoIndependente);
         Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
-            .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
-        FieldError[] erros = [.. criar.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(command, admitidos)];
+            .Resolver(avaliacao.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
+        FieldError[] erros = CaminhoDaAvaliacao.Aplicar([.. criar.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(avaliacao, admitidos)]);
         if (erros.Length > 0)
         {
             return Result<TipoEtapa>.ValidationFailure(erros);
@@ -49,8 +50,8 @@ public static class CriarTipoEtapaCommandHandler
     }
 
     private static IReadOnlyList<FieldError> ViolacoesDosConceitos(
-        CriarTipoEtapaCommand command, Result<IReadOnlyList<TipoConceito>> admitidos) =>
-        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(command.ExigeCorrecaoIndependente, admitidos.Value!) : [];
+        AvaliacaoDasEtapasInput avaliacao, Result<IReadOnlyList<TipoConceito>> admitidos) =>
+        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(avaliacao.ExigeCorrecaoIndependente, admitidos.Value!) : [];
 
     private static async Task<Result<Guid>> RegistrarSeInedito(
         TipoEtapa tipo, ITipoEtapaRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken) =>

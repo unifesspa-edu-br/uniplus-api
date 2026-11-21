@@ -8,29 +8,37 @@
         "itens": [
           {
             "fatoCodigo": "TEM_BOLSA",
-            "exibicao": null,
-            "obrigatoriedade": "NUNCA",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "NUNCA",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "JUSTIFICATIVA",
-            "exibicao": [
-              [
-                {
-                  "fato": "TEM_BOLSA",
-                  "operador": "DIFERENTE",
-                  "valor": "SIM"
-                }
-              ]
-            ],
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": [
+                [
+                  {
+                    "fato": "TEM_BOLSA",
+                    "operador": "DIFERENTE",
+                    "valor": "SIM"
+                  }
+                ]
+              ],
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -56,7 +64,9 @@
       },
       {
         "fatoCodigo": "JUSTIFICATIVA",
-        "visivel": "FALSO"
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }

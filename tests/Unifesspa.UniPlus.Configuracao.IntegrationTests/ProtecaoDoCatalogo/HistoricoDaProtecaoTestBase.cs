@@ -108,11 +108,15 @@ public abstract class HistoricoDaProtecaoTestBase
             : new(1, 0);
     }
 
+    /// <summary>A aprovação da proteção de dados do fato, como a resposta do fato a traz dentro da definição.</summary>
+    private protected static JsonElement AprovacaoDoFato(JsonElement fato) =>
+        fato.GetProperty("definicao").GetProperty("protecao").GetProperty("aprovacao");
+
     private protected static async Task<JsonElement> ObterFatoAsync(HttpClient client, Guid id)
     {
         HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Fatos}/{id}", Isabella);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        return (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("fato");
     }
 
     private protected static async Task<List<string>> NomesAsync(HttpClient client, Persona quem, string consulta) =>

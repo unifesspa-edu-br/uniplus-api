@@ -14,6 +14,7 @@ using Mappings;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// Projeta para o contrato REST a fase do cronograma, com as bancas requeridas e a regra de recurso.

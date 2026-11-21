@@ -86,7 +86,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
         ArgumentNullException.ThrowIfNull(request);
 
         Result resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.Aplica, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegalBonusRegionalId),
+            new DefinirBonusRegionalCommand(id, request.Aplica, request.Regra, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegal),
             cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
@@ -210,21 +210,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(
-            new DefinirClassificacaoCommand(
-                id,
-                request.RegraCalculoCodigo,
-                request.RegraCalculoVersao,
-                request.RegraArredondamentoCodigo,
-                request.RegraArredondamentoVersao,
-                request.CasasArredondamento,
-                request.RegraOrdemAlocacaoCodigo,
-                request.RegraOrdemAlocacaoVersao,
-                request.RegrasEliminacao,
-                request.BaseadoEmEnem,
-                request.ResolucaoPesoAreaEnem,
-                request.EscalaNotaFinal),
-            cancellationToken);
+        Result resultado = await _commandBus.Send(request.ParaComando(id), cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 }

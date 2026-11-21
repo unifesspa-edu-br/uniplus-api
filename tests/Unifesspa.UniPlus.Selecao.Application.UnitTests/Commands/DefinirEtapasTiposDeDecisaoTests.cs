@@ -109,9 +109,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     private static Task<Result> ExecutarComOsCadastros(ProcessoSeletivo processo, params EtapaProcessoInput[] etapas) =>
         Executar(
             Comando(processo, etapas), RepositorioDe(processo), Substitute.For<IUnitOfWork>(),
-            tipoBancaReader: CadastroComOTipoDeBanca(),
-            regraCatalogoReader: CatalogoDasRegrasDoRecurso(),
-            tipoAtoPublicadoReader: CatalogoComOAtoDaClassificacao());
+            cadastros: new(TiposDeBanca: CadastroComOTipoDeBanca(), Regras: CatalogoDasRegrasDoRecurso(), Atos: CatalogoComOAtoDaClassificacao()));
 
     [Fact(DisplayName = "A etapa declara os tipos de decisão e a leitura os devolve em ordem canônica, do comando ao DTO")]
     public async Task Handle_EtapaComTipos_GravaEDevolveEmOrdemCanonica()
@@ -280,7 +278,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         EtapaProcessoInput etapa = Etapa(1, tipos: [Classificacao]) with { Produtos = [new ProdutoDaEtapaInput("ATO_INEXISTENTE", null)] };
 
         Result resultado = await Executar(
-            Comando(processo, etapa), RepositorioDe(processo), unitOfWork, tipoAtoPublicadoReader: catalogoSemAtos);
+            Comando(processo, etapa), RepositorioDe(processo), unitOfWork, cadastros: new(Atos: catalogoSemAtos));
 
         resultado.Error!.Code.Should().Be("ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo");
         await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);

@@ -27,12 +27,15 @@ public sealed class TipoEtapaCorrecaoIndependenteEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Sem o sinalizador",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
+            avaliacao = new
+            {
+                conceitosAdmitidos = Array.Empty<string>(),
+                admitePontuacao = true,
+                admiteEliminacao = true,
+            },
         });
 
-        await ConferirRecusa(response, "uniplus.configuracao.tipo_etapa.exige_correcao_independente_obrigatorio", "exigeCorrecaoIndependente");
+        await ConferirRecusa(response, "uniplus.configuracao.tipo_etapa.exige_correcao_independente_obrigatorio", "avaliacao.exigeCorrecaoIndependente");
     }
 
     [Fact(DisplayName = "POST exigindo correção independente sem admitir conceito devolve 422 no campo dos conceitos")]
@@ -42,13 +45,16 @@ public sealed class TipoEtapaCorrecaoIndependenteEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Correção sem conceito",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
-            exigeCorrecaoIndependente = true,
+            avaliacao = new
+            {
+                conceitosAdmitidos = Array.Empty<string>(),
+                admitePontuacao = true,
+                admiteEliminacao = true,
+                exigeCorrecaoIndependente = true,
+            },
         });
 
-        await ConferirRecusa(response, "uniplus.configuracao.tipo_etapa.correcao_independente_sem_conceito", "conceitosAdmitidos");
+        await ConferirRecusa(response, "uniplus.configuracao.tipo_etapa.correcao_independente_sem_conceito", "avaliacao.conceitosAdmitidos");
     }
 
     private static async Task ConferirRecusa(HttpResponseMessage response, string codigo, string campo)

@@ -47,6 +47,18 @@ public sealed class AvaliadorFormularioPeloFioTests : AvaliadorFormularioTests
         PeloFio.Avaliar(definicao, entrada);
 }
 
+public sealed class RestricoesDeValorNaAvaliacaoPeloFioTests : RestricoesDeValorNaAvaliacaoTests
+{
+    protected override AvaliacaoFormulario AvaliarDefinicao(DefinicaoFormulario definicao, EntradaAvaliacaoFormulario entrada) =>
+        PeloFio.Avaliar(definicao, entrada);
+}
+
+public sealed class GrupoRepetivelNaAvaliacaoPeloFioTests : GrupoRepetivelNaAvaliacaoTests
+{
+    protected override AvaliacaoFormulario AvaliarDefinicao(DefinicaoFormulario definicao, EntradaAvaliacaoFormulario entrada) =>
+        PeloFio.Avaliar(definicao, entrada);
+}
+
 public sealed class AgregadoNaAvaliacaoPeloFioTests : AgregadoNaAvaliacaoTests
 {
     protected override AvaliacaoFormulario AvaliarDefinicao(DefinicaoFormulario definicao, EntradaAvaliacaoFormulario entrada) =>

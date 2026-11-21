@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// O perfil simulado de um candidato para a pré-visualização do processo: as respostas dos
 /// formulários, por fato; as ocorrências dos grupos repetíveis; as etapas dadas como concluídas; e os
@@ -39,7 +42,7 @@ public sealed record FormularioSimuladoDto(
     IReadOnlyList<SecaoSimuladaDto> Secoes);
 
 /// <summary>Uma seção do formulário avaliada: se ela aparece.</summary>
-public sealed record SecaoSimuladaDto(string Codigo, string Visivel);
+public sealed record SecaoSimuladaDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
 
 /// <summary>
 /// As opções que um campo de escolha deixa escolher diante das respostas: as que valem em definitivo e
@@ -54,10 +57,10 @@ public sealed record OpcoesSimuladasDto(IReadOnlyList<string> Codigos, bool Defi
 public sealed record ItemSimuladoDto(
     string FatoCodigo,
     string? EtapaCodigo,
-    string Visivel,
-    string Obrigatorio,
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
-    string Impedido,
+    [property: AceitaCodigosDe<Ternario>] string Impedido,
     string? MensagemDoImpedimento,
     OpcoesSimuladasDto? Opcoes);
 
@@ -68,8 +71,8 @@ public sealed record ItemSimuladoDto(
 public sealed record GrupoSimuladoDto(
     string Codigo,
     string? EtapaCodigo,
-    string Visivel,
-    string Obrigatorio,
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     bool ContagemValida,
     bool OcorrenciaDoCandidatoValida,
     IReadOnlyList<OcorrenciaSimuladaDto> Ocorrencias);
@@ -78,7 +81,7 @@ public sealed record GrupoSimuladoDto(
 public sealed record OcorrenciaSimuladaDto(string Id, IReadOnlyList<ItemSimuladoDto> Itens);
 
 /// <summary>Um termo avaliado: se aparece e se é obrigatório.</summary>
-public sealed record TermoSimuladoDto(string Codigo, string Visivel, string Obrigatorio);
+public sealed record TermoSimuladoDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
 
 /// <summary>
 /// Um documento da árvore de exigências diante do perfil: <c>EXIGIDO</c>, <c>NAO_EXIGIDO</c> ou

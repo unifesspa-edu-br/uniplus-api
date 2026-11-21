@@ -44,13 +44,16 @@ public sealed class CriarModalidadeCommandHandlerTests
         new(CodigoInstitucional, Descricao: "Ampla concorrência do vestibular remanescente", NaturezaLegal: "AMPLA",
             RegraDeAplicabilidade: Incondicional);
 
+    private Task<Result<Guid>> Criar(CriarModalidadeCommand comando) =>
+        CriarModalidadeCommandHandler.Handle(
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+
     [Fact(DisplayName = "Código livre cria a modalidade, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
     {
         _repository.CodigoExisteEntreVivosAsync(CodigoInstitucional, null, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            ComandoAmpla(), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(ComandoAmpla());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
@@ -69,8 +72,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     {
         var comando = new CriarModalidadeCommand(codigo, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido);
@@ -85,8 +87,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(CodigoInstitucional, null, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            ComandoAmpla(), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(ComandoAmpla());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CodigoJaExiste);
@@ -104,8 +105,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         var comando = new CriarModalidadeCommand(
             "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRADA_DE_OUTRA_MODALIDADE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa);
@@ -121,8 +121,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         var comando = new CriarModalidadeCommand(
             "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL", RegraDeAplicabilidade: OptouPelasCotas(true));
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
@@ -134,8 +133,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     {
         var comando = new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida);
@@ -163,13 +161,12 @@ public sealed class CriarModalidadeCommandHandlerTests
         var comando = new CriarModalidadeCommand(
             CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("descricao", ModalidadeErrorCodes.DescricaoTamanho),
-            ("regraDeAplicabilidade", "ClausulaDnf.ClausulaVazia"),
+            ("regraDeAplicabilidade[0]", "ClausulaDnf.ClausulaVazia"),
         ]);
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
     }
@@ -183,8 +180,7 @@ public sealed class CriarModalidadeCommandHandlerTests
             ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL", RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
             RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)]]);
 
-        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await Criar(comando);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(
             [ModalidadeErrorCodes.DescricaoTamanho, ModalidadeErrorCodes.RegraCitaFatoDesativado]);

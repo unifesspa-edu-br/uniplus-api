@@ -76,7 +76,11 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoColetado FatoColetadoModalidade() =>
-        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
+            .ComRotulo("Modalidade")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     [Fact(DisplayName = "Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
@@ -170,9 +174,10 @@ public sealed class ColetabilidadeDeFatosGateTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 0, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
-                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("ATENDIMENTO_NO_MUNICIPIO", 0)
+                .ComRotulo("Deseja atendimento no município?")
+                .ExibidoQuando(ExibicaoDeTeste.Quando("MUNICIPIO_RESIDENCIA", Operador.Igual, "1504208"))
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
         return processo;
     }

@@ -117,9 +117,7 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
             inscricaoRepository, unitOfWork, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
     }
 
-    private static FatoColetado ItemApelido() => FatoColetado.Criar(
-        "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado ItemApelido() => FatoColetadoDeTeste.Coletando("APELIDO", 0).ComRotulo("Apelido").DeTexto("LIVRE").Construir();
 
     [Fact(DisplayName = "Fora do período da inscrição, salvar é recusado sem gravar nada")]
     public async Task Handle_ForaDoPeriodo_RecusaSemGravar()
@@ -198,11 +196,12 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private static FatoColetado ApelidoComLimite() => FatoColetado.Criar(
-        "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)],
-        hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-        descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado ApelidoComLimite() => FatoColetadoDeTeste.Coletando("APELIDO", 0)
+        .ComRotulo("Apelido")
+        .DeTexto("LIVRE")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComRestricoes(new TamanhoTexto(1, 5))
+        .Construir();
 
     private static Task<Result<InscricaoDto>> SalvarNaVersaoAsync(Inscricao existente, VersaoConfiguracao versao,
         ConfiguracaoPublicada configuracao, IUnitOfWork unitOfWork, IUserContext usuario, TimeProvider relogio, InscricaoRequest? request = null)

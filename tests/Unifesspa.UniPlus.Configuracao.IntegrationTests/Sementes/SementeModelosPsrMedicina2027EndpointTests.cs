@@ -34,7 +34,7 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
         JsonObject modelo = await ObterPeloCodigoAsync(client, codigo);
 
         modelo["ativo"]!.GetValue<bool>().Should().BeTrue();
-        modelo["tipoProcessoCodigo"]!.GetValue<string>().Should().Be(SementePsrMedicina2027.TipoProcessoCodigo);
+        modelo["descritivo"]!["tipoProcessoCodigo"]!.GetValue<string>().Should().Be(SementePsrMedicina2027.TipoProcessoCodigo);
         ConferirQueTemCampos(modelo["conteudo"]!);
 
         // A escrita confere o conteúdo contra o catálogo de fatos, os termos e o tipo de processo:
@@ -77,9 +77,7 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
     private static async Task<HttpResponseMessage> ReescreverAsync(HttpClient client, JsonObject modelo) =>
         await EnviarAsync(client, HttpMethod.Put, $"{Base}/{modelo["id"]!.GetValue<Guid>()}", new
         {
-            nome = modelo["nome"]!.GetValue<string>(),
-            descricao = modelo["descricao"]!.GetValue<string>(),
-            tipoProcessoCodigo = SementePsrMedicina2027.TipoProcessoCodigo,
+            descritivo = modelo["descritivo"],
             conteudo = modelo["conteudo"],
         });
 }

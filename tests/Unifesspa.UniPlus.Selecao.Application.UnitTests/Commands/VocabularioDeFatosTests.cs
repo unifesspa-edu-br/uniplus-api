@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -36,10 +37,7 @@ public sealed class VocabularioDeFatosTests
     [Fact(DisplayName = "UF e município de residência são citáveis: a UF entre as 27 siglas, o município pelo código IBGE bem formado")]
     public void DominiosDinamicos_DerivadosDeResidencia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Residência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS Residência", OrigemCandidatos.InscricaoPropria);
 
         VocabularioDeFatos.Classificar(Derivado("UF_RESIDENCIA", "GEO_UF")).Should().Be(TipoDominioFato.CategoricoDinamico);
         VocabularioDeFatos.Classificar(Derivado("MUNICIPIO_RESIDENCIA", "GEO_MUNICIPIO")).Should().Be(TipoDominioFato.CategoricoDinamico);
@@ -115,9 +113,14 @@ public sealed class VocabularioDeFatosTests
     public void QueOProcessoResolve_AgregadoDeCampoDeGrupo_Incluido()
     {
         ProcessoSeletivo processo = Processo();
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO", 0)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
+                .ComRotulo("Categoria de renda")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir())
+            .Construir();
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])

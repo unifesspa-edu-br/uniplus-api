@@ -30,7 +30,15 @@
   <ItemGroup>
     <Compile Include="../Shared/ResultadoDeTeste.cs" Link="ResultadoDeTeste.cs" />
     <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
+    <Compile Include="../Shared/AvaliacaoDasEtapasDeTeste.cs" Link="AvaliacaoDasEtapasDeTeste.cs" />
+    <Compile Include="../Shared/ItemDoModeloDeTeste.cs" Link="ItemDoModeloDeTeste.cs" />
+    <Compile Include="../Shared/GrupoDoModeloDeTeste.cs" Link="GrupoDoModeloDeTeste.cs" />
+    <Compile Include="../Shared/TermoDoModeloDeTeste.cs" Link="TermoDoModeloDeTeste.cs" />
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
   </ItemGroup>
 
 </Project>

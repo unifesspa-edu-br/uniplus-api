@@ -65,7 +65,7 @@ internal sealed class EscritaDoModelo(
         }
 
         return await tipoProcessoReader.ObterAtivoPorCodigoAsync(tipo, cancellationToken).ConfigureAwait(false) is null
-            ? new FieldError("tipoProcessoCodigo", new DomainError(
+            ? new FieldError($"{DescritivoDoModeloInput.Caminho}.tipoProcessoCodigo", new DomainError(
                 ModeloFormularioErrorCodes.TipoProcessoInexistente, "O tipo de processo não existe ou está desativado."))
             : null;
     }

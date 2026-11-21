@@ -30,9 +30,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
     private static readonly Cpf Dono = PersonasDeTeste.KevinCarvalho;
 
-    private static readonly FatoColetado Item = FatoColetado.Criar(
-        "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static readonly FatoColetado Item = FatoColetadoDeTeste.Coletando("APELIDO", 0).ComRotulo("Apelido").DeTexto("LIVRE").Construir();
 
     private static IUserContext Usuario(string contaId)
     {

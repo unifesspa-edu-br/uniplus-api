@@ -15,7 +15,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O renderizável do modelo projeta o conteúdo como aplicado, com o catálogo vivo e o cadastro
@@ -61,10 +63,10 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
 
         resultado.Finalidade.Should().Be("HABILITACAO");
         resultado.Titulo.Should().Be("Habilitação");
-        resultado.FatosColetados.Select(static c => (c.FatoCodigo, c.Ordem, c.EtapaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
+        resultado.Coleta.Itens.Select(static c => (c.FatoCodigo, c.Ordem, c.EtapaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
         resultado.Etapas.Should().Equal(
-            new SecaoRenderizavel("DADOS", "DADOS", 0, "SECAO", null, "Dados", "Dados pessoais", "Atenção"),
-            new SecaoRenderizavel("REVISAO", null, 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null));
+            new SecaoRenderizavel("DADOS", "DADOS", 0, "SECAO", null, new ApresentacaoDaEtapaDto("Dados", "Dados pessoais", "Atenção")),
+            new SecaoRenderizavel("REVISAO", null, 1, "BLOCO", "REVISAO_E_ACEITE", new ApresentacaoDaEtapaDto("Revisão", null, null)));
     }
 
     [Fact(DisplayName = "O campo de seleção global oferta os valores ativos do catálogo, e o que o processo declara sai nulo")]
@@ -77,8 +79,8 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)])))!;
 
-        resultado.FatosColetados.Single(static c => c.FatoCodigo == "COR_RACA").ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("PRETA", "Preta", 0));
-        resultado.FatosColetados.Single(static c => c.FatoCodigo == "MODALIDADE").ValoresSelecionaveis.Should().BeNull();
+        resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "COR_RACA").ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("PRETA", "Preta", 0));
+        resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "MODALIDADE").ValoresSelecionaveis.Should().BeNull();
     }
 
     [Fact(DisplayName = "O campo do cadastro institucional oferta o cadastro vivo, que o processo recorta")]
@@ -89,7 +91,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)])))!;
 
-        resultado.FatosColetados.Single().ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("TEA", "Autismo", 0));
+        resultado.Coleta.Itens.Single().ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("TEA", "Autismo", 0));
     }
 
     [Fact(DisplayName = "O termo sai com o conteúdo da versão escolhida, na ordem do modelo")]
@@ -97,12 +99,17 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         TermoConsentimento termo = TermoPromovido(out TermoConsentimentoVersao versao);
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
-        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, null, Obrigatoriedade.Sempre)]);
+        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
         FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
 
         resultado.Termos.Should().ContainSingle().Which.Should().Be(new TermoRenderizavel(
-            "ACEITE_DADOS", "ACEITE_DADOS", 3, termo.Id, versao.Id, termo.Nome, versao.Texto, versao.BaseLegal, "REGISTRO_DIGITAL_SEM_LOG_IP", versao.Hash));
+            "ACEITE_DADOS",
+            "ACEITE_DADOS",
+            3,
+            termo.Id,
+            versao.Id,
+            new ConteudoDoTermoDto(termo.Nome, versao.Texto, versao.BaseLegal, "REGISTRO_DIGITAL_SEM_LOG_IP", versao.Hash)));
     }
 
     [Fact(DisplayName = "A versão do termo que não está mais no catálogo é defeito do cadastro, não estado a esconder")]
@@ -110,7 +117,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         TermoConsentimento termo = TermoPromovido(out _);
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
-        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 0, termo.Id, Guid.NewGuid(), null, Obrigatoriedade.Sempre)]);
+        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 0, termo.Id, Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
         Func<Task> obter = () => ObterAsync(modelo);
 
@@ -121,13 +128,14 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     public async Task Handle_Grupo_ProjetaOsSubcamposNaOrdem()
     {
         GrupoDoModelo familia = new(
-            "FAMILIA", 1, "DADOS", "Composição familiar", 1, 3, null, Obrigatoriedade.Sempre, [Subitem("SEGUNDO", 1), Subitem("PRIMEIRO", 0)]);
+            "FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 3, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
+            [Subitem("SEGUNDO", 1), Subitem("PRIMEIRO", 0)]);
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(grupos: [familia])))!;
 
-        GrupoRenderizavel grupo = resultado.Grupos.Should().ContainSingle().Which;
-        (grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato)
-            .Should().Be(("FAMILIA", 1, "DADOS", "Composição familiar", 1, 3, false));
+        GrupoRenderizavel grupo = resultado.Coleta.Grupos.Should().ContainSingle().Which;
+        (grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias)
+            .Should().Be(("FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupoDto(1, 3, false)));
         grupo.Subitens.Select(static c => c.FatoCodigo).Should().Equal("PRIMEIRO", "SEGUNDO");
     }
 
@@ -139,19 +147,19 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
         FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
 
         resultado.Finalidade.Should().Be("INSCRICAO");
-        resultado.FatosColetados.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
+        resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
     }
 
     [Fact(DisplayName = "As regras recortadas citam os pressupostos que o modelo declara")]
     public async Task Handle_PressupostoDoModelo_SaiNosPressupostos()
     {
-        ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0) with { Exibicao = Quando("CONCLUSAO_REGULAR", true) }], pressupostos: ["CONCLUSAO_REGULAR"]);
+        ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0).ComExibicao(Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
         FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
 
-        resultado.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("CONCLUSAO_REGULAR");
-        resultado.DataReferenciaFatos.Should().BeNull();
-        resultado.FusoDoEnvio.Should().BeNull();
+        resultado.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("CONCLUSAO_REGULAR");
+        resultado.Pressupostos.DataReferenciaFatos.Should().BeNull();
+        resultado.Pressupostos.FusoDoEnvio.Should().BeNull();
     }
 
     private Task<FormularioRenderizavel?> ObterAsync(ModeloFormulario modelo)
@@ -189,7 +197,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     }
 
     private static ItemDoModelo Item(string fato, int ordem) =>
-        new(fato, ordem, "DADOS", fato, TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SelecaoUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
 

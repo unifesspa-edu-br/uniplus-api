@@ -49,14 +49,14 @@ public sealed class FaixaDeDataTests
     }
 
     [Theory(DisplayName = "O deslocamento soma os anos e depois os dias, e o 29 de fevereiro sem ano bissexto vira 28")]
-    [InlineData(2026, 10, 10, -120, 0, 1906, 10, 10)]
-    [InlineData(2026, 10, 10, -1, -10, 2025, 9, 30)]
-    [InlineData(2028, 2, 29, -1, 0, 2027, 2, 28)]
-    [InlineData(2028, 2, 29, -1, 1, 2027, 3, 1)]
-    [InlineData(2028, 2, 29, -1, -1, 2027, 2, 27)]
-    public void No_DeslocaOEnvio(int ano, int mes, int dia, int anos, int dias, int anoEsperado, int mesEsperado, int diaEsperado)
+    [InlineData("2026-10-10", -120, 0, "1906-10-10")]
+    [InlineData("2026-10-10", -1, -10, "2025-09-30")]
+    [InlineData("2028-02-29", -1, 0, "2027-02-28")]
+    [InlineData("2028-02-29", -1, 1, "2027-03-01")]
+    [InlineData("2028-02-29", -1, -1, "2027-02-27")]
+    public void No_DeslocaOEnvio(string envio, int anos, int dias, string esperado)
     {
-        LimiteDeData.NoEnvio(anos, dias).No(new DateOnly(ano, mes, dia)).Should().Be(new DateOnly(anoEsperado, mesEsperado, diaEsperado));
+        LimiteDeData.NoEnvio(anos, dias).No(Dia(envio)!.Value).Should().Be(Dia(esperado));
     }
 
     [Fact(DisplayName = "Resposta que não é um dia do calendário viola a faixa")]
@@ -68,30 +68,24 @@ public sealed class FaixaDeDataTests
     }
 
     [Theory(DisplayName = "A data mínima que cai depois da máxima, seja qual for o envio, é recusada")]
-    [InlineData("DATA_FIXA", "2011-01-01", null, null, "DATA_FIXA", "2010-12-31", null, null)]
-    [InlineData("ENVIO", null, 0, 1, "ENVIO", null, 0, 0)]
-    [InlineData("ENVIO", null, -10, 0, "ENVIO", null, -20, 0)]
-    [InlineData("ENVIO", null, 1, 1, "ENVIO", null, 0, 0)]
-    public void FaixaDeData_MinimaDepoisDaMaxima_Recusa(
-        string ancoraMinima, string? dataMinima, int? anosMinima, int? diasMinima,
-        string ancoraMaxima, string? dataMaxima, int? anosMaxima, int? diasMaxima)
+    [InlineData("DATA_FIXA 2011-01-01", "DATA_FIXA 2010-12-31")]
+    [InlineData("ENVIO 0 1", "ENVIO 0 0")]
+    [InlineData("ENVIO -10 0", "ENVIO -20 0")]
+    [InlineData("ENVIO 1 1", "ENVIO 0 0")]
+    public void FaixaDeData_MinimaDepoisDaMaxima_Recusa(string minima, string maxima)
     {
-        Result<RestricaoValor> faixa = RestricoesDeValor.FaixaDeData(
-            Limite(ancoraMinima, dataMinima, anosMinima, diasMinima), Limite(ancoraMaxima, dataMaxima, anosMaxima, diasMaxima));
+        Result<RestricaoValor> faixa = RestricoesDeValor.FaixaDeData(Limite(minima), Limite(maxima));
 
         faixa.Error!.Code.Should().Be(RestricaoValorErrorCodes.LimitesIncoerentes);
     }
 
     [Theory(DisplayName = "Limites cuja ordem depende do dia do envio, ou em que a mínima vem antes, não são recusados na gravação")]
-    [InlineData("DATA_FIXA", "2000-01-01", null, null, "ENVIO", null, -30, 0)]
-    [InlineData("ENVIO", null, 1, -400, "ENVIO", null, 0, 0)]
-    [InlineData("ENVIO", null, -1, -1, "ENVIO", null, 0, 0)]
-    public void FaixaDeData_OrdemQueDependeDoEnvio_Aceita(
-        string ancoraMinima, string? dataMinima, int? anosMinima, int? diasMinima,
-        string ancoraMaxima, string? dataMaxima, int? anosMaxima, int? diasMaxima)
+    [InlineData("DATA_FIXA 2000-01-01", "ENVIO -30 0")]
+    [InlineData("ENVIO 1 -400", "ENVIO 0 0")]
+    [InlineData("ENVIO -1 -1", "ENVIO 0 0")]
+    public void FaixaDeData_OrdemQueDependeDoEnvio_Aceita(string minima, string maxima)
     {
-        Result<RestricaoValor> faixa = RestricoesDeValor.FaixaDeData(
-            Limite(ancoraMinima, dataMinima, anosMinima, diasMinima), Limite(ancoraMaxima, dataMaxima, anosMaxima, diasMaxima));
+        Result<RestricaoValor> faixa = RestricoesDeValor.FaixaDeData(Limite(minima), Limite(maxima));
 
         faixa.IsSuccess.Should().BeTrue();
     }
@@ -133,14 +127,27 @@ public sealed class FaixaDeDataTests
     {
         RestricaoValor[] faixa = [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))];
 
-        FormaDoItem.Conferir("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Numero, null, null, [], Obrigatoriedade.Sempre, faixa)
-            .Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
-        FormaDoItem.Conferir("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Data, null, null, [], Obrigatoriedade.Sempre, faixa)
-            .Should().BeEmpty();
+        ConferirCampoDeData(TipoRenderizacao.Numero, faixa).Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
+        ConferirCampoDeData(TipoRenderizacao.Data, faixa).Should().BeEmpty();
     }
 
-    private static LimiteDeData Limite(string ancora, string? data, int? anos, int? dias) =>
-        RestricoesDeValor.Limite(ancora, Dia(data), anos, dias).Value!;
+    private static List<FieldError> ConferirCampoDeData(TipoRenderizacao tipo, RestricaoValor[] restricoes) =>
+        FormaDoItem.Conferir(
+            "DATA_NASCIMENTO",
+            1,
+            new ApresentacaoDoCampo("Data de nascimento", tipo),
+            formato: null,
+            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes));
+
+    /// <summary>O limite descrito pelo tipo e pelo dado dele: a data, para o limite fixo, ou os anos e os dias, para o contado do envio.</summary>
+    private static LimiteDeData Limite(string descricao)
+    {
+        ArgumentNullException.ThrowIfNull(descricao);
+        string[] partes = descricao.Split(' ');
+        return partes[0] == "ENVIO"
+            ? RestricoesDeValor.Limite(partes[0], null, int.Parse(partes[1], CultureInfo.InvariantCulture), int.Parse(partes[2], CultureInfo.InvariantCulture)).Value!
+            : RestricoesDeValor.Limite(partes[0], Dia(partes[1]), null, null).Value!;
+    }
 
     private static DateOnly? Dia(string? data) => data is null ? null : DateOnly.Parse(data, CultureInfo.InvariantCulture);
 
@@ -186,16 +193,26 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "A faixa de data vale no subitem de cada ocorrência do grupo")]
     public void Avaliar_SubitemComFaixa_RecusaNaOcorrencia()
     {
-        DefinicaoFormulario formulario = new(
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioComGrupoDeNascimentos(), EntradaComDuasOcorrencias());
+
+        AvaliacaoGrupo grupo = avaliacao.Grupos.Single();
+        grupo.Ocorrencias.Single(static o => o.Id == "M1").Itens.Single().RestricoesVioladas.Should().BeEmpty();
+        grupo.Ocorrencias.Single(static o => o.Id == "M2").Itens.Single().RestricoesVioladas.Should().ContainSingle()
+            .Which.Should().BeOfType<FaixaDeData>();
+    }
+
+    private static DefinicaoFormulario FormularioComGrupoDeNascimentos() =>
+        new(
             [
                 new DefinicaoEtapa(Etapa, exibicao: null, [],
                     [new DefinicaoGrupo("FAMILIA", null, Obrigatoriedade.Nunca, 0, null,
-                        [new DefinicaoItem("NASCIMENTO_MEMBRO", null, Obrigatoriedade.Sempre, [AteOEnvio])])]),
+                        [new DefinicaoItem("NASCIMENTO_MEMBRO", null, Obrigatoriedade.Sempre, [AteOEnvio])], incluiCandidato: false)]),
             ],
             termos: [],
             derivacoes: []);
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
+    private static EntradaAvaliacaoFormulario EntradaComDuasOcorrencias() =>
+        new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new HashSet<string>([Etapa], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
@@ -207,13 +224,7 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
                     Ocorrencia("M1", "2000-05-01"),
                     Ocorrencia("M2", "2030-05-01"),
                 ],
-            }));
-
-        AvaliacaoGrupo grupo = avaliacao.Grupos.Single();
-        grupo.Ocorrencias.Single(static o => o.Id == "M1").Itens.Single().RestricoesVioladas.Should().BeEmpty();
-        grupo.Ocorrencias.Single(static o => o.Id == "M2").Itens.Single().RestricoesVioladas.Should().ContainSingle()
-            .Which.Should().BeOfType<FaixaDeData>();
-    }
+            });
 
     private static OcorrenciaRespondida Ocorrencia(string id, string nascimento) =>
         new(id, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["NASCIMENTO_MEMBRO"] = JsonSerializer.SerializeToElement(nascimento) });

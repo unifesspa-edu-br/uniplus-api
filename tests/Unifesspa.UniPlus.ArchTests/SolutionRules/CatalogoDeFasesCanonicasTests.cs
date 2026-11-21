@@ -31,27 +31,30 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Should().BeEquivalentTo(FaseCanonicaCatalogo.Codigos);
     }
 
+    /// <summary>
+    /// O HasData escreve direto no banco. Submeter cada item à factory é o que impede o seed de materializar um
+    /// dado que a tela recusaria — por exemplo, agrupar etapas fora da avaliação ou permitir complementação fora
+    /// do rol legal.
+    /// </summary>
     [Fact(DisplayName = "Cada fase do seed é aceita pela factory do agregado")]
     public void Seed_PassaPelaFactory()
     {
-        // O HasData escreve direto no banco. Submeter cada item à factory é o que
-        // impede o seed de materializar um dado que a tela recusaria — por exemplo,
-        // agrupar etapas fora da avaliação ou permitir complementação fora do rol legal.
         foreach (FaseCanonicaSeedItem item in FaseCanonicaSeed.Itens)
         {
-            Result<FaseCanonica> resultado = FaseCanonica.Criar(
-                item.Codigo,
-                item.Nome,
-                item.Descricao,
-                item.BaseLegal,
-                OrigensDataFase.ParaTokenCanonico(item.OrigemData),
-                new SinalizadoresDaFase(
-                    item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao));
+            Result<FaseCanonica> resultado = CriarPelaFactory(item);
 
             resultado.IsSuccess.Should().BeTrue(
                 $"a fase {item.Codigo} do seed precisa ser aceita pelo mesmo caminho que valida o cadastro");
         }
     }
+
+    private static Result<FaseCanonica> CriarPelaFactory(FaseCanonicaSeedItem item) => FaseCanonica.Criar(
+        item.Codigo,
+        item.Nome,
+        item.Descricao,
+        item.BaseLegal,
+        OrigensDataFase.ParaTokenCanonico(item.OrigemData),
+        new SinalizadoresDaFase(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao));
 
     [Fact(DisplayName = "Os identificadores do seed são únicos e do prefixo determinístico")]
     public void Seed_IdentificadoresDeterministicos()
@@ -98,15 +101,15 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Should().BeEquivalentTo("LISTA_ESPERA", "CHAMADA");
     }
 
+    /// <summary>
+    /// Oráculo dos atributos normativos da fase (UNI-REQ-0139): espelha exatamente HETEROIDENTIFICACAO — banca
+    /// cujo parecer verifica direito à reserva de vagas antes da homologação do resultado final. O que a fase
+    /// publica não entra aqui: é declarado no cronograma do processo, não no cadastro. Alterar qualquer um destes
+    /// campos é ato deliberado, não refatoração.
+    /// </summary>
     [Fact(DisplayName = "A avaliação biopsicossocial tem os atributos publicados em UNI-REQ-0139")]
     public void Seed_AvaliacaoBiopsicossocial_TemOsAtributosDoRequisitoCanonico()
     {
-        // Oráculo dos atributos normativos da fase (UNI-REQ-0139): espelha
-        // exatamente HETEROIDENTIFICACAO — banca cujo parecer verifica direito à
-        // reserva de vagas antes da homologação do resultado final. O que a fase
-        // publica não entra aqui: é declarado no cronograma do processo, não no
-        // cadastro. Alterar qualquer um destes campos é ato deliberado, não
-        // refatoração.
         FaseCanonicaSeedItem item = FaseCanonicaSeed.Itens.Single(i => i.Codigo == "AVALIACAO_BIOPSICOSSOCIAL");
 
         item.Id.Should().Be(Guid.Parse("f45e0000-0000-7000-8000-000000000016"));

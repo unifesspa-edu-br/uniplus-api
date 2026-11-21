@@ -11,6 +11,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// As opções que o processo declara para um fato de fonte do processo, como as edições do ENEM
@@ -67,7 +68,7 @@ public sealed class OpcoesDeclaradasEndpointTests
 
     private static void ConfiraQueNenhumFormularioColetaAsEdicoes(JsonDocument processo) =>
         processo.RootElement.GetProperty("formularios").EnumerateArray()
-            .SelectMany(static f => f.GetProperty("fatosColetados").EnumerateArray())
+            .SelectMany(static f => FormularioNaRespostaDoProcesso.Itens(f))
             .Select(static f => f.GetProperty("fatoCodigo").GetString())
             .Should().NotContain("EDICAO_ENEM");
 

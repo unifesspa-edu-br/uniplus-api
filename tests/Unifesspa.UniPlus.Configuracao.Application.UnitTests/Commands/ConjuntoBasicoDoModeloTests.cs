@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ConteudosDeModeloParaTeste;
 
@@ -51,14 +52,14 @@ public sealed class ConjuntoBasicoDoModeloTests
         ConteudoDoModelo completo = ConteudoComOConjunto();
         ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao)];
         ItemDoModelo sexo = doConjunto.Single(static i => i.FatoCodigo == "SEXO");
-        ItemDoModelo[] sexoNoFim = [.. doConjunto.Where(static i => i.FatoCodigo != "SEXO"), sexo with { Rotulo = "Sexo" }];
+        ItemDoModelo[] sexoNoFim = [.. doConjunto.Where(static i => i.FatoCodigo != "SEXO"), sexo.ComRotulo("Sexo")];
         ConteudoDoModelo legado = completo with { Itens = [.. sexoNoFim.Select(static (item, ordem) => item with { Ordem = ordem })] };
 
         ConteudoDoModelo mesclado = ConjuntoBasicoDoModelo.Mesclar(legado, Formatos);
 
         mesclado.Itens.OrderBy(static i => i.Ordem).Select(static i => i.FatoCodigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
-        mesclado.Itens.Single(static i => i.FatoCodigo == "SEXO").Rotulo.Should().Be("Sexo biológico");
+        mesclado.Itens.Single(static i => i.FatoCodigo == "SEXO").Apresentacao.Rotulo.Should().Be("Sexo biológico");
     }
 
     [Fact(DisplayName = "O modelo de inscrição, como aplicado, traz o conjunto básico na seção reservada")]
@@ -92,10 +93,13 @@ public sealed class ConjuntoBasicoDoModeloTests
         ItemDoModelo[] gravadosAntes =
         [
             .. doConjunto.Select(static (item, ordem) => item with { Ordem = ordem }),
-            new ItemDoModelo("BAIXA_RENDA", doConjunto.Length, "DADOS", "Baixa renda", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Nunca, null, [], false),
+            ItemOpcionalDeBaixaRenda(doConjunto.Length),
         ];
         return completo with { Itens = gravadosAntes };
     }
+
+    private static ItemDoModelo ItemOpcionalDeBaixaRenda(int ordem) =>
+        new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
 
     private static ModeloFormulario ModeloGravado(FinalidadeFormulario finalidade)
     {

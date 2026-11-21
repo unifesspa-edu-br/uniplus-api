@@ -30,9 +30,12 @@ using static SubmeterDeTeste;
 /// </summary>
 public sealed class SubmeterInscricaoInstanteDoEnvioTests
 {
-    private static readonly FatoColetado DataAteOEnvio = FatoColetado.Criar(
-        "DATA_DO_EVENTO", 1, "Data do evento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-        restricoes: [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static readonly FatoColetado DataAteOEnvio = FatoColetadoDeTeste.Coletando("DATA_DO_EVENTO", 1)
+        .ComRotulo("Data do evento")
+        .DoTipo(TipoRenderizacao.Data)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComRestricoes(new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0)))
+        .Construir();
 
     private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada configuracao, string dataDoEvento)
     {

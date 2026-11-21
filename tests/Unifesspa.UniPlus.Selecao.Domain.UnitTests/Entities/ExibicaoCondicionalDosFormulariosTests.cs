@@ -150,7 +150,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItens([
             Opcional("NACIONALIDADE_BR", 0),
-            Opcional("COMPROVANTE", 1, CondicaoPrecondicaoFato.Criar(0, "NACIONALIDADE_BR", Operador.Diferente, JsonSerializer.SerializeToElement(true)).Value!),
+            Opcional("COMPROVANTE", 1, ExibicaoDeTeste.Quando("NACIONALIDADE_BR", Operador.Diferente, true)),
         ]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Message.Should().Contain("'NACIONALIDADE_BR'");

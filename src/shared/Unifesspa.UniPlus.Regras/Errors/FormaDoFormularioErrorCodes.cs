@@ -9,6 +9,7 @@ public static class ItemFormularioErrorCodes
     public const string RotuloObrigatorio = "ItemFormulario.RotuloObrigatorio";
     public const string RotuloTamanho = "ItemFormulario.RotuloTamanho";
     public const string TipoRenderizacaoObrigatorio = "ItemFormulario.TipoRenderizacaoObrigatorio";
+    public const string TipoRenderizacaoInvalido = "ItemFormulario.TipoRenderizacaoInvalido";
     public const string AjudaTamanho = "ItemFormulario.AjudaTamanho";
     public const string FormatoIncoerente = "ItemFormulario.FormatoIncoerente";
     public const string RegraAutorreferente = "ItemFormulario.RegraAutorreferente";
@@ -34,6 +35,7 @@ public static class GrupoFormularioErrorCodes
     public const string CodigoInvalido = "GrupoFormulario.CodigoInvalido";
     public const string OrdemInvalida = "GrupoFormulario.OrdemInvalida";
     public const string RotuloInvalido = "GrupoFormulario.RotuloInvalido";
+    public const string OcorrenciasObrigatorias = "GrupoFormulario.OcorrenciasObrigatorias";
     public const string ContagemIncoerente = "GrupoFormulario.ContagemIncoerente";
     public const string SubitensForaDoLimite = "GrupoFormulario.SubitensForaDoLimite";
     public const string RegraAutorreferente = "GrupoFormulario.RegraAutorreferente";

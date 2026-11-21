@@ -68,6 +68,10 @@ public sealed class TiposEtapaController : ControllerBase
         return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
     }
 
+    /// <summary>
+    /// Cria um tipo de etapa. O corpo leva o <c>codigo</c>, que não muda depois, o <c>nome</c>, a <c>descricao</c> e a
+    /// <c>avaliacao</c>, na forma que a resposta devolve, sem <c>notaDeOrigemNoEnem</c>.
+    /// </summary>
     [HttpPost("admin/tipos-etapa")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]
@@ -83,6 +87,11 @@ public sealed class TiposEtapaController : ControllerBase
         return resultado.IsSuccess ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
+    /// <summary>
+    /// Substitui o nome, a descrição e a avaliação do tipo de etapa; o código é imutável. O corpo leva o <c>id</c> da rota
+    /// e a <c>avaliacao</c> na forma que a resposta devolve, sem <c>notaDeOrigemNoEnem</c>; os <c>conceitosAdmitidos</c>
+    /// substituem o conjunto inteiro.
+    /// </summary>
     [HttpPut("admin/tipos-etapa/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]

@@ -39,4 +39,20 @@ public sealed record DefinirClassificacaoRequest(
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     [property: JsonRequired] bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem = null,
-    decimal? EscalaNotaFinal = null);
+    decimal? EscalaNotaFinal = null)
+{
+    /// <summary>O comando que define a classificação do processo, com o corpo recebido.</summary>
+    internal DefinirClassificacaoCommand ParaComando(Guid processoSeletivoId) => new(
+        processoSeletivoId,
+        RegraCalculoCodigo,
+        RegraCalculoVersao,
+        RegraArredondamentoCodigo,
+        RegraArredondamentoVersao,
+        CasasArredondamento,
+        RegraOrdemAlocacaoCodigo,
+        RegraOrdemAlocacaoVersao,
+        RegrasEliminacao,
+        BaseadoEmEnem,
+        ResolucaoPesoAreaEnem,
+        EscalaNotaFinal);
+}

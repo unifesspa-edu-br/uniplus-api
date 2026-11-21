@@ -25,14 +25,9 @@ public sealed class DefinirFormularioCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result result = await DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(
-                processo.Id, FinalidadeFormulario.Inscricao, null, null,
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)]),
-            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+        Result result = await DefinirAsync(
+            processo, FinalidadeFormulario.Inscricao, faseId: null, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
             "o gate de estado e concorrência sai antes da validação das etapas");
@@ -42,35 +37,33 @@ public sealed class DefinirFormularioCommandHandlerTests
     public async Task Handle_TituloFaseEEtapaInvalidos_AcumulaAsRecusas()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result result = await DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(
-                processo.Id, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301),
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)]),
-            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+        Result result = await DefinirAsync(
+            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
-        result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["etapas[0].titulo", "titulo", "faseId"]);
+        result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["etapas[0].apresentacao.titulo", "titulo", "faseId"]);
+    }
+
+    [Fact(DisplayName = "Etapa sem a apresentação é recusada no título, no caminho da apresentação")]
+    public async Task Handle_EtapaSemApresentacao_RecusaOTituloAusente()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
+
+        Result result = await DefinirAsync(
+            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").SemApresentacao().Construir());
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(("etapas[0].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
     }
 
     [Fact(DisplayName = "Exibição de seção que cita fato fora do catálogo é recusada na etapa, junto das recusas de estrutura e de título")]
     public async Task Handle_ExibicaoComFatoDesconhecido_RecusaNaEtapa()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
-        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com([]));
+        EtapaFormularioInput secao = EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados")
+            .ExibidaQuando([[new CondicaoPrecondicaoInput("FATO_INEXISTENTE", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]).Construir();
 
-        Result result = await DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(
-                processo.Id, FinalidadeFormulario.Inscricao, faseDeInscricao, new string('a', 301),
-                [
-                    new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null,
-                        [[new CondicaoPrecondicaoInput("FATO_INEXISTENTE", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]),
-                ]),
-            repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+        Result result = await DefinirAsync(
+            processo, FinalidadeFormulario.Inscricao, faseDeInscricao, new string('a', 301), [secao], CatalogoDoConjuntoBasico.Com([]));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -85,23 +78,37 @@ public sealed class DefinirFormularioCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
-        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Fatos);
+        EtapaFormularioInput[] etapas =
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão e aceite").Construir(),
+        ];
 
-        Result result = await DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(
-                processo.Id, FinalidadeFormulario.Inscricao, faseDeInscricao, null,
-                [
-                    new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null),
-                    new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão e aceite", null, null),
-                ]),
-            repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+        Result result = await DefinirAsync(processo, FinalidadeFormulario.Inscricao, faseDeInscricao, titulo: null, etapas, CatalogoDoConjuntoBasico.Fatos);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Etapas.OrderBy(static e => e.Ordem).Select(static e => e.Codigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         processo.FatosColetados.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(ConjuntoBasicoDaInscricao.Fatos);
+    }
+
+    private static Task<Result> DefinirAsync(
+        ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid? faseId, string? titulo, params EtapaFormularioInput[] etapas) =>
+        DefinirAsync(processo, finalidade, faseId, titulo, etapas, catalogo: []);
+
+    private static Task<Result> DefinirAsync(
+        ProcessoSeletivo processo,
+        FinalidadeFormulario finalidade,
+        Guid? faseId,
+        string? titulo,
+        IReadOnlyList<EtapaFormularioInput> etapas,
+        IReadOnlyList<FatoCandidatoView> catalogo)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogo);
+        return DefinirFormularioCommandHandler.Handle(
+            new DefinirFormularioCommand(processo.Id, finalidade, faseId, titulo, etapas), repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
     }
 }

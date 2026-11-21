@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 public static class ObterFatoCandidatoPorCodigoQueryHandler
 {
-    public static async Task<FatoCandidatoView?> Handle(
+    public static async Task<FatoDoCatalogoDto?> Handle(
         ObterFatoCandidatoPorCodigoQuery query,
-        IFatoCandidatoReader reader,
+        IFatoCandidatoDoCatalogoReader reader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);

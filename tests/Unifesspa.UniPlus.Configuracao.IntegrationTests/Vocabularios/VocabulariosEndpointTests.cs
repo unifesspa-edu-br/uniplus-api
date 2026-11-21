@@ -8,14 +8,14 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Contrato HTTP dos vocabulários fechados de Configuração — <c>TipoBanca</c> e
-/// <c>FaseCanonica</c> (UNI-REQ-0139), e <c>TipoInstrumentoNormativo</c>, usado pela Base
-/// Legal de Bônus Regional. O que se
-/// prova aqui é o que o fitness test não alcança: que as rotas existem, respondem sem
+/// Contrato HTTP dos vocabulários fechados de Configuração — <c>TipoBanca</c>, o papel da banca, os tipos
+/// de decisão que a banca julga e <c>FaseCanonica</c> (UNI-REQ-0139), e <c>TipoInstrumentoNormativo</c>,
+/// usado pela Base Legal de Bônus Regional. O que se prova aqui é o que o fitness test não alcança: que as rotas existem, respondem sem
 /// autenticação, negociam a vendor MIME e não têm par de escrita.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -129,6 +129,17 @@ public sealed class VocabulariosEndpointTests
         "CHAMADA",
     ];
 
+    [Fact(DisplayName = "GET /vocabularios/naturezas-conceito devolve código e rótulo na ordem do enum, sem exigir autenticação nem cabeçalho de cache")]
+    public async Task ListarNaturezasConceito_DevolveCodigoERotuloNaOrdemDoEnum()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        CodigoComRotulo<NaturezaConceito>[] naturezas = await ApoioDosVocabularios.LerAsync<CodigoComRotulo<NaturezaConceito>>(
+            client, "naturezas-conceito", "codigo-natureza-conceito");
+
+        naturezas.Select(static n => (n.Codigo, n.Rotulo)).Should().Equal(("NUMERICO", "Numérico"), ("CATEGORICO", "Categórico"));
+    }
+
     [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os quatorze códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosFaseCanonica_DevolveVocabularioCompleto()
     {
@@ -141,39 +152,37 @@ public sealed class VocabulariosEndpointTests
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
-    // Afirmado por extenso, pelo mesmo motivo da lista de tipos de banca.
-    private static readonly string[] CodigosDeInstrumentoNormativoNaOrdemPublicada =
+    // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está sob teste — derivá-lo da mesma
+    // fonte que o produz faria o teste concordar com qualquer mudança, inclusive uma remoção acidental de código.
+    private static readonly (string Codigo, string Rotulo)[] TiposDeInstrumentoNaOrdemPublicada =
     [
-        "LEI",
-        "DECRETO",
-        "PORTARIA",
-        "RESOLUCAO",
-        "INSTRUCAO_NORMATIVA",
-        "PARECER",
-        "EDITAL",
+        ("LEI", "Lei"),
+        ("DECRETO", "Decreto"),
+        ("PORTARIA", "Portaria"),
+        ("RESOLUCAO", "Resolução"),
+        ("INSTRUCAO_NORMATIVA", "Instrução Normativa"),
+        ("PARECER", "Parecer"),
+        ("EDITAL", "Edital"),
     ];
 
-    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
+    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, rótulo e descrição, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoInstrumentoNormativo_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        TipoInstrumentoNormativoVocabularioDto[] codigos =
-            await ApoioDosVocabularios.LerAsync<TipoInstrumentoNormativoVocabularioDto>(
+        CodigoComDescricao<TipoInstrumentoNormativo>[] tipos =
+            await ApoioDosVocabularios.LerAsync<CodigoComDescricao<TipoInstrumentoNormativo>>(
                 client, "tipos-instrumento-normativo", "codigo-tipo-instrumento-normativo");
 
-        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeInstrumentoNormativoNaOrdemPublicada);
-        codigos.Should().AllSatisfy(c =>
-        {
-            c.Nome.Should().NotBeNullOrWhiteSpace();
-            c.Descricao.Should().NotBeNullOrWhiteSpace();
-        });
+        tipos.Select(static t => (t.Codigo, t.Rotulo)).Should().Equal(TiposDeInstrumentoNaOrdemPublicada);
+        tipos.Should().AllSatisfy(static t => t.Descricao.Should().NotBeNullOrWhiteSpace());
     }
 
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
     [InlineData("/api/configuracao/vocabularios/papeis-de-banca")]
     [InlineData("/api/configuracao/vocabularios/tipos-de-decisao")]
+    [InlineData("/api/configuracao/vocabularios/naturezas-conceito")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo")]
     [InlineData("/api/configuracao/vocabularios/grupos-area-enem")]

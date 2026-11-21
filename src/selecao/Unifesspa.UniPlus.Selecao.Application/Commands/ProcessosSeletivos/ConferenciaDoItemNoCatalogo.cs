@@ -5,6 +5,7 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -18,6 +19,19 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal static class ConferenciaDoItemNoCatalogo
 {
+    /// <summary>O caminho da exibição do item, onde se aponta a recusa da forma e a da semântica dela.</summary>
+    public static readonly string CaminhoDaExibicao = $"{FatoColetadoInput.CaminhoDasRegras}.exibicao";
+
+    private static readonly string RegrasNoItem = $"{FatoColetadoInput.CaminhoDasRegras}.";
+
+    private static readonly (string NasRegras, string NoItemPlano)[] CamposPlanosDoItem =
+        [("exibicao", "precondicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
+
+    private static readonly string RegrasNoGrupo = $"{GrupoColetadoInput.CaminhoDasRegras}.";
+
+    private static readonly (string NasRegras, string NoGrupoPlano)[] CamposPlanosDoGrupo =
+        [("exibicao", "exibicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
+
     /// <summary>A coerência do tipo de campo com domínio, cardinalidade e fonte de valores do fato.</summary>
     public static DomainError? Coerencia(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao)
     {
@@ -30,85 +44,83 @@ internal static class ConferenciaDoItemNoCatalogo
     /// fatos que a pré-condição cita, inclusive quando a forma dela foi recusada e não há predicado.
     /// </summary>
     public static List<FieldError> Semantica(
-        FatoCandidatoView fato,
-        TipoRenderizacao tipoRenderizacao,
-        PredicadoDnf? precondicao,
-        IEnumerable<string> fatosDaPrecondicao,
-        Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<RestricaoValor> restricoes,
-        Impedimento? impedimento,
-        ContextoDoCatalogo contexto)
+        FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, IEnumerable<string> fatosDaPrecondicao, ContextoDoCatalogo contexto)
     {
         ArgumentNullException.ThrowIfNull(fato);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(fatosDaPrecondicao);
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
-        ArgumentNullException.ThrowIfNull(restricoes);
         ArgumentNullException.ThrowIfNull(contexto);
-        List<FieldError> erros = [];
-        if (precondicao is not null
-            && PredicadoDnfValidador.Validar(precondicao, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semanticaDaPrecondicao)
-        {
-            erros.Add(new("precondicao", semanticaDaPrecondicao.Error!));
-        }
-
-        if (obrigatoriedade.Predicado is { } predicado
-            && PredicadoDnfValidador.Validar(predicado, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semantica)
-        {
-            erros.Add(new("predicadoObrigatoriedade", semantica.Error!));
-        }
-
-        erros.AddRange(ConferenciaNoCatalogo.SemanticaDasRestricoes(
-            contexto.FatosDasRegras[fato.Codigo], tipoRenderizacao, restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos));
-
-        if (impedimento is not null
-            && PredicadoDnfValidador.Validar(impedimento.Quando, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semanticaDoImpedimento)
-        {
-            erros.Add(new("impedimento.quando", semanticaDoImpedimento.Error!));
-        }
-
-        IEnumerable<string> citados = fatosDaPrecondicao
-            .Concat(obrigatoriedade.FatosCitados)
-            .Concat(restricoes.SelectMany(static r => r.FatosCitados))
-            .Concat(impedimento?.FatosCitados ?? []);
-        if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(citados, contexto.Fatos) is { } atributo)
-        {
-            erros.Add(new(string.Empty, atributo));
-        }
-
-        return erros;
+        return
+        [
+            .. SemanticaDasRegras(fato, tipoRenderizacao, regras, contexto).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
+            .. RecusaDeAtributoDoCandidato(fatosDaPrecondicao.Concat(FatosDasRegrasSemExibicao(regras)), contexto),
+        ];
     }
+
+    private static IEnumerable<FieldError> SemanticaDasRegras(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, ContextoDoCatalogo contexto) =>
+    [
+        .. SemanticaDoPredicado("exibicao", regras.Exibicao, contexto),
+        .. SemanticaDoPredicado("obrigatoriedade.predicado", regras.Obrigatoriedade.Predicado, contexto),
+        .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
+            contexto.FatosDasRegras[fato.Codigo], tipoRenderizacao, regras.Restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos),
+        .. SemanticaDoPredicado("impedimento.quando", regras.Impedimento?.Quando, contexto),
+    ];
+
+    private static IEnumerable<string> FatosDasRegrasSemExibicao(RegrasDoCampo regras) =>
+        regras.Obrigatoriedade.FatosCitados
+            .Concat(regras.Restricoes.SelectMany(static r => r.FatosCitados))
+            .Concat(regras.Impedimento?.FatosCitados ?? []);
+
+    /// <summary>O predicado, quando há, confere com o vocabulário e os domínios do catálogo; a recusa aponta a regra.</summary>
+    private static IEnumerable<FieldError> SemanticaDoPredicado(string regra, PredicadoDnf? predicado, ContextoDoCatalogo contexto) =>
+        predicado is not null
+        && PredicadoDnfValidador.Validar(predicado, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semantica
+            ? [new(regra, semantica.Error!)]
+            : [];
+
+    /// <summary>As regras não citam atributo do candidato, que não se responde; a recusa é do campo inteiro.</summary>
+    private static IEnumerable<FieldError> RecusaDeAtributoDoCandidato(IEnumerable<string> citados, ContextoDoCatalogo contexto) =>
+        VocabularioDeFatos.CitacaoDeAtributoDoCandidato(citados, contexto.Fatos) is { } atributo ? [new(string.Empty, atributo)] : [];
 
     /// <summary>
     /// A semântica da exibição e da obrigatoriedade do grupo contra o catálogo e a recusa de citar
     /// atributo do candidato, como na gravação do grupo. O campo vazio é o grupo inteiro.
     /// </summary>
-    public static List<FieldError> DoGrupo(PredicadoDnf? exibicao, Obrigatoriedade obrigatoriedade, ContextoDoCatalogo contexto)
+    public static List<FieldError> DoGrupo(ExibicaoEObrigatoriedade regras, ContextoDoCatalogo contexto)
     {
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(contexto);
-        List<FieldError> erros = [];
-        foreach ((string regra, PredicadoDnf? predicado) in new[] { ("exibicao", exibicao), ("predicadoObrigatoriedade", obrigatoriedade.Predicado) })
-        {
-            if (predicado is not null
-                && PredicadoDnfValidador.Validar(predicado, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semantica)
-            {
-                erros.Add(new(regra, semantica.Error!));
-            }
-        }
-
-        if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(
-                (exibicao?.FatosCitados ?? []).Concat(obrigatoriedade.FatosCitados), contexto.Fatos) is { } atributo)
-        {
-            erros.Add(new(string.Empty, atributo));
-        }
-
-        return erros;
+        return
+        [
+            .. SemanticaDoPredicado($"{GrupoColetadoInput.CaminhoDasRegras}.exibicao", regras.Exibicao, contexto),
+            .. SemanticaDoPredicado($"{GrupoColetadoInput.CaminhoDasRegras}.obrigatoriedade.predicado", regras.Obrigatoriedade.Predicado, contexto),
+            .. RecusaDeAtributoDoCandidato(regras.FatosCitados, contexto),
+        ];
     }
+
+    /// <summary>
+    /// A conferência do grupo já gravado contra o catálogo de hoje, como em <see cref="DoGrupo"/>; o grupo gravado e o
+    /// envelope guardam o grupo plano, e a recusa aponta o campo plano: <c>exibicao</c> e <c>predicadoObrigatoriedade</c>.
+    /// </summary>
+    public static List<FieldError> DoGrupoGravado(ExibicaoEObrigatoriedade regras, ContextoDoCatalogo contexto) =>
+        [.. DoGrupo(regras, contexto).Select(static erro => NoPlano(erro, RegrasNoGrupo, CamposPlanosDoGrupo))];
+
+    private static FieldError NoPlano(FieldError erro, string regrasNaParte, (string NasRegras, string NoPlano)[] camposPlanos) =>
+        erro.Field is { } campo && campo.StartsWith(regrasNaParte, StringComparison.Ordinal)
+            ? erro with { Field = CampoPlano(campo[regrasNaParte.Length..], camposPlanos) }
+            : erro;
+
+    private static string CampoPlano(string nasRegras, (string NasRegras, string NoPlano)[] camposPlanos) =>
+        camposPlanos.Where(c => nasRegras.StartsWith(c.NasRegras, StringComparison.Ordinal))
+            .Select(c => c.NoPlano + nasRegras[c.NasRegras.Length..])
+            .FirstOrDefault(nasRegras);
 
     /// <summary>
     /// Confere o item já gravado contra o catálogo de hoje. O fato que alguma versão publicada já
     /// coletou só tem o campo conferido: os valores de domínio nunca saem do catálogo, então as
-    /// regras dele não são reconferidas.
+    /// regras dele não são reconferidas. O item gravado e o envelope guardam o item plano, e a
+    /// recusa aponta o campo plano: <c>tipoRenderizacao</c>, <c>precondicao</c>,
+    /// <c>predicadoObrigatoriedade</c>, <c>restricoes</c> e <c>impedimento</c>.
     /// </summary>
     public static List<FieldError> DoItemGravado(FatoColetado item, FatoCandidatoView fato, bool jaColetado, ContextoDoCatalogo contexto)
     {
@@ -125,9 +137,6 @@ internal static class ConferenciaDoItemNoCatalogo
             return [];
         }
 
-        List<FieldError> erros = [];
-        erros.AddRange(Semantica(
-            fato, item.TipoRenderizacao, item.Exibicao, item.Precondicoes.Select(static c => c.Fato), item.Obrigatoriedade, item.Restricoes, item.Impedimento, contexto));
-        return erros;
+        return [.. Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(static erro => NoPlano(erro, RegrasNoItem, CamposPlanosDoItem))];
     }
 }

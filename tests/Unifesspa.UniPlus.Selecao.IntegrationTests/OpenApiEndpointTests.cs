@@ -8,6 +8,8 @@ using AwesomeAssertions;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures;
+
 /// <summary>
 /// Smoke + drift check do endpoint <c>/openapi/selecao.json</c>:
 /// <list type="bullet">
@@ -234,6 +236,17 @@ public sealed class OpenApiEndpointTests
         responses.TryGetProperty("200", out _).Should().BeTrue();
         responses.GetProperty("404").GetProperty("description").GetString()
             .Should().Contain("uniplus.selecao.ato_do_processo.nao_encontrado");
+    }
+
+    [Fact(DisplayName = "No contrato da Seleção, todo campo de texto que leva o código de um enum referencia o componente dos códigos")]
+    public async Task CampoDeTextoComCodigoDeEnum_ReferenciaOComponenteDosCodigos()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        CodigosDeEnumNoContrato.CamposComTextoCru(spec.RootElement).Should().BeEmpty(
+            "o campo que leva código de enum de contrato publica o componente dos códigos do enum (ADR-0176)");
+        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoRenderizacao").Should().BeTrue();
+        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "CondicaoPrecondicaoDto", "operador").Should().BeTrue();
     }
 
     private static void ExigirUrlDownload(JsonElement schemas, string schema, bool nulo)

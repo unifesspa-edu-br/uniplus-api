@@ -81,8 +81,12 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     [Fact(DisplayName = "O campo de grupo é comparado contra o que o grupo publicou")]
     public void Conferir_CampoDeGrupoDivergente_RecusaNoCampo()
     {
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "GRUPO", 0, FormularioDeTeste.Secao, "Grupo", 0, 5, null, Obrigatoriedade.Sempre, [Item(TipoRenderizacao.Data)], FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("GRUPO", 0)
+            .ComRotulo("Grupo")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(Item(TipoRenderizacao.Data))
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo])]);
 
         IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.Booleano), "formularios[0].grupos[0].subitens[2]")]);
@@ -116,16 +120,23 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
             return Publicadas([publicado]);
         }
 
-        Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            "GRUPO", 0, FormularioDeTeste.Secao, "Grupo", 0, 5, null, Obrigatoriedade.Sempre, [publicado], FinalidadeFormulario.Inscricao);
+        Result<GrupoColetado> grupo = GrupoColetadoDeTeste.Agrupando("GRUPO", 0)
+            .ComRotulo("Grupo")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(publicado)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Criar();
         grupo.IsSuccess.Should().BeTrue(grupo.Error?.Message);
         return VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo.Value!])]);
     }
 
     private static FatoColetado Coletado(
         TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
-        FatoColetado.Criar(
-            fato, 0, rotulo, tipo, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: classificacao, ajuda: ajuda, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, 0)
+            .ComRotulo(rotulo)
+            .DoTipo(tipo)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao(classificacao)
+            .ComAjuda(ajuda)
+            .Construir();
 }

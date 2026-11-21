@@ -96,7 +96,10 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+                [
+                    EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+                    EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+                ],
                 itens, termos ?? [], pressupostos ?? [], grupos ?? [], documentos));
 
     public static ModeloFormularioView ModeloComDocumentos(params DocumentoExigidoDoModeloInput[] documentos) =>
@@ -114,18 +117,22 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             "REMOVE_VANTAGEM", []);
 
     public static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
-        new("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos);
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir();
 
-    public static FatoColetadoInput Campo(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
+    public static FatoColetadoInput Campo(string fato, int ordem) => EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).Construir();
 
-    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
-        new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
+    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).Construir();
+
+    /// <summary>O item na seção <c>DADOS</c>, ainda sem fechar, para o teste que lhe dá regras ou apresentação.</summary>
+    public static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "BOOLEANO") =>
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS");
 
     public static FatoColetadoInput ItemQueCita(FatoColetadoInput item, string fato, string operador, object valor) =>
-        item with { Precondicao = [[new CondicaoPrecondicaoInput(fato, operador, JsonSerializer.SerializeToElement(valor))]] };
+        item with { Regras = item.Regras! with { Exibicao = [[new CondicaoPrecondicaoInput(fato, operador, JsonSerializer.SerializeToElement(valor))]] } };
 
     public static FatoColetado FatoBooleanoJaColetado(string codigo, string rotulo) =>
-        FatoColetado.Criar(codigo, 0, rotulo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComRotulo(rotulo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     public static FatoCandidatoView Declarado(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);

@@ -133,9 +133,12 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
     private static void DefinirOpcoesDeTeste(ProcessoSeletivo processo)
     {
-        processo.DefinirItens([FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-            origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([FatoColetadoDeTeste.Coletando("FATO_OPCAO_DE_TESTE", 0)
+            .ComRotulo("Opção de teste")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+            .Construir()]).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!]).IsSuccess.Should().BeTrue();
     }

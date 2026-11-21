@@ -127,15 +127,18 @@ public sealed class RespostasDoRascunhoSobreVersaoFixadaTests
     private static ProcessoSeletivo ProcessoComCondicao() =>
         NovoProcessoDeInscricao(nameof(Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto), camposAdicionais: [PrecisaDeAtendimento(), DescricaoDaCondicao()]);
 
-    private static FatoColetado PrecisaDeAtendimento() => FatoColetado.Criar(
-        "PRECISA_ATENDIMENTO", 1, "Você precisa de atendimento especializado?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-        classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado PrecisaDeAtendimento() => FatoColetadoDeTeste.Coletando("PRECISA_ATENDIMENTO", 1)
+        .ComRotulo("Você precisa de atendimento especializado?")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComClassificacao("SENSIVEL")
+        .Construir();
 
-    private static FatoColetado DescricaoDaCondicao() => FatoColetado.Criar(
-        "CONDICAO_DESCRITA", 2, "Descreva a sua condição", TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
-        [CondicaoPrecondicaoFato.Criar(0, "PRECISA_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-        classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-        finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado DescricaoDaCondicao() => FatoColetadoDeTeste.Coletando("CONDICAO_DESCRITA", 2)
+        .ComRotulo("Descreva a sua condição")
+        .DeTexto("LIVRE")
+        .ExibidoQuando(ExibicaoDeTeste.Quando("PRECISA_ATENDIMENTO", Operador.Igual, true))
+        .ComClassificacao("SENSIVEL")
+        .Construir();
 
     private async Task SalvarCondicaoOcultaAsync(UniPlusDbContext db, Inscricao inscricao, ContextoDaVersaoFixada contexto)
     {

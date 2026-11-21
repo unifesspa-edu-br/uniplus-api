@@ -35,11 +35,11 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         Guid id = await CriarTipoAsync(client, [$"{prefixo}_PARECER", $"{prefixo}_NOTA"]);
 
         using JsonDocument tipo = await LerTipoAsync(client, id);
-        tipo.RootElement.GetProperty("conceitosAdmitidos").EnumerateArray()
-            .Select(conceito => (conceito.GetProperty("codigo").GetString(), conceito.GetProperty("nome").GetString(), conceito.GetProperty("natureza").GetString()))
+        tipo.RootElement.GetProperty("avaliacao").GetProperty("conceitosAdmitidos").EnumerateArray()
+            .Select(conceito => (conceito.GetProperty("codigo").GetString(), conceito.GetProperty("nome").GetString(), conceito.GetProperty("natureza").GetProperty("codigo").GetString()))
             .Should().Equal(
-                ($"{prefixo}_NOTA", "Nota da entrevista", "numerico"),
-                ($"{prefixo}_PARECER", "Parecer da análise", "categorico"));
+                ($"{prefixo}_NOTA", "Nota da entrevista", "NUMERICO"),
+                ($"{prefixo}_PARECER", "Parecer da análise", "CATEGORICO"));
     }
 
     [Fact(DisplayName = "A listagem pública traz os conceitos admitidos de cada tipo de etapa")]
@@ -61,7 +61,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         Guid id = await CriarTipoAsync(client, []);
 
         using JsonDocument tipo = await LerTipoAsync(client, id);
-        tipo.RootElement.GetProperty("conceitosAdmitidos").GetArrayLength().Should().Be(0);
+        tipo.RootElement.GetProperty("avaliacao").GetProperty("conceitosAdmitidos").GetArrayLength().Should().Be(0);
     }
 
     [Fact(DisplayName = "PUT substitui o conjunto de conceitos admitidos, sem acumular o anterior")]
@@ -113,14 +113,15 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarTipoAsync(client, []);
-        Dictionary<string, object?> corpo = CorpoDoTipo(CodigoUnico(), []).Sem("conceitosAdmitidos").Com("id", id);
+        Dictionary<string, object?> corpo = CorpoDoTipo(CodigoUnico(), []).Com("id", id);
+        ((Dictionary<string, object?>)corpo["avaliacao"]!).Remove("conceitosAdmitidos");
 
         using HttpResponseMessage resposta = metodo == "POST"
             ? await EnviarAsync(client, HttpMethod.Post, Rota, corpo)
             : await EnviarAsync(client, HttpMethod.Put, $"{Rota}/{id}", corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("conceitosAdmitidos", $"{Prefixo}conceitos_admitidos_obrigatorio"));
+        (await ErrosAsync(resposta)).Should().Equal(("avaliacao.conceitosAdmitidos", $"{Prefixo}conceitos_admitidos_obrigatorio"));
     }
 
     [Theory(DisplayName = "POST com conceito inexistente, inativo ou repetido retorna 422 com o código da espécie")]
@@ -135,7 +136,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         using HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Rota, CorpoDoTipo(CodigoUnico(), conceitos));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("conceitosAdmitidos", $"{Prefixo}{codigo}"));
+        (await ErrosAsync(resposta)).Should().Equal(("avaliacao.conceitosAdmitidos", $"{Prefixo}{codigo}"));
     }
 
     [Theory(DisplayName = "PUT com conceito inexistente, inativo ou repetido retorna 422 e mantém o conjunto anterior")]
@@ -153,7 +154,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         using HttpResponseMessage resposta = await AtualizarTipoAsync(client, id, conceitos);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("conceitosAdmitidos", $"{Prefixo}{codigo}"));
+        (await ErrosAsync(resposta)).Should().Equal(("avaliacao.conceitosAdmitidos", $"{Prefixo}{codigo}"));
         (await CodigosAdmitidosAsync(client, id)).Should().Equal(mantido);
     }
 
@@ -191,10 +192,13 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
     {
         ["codigo"] = codigo,
         ["nome"] = "Etapa avaliada por conceito",
-        ["admitePontuacao"] = true,
-        ["admiteEliminacao"] = true,
-        ["exigeCorrecaoIndependente"] = false,
-        ["conceitosAdmitidos"] = conceitos,
+        ["avaliacao"] = new Dictionary<string, object?>
+        {
+            ["admitePontuacao"] = true,
+            ["admiteEliminacao"] = true,
+            ["exigeCorrecaoIndependente"] = false,
+            ["conceitosAdmitidos"] = conceitos,
+        },
     };
 
     private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string rota, object corpo)
@@ -279,7 +283,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
     }
 
     private static string?[] CodigosDos(JsonElement tipo) =>
-        [.. tipo.GetProperty("conceitosAdmitidos").EnumerateArray().Select(conceito => conceito.GetProperty("codigo").GetString())];
+        [.. tipo.GetProperty("avaliacao").GetProperty("conceitosAdmitidos").EnumerateArray().Select(conceito => conceito.GetProperty("codigo").GetString())];
 
     private static async Task<IReadOnlyList<(string? Campo, string? Codigo)>> ErrosAsync(HttpResponseMessage resposta)
     {

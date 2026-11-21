@@ -53,32 +53,30 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     /// <summary>Oferta uma distribuição mínima com as modalidades dadas, cada uma com a regra dada.</summary>
     private static void OfertarModalidades(ProcessoSeletivo processo, params (string Codigo, PredicadoDnf Regra)[] ofertadas)
     {
-        string[] codigos = [.. ofertadas.Select(static o => o.Codigo)];
-        List<ModalidadeSelecionada> modalidades =
-        [
-            .. ofertadas.Select(static oferta => ModalidadeSelecionada.Criar(
-                modalidadeOrigemId: Guid.CreateVersion7(),
-                codigo: oferta.Codigo,
-                descricao: null,
-                naturezaLegal: NaturezaLegalModalidade.Ampla,
-                composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-                composicaoOrigemCodigo: null,
-                regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-                remanejamentoDestino: null,
-                remanejamentoPar: null,
-                remanejamentoFallback: null,
-                regraDeAplicabilidade: oferta.Regra,
-                acaoQuandoIndeferido: null,
-                baseLegal: "Res. Unifesspa 532/2021",
-                quantidadeDeclarada: 10).Value!),
-        ];
-
+        List<ModalidadeSelecionada> modalidades = [.. ofertadas.Select(static oferta => ModalidadeAmplaDeDezVagas(oferta.Codigo, oferta.Regra))];
+        ReferenciaRegra regraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64));
         ConfiguracaoDistribuicaoVagas config = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = codigos.Length * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = modalidades.Count * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDeDistribuicao, Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
         processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
+
+    private static ModalidadeSelecionada ModalidadeAmplaDeDezVagas(string codigo, PredicadoDnf regraDeAplicabilidade) => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(),
+        codigo: codigo,
+        descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        composicaoOrigemCodigo: null,
+        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null,
+        remanejamentoPar: null,
+        remanejamentoFallback: null,
+        regraDeAplicabilidade: regraDeAplicabilidade,
+        acaoQuandoIndeferido: null,
+        baseLegal: "Res. Unifesspa 532/2021",
+        quantidadeDeclarada: 10).Value!;
 
     /// <summary>
     /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
@@ -239,9 +237,6 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
     // ── Grafo de dependência conjunto a partir da configuração do agregado (Story #928, §6) ────────
 
-    private static CondicaoPrecondicaoFato Precond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-
     private static ConfiguracaoDerivacaoFato DerivadoDe(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,
         [
@@ -250,15 +245,18 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
                     1, c, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
         ]).Value!;
 
+    private static FatoColetado PcdDeclarado() => FatoColetadoDeTeste.Coletando("PCD", 0).DoTipo(TipoRenderizacao.SelecaoUnica).Construir();
+
+    private static FatoColetado ConcorrerPcdExibidoQuandoPcd() => FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
+        .Construir();
+
     [Fact(DisplayName = "Constrói o grafo conjunto acíclico, com a modalidade do candidato projetada das regras ofertadas")]
     public void ConstruirGrafoDependencia_ConfigAciclica_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens(
-        [
-            FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([PcdDeclarado(), ConcorrerPcdExibidoQuandoPcd()]).IsSuccess.Should().BeTrue();
         OfertarModalidades(processo, ("AC", PredicadoDnf.SemClausula), ("AC_PCD", PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!));
 

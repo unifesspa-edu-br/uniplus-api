@@ -76,12 +76,7 @@ internal static class ReconferenciaDasCopiasDoItem
     }
 
     private static Dictionary<string, CopiaDoItemNoCatalogo> CopiasDoCatalogo(IReadOnlyList<FatoCandidatoView> catalogoDeFatos) =>
-        catalogoDeFatos.ToDictionary(
-            static f => f.Codigo,
-            static f => new CopiaDoItemNoCatalogo(
-                VocabularioDeFatos.OrigemValores(f), f.Formato, f.ClassificacaoProtecao, f.HipoteseLegal, f.FinalidadeTratamento,
-                f.Descricao, f.ComponenteExibicao),
-            StringComparer.Ordinal);
+        catalogoDeFatos.ToDictionary(static f => f.Codigo, VocabularioDeFatos.CopiaNoCatalogo, StringComparer.Ordinal);
 
     // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
     // recusa são montados aqui, no mesmo percurso das demais.
@@ -102,7 +97,7 @@ internal static class ReconferenciaDasCopiasDoItem
         // O grupo cujos campos já foram todos coletados está congelado como eles.
         IEnumerable<FieldError> doGrupo = grupo.Campos.All(c => jaColetados.Contains(c.Item.FatoCodigo))
             ? []
-            : ConferenciaDoItemNoCatalogo.DoGrupo(grupo.Grupo.Exibicao, grupo.Grupo.Obrigatoriedade, contexto).Select(erro => Decorar(
+            : ConferenciaDoItemNoCatalogo.DoGrupoGravado(grupo.Grupo.Regras, contexto).Select(erro => Decorar(
                 erro, grupo.Caminho, $"Grupo '{grupo.Grupo.Rotulo}' ('{grupo.Grupo.Codigo}')", OrientacaoDoGrupo));
 
         return [.. doGrupo, .. grupo.Campos.SelectMany(c => Conferir(c.Item, c.Caminho, contexto, jaColetados, daForma))];

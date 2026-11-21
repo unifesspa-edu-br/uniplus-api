@@ -23,53 +23,82 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     private static FatoCandidatoView Fato(string codigo) => CatalogoDoConjuntoBasico.Fatos.Single(f => f.Codigo == codigo);
 
     private static IReadOnlyList<FatoCandidatoView> CatalogoCom(string codigo, Func<FatoCandidatoView, FatoCandidatoView> altera) =>
-        [.. CatalogoDoConjuntoBasico.Fatos.Select(f => f.Codigo == codigo ? altera(f) : f)];
+        CatalogoComAlteracoes((codigo, altera));
+
+    private static IReadOnlyList<FatoCandidatoView> CatalogoComAlteracoes(
+        params (string Codigo, Func<FatoCandidatoView, FatoCandidatoView> Altera)[] alteracoes) =>
+        [.. CatalogoDoConjuntoBasico.Fatos.Select(f => alteracoes.FirstOrDefault(a => a.Codigo == f.Codigo).Altera?.Invoke(f) ?? f)];
 
     private static FatoColetado Texto(string codigo, int ordem, string formato) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL", formato: formato, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DeTexto(formato).Construir();
 
     private static HashSet<string> Coletados(params string[] fatos) => new(fatos, StringComparer.Ordinal);
+
+    private static ProcessoSeletivo ProcessoConforme() => ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
+
+    private static ProcessoSeletivo ProcessoComCpfERgNumero()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG_NUMERO", 1, "LIVRE")]).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
+    private static FatoColetado ItemDe(ProcessoSeletivo processo, string codigo) =>
+        processo.FatosColetados.Single(f => f.FatoCodigo == codigo);
+
+    private static IReadOnlyList<FatoCandidatoView> SemAPretaEmCorRaca(IReadOnlyList<FatoCandidatoView> catalogo) =>
+        [.. catalogo.Select(static f => f.Codigo != "COR_RACA" ? f : f with
+        {
+            ValoresDominio = [.. f.ValoresDominio!.Where(static v => v != "PRETA")],
+            ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
+        })];
+
+    private static PredicadoDnf QuandoCorRacaEPreta() => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
+
+    private static FatoCandidatoView FatoDeFormularioNovo(string codigo, string nome, string? escopo = null) => Fato("DESEJA_NOME_SOCIAL") with
+    {
+        Id = Guid.CreateVersion7(),
+        Codigo = codigo,
+        Nome = nome,
+        Binding = $"CAMPO_FORMULARIO:{codigo}",
+        Escopo = escopo ?? Fato("DESEJA_NOME_SOCIAL").Escopo,
+    };
 
     [Fact(DisplayName = "O fato que nenhuma versão publicada coletou é recopiado; o já coletado fica como está")]
     public void Aplicar_FatoJaColetadoNaoERecopiado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG_NUMERO", 1, "LIVRE")]).IsSuccess.Should().BeTrue();
-        FatoColetado novo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
-        FatoColetado coletado = processo.FatosColetados.Single(static f => f.FatoCodigo == "RG_NUMERO");
+        ProcessoSeletivo processo = ProcessoComCpfERgNumero();
 
         ReconferenciaDeTeste.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
 
-        novo.ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
-        coletado.ClassificacaoProtecao.Should().Be("PESSOAL", "o fato já coletado segue a guarda da retificação contra troca de eixo");
+        ItemDe(processo, "CPF").ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
+        ItemDe(processo, "RG_NUMERO").ClassificacaoProtecao.Should().Be("PESSOAL", "o fato já coletado segue a guarda da retificação contra troca de eixo");
     }
 
     [Fact(DisplayName = "A hipótese legal e a finalidade são recopiadas do catálogo com a classificação, enquanto nenhuma versão publicada coletou o fato")]
     public void Aplicar_RecopiaAHipoteseLegalEAFinalidade()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG_NUMERO", 1, "LIVRE")]).IsSuccess.Should().BeTrue();
-        FatoColetado novo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
-        FatoColetado coletado = processo.FatosColetados.Single(static f => f.FatoCodigo == "RG_NUMERO");
+        ProcessoSeletivo processo = ProcessoComCpfERgNumero();
         IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo is "CPF" or "RG_NUMERO"
             ? f with { HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS", FinalidadeTratamento = "Finalidade nova do catálogo." }
             : f)];
 
         ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
 
-        novo.HipoteseLegal.Should().Be("EXECUCAO_POLITICAS_PUBLICAS");
-        novo.FinalidadeTratamento.Should().Be("Finalidade nova do catálogo.");
-        coletado.HipoteseLegal.Should().Be(ProtecaoDoFatoDeTeste.HipoteseLegal, "o fato já coletado mantém o que a versão publicada congelou");
-        coletado.FinalidadeTratamento.Should().Be(ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao);
+        ItemDe(processo, "CPF").HipoteseLegal.Should().Be("EXECUCAO_POLITICAS_PUBLICAS");
+        ItemDe(processo, "CPF").FinalidadeTratamento.Should().Be("Finalidade nova do catálogo.");
+        ItemDe(processo, "RG_NUMERO").HipoteseLegal.Should().Be(ProtecaoDoFatoDeTeste.HipoteseLegal, "o fato já coletado mantém o que a versão publicada congelou");
+        ItemDe(processo, "RG_NUMERO").FinalidadeTratamento.Should().Be(ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao);
     }
 
     [Fact(DisplayName = "O fato já coletado cujo catálogo mudou de forma incompatível é recusado, orientando desfazer a correção")]
     public void Aplicar_FatoJaColetadoIncoerente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("DESEJA_NOME_SOCIAL", static f => f with { Dominio = "CATEGORICO" });
 
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("DESEJA_NOME_SOCIAL"));
+        Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, Coletados("DESEJA_NOME_SOCIAL"));
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
@@ -79,10 +108,9 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "A recusa de coerência traz a causa real do campo, inclusive a fonte de valores")]
     public void Aplicar_IncoerenciaPorFonte_NomeiaAFonte()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" });
 
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Message.Should().Contain("fonte de valores 'GEO_MUNICIPIO'").And.Contain("Regrave o item");
@@ -91,20 +119,16 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "A restrição de opções que cita valor que o fato deixou de ter é recusada")]
     public void Aplicar_RestricaoDeOpcoesForaDoDominio_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, "PESSOAL",
-            restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])])], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        ProcessoSeletivo processo = ProcessoConforme();
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])]))
+            .Construir();
         processo.DefinirItens([corRaca]).IsSuccess.Should().BeTrue();
         ReconferenciaDeTeste.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, null).IsSuccess.Should().BeTrue("o domínio atual tem os dois valores");
 
-        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("COR_RACA", static f => f with
-        {
-            ValoresDominio = [.. f.ValoresDominio!.Where(static v => v != "PRETA")],
-            ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
-        });
-
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, SemAPretaEmCorRaca(CatalogoDoConjuntoBasico.Fatos), null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Message.Should().Contain("Cor ou raça");
@@ -113,17 +137,11 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "A recusa junta todos os itens incoerentes no mesmo lote, cada um no caminho do próprio item, pela posição dele no documento")]
     public void Aplicar_VariosItensIncoerentes_AcumulaTodasAsRecusas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        IReadOnlyList<FatoCandidatoView> catalogo = [
-            .. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo switch
-            {
-                "DESEJA_NOME_SOCIAL" => f with { Dominio = "CATEGORICO" },
-                "RG_UF" => f with { FonteValores = "GEO_MUNICIPIO" },
-                _ => f,
-            }),
-        ];
+        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoComAlteracoes(
+            ("DESEJA_NOME_SOCIAL", static f => f with { Dominio = "CATEGORICO" }),
+            ("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" }));
 
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().HaveCountGreaterThanOrEqualTo(2);
@@ -135,84 +153,74 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "O predicado de obrigatoriedade que cita valor que o fato deixou de ter é recusado, como na gravação do item")]
     public void Aplicar_PredicadoDeObrigatoriedadeComValorRemovido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        FatoCandidatoView temRenda = Fato("DESEJA_NOME_SOCIAL") with { Id = Guid.CreateVersion7(), Codigo = "TEM_RENDA", Nome = "Tem renda?", Binding = "CAMPO_FORMULARIO:TEM_RENDA" };
-        PredicadoDnf quandoPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
-        FatoColetado item = FatoColetado.Criar(
-            "TEM_RENDA", 100, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Quando(quandoPreta), null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        Result definido = processo.DefinirItens([item]);
-        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
-        IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([temRenda]);
+        ProcessoSeletivo processo = ProcessoComItemObrigatorioQuandoCorRacaEPreta();
+        IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([FatoDeFormularioNovo("TEM_RENDA", "Tem renda?")]);
         ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
 
-        IReadOnlyList<FatoCandidatoView> catalogo = [.. vigente.Select(static f => f.Codigo != "COR_RACA" ? f : f with
-        {
-            ValoresDominio = [.. f.ValoresDominio!.Where(static v => v != "PRETA")],
-            ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
-        })];
-
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, SemAPretaEmCorRaca(vigente), null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().Contain(static e => e.Field != null && e.Field.EndsWith("predicadoObrigatoriedade", StringComparison.Ordinal));
-        ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("TEM_RENDA")).IsSuccess
+        ReconferenciaDeTeste.Aplicar(processo, SemAPretaEmCorRaca(vigente), Coletados("TEM_RENDA")).IsSuccess
             .Should().BeTrue("o fato já coletado só tem o campo conferido");
     }
 
     [Fact(DisplayName = "A exibição do grupo que cita valor que o fato deixou de ter é recusada, como na gravação do grupo")]
     public void Aplicar_ExibicaoDoGrupoComValorRemovido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        FatoCandidatoView membro = Fato("DESEJA_NOME_SOCIAL") with
-        {
-            Id = Guid.CreateVersion7(),
-            Codigo = "MENOR_SOB_GUARDA",
-            Nome = "Menor sob guarda",
-            Binding = "CAMPO_FORMULARIO:MENOR_SOB_GUARDA",
-            Escopo = "MEMBRO_GRUPO",
-        };
-        IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([membro]);
-        PredicadoDnf quandoPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
-        FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1, itens.First().EtapaCodigo, "Composição familiar", 0, 10, quandoPreta, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("MENOR_SOB_GUARDA", 0, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
-        Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
-        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+        ProcessoSeletivo processo = ProcessoConforme();
+        IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([FatoDeFormularioNovo("MENOR_SOB_GUARDA", "Menor sob guarda", "MEMBRO_GRUPO")]);
+        DefinirGrupoExibidoQuandoCorRacaEPreta(processo);
         ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
 
-        IReadOnlyList<FatoCandidatoView> catalogo = [.. vigente.Select(static f => f.Codigo != "COR_RACA" ? f : f with
-        {
-            ValoresDominio = [.. f.ValoresDominio!.Where(static v => v != "PRETA")],
-            ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
-        })];
-
-        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, SemAPretaEmCorRaca(vigente), null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("formularios[0].grupos[0].exibicao");
         resposta.Error!.Message.Should().Contain("Composição familiar").And.Contain("Regrave o grupo");
     }
 
+    private static ProcessoSeletivo ProcessoComItemObrigatorioQuandoCorRacaEPreta()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        FatoColetado item = FatoColetadoDeTeste.Coletando("TEM_RENDA", 100)
+            .ComRotulo("Tem renda?")
+            .ComObrigatoriedade(Obrigatoriedade.Quando(QuandoCorRacaEPreta()))
+            .Construir();
+        Result definido = processo.DefinirItens([item]);
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+
+        return processo;
+    }
+
+    private static void DefinirGrupoExibidoQuandoCorRacaEPreta(ProcessoSeletivo processo)
+    {
+        FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1)
+            .NaSecao(itens.First().EtapaCodigo)
+            .ComOcorrencias(0, 10)
+            .ExibidoQuando(QuandoCorRacaEPreta())
+            .ComCampos(FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
+        Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+    }
+
+    private static void DefinirItemNaHabilitacao(ProcessoSeletivo processo, FatoColetado item)
+    {
+        Result definido = processo.DefinirItens([item], finalidade: FinalidadeFormulario.Habilitacao);
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+    }
+
     [Fact(DisplayName = "As recusas de dois formulários saem no caminho do formulário de cada um, pela posição dele no documento")]
     public void Aplicar_ItensIncoerentesEmDoisFormularios_CaminhosDistintos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        FatoCandidatoView extra = Fato("DESEJA_NOME_SOCIAL") with
-        {
-            Id = Guid.CreateVersion7(),
-            Codigo = "SITUACAO_EXTRA",
-            Nome = "Situação extra",
-            Binding = "CAMPO_FORMULARIO:SITUACAO_EXTRA",
-        };
-        FatoColetado doOutroFormulario = FatoColetado.Criar("SITUACAO_EXTRA", 0, "Situação extra", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        Result definido = processo.DefinirItens([doOutroFormulario], finalidade: FinalidadeFormulario.Habilitacao);
-        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+        ProcessoSeletivo processo = ProcessoConforme();
+        DefinirItemNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("SITUACAO_EXTRA", 0).ComRotulo("Situação extra").Construir());
         IReadOnlyList<FatoCandidatoView> catalogo = [
-            .. CatalogoDoConjuntoBasico.Com([extra]).Select(static f => f.Codigo is "DESEJA_NOME_SOCIAL" or "SITUACAO_EXTRA" ? f with { Dominio = "CATEGORICO" } : f),
+            .. CatalogoDoConjuntoBasico.Com([FatoDeFormularioNovo("SITUACAO_EXTRA", "Situação extra")])
+                .Select(static f => f.Codigo is "DESEJA_NOME_SOCIAL" or "SITUACAO_EXTRA" ? f with { Dominio = "CATEGORICO" } : f),
         ];
 
         Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
@@ -226,21 +234,16 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "A recusa da semântica não muda o agregado: a cópia do item conforme só é refeita sem nenhuma recusa")]
     public void Aplicar_RecusaDaSemantica_NaoMudaOAgregado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        string antes = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF").ClassificacaoProtecao;
-        IReadOnlyList<FatoCandidatoView> catalogo = [
-            .. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo switch
-            {
-                "CPF" => f with { ClassificacaoProtecao = "PUBLICO" },
-                "RG_UF" => f with { FonteValores = "GEO_MUNICIPIO" },
-                _ => f,
-            }),
-        ];
+        ProcessoSeletivo processo = ProcessoConforme();
+        string antes = ItemDe(processo, "CPF").ClassificacaoProtecao;
+        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoComAlteracoes(
+            ("CPF", static f => f with { ClassificacaoProtecao = "PUBLICO" }),
+            ("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" }));
         antes.Should().NotBe("PUBLICO", "pré-condição: há cópia a refazer");
 
         Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
-        processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF").ClassificacaoProtecao.Should().Be(antes);
+        ItemDe(processo, "CPF").ClassificacaoProtecao.Should().Be(antes);
     }
 }

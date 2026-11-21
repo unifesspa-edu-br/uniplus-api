@@ -121,11 +121,11 @@ internal static class ApoioDaIdentidadeDeNegocio
         return [.. exigenciasJson.Select(static e => e!["tipoDocumentoNome"]!.GetValue<string>())];
     }
 
-    internal static FatoColetado FatoBooleanoPessoal(string codigo, int ordem, IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes) =>
-        FatoColetado.Criar(
-            codigo, ordem, $"Rótulo {codigo[..1]}", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes,
-            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado FatoBooleanoPessoal(string codigo, int ordem, PredicadoDnf? exibicao) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo($"Rótulo {codigo[..1]}")
+            .ExibidoQuando(exibicao)
+            .Construir();
 
     private static bool DoCaso(string idCanonico) =>
         idCanonico.EndsWith("/A_FATO", StringComparison.Ordinal) || idCanonico.EndsWith("/B_FATO", StringComparison.Ordinal);

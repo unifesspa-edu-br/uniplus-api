@@ -8,24 +8,27 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 internal static class TiposConceitoDeTeste
 {
     public static CriarTipoConceitoCommand CriarNumerico() =>
-        new("NOTA_ENTREVISTA", "Nota da entrevista", "Nota atribuída pela banca.", "numerico", new EscalaNumericaCommand(0m, 10m, 2), null);
+        new("NOTA_ENTREVISTA", new DefinicaoDoTipoConceitoInput(
+            "Nota da entrevista", "Nota atribuída pela banca.", "NUMERICO", new EscalaNumericaCommand(0m, 10m, 2), null));
 
     public static CriarTipoConceitoCommand CriarCategorico() =>
-        new("PARECER_ANALISE", "Parecer da análise", null, "categorico", null,
-            [new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false)]);
+        new("PARECER_ANALISE", new DefinicaoDoTipoConceitoInput(
+            "Parecer da análise", null, "CATEGORICO", null,
+            [new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false)]));
 
     public static AtualizarTipoConceitoCommand AtualizarNumerico(Guid id) =>
-        new(id, "Nota da entrevista revisada", null, "numerico", new EscalaNumericaCommand(0m, 100m, 1), null);
+        new(id, new DefinicaoDoTipoConceitoInput("Nota da entrevista revisada", null, "NUMERICO", new EscalaNumericaCommand(0m, 100m, 1), null));
 
     public static AtualizarTipoConceitoCommand AtualizarCategorico(Guid id) =>
-        new(id, "Parecer revisado", null, "categorico", null,
-            [new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false), new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("EM_ANALISE", "Em análise", false)]);
+        new(id, new DefinicaoDoTipoConceitoInput(
+            "Parecer revisado", null, "CATEGORICO", null,
+            [new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false), new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("EM_ANALISE", "Em análise", false)]));
 
     public static TipoConceito Numerico() =>
-        TipoConceito.Criar("NOTA_ENTREVISTA", new DefinicaoInformada("Nota da entrevista", null, "numerico", new EscalaInformada(0m, 10m, 2), null)).Value!;
+        TipoConceito.Criar("NOTA_ENTREVISTA", new DefinicaoInformada("Nota da entrevista", null, "NUMERICO", new EscalaInformada(0m, 10m, 2), null)).Value!;
 
     public static TipoConceito Categorico() =>
         TipoConceito.Criar("PARECER_ANALISE", new DefinicaoInformada(
-            "Parecer da análise", null, "categorico", null,
+            "Parecer da análise", null, "CATEGORICO", null,
             [new ValorInformado("DEFERIDO", "Deferido", true), new ValorInformado("INDEFERIDO", "Indeferido", false)])).Value!;
 }

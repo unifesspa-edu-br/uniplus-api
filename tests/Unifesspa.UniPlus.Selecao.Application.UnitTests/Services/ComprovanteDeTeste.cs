@@ -27,10 +27,11 @@ internal static class ComprovanteDeTeste
     public static Dictionary<string, JsonElement> Respostas(params (string Fato, object? Valor)[] respostas) =>
         respostas.ToDictionary(static r => r.Fato, static r => Json(r.Valor), StringComparer.Ordinal);
 
-    public static FatoColetado Texto(string codigo, string rotulo, int ordem = 1, string classificacao = "PESSOAL") => FatoColetado.Criar(
-        codigo, ordem, rotulo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: classificacao, formato: "LIVRE",
-        hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-        descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    public static FatoColetado Texto(string codigo, string rotulo, int ordem = 1, string classificacao = "PESSOAL") => FatoColetadoDeTeste.Coletando(codigo, ordem)
+        .ComRotulo(rotulo)
+        .DeTexto("LIVRE")
+        .ComClassificacao(classificacao)
+        .Construir();
 
     public static EnvelopeReidratado Envelope(
         IReadOnlyList<FatoColetado>? itens = null,

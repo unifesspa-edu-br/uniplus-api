@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Estado de resolução de um fato do candidato (Story #926, ADR-0111). É o
 /// discriminador que distingue "não se aplica a este candidato" de "ainda não se
@@ -21,18 +23,22 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// Um campo esquecido nunca é lido como resolvido nem como inaplicável.
 /// </para>
 /// </remarks>
+[DescricaoDoContrato("Estado de resolução de um fato do candidato: distingue o que não se aplica, o que ainda não se sabe, o que tem valor e o que foi deixado em branco.")]
 public enum EstadoFato
 {
     /// <summary>O fato se aplica, mas o seu valor ainda não é conhecido — pendência.</summary>
+    [CodigoDeContrato("INDETERMINADO", "Indeterminado")]
     Indeterminado = 0,
 
     /// <summary>
     /// O fato não se aplica a este candidato porque a sua pré-condição é falsa.
     /// É estado <b>resolvido</b>, não pendência: não há valor a esperar.
     /// </summary>
+    [CodigoDeContrato("NAO_APLICAVEL", "Não se aplica")]
     NaoAplicavel = 1,
 
     /// <summary>O fato se aplica e tem valor conhecido.</summary>
+    [CodigoDeContrato("RESOLVIDO", "Resolvido")]
     Resolvido = 2,
 
     /// <summary>
@@ -41,5 +47,6 @@ public enum EstadoFato
     /// candidato já decidiu não responder, e não é inaplicável, porque o campo se aplicava.
     /// Não trava as regras seguintes, e toda condição sobre ele é falsa.
     /// </summary>
+    [CodigoDeContrato("NAO_INFORMADO", "Não informado")]
     NaoInformado = 3,
 }

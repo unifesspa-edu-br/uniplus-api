@@ -39,7 +39,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         bancasRequeridas: []).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, string classificacao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).ComClassificacao(classificacao).Construir();
 
     private static DocumentoExigido Exigencia(
         Guid faseId, string tipo, ClassificacaoDeProtecao protecao, string[]? comprova = null, CondicaoGatilho[]? gatilho = null) =>

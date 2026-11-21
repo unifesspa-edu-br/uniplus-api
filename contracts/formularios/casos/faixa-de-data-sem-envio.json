@@ -8,61 +8,69 @@
         "itens": [
           {
             "fatoCodigo": "DATA_A",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": 0,
-                  "dias": 0
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": 0,
+                    "dias": 0
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "DATA_B",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "ENVIO",
-                  "data": null,
-                  "anos": 0,
-                  "dias": 0
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "ENVIO",
+                    "data": null,
+                    "anos": 0,
+                    "dias": 0
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -86,14 +94,18 @@
       {
         "fatoCodigo": "DATA_A",
         "estado": "INDETERMINADO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       },
       {
         "fatoCodigo": "DATA_B",
         "estado": "INDETERMINADO",
-        "restricoesVioladas": [
-          "FAIXA_DE_DATA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_DE_DATA"
+          ]
+        }
       }
     ]
   }

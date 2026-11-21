@@ -38,5 +38,5 @@ internal static class EscritaDasBasesLegais
     public static StatusBaseLegal Status(BaseLegalInput declarada) => StatusBaseLegalCodigo.FromCodigo(declarada.Status);
 
     public static IEnumerable<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
-        erros.Select(erro => erro with { Field = $"basesLegais[{indice}].{erro.Field}" });
+        erros.Select(erro => erro with { Field = $"{BaseLegalInput.CaminhoDaLista}[{indice}].{erro.Field}" });
 }

@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A escrita do modelo de formulário confere o conteúdo contra o catálogo de fatos, de termos e de
@@ -43,6 +44,27 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         gravado!.Conteudo.Itens.Single().Formato.Should().Be("CPF");
     }
 
+    [Fact(DisplayName = "O descritivo ausente na criação recusa o nome obrigatório no caminho do descritivo")]
+    public async Task Criar_DescritivoAusente_RecusaONomeNoCaminhoDoDescritivo()
+    {
+        CriarModeloFormularioCommand comando = new("HABILITACAO_MEDICINA", "HABILITACAO", null, Conteudo(Item("CERTIFICADO", 0)));
+
+        Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
+            comando, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "descritivo.nome" && e.Error.Code == ModeloFormularioErrorCodes.NomeObrigatorio);
+    }
+
+    [Fact(DisplayName = "O tipo de processo inexistente é recusado no caminho do descritivo")]
+    public async Task Criar_TipoDeProcessoInexistente_RecusaNoCaminhoDoDescritivo()
+    {
+        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "NAO_EXISTE");
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "descritivo.tipoProcessoCodigo" && e.Error.Code == ModeloFormularioErrorCodes.TipoProcessoInexistente);
+    }
+
     [Fact(DisplayName = "O campo do grupo cita o campo anterior da mesma ocorrência, e o grupo é gravado")]
     public async Task Criar_CampoDoGrupoCitaCampoAnterior_Grava()
     {
@@ -50,7 +72,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
 
         Result<Guid> resultado = await CriarAsync(ComComposicao(
-            Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1) with { Precondicao = Quando("MAIOR_IDADE", true) }));
+            Campo("MAIOR_IDADE", 0), Montar("SEM_RENDA", 1).NaSecao(null).ExibidoQuando(Quando("MAIOR_IDADE", true)).Construir()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         gravado!.Conteudo.Grupos.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("MAIOR_IDADE", "SEM_RENDA");
@@ -60,7 +82,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     public async Task Criar_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
     {
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
-        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { IncluiCandidato = true }] };
+        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(1, IncluiCandidato: true, Maximo: 10) }] };
 
         Result<Guid> resultado = await CriarAsync(conteudo);
 
@@ -68,10 +90,40 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
             e.Field == "conteudo.grupos[0].subitens" && e.Error.Code == GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
     }
 
+    [Fact(DisplayName = "Grupo que inclui o candidato sem o mínimo é recusado só no mínimo, e o modelo não é gravado (acúmulo das recusas de leitura e de domínio: #2706)")]
+    public async Task Criar_GrupoSemMinimoComInclusaoDoCandidato_RecusaSoOMinimo()
+    {
+        ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
+        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(null, IncluiCandidato: true, Maximo: 10) }] };
+
+        Result<Guid> resultado = await CriarAsync(conteudo);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle(static e => e.Field == "conteudo.grupos[0].ocorrencias.minimo").Subject;
+        recusa.Error.Code.Should().Be(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+        await Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Grupo sem as ocorrências é recusado no mínimo e na inclusão do candidato, antes das regras do grupo")]
+    public async Task Criar_GrupoSemOcorrencias_RecusaOMinimoEAInclusaoAntesDasRegras()
+    {
+        Result<Guid> resultado = await CriarAsync(SemOcorrenciasEComObrigatoriedadeInvalida(ComComposicao(Campo("MAIOR_IDADE", 0))));
+
+        resultado.Errors.Select(static e => e.Field).Should().ContainInOrder(
+            "conteudo.grupos[0].ocorrencias.minimo", "conteudo.grupos[0].ocorrencias.incluiCandidato", "conteudo.grupos[0].regras.obrigatoriedade");
+        resultado.Errors.Take(2).Select(static e => e.Error.Code).Should().AllBe(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+        await Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
+    }
+
+    private static ConteudoDoModeloInput SemOcorrenciasEComObrigatoriedadeInvalida(ConteudoDoModeloInput conteudo)
+    {
+        GrupoColetadoInput grupo = conteudo.Grupos![0];
+        return conteudo with { Grupos = [grupo with { Ocorrencias = null, Regras = grupo.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("INEXISTENTE") } }] };
+    }
+
     [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]
     public async Task Criar_CampoDoGrupoComFatoDoCandidato_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0) with { TipoRenderizacao = "TEXTO" }));
+        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0, "TEXTO")));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.grupos[0].subitens[0].fatoCodigo");
     }
@@ -123,7 +175,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [InlineData(false)]
     public async Task Criar_RegraCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
     {
-        FatoColetadoInput cita = Item("CERTIFICADO", 1) with { Precondicao = Quando("FAIXA_ETARIA", 18) };
+        FatoColetadoInput cita = Montar("CERTIFICADO", 1).ExibidoQuando(Quando("FAIXA_ETARIA", 18)).Construir();
         ConteudoDoModeloInput conteudo = coletaDataDeNascimento ? Conteudo(Item("DATA_NASCIMENTO", 0, "DATA"), cita) : Conteudo(cita);
 
         Result<Guid> resultado = await CriarAsync(conteudo);
@@ -151,33 +203,33 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Regra que cita valor fora do tipo do fato é recusada pela semântica do predicado")]
     public async Task Criar_RegraComValorDeOutroTipo_Recusa()
     {
-        FatoColetadoInput exibido = Item("CPF_RESPONSAVEL", 1, "TEXTO") with { Precondicao = Quando("CERTIFICADO", "SIM") };
+        FatoColetadoInput exibido = Montar("CPF_RESPONSAVEL", 1, "TEXTO").ExibidoQuando(Quando("CERTIFICADO", "SIM")).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), exibido));
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.itens[1].precondicao");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.itens[1].regras.exibicao");
     }
 
     [Fact(DisplayName = "Regra que cita fato calculado de atributos do candidato é recusada")]
     public async Task Criar_RegraCitaAtributo_Recusa()
     {
-        FatoColetadoInput exibido = Item("CERTIFICADO", 0) with { Precondicao = Quando("IDADE", 18) };
+        FatoColetadoInput exibido = Montar("CERTIFICADO", 0).ExibidoQuando(Quando("IDADE", 18)).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(exibido));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
-            .Contain(("conteudo.itens[0].precondicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato));
+            .Contain(("conteudo.itens[0].regras.exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato));
     }
 
     [Fact(DisplayName = "Termo cuja versão não existe no catálogo é recusado")]
     public async Task Criar_VersaoDeTermoInexistente_Recusa()
     {
-        TermoExigidoInput termo = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
+        TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Termos = [termo] });
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.termos[0].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
+            new FieldError("conteudo.termos[0].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 

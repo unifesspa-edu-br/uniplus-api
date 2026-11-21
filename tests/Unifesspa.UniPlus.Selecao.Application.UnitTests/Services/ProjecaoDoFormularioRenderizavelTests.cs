@@ -63,8 +63,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
-        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME").Formato.Should().BeNull();
-        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Formato.Should().Be("NOME_PESSOA");
+        formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME").Formato.Should().BeNull();
+        formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_MAE").Formato.Should().Be("NOME_PESSOA");
     }
 
     [Fact(DisplayName = "O NOME_SOCIAL congelado sem a orientação é publicado com ela; os demais campos seguem com a ajuda congelada")]
@@ -81,9 +81,9 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
-        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Ajuda
-            .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Ajuda);
-        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Ajuda.Should().BeNull();
+        formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Apresentacao.Ajuda
+            .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Apresentacao!.Ajuda);
+        formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_MAE").Apresentacao.Ajuda.Should().BeNull();
     }
 
     [Fact(DisplayName = "Fora da inscrição, o NOME_SOCIAL segue com a ajuda congelada: a conferência com a conta é da inscrição")]
@@ -97,7 +97,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!;
 
-        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Ajuda.Should().BeNull();
+        formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Apresentacao.Ajuda.Should().BeNull();
     }
 
     [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação, com a orientação congelada; o de texto, o formato e nenhum valor")]
@@ -107,11 +107,11 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
-        formulario.FatosColetados[0].ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal("BRANCA", "AMARELA", "PRETA");
-        formulario.FatosColetados[0].ValoresSelecionaveis!.Select(static v => v.Orientacao)
+        formulario.Coleta.Itens[0].ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal("BRANCA", "AMARELA", "PRETA");
+        formulario.Coleta.Itens[0].ValoresSelecionaveis!.Select(static v => v.Orientacao)
             .Should().Equal(null, null, "Passa pela heteroidentificação.");
-        formulario.FatosColetados[1].ValoresSelecionaveis.Should().BeNull();
-        formulario.FatosColetados[1].Formato.Should().Be("NOME_PESSOA");
+        formulario.Coleta.Itens[1].ValoresSelecionaveis.Should().BeNull();
+        formulario.Coleta.Itens[1].Formato.Should().Be("NOME_PESSOA");
         formulario.Regras.Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta
             .Should().BeEquivalentTo(["AMARELA", "BRANCA", "PRETA"]);
     }
@@ -121,7 +121,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     {
         Configuracao configuracao = ConfiguracaoComPressupostos();
 
-        IReadOnlyList<PressupostoRenderizavel> pressupostos = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!.Pressupostos;
+        IReadOnlyList<PressupostoRenderizavel> pressupostos = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!.Pressupostos.Fatos;
 
         pressupostos.Should().BeEquivalentTo(
             [
@@ -155,10 +155,12 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         Agregados = [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)],
     };
 
-    private static GrupoColetado Familia() => GrupoColetado.Criar(
-        "COMPOSICAO_FAMILIAR", 1, Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
-        [Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null)],
-        FinalidadeFormulario.Inscricao).Value!;
+    private static GrupoColetado Familia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
+        .NaSecao(Secao)
+        .ComOcorrencias(0, null)
+        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null))
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
 
     /// <summary>A configuração de um processo, como a configuração publicada ou a configuração viva a dão à projeção.</summary>
     private sealed record Configuracao(
@@ -216,10 +218,14 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         string? formato = null,
         string? etapa = Secao,
         (string Fato, object Valor)[]? quando = null) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre,
-            quando is null ? null : [.. quando.Select(static c => CondicaoPrecondicaoFato.Criar(0, c.Fato, Operador.Igual, JsonSerializer.SerializeToElement(c.Valor)).Value!)],
-            etapaCodigo: etapa, finalidade: finalidade, formato: formato, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(tipo)
+            .ComFormato(formato)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(quando is null ? null : ExibicaoDeTeste.QuandoTodas([.. quando.Select(static c => (c.Fato, Operador.Igual, c.Valor))]))
+            .NaSecao(etapa)
+            .DaFinalidade(finalidade)
+            .Construir();
 
     private static TermoExigidoFormulario Termo(string codigo, FinalidadeFormulario finalidade) =>
         TermoExigidoFormulario.Criar(

@@ -70,8 +70,8 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         await Aceito(ctx.PublicarAsync());
 
         using JsonDocument processo = JsonDocument.Parse(await ctx.ObterProcessoAsync());
-        processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single()
-            .GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        ClassificacaoPublicada(processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single())
+            .Should().Be("SENSIVEL");
     }
 
     [Fact(DisplayName = "Tipo reclassificado para pessoal entre a gravação e a publicação: a publicação recusa o fato sensível comprovado")]
@@ -123,7 +123,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
 
         using JsonDocument processo = JsonDocument.Parse(await ctx.ObterProcessoAsync());
         JsonElement exigencia = processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single();
-        exigencia.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        ClassificacaoPublicada(exigencia).Should().Be("SENSIVEL");
         exigencia.GetProperty("fatosComprovados").EnumerateArray().Select(static f => f.GetString()).Should().Equal(FatoSensivel);
     }
 
@@ -139,10 +139,13 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         await Aceito(ctx.RetificarAsync());
 
         using JsonDocument processo = JsonDocument.Parse(await ctx.ObterProcessoAsync());
-        processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single()
-            .GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        ClassificacaoPublicada(processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single())
+            .Should().Be("SENSIVEL");
         await ConferirProtecaoNasDuasVersoesAsync(ctx.ProcessoId);
     }
+
+    private static string? ClassificacaoPublicada(JsonElement exigencia) =>
+        exigencia.GetProperty("tipoDocumento").GetProperty("protecao").GetProperty("classificacao").GetString();
 
     private async Task ConferirProtecaoNasDuasVersoesAsync(Guid processoId)
     {
@@ -278,16 +281,8 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                 new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/INSCRICAO/itens", UriKind.Relative),
                 new { itens = new[] { ItemSensivel() } });
 
-        private static object ItemSensivel() => new
-        {
-            fatoCodigo = FatoSensivel,
-            ordem = PrimeiraOrdem,
-            rotulo = FatoSensivel,
-            tipoRenderizacao = "BOOLEANO",
-            obrigatoriedade = "NUNCA",
-            precondicao = (object?)null,
-            etapaCodigo = FormularioDeInscricaoHttp.Secao,
-        };
+        private static object ItemSensivel() =>
+            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
         public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string[]? comprova = null) =>
             EnviarAsync(
@@ -297,14 +292,11 @@ public sealed class ProtecaoDaExigenciaEndpointTests
 
         private object DocumentoDaExigencia(Guid tipoDocumentoId, string[] fatosComprovados) => new
         {
-            exigidoNaFaseId = FaseId,
-            finalidade = "INSCRICAO",
-            tipoDocumentoId,
-            aplicabilidade = "GERAL",
-            obrigatorio = false,
-            condicoes = Array.Empty<object>(),
-            basesLegais = Array.Empty<object>(),
-            formatosPermitidos = "QUALQUER",
+            tipoDocumento = new { id = tipoDocumentoId },
+            momento = new { faseId = FaseId, finalidade = "INSCRICAO" },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
             fatosComprovados,
         };
 

@@ -26,7 +26,7 @@ public sealed class ModeloFormularioTipoDeProcessoTests
             new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
             new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
         ],
-        [new ItemDoModelo("QUILOMBOLA", 0, "DADOS", "Quilombola", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)],
+        [new ItemDoModelo("QUILOMBOLA", 0, "DADOS", new ApresentacaoDoCampo("Quilombola", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
         [],
         [],
         []);

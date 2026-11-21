@@ -56,7 +56,6 @@ internal static class ApoioDosDocumentosExigidos
             mocks.FatoCandidatoReader,
             mocks.Modelos,
             mocks.UnitOfWork,
-            TimeProvider.System,
             CancellationToken.None);
 
     internal static TipoDocumentoView TipoDocumentoResultado(Guid id) =>
@@ -86,7 +85,7 @@ internal static class ApoioDosDocumentosExigidos
     /// </summary>
     internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
     {
-        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando(codigo, 0).DoTipo(renderizacao).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
         processo.DefinirItens([fato]).IsSuccess.Should().BeTrue();
     }
 
@@ -100,9 +99,11 @@ internal static class ApoioDosDocumentosExigidos
     }
 
     private static GrupoColetado GrupoDaComposicaoFamiliar() =>
-        GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+        GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
+            .ComOcorrencias(1, 10)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .Construir();
 
     private static FatoCandidatoView FatoMaiorIdadeDoMembro() =>
         new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
@@ -127,11 +128,13 @@ internal static class ApoioDosDocumentosExigidos
     internal sealed record CenarioDaExigencia(ProcessoSeletivo Processo, FaseCronograma Fase, Mocks Mocks, Guid TipoDocumentoId)
     {
         /// <summary>Exigência geral e obrigatória, sem condições nem bases legais, com qualquer formato.</summary>
-        internal ItemDocumentoExigidoInput ItemGeral(JsonElement? formatosPermitidos = null, int? tamanhoMaximoBytes = null) =>
-            new(Fase.Id, TipoDocumentoId, "GERAL", true, null, [], [], null, formatosPermitidos ?? Qualquer, tamanhoMaximoBytes);
+        internal ItemDocumentoExigidoDeTeste ItemGeral(JsonElement? formatosPermitidos = null, int? tamanhoMaximoBytes = null)
+        {
+            ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(Fase.Id, TipoDocumentoId).ComTamanhoMaximo(tamanhoMaximoBytes);
+            return formatosPermitidos is { } formatos ? item.ComFormatos(formatos) : item;
+        }
 
-        internal ItemDocumentoExigidoInput ItemCondicional(CondicaoGatilhoInput condicao) =>
-            ItemGeral() with { Aplicabilidade = "CONDICIONAL", Condicoes = [condicao] };
+        internal ItemDocumentoExigidoDeTeste ItemCondicional(CondicaoGatilhoInput condicao) => ItemGeral().Condicional(condicao);
 
         /// <summary>O leitor de tipos passa a devolver o tipo dado para o id do cenário (ou nenhum, quando é <see langword="null"/>).</summary>
         internal CenarioDaExigencia ComTipoDeDocumento(Func<Guid, TipoDocumentoView?> tipo)
@@ -141,9 +144,11 @@ internal static class ApoioDosDocumentosExigidos
         }
 
         internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoInput item) =>
-            new(Processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
+            new(Processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
 
-        internal Task<Result> DefinirAsync(ItemDocumentoExigidoInput item) => HandleAsync(Mocks, Comando(item));
+        internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoDeTeste item) => Comando(item.Construir());
+
+        internal Task<Result> DefinirAsync(ItemDocumentoExigidoDeTeste item) => HandleAsync(Mocks, Comando(item));
     }
 
     internal static ProcessoSeletivo NovoProcesso(string nome) =>

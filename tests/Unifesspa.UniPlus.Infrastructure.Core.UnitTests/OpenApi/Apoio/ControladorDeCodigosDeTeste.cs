@@ -26,6 +26,9 @@ public sealed class ControladorDeCodigosDeTeste : ControllerBase
         [FromQuery, BindRequired, AceitaCodigosDe<Fase>] string faseObrigatoria) =>
         throw new NotSupportedException();
 
+    [HttpGet("textual")]
+    public RespostaTextualDeFase ComRespostaTextual() => throw new NotSupportedException();
+
     [HttpGet("filtro")]
     public RespostaDeFase ComTipoDeConsulta([FromQuery] FiltroDeFase filtro) => throw new NotSupportedException();
 

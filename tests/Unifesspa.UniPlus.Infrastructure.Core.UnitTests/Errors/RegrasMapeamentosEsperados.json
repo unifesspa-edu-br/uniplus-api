@@ -180,6 +180,12 @@
     "titulo": "O rótulo do grupo é obrigatório e tem tamanho limitado"
   },
   {
+    "chave": "GrupoFormulario.OcorrenciasObrigatorias",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.ocorrencias_obrigatorias",
+    "titulo": "O grupo não declara o mínimo de ocorrências ou se o candidato é uma delas"
+  },
+  {
     "chave": "GrupoFormulario.ContagemIncoerente",
     "status": 422,
     "codigo": "uniplus.grupo_formulario.contagem_incoerente",
@@ -292,6 +298,12 @@
     "status": 422,
     "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
     "titulo": "O tipo de campo do item é obrigatório"
+  },
+  {
+    "chave": "ItemFormulario.TipoRenderizacaoInvalido",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+    "titulo": "O tipo de campo do item não é reconhecido"
   },
   {
     "chave": "ItemFormulario.AjudaTamanho",

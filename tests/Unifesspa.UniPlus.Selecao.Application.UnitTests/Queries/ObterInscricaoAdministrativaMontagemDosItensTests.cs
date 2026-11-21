@@ -142,13 +142,18 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
             .Derivado("MUNICIPIO_RESIDENCIA", "Município de residência", "CATEGORICO", "PESSOAL", salvador);
 
     private static GrupoColetado GrupoDeLocais() =>
-        GrupoColetado.Criar(
-            "LOCAIS", 1, "DADOS", "Locais", minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar(
-                "LOCAL_MUNICIPIO", 0, "Município do local", TipoRenderizacao.Municipio, Obrigatoriedade.Nunca, null, "PESSOAL",
-                InscricaoAdministrativaDeTeste.Hipotese, ProtecaoDoFatoDeTeste.Finalidade, "Município do local",
-                restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
+        GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)
+            .NaSecao("DADOS")
+            .ComRotulo("Locais")
+            .ComOcorrencias(0, null)
+            .ComCampos(FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
+                .ComRotulo("Município do local")
+                .DoTipo(TipoRenderizacao.Municipio)
+                .ComCopia(ProtecaoDoFatoDeTeste.Copia() with { HipoteseLegal = InscricaoAdministrativaDeTeste.Hipotese, Descricao = "Município do local" })
+                .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
+                .Construir())
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
     private static InscricaoAdministrativaDeTeste ComAjudaEDescricao()
     {
         return new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)

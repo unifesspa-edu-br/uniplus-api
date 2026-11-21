@@ -11,7 +11,7 @@ internal static class ArvoreDeEntradaDasExigencias
 
     /// <summary>Se alguma folha declara gatilho.</summary>
     public static bool ExisteGatilho(IReadOnlyList<NoExigenciaInput> nos) =>
-        nos.Any(no => (no.Documento?.Condicoes.Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
+        nos.Any(no => (no.Documento?.Condicoes().Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
 
     /// <summary>Se alguma folha declara fato comprovado.</summary>
     public static bool ExisteFatoComprovado(IReadOnlyList<NoExigenciaInput> nos) =>
@@ -19,7 +19,7 @@ internal static class ArvoreDeEntradaDasExigencias
 
     /// <summary>Os modelos de documento que as folhas citam.</summary>
     public static HashSet<Guid> ModelosCitados(IReadOnlyList<NoExigenciaInput> nos) =>
-        [.. nos.SelectMany(static no => (no.Documento?.ModeloId is { } id ? [id] : Array.Empty<Guid>()).Concat(ModelosCitados(no.Filhos ?? [])))];
+        [.. nos.SelectMany(static no => (no.Documento?.ModeloId() is { } id ? [id] : Array.Empty<Guid>()).Concat(ModelosCitados(no.Filhos ?? [])))];
 
     /// <summary>Os grupos que a árvore nomeia na repetição por entidade.</summary>
     public static IEnumerable<string> GruposDaRepeticao(IEnumerable<NoExigenciaInput> nos) =>

@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Mappings;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -11,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ModeloFormularioMappingTests
 {
@@ -41,6 +44,25 @@ public sealed class ModeloFormularioMappingTests
         entrada.DocumentosExigidos.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O conteúdo completo na leitura tem o mesmo JSON da entrada que a escrita recebe")]
+    public void ToDto_ConteudoCompleto_TemOMesmoJsonDaEntradaDaEscrita()
+    {
+        ConteudoDoModeloDto leitura = ConteudoCompleto().ToDto();
+
+        JsonNode.DeepEquals(JsonSerializer.SerializeToNode(leitura), JsonSerializer.SerializeToNode(EntradaCompleta())).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O conteúdo mínimo na leitura traz os blocos presentes: listas vazias, exibição nula e documentos sem condição")]
+    public void ToDto_ConteudoMinimo_TrazOsBlocosPresentes()
+    {
+        ConteudoDoModeloDto leitura = ConteudoMinimo().ToDto();
+
+        leitura.Pressupostos.Should().BeEmpty();
+        leitura.Itens.Single().Regras.Exibicao.Should().BeNull();
+        leitura.DocumentosExigidos.Single().Quando.Should().BeNull();
+        leitura.DocumentosExigidos.Single().PorOpcao.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O conteúdo nulo é recusado")]
     public void ParaEntrada_ConteudoNulo_Lanca()
     {
@@ -55,7 +77,9 @@ public sealed class ModeloFormularioMappingTests
         "Inscrição Medicina",
         [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)))],
+        [new TermoDoModelo(
+            "TERMO_USO", 0, TermoId, VersaoId,
+            new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))))],
         ["COR_RACA"],
         [GrupoCompleto()],
         [DocumentoCompleto()]);
@@ -64,25 +88,34 @@ public sealed class ModeloFormularioMappingTests
         null,
         [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
-        [new GrupoDoModelo("FAMILIA", 0, null, "Família", 1, null, null, Obrigatoriedade.Nunca, [ItemMinimo("PARENTESCO", 0)])],
+        [new GrupoDoModelo(
+            "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
     private static EtapaDoModelo EtapaCompleta() => new(
         "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
-        "RENDA", 1, "DADOS", "Renda familiar", TipoRenderizacao.Numero, "LIVRE", "Some a renda de todos",
-        Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)), Quando("QUILOMBOLA", true), [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
-        true, new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite"));
+        "RENDA",
+        1,
+        "DADOS",
+        new ApresentacaoDoCampo("Renda familiar", TipoRenderizacao.Numero, "Some a renda de todos", pedirConfirmacao: true),
+        "LIVRE",
+        new RegrasDoCampo(
+            Quando("QUILOMBOLA", true),
+            Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
+            [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
+            new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, "Pergunta", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
-        "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
-        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)], true);
+        "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),
+        new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))),
+        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)]);
 
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",
@@ -91,36 +124,47 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModeloInput EntradaCompleta() => new(
         "Inscrição Medicina",
-        [EtapaCompletaNaEntrada(), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [EtapaCompletaNaEntrada(), EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir()],
         [ItemCompletoNaEntrada()],
-        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))],
+        [
+            EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+                .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true)).Construir(),
+        ],
         ["COR_RACA"],
         [GrupoCompletoNaEntrada()],
         [DocumentoCompletoNaEntrada()]);
 
     private static ConteudoDoModeloInput EntradaMinima() => new(
         null,
-        [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null)],
+        [EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir()],
         [ItemMinimoNaEntrada("QUILOMBOLA", 0)],
-        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, null, "SEMPRE", null)],
+        [EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).Construir()],
         [],
-        [new GrupoColetadoInput("FAMILIA", 0, "Família", null, 1, null, null, "NUNCA", null, [ItemMinimoNaEntrada("PARENTESCO", 0)])],
+        [EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA").ComRotulo("Família").ComOcorrencias(1)
+            .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0)).Construir()],
         [new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
-    private static EtapaFormularioInput EtapaCompletaNaEntrada() => new(
-        "DADOS", 0, "SECAO", null, "Dados", "Dados do candidato", "Confira os dados", QuandoNaEntrada("QUILOMBOLA", true));
+    private static EtapaFormularioInput EtapaCompletaNaEntrada() =>
+        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
+            .ExibidaQuando(QuandoNaEntrada("QUILOMBOLA", true)).Construir();
 
-    private static FatoColetadoInput ItemCompletoNaEntrada() => new(
-        "RENDA", 1, "Renda familiar", "NUMERO", "QUANDO", QuandoNaEntrada("QUILOMBOLA", true), "DADOS", QuandoNaEntrada("BAIXA_RENDA", true),
-        "Some a renda de todos", true, [new RestricaoValorInput("FAIXA_NUMERICA", 0, 10), new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["COR_RACA"])],
-        new ImpedimentoInput(QuandoNaEntrada("BAIXA_RENDA", false), "Renda acima do limite"));
+    private static FatoColetadoInput ItemCompletoNaEntrada() =>
+        EntradaDoFatoColetadoDeTeste.Coletando("RENDA", 1)
+            .ComRotulo("Renda familiar").DoTipo("NUMERO").ComAjuda("Some a renda de todos").PedindoConfirmacao().NaSecao("DADOS")
+            .ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+            .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))
+            .ComRestricoes(new RestricaoValorInput("FAIXA_NUMERICA", 0, 10), new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["COR_RACA"]))
+            .ComImpedimento(new ImpedimentoInput(QuandoNaEntrada("BAIXA_RENDA", false), "Renda acima do limite"))
+            .Construir();
 
     private static FatoColetadoInput ItemMinimoNaEntrada(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, "Pergunta", "BOOLEANO", "SEMPRE", null, null, null, null, false, []);
+        EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo, ordem).ComRotulo("Pergunta").ComRestricoes().Construir();
 
-    private static GrupoColetadoInput GrupoCompletoNaEntrada() => new(
-        "FAMILIA", 2, "Composição familiar", "DADOS", 1, 5, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true),
-        [ItemMinimoNaEntrada("PARENTESCO", 0), ItemMinimoNaEntrada("RENDA_MEMBRO", 1)], true);
+    private static GrupoColetadoInput GrupoCompletoNaEntrada() =>
+        EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA", 2).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1, 5).IncluindoOCandidato().ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+            .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))
+            .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0), ItemMinimoNaEntrada("RENDA_MEMBRO", 1)).Construir();
 
     private static DocumentoExigidoDoModeloInput DocumentoCompletoNaEntrada() => new(
         "HABILITACAO", "CERTIDAO", false, QuandoNaEntrada("QUILOMBOLA", true), "PERDA_DA_VAGA",

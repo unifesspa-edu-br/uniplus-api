@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using System.Collections.Frozen;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -75,9 +76,23 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
     private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
+    private static readonly string CampoDeSelecao = TipoRenderizacao.SelecaoUnica.Codigo();
+    private static readonly string CampoDeTexto = TipoRenderizacao.Texto.Codigo();
+    private static readonly string CampoDeData = TipoRenderizacao.Data.Codigo();
+    private static readonly string Sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
+    private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoNaoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
+    private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoEstrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
+
+    private static readonly IReadOnlyList<RestricaoValorInput> DataPlausivel =
+    [
+        new(RestricaoValorJson.FaixaDeData,
+            DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
+            DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
+    ];
+
     /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
     public static EtapaFormularioInput Secao { get; } =
-        new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, "Dados do candidato", null, null);
+        new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados do candidato", null, null));
 
     /// <summary>Os itens da seção, na ordem em que são coletados.</summary>
     public static IReadOnlyList<FatoColetadoInput> Itens { get; } = MontarItens();
@@ -105,19 +120,28 @@ public static class ConjuntoBasicoDaInscricao
     public static IReadOnlyList<FatoColetadoInput> Referencia(IEnumerable<FatoColetadoInput> gravados)
     {
         ArgumentNullException.ThrowIfNull(gravados);
-        Dictionary<string, FatoColetadoInput> porCodigo = gravados
-            .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.EtapaCodigo))
-            .DistinctBy(static g => g.FatoCodigo, StringComparer.Ordinal)
-            .ToDictionary(static g => g.FatoCodigo, StringComparer.Ordinal);
+        Dictionary<string, FatoColetadoInput> porCodigo = BasicosGravadosNaSecao(gravados);
         if (porCodigo.Count == 0)
         {
             return Itens;
         }
 
         int inicio = porCodigo.Values.Min(static g => g.Ordem);
-        return [.. Itens.Select((canonico, posicao) => (porCodigo.GetValueOrDefault(canonico.FatoCodigo) ?? canonico)
-            with { Ordem = inicio + posicao, Rotulo = canonico.Rotulo })];
+        return [.. Itens.Select((canonico, posicao) =>
+            ComOrdemERotuloDoConjunto(porCodigo.GetValueOrDefault(canonico.FatoCodigo) ?? canonico, canonico, inicio + posicao))];
     }
+
+    private static Dictionary<string, FatoColetadoInput> BasicosGravadosNaSecao(IEnumerable<FatoColetadoInput> gravados) =>
+        gravados
+            .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.EtapaCodigo))
+            .DistinctBy(static g => g.FatoCodigo, StringComparer.Ordinal)
+            .ToDictionary(static g => g.FatoCodigo, StringComparer.Ordinal);
+
+    private static FatoColetadoInput ComOrdemERotuloDoConjunto(FatoColetadoInput gravado, FatoColetadoInput canonico, int ordem) =>
+        gravado with { Ordem = ordem, Apresentacao = ComRotuloDe(gravado.Apresentacao, canonico.Apresentacao) };
+
+    private static ApresentacaoDoCampoInput? ComRotuloDe(ApresentacaoDoCampoInput? gravada, ApresentacaoDoCampoInput? canonica) =>
+        (gravada ?? canonica) is { } apresentacao ? apresentacao with { Rotulo = canonica?.Rotulo } : null;
 
     /// <summary>A seção gravada num formulário ou num modelo, ou a do conjunto básico.</summary>
     public static EtapaFormularioInput SecaoDe(IEnumerable<EtapaFormularioInput> gravadas)
@@ -139,42 +163,60 @@ public static class ConjuntoBasicoDaInscricao
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(referencia);
 
-        List<FieldError> erros = ConferirBasicosEnviados(enviados, referencia);
-        for (int i = 0; i < enviados.Count; i++)
-        {
-            if (enviados[i] is { } item && !Fatos.Contains(item.FatoCodigo) && EhDaSecao(item.EtapaCodigo))
-            {
-                erros.Add(SecaoReservada($"itens[{i}].etapaCodigo"));
-            }
-        }
+        int deslocamento = DeslocamentoDoQueVemDepoisDaSecao(enviados, grupos, referencia);
+        List<FieldError> erros = [.. RepeticaoDoItemBasico.Conferir(enviados, referencia), .. RecusasDoClienteNaSecaoReservada(enviados, grupos)];
+        IReadOnlyList<GrupoColetadoInput> gruposMesclados = [.. grupos.Select(g => g is null ? g! : g with { Ordem = g.Ordem + deslocamento })];
+        return (ItensMesclados(enviados, referencia, deslocamento), gruposMesclados, erros);
+    }
 
-        for (int i = 0; i < grupos.Count; i++)
-        {
-            if (grupos[i] is { } grupo && EhDaSecao(grupo.EtapaCodigo))
-            {
-                erros.Add(SecaoReservada($"grupos[{i}].etapaCodigo"));
-            }
-        }
+    private static IEnumerable<FieldError> RecusasDoClienteNaSecaoReservada(
+        IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<GrupoColetadoInput> grupos) =>
+    [
+        .. enviados.Index().Where(static p => ItemDoClienteNaSecaoReservada(p.Item)).Select(static p => SecaoReservada($"itens[{p.Index}].etapaCodigo")),
+        .. grupos.Index().Where(static p => p.Item is { } grupo && EhDaSecao(grupo.EtapaCodigo)).Select(static p => SecaoReservada($"grupos[{p.Index}].etapaCodigo")),
+    ];
 
-        // O que vem depois da seção desloca-se só o bastante para abrir lugar ao último item dela: dos
-        // itens e grupos do cliente, o primeiro passa a ser o seguinte ao último básico.
+    private static bool ItemDoClienteNaSecaoReservada(FatoColetadoInput? item) =>
+        item is not null && !Fatos.Contains(item.FatoCodigo) && EhDaSecao(item.EtapaCodigo);
+
+    /// <summary>
+    /// O que vem depois da seção desloca-se só o bastante para abrir lugar ao último item dela: dos
+    /// itens e grupos do cliente, o primeiro passa a ser o seguinte ao último básico.
+    /// </summary>
+    private static int DeslocamentoDoQueVemDepoisDaSecao(
+        IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<GrupoColetadoInput> grupos, IReadOnlyList<FatoColetadoInput> referencia)
+    {
         int teto = referencia.Count == 0 ? -1 : referencia.Max(static r => r.Ordem);
         int primeiro = enviados.Where(i => i is not null && !Fatos.Contains(i.FatoCodigo)).Select(static i => i.Ordem)
             .Concat(grupos.Where(static g => g is not null).Select(static g => g.Ordem))
             .DefaultIfEmpty(int.MaxValue).Min();
-        int deslocamento = primeiro <= teto ? teto + 1 - primeiro : 0;
+        return primeiro <= teto ? teto + 1 - primeiro : 0;
+    }
 
-        // O item básico enviado vale pelo da referência, que já tem a ordem e o rótulo do conjunto; o
-        // omitido entra por ela.
+    /// <summary>
+    /// O item básico enviado vale pelo da referência, que já tem a ordem e o rótulo do conjunto; o
+    /// omitido entra por ela.
+    /// </summary>
+    private static IReadOnlyList<FatoColetadoInput> ItensMesclados(
+        IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<FatoColetadoInput> referencia, int deslocamento)
+    {
         Dictionary<string, FatoColetadoInput> basicos = referencia.ToDictionary(static r => r.FatoCodigo, StringComparer.Ordinal);
         HashSet<string> enviadosBasicos = new(enviados.Where(static i => i is not null && Fatos.Contains(i.FatoCodigo)).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        IReadOnlyList<FatoColetadoInput> itens =
+        return
         [
-            .. enviados.Select(i => i is null ? i! : basicos.GetValueOrDefault(i.FatoCodigo) ?? (Fatos.Contains(i.FatoCodigo) ? i : i with { Ordem = i.Ordem + deslocamento })),
+            .. enviados.Select(i => ItemMesclado(i, basicos, deslocamento)),
             .. referencia.Where(r => !enviadosBasicos.Contains(r.FatoCodigo)),
         ];
-        IReadOnlyList<GrupoColetadoInput> gruposMesclados = [.. grupos.Select(g => g is null ? g! : g with { Ordem = g.Ordem + deslocamento })];
-        return (itens, gruposMesclados, erros);
+    }
+
+    private static FatoColetadoInput ItemMesclado(FatoColetadoInput? enviado, Dictionary<string, FatoColetadoInput> basicos, int deslocamento)
+    {
+        if (enviado is null)
+        {
+            return enviado!;
+        }
+
+        return basicos.GetValueOrDefault(enviado.FatoCodigo) ?? (Fatos.Contains(enviado.FatoCodigo) ? enviado : enviado with { Ordem = enviado.Ordem + deslocamento });
     }
 
     /// <summary>
@@ -188,87 +230,27 @@ public static class ConjuntoBasicoDaInscricao
         ArgumentNullException.ThrowIfNull(enviadas);
         ArgumentNullException.ThrowIfNull(referencia);
 
-        List<FieldError> erros = [];
         int indice = enviadas.ToList().FindIndex(static e => e is not null && EhDaSecao(e.Codigo));
-        if (indice >= 0)
-        {
-            if (!MesmaSecao(enviadas[indice], referencia))
-            {
-                erros.Add(new($"etapas[{indice}]", new DomainError(
+        return indice >= 0
+            ? (enviadas, RecusasDaSecaoEnviada(enviadas[indice], indice, referencia))
+            : (EtapasComASecao(enviadas, referencia), []);
+    }
+
+    private static List<FieldError> RecusasDaSecaoEnviada(EtapaFormularioInput enviada, int indice, EtapaFormularioInput referencia) =>
+        MesmaSecao(enviada, referencia)
+            ? []
+            :
+            [
+                new($"etapas[{indice}]", new DomainError(
                     EstruturaFormularioErrorCodes.SecaoReservadaAlterada,
-                    $"A seção {CodigoDaSecao} é a dos dados básicos do candidato e não pode ser alterada.")));
-            }
+                    $"A seção {CodigoDaSecao} é a dos dados básicos do candidato e não pode ser alterada.")),
+            ];
 
-            return (enviadas, erros);
-        }
-
+    private static IReadOnlyList<EtapaFormularioInput> EtapasComASecao(IReadOnlyList<EtapaFormularioInput> enviadas, EtapaFormularioInput referencia)
+    {
         bool colide = enviadas.Any(e => e is not null && e.Ordem <= referencia.Ordem);
-        return ([.. enviadas.Select(e => colide && e is not null ? e with { Ordem = e.Ordem + 1 } : e!), referencia], erros);
+        return [.. enviadas.Select(e => colide && e is not null ? e with { Ordem = e.Ordem + 1 } : e!), referencia];
     }
-
-    /// <summary>
-    /// Recusa o item básico enviado que difere do de <paramref name="referencia"/>: o conjunto
-    /// básico não é alterado pela escrita, só repetido ou omitido. A ordem e o rótulo são do
-    /// conjunto, não do cliente: o item gravado antes de uma mudança neles continua repetível.
-    /// </summary>
-    private static List<FieldError> ConferirBasicosEnviados(IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<FatoColetadoInput> referencia)
-    {
-        Dictionary<string, string> canonicos = referencia.ToDictionary(static r => r.FatoCodigo, static r => FormaCanonica(SemOrdemNemRotulo(r)), StringComparer.Ordinal);
-        List<FieldError> erros = [];
-        for (int i = 0; i < enviados.Count; i++)
-        {
-            if (enviados[i] is { } item && Fatos.Contains(item.FatoCodigo)
-                && (!canonicos.TryGetValue(item.FatoCodigo, out string? canonico)
-                    || TemValorAusente(item)
-                    || !string.Equals(canonico, FormaCanonica(SemOrdemNemRotulo(item)), StringComparison.Ordinal)))
-            {
-                erros.Add(new($"itens[{i}]", new DomainError(
-                    EstruturaFormularioErrorCodes.DadoBasicoAlterado,
-                    $"O item '{item.FatoCodigo}' é do conjunto básico de dados do candidato: pode ser repetido como está, ou omitido, mas não alterado.")));
-            }
-        }
-
-        return erros;
-    }
-
-    private static FatoColetadoInput SemOrdemNemRotulo(FatoColetadoInput item) => item with { Ordem = 0, Rotulo = string.Empty };
-
-    /// <summary>
-    /// A forma canônica do item na entrada, para conferir que o item básico enviado é o de
-    /// referência: os textos aparados, as listas vazias como nulas e o token da obrigatoriedade.
-    /// </summary>
-    public static string FormaCanonica(FatoColetadoInput item)
-    {
-        ArgumentNullException.ThrowIfNull(item);
-        return JsonSerializer.Serialize(item with
-        {
-            Rotulo = item.Rotulo?.Trim() ?? string.Empty,
-            EtapaCodigo = string.IsNullOrWhiteSpace(item.EtapaCodigo) ? null : item.EtapaCodigo.Trim(),
-            Obrigatoriedade = string.IsNullOrWhiteSpace(item.Obrigatoriedade) ? PredicadoDnfJson.ObrigatoriedadeSempre : item.Obrigatoriedade.Trim(),
-            Precondicao = item.Precondicao is { Count: > 0 } precondicao ? precondicao : null,
-            PredicadoObrigatoriedade = item.PredicadoObrigatoriedade is { Count: > 0 } predicado ? predicado : null,
-            Ajuda = string.IsNullOrWhiteSpace(item.Ajuda) ? null : item.Ajuda.Trim(),
-            Restricoes = item.Restricoes is { Count: > 0 } restricoes ? [.. restricoes.Select(static r => RestricaoCanonica(r)!)] : null,
-        });
-    }
-
-    /// <summary>
-    /// A restrição na forma que a escrita grava: lida pelo domínio e devolvida à entrada, para que o
-    /// deslocamento omitido de um limite de data e o explícito em zero sejam a mesma restrição. A
-    /// restrição ausente ou que o domínio recusa fica como veio, e a recusa sai na própria escrita.
-    /// </summary>
-    private static RestricaoValorInput? RestricaoCanonica(RestricaoValorInput? restricao) =>
-        restricao is not null && EntradaDeRegras.Restricao(restricao) is { IsSuccess: true } lida
-            ? EntradaDeRegras.ParaEntrada(lida.Value!)
-            : restricao;
-
-    /// <summary>A condição sem valor não tem forma canônica, e o item que a traz não é o de referência.</summary>
-    private static bool TemValorAusente(FatoColetadoInput item) =>
-        new[] { item.Precondicao, item.PredicadoObrigatoriedade, item.Impedimento?.Quando }
-            .Concat((item.Restricoes ?? []).SelectMany(static r => (r?.Entradas ?? []).Select(static e => e?.Quando)))
-            .SelectMany(static predicado => predicado ?? [])
-            .SelectMany(static clausula => clausula ?? [])
-            .Any(static condicao => condicao is not null && condicao.Valor.ValueKind == JsonValueKind.Undefined);
 
     private static bool EhDaSecao(string? etapaCodigo) => string.Equals(etapaCodigo?.Trim(), CodigoDaSecao, StringComparison.Ordinal);
 
@@ -276,10 +258,13 @@ public static class ConjuntoBasicoDaInscricao
         enviada.Ordem == referencia.Ordem
         && string.Equals(enviada.Tipo, referencia.Tipo, StringComparison.Ordinal)
         && string.IsNullOrWhiteSpace(enviada.Bloco)
-        && string.Equals(enviada.Titulo?.Trim(), referencia.Titulo, StringComparison.Ordinal)
-        && string.Equals(string.IsNullOrWhiteSpace(enviada.Descricao) ? null : enviada.Descricao.Trim(), referencia.Descricao, StringComparison.Ordinal)
-        && string.Equals(string.IsNullOrWhiteSpace(enviada.Aviso) ? null : enviada.Aviso.Trim(), referencia.Aviso, StringComparison.Ordinal)
+        && MesmaApresentacao(enviada.Apresentacao, referencia.Apresentacao)
         && enviada.Exibicao is not { Count: > 0 };
+
+    private static bool MesmaApresentacao(ApresentacaoDaEtapaInput? enviada, ApresentacaoDaEtapaInput? referencia) =>
+        string.Equals(enviada?.Titulo?.Trim(), referencia?.Titulo, StringComparison.Ordinal)
+        && string.Equals(FormaDoItem.TextoOpcional(enviada?.Descricao), referencia?.Descricao, StringComparison.Ordinal)
+        && string.Equals(FormaDoItem.TextoOpcional(enviada?.Aviso), referencia?.Aviso, StringComparison.Ordinal);
 
     private static FieldError SecaoReservada(string campo) =>
         new(campo, new DomainError(
@@ -288,58 +273,82 @@ public static class ConjuntoBasicoDaInscricao
 
     private static List<FatoColetadoInput> MontarItens()
     {
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> naoEstrangeiro = Quando(Nacionalidade, OperadorCodigo.Diferente, Estrangeiro);
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> estrangeiro = Quando(Nacionalidade, OperadorCodigo.Igual, Estrangeiro);
-
-        string selecao = TipoRenderizacaoCodigo.SelecaoUnica;
-        string texto = TipoRenderizacaoCodigo.Texto;
-        string data = TipoRenderizacaoCodigo.Data;
-        string sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
-        IReadOnlyList<RestricaoValorInput> dataPlausivel =
-        [
-            new(RestricaoValorJson.FaixaDeData,
-                DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
-                DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
-        ];
-
         List<FatoColetadoInput> itens =
         [
-            new(Nome, 0, "Nome completo", texto, sempre, null),
-            new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
-            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true), Ajuda: AjudaDoNomeSocial),
-            new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
-            new(Cpf, 0, "CPF", texto, sempre, null),
-            new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
-            new(OrgaoEmissor, 0, "Órgão emissor do RG", selecao, sempre, naoEstrangeiro),
-            new("RG_ORGAO_EMISSOR_OUTRO", 0, "Nome do órgão emissor", texto, sempre,
-                Quando(OrgaoEmissor, OperadorCodigo.Igual, OutroOrgaoEmissor),
-                Restricoes: [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
-            new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),
-            new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro, Restricoes: dataPlausivel),
-            new("PASSAPORTE_NUMERO", 0, "Número do passaporte", texto, sempre, estrangeiro),
-            new("RNM_NUMERO", 0, "Número do Registro Nacional Migratório (RNM)", texto, sempre, estrangeiro),
-            new("DATA_NASCIMENTO", 0, "Data de nascimento", data, sempre, null, Restricoes: dataPlausivel),
-            new("NATURALIDADE_UF", 0, "UF de nascimento", selecao, sempre, naoEstrangeiro),
-            new("NATURALIDADE_MUNICIPIO", 0, "Município de nascimento", TipoRenderizacaoCodigo.Municipio, sempre, naoEstrangeiro,
-                Restricoes: [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),
-            new("NOME_MAE", 0, "Nome da mãe", texto, sempre, null),
-            new("NOME_PAI", 0, "Nome do pai", texto, PredicadoDnfJson.ObrigatoriedadeNunca, null),
-            new("ESTADO_CIVIL", 0, "Estado civil", selecao, sempre, null),
-            new("SEXO", 0, "Sexo biológico", selecao, sempre, null),
-            new("SEXO_CIVIL", 0, "Sexo civil", selecao, sempre, null),
-            new("IDENTIDADE_GENERO", 0, "Identidade de gênero", selecao, sempre, null),
-            new("ORIENTACAO_SEXUAL", 0, "Orientação sexual", selecao, sempre, null),
-            new("COR_RACA", 0, "Cor ou raça", selecao, sempre, null),
-            new("EMAIL", 0, "E-mail", texto, sempre, null),
-            new("TELEFONE", 0, "Telefone", texto, sempre, null),
-            new(TipoDeLocalidade, 0, "Tipo de localidade", selecao, sempre, null),
-            new("NOME_COMUNIDADE", 0, "Nome da aldeia, comunidade ou quilombo", texto, sempre,
-                Quando(TipoDeLocalidade, OperadorCodigo.Em, LocalidadesComComunidade)),
-            new("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacaoCodigo.Endereco, sempre, null),
+            .. Identificacao(), .. DocumentoDeIdentidade(), .. Nascimento(), .. Filiacao(), .. Caracterizacao(), .. ContatoEResidencia(),
         ];
 
         return [.. itens.Select(static (item, ordem) => item with { Ordem = ordem, EtapaCodigo = CodigoDaSecao })];
     }
+
+    private static FatoColetadoInput[] Identificacao() =>
+    [
+        Item(Nome, "Nome completo", CampoDeTexto),
+        Item(DesejaNomeSocial, "Deseja usar nome social?", TipoRenderizacao.Booleano.Codigo()),
+        Item(NomeSocial, "Nome social", CampoDeTexto, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), ajuda: AjudaDoNomeSocial),
+        Item(Nacionalidade, "Nacionalidade", CampoDeSelecao),
+        Item(Cpf, "CPF", CampoDeTexto),
+    ];
+
+    private static FatoColetadoInput[] DocumentoDeIdentidade() =>
+    [
+        Item("RG_NUMERO", "Número do RG", CampoDeTexto, QuandoNaoEstrangeiro),
+        Item(OrgaoEmissor, "Órgão emissor do RG", CampoDeSelecao, QuandoNaoEstrangeiro),
+        Item("RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor", CampoDeTexto, Quando(OrgaoEmissor, Operador.Igual.Codigo(), OutroOrgaoEmissor),
+            [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
+        Item("RG_UF", "UF de emissão do RG", CampoDeSelecao, QuandoNaoEstrangeiro),
+        Item("RG_DATA_EMISSAO", "Data de emissão do RG", CampoDeData, QuandoNaoEstrangeiro, DataPlausivel),
+        Item("PASSAPORTE_NUMERO", "Número do passaporte", CampoDeTexto, QuandoEstrangeiro),
+        Item("RNM_NUMERO", "Número do Registro Nacional Migratório (RNM)", CampoDeTexto, QuandoEstrangeiro),
+    ];
+
+    private static FatoColetadoInput[] Nascimento() =>
+    [
+        Item("DATA_NASCIMENTO", "Data de nascimento", CampoDeData, restricoes: DataPlausivel),
+        Item("NATURALIDADE_UF", "UF de nascimento", CampoDeSelecao, QuandoNaoEstrangeiro),
+        Item("NATURALIDADE_MUNICIPIO", "Município de nascimento", TipoRenderizacao.Municipio.Codigo(), QuandoNaoEstrangeiro,
+            [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),
+    ];
+
+    private static FatoColetadoInput[] Filiacao() =>
+    [
+        Item("NOME_MAE", "Nome da mãe", CampoDeTexto),
+        Item("NOME_PAI", "Nome do pai", CampoDeTexto, obrigatoriedade: PredicadoDnfJson.ObrigatoriedadeNunca),
+    ];
+
+    private static FatoColetadoInput[] Caracterizacao() =>
+    [
+        Item("ESTADO_CIVIL", "Estado civil", CampoDeSelecao),
+        Item("SEXO", "Sexo biológico", CampoDeSelecao),
+        Item("SEXO_CIVIL", "Sexo civil", CampoDeSelecao),
+        Item("IDENTIDADE_GENERO", "Identidade de gênero", CampoDeSelecao),
+        Item("ORIENTACAO_SEXUAL", "Orientação sexual", CampoDeSelecao),
+        Item("COR_RACA", "Cor ou raça", CampoDeSelecao),
+    ];
+
+    private static FatoColetadoInput[] ContatoEResidencia() =>
+    [
+        Item("EMAIL", "E-mail", CampoDeTexto),
+        Item("TELEFONE", "Telefone", CampoDeTexto),
+        Item(TipoDeLocalidade, "Tipo de localidade", CampoDeSelecao),
+        Item("NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", CampoDeTexto, Quando(TipoDeLocalidade, Operador.Em.Codigo(), LocalidadesComComunidade)),
+        Item("ENDERECO_RESIDENCIAL", "Endereço residencial", TipoRenderizacao.Endereco.Codigo()),
+    ];
+
+    /// <summary>O item na forma de entrada: sempre obrigatório, salvo a obrigatoriedade dada, e sem ordem nem seção, que o conjunto dá depois.</summary>
+    private static FatoColetadoInput Item(
+        string fatoCodigo,
+        string rotulo,
+        string tipoRenderizacao,
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? exibicao = null,
+        IReadOnlyList<RestricaoValorInput>? restricoes = null,
+        string? ajuda = null,
+        string? obrigatoriedade = null) =>
+        new(
+            fatoCodigo,
+            0,
+            new ApresentacaoDoCampoInput(rotulo, tipoRenderizacao, ajuda),
+            new RegrasDoCampoInput(exibicao, new ObrigatoriedadeInput(obrigatoriedade ?? Sempre), restricoes));
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, string operador, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, operador, JsonSerializer.SerializeToElement(valor))]];

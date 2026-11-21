@@ -52,11 +52,13 @@ public sealed class FaseEfetivaDosFatosTests
             bancasRequeridas: []).Value!;
 
     private static FatoColetado Item(string codigo) =>
-        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 
     private static GrupoColetado Grupo(string membro) =>
-        GrupoColetado.Criar($"GRUPO_{membro}", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar(membro, 0, membro, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+        GrupoColetadoDeTeste.Agrupando($"GRUPO_{membro}", 1)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(FatoColetadoDeTeste.Coletando(membro, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .Construir();
 
     private static void DefinirDerivado(ProcessoSeletivo processo, string derivado, string dependencia) =>
         processo.DefinirRegrasDerivacao(
@@ -161,12 +163,14 @@ public sealed class FaseEfetivaDosFatosTests
 
     private static GrupoColetado GrupoDeMembroRural(bool grupoObrigatorio, bool campoObrigatorio)
     {
-        FatoColetado campo = FatoColetado.Criar(
-            "MEMBRO_RURAL", 0, "MEMBRO_RURAL", TipoRenderizacao.Booleano, campoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado campo = FatoColetadoDeTeste.Coletando("MEMBRO_RURAL", 0)
+            .ComObrigatoriedade(campoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)
+            .Construir();
 
-        return GrupoColetado.Criar(
-            "GRUPO_MEMBRO_RURAL", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null,
-            grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, [campo]).Value!;
+        return GrupoColetadoDeTeste.Agrupando("GRUPO_MEMBRO_RURAL", 1)
+            .ComObrigatoriedade(grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)
+            .ComCampos(campo)
+            .Construir();
     }
 
     [Theory(DisplayName = "Agregado citado por regra viva exige o grupo e o campo de membro obrigatórios sempre")]

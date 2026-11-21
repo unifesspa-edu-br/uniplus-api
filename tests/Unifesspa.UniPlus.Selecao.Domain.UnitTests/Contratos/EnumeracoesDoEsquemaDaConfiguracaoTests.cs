@@ -45,7 +45,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Comuns, $"{Recurso}/prazoSegundaInstanciaUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/efeitoSuspensivo", () => Codigos<EfeitoSuspensivo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/guardaDaVaga", () => Codigos<GuardaDaVaga>(static v => v.Codigo())),
-        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
         (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
         (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),

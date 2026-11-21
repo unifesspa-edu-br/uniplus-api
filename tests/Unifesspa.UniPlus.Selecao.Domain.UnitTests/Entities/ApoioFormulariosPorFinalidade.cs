@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioFormulariosPorFinalidade
 {
     internal static FatoColetado Item(string codigo, int ordem, string? etapa = FormularioDeTeste.Secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: etapa, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(etapa).Construir();
 
     internal static ProcessoSeletivo ComHabilitacao()
     {
@@ -38,10 +38,10 @@ internal static class ApoioFormulariosPorFinalidade
             null, Obrigatoriedade.Sempre).Value!;
 
     internal static FatoColetado ItemQueCita(string codigo, int ordem, string citado) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
-            [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ExibidoQuando(ExibicaoDeTeste.Quando(citado, Operador.Igual, true))
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     internal static ConfiguracaoDerivacaoFato DerivadoQueDependeDe(string fato) =>
         ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
@@ -60,24 +60,31 @@ internal static class ApoioFormulariosPorFinalidade
     ];
 
     internal static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(secao).Construir();
 
-    internal static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado Opcional(string codigo, int ordem, PredicadoDnf? exibicao = null) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ExibidoQuando(exibicao)
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     /// <summary>A data de nascimento na seção dos dados básicos, com a obrigatoriedade do caso.</summary>
-    internal static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetado.Criar(
-        "DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem, "Data de nascimento",
-        TipoRenderizacao.Data, obrigatoriedade, null, etapaCodigo: ConjuntoBasicoDaInscricao.CodigoDaSecao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem)
+        .ComRotulo("Data de nascimento")
+        .DoTipo(TipoRenderizacao.Data)
+        .ComObrigatoriedade(obrigatoriedade)
+        .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao)
+        .Construir();
 
     internal static FatoColetado CitaFaixaEtaria(int ordem) => Opcional(
-        "MENOR_SOB_RESPONSAVEL", ordem, CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MenorIgual, JsonSerializer.SerializeToElement(17)).Value!);
+        "MENOR_SOB_RESPONSAVEL", ordem, ExibicaoDeTeste.Quando("FAIXA_ETARIA", Operador.MenorIgual, 17));
 
     internal static FatoColetado ItemQueCitaODerivado(int ordem) =>
-        FatoColetado.Criar(
-            "CONCORRER_EP", ordem, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
-            [CondicaoPrecondicaoFato.Criar(0, "REGIME_DE_VAGA", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!],
-            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("CONCORRER_EP", ordem)
+            .ComRotulo("Concorrer")
+            .ExibidoQuando(ExibicaoDeTeste.Quando("REGIME_DE_VAGA", Operador.Igual, "AC"))
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     internal static TermoExigidoFormulario TermoQueCita(string fato, int ordem = 0) =>
         TermoExigidoFormulario.Criar(

@@ -49,14 +49,16 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             return Result.ValidationFailure(entradas.Errors);
         }
 
-        // A raiz cujas folhas são todas da finalidade do modelo é a que o modelo substitui.
-        List<NoExigencia> mantidas = [.. processo.RaizesDeExigencia.Where(raiz => !raiz.AchatarComDescendentes()
-            .Where(static n => n.Tipo == TipoNo.Folha)
-            .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
         return await DefinicaoDosDocumentosExigidos.DefinirAsync(
-                processo, entradas.Value!, mantidas, cadastros, cancellationToken)
+                processo, entradas.Value!, RaizesQueOModeloNaoSubstitui(), cadastros, cancellationToken)
             .ConfigureAwait(false);
     }
+
+    // A raiz cujas folhas são todas da finalidade do modelo é a que o modelo substitui.
+    private List<NoExigencia> RaizesQueOModeloNaoSubstitui() =>
+        [.. processo.RaizesDeExigencia.Where(raiz => !raiz.AchatarComDescendentes()
+            .Where(static n => n.Tipo == TipoNo.Folha)
+            .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
 
     /// <summary>
     /// O campo da recusa no conjunto de documentos do modelo: o da fase e o do tipo já trazem a posição; os
@@ -73,28 +75,29 @@ internal sealed class SelecaoDosDocumentosDoModelo(
     /// processo não oferece não gera cópia. O documento que não se multiplica segue como está.
     /// </summary>
     public static IEnumerable<DocumentoExigidoDoModeloInput> PorOpcaoOfertada(
-        DocumentoExigidoDoModeloInput documento, IReadOnlyDictionary<string, DominioDeValores> ofertados)
-    {
-        if (documento.PorOpcao is not { } porOpcao)
-        {
-            return [documento];
-        }
+        DocumentoExigidoDoModeloInput documento, IReadOnlyDictionary<string, DominioDeValores> ofertados) =>
+        documento.PorOpcao is { } porOpcao
+            ? OpcoesOfertadas(porOpcao, ofertados).Select(opcao => ParaAOpcao(documento, porOpcao.FatoCodigo, opcao))
+            : [documento];
 
+    private static IEnumerable<string> OpcoesOfertadas(ExigenciaPorOpcaoInput porOpcao, IReadOnlyDictionary<string, DominioDeValores> ofertados)
+    {
         HashSet<string> excetuadas = [.. (porOpcao.Exceto ?? []).OfType<string>()];
-        IEnumerable<string> opcoes = ofertados.TryGetValue(porOpcao.FatoCodigo, out DominioDeValores? dominio) && dominio.Valores is { } valores
+        return ofertados.TryGetValue(porOpcao.FatoCodigo, out DominioDeValores? dominio) && dominio.Valores is { } valores
             ? valores.Where(v => !excetuadas.Contains(v)).Order(StringComparer.Ordinal)
             : [];
-        return opcoes.Select(opcao =>
+    }
+
+    private static DocumentoExigidoDoModeloInput ParaAOpcao(DocumentoExigidoDoModeloInput documento, string fatoCodigo, string opcao)
+    {
+        CondicaoPrecondicaoInput declarou = new(fatoCodigo, "IGUAL", JsonSerializer.SerializeToElement(opcao));
+        return documento with
         {
-            CondicaoPrecondicaoInput declarou = new(porOpcao.FatoCodigo, "IGUAL", JsonSerializer.SerializeToElement(opcao));
-            return documento with
-            {
-                Quando = documento.Quando is { Count: > 0 } quando
-                    ? [.. quando.Select(clausula => (IReadOnlyList<CondicaoPrecondicaoInput>)[.. clausula, declarou])]
-                    : [[declarou]],
-                PorOpcao = null,
-            };
-        });
+            Quando = documento.Quando is { Count: > 0 } quando
+                ? [.. quando.Select(clausula => (IReadOnlyList<CondicaoPrecondicaoInput>)[.. clausula, declarou])]
+                : [[declarou]],
+            PorOpcao = null,
+        };
     }
 
     /// <summary>
@@ -123,58 +126,74 @@ internal sealed class SelecaoDosDocumentosDoModelo(
         IReadOnlyDictionary<string, DominioDeValores> ofertados = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
         foreach ((int i, DocumentoExigidoDoModeloInput copia) in documentos.SelectMany((d, i) => PorOpcaoOfertada(d, ofertados).Select(c => (i, c))))
         {
-            DocumentoExigidoDoModeloInput documento = copia with { Quando = ClausulasOfertadas(copia.Quando, ofertados) };
-            if (copia.Quando is { Count: > 0 } && documento.Quando is not { Count: > 0 })
-            {
-                continue;
-            }
-
-            NoExigenciaInput? entrada = await EntradaAsync(documento, $"documentosExigidos[{i}]", erros, cancellationToken).ConfigureAwait(false);
-            if (entrada is not null)
+            if (ComClausulasOfertadas(copia, ofertados) is { } documento
+                && await EntradaAsync(documento, $"documentosExigidos[{i}]", erros, cancellationToken).ConfigureAwait(false) is { } entrada)
             {
                 entradas.Add(entrada);
             }
         }
 
-        // As cópias de um documento multiplicado pelas opções têm a mesma fase e o mesmo tipo: a recusa sai
-        // uma vez, na posição do documento no modelo.
-        return erros.Count > 0
+        return ResultadoDasEntradas(erros, entradas);
+    }
+
+    // O documento sem nenhuma cláusula que valha sai da cópia, junto com elas.
+    private static DocumentoExigidoDoModeloInput? ComClausulasOfertadas(
+        DocumentoExigidoDoModeloInput copia, IReadOnlyDictionary<string, DominioDeValores> ofertados)
+    {
+        DocumentoExigidoDoModeloInput documento = copia with { Quando = ClausulasOfertadas(copia.Quando, ofertados) };
+        return copia.Quando is { Count: > 0 } && documento.Quando is not { Count: > 0 } ? null : documento;
+    }
+
+    // As cópias de um documento multiplicado pelas opções têm a mesma fase e o mesmo tipo: a recusa sai
+    // uma vez, na posição do documento no modelo.
+    private static Result<List<NoExigenciaInput>> ResultadoDasEntradas(List<FieldError> erros, List<NoExigenciaInput> entradas) =>
+        erros.Count > 0
             ? Result<List<NoExigenciaInput>>.ValidationFailure([.. erros.DistinctBy(static e => (e.Field, e.Error.Code))])
             : Result<List<NoExigenciaInput>>.Success(entradas);
-    }
 
     private async Task<NoExigenciaInput?> EntradaAsync(
         DocumentoExigidoDoModeloInput documento, string campo, List<FieldError> erros, CancellationToken cancellationToken)
     {
         FaseCronograma? fase = processo.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, documento.FaseCodigo, StringComparison.Ordinal));
+        TipoDocumentoView? tipo = await _tipos.ObterAsync(documento.TipoDocumentoCodigo, cancellationToken).ConfigureAwait(false);
         if (fase is null)
         {
-            erros.Add(new($"{campo}.faseCodigo", new DomainError(
-                AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente,
-                $"O modelo exige o documento '{documento.TipoDocumentoCodigo}' na fase '{documento.FaseCodigo}', que o cronograma do processo não tem; defina o cronograma antes.")));
+            erros.Add(RecusaDaFase(documento, campo));
         }
 
-        TipoDocumentoView? tipo = await _tipos.ObterAsync(documento.TipoDocumentoCodigo, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
-            erros.Add(new($"{campo}.tipoDocumentoCodigo", new DomainError(
-                AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente,
-                $"O modelo exige o tipo de documento '{documento.TipoDocumentoCodigo}', que o catálogo não tem.")));
+            erros.Add(RecusaDoTipo(documento, campo));
         }
 
         return fase is null || tipo is null ? null : FolhaDoModelo(documento, fase, tipo);
     }
 
+    private static FieldError RecusaDaFase(DocumentoExigidoDoModeloInput documento, string campo) =>
+        new($"{campo}.faseCodigo", new DomainError(
+            AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente,
+            $"O modelo exige o documento '{documento.TipoDocumentoCodigo}' na fase '{documento.FaseCodigo}', que o cronograma do processo não tem; defina o cronograma antes."));
+
+    private static FieldError RecusaDoTipo(DocumentoExigidoDoModeloInput documento, string campo) =>
+        new($"{campo}.tipoDocumentoCodigo", new DomainError(
+            AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente,
+            $"O modelo exige o tipo de documento '{documento.TipoDocumentoCodigo}', que o catálogo não tem."));
+
     private NoExigenciaInput FolhaDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
+        new("FOLHA", DocumentoDaFolha(documento, fase, tipo), Cardinalidade: null, Indeferimento: null, Filhos: null);
+
+    private ItemDocumentoExigidoInput DocumentoDaFolha(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
         new(
-            "FOLHA",
-            new ItemDocumentoExigidoInput(
-                fase.Id, tipo.Id, documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", Obrigatorio: documento.Obrigatorio,
-                documento.ConsequenciaIndeferimento, CondicoesDoGatilho(documento.Quando),
-                [.. (documento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))],
-                IdadeMaximaEmissao: null, FormatosPermitidos: JsonSerializer.SerializeToElement("QUALQUER"), TamanhoMaximoBytes: null,
-                Finalidade: EstruturaFormulario.ParaToken(finalidade)),
-            QuantidadeMinima: null, Consequencia: null, BasesLegais: null, Filhos: null);
+            new TipoDocumentoDaExigenciaInput(tipo.Id),
+            new MomentoDaExigenciaInput(fase.Id, Finalidade: EstruturaFormulario.ParaToken(finalidade)),
+            new AplicabilidadeDaExigenciaInput(
+                documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", CondicoesDoGatilho(documento.Quando)),
+            new IndeferimentoDoDocumentoInput(documento.Obrigatorio, documento.ConsequenciaIndeferimento, BasesLegaisDoModelo(documento)),
+            new RequisitosDoDocumentoInput(JsonSerializer.SerializeToElement("QUALQUER"), null, null, null));
+
+    private static List<BaseLegalInput> BasesLegaisDoModelo(DocumentoExigidoDoModeloInput documento) =>
+        [.. (documento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>()
+            .Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))];
 
     // As cláusulas do predicado do modelo como linhas do gatilho: uma cláusula por índice, o valor como JSON.
     private static List<CondicaoGatilhoInput> CondicoesDoGatilho(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? quando) =>

@@ -33,9 +33,11 @@ public sealed class RepeticaoPorGrupoTests
             new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
-    private static GrupoColetado GrupoDaComposicao() => GrupoColetado.Criar(
-        Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-        [FatoColetado.Criar("SOB_GUARDA", 0, "Sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+    private static GrupoColetado GrupoDaComposicao() => GrupoColetadoDeTeste.Agrupando(Composicao, 0)
+        .ComOcorrencias(1, 10)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComCampos(FatoColetadoDeTeste.Coletando("SOB_GUARDA", 0).ComRotulo("Sob guarda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+        .Construir();
 
     private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,

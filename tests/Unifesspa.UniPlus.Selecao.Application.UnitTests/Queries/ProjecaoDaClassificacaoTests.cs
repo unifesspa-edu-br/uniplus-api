@@ -176,7 +176,8 @@ public sealed class ProjecaoDaClassificacaoTests
             CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, CriterioDesempateCodigo.MaiorIdade, new ParametrosDesempateMaiorIdade()));
 
         dto.Should().Be(new CriterioDesempateDto(
-            dto.Id, 1, new ReferenciaRegraDto(CriterioDesempateCodigo.MaiorIdade, "v1", HashDoCriterio), null, null, null, null, null, null));
+            dto.Id, 1, new ReferenciaRegraDto(CriterioDesempateCodigo.MaiorIdade, "v1", HashDoCriterio),
+            new ParametrosDoCriterioDesempateDto(null, null, null, null, null, null)));
     }
 
     [Fact(DisplayName = "O desempate por maior nota na etapa devolve a etapa")]
@@ -188,9 +189,9 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
             processo, Criterio(1, CriterioDesempateCodigo.MaiorNotaEtapa, new ParametrosDesempateMaiorNotaEtapa(etapaId)));
 
-        dto.EtapaRef.Should().Be(etapaId);
-        dto.IdadeMinima.Should().BeNull();
-        dto.Areas.Should().BeNull();
+        dto.Parametros.EtapaRef.Should().Be(etapaId);
+        dto.Parametros.IdadeMinima.Should().BeNull();
+        dto.Parametros.Areas.Should().BeNull();
     }
 
     [Fact(DisplayName = "O desempate por idoso devolve a idade mínima")]
@@ -199,9 +200,9 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
             CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, CriterioDesempateCodigo.Idoso, new ParametrosDesempateIdoso(60)));
 
-        dto.IdadeMinima.Should().Be(60);
-        dto.EtapaRef.Should().BeNull();
-        dto.Fato.Should().BeNull();
+        dto.Parametros.IdadeMinima.Should().Be(60);
+        dto.Parametros.EtapaRef.Should().BeNull();
+        dto.Parametros.Fato.Should().BeNull();
     }
 
     [Fact(DisplayName = "O desempate por predicado de fato devolve o fato, o operador e o valor")]
@@ -210,10 +211,10 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
             CenariosDeDefinirEtapas.ProcessoSemEtapas(), CriterioDePredicado("PROFESSOR_RURAL", Operador.Igual, true));
 
-        dto.Fato.Should().Be("PROFESSOR_RURAL");
-        dto.Operador.Should().Be("IGUAL");
-        dto.Valor.Should().Be("true");
-        dto.EtapaRef.Should().BeNull();
+        dto.Parametros.Fato.Should().Be("PROFESSOR_RURAL");
+        dto.Parametros.Operador.Should().Be("IGUAL");
+        dto.Parametros.Valor.Should().Be("true");
+        dto.Parametros.EtapaRef.Should().BeNull();
     }
 
     [Theory(DisplayName = "O valor da condição do predicado mantém o tipo: texto entre aspas, número e booleano sem aspas")]
@@ -227,7 +228,7 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
             CenariosDeDefinirEtapas.ProcessoSemEtapas(), CriterioDePredicado("FATO_DE_TESTE", Operador.Igual, valor));
 
-        dto.Valor.Should().Be(textoEsperado);
+        dto.Parametros.Valor.Should().Be(textoEsperado);
     }
 
     [Fact(DisplayName = "O valor da condição com vários itens sai como lista em texto JSON")]
@@ -236,8 +237,8 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
             CenariosDeDefinirEtapas.ProcessoSemEtapas(), CriterioDePredicado("MODALIDADE", Operador.Em, new[] { "LB_PPI", "AC" }));
 
-        dto.Operador.Should().Be("EM");
-        dto.Valor.Should().Be("[\"LB_PPI\",\"AC\"]");
+        dto.Parametros.Operador.Should().Be("EM");
+        dto.Parametros.Valor.Should().Be("[\"LB_PPI\",\"AC\"]");
     }
 
     [Fact(DisplayName = "O desempate por maior nota na área do ENEM devolve as áreas na ordem declarada")]
@@ -251,8 +252,8 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempateDto dto = ProjetarUnicoCriterio(processo, criterio);
 
         dto.Id.Should().Be(criterio.Id);
-        dto.Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
-        dto.EtapaRef.Should().BeNull();
+        dto.Parametros.Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
+        dto.Parametros.EtapaRef.Should().BeNull();
     }
 
     private static ProcessoSeletivo ProcessoComUmaEtapa() =>

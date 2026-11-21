@@ -30,8 +30,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(
             new ExigenciaParaProjetar { TipoDocumentoOrigemId = tipoDocumentoOrigemId, Aplicabilidade = aplicabilidade });
 
-        projetado.Aplicabilidade.Should().Be(tokenEsperado);
-        projetado.TipoDocumentoOrigemId.Should().Be(tipoDocumentoOrigemId);
+        projetado.Aplicabilidade.Tipo.Should().Be(tokenEsperado);
+        projetado.TipoDocumento.Id.Should().Be(tipoDocumentoOrigemId);
     }
 
     [Fact(DisplayName = "Projeta Condicoes do gatilho DNF (issue #892) — round-trip GET→PUT sem perda")]
@@ -39,13 +39,13 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaCondicionalComCondicaoEscalarEMultivalorada());
 
-        projetado.Condicoes.Should().HaveCount(2);
+        projetado.Aplicabilidade.Condicoes.Should().HaveCount(2);
 
-        CondicaoGatilhoDto escalarDto = projetado.Condicoes.Should().ContainSingle(c => c.Fato == "SEXO").Which;
+        CondicaoGatilhoDto escalarDto = projetado.Aplicabilidade.Condicoes.Should().ContainSingle(c => c.Fato == "SEXO").Which;
         escalarDto.Operador.Should().Be("IGUAL");
         escalarDto.Valor.Should().Be("\"MASCULINO\"", "GetRawText preserva o JSON canônico — o mesmo PUT reinterpreta como JSON válido");
 
-        CondicaoGatilhoDto emDto = projetado.Condicoes.Should().ContainSingle(c => c.Fato == "MODALIDADE").Which;
+        CondicaoGatilhoDto emDto = projetado.Aplicabilidade.Condicoes.Should().ContainSingle(c => c.Fato == "MODALIDADE").Which;
         emDto.Operador.Should().Be("EM");
         JsonDocument.Parse(emDto.Valor).RootElement.EnumerateArray().Select(e => e.GetString())
             .Should().BeEquivalentTo(["LB_PPI", "AC"]);
@@ -78,14 +78,14 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComUmaBaseLegalResolvidaEUmaPendente());
 
-        projetado.BasesLegais.Should().HaveCount(2);
+        projetado.Indeferimento.BasesLegais.Should().HaveCount(2);
 
-        BaseLegalDto resolvidaDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "RESOLVIDO").Which;
+        BaseLegalDto resolvidaDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Status == "RESOLVIDO").Which;
         resolvidaDto.Referencia.Should().Be("Lei 12.711/2012, art. 3º");
         resolvidaDto.Abrangencia.Should().Be("FEDERAL");
         resolvidaDto.Observacao.Should().Be("Observação");
 
-        BaseLegalDto pendenteDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "PENDENTE").Which;
+        BaseLegalDto pendenteDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Status == "PENDENTE").Which;
         pendenteDto.Abrangencia.Should().Be("INTERNA_EDITAL");
         pendenteDto.Observacao.Should().BeNull();
     }
@@ -95,15 +95,15 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComIdadeFormatoETamanho());
 
-        projetado.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.Array);
-        projetado.FormatosPermitidos.EnumerateArray().Should().ContainSingle(
+        projetado.Requisitos.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.Array);
+        projetado.Requisitos.FormatosPermitidos.EnumerateArray().Should().ContainSingle(
             e => e.GetProperty("formato").GetString() == "PDF" && e.GetProperty("tamanhoMaximoBytesMax").ValueKind == JsonValueKind.Null);
-        projetado.TamanhoMaximoBytes.Should().Be(5_000_000);
-        projetado.IdadeMaximaEmissao.Should().NotBeNull();
-        projetado.IdadeMaximaEmissao!.Valor.Should().Be(90);
-        projetado.IdadeMaximaEmissao.Unidade.Should().Be("DIAS");
-        projetado.IdadeMaximaEmissao.ReferenciaTipo.Should().Be("DATA_SUBMISSAO");
-        projetado.IdadeMaximaEmissao.ReferenciaFaseId.Should().BeNull();
+        projetado.Requisitos.TamanhoMaximoBytes.Should().Be(5_000_000);
+        projetado.Requisitos.IdadeMaximaEmissao.Should().NotBeNull();
+        projetado.Requisitos.IdadeMaximaEmissao!.Valor.Should().Be(90);
+        projetado.Requisitos.IdadeMaximaEmissao.Unidade.Should().Be("DIAS");
+        projetado.Requisitos.IdadeMaximaEmissao.ReferenciaTipo.Should().Be("DATA_SUBMISSAO");
+        projetado.Requisitos.IdadeMaximaEmissao.ReferenciaFaseId.Should().BeNull();
     }
 
     [Fact(DisplayName = "Sem idade/tamanho configurados (FormatosPermitidos=QUALQUER), a projeção emite QUALQUER e o resto null (contraprova)")]
@@ -111,9 +111,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(new ExigenciaParaProjetar());
 
-        projetado.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.String);
-        projetado.FormatosPermitidos.GetString().Should().Be("QUALQUER");
-        projetado.TamanhoMaximoBytes.Should().BeNull();
-        projetado.IdadeMaximaEmissao.Should().BeNull();
+        projetado.Requisitos.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.String);
+        projetado.Requisitos.FormatosPermitidos.GetString().Should().Be("QUALQUER");
+        projetado.Requisitos.TamanhoMaximoBytes.Should().BeNull();
+        projetado.Requisitos.IdadeMaximaEmissao.Should().BeNull();
     }
 }

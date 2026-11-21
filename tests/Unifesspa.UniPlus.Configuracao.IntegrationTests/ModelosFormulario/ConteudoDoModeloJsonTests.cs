@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O documento jsonb do conteúdo do modelo, sem banco: a forma gravada é a do contrato, na ordem das
@@ -118,6 +119,35 @@ public sealed class ConteudoDoModeloJsonTests
         ConteudoDoModeloJson.Comparer.Equals(ConteudoCompleto(), copia).Should().BeTrue();
     }
 
+    [Theory(DisplayName = "O tipo de campo do item é gravado no documento pelo código")]
+    [InlineData(TipoRenderizacao.Numero, "NUMERO")]
+    [InlineData(TipoRenderizacao.Booleano, "BOOLEANO")]
+    [InlineData(TipoRenderizacao.SelecaoUnica, "SELECAO_UNICA")]
+    [InlineData(TipoRenderizacao.SelecaoMultipla, "SELECAO_MULTIPLA")]
+    [InlineData(TipoRenderizacao.Texto, "TEXTO")]
+    [InlineData(TipoRenderizacao.Data, "DATA")]
+    [InlineData(TipoRenderizacao.Endereco, "ENDERECO")]
+    [InlineData(TipoRenderizacao.Municipio, "MUNICIPIO")]
+    public void Serializar_TipoDeCampoDoItem_GravaOCodigo(TipoRenderizacao tipo, string codigo)
+    {
+        ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0).ComTipoDeCampo(tipo)] };
+
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Contain($"\"tipoRenderizacao\":\"{codigo}\"");
+    }
+
+    [Theory(DisplayName = "O tipo de campo gravado que o catálogo não declara é dado corrompido e lança")]
+    [InlineData("NENHUMA")]
+    [InlineData("selecao_unica")]
+    [InlineData("0")]
+    public void Desserializar_TipoDeCampoForaDoCatalogo_Lanca(string tipo)
+    {
+        string corrompido = JsonLegado.Replace("\"tipoRenderizacao\":\"BOOLEANO\"", $"\"tipoRenderizacao\":\"{tipo}\"", StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(corrompido);
+
+        ler.Should().Throw<ArgumentException>();
+    }
+
     [Fact(DisplayName = "A forma que não remonta é dado corrompido e lança")]
     public void Desserializar_ExibicaoQueNaoRemonta_Lanca()
     {
@@ -189,7 +219,9 @@ public sealed class ConteudoDoModeloJsonTests
         "Inscrição \"Medicina\" <2027>",
         [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)))],
+        [new TermoDoModelo(
+            "TERMO_USO", 0, TermoId, VersaoId,
+            new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))))],
         ["COR_RACA"],
         [GrupoCompleto()],
         [DocumentoCompleto()]);
@@ -198,25 +230,34 @@ public sealed class ConteudoDoModeloJsonTests
         null,
         [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
-        [new GrupoDoModelo("FAMILIA", 0, null, "Família", 1, null, null, Obrigatoriedade.Nunca, [ItemMinimo("PARENTESCO", 0)])],
+        [new GrupoDoModelo(
+            "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
     private static EtapaDoModelo EtapaCompleta() => new(
         "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
-        "RENDA", 1, "DADOS", "Renda familiar", TipoRenderizacao.Numero, "LIVRE", "Some a renda de todos",
-        Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)), Quando("QUILOMBOLA", true), [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
-        true, new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite"));
+        "RENDA",
+        1,
+        "DADOS",
+        new ApresentacaoDoCampo("Renda familiar", TipoRenderizacao.Numero, "Some a renda de todos", pedirConfirmacao: true),
+        "LIVRE",
+        new RegrasDoCampo(
+            Quando("QUILOMBOLA", true),
+            Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
+            [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
+            new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, "Pergunta", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
-        "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
-        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)], true);
+        "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),
+        new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))),
+        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)]);
 
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",

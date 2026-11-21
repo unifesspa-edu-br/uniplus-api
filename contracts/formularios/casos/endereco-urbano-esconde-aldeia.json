@@ -8,11 +8,15 @@
         "itens": [
           {
             "fatoCodigo": "TIPO_ENDERECO",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": [
               "ALDEIA",
               "URBANO"
@@ -21,19 +25,23 @@
           },
           {
             "fatoCodigo": "NOME_ALDEIA",
-            "exibicao": [
-              [
-                {
-                  "fato": "TIPO_ENDERECO",
-                  "operador": "IGUAL",
-                  "valor": "ALDEIA"
-                }
-              ]
-            ],
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [],
-            "impedimento": null,
+            "regras": {
+              "exibicao": [
+                [
+                  {
+                    "fato": "TIPO_ENDERECO",
+                    "operador": "IGUAL",
+                    "valor": "ALDEIA"
+                  }
+                ]
+              ],
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -59,8 +67,10 @@
       },
       {
         "fatoCodigo": "NOME_ALDEIA",
-        "visivel": "FALSO",
-        "estado": "NAO_APLICAVEL"
+        "estado": "NAO_APLICAVEL",
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }

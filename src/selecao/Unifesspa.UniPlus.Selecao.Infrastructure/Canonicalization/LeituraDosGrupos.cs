@@ -36,17 +36,10 @@ internal static class LeituraDosGrupos
         List<DefinicaoAgregado> agregados)
     {
         JsonArray array = leitor.Array(payload, "gruposColetados", "$");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
         List<GrupoColetado> grupos = [];
-        for (int i = 0; i < array.Count; i++)
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            GrupoColetado? grupo = LerGrupo(
-                leitor, leitor.ItemObjeto(array, i, "gruposColetados"), $"gruposColetados[{i}]", valoresSelecionaveis, agregados);
-            if (grupo is null)
+            if (LerGrupo(leitor, leitor.ItemObjeto(array, i, "gruposColetados"), $"gruposColetados[{i}]", valoresSelecionaveis, agregados) is not { } grupo)
             {
                 return [];
             }
@@ -64,22 +57,25 @@ internal static class LeituraDosGrupos
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
         List<DefinicaoAgregado> agregados)
     {
-        leitor.ExigirChaves(
-            item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
-
-        DeclaracaoDoGrupo d = LerDeclaracaoDoGrupo(leitor, item, path);
-        if (leitor.Falhou)
+        if (LerDeclaracaoDoGrupo(leitor, item, path) is not { } declaracao)
         {
             return null;
         }
 
-        if (d.Finalidade == FinalidadeFormulario.Nenhuma)
-        {
-            return leitor.Recusar<GrupoColetado?>($"'{path}.finalidade' fora do vocabulário de finalidades.");
-        }
-
-        GrupoColetado? grupo = CriarGrupo(leitor, d, item, path, valoresSelecionaveis);
+        GrupoColetado? grupo = CriarGrupo(leitor, declaracao, item, path, valoresSelecionaveis);
         return grupo is not null && LerAgregadosDoGrupo(leitor, item, path, grupo, agregados) ? grupo : null;
+    }
+
+    /// <summary>A declaração do grupo lida das chaves exatas do envelope; recusa a finalidade fora do vocabulário.</summary>
+    private static DeclaracaoDoGrupo? LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(
+            item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
+        DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path);
+        return leitor.Falhou ? null
+            : declaracao.Finalidade == FinalidadeFormulario.Nenhuma
+                ? leitor.Recusar<DeclaracaoDoGrupo?>($"'{path}.finalidade' fora do vocabulário de finalidades.")
+                : declaracao;
     }
 
     private static GrupoColetado? CriarGrupo(
@@ -89,35 +85,49 @@ internal static class LeituraDosGrupos
         string path,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
     {
-        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
-        if (exibicaoLida.IsFailure)
-        {
-            return leitor.Propagar<GrupoColetado?>(exibicaoLida.Error!);
-        }
-
-        if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
+        if (LerRegrasDoGrupo(leitor, d, item, path) is not { } regras
+            || LerCamposDoGrupo(leitor, d, path, valoresSelecionaveis) is not { } campos)
         {
             return null;
         }
 
+        Result<GrupoColetado> grupo = GrupoColetado.Criar(
+            d.Codigo, d.Ordem, d.EtapaCodigo, d.Rotulo, new OcorrenciasDoGrupo(d.Minimo, d.Maximo, d.IncluiCandidato), regras, campos);
+        return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(grupo.Error!) : grupo.Value;
+    }
+
+    private static ExibicaoEObrigatoriedade? LerRegrasDoGrupo(LeitorEnvelope leitor, DeclaracaoDoGrupo d, JsonObject item, string path)
+    {
+        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
+        if (exibicao.IsFailure)
+        {
+            return leitor.Propagar<ExibicaoEObrigatoriedade?>(exibicao.Error!);
+        }
+
+        return LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is { } obrigatoriedade
+            ? new ExibicaoEObrigatoriedade(exibicao.Value, obrigatoriedade)
+            : null;
+    }
+
+    private static IReadOnlyList<FatoColetado>? LerCamposDoGrupo(
+        LeitorEnvelope leitor,
+        DeclaracaoDoGrupo d,
+        string path,
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+    {
         IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, d.Subitens, $"{path}.subitens", valoresSelecionaveis);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        if (campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.EtapaCodigo is not null) is { } foraDoGrupo)
-        {
-            return leitor.Recusar<GrupoColetado?>(
-                $"'{path}.subitens': o campo '{foraDoGrupo.FatoCodigo}' tem finalidade ou seção própria, mas o campo do grupo segue o grupo.");
-        }
-
-        Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            d.Codigo, d.Ordem, d.EtapaCodigo, d.Rotulo, d.Minimo, d.Maximo, exibicaoLida.Value, obrigatoriedade, campos, d.Finalidade, d.IncluiCandidato);
-        return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(grupo.Error!) : grupo.Value;
+        return campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.EtapaCodigo is not null) is { } foraDoGrupo
+            ? leitor.Recusar<IReadOnlyList<FatoColetado>?>(
+                $"'{path}.subitens': o campo '{foraDoGrupo.FatoCodigo}' tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")
+            : campos;
     }
 
-    private static DeclaracaoDoGrupo LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
         Finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path)),
@@ -160,31 +170,37 @@ internal static class LeituraDosGrupos
         string? anterior = null;
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            string caminho = $"{path}.agregados[{i}]";
-            JsonObject agregado = leitor.ItemObjeto(array, i, $"{path}.agregados");
-            leitor.ExigirChaves(agregado, caminho, "codigo", "fatoDeMembro", "operacao");
-            string codigo = leitor.TextoNaoVazio(agregado, "codigo", caminho, LimitesDoEnvelope.Fato);
-            string fatoDeMembro = leitor.TextoNaoVazio(agregado, "fatoDeMembro", caminho, LimitesDoEnvelope.Fato);
-            OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(leitor.TextoNaoVazio(agregado, "operacao", caminho));
-            if (leitor.Falhou)
+            if (LerAgregado(leitor, leitor.ItemObjeto(array, i, $"{path}.agregados"), $"{path}.agregados[{i}]", grupo, anterior) is not { } agregado)
             {
                 break;
             }
 
-            string? defeito = operacao == OperacaoAgregado.Nenhuma ? "a operação não é EXISTE nem VALORES_PRESENTES"
-                : !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
-                : anterior is not null && string.CompareOrdinal(anterior, codigo) >= 0 ? "os agregados não estão na ordem do código"
-                : null;
-            if (defeito is not null)
-            {
-                _ = leitor.Propagar<object>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{caminho}': {defeito}."));
-                break;
-            }
-
-            agregados.Add(new DefinicaoAgregado(codigo, grupo.Codigo, fatoDeMembro, operacao));
-            anterior = codigo;
+            agregados.Add(agregado);
+            anterior = agregado.Codigo;
         }
 
         return !leitor.Falhou;
     }
+
+    private static DefinicaoAgregado? LerAgregado(LeitorEnvelope leitor, JsonObject agregado, string caminho, GrupoColetado grupo, string? anterior)
+    {
+        leitor.ExigirChaves(agregado, caminho, "codigo", "fatoDeMembro", "operacao");
+        string codigo = leitor.TextoNaoVazio(agregado, "codigo", caminho, LimitesDoEnvelope.Fato);
+        string fatoDeMembro = leitor.TextoNaoVazio(agregado, "fatoDeMembro", caminho, LimitesDoEnvelope.Fato);
+        OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(leitor.TextoNaoVazio(agregado, "operacao", caminho));
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        return DefeitoDoAgregado(operacao, fatoDeMembro, codigo, anterior, grupo) is { } defeito
+            ? leitor.Propagar<DefinicaoAgregado?>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{caminho}': {defeito}."))
+            : new DefinicaoAgregado(codigo, grupo.Codigo, fatoDeMembro, operacao);
+    }
+
+    private static string? DefeitoDoAgregado(OperacaoAgregado operacao, string fatoDeMembro, string codigo, string? anterior, GrupoColetado grupo) =>
+        operacao == OperacaoAgregado.Nenhuma ? "a operação não é EXISTE nem VALORES_PRESENTES"
+            : !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
+            : anterior is not null && string.CompareOrdinal(anterior, codigo) >= 0 ? "os agregados não estão na ordem do código"
+            : null;
 }

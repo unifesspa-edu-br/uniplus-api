@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Converte o corpo da requisição para a forma que o domínio valida. Um valor nulo no JSON
@@ -9,24 +10,29 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// </summary>
 internal static class DefinicaoDoComando
 {
-    public static DefinicaoInformada De(CriarTipoConceitoCommand comando) =>
-        Montar(comando.Nome, comando.Descricao, comando.Natureza, comando.Numerico, comando.Valores);
+    private const string Caminho = "definicao";
 
-    public static DefinicaoInformada De(AtualizarTipoConceitoCommand comando) =>
-        Montar(comando.Nome, comando.Descricao, comando.Natureza, comando.Numerico, comando.Valores);
+    public static DefinicaoInformada De(CriarTipoConceitoCommand comando) => Montar(comando.Definicao);
 
-    private static DefinicaoInformada Montar(
-        string? nome,
-        string? descricao,
-        string? natureza,
-        EscalaNumericaCommand? numerico,
-        IReadOnlyList<ValorCategoricoCommand>? valores) =>
+    public static DefinicaoInformada De(AtualizarTipoConceitoCommand comando) => Montar(comando.Definicao);
+
+    /// <summary>
+    /// As recusas dos campos da definição saem em <c>definicao.&lt;campo&gt;</c>, onde o corpo os recebe; a do código, que
+    /// não faz parte dela, fica como está.
+    /// </summary>
+    public static IReadOnlyList<FieldError> NoCaminhoDaDefinicao(IEnumerable<FieldError> erros) =>
+        [.. erros.Select(static erro => erro.Field == "codigo" ? erro : erro.NoCaminhoDe(Caminho))];
+
+    private static DefinicaoInformada Montar(DefinicaoDoTipoConceitoInput? definicao) =>
         new(
-            nome,
-            descricao,
-            natureza,
-            numerico is null ? null : new EscalaInformada(numerico.EscalaMinima, numerico.EscalaMaxima, numerico.CasasDecimais),
-            valores is null ? null : [.. valores.Select(static valor => valor is null
-                ? new ValorInformado(null, null, null)
-                : new ValorInformado(valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao))]);
+            definicao?.Nome,
+            definicao?.Descricao,
+            definicao?.Natureza,
+            definicao?.Numerico is { } numerico ? new EscalaInformada(numerico.EscalaMinima, numerico.EscalaMaxima, numerico.CasasDecimais) : null,
+            definicao?.Valores is { } valores ? [.. valores.Select(static valor => ValorInformadoDe(valor))] : null);
+
+    private static ValorInformado ValorInformadoDe(ValorCategoricoCommand? valor) =>
+        valor is null
+            ? new ValorInformado(null, null, null)
+            : new ValorInformado(valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao);
 }

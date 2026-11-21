@@ -103,7 +103,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
 
     private static void ConferirLeituras(FormularioRenderizavelDto primeira, FormularioRenderizavelDto segunda)
     {
-        CampoRenderizavel corRaca = primeira.FatosColetados.Single(f => f.FatoCodigo == "COR_RACA");
+        CampoRenderizavel corRaca = primeira.Formulario.Coleta.Itens.Single(f => f.FatoCodigo == "COR_RACA");
         corRaca.ValoresSelecionaveis.Should().NotBeNull();
         corRaca.ValoresSelecionaveis!.Select(v => v.Codigo).Should().Equal(
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_DECLARADO"],
@@ -124,13 +124,13 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
 
         FormularioRenderizavelDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComCorRaca([.. CorRacaCorrigida()]));
 
-        rascunho.FatosColetados.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
+        rascunho.Formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
             .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
                 ("PRETA", "Preta ou negra.", 0, "Escolha conforme a sua autodeclaração."),
                 ("BRANCA", "Branca (corrigida).", 1, null));
 
         FormularioRenderizavelDto publicado = await _cenario.LerPublicadoAsync(processo.Id);
-        publicado.FatosColetados.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
+        publicado.Formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
             .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
                 ("BRANCA", "Branca.", 0, null),
                 ("PRETA", "Preta.", 1, null));

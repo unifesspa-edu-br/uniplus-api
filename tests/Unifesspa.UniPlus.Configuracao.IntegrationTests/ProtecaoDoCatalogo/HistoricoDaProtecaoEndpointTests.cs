@@ -31,7 +31,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await FatoReprovadoECorrigidoAsync(client);
 
-        (await ObterFatoAsync(client, id)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        AprovacaoDoFato(await ObterFatoAsync(client, id)).GetProperty("situacao").GetString().Should().Be("PENDENTE");
         HttpResponseMessage historico = await Enviar(client, HttpMethod.Get, $"{Fatos}/{id}/protecao/atos", Isabella);
         historico.StatusCode.Should().Be(HttpStatusCode.OK);
         historico.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.protecao-do-catalogo-ato.v1+json");
@@ -122,7 +122,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement fato = await ObterFatoAsync(client, id);
-        (await Enviar(client, HttpMethod.Put, $"{Fatos}/{id}", Isabella, new { nome = fato.GetProperty("nome").GetString(), descricao = "Renda per capita da família." }))
+        (await Enviar(client, HttpMethod.Put, $"{Fatos}/{id}", Isabella, new { nome = fato.GetProperty("descritivo").GetProperty("nome").GetString(), descricao = "Renda per capita da família." }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         return id;
     }

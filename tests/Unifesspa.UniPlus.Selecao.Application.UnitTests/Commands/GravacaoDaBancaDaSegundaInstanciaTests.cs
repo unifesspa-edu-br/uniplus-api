@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Bancas;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -58,7 +59,8 @@ public sealed class GravacaoDaBancaDaSegundaInstanciaTests
             Bancas: [new BancaDaEtapaInput(TipoDeSegundaInstancia.Id, RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso())]);
 
         Result resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [etapa]), RepositorioCom(processo), Substitute.For<IUnitOfWork>(), tipoBancaReader: tiposDeBanca);
+            new DefinirEtapasCommand(processo.Id, [etapa]), RepositorioCom(processo), Substitute.For<IUnitOfWork>(),
+            cadastros: new CadastrosDeApoioDeDefinirEtapas(TiposDeBanca: tiposDeBanca));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Etapas.Single().Bancas.Should().ContainSingle().Which.Tipo.Papel.Should().Be(PapelDaBanca.JulgaASegundaInstancia);

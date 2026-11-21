@@ -8,121 +8,137 @@
         "itens": [
           {
             "fatoCodigo": "DATA_A",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2010-12-31",
-                  "anos": null,
-                  "dias": null
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2010-12-31",
+                    "anos": null,
+                    "dias": null
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "DATA_B",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2010-12-31",
-                  "anos": null,
-                  "dias": null
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2010-12-31",
+                    "anos": null,
+                    "dias": null
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "DATA_C",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2010-12-31",
-                  "anos": null,
-                  "dias": null
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2010-12-31",
+                    "anos": null,
+                    "dias": null
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           },
           {
             "fatoCodigo": "DATA_D",
-            "exibicao": null,
-            "obrigatoriedade": "SEMPRE",
-            "predicadoObrigatoriedade": null,
-            "restricoes": [
-              {
-                "tipo": "FAIXA_DE_DATA",
-                "minimo": null,
-                "maximo": null,
-                "entradas": null,
-                "fatos": null,
-                "dataMinima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2000-01-01",
-                  "anos": null,
-                  "dias": null
-                },
-                "dataMaxima": {
-                  "ancora": "DATA_FIXA",
-                  "data": "2010-12-31",
-                  "anos": null,
-                  "dias": null
+            "regras": {
+              "exibicao": null,
+              "obrigatoriedade": {
+                "tipo": "SEMPRE",
+                "predicado": null
+              },
+              "restricoes": [
+                {
+                  "tipo": "FAIXA_DE_DATA",
+                  "minimo": null,
+                  "maximo": null,
+                  "entradas": null,
+                  "fatos": null,
+                  "dataMinima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2000-01-01",
+                    "anos": null,
+                    "dias": null
+                  },
+                  "dataMaxima": {
+                    "ancora": "DATA_FIXA",
+                    "data": "2010-12-31",
+                    "anos": null,
+                    "dias": null
+                  }
                 }
-              }
-            ],
-            "impedimento": null,
+              ],
+              "impedimento": null
+            },
             "oferta": null,
             "formato": null
           }
@@ -151,25 +167,33 @@
     "campos": [
       {
         "fatoCodigo": "DATA_A",
-        "restricoesVioladas": [
-          "FAIXA_DE_DATA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_DE_DATA"
+          ]
+        }
       },
       {
         "fatoCodigo": "DATA_B",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       },
       {
         "fatoCodigo": "DATA_C",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       },
       {
         "fatoCodigo": "DATA_D",
-        "restricoesVioladas": [
-          "FAIXA_DE_DATA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_DE_DATA"
+          ]
+        }
       }
     ]
   }

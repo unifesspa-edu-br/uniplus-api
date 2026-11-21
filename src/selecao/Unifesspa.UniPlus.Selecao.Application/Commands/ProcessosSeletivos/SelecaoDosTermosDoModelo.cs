@@ -18,9 +18,16 @@ internal sealed class SelecaoDosTermosDoModelo(ITermoConsentimentoReader termoCo
     public async Task<TermosSelecionados> SelecionarAsync(IReadOnlyList<TermoExigidoInput> termosDoModelo, CancellationToken cancellationToken)
     {
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoConsentimentoReader
-            .ListarVersoesAsync([.. termosDoModelo.Select(static t => t.VersaoId).Distinct()], cancellationToken)
+            .ListarVersoesAsync([.. termosDoModelo.Select(static t => t.Termo?.VersaoId).OfType<Guid>().Distinct()], cancellationToken)
             .ConfigureAwait(false);
         Dictionary<Guid, VersaoTermoConsentimentoView> versaoPorId = versoes.ToDictionary(static v => v.VersaoId);
+        (List<int> indices, List<TermoExigidoInput> aCopiar) = SepararOsVigentes(termosDoModelo, versaoPorId);
+        return new TermosSelecionados(EscritaDosTermos.Ler(aCopiar), versaoPorId, indices, aCopiar);
+    }
+
+    private (List<int> Indices, List<TermoExigidoInput> ACopiar) SepararOsVigentes(
+        IReadOnlyList<TermoExigidoInput> termosDoModelo, Dictionary<Guid, VersaoTermoConsentimentoView> versaoPorId)
+    {
         List<int> indices = [];
         List<TermoExigidoInput> aCopiar = [];
         for (int i = 0; i < termosDoModelo.Count; i++)
@@ -32,7 +39,7 @@ internal sealed class SelecaoDosTermosDoModelo(ITermoConsentimentoReader termoCo
             }
         }
 
-        return new TermosSelecionados(EscritaDosTermos.Ler(aCopiar), versaoPorId, indices, aCopiar);
+        return (indices, aCopiar);
     }
 
     public static TermosResolvidos Resolver(
@@ -45,7 +52,9 @@ internal sealed class SelecaoDosTermosDoModelo(ITermoConsentimentoReader termoCo
 
     private bool VersaoVigente(TermoExigidoInput termo, Dictionary<Guid, VersaoTermoConsentimentoView> versaoPorId)
     {
-        if (versaoPorId.TryGetValue(termo.VersaoId, out VersaoTermoConsentimentoView? versao) && versao.TermoId == termo.TermoId)
+        if (termo.Termo is { } versaoDoTermo
+            && versaoPorId.TryGetValue(versaoDoTermo.VersaoId, out VersaoTermoConsentimentoView? versao)
+            && versao.TermoId == versaoDoTermo.TermoId)
         {
             return true;
         }

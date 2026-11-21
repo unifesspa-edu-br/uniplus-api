@@ -91,10 +91,11 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     }
 
     private static FatoColetado PerguntaDeSelecaoUnica(string fatoCodigo, int ordem, string rotulo) =>
-        FatoColetado.Criar(
-            fatoCodigo, ordem, rotulo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fatoCodigo, ordem)
+            .ComRotulo(rotulo)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     private async Task<Guid> ModeloAsync()
     {

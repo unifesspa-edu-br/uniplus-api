@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -52,7 +53,7 @@ internal static class SerializacaoDaClassificacao
     private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao) => new()
     {
         ["fato"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
-        ["operador"] = condicao.Operador.ToCodigo(),
+        ["operador"] = condicao.Operador.Codigo(),
         ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
     };
 
@@ -109,15 +110,18 @@ internal static class SerializacaoDaClassificacao
             {
                 ["grupoAreaEnem"] = SerializacaoDasVagas.SerializarGrupoAreaEnem(g.GrupoAreaEnem),
                 ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(g.BaseLegal),
-                ["areas"] = new JsonArray([.. g.Areas
-                    .OrderBy(static a => HashCanonicalComputer.NormalizeNfc(a.Codigo), StringComparer.Ordinal)
-                    .Select(static a => (JsonNode)new JsonObject
-                    {
-                        ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
-                        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
-                        ["peso"] = HashCanonicalComputer.SerializeDecimalCanonical(a.Peso, EscritaCanonica.EscalaPadrao),
-                        ["corte"] = a.Corte is { } corte ? HashCanonicalComputer.SerializeDecimalCanonical(corte, EscritaCanonica.EscalaPadrao) : null,
-                    })]),
+                ["areas"] = SerializarAreasDoGrupo(g),
+            })]);
+
+    private static JsonArray SerializarAreasDoGrupo(GrupoPesoAreaEnemCongelado grupo) =>
+        new([.. grupo.Areas
+            .OrderBy(static a => HashCanonicalComputer.NormalizeNfc(a.Codigo), StringComparer.Ordinal)
+            .Select(static a => (JsonNode)new JsonObject
+            {
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
+                ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
+                ["peso"] = HashCanonicalComputer.SerializeDecimalCanonical(a.Peso, EscritaCanonica.EscalaPadrao),
+                ["corte"] = a.Corte is { } corte ? HashCanonicalComputer.SerializeDecimalCanonical(corte, EscritaCanonica.EscalaPadrao) : null,
             })]);
 
     private static JsonObject SerializarParametrosRegraEliminacao(ParametrosRegraEliminacao parametros) => parametros switch

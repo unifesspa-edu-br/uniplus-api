@@ -148,11 +148,13 @@ public sealed class TipoConceitoTests
         TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = descricao })
             .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoCaractereInvalido, "descricao");
 
-    [Theory(DisplayName = "Recusa natureza ausente ou que não seja o nome exato de uma natureza")]
+    [Theory(DisplayName = "Recusa natureza ausente ou que não seja o código exato de uma natureza")]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("NUMERICO")]
-    [InlineData("ordinal")]
+    [InlineData("numerico")]
+    [InlineData("Numerico")]
+    [InlineData(" NUMERICO")]
+    [InlineData("ORDINAL")]
     public void Criar_NaturezaInvalida_Recusa(string? natureza) =>
         TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = natureza })
             .DeveRecusarComo(TipoConceitoErrorCodes.NaturezaInvalida, "natureza");
@@ -163,6 +165,23 @@ public sealed class TipoConceitoTests
         Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = "x" });
 
         resultado.Errors.Select(e => e.Error.Code).Should().Equal(TipoConceitoErrorCodes.NaturezaInvalida);
+    }
+
+    [Fact(DisplayName = "A recusa da natureza lista os códigos aceitos sem repetir o valor recebido")]
+    public void Criar_NaturezaInvalida_ListaOsCodigosSemRepetirOValor()
+    {
+        Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = "ordinal" });
+
+        string mensagem = resultado.Errors.Single().Error.Message;
+        mensagem.Should().Contain("NUMERICO").And.Contain("CATEGORICO").And.NotContain("ordinal");
+    }
+
+    [Fact(DisplayName = "Natureza inválida acumula com as demais recusas do pedido")]
+    public void Criar_NaturezaInvalidaENomeAusente_Acumula()
+    {
+        Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = "", Natureza = null });
+
+        resultado.Errors.Select(e => e.Field).Should().Equal("nome", "natureza");
     }
 
     [Fact(DisplayName = "Acumula as violações de código, nome e escala no mesmo lote")]

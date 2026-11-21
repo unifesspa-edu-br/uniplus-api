@@ -69,3 +69,21 @@ Testes de unidade do catálogo, do OpenAPI e dos pares de cada enum, a conferên
 
 - Relacionadas: [ADR-0022](0022-contrato-rest-canonico-umbrella.md), [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md), [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md), [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md).
 - Primeiro uso: a situação do acesso do perfil de acesso, no módulo Autorização.
+
+## Emenda 1 (2026-11-20) — rótulo do operador conforme o eixo do recurso
+
+O sentido de um operador depende de um eixo do recurso que o consulta: a cardinalidade do fato. "Igual a" sobre um único valor compara, e sobre um conjunto significa que o conjunto inclui o valor. Por isso o enum `Operador` declara dois rótulos: o de valor único no `CodigoDeContrato` e o de conjunto num atributo próprio do projeto de regras (`RotuloSobreConjunto`), lido por reflexão uma vez. A resposta do recurso, e não a tela, traz os operadores admitidos, no formato `{ codigo, rotulo }` do item 4, com o rótulo no sentido certo: o web não escolhe sentido. Os operadores admitidos vêm da regra pura `OperadoresDoFato`, a mesma que o validador do predicado usa, e são calculados na resposta, nunca gravados.
+
+## Emenda 2 (2026-11-21) — vocabulário publicado
+
+O enum com código de contrato que um cliente precisa listar é publicado como vocabulário, de um só jeito em todos os módulos:
+
+1. A rota é `GET /api/{modulo}/vocabularios/{plural-do-enum}`, o plural do nome do enum sem preposição; rota publicada não muda de nome.
+2. Há um controller por assunto, `Vocabularios{DoAssunto}Controller`, com uma ação por vocabulário e a tag `Vocabularios`; não há rota genérica por nome.
+3. Cada vocabulário tem consulta e manipulador próprios, chamados pelo barramento; o manipulador decide o conjunto escolhível por `CatalogoDe<T>.Valores()`.
+4. A resposta é uma lista de `{ codigo, rotulo }` na ordem de declaração do enum, com teste da ordem; `{ codigo, rotulo, descricao }` só quando todo membro tem descrição.
+5. O acesso é anônimo: a lista é fechada e não traz dado de ninguém; a proteção fica na ação que usa o código.
+6. Não há cache.
+7. O dono é o módulo do enum; os enums do projeto de regras (`FormaAceite`, `Ternario`, `EstadoFato`) são servidos pela Configuração.
+
+O campo de texto de um contrato que carrega o código de um desses enums é marcado com `AceitaCodigosDe<T>`, para o contrato apontar o vocabulário.

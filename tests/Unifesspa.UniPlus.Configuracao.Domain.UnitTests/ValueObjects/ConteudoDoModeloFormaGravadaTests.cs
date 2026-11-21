@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -73,42 +74,42 @@ public sealed class ConteudoDoModeloFormaGravadaTests
     [Fact(DisplayName = "Rótulo, título de etapa e texto opcional ficam aparados, e o texto opcional em branco fica ausente")]
     public void NaFormaGravada_AparaOsTextos()
     {
-        ItemDoModelo campo = Item("RENDA") with { Rotulo = "  Renda  ", Ajuda = "  Informe  ", Formato = "   " };
+        ItemDoModelo campo = (Item("RENDA").ComRotulo("  Renda  ").ComAjuda("  Informe  ")) with { Formato = "   " };
 
         ConteudoDoModelo gravado = (Vazio with { Etapas = [Etapa() with { Titulo = " Dados ", Aviso = "  " }], Itens = [campo] }).NaFormaGravada();
 
         gravado.Etapas.Single().Titulo.Should().Be("Dados");
         gravado.Etapas.Single().Aviso.Should().BeNull();
-        gravado.Itens.Single().Rotulo.Should().Be("Renda");
-        gravado.Itens.Single().Ajuda.Should().Be("Informe");
+        gravado.Itens.Single().Apresentacao.Rotulo.Should().Be("Renda");
+        gravado.Itens.Single().Apresentacao.Ajuda.Should().Be("Informe");
         gravado.Itens.Single().Formato.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A parte ausente do conteúdo fica como vazia, inclusive o rótulo e as restrições do campo")]
+    [Fact(DisplayName = "A parte ausente do conteúdo fica como vazia, inclusive o rótulo do campo")]
     public void NaFormaGravada_PartesAusentesViramVazias()
     {
-        ItemDoModelo semRotuloNemRestricoes = Item("RENDA") with { Rotulo = null!, Restricoes = null! };
+        ItemDoModelo semRotulo = Item("RENDA").ComRotulo(null!);
 
-        ConteudoDoModelo gravado = new ConteudoDoModelo(null, null!, [semRotuloNemRestricoes], null!, null!, null!).NaFormaGravada();
+        ConteudoDoModelo gravado = new ConteudoDoModelo(null, null!, [semRotulo], null!, null!, null!).NaFormaGravada();
 
         gravado.Etapas.Should().BeEmpty();
         gravado.Termos.Should().BeEmpty();
         gravado.Pressupostos.Should().BeEmpty();
         gravado.Grupos.Should().BeEmpty();
         gravado.Documentos.Should().BeEmpty();
-        gravado.Itens.Single().Should().Match<ItemDoModelo>(static i => i.Rotulo.Length == 0 && i.Restricoes.Count == 0);
+        gravado.Itens.Single().Should().Match<ItemDoModelo>(static i => i.Apresentacao.Rotulo.Length == 0);
     }
 
     [Fact(DisplayName = "As posições do conteúdo e das restrições são mantidas, para a recusa apontar o índice que veio")]
     public void NaFormaGravada_MantemAsPosicoes()
     {
-        ItemDoModelo campo = Item("RENDA") with { Restricoes = [new TamanhoTexto(1, 5), new FaixaNumerica(0, 1)] };
+        ItemDoModelo campo = Item("RENDA").ComRestricoes([new TamanhoTexto(1, 5), new FaixaNumerica(0, 1)]);
         ConteudoDoModelo conteudo = Vazio with { Itens = [Item("B", 1), Item("A", 0), campo] };
 
         ConteudoDoModelo gravado = conteudo.NaFormaGravada();
 
         gravado.Itens.Select(static i => i.FatoCodigo).Should().Equal("B", "A", "RENDA");
-        gravado.Itens[2].Restricoes.Select(static r => r.Tipo).Should().Equal(conteudo.Itens[2].Restricoes.Select(static r => r.Tipo));
+        gravado.Itens[2].Regras.Restricoes.Select(static r => r.Tipo).Should().Equal(conteudo.Itens[2].Regras.Restricoes.Select(static r => r.Tipo));
     }
 
     [Fact(DisplayName = "O código que não se normaliza fica como veio, só aparado, sem exceção")]
@@ -151,12 +152,12 @@ public sealed class ConteudoDoModeloFormaGravadaTests
     public void EmOrdem_RestricoesNaOrdemDoTipo()
     {
         IReadOnlyList<RestricaoValor> desordenadas = [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["A"])]), new TamanhoTexto(1, 5), new FaixaNumerica(0, 1)];
-        ItemDoModelo campo = Item("RENDA") with { Restricoes = desordenadas };
+        ItemDoModelo campo = Item("RENDA").ComRestricoes(desordenadas);
 
         ConteudoDoModelo ordenado = (Vazio with { Itens = [campo], Grupos = [Grupo("G", 0, null, campo)] }).EmOrdem();
 
-        ordenado.Itens.Single().Restricoes.Select(static r => r.Tipo).Should().BeInAscendingOrder();
-        ordenado.Grupos.Single().Subitens.Single().Restricoes.Select(static r => r.Tipo).Should().BeInAscendingOrder();
+        ordenado.Itens.Single().Regras.Restricoes.Select(static r => r.Tipo).Should().BeInAscendingOrder();
+        ordenado.Grupos.Single().Subitens.Single().Regras.Restricoes.Select(static r => r.Tipo).Should().BeInAscendingOrder();
     }
 
     [Fact(DisplayName = "Os documentos exigidos ausentes ficam como lista vazia, e os informados são mantidos")]
