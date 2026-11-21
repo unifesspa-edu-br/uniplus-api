@@ -78,9 +78,9 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             return Result<RegraRecursoFase>.ValidationFailure(procedimentos.Errors);
         }
 
-        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia, ParametrosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
+        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia, ParametrosDeclarados(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
         return regra.IsFailure
-            ? Result<RegraRecursoFase>.ValidationFailure([.. regra.Errors.Select(erro => new FieldError(campo, erro.Error))])
+            ? Result<RegraRecursoFase>.ValidationFailure([.. regra.Errors.Select(erro => erro.NoCaminhoDe(campo))])
             : regra;
     }
 
@@ -132,13 +132,11 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         produtos.FirstOrDefault(p => p.Papel == PapelProdutoFase.Preliminar
             && string.Equals(p.AtoCodigo, atoAncoraCodigo, StringComparison.Ordinal));
 
-    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo(RegraRecursoFaseInput declarada) =>
+    private static ParametrosDeclaradosDoRecurso ParametrosDeclarados(RegraRecursoFaseInput declarada) =>
         new(
-            declarada.PrazoValor,
-            declarada.PrazoUnidade,
-            declarada.SuspensividadePrimeiraInstanciaValor,
-            declarada.SuspensividadePrimeiraInstanciaUnidade,
+            new PrazoDeclarado(declarada.PrazoValor, declarada.PrazoUnidade),
             declarada.AdmiteInstanciaSuperior,
-            declarada.SuspensividadeSegundaInstanciaValor,
-            declarada.SuspensividadeSegundaInstanciaUnidade);
+            new PrazoDeclarado(declarada.PrazoSegundaInstanciaValor, declarada.PrazoSegundaInstanciaUnidade),
+            declarada.EfeitoSuspensivo,
+            declarada.GuardaDaVaga);
 }

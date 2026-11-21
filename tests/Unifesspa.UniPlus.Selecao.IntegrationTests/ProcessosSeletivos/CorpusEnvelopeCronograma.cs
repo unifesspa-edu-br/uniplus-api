@@ -55,10 +55,8 @@ internal static class CorpusEnvelopeCronograma
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
     /// resultado, atos distintos com o mesmo papel —, promete parecer individual, declara a
     /// fase que a conclui, exige quatro bancas — duas do MESMO tipo, separadas pelo recorte de
-    /// competência, e a de análise de recursos — e admite recurso; os DOIS pares de
-    /// suspensividade exercitados: a 1ª instância com valor (5 dias corridos), a 2ª
-    /// <b>nula</b> (não bloqueia — o caso normal do Ingresso via judicial). É o ramo mais
-    /// rico do bloco <c>cronogramaFases</c>.
+    /// competência, e a de análise de recursos — e admite recurso, sem instância superior,
+    /// sem efeito suspensivo e sem guardar a vaga. É o ramo mais rico do bloco <c>cronogramaFases</c>.
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
@@ -155,14 +153,7 @@ internal static class CorpusEnvelopeCronograma
     internal static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ParametrosRegraPrazoRecurso(
-                PrazoValor: 48.0000m,
-                PrazoUnidade: UnidadePrazo.Horas,
-                SuspensividadePrimeiraInstanciaValor: 5.0000m,
-                SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
-                AdmiteInstanciaSuperior: false,
-                SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null),
+            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas, guardaDaVaga: "naoGuarda"),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
             ProdutoId(2, 2, variante),

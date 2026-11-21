@@ -102,8 +102,15 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             .ConfigureAwait(false);
         return procedimentos.IsFailure
             ? Result<RecursoDaEtapa>.ValidationFailure(procedimentos.Errors)
-            : RecursoDaEtapa.Criar(declarado.Ancora, regra, ParametrosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
+            : ComoRecursoDoIndice(
+                RecursoDaEtapa.Criar(declarado.Ancora, regra, ParametrosDeclarados(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value),
+                posicao);
     }
+
+    private static Result<RecursoDaEtapa> ComoRecursoDoIndice(Result<RecursoDaEtapa> recurso, int posicao) =>
+        recurso.IsSuccess
+            ? recurso
+            : Result<RecursoDaEtapa>.ValidationFailure([.. recurso.Errors.Select(erro => erro.NoCaminhoDe($"recursos[{posicao}]"))]);
 
     // O lugar da janela é a própria etapa: ela declara os tipos de decisão que produz e os itens de avaliação que o alvo
     // pode apontar. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM. Os tipos vêm do payload,
@@ -136,13 +143,11 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             : Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
-    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo(RecursoDaEtapaInput declarado) =>
+    private static ParametrosDeclaradosDoRecurso ParametrosDeclarados(RecursoDaEtapaInput declarado) =>
         new(
-            declarado.PrazoValor,
-            declarado.PrazoUnidade,
-            declarado.SuspensividadePrimeiraInstanciaValor,
-            declarado.SuspensividadePrimeiraInstanciaUnidade,
+            new PrazoDeclarado(declarado.PrazoValor, declarado.PrazoUnidade),
             declarado.AdmiteInstanciaSuperior,
-            declarado.SuspensividadeSegundaInstanciaValor,
-            declarado.SuspensividadeSegundaInstanciaUnidade);
+            new PrazoDeclarado(declarado.PrazoSegundaInstanciaValor, declarado.PrazoSegundaInstanciaUnidade),
+            declarado.EfeitoSuspensivo,
+            declarado.GuardaDaVaga);
 }

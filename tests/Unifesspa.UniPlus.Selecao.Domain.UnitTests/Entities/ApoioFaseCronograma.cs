@@ -37,14 +37,7 @@ internal static class ApoioFaseCronograma
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
             bancasRequeridas ?? []);
 
-    internal static ParametrosRegraPrazoRecurso ParametrosValidos() => new(
-        PrazoValor: 48m,
-        PrazoUnidade: UnidadePrazo.Horas,
-        SuspensividadePrimeiraInstanciaValor: null,
-        SuspensividadePrimeiraInstanciaUnidade: null,
-        AdmiteInstanciaSuperior: false,
-        SuspensividadeSegundaInstanciaValor: null,
-        SuspensividadeSegundaInstanciaUnidade: null);
+    internal static ParametrosDeclaradosDoRecurso ParametrosValidos() => ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas);
 
     /// <summary>Cria a fase de uma data no edital; o teste informa só o que difere dela, com <c>ajuste</c>.</summary>
     internal static Result<FaseCronograma> Criar(Func<ModeloDeFase, ModeloDeFase>? ajuste = null)

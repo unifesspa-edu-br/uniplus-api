@@ -1885,8 +1885,12 @@ selecao.rascunhos_processos_seletivos.updated_at: Interno
 selecao.recursos_da_etapa.admite_instancia_superior: Interno
 selecao.recursos_da_etapa.ancora: Interno
 selecao.recursos_da_etapa.created_at: Interno
+selecao.recursos_da_etapa.efeito_suspensivo: Interno
 selecao.recursos_da_etapa.etapa_processo_id: Interno
+selecao.recursos_da_etapa.guarda_da_vaga: Interno
 selecao.recursos_da_etapa.id: Interno
+selecao.recursos_da_etapa.prazo_segunda_instancia_unidade: Interno
+selecao.recursos_da_etapa.prazo_segunda_instancia_valor: Interno
 selecao.recursos_da_etapa.prazo_unidade: Interno
 selecao.recursos_da_etapa.prazo_valor: Interno
 selecao.recursos_da_etapa.procedimentos_de_recurso: Interno
@@ -1894,10 +1898,6 @@ selecao.recursos_da_etapa.produto_ancora_id: Interno
 selecao.recursos_da_etapa.regra_codigo: Interno
 selecao.recursos_da_etapa.regra_hash: Interno
 selecao.recursos_da_etapa.regra_versao: Interno
-selecao.recursos_da_etapa.susp_1a_unidade: Interno
-selecao.recursos_da_etapa.susp_1a_valor: Interno
-selecao.recursos_da_etapa.susp_2a_unidade: Interno
-selecao.recursos_da_etapa.susp_2a_valor: Interno
 selecao.recursos_da_etapa.updated_at: Interno
 selecao.recursos_ofertados.atendimento_especializado_id: Interno
 selecao.recursos_ofertados.created_at: Interno
@@ -1932,8 +1932,12 @@ selecao.regras_eliminacao.regra_versao: Interno
 selecao.regras_eliminacao.updated_at: Interno
 selecao.regras_recurso_fase.admite_instancia_superior: Interno
 selecao.regras_recurso_fase.created_at: Interno
+selecao.regras_recurso_fase.efeito_suspensivo: Interno
 selecao.regras_recurso_fase.fase_cronograma_id: Interno
+selecao.regras_recurso_fase.guarda_da_vaga: Interno
 selecao.regras_recurso_fase.id: Interno
+selecao.regras_recurso_fase.prazo_segunda_instancia_unidade: Interno
+selecao.regras_recurso_fase.prazo_segunda_instancia_valor: Interno
 selecao.regras_recurso_fase.prazo_unidade: Interno
 selecao.regras_recurso_fase.prazo_valor: Interno
 selecao.regras_recurso_fase.procedimentos_de_recurso: Interno
@@ -1941,10 +1945,6 @@ selecao.regras_recurso_fase.produto_ancora_id: Interno
 selecao.regras_recurso_fase.regra_codigo: Interno
 selecao.regras_recurso_fase.regra_hash: Interno
 selecao.regras_recurso_fase.regra_versao: Interno
-selecao.regras_recurso_fase.suspensividade_1a_instancia_unidade: Interno
-selecao.regras_recurso_fase.suspensividade_1a_instancia_valor: Interno
-selecao.regras_recurso_fase.suspensividade_2a_instancia_unidade: Interno
-selecao.regras_recurso_fase.suspensividade_2a_instancia_valor: Interno
 selecao.regras_recurso_fase.updated_at: Interno
 selecao.respostas_da_inscricao.fato_codigo: Interno
 selecao.respostas_da_inscricao.id: Interno

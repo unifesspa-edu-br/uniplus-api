@@ -2,11 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ProjecaoDaEtapaDoProcessoTests
 {
@@ -70,14 +72,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
     private static ReferenciaRegra RegraDoPrazo() => ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra);
 
-    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo() => new(
-        PrazoValor: 2m,
-        PrazoUnidade: UnidadePrazo.DiasUteis,
-        SuspensividadePrimeiraInstanciaValor: null,
-        SuspensividadePrimeiraInstanciaUnidade: null,
-        AdmiteInstanciaSuperior: true,
-        SuspensividadeSegundaInstanciaValor: null,
-        SuspensividadeSegundaInstanciaUnidade: null);
+    private static ParametrosDeclaradosDoRecurso ParametrosDoPrazo() => ParametrosDoRecursoDeTeste.ComInstanciaSuperior(2m, UnidadePrazo.DiasUteis);
 
     [Fact(DisplayName = "A etapa projeta o id e as bancas no topo")]
     public void ProjetarEtapa_IdEBancas_FicamNoTopo()
@@ -168,10 +163,19 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
                 recurso.Id,
                 AncoraDoRecurso.AtoPublicado,
                 new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra),
-                new ParametrosRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, null, null, true, null, null),
+                ParametrosEsperados(),
                 ProdutoDoResultadoId,
                 "RESULTADO_PRELIMINAR",
                 []),
         ],
         TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]);
+
+    private static ParametrosRegraPrazoRecursoDto ParametrosEsperados() => new(
+        2m,
+        CodigoComRotulo<UnidadePrazo>.De(UnidadePrazo.DiasUteis),
+        true,
+        3m,
+        CodigoComRotulo<UnidadePrazo>.De(UnidadePrazo.DiasUteis),
+        CodigoComRotulo<EfeitoSuspensivo>.De(EfeitoSuspensivo.SemEfeitoSuspensivo),
+        CodigoComRotulo<GuardaDaVaga>.De(GuardaDaVaga.AteOResultadoDefinitivo));
 }

@@ -346,14 +346,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId, ProcedimentosDeRecurso procedimentos) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
-            new ParametrosRegraPrazoRecurso(
-                PrazoValor: 48m,
-                PrazoUnidade: UnidadePrazo.Horas,
-                SuspensividadePrimeiraInstanciaValor: null,
-                SuspensividadePrimeiraInstanciaUnidade: null,
-                AdmiteInstanciaSuperior: false,
-                SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null),
+            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             produtoPreliminarId,
             procedimentos).Value!;
 }

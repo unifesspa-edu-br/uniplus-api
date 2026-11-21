@@ -6,6 +6,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>
 /// Projeta o agregado do processo seletivo para o contrato REST de leitura. Cada bloco é montado pela
 /// projeção do seu assunto; aqui ficam a composição e o que não pertence a nenhum deles: identificação,
@@ -33,13 +35,13 @@ internal static class ProjecaoDoProcessoSeletivo
     internal static ReferenciaRegraDto Referencia(ReferenciaRegra regra) => new(regra.Codigo, regra.Versao, regra.Hash);
 
     internal static ParametrosRegraPrazoRecursoDto ProjetarParametrosDoPrazo(ParametrosRegraPrazoRecurso parametros) => new(
-        parametros.PrazoValor,
-        parametros.PrazoUnidade,
-        parametros.SuspensividadePrimeiraInstanciaValor,
-        parametros.SuspensividadePrimeiraInstanciaUnidade,
+        parametros.PrazoDeInterposicao.Valor,
+        CodigoComRotulo<UnidadePrazo>.De(parametros.PrazoDeInterposicao.Unidade),
         parametros.AdmiteInstanciaSuperior,
-        parametros.SuspensividadeSegundaInstanciaValor,
-        parametros.SuspensividadeSegundaInstanciaUnidade);
+        parametros.PrazoDaSegundaInstancia?.Valor,
+        parametros.PrazoDaSegundaInstancia is { } segunda ? CodigoComRotulo<UnidadePrazo>.De(segunda.Unidade) : null,
+        CodigoComRotulo<EfeitoSuspensivo>.De(parametros.EfeitoSuspensivo),
+        CodigoComRotulo<GuardaDaVaga>.De(parametros.GuardaDaVaga));
 
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,

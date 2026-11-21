@@ -24,16 +24,15 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     /// <summary>
     /// O prazo de interposição em unidade não declarável entra pela reidratação, não pelo
     /// HTTP: quem chega pela API é barrado pelo validator do comando, mas o codec chama
-    /// <c>RegraRecursoFase.Criar</c> direto. Sem a invariante na entidade, um envelope com
-    /// <c>Nenhuma</c> — que é o valor zero do enum, e portanto o default de qualquer conjunto de parâmetros
-    /// construído sem preencher a unidade — reidrataria num agregado cujo prazo não conta
+    /// <c>RegraRecursoFase.Criar</c> direto. Sem a invariante na entidade, um envelope com um código
+    /// de unidade que o domínio não conhece reidrataria num agregado cujo prazo não conta
     /// em unidade alguma.
     /// </summary>
     [Fact(DisplayName = "Prazo de interposição sem unidade declarável no envelope: recusa nomeada da entidade, não agregado em estado proibido")]
     public void RegraRecursoComPrazoSemUnidadeDeclaravel_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ParametrosDaRegraDeRecurso(envelope)["prazoUnidade"] = nameof(UnidadePrazo.Nenhuma));
+            ParametrosDaRegraDeRecurso(envelope)["prazoUnidade"] = "nenhuma");
 
         resultado.IsFailure.Should().BeTrue(
             "a unidade do prazo é o que decide quando a janela do candidato fecha; sem ela o prazo não conta");
@@ -53,15 +52,40 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo");
     }
 
-    [Fact(DisplayName = "Par de suspensividade pela metade no envelope: recusa nomeada, e não uma janela sem relógio")]
-    public void RegraRecursoComSuspensividadePelaMetade_Recusa()
+    [Fact(DisplayName = "Efeito suspensivo desconhecido no envelope: recusa nomeada, e não um recurso sem o efeito que o edital prometeu")]
+    public void RegraRecursoComEfeitoSuspensivoDesconhecido_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ParametrosDaRegraDeRecurso(envelope)["suspensividadePrimeiraInstanciaUnidade"] = null);
+            ParametrosDaRegraDeRecurso(envelope)["efeitoSuspensivo"] = "talvez");
 
         resultado.IsFailure.Should().BeTrue(
-            "o valor sobreviveu e a unidade sumiu — o par deixou de dizer em que relógio a janela corre");
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
+            "o efeito suspensivo decide se o recurso trava o resultado, e um código desconhecido não diz isso");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.EfeitoSuspensivoNaoDeclarado");
+    }
+
+    [Fact(DisplayName = "Guarda da vaga desconhecida no envelope: recusa nomeada, e não a guarda padrão por omissão")]
+    public void RegraRecursoComGuardaDaVagaDesconhecida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ParametrosDaRegraDeRecurso(envelope)["guardaDaVaga"] = "talvez");
+
+        resultado.IsFailure.Should().BeTrue(
+            "o registro sempre grava a guarda; um código que o domínio não conhece é dado corrompido, e não a guarda padrão");
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.GuardaDaVagaNaoDeclaravel");
+    }
+
+    [Fact(DisplayName = "Prazo da 2ª instância sem instância superior no envelope: recusa nomeada")]
+    public void RegraRecursoComPrazoDaSegundaInstanciaSemInstanciaSuperior_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject parametros = ParametrosDaRegraDeRecurso(envelope);
+            parametros["prazoSegundaInstanciaValor"] = "3.0000";
+            parametros["prazoSegundaInstanciaUnidade"] = "diasUteis";
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoSegundaInstanciaSemInstanciaSuperior");
     }
 
     /// <summary>

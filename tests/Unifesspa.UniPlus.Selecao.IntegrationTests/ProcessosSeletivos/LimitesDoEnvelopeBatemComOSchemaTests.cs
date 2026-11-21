@@ -1,14 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -42,7 +38,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     /// Os limites que o decoder aplica, e a coluna de onde cada um tem de vir. Os nomes são
     /// os das constantes de <c>LimitesDoEnvelope</c> — referenciadas aqui, nunca recopiadas.
     /// </summary>
-    private static readonly (string Nome, int ValorNoCodec, Type Entidade, string Propriedade)[] Comprimentos =
+    internal static readonly (string Nome, int ValorNoCodec, Type Entidade, string Propriedade)[] Comprimentos =
     [
         ("EtapaNome", LimitesDoEnvelope.EtapaNome, typeof(EtapaProcesso), nameof(EtapaProcesso.Nome)),
         ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Codigo)),
@@ -138,15 +134,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("AreaPesoAreaEnemRotulo", LimitesDoEnvelope.AreaPesoAreaEnemRotulo, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Rotulo)),
     ];
 
-    /// <summary>
-    /// A escala com que o decodificador lê todo prazo de recurso (o <c>EscalaPadrao</c> do
-    /// codec). A precisão tem constante própria em <c>LimitesDoEnvelope</c>; a escala não —
-    /// e sem confrontá-la uma coluna <c>numeric(18,2)</c> passaria batido, arredondando o
-    /// prazo que o edital prometeu.
-    /// </summary>
-    private const int EscalaDoPrazo = 4;
-
-    private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =
+    internal static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =
     [
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(EtapaProcesso), nameof(EtapaProcesso.Peso)),
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(EtapaProcesso), nameof(EtapaProcesso.NotaMinima)),
@@ -162,27 +150,26 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [Fact(DisplayName = "Todo limite de COMPRIMENTO do decoder é o da coluna que vai receber o valor")]
     public void Comprimentos_BatemComOSchema()
     {
-        using UniPlusDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
 
         foreach ((string nome, int valorNoCodec, Type entidade, string propriedade) in Comprimentos)
         {
-            int? doSchema = contexto.Model
-                .FindEntityType(entidade)!
-                .FindProperty(propriedade)!
-                .GetMaxLength();
+            ConferirOComprimento(contexto, nome, valorNoCodec, entidade, propriedade);
+        }
+    }
 
-            doSchema.Should().Be(valorNoCodec,
+    private static void ConferirOComprimento(UniPlusDbContext contexto, string nome, int valorNoCodec, Type entidade, string propriedade) =>
+        contexto.Model.FindEntityType(entidade)!.FindProperty(propriedade)!.GetMaxLength()
+            .Should().Be(valorNoCodec,
                 $"LimitesDoEnvelope.{nome} tem de ser o HasMaxLength de {entidade.Name}.{propriedade}. " +
                 "Se a coluna encolheu, o decoder passou a aceitar o que o banco recusa — e o descarte volta a morrer " +
                 "com DbUpdateException (500) em vez de recusa nomeada. Se a coluna cresceu, o decoder passou a " +
                 "recusar configuração legítima.");
-        }
-    }
 
     [Fact(DisplayName = "Todo limite de PRECISÃO do decoder é o da coluna numeric(p,s)")]
     public void Precisoes_BatemComOSchema()
     {
-        using UniPlusDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
 
         foreach ((string nome, int precisaoNoCodec, int escalaNoCodec, Type entidade, string propriedade) in Precisoes)
         {
@@ -195,249 +182,4 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             coluna.GetScale().Should().Be(escalaNoCodec);
         }
     }
-
-    /// <summary>
-    /// Um SHA-256 em hexadecimal minúsculo tem 64 caracteres — é o que o value object valida
-    /// ao construir a referência, e é o que a coluna tem de guardar.
-    /// </summary>
-    private const int HashSha256Length = 64;
-
-    /// <summary>
-    /// Toda referência de regra embutida no modelo — <b>descobertas</b>, não listadas — tem as
-    /// larguras que o decodificador do envelope pressupõe.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A lista à mão era o problema. Quando esta conferência nomeava dono por dono, quatro dos
-    /// nove ficavam de fora sem que nada dissesse isso, e foi assim que uma divergência real
-    /// passou: um dono ficou com larguras próprias e nenhuma linha o confrontava. Descobrir as
-    /// navegações pelo modelo faz o dono novo nascer coberto, em vez de depender de alguém
-    /// lembrar de acrescentá-lo aqui.
-    /// </para>
-    /// <para>
-    /// A configuração compartilhada já torna a divergência inexprimível para quem usa a
-    /// extensão; este gate é a rede para quem não usar — configurar a navegação à mão continua
-    /// sendo possível, e é exatamente o caminho que produziria o defeito de novo.
-    /// </para>
-    /// </remarks>
-    [Fact(DisplayName = "Toda ReferenciaRegra embutida no modelo tem as larguras do decodificador — descobertas, não listadas")]
-    public void Toda_ReferenciaRegra_Embutida_TemAsLargurasDoDecodificador()
-    {
-        using UniPlusDbContext contexto = ContextoSoParaOModelo();
-
-        (string Dono, string Navegacao, IEntityType Alvo)[] referencias = contexto.Model
-            .GetEntityTypes()
-            .SelectMany(e => e.GetNavigations()
-                .Where(n => n.TargetEntityType.ClrType == typeof(ReferenciaRegra))
-                .Select(n => (Dono: e.ClrType.Name, Navegacao: n.Name, Alvo: n.TargetEntityType)))
-            .ToArray();
-
-        referencias.Should().NotBeEmpty(
-            "se a descoberta parar de achar navegações, o gate passa a aprovar por vacuidade — e é "
-            + "justamente esse silêncio que ele existe para não ter");
-
-        foreach ((string dono, string navegacao, IEntityType alvo) in referencias)
-        {
-            alvo.FindProperty(nameof(ReferenciaRegra.Codigo))!.GetMaxLength()
-                .Should().Be(LimitesDoEnvelope.RegraCodigo,
-                    $"o código da regra em {dono}.{navegacao} tem de caber o que o decodificador aceita");
-
-            alvo.FindProperty(nameof(ReferenciaRegra.Versao))!.GetMaxLength()
-                .Should().Be(LimitesDoEnvelope.RegraVersao,
-                    $"a versão da regra em {dono}.{navegacao} tem de caber o que o decodificador aceita");
-
-            IProperty hash = alvo.FindProperty(nameof(ReferenciaRegra.Hash))!;
-            hash.GetMaxLength().Should().Be(HashSha256Length,
-                $"o hash em {dono}.{navegacao} é um SHA-256 hexadecimal minúsculo");
-            hash.IsFixedLength().Should().BeTrue(
-                $"o hash em {dono}.{navegacao} tem sempre 64 caracteres — coluna de comprimento variável "
-                + "aceitaria um hash truncado, que é o que prova que a definição da regra não mudou");
-        }
-    }
-
-    /// <summary>
-    /// Os limites dos <b>owned types</b> — <c>ReferenciaRegra</c> (6 usos no envelope) e o
-    /// snapshot da referência demográfica. Eles não têm entidade própria no modelo: são
-    /// colunas do dono, e é por elas que se chega ao <c>HasMaxLength</c>/<c>HasPrecision</c>.
-    /// </summary>
-    [Fact(DisplayName = "Os limites dos owned types (ReferenciaRegra, referência demográfica) também são os do schema")]
-    public void OwnedTypes_BatemComOSchema()
-    {
-        using UniPlusDbContext contexto = ContextoSoParaOModelo();
-
-        ConferirAReferenciaDemografica(contexto);
-        ConferirOGrupoDeAreaEnem(contexto);
-        ConferirOPrazoDoRecursoDaFase(contexto);
-        ConferirOPrazoDoRecursoDaEtapa(contexto);
-        ConferirAUnidadeAdministradora(contexto);
-        ConferirOTipoDaEtapa(contexto);
-    }
-
-    private static IEntityType OwnedDe<TDono>(UniPlusDbContext contexto, string navegacao) =>
-        contexto.Model.FindEntityType(typeof(TDono))!.GetNavigations().Single(n => n.Name == navegacao).TargetEntityType;
-
-    private static void ConferirAReferenciaDemografica(UniPlusDbContext contexto)
-    {
-        IEntityType demografica = OwnedDe<ConfiguracaoDistribuicaoVagas>(contexto, nameof(ConfiguracaoDistribuicaoVagas.ReferenciaDemografica));
-
-        demografica.FindProperty(nameof(ReferenciaReservaDemograficaSnapshot.CensoReferencia))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.CensoReferencia);
-
-        foreach (string percentual in PercentuaisDaReferenciaDemografica)
-        {
-            demografica.FindProperty(percentual)!.GetPrecision()
-                .Should().Be(LimitesDoEnvelope.PrecisaoPercentual, $"LimitesDoEnvelope.PrecisaoPercentual espelha a coluna de {percentual}");
-        }
-    }
-
-    private static void ConferirOGrupoDeAreaEnem(UniPlusDbContext contexto)
-    {
-        IEntityType grupoDaOferta = OwnedDe<ConfiguracaoDistribuicaoVagas>(contexto, nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem));
-        // O mesmo snapshot do grupo, no quadro de pesos por área congelado na classificação.
-        IEntityType grupoDoQuadro = OwnedDe<GrupoPesoAreaEnemCongelado>(contexto, nameof(GrupoPesoAreaEnemCongelado.GrupoAreaEnem));
-
-        foreach (IEntityType grupo in new[] { grupoDaOferta, grupoDoQuadro })
-        {
-            grupo.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength().Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
-            grupo.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength().Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
-        }
-    }
-
-    // Story #851 — as precisões do prazo de interposição e das duas suspensividades.
-    private static void ConferirOPrazoDoRecursoDaFase(UniPlusDbContext contexto)
-    {
-        IEntityType parametros = OwnedDe<RegraRecursoFase>(contexto, nameof(RegraRecursoFase.Parametros));
-
-        foreach (string campoPrazo in CamposDePrazoDoRecurso)
-        {
-            IProperty coluna = parametros.FindProperty(campoPrazo)!;
-            coluna.GetPrecision()
-                .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
-            coluna.GetScale().Should().Be(EscalaDoPrazo);
-        }
-    }
-
-    /// <summary>
-    /// Os prazos do período recursal da ETAPA precisam das mesmas precisões que os da fase: o
-    /// decodificador do envelope usa uma constante só para os dois lados, então uma coluna
-    /// mais estreita aqui produz envelope que ele aprova e o INSERT recusa.
-    /// </summary>
-    private static void ConferirOPrazoDoRecursoDaEtapa(UniPlusDbContext contexto)
-    {
-        IEntityType parametros = OwnedDe<RecursoDaEtapa>(contexto, nameof(RecursoDaEtapa.Parametros));
-
-        foreach (string campoPrazo in CamposDePrazoDoRecurso)
-        {
-            IProperty coluna = parametros.FindProperty(campoPrazo)!;
-            coluna.GetPrecision()
-                .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo} em recursos_da_etapa");
-            coluna.GetScale().Should().Be(EscalaDoPrazo,
-                $"a escala de {campoPrazo} é o que o decodificador aceita; uma coluna com menos casas ARREDONDA o prazo " +
-                "em silêncio, e a prova de round-trip não enxerga arredondamento — só o valor restaurado sai diferente do congelado");
-        }
-    }
-
-    private static readonly string[] PercentuaisDaReferenciaDemografica =
-    [
-        nameof(ReferenciaReservaDemograficaSnapshot.PpiPercentual),
-        nameof(ReferenciaReservaDemograficaSnapshot.QuilombolaPercentual),
-        nameof(ReferenciaReservaDemograficaSnapshot.PcdPercentual),
-    ];
-
-    private static readonly string[] CamposDePrazoDoRecurso =
-    [
-        nameof(ParametrosRegraPrazoRecurso.PrazoValor),
-        nameof(ParametrosRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
-        nameof(ParametrosRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
-    ];
-
-    // Issue #849 — Unidade administradora (identidadesUnidade); issue #1114 — cidade (opcional, tudo ou nada).
-    private static void ConferirAUnidadeAdministradora(UniPlusDbContext contexto)
-    {
-        IEntityType unidade = OwnedDe<ProcessoSeletivo>(contexto, nameof(ProcessoSeletivo.UnidadeAdministradora));
-
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Sigla), LimitesDoEnvelope.UnidadeAdministradoraSigla, "UnidadeAdministradoraSigla");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Codigo), LimitesDoEnvelope.UnidadeAdministradoraCodigo, "UnidadeAdministradoraCodigo");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Slug), LimitesDoEnvelope.UnidadeAdministradoraSlug, "UnidadeAdministradoraSlug");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Nome), LimitesDoEnvelope.UnidadeAdministradoraNome, "UnidadeAdministradoraNome");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Tipo), LimitesDoEnvelope.UnidadeAdministradoraTipo, "UnidadeAdministradoraTipo");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeCodigoIbge), LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge, "UnidadeAdministradoraCidadeCodigoIbge");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeNome), LimitesDoEnvelope.UnidadeAdministradoraCidadeNome, "UnidadeAdministradoraCidadeNome");
-        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeUf), LimitesDoEnvelope.UnidadeAdministradoraCidadeUf, "UnidadeAdministradoraCidadeUf");
-    }
-
-    // Issue #1071 — o tipo da etapa aninhado em cada item de etapas é persistido ao restaurar uma versão,
-    // por isso precisa da mesma disciplina de limite (diferente do bloco de topo tipoProcesso, só de forma).
-    private static void ConferirOTipoDaEtapa(UniPlusDbContext contexto)
-    {
-        IEntityType tipoEtapa = OwnedDe<EtapaProcesso>(contexto, nameof(EtapaProcesso.TipoEtapa));
-
-        tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Codigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.TipoEtapaCodigo, "LimitesDoEnvelope.TipoEtapaCodigo espelha a coluna tipo_etapa_codigo");
-        tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Nome))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.TipoEtapaNome, "LimitesDoEnvelope.TipoEtapaNome espelha a coluna tipo_etapa_nome");
-    }
-
-    private static void ConferirOLimiteDaColuna(IEntityType entidade, string propriedade, int limite, string constante) =>
-        entidade.FindProperty(propriedade)!.GetMaxLength()
-            .Should().Be(limite, $"LimitesDoEnvelope.{constante} espelha a coluna de {propriedade}");
-
-    /// <summary>
-    /// E o inverso: <b>toda</b> constante de <c>LimitesDoEnvelope</c> é exercida por algum
-    /// caso acima. Uma constante que ninguém confronta com o schema é uma que pode divergir
-    /// dele em silêncio — e o fitness passaria a proteger menos do que diz proteger.
-    /// </summary>
-    [Fact(DisplayName = "Nenhuma constante de LimitesDoEnvelope fica sem confronto com o schema")]
-    public void TodaConstante_EConfrontada()
-    {
-        IEnumerable<string> declaradas = typeof(LimitesDoEnvelope)
-            .GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(static f => f.IsLiteral)
-            .Select(static f => f.Name);
-
-        HashSet<string> confrontadas =
-        [
-            .. Comprimentos.Select(static c => c.Nome),
-            .. Precisoes.Select(static p => p.Nome),
-            // Exercidas em OwnedTypes_BatemComOSchema.
-            "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
-            "UnidadeAdministradoraSigla", "UnidadeAdministradoraCodigo", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
-            "UnidadeAdministradoraCidadeCodigoIbge", "UnidadeAdministradoraCidadeNome", "UnidadeAdministradoraCidadeUf",
-            "TipoEtapaCodigo", "TipoEtapaNome",
-            "GrupoAreaEnemCodigo", "GrupoAreaEnemRotulo",
-
-            // NumeroDoAto não é coluna do agregado — os DadosEdital são do ato, não da
-            // configuração. O limite vem dos validators de publicar e de retificar (60), e é
-            // deles que o decoder tem de ser tão estrito quanto.
-            "NumeroDoAto",
-
-            // A coluna da escala da nota final é definida pela mesma constante (a da NotaFinal);
-            // o limite do envelope a espelha, e não há segunda cópia que possa divergir.
-            "PrecisaoEscalaNotaFinal",
-
-            // MensagemDoImpedimento também não é coluna: o impedimento é gravado em jsonb. O
-            // limite é o da forma do item, que o domínio confere ao criar o campo, e a constante
-            // é definida pela mesma constante da forma — não há segunda cópia que possa divergir.
-            "MensagemDoImpedimento",
-
-            // Os níveis da escala de atendimento também vivem em jsonb: o teto do rótulo é o do
-            // domínio (definido pela mesma constante), e a fração cabe em numeric(5,4) por
-            // construção, já que o domínio a limita ao intervalo de 0 a 1.
-            "NivelDeAtendimentoRotulo", "PrecisaoFracaoDeAtendimento",
-        ];
-
-        declaradas.Except(confrontadas).Should().BeEmpty(
-            "toda constante de LimitesDoEnvelope tem de ser confrontada com a coluna que ela espelha — senão ela " +
-            "pode divergir do schema sem que nada acuse, e o decoder volta a aceitar o que o banco recusa");
-    }
-
-    /// <summary>
-    /// O modelo do EF é construído em memória — nenhuma conexão é aberta. A connection string
-    /// existe só porque o provider a exige para montar o modelo.
-    /// </summary>
-    private static MonolitoDbContext ContextoSoParaOModelo() => new(
-        new DbContextOptionsBuilder<MonolitoDbContext>()
-            .UseNpgsql("Host=localhost;Database=nao-conecta;Username=x;Password=x")
-            .UseSnakeCaseNamingConvention()
-            .Options);
 }

@@ -43,7 +43,7 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         etapa.DefinirTiposDeDecisao(tiposDeDecisao).IsSuccess.Should().BeTrue();
         Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, RegraDoPrazo, new ParametrosRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+            AncoraDoRecurso.AtoPublicado, RegraDoPrazo, ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
             preliminar, procedimentos).Value!]).IsSuccess.Should().BeTrue();
         return etapa;
     }

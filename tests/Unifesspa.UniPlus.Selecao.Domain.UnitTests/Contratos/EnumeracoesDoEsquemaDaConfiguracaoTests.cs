@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -40,8 +41,10 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Bancas, $"{Deliberacao}/semUnanimidade", Nomes<ResultadoSemUnanimidade>),
         ("coleta.schema.json", "/properties/referenciaTemporalFatos/properties/tipo", () => Codigos<ReferenciaTipo>(static v => v.ToCodigo())),
         (Comuns, "/$defs/produto/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
-        (Comuns, $"{Recurso}/suspensividadePrimeiraInstanciaUnidade", () => Nomes<UnidadePrazo>().Append<string?>(null)),
-        (Comuns, $"{Recurso}/suspensividadeSegundaInstanciaUnidade", () => Nomes<UnidadePrazo>().Append<string?>(null)),
+        (Comuns, $"{Recurso}/prazoUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
+        (Comuns, $"{Recurso}/prazoSegundaInstanciaUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
+        (Comuns, $"{Recurso}/efeitoSuspensivo", () => Codigos<EfeitoSuspensivo>(static v => v.Codigo())),
+        (Comuns, $"{Recurso}/guardaDaVaga", () => Codigos<GuardaDaVaga>(static v => v.Codigo())),
         (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.ToCodigo())),
         (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
@@ -80,11 +83,6 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
 
         noEsquema.Should().BeEquivalentTo(dominio());
     }
-
-    // O prazo de interposição admite horas e dias úteis, sem dias: menos valores que a unidade de prazo do domínio.
-    [Fact(DisplayName = "A unidade do prazo de interposição é um subconjunto da unidade de prazo do domínio")]
-    public void UnidadeDoPrazoDeInterposicao_EhSubconjuntoDoDominio() =>
-        ValoresDoEsquema(Comuns, $"{Recurso}/prazoUnidade").Should().BeSubsetOf(Nomes<UnidadePrazo>());
 
     // O formato do texto é derivado do catálogo do fato, não declarado: fica fora do tipo da restrição do esquema.
     [Fact(DisplayName = "O tipo de restrição do esquema são os tipos declaráveis do domínio")]

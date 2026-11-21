@@ -50,6 +50,7 @@
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
     <Compile Include="../Shared/HomologacaoDasInscricoesDeTeste.cs" Link="HomologacaoDasInscricoesDeTeste.cs" />
+    <Compile Include="../Shared/ParametrosDoRecursoDeTeste.cs" Link="ParametrosDoRecursoDeTeste.cs" />
     <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />
     <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />

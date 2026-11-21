@@ -45,17 +45,9 @@ public sealed class GateDoAlgoritmoDeContagemTests
 
     private static RegraRecursoFase RegraDeRecurso(
         UnidadePrazo prazoUnidade = UnidadePrazo.DiasUteis,
-        decimal prazoValor = 2m,
-        UnidadePrazo? suspensividadeUnidade = null) => RegraRecursoFase.Criar(
+        decimal prazoValor = 2m) => RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-            new ParametrosRegraPrazoRecurso(
-                PrazoValor: prazoValor,
-                PrazoUnidade: prazoUnidade,
-                SuspensividadePrimeiraInstanciaValor: suspensividadeUnidade is null ? null : 5m,
-                SuspensividadePrimeiraInstanciaUnidade: suspensividadeUnidade,
-                AdmiteInstanciaSuperior: false,
-                SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null),
+            ParametrosDoRecursoDeTeste.Declarados(prazoValor, prazoUnidade),
             ProcessoConformeFactory.ProdutoPreliminarId,
             HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;
 
@@ -143,19 +135,6 @@ public sealed class GateDoAlgoritmoDeContagemTests
         publicar.Error?.Code.Should().NotBe(CodigoDaRecusa,
             "sem prazo de recurso não há contagem que distinga dia útil, e exigir a convenção seria pedir "
                 + "uma declaração que não governa nada");
-    }
-
-    [Fact(DisplayName = "Contraprova: suspensividade em dias corridos, com interposição em horas, não muda a exigência")]
-    public void SuspensividadeCorrida_NaoAlteraAExigencia()
-    {
-        ProcessoSeletivo comAlgoritmo = Processo(
-            RegraDeRecurso(prazoUnidade: UnidadePrazo.Horas, prazoValor: 48m, suspensividadeUnidade: UnidadePrazo.Dias));
-        comAlgoritmo.DefinirAlgoritmoContagemPrazo(Algoritmo())
-            .IsSuccess.Should().BeTrue();
-
-        Publicar(comAlgoritmo).Error?.Code.Should().NotBe(CodigoDaRecusa,
-            "declarada a convenção, o gate não tem mais o que recusar — a suspensividade corrida nunca foi o "
-                + "que o exigia, e a interposição em horas já era coberta pela declaração");
     }
 
     [Fact(DisplayName = "Declarada a convenção, o gate deixa passar — a recusa que reste é de outra dimensão")]

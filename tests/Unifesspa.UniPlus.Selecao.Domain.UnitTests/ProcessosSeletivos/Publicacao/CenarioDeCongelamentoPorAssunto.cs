@@ -251,7 +251,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
             EmiteParecerIndividual: false,
             RegraRecurso: RegraRecursoFase.Criar(
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
-                new ParametrosRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+                ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
                 ProdutoPreliminar).Value!),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 

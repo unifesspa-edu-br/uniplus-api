@@ -33,6 +33,6 @@ internal static class FasesDeHomologacaoParaTestes
 
     internal static RegraRecursoFase JanelaDeRecurso(Guid produtoPreliminarId) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+        ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoPreliminarId).Value!;
 }

@@ -52,14 +52,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
 
     private static RegraRecursoFase Recurso(UnidadePrazo unidade) => RegraRecursoFase.Criar(
         Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
-        new ParametrosRegraPrazoRecurso(
-            PrazoValor: unidade == UnidadePrazo.Horas ? 48m : 2m,
-            PrazoUnidade: unidade,
-            SuspensividadePrimeiraInstanciaValor: null,
-            SuspensividadePrimeiraInstanciaUnidade: null,
-            AdmiteInstanciaSuperior: false,
-            SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null),
+        ParametrosDoRecursoDeTeste.Declarados(unidade == UnidadePrazo.Horas ? 48m : 2m, unidade),
         ProdutoPreliminarId).Value!;
 
     /// <summary>

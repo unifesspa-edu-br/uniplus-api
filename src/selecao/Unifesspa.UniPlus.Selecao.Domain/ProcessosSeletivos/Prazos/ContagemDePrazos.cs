@@ -17,14 +17,14 @@ public static class ContagemDePrazos
 {
     /// <summary>
     /// Se alguma janela de recurso, da fase ou da etapa, conta prazo que distingue dia útil. É a
-    /// pergunta única de que o gate da convenção, o do calendário e a leitura do envelope
-    /// congelado dependem, para que nenhum deles olhe só um dos dois lugares onde o recurso mora.
+    /// pergunta única de que a conferência da convenção, a do calendário e a leitura do registro
+    /// da versão publicada dependem, para que nenhuma delas olhe só um dos dois lugares onde o recurso mora.
     /// </summary>
     /// <remarks>
     /// Basta existir regra de recurso: toda regra declara prazo de interposição, e as duas
     /// unidades declaráveis nele correm sobre dia útil — dias úteis por definição, e horas porque
-    /// só as horas situadas em dia útil avançam o relógio. A suspensividade em dias úteis depende
-    /// igualmente, mas nunca sozinha, já que não existe suspensividade sem a regra que a carrega.
+    /// só as horas situadas em dia útil avançam o relógio. O prazo da 2ª instância usa as mesmas
+    /// unidades, mas nunca sozinho, já que não existe prazo da 2ª instância sem a regra que o carrega.
     /// A janela de solicitação de isenção não é regra de recurso e não aciona nada disto.
     /// </remarks>
     public static bool ContagemDistingueDiaUtil(IEnumerable<FaseCronograma> fases, IEnumerable<EtapaProcesso> etapas)

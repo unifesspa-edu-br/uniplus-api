@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -19,23 +20,29 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// como a identidade daquele produto — ancorar na publicação de outra fase deixa de ser
 /// exprimível, ainda que as duas declarem o mesmo tipo de ato.
 /// </param>
+/// <param name="PrazoValor">Valor do prazo de interposição; ausente é recusado pelo domínio.</param>
+/// <param name="PrazoUnidade">Código da unidade do prazo de interposição; o domínio recusa o ausente e o desconhecido.</param>
 /// <param name="AdmiteInstanciaSuperior">
 /// Se o recurso desta fase admite instância superior. <c>[JsonRequired]</c>: o ausente
 /// virava <c>false</c> em silêncio, e o edital seria congelado afirmando que o recurso termina
 /// na 1ª instância sem que ninguém tivesse decidido isso.
 /// </param>
+/// <param name="PrazoSegundaInstanciaValor">Valor do prazo da 2ª instância; obrigatório com instância superior e recusado sem ela.</param>
+/// <param name="PrazoSegundaInstanciaUnidade">Código da unidade do prazo da 2ª instância.</param>
+/// <param name="EfeitoSuspensivo">Código do efeito suspensivo da 1ª instância; obrigatório.</param>
+/// <param name="GuardaDaVaga">Código da guarda da vaga; ausente vale guardar até o resultado definitivo.</param>
 /// <param name="Procedimentos">Como o recurso de cada matéria que a fase produz é revisado.</param>
 public sealed record RegraRecursoFaseInput(
     string RegraCodigo,
     string RegraVersao,
-    decimal PrazoValor,
-    UnidadePrazo PrazoUnidade,
+    decimal? PrazoValor,
+    [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoUnidade,
     string AtoAncoraCodigo,
-    decimal? SuspensividadePrimeiraInstanciaValor,
-    UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
-    decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    decimal? PrazoSegundaInstanciaValor,
+    [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoSegundaInstanciaUnidade,
+    [property: AceitaCodigosDe<EfeitoSuspensivo>] string? EfeitoSuspensivo,
+    [property: AceitaCodigosDe<GuardaDaVaga>] string? GuardaDaVaga,
     IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>

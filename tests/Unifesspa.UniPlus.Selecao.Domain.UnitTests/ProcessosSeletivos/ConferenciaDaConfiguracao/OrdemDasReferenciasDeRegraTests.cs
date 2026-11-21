@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class OrdemDasReferenciasDeRegraTests
 {
@@ -106,7 +107,7 @@ public sealed class OrdemDasReferenciasDeRegraTests
         ConfiguracaoDeclarada original = ProcessoConformeFactory.Criar().Declaracao();
         RegraRecursoFase prazo = ModeloDeFase.RecursoAncoradoEm(ProcessoConformeFactory.ProdutoPreliminarId);
         ProcedimentosDeRecurso procedimentos = Procedimentos();
-        RegraRecursoFase recurso = RegraRecursoFase.Criar(prazo.Regra, prazo.Parametros, prazo.ProdutoAncoraId, procedimentos).Value!;
+        RegraRecursoFase recurso = RegraRecursoFase.Criar(prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), prazo.ProdutoAncoraId, procedimentos).Value!;
         FaseCronograma fase = ProcessoConformeFactory.FaseConforme(recurso);
         return new ConfiguracaoDeclarada(original.Identidade, new CronogramaDeclarado(null, null, [fase]), original.Avaliacao,
             original.Vagas, original.Exigencias, original.Coleta, original.DivulgacaoETaxa)

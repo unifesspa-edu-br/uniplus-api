@@ -67,7 +67,7 @@
     },
     "propriedadesDoRecurso": {
       "title": "Propriedades do recurso",
-      "description": "Prazo de interposição, âncora e efeito suspensivo do recurso, comuns à fase e à etapa.",
+      "description": "Prazos, efeito suspensivo e guarda da vaga do recurso, comuns à fase e à etapa.",
       "type": "object",
       "properties": {
         "regraCodigo": {
@@ -92,9 +92,10 @@
         },
         "prazoUnidade": {
           "title": "Unidade do prazo",
-          "description": "Unidade do prazo de interposição: horas ou dias úteis (diasUteis).",
+          "description": "Unidade do prazo de interposição: horas, dias úteis (diasUteis) ou dias corridos (dias). Só horas e dias úteis são aceitos pelo domínio; dias corridos chegam a ele para receber a recusa própria.",
           "enum": [
             "horas",
+            "dias",
             "diasUteis"
           ]
         },
@@ -106,47 +107,39 @@
           "minLength": 1,
           "maxLength": 60
         },
-        "suspensividadePrimeiraInstanciaValor": {
-          "title": "Efeito suspensivo na primeira instância, quantidade",
-          "description": "Quantidade de unidades do efeito suspensivo na primeira instância, com até quatro casas decimais. Nulo, junto à unidade, desativa o bloqueio nesta instância.",
-          "type": [
-            "number",
-            "null"
-          ],
-          "multipleOf": 0.0001
-        },
-        "suspensividadePrimeiraInstanciaUnidade": {
-          "title": "Efeito suspensivo na primeira instância, unidade",
-          "description": "Unidade do efeito suspensivo na primeira instância: horas, dias ou dias úteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta instância.",
-          "enum": [
-            "horas",
-            "dias",
-            "diasUteis",
-            null
-          ]
-        },
         "admiteInstanciaSuperior": {
           "title": "Admite instância superior",
           "description": "Se cabe recurso à instância superior.",
           "type": "boolean"
         },
-        "suspensividadeSegundaInstanciaValor": {
-          "title": "Efeito suspensivo na instância superior, quantidade",
-          "description": "Quantidade de unidades do efeito suspensivo na instância superior, com até quatro casas decimais. Nulo, junto à unidade, desativa o bloqueio nesta instância.",
-          "type": [
-            "number",
-            "null"
-          ],
+        "prazoSegundaInstanciaValor": {
+          "title": "Prazo da 2ª instância",
+          "description": "Quantidade de unidades do prazo para recorrer em 2ª instância, com até quatro casas decimais. Obrigatório quando o recurso admite instância superior e recusado quando não admite.",
+          "type": "number",
           "multipleOf": 0.0001
         },
-        "suspensividadeSegundaInstanciaUnidade": {
-          "title": "Efeito suspensivo na instância superior, unidade",
-          "description": "Unidade do efeito suspensivo na instância superior: horas, dias ou dias úteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta instância.",
+        "prazoSegundaInstanciaUnidade": {
+          "title": "Unidade do prazo da 2ª instância",
+          "description": "Unidade do prazo da 2ª instância: horas, dias úteis (diasUteis) ou dias corridos (dias). Como no prazo de interposição, só horas e dias úteis são aceitos pelo domínio.",
           "enum": [
             "horas",
             "dias",
-            "diasUteis",
-            null
+            "diasUteis"
+          ]
+        },
+        "efeitoSuspensivo": {
+          "title": "Efeito suspensivo na 1ª instância",
+          "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital. A única opção aceita é sem efeito suspensivo (semEfeitoSuspensivo). A 2ª instância sempre tem efeito suspensivo, sem escolha.",
+          "enum": [
+            "semEfeitoSuspensivo"
+          ]
+        },
+        "guardaDaVaga": {
+          "title": "Guarda da vaga",
+          "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: até o resultado definitivo (ateOResultadoDefinitivo) ou não guarda (naoGuarda). Quando ausente, vale guardar até o resultado definitivo. Com instância superior, a vaga fica guardada até o resultado definitivo.",
+          "enum": [
+            "ateOResultadoDefinitivo",
+            "naoGuarda"
           ]
         },
         "procedimentosDeRecurso": {

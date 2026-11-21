@@ -87,7 +87,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
     private static void RegravarOsRecursosComIdNovo(EtapaProcesso etapa, IReadOnlyList<RecursoDaEtapa> originais) =>
         etapa.DefinirRecursos([.. originais.Select(r => RecursoDaEtapa.Reidratar(
-            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Parametros, r.ProdutoAncoraId, r.Procedimentos).Value!)])
+            Guid.CreateVersion7(), r.Ancora, r.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(r.Parametros), r.ProdutoAncoraId, r.Procedimentos).Value!)])
             .IsSuccess.Should().BeTrue();
 
     /// <summary>

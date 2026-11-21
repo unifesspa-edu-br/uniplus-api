@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -12,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ProjecaoDaFaseDoCronogramaTests
 {
@@ -41,14 +43,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
-        new ParametrosRegraPrazoRecurso(
-            PrazoValor: 2m,
-            PrazoUnidade: UnidadePrazo.DiasUteis,
-            SuspensividadePrimeiraInstanciaValor: 5m,
-            SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
-            AdmiteInstanciaSuperior: true,
-            SuspensividadeSegundaInstanciaValor: 3m,
-            SuspensividadeSegundaInstanciaUnidade: UnidadePrazo.Dias),
+        ParametrosDoRecursoDeTeste.ComInstanciaSuperior(2m, UnidadePrazo.DiasUteis),
         ProdutoDoResultadoId).Value!;
 
     private static ProdutoDaFase[] Produtos() =>
@@ -185,7 +180,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             regra.Id,
             ProdutoDoResultadoId,
             new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
-            new ParametrosRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, 5m, UnidadePrazo.Dias, true, 3m, UnidadePrazo.Dias),
+            ParametrosEsperados(),
             []),
         TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa],
         RegraDeHomologacao: null);
@@ -201,4 +196,13 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
 
     private static PredicadoDnf EnquadramentoDaModalidade() => PredicadoDnf.CriarDeCondicoesAgrupadas(
         [(0, CondicaoDnf.Criar("MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AMPLA")).Value!)]).Value!;
+
+    private static ParametrosRegraPrazoRecursoDto ParametrosEsperados() => new(
+        2m,
+        CodigoComRotulo<UnidadePrazo>.De(UnidadePrazo.DiasUteis),
+        true,
+        3m,
+        CodigoComRotulo<UnidadePrazo>.De(UnidadePrazo.DiasUteis),
+        CodigoComRotulo<EfeitoSuspensivo>.De(EfeitoSuspensivo.SemEfeitoSuspensivo),
+        CodigoComRotulo<GuardaDaVaga>.De(GuardaDaVaga.AteOResultadoDefinitivo));
 }

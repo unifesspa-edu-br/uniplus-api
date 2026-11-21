@@ -6,17 +6,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="RecursoDaEtapa.Criar"/> — as invariantes de forma sobre o prazo de
-/// interposição e a suspensividade.
+/// interposição, o efeito suspensivo, a guarda da vaga e o prazo da 2ª instância.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A janela da etapa carrega o MESMO <see cref="ParametrosRegraPrazoRecurso"/> que a regra da fase.
-/// Enquanto essas invariantes viviam privadas em <see cref="RegraRecursoFase"/>, a etapa
-/// aceitava prazo zero, prazo em dia corrido e par de suspensividade pela metade — e a
-/// configuração que a fase recusava com 422 era gravada na etapa em silêncio.
+/// O recurso da etapa carrega o MESMO <see cref="ParametrosRegraPrazoRecurso"/> que a regra da fase, conferido pela mesma
+/// declaração: a configuração que a fase recusa com 422 não pode ser gravada na etapa em silêncio.
 /// </para>
 /// <para>
 /// O que legitimamente difere entre as duas é a <b>âncora</b>: a fase conta sempre da
@@ -31,31 +30,15 @@ public sealed class RecursoDaEtapaTests
 
     private static readonly Guid Ancora = Guid.CreateVersion7();
 
-    private static ParametrosRegraPrazoRecurso Parametros(
-        decimal prazoValor = 48m,
-        UnidadePrazo prazoUnidade = UnidadePrazo.Horas,
-        decimal? susp1Valor = null,
-        UnidadePrazo? susp1Unidade = null,
-        decimal? susp2Valor = null,
-        UnidadePrazo? susp2Unidade = null,
-        bool? admiteInstanciaSuperior = null) => new(
-            PrazoValor: prazoValor,
-            PrazoUnidade: prazoUnidade,
-            SuspensividadePrimeiraInstanciaValor: susp1Valor,
-            SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
-            AdmiteInstanciaSuperior: admiteInstanciaSuperior ?? (susp2Valor is not null || susp2Unidade is not null),
-            SuspensividadeSegundaInstanciaValor: susp2Valor,
-            SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
-
     private static Result<RecursoDaEtapa> Criar(
-        ParametrosRegraPrazoRecurso parametros,
+        ParametrosDeclaradosDoRecurso parametros,
         AncoraDoRecurso ancora = AncoraDoRecurso.AtoPublicado) =>
         RecursoDaEtapa.Criar(ancora, Regra, parametros, Ancora);
 
-    [Fact(DisplayName = "Janela com prazo e âncora válidos é criada")]
+    [Fact(DisplayName = "Recurso da etapa com prazo e evento que inicia o prazo válidos é criado")]
     public void PrazoValido_Cria()
     {
-        Criar(Parametros()).IsSuccess.Should().BeTrue();
+        Criar(ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas)).IsSuccess.Should().BeTrue();
     }
 
     [Theory(DisplayName = "Prazo não positivo é recusado")]
@@ -63,7 +46,7 @@ public sealed class RecursoDaEtapaTests
     [InlineData(-5)]
     public void PrazoNaoPositivo_Recusa(int prazo)
     {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(prazoValor: prazo));
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.Horas));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoNaoPositivo");
@@ -79,7 +62,7 @@ public sealed class RecursoDaEtapaTests
     [InlineData(AncoraDoRecurso.CienciaIndividual)]
     public void PrazoEmDiasCorridos_Recusa(AncoraDoRecurso ancora)
     {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(prazoValor: 3m, prazoUnidade: UnidadePrazo.Dias), ancora);
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(3m, UnidadePrazo.Dias), ancora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoEmDiasCorridos");
@@ -88,7 +71,7 @@ public sealed class RecursoDaEtapaTests
     [Fact(DisplayName = "Prazo sem unidade declarável é recusado")]
     public void PrazoSemUnidade_Recusa()
     {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(prazoUnidade: UnidadePrazo.Nenhuma));
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados() with { PrazoDeInterposicao = new PrazoDeclarado(2m, null) });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoSemUnidadeDeclaravel");
@@ -97,86 +80,16 @@ public sealed class RecursoDaEtapaTests
     [Fact(DisplayName = "Fração de dia útil é recusada — prazo menor que um dia se declara em horas")]
     public void FracaoDeDiaUtil_Recusa()
     {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(prazoValor: 2.5m, prazoUnidade: UnidadePrazo.DiasUteis));
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(2.5m, UnidadePrazo.DiasUteis));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil");
     }
 
-    [Fact(DisplayName = "Suspensividade sem os dois campos é a desativação prevista da instância")]
-    public void SuspensividadeAusente_Cria()
-    {
-        Criar(Parametros()).IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Suspensividade com valor e unidade é aceita")]
-    public void SuspensividadeCompleta_Cria()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(
-            susp1Valor: 3m, susp1Unidade: UnidadePrazo.DiasUteis,
-            susp2Valor: 48m, susp2Unidade: UnidadePrazo.Horas));
-
-        resultado.IsSuccess.Should().BeTrue();
-    }
-
-    /// <summary>
-    /// UNI-REQ-0080 congela a suspensividade como par valor-unidade: um lado sem o outro não
-    /// descreve janela alguma. Era o que a etapa aceitava calada.
-    /// </summary>
-    [Fact(DisplayName = "Suspensividade com valor e sem unidade é recusada")]
-    public void SuspensividadeSemUnidade_Recusa()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(susp1Valor: 3m));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeIncompleta");
-    }
-
-    [Fact(DisplayName = "Suspensividade com unidade e sem valor é recusada")]
-    public void SuspensividadeSemValor_Recusa()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(susp1Unidade: UnidadePrazo.Horas));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeIncompleta");
-    }
-
-    /// <summary>
-    /// A magnitude errada é conferida ANTES da incompletude: mandar completar um par cujo
-    /// valor já é inválido devolveria a pessoa com uma segunda recusa.
-    /// </summary>
-    [Fact(DisplayName = "Suspensividade não positiva é recusada antes da incompletude")]
-    public void SuspensividadeNaoPositiva_Recusa()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(susp1Valor: -3m));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeNaoPositiva");
-    }
-
-    [Fact(DisplayName = "Unidade de suspensividade não declarável é recusada")]
-    public void SuspensividadeUnidadeNaoDeclaravel_Recusa()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(susp1Valor: 3m, susp1Unidade: UnidadePrazo.Nenhuma));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel");
-    }
-
-    /// <summary>
-    /// A suspensividade admite dia corrido, que a interposição acabou de recusar: é outro
-    /// relógio, com outra regra.
-    /// </summary>
-    [Fact(DisplayName = "Suspensividade em dias corridos é aceita")]
-    public void SuspensividadeEmDiasCorridos_Cria()
-    {
-        Criar(Parametros(susp1Valor: 5m, susp1Unidade: UnidadePrazo.Dias)).IsSuccess.Should().BeTrue();
-    }
-
     [Fact(DisplayName = "Âncora não declarada continua sendo recusada")]
     public void AncoraNenhuma_Recusa()
     {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(), AncoraDoRecurso.Nenhuma);
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(), AncoraDoRecurso.Nenhuma);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -193,7 +106,7 @@ public sealed class RecursoDaEtapaTests
             "RECURSO-PRAZO-OUTRA-CONTAGEM", "v1", new string('b', 64));
 
         Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, outra, Parametros(), Ancora);
+            AncoraDoRecurso.AtoPublicado, outra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.RegraCatalogoInvalida");
@@ -203,31 +116,51 @@ public sealed class RecursoDaEtapaTests
     public void Aceita_RegraAncoradaEmAto()
     {
         Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, Regra, Parametros(), Ancora);
+            AncoraDoRecurso.AtoPublicado, Regra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Theory(DisplayName = "Janela que não admite instância superior recusa tempo de bloqueio superior, completo ou pela metade")]
-    [InlineData(5, UnidadePrazo.DiasUteis)]
-    [InlineData(5, null)]
-    [InlineData(null, UnidadePrazo.Horas)]
-    public void SemInstanciaSuperior_ComBloqueioSuperior_Recusa(int? valor, UnidadePrazo? unidade)
+    [Fact(DisplayName = "Recurso da etapa com instância superior guarda o prazo próprio da 2ª instância")]
+    public void ComInstanciaSuperior_GuardaOPrazoDaSegundaInstancia()
     {
-        Result<RecursoDaEtapa> resultado = Criar(
-            Parametros(susp2Valor: valor, susp2Unidade: unidade, admiteInstanciaSuperior: false));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior",
-            "remover o bloqueio resolve também o par pela metade, então esta é a recusa que orienta");
-    }
-
-    [Fact(DisplayName = "Janela que admite instância superior aceita o bloqueio superior ausente: existe, mas não bloqueia")]
-    public void ComInstanciaSuperior_SemBloqueioSuperior_Aceita()
-    {
-        Result<RecursoDaEtapa> resultado = Criar(Parametros(admiteInstanciaSuperior: true));
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.ComInstanciaSuperior());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Parametros.AdmiteInstanciaSuperior.Should().BeTrue();
+        resultado.Value.Parametros.PrazoDaSegundaInstancia.Should().Be(new PrazoDoRecurso(3m, UnidadePrazo.DiasUteis));
+    }
+
+    [Fact(DisplayName = "Recurso da etapa com instância superior e sem prazo da 2ª instância é recusada no campo do prazo")]
+    public void ComInstanciaSuperior_SemPrazoDaSegundaInstancia_Recusa()
+    {
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(admiteInstanciaSuperior: true));
+
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoSegundaInstanciaNaoDeclarado");
+        resultado.Errors.Single().Field.Should().Be("prazoSegundaInstanciaValor");
+    }
+
+    [Fact(DisplayName = "Recurso da etapa sem instância superior recusa o prazo da 2ª instância")]
+    public void SemInstanciaSuperior_ComPrazoDaSegundaInstancia_Recusa()
+    {
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(segundaInstancia: new PrazoDoRecurso(3m, UnidadePrazo.DiasUteis)));
+
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.PrazoSegundaInstanciaSemInstanciaSuperior");
+    }
+
+    [Fact(DisplayName = "Recurso da etapa com instância superior que não guarda a vaga é recusado")]
+    public void ComInstanciaSuperior_NaoGuarda_Recusa()
+    {
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.ComInstanciaSuperior() with { GuardaDaVaga = "naoGuarda" });
+
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.NaoGuardaComInstanciaSuperior");
+    }
+
+    [Fact(DisplayName = "Recurso da etapa sem efeito suspensivo declarado é recusado")]
+    public void SemEfeitoSuspensivo_Recusa()
+    {
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(efeitoSuspensivo: null));
+
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado");
     }
 }

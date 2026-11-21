@@ -55,6 +55,26 @@ public sealed class EntradaDoPreliminarDaFaseTests
     public void MudarPropriedadeQueEntra_MudaAEntrada(string propriedade) =>
         QueEntram[propriedade]().EntradaDoPreliminar().Should().NotBe(Fase().EntradaDoPreliminar());
 
+    [Fact(DisplayName = "Mudar só o prazo da 2ª instância não muda a entrada: ele vale pela versão vigente quando o indeferimento é publicado")]
+    public void PrazoDaSegundaInstancia_NaoMudaAEntrada()
+    {
+        ParametrosDeclaradosDoRecurso comInstanciaSuperior = ParametrosDoRecursoDeTeste.ComInstanciaSuperior();
+
+        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "diasUteis") }).EntradaDoPreliminar()
+            .Should().Be(ComParametrosDoRecurso(comInstanciaSuperior).EntradaDoPreliminar());
+    }
+
+    [Fact(DisplayName = "Mudar a guarda da vaga, a interposição ou a instância superior muda a entrada")]
+    public void ParametrosDoRecurso_MudamAEntrada()
+    {
+        EntradaDoPreliminar baseDaEntrada = ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados()).EntradaDoPreliminar();
+
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "naoGuarda")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(3m)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.Horas)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.ComInstanciaSuperior()).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+    }
+
     [Theory(DisplayName = "Mudar só a propriedade da fase que não entra no preliminar não muda a entrada")]
     [MemberData(nameof(PropriedadesQueNaoEntram))]
     public void MudarPropriedadeQueNaoEntra_NaoMudaAEntrada(string propriedade) =>
@@ -152,12 +172,21 @@ public sealed class EntradaDoPreliminarDaFaseTests
     private static FaseCronograma ComRecurso(decimal prazo, int ancora, params string[] atos) =>
         ComRecursoEProcedimentos(prazo, ancora, ProcedimentosDeRecurso.Nenhum, atos);
 
+    private static FaseCronograma ComParametrosDoRecurso(ParametrosDeclaradosDoRecurso parametros)
+    {
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
+        RegraRecursoFase regra = RegraRecursoFase.Criar(
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)), parametros, preliminar.Id).Value!;
+
+        return Fase(publicacoes: _ => new PublicacoesDaFase([preliminar], false, regra));
+    }
+
     private static FaseCronograma ComRecursoEProcedimentos(decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos)
     {
         List<ProdutoDaFase> produtos = [.. atos.Select(static ato => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar))];
         RegraRecursoFase regra = RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-            new ParametrosRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
+            ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.DiasUteis),
             produtos[ancora].Id,
             procedimentos).Value!;
 

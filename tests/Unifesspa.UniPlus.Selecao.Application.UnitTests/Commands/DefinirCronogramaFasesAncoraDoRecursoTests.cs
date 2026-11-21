@@ -63,7 +63,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao());
         FaseCronogramaInput ancorada = FaseRecorrivelAncorada(cenario, ProdutosPreliminarEDefinitivo());
-        FaseCronogramaInput fase = ancorada with { RegraRecurso = RecursoAncoradoNaClassificacao() with { AdmiteInstanciaSuperior = true } };
+        FaseCronogramaInput fase = ancorada with { RegraRecurso = RecursoAncoradoNaClassificacao() with { AdmiteInstanciaSuperior = true, PrazoSegundaInstanciaValor = 3m, PrazoSegundaInstanciaUnidade = "diasUteis" } };
 
         Result resultado = await cenario.DefinirFasesAsync(fase);
 

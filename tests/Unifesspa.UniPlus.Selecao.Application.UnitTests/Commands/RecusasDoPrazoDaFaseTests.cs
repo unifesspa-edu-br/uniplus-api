@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using Xunit;
@@ -12,20 +13,60 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FasesDoCro
 
 public sealed class RecusasDoPrazoDaFaseTests
 {
+    private static readonly ParametrosDoPedidoDoRecurso VariasRecusas = ParametrosDoPedidoDoRecurso.Valido with
+    {
+        PrazoValor = 0m,
+        EfeitoSuspensivo = null,
+        GuardaDaVaga = "talvez",
+        PrazoSegundaInstanciaValor = 1m,
+        PrazoSegundaInstanciaUnidade = "horas",
+    };
+
     [Fact]
-    public async Task Handle_PrazoESuspensividadeInvalidos_AcumulaRecusas()
+    public async Task Handle_ParametrosInvalidos_AcumulaRecusasCadaUmaNoSeuCampo()
+    {
+        Result resultado = await DefinirFaseComAsync(VariasRecusas);
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("fases[0].regraRecurso.prazoValor", "RegraRecursoFase.PrazoNaoPositivo"),
+            ("fases[0].regraRecurso.efeitoSuspensivo", "RegraRecursoFase.EfeitoSuspensivoNaoDeclarado"),
+            ("fases[0].regraRecurso.guardaDaVaga", "RegraRecursoFase.GuardaDaVagaNaoDeclaravel"),
+            ("fases[0].regraRecurso.prazoSegundaInstanciaValor", "RegraRecursoFase.PrazoSegundaInstanciaSemInstanciaSuperior"));
+    }
+
+    [Theory(DisplayName = "Cada causa de recusa dos parâmetros do recurso chega ao pedido da fase com o código e o campo próprios")]
+    [MemberData(nameof(CausasDeRecusaDosParametrosDoRecurso.Nomes), MemberType = typeof(CausasDeRecusaDosParametrosDoRecurso))]
+    public async Task Handle_CausaDeRecusa_ChegaComOCodigoEOCampoProprios(string causa)
+    {
+        (string codigo, string campo, ParametrosDoPedidoDoRecurso pedido) = CausasDeRecusaDosParametrosDoRecurso.Da(causa);
+
+        Result resultado = await DefinirFaseComAsync(pedido);
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ($"fases[0].regraRecurso.{campo}", $"RegraRecursoFase.{codigo}"));
+    }
+
+    private static Task<Result> DefinirFaseComAsync(ParametrosDoPedidoDoRecurso pedido)
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho()
             .ComTipoDeAto(TipoAtoDaClassificacao()).ComRegraNoCatalogo(RegraDePrazoDeRecurso());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with
         {
             Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)],
-            RegraRecurso = RecursoAncoradoNaClassificacao() with { PrazoValor = 0, SuspensividadePrimeiraInstanciaValor = 1 },
+            RegraRecurso = RecursoDoPedido(pedido),
         };
 
-        Result resultado = await cenario.DefinirFasesAsync(fase);
-
-        resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
-            "RegraRecursoFase.PrazoNaoPositivo", "RegraRecursoFase.SuspensividadeIncompleta");
+        return cenario.DefinirFasesAsync(fase);
     }
+
+    private static RegraRecursoFaseInput RecursoDoPedido(ParametrosDoPedidoDoRecurso pedido) => RecursoAncoradoNaClassificacao() with
+    {
+        PrazoValor = pedido.PrazoValor,
+        PrazoUnidade = pedido.PrazoUnidade,
+        AdmiteInstanciaSuperior = pedido.AdmiteInstanciaSuperior,
+        PrazoSegundaInstanciaValor = pedido.PrazoSegundaInstanciaValor,
+        PrazoSegundaInstanciaUnidade = pedido.PrazoSegundaInstanciaUnidade,
+        EfeitoSuspensivo = pedido.EfeitoSuspensivo,
+        GuardaDaVaga = pedido.GuardaDaVaga,
+    };
 }

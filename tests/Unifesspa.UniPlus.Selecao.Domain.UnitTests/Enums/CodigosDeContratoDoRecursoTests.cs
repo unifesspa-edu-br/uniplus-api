@@ -1,0 +1,52 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Enums;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
+/// <summary>
+/// Os pares valor e código dos enums da configuração do recurso, escritos aqui de propósito: alterar um código é alterar o
+/// contrato publicado e o dado gravado, e este teste é o que obriga a revisão. O rótulo é texto de tela e não é fixado.
+/// </summary>
+public sealed class CodigosDeContratoDoRecursoTests
+{
+    [Fact(DisplayName = "Cada unidade de prazo tem o código que o contrato publica")]
+    public void UnidadePrazo_CodigoDeCadaValor() =>
+        Enum.GetValues<UnidadePrazo>().ToDictionary(static v => v, static v => v.Codigo())
+            .Should().Equal(new Dictionary<UnidadePrazo, string>
+            {
+                [UnidadePrazo.Horas] = "horas",
+                [UnidadePrazo.Dias] = "dias",
+                [UnidadePrazo.DiasUteis] = "diasUteis",
+            });
+
+    [Fact(DisplayName = "Cada efeito suspensivo tem o código que o contrato publica")]
+    public void EfeitoSuspensivo_CodigoDeCadaValor() =>
+        Enum.GetValues<EfeitoSuspensivo>().ToDictionary(static v => v, static v => v.Codigo())
+            .Should().Equal(new Dictionary<EfeitoSuspensivo, string>
+            {
+                [EfeitoSuspensivo.SemEfeitoSuspensivo] = "semEfeitoSuspensivo",
+            });
+
+    [Fact(DisplayName = "Cada guarda da vaga tem o código que o contrato publica")]
+    public void GuardaDaVaga_CodigoDeCadaValor() =>
+        Enum.GetValues<GuardaDaVaga>().ToDictionary(static v => v, static v => v.Codigo())
+            .Should().Equal(new Dictionary<GuardaDaVaga, string>
+            {
+                [GuardaDaVaga.AteOResultadoDefinitivo] = "ateOResultadoDefinitivo",
+                [GuardaDaVaga.NaoGuarda] = "naoGuarda",
+            });
+
+    [Fact(DisplayName = "Todo valor dos enums do recurso tem rótulo")]
+    public void Rotulo_DeCadaValor_NaoEstaVazio()
+    {
+        Enum.GetValues<UnidadePrazo>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Rotulo()));
+        Enum.GetValues<EfeitoSuspensivo>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Rotulo()));
+        Enum.GetValues<GuardaDaVaga>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Rotulo()));
+    }
+
+    [Fact(DisplayName = "Os códigos de contrato dos enums do domínio da Seleção passam na conferência da subida")]
+    public void ConferirEnumsDe_DominioDaSelecao_Passa() =>
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(UnidadePrazo).Assembly])).Should().NotThrow();
+}

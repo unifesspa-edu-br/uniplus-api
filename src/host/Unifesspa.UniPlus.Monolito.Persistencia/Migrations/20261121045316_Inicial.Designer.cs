@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261121022843_Inicial")]
+    [Migration("20261121045316_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -14492,12 +14492,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000018"),
-                            BaseLegal = "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital",
+                            BaseLegal = "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo, efeito suspensivo e guarda da vaga configuráveis por edital",
                             Codigo = "RECURSO-PRAZO-ANCORADO-EM-ATO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "595a2d755e2f9ded25793c6f433964f36f4b9d314ef3a1183e45f57ed4d5bd02",
-                            Invariantes = "[\"o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado\",\"a suspensividade é configurável por fase e por grau: sem prazo de suspensividade, a pendência não impede atos irreversíveis\",\"o período de suspensividade termina no julgamento ou no fim do prazo, o que ocorrer primeiro — recurso sem julgamento não impede o andamento do certame indefinidamente\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"o prazo de interposição corre exclusivamente em dia útil e admite apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de interposição, nas duas unidades, e para a suspensividade em dias úteis\",\"a suspensividade em horas ou em dias corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
+                            Hash = "7bf7efd0ce76abe370879d800b980b7894eadf27d2a96f22eba6066d6aa24206",
+                            Invariantes = "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
                             Tipo = "regra_prazo_recurso",
                             Versao = "v1"
                         },
@@ -20278,32 +20278,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("boolean")
                                 .HasColumnName("admite_instancia_superior");
 
-                            b1.Property<int>("PrazoUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("prazo_unidade");
+                            b1.Property<string>("EfeitoSuspensivo")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("efeito_suspensivo");
 
-                            b1.Property<decimal>("PrazoValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("prazo_valor");
-
-                            b1.Property<int?>("SuspensividadePrimeiraInstanciaUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("susp_1a_unidade");
-
-                            b1.Property<decimal?>("SuspensividadePrimeiraInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("susp_1a_valor");
-
-                            b1.Property<int?>("SuspensividadeSegundaInstanciaUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("susp_2a_unidade");
-
-                            b1.Property<decimal?>("SuspensividadeSegundaInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("susp_2a_valor");
+                            b1.Property<string>("GuardaDaVaga")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("guarda_da_vaga");
 
                             b1.HasKey("RecursoDaEtapaId");
 
@@ -20312,6 +20295,61 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("RecursoDaEtapaId")
                                 .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDaSegundaInstancia", b2 =>
+                                {
+                                    b2.Property<Guid>("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Unidade")
+                                        .IsRequired()
+                                        .HasColumnType("text")
+                                        .HasColumnName("prazo_segunda_instancia_unidade");
+
+                                    b2.Property<decimal>("Valor")
+                                        .HasPrecision(18, 4)
+                                        .HasColumnType("numeric(18,4)")
+                                        .HasColumnName("prazo_segunda_instancia_valor");
+
+                                    b2.HasKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId");
+
+                                    b2.ToTable("recursos_da_etapa", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
+                                        .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                });
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDeInterposicao", b2 =>
+                                {
+                                    b2.Property<Guid>("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Unidade")
+                                        .IsRequired()
+                                        .HasColumnType("text")
+                                        .HasColumnName("prazo_unidade");
+
+                                    b2.Property<decimal>("Valor")
+                                        .HasPrecision(18, 4)
+                                        .HasColumnType("numeric(18,4)")
+                                        .HasColumnName("prazo_valor");
+
+                                    b2.HasKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId");
+
+                                    b2.ToTable("recursos_da_etapa", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
+                                        .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                });
+
+                            b1.Navigation("PrazoDaSegundaInstancia");
+
+                            b1.Navigation("PrazoDeInterposicao")
+                                .IsRequired();
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
@@ -20441,32 +20479,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("boolean")
                                 .HasColumnName("admite_instancia_superior");
 
-                            b1.Property<int>("PrazoUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("prazo_unidade");
+                            b1.Property<string>("EfeitoSuspensivo")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("efeito_suspensivo");
 
-                            b1.Property<decimal>("PrazoValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("prazo_valor");
-
-                            b1.Property<int?>("SuspensividadePrimeiraInstanciaUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("suspensividade_1a_instancia_unidade");
-
-                            b1.Property<decimal?>("SuspensividadePrimeiraInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("suspensividade_1a_instancia_valor");
-
-                            b1.Property<int?>("SuspensividadeSegundaInstanciaUnidade")
-                                .HasColumnType("integer")
-                                .HasColumnName("suspensividade_2a_instancia_unidade");
-
-                            b1.Property<decimal?>("SuspensividadeSegundaInstanciaValor")
-                                .HasPrecision(18, 4)
-                                .HasColumnType("numeric(18,4)")
-                                .HasColumnName("suspensividade_2a_instancia_valor");
+                            b1.Property<string>("GuardaDaVaga")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("guarda_da_vaga");
 
                             b1.HasKey("RegraRecursoFaseId");
 
@@ -20475,6 +20496,61 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("RegraRecursoFaseId")
                                 .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDaSegundaInstancia", b2 =>
+                                {
+                                    b2.Property<Guid>("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Unidade")
+                                        .IsRequired()
+                                        .HasColumnType("text")
+                                        .HasColumnName("prazo_segunda_instancia_unidade");
+
+                                    b2.Property<decimal>("Valor")
+                                        .HasPrecision(18, 4)
+                                        .HasColumnType("numeric(18,4)")
+                                        .HasColumnName("prazo_segunda_instancia_valor");
+
+                                    b2.HasKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId");
+
+                                    b2.ToTable("regras_recurso_fase", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
+                                        .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                });
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDeInterposicao", b2 =>
+                                {
+                                    b2.Property<Guid>("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Unidade")
+                                        .IsRequired()
+                                        .HasColumnType("text")
+                                        .HasColumnName("prazo_unidade");
+
+                                    b2.Property<decimal>("Valor")
+                                        .HasPrecision(18, 4)
+                                        .HasColumnType("numeric(18,4)")
+                                        .HasColumnName("prazo_valor");
+
+                                    b2.HasKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId");
+
+                                    b2.ToTable("regras_recurso_fase", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
+                                        .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                });
+
+                            b1.Navigation("PrazoDaSegundaInstancia");
+
+                            b1.Navigation("PrazoDeInterposicao")
+                                .IsRequired();
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>

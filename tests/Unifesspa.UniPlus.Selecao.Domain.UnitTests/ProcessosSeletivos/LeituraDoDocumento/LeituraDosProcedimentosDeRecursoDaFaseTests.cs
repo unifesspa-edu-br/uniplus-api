@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -17,7 +18,7 @@ public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
     private static FaseNoDocumento ComRegra(ReferenciaDeRegraNoDocumento regra, params ProcedimentoNoDocumento[] procedimentos) =>
         Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, AtoDoResultado)) with
         {
-            RegraDeRecurso = new(regra, AtoDoResultado, new ParametrosRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null), procedimentos),
+            RegraDeRecurso = new(regra, AtoDoResultado, ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis), procedimentos),
         };
 
     [Fact(DisplayName = "O procedimento com regra desconhecida e item de avaliação como alvo acumula as duas recusas")]

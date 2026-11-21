@@ -283,6 +283,8 @@
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
           "admiteInstanciaSuperior": false,
+          "efeitoSuspensivo": "semEfeitoSuspensivo",
+          "guardaDaVaga": "ateOResultadoDefinitivo",
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "HOMOLOGACAO_DAS_INSCRICOES",
@@ -392,7 +394,10 @@
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "admiteInstanciaSuperior": false,
+          "admiteInstanciaSuperior": true,
+          "prazoSegundaInstanciaValor": 3,
+          "prazoSegundaInstanciaUnidade": "diasUteis",
+          "efeitoSuspensivo": "semEfeitoSuspensivo",
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "CLASSIFICACAO",

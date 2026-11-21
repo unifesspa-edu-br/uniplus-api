@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>A tradução do documento para as declarações do domínio copia valores e posições de origem, sem decidir regra.</summary>
 public sealed class DeclaracoesDoDocumentoLidasTests
@@ -46,8 +47,8 @@ public sealed class DeclaracoesDoDocumentoLidasTests
             "regraRecurso": {
               "regraCodigo": "PRAZO-ANCORADO", "regraVersao": "v2", "prazoValor": 2.5, "prazoUnidade": "diasUteis",
               "atoAncoraCodigo": "RESULTADO_PRELIMINAR", "admiteInstanciaSuperior": true,
-              "suspensividadePrimeiraInstanciaValor": 12, "suspensividadePrimeiraInstanciaUnidade": "horas",
-              "suspensividadeSegundaInstanciaValor": 3, "suspensividadeSegundaInstanciaUnidade": "dias",
+              "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "horas",
+              "efeitoSuspensivo": "semEfeitoSuspensivo", "guardaDaVaga": "ateOResultadoDefinitivo",
               "procedimentosDeRecurso": [
                 { "tipoDeDecisao": "ANALISE_DOCUMENTAL", "regra": { "codigo": "PROCEDIMENTO-CONFERENCIA", "versao": "v1" } },
                 { "tipoDeDecisao": "NOTA_DA_ETAPA", "alvo": { "areaDoEnem": "REDACAO" }, "regra": { "codigo": "PROCEDIMENTO-RECALCULO", "versao": "v1" } },
@@ -166,15 +167,15 @@ public sealed class DeclaracoesDoDocumentoLidasTests
             DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null));
     }
 
-    [Fact(DisplayName = "A regra de recurso copia a regra, o ato âncora e o prazo, cada unidade pelo nome em camelCase")]
+    [Fact(DisplayName = "A regra de recurso copia a regra, o ato cuja publicação inicia o prazo e os parâmetros, cada código como texto")]
     public void RegraDeRecurso_CopiaARegraOAtoAncoraEOPrazo()
     {
         RegraDeRecursoNoDocumento regra = UnicaFase(RegraDeRecurso).RegraDeRecurso!;
 
         regra.Regra.Should().Be(new ReferenciaDeRegraNoDocumento("PRAZO-ANCORADO", "v2"));
         regra.AtoAncoraCodigo.Should().Be("RESULTADO_PRELIMINAR");
-        regra.Prazo.Should().Be(new Domain.ValueObjects.ParametrosRegraPrazoRecurso(
-            2.5m, UnidadePrazo.DiasUteis, 12m, UnidadePrazo.Horas, true, 3m, UnidadePrazo.Dias));
+        regra.Parametros.Should().Be(new ParametrosDeclaradosDoRecurso(
+            new PrazoDeclarado(2.5m, "diasUteis"), true, new PrazoDeclarado(3m, "horas"), "semEfeitoSuspensivo", "ateOResultadoDefinitivo"));
     }
 
     [Fact(DisplayName = "O procedimento de recurso copia a posição, o tipo de decisão, o alvo e a regra, e a regra ausente é referência vazia")]
@@ -188,14 +189,14 @@ public sealed class DeclaracoesDoDocumentoLidasTests
             new ProcedimentoNoDocumento(2, TipoMotivoDeDecisao.NotaDaEtapa, new("item-de-prova", null), new(null, null)));
     }
 
-    [Fact(DisplayName = "A regra de recurso sem parâmetros do prazo fica no valor de partida do tipo, para o domínio recusar")]
-    public void RegraDeRecursoSemPrazo_FicaNoValorDePartida()
+    [Fact(DisplayName = "A regra de recurso sem parâmetros fica sem valor declarado, para o domínio recusar")]
+    public void RegraDeRecursoSemParametros_FicaSemValorDeclarado()
     {
         RegraDeRecursoNoDocumento regra = UnicaFase("""
             { "cronograma": { "fases": [ { "chave": "analise", "faseCanonicaCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO" } } ] } }
             """).RegraDeRecurso!;
 
-        regra.Prazo.Should().Be(new Domain.ValueObjects.ParametrosRegraPrazoRecurso(0m, UnidadePrazo.Nenhuma, null, null, false, null, null));
+        regra.Parametros.Should().Be(new ParametrosDeclaradosDoRecurso(PrazoDeclarado.Ausente, false, PrazoDeclarado.Ausente, null, null));
         regra.Regra.Should().Be(new ReferenciaDeRegraNoDocumento("PRAZO-ANCORADO", null));
         regra.AtoAncoraCodigo.Should().BeNull();
         regra.Procedimentos.Should().BeEmpty();

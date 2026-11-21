@@ -14,7 +14,7 @@ public sealed class CodigosCitadosNoDocumentoTests
     private static readonly IdentificacaoNoDocumento Identificacao =
         new("Processo de Teste", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", null, new("CONTAGEM", "v1"));
 
-    private static readonly ParametrosRegraPrazoRecurso Prazo = new(1m, UnidadePrazo.Horas, null, null, false, null, null);
+    private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "horas"), false, PrazoDeclarado.Ausente, "semEfeitoSuspensivo", null);
 
     private static FaseNoDocumento Fase(int posicao, string faseCanonica, string? unidade = null) =>
         new(posicao, $"fase-{posicao}", new(faseCanonica, unidade, null), new(null, null), new([], false, null, null), [], null);

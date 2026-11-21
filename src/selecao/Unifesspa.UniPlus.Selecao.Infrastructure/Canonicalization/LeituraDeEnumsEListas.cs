@@ -42,9 +42,8 @@ internal static class LeituraDeEnumsEListas
     }
 
     /// <summary>
-    /// Variante opcional de <see cref="Enumeracao{TEnum}"/> — usada pelos pares de
-    /// suspensividade de <c>ParametrosRegraPrazoRecurso</c>, em que
-    /// <see langword="null"/> é valor legítimo ("esta instância não bloqueia").
+    /// Variante opcional de <see cref="Enumeracao{TEnum}"/>: <see langword="null"/> é valor legítimo
+    /// quando o campo não se aplica à configuração.
     /// </summary>
     public static TEnum? EnumeracaoOpcional<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
         where TEnum : struct, Enum

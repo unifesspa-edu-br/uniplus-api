@@ -174,7 +174,7 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int PrecisaoCorteAreaEnem = 8;
 
-    /// <summary>Precisão de <c>ParametrosRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
+    /// <summary>Precisão do valor do prazo de interposição e do prazo da 2ª instância do recurso — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
 
     /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> — <c>numeric(12,2)</c>, monetário.</summary>
