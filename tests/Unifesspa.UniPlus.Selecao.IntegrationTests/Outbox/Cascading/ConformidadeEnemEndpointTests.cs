@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Globalization;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -14,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -65,27 +63,45 @@ public sealed class ConformidadeEnemEndpointTests
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearAsync(api, nameof(Retificar_OfertaSemGrupo_Retorna422ComOItem), ofertaComGrupo: true);
         Guid oferta = processo.DistribuicaoVagas.Single().OfertaCursoOrigemId;
 
-        (await PostAsync(client, $"{processo.Id}/publicacao", NovoCorpoPublicacao(documento.Id)))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        Guid documentoRetificacao;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            // Correção de dados sobre o processo publicado: o grupo perde o código, e o EF
-            // devolve a oferta sem grupo.
-            await db.Database.ExecuteSqlAsync(
-                $"UPDATE selecao.configuracoes_de_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {processo.Id}");
-            DocumentoAPublicar retificacao = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            retificacao.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System)
-                .IsSuccess.Should().BeTrue();
-            await db.DocumentosAPublicar.AddAsync(retificacao);
-            await db.SaveChangesAsync();
-            documentoRetificacao = retificacao.Id;
-        }
-
+        await PubliqueAsync(client, processo.Id, documento.Id);
+        Guid documentoRetificacao = await ArrumeRetificacaoComAOfertaSemGrupoAsync(api, processo.Id);
         HttpResponseMessage response = await PostAsync(client, $"{processo.Id}/retificacoes", NovoCorpoRetificacao(documentoRetificacao));
 
+        await ConfiraConformidadeInsuficienteComAOfertaNoDetalheAsync(response, oferta);
+    }
+
+    private static async Task PubliqueAsync(HttpClient client, Guid processoId, Guid documentoId)
+    {
+        using HttpResponseMessage response = await PostAsync(client, $"{processoId}/publicacao", NovoCorpoPublicacao(documentoId));
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task<Guid> ArrumeRetificacaoComAOfertaSemGrupoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await RemovaOCodigoDoGrupoDeAreaAsync(db, processoId);
+        return await SemeieODocumentoDaRetificacaoAsync(db, processoId);
+    }
+
+    // Correção de dados sobre o processo publicado: o grupo perde o código, e o EF
+    // devolve a oferta sem grupo.
+    private static async Task RemovaOCodigoDoGrupoDeAreaAsync(UniPlusDbContext db, Guid processoId) =>
+        await db.Database.ExecuteSqlAsync(
+            $"UPDATE selecao.configuracoes_de_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {processoId}");
+
+    private static async Task<Guid> SemeieODocumentoDaRetificacaoAsync(UniPlusDbContext db, Guid processoId)
+    {
+        DocumentoAPublicar retificacao = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        retificacao.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System)
+            .IsSuccess.Should().BeTrue();
+        await db.DocumentosAPublicar.AddAsync(retificacao);
+        await db.SaveChangesAsync();
+        return retificacao.Id;
+    }
+
+    private static async Task ConfiraConformidadeInsuficienteComAOfertaNoDetalheAsync(HttpResponseMessage response, Guid oferta)
+    {
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.conformidade_insuficiente");
@@ -133,10 +149,8 @@ public sealed class ConformidadeEnemEndpointTests
         {
             Content = JsonContent.Create(corpo),
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        ApoioDaPublicacaoDoProcessoSeletivo.AppendTestAuth(request);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", ApoioDaPublicacaoDoProcessoSeletivo.MakeIdempotencyKey());
         return await client.SendAsync(request).ConfigureAwait(false);
     }
 }

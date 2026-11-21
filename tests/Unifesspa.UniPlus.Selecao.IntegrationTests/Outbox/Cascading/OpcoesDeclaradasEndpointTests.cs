@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -12,7 +11,6 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// As opções que o processo declara para um fato de fonte do processo, como as edições do ENEM
@@ -33,32 +31,49 @@ public sealed class OpcoesDeclaradasEndpointTests
         Guid processoId = await SemearProcessoDoEnemAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpRequestMessage itens = Requisicao(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens");
-        itens.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        itens.Content = JsonContent.Create(new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
-        HttpResponseMessage semOCampo = await client.SendAsync(itens);
-        semOCampo.StatusCode.Should().Be(HttpStatusCode.NoContent, await semOCampo.Content.ReadAsStringAsync());
+        await DefinaFormularioSemItensAsync(client, processoId);
+        await DeclareAsEdicoesDoEnemAsync(client, processoId);
+        using JsonDocument processo = await LeiaOProcessoAsync(client, processoId);
 
-        using HttpRequestMessage opcoes = Requisicao(HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/fatos/EDICAO_ENEM/opcoes");
-        opcoes.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        opcoes.Content = JsonContent.Create(new
-        {
-            opcoes = new[] { new { codigo = "2026", rotulo = "ENEM 2026" }, new { codigo = "2025", rotulo = "ENEM 2025" } },
-        });
-        HttpResponseMessage declaradas = await client.SendAsync(opcoes);
-        declaradas.StatusCode.Should().Be(HttpStatusCode.NoContent, await declaradas.Content.ReadAsStringAsync());
+        ConfiraQueNenhumFormularioColetaAsEdicoes(processo);
+        ConfiraAsEdicoesDeclaradasNaOrdem(processo);
+    }
 
-        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
-        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
-        HttpResponseMessage lido = await client.SendAsync(get);
-        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
+    private static async Task DefinaFormularioSemItensAsync(HttpClient client, Guid processoId) =>
+        await PutSemConteudoAsync(client, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens",
+            new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
 
-        using JsonDocument corpo = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
-        corpo.RootElement.GetProperty("formularios").EnumerateArray()
+    private static async Task DeclareAsEdicoesDoEnemAsync(HttpClient client, Guid processoId) =>
+        await PutSemConteudoAsync(client, $"/api/selecao/processos-seletivos/{processoId}/fatos/EDICAO_ENEM/opcoes",
+            new { opcoes = new[] { new { codigo = "2026", rotulo = "ENEM 2026" }, new { codigo = "2025", rotulo = "ENEM 2025" } } });
+
+    private static async Task PutSemConteudoAsync(HttpClient client, string rota, object corpo)
+    {
+        using HttpRequestMessage request = Requisicao(HttpMethod.Put, rota);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", ApoioDaPublicacaoDoProcessoSeletivo.MakeIdempotencyKey());
+        request.Content = JsonContent.Create(corpo);
+        HttpResponseMessage resposta = await client.SendAsync(request);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<JsonDocument> LeiaOProcessoAsync(HttpClient client, Guid processoId)
+    {
+        using HttpRequestMessage request = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
+        request.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
+        HttpResponseMessage resposta = await client.SendAsync(request);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+    }
+
+    private static void ConfiraQueNenhumFormularioColetaAsEdicoes(JsonDocument processo) =>
+        processo.RootElement.GetProperty("formularios").EnumerateArray()
             .SelectMany(static f => f.GetProperty("fatosColetados").EnumerateArray())
             .Select(static f => f.GetProperty("fatoCodigo").GetString())
             .Should().NotContain("EDICAO_ENEM");
-        JsonElement edicoes = corpo.RootElement.GetProperty("opcoesDeclaradas").EnumerateArray()
+
+    private static void ConfiraAsEdicoesDeclaradasNaOrdem(JsonDocument processo)
+    {
+        JsonElement edicoes = processo.RootElement.GetProperty("opcoesDeclaradas").EnumerateArray()
             .Single(static o => o.GetProperty("fatoCodigo").GetString() == "EDICAO_ENEM");
         edicoes.GetProperty("opcoes").EnumerateArray()
             .Select(static o => (o.GetProperty("codigo").GetString(), o.GetProperty("rotulo").GetString(), o.GetProperty("ordem").GetInt32()))
@@ -77,8 +92,7 @@ public sealed class OpcoesDeclaradasEndpointTests
     private static HttpRequestMessage Requisicao(HttpMethod metodo, string rota)
     {
         HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        ApoioDaPublicacaoDoProcessoSeletivo.AppendTestAuth(request);
         return request;
     }
 }
