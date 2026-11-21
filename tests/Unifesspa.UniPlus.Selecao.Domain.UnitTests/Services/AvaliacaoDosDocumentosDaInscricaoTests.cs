@@ -145,14 +145,9 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     [Fact(DisplayName = "No OU repetido por membro, o OU traz a repetição; no OU entre exigências repetidas uma a uma, a repetição vem em cada folha")]
     public void Repeticao_DizOndeComeca()
     {
-        DocumentoExigido rgX = Geral(), cnhX = Geral();
-        NoExigencia porMembro = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(rgX, 0).Value!, NoExigencia.CriarFolha(cnhX, 1).Value!],
-            repetePorEntidade: Familia).Value!;
-        DocumentoExigido rgY = Geral(), cnhY = Geral();
-        NoExigencia deTodos = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 1, 1, null, [],
-            [NoExigencia.CriarFolha(rgY, 0, repetePorEntidade: Familia).Value!, NoExigencia.CriarFolha(cnhY, 1, repetePorEntidade: Familia).Value!]).Value!;
+        DocumentoExigido rgX = Geral(), cnhX = Geral(), rgY = Geral(), cnhY = Geral();
+        NoExigencia porMembro = OuRepetidoPorMembro(rgX, cnhX);
+        NoExigencia deTodos = OuDeFolhasRepetidasPorMembro(rgY, cnhY);
 
         List<DocumentoAvaliado> documentos = [.. Avaliar(ComRaizes([porMembro, deTodos]), Respostas(), Membros(("m1", true))).Documentos.Itens];
 
@@ -189,6 +184,16 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
         derivados.Should().Contain("FAIXA_ETARIA", "sem ela a consulta não decide se o grupo aparece, e a exigência por membro fica sem resposta");
     }
+
+    private static NoExigencia OuRepetidoPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
+        NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(primeiro, 0).Value!, NoExigencia.CriarFolha(segundo, 1).Value!],
+            repetePorEntidade: Familia).Value!;
+
+    private static NoExigencia OuDeFolhasRepetidasPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
+        NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 1, 1, null, [],
+            [NoExigencia.CriarFolha(primeiro, 0, repetePorEntidade: Familia).Value!, NoExigencia.CriarFolha(segundo, 1, repetePorEntidade: Familia).Value!]).Value!;
 
     private static Dictionary<Guid, IReadOnlyList<GrupoDaArvore>> GruposPorDocumento(ConfiguracaoAvaliavel configuracao) =>
         Avaliar(configuracao, Respostas()).Documentos.Itens.ToDictionary(static d => d.Documento.Id, static d => d.Grupos);
@@ -328,10 +333,11 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     }
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
-    private static ConfiguracaoAvaliavel ComRaizes(IReadOnlyList<NoExigencia> raizes, PredicadoDnf? exibicaoDaFamilia = null)
+    private static DefinicaoFormulario DefinicaoDoFormularioDaInscricao(PredicadoDnf? exibicaoDaFamilia)
     {
         string etapa = DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao);
-        DefinicaoFormulario definicao = new(
+
+        return new DefinicaoFormulario(
             [new DefinicaoEtapa(
                 etapa,
                 null,
@@ -340,9 +346,12 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
                     Familia, exibicaoDaFamilia, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])])])],
             [],
             []);
+    }
 
-        return new ConfiguracaoAvaliavel(
-            definicao,
+    /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
+    private static ConfiguracaoAvaliavel ComRaizes(IReadOnlyList<NoExigencia> raizes, PredicadoDnf? exibicaoDaFamilia = null) =>
+        new(
+            DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             ArvoreExigenciasCongelada.DeGrafoReidratado(raizes),
             [Campo(BaixaRenda), Campo(PediuFator)],
@@ -350,7 +359,6 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             [],
             [FaseDaInscricao, FaseDaHabilitacao],
             [Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao), Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);
-    }
 
     /// <param name="etapa">A seção do campo; o subitem de grupo segue a do grupo, e não tem a sua.</param>
     private static FatoColetado Campo(string fato, string? etapa = Secao) =>

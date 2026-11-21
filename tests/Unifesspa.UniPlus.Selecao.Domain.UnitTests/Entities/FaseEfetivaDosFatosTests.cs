@@ -75,19 +75,19 @@ public sealed class FaseEfetivaDosFatosTests
         FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
         Result cronograma = processo.DefinirCronogramaFases([inscricao, isencao, habilitacao], []);
         cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
-        foreach ((FinalidadeFormulario finalidade, FaseCronograma fase, string fato, GrupoColetado[] grupos) in new[]
-        {
-            (FinalidadeFormulario.Inscricao, inscricao, "TEM_RENDA", Array.Empty<GrupoColetado>()),
-            (FinalidadeFormulario.IsencaoTaxa, isencao, "BOLSISTA", [Grupo("MEMBRO_BOLSISTA")]),
-            (FinalidadeFormulario.Habilitacao, habilitacao, "COMPROVANTE_RENDA", [Grupo("MEMBRO_RURAL")]),
-        })
-        {
-            processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
-            Result itens = processo.DefinirFatosColetados(finalidade, [Item(fato)], grupos);
-            itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
-        }
+        DefinirFormularioComUmFato(processo, FinalidadeFormulario.Inscricao, inscricao, "TEM_RENDA", []);
+        DefinirFormularioComUmFato(processo, FinalidadeFormulario.IsencaoTaxa, isencao, "BOLSISTA", [Grupo("MEMBRO_BOLSISTA")]);
+        DefinirFormularioComUmFato(processo, FinalidadeFormulario.Habilitacao, habilitacao, "COMPROVANTE_RENDA", [Grupo("MEMBRO_RURAL")]);
 
         return (processo, inscricao, isencao, habilitacao);
+    }
+
+    private static void DefinirFormularioComUmFato(
+        ProcessoSeletivo processo, FinalidadeFormulario finalidade, FaseCronograma fase, string fato, GrupoColetado[] grupos)
+    {
+        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+        Result itens = processo.DefinirFatosColetados(finalidade, [Item(fato)], grupos);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
     /// <summary>Inscrição e isenção respondidas na mesma fase, cada uma com o fato que só ela coleta.</summary>
@@ -160,17 +160,23 @@ public sealed class FaseEfetivaDosFatosTests
             .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
     }
 
+    private static GrupoColetado GrupoDeMembroRural(bool grupoObrigatorio, bool campoObrigatorio)
+    {
+        FatoColetado campo = FatoColetado.Criar(
+            "MEMBRO_RURAL", 0, "MEMBRO_RURAL", TipoRenderizacao.Booleano, campoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+
+        return GrupoColetado.Criar(
+            "GRUPO_MEMBRO_RURAL", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null,
+            grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, [campo]).Value!;
+    }
+
     [Theory(DisplayName = "Agregado citado por regra viva exige o grupo e o campo de membro obrigatórios sempre")]
     [InlineData(false, true, "grupo 'GRUPO_MEMBRO_RURAL'")]
     [InlineData(true, false, "campo 'MEMBRO_RURAL'")]
     public void PendenciaDeGrupoQueAlimentaAgregado_GrupoOuCampoOpcional_Recusa(bool grupoObrigatorio, bool campoObrigatorio, string recusado)
     {
         (ProcessoSeletivo processo, _, _, _) = Processo();
-        FatoColetado campo = FatoColetado.Criar(
-            "MEMBRO_RURAL", 0, "MEMBRO_RURAL", TipoRenderizacao.Booleano, campoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        GrupoColetado grupo = GrupoColetado.Criar(
-            "GRUPO_MEMBRO_RURAL", 1, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null,
-            grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, [campo]).Value!;
+        GrupoColetado grupo = GrupoDeMembroRural(grupoObrigatorio, campoObrigatorio);
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA")], [grupo])
             .IsSuccess.Should().BeTrue();
         PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(processo.Declaracao(), Agregados).Should().BeNull("nenhuma regra cita o agregado");
