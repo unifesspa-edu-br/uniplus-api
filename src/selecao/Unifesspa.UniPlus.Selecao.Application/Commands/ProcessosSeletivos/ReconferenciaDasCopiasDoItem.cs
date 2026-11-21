@@ -76,12 +76,7 @@ internal static class ReconferenciaDasCopiasDoItem
     }
 
     private static Dictionary<string, CopiaDoItemNoCatalogo> CopiasDoCatalogo(IReadOnlyList<FatoCandidatoView> catalogoDeFatos) =>
-        catalogoDeFatos.ToDictionary(
-            static f => f.Codigo,
-            static f => new CopiaDoItemNoCatalogo(
-                VocabularioDeFatos.OrigemValores(f), f.Formato, f.ClassificacaoProtecao, f.HipoteseLegal, f.FinalidadeTratamento,
-                f.Descricao, f.ComponenteExibicao),
-            StringComparer.Ordinal);
+        catalogoDeFatos.ToDictionary(static f => f.Codigo, VocabularioDeFatos.CopiaNoCatalogo, StringComparer.Ordinal);
 
     // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
     // recusa são montados aqui, no mesmo percurso das demais.

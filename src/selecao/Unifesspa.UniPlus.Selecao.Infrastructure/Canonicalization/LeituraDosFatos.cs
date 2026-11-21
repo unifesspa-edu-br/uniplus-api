@@ -44,20 +44,18 @@ internal static class LeituraDosFatos
 
         const string path = "documentosExigidos.referenciaTemporalFatos";
         leitor.ExigirChaves(json, path, "tipo", "data", "faseId");
-
         string tipoCodigo = leitor.TextoNaoVazio(json, "tipo", path);
         DateOnly? data = leitor.DataOpcional(json, "data", path);
         Guid? faseId = leitor.IdentificadorOpcional(json, "faseId", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+        return leitor.Falhou ? null : CriarReferenciaTemporal(leitor, tipoCodigo, data, faseId);
+    }
 
-        // FromCodigo mapeia um token não reconhecido para o sentinela Nenhuma — e Criar já
-        // o rejeita com um DomainError nomeado (ReferenciaTemporalFatos.TipoObrigatorio),
-        // sem precisar de uma checagem de "código desconhecido" própria aqui.
-        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(
-            ReferenciaTipoCodigo.FromCodigo(tipoCodigo), data, faseId);
+    // FromCodigo mapeia um token não reconhecido para o sentinela Nenhuma — e Criar já o rejeita com
+    // um DomainError nomeado (ReferenciaTemporalFatos.TipoObrigatorio), sem precisar de uma checagem
+    // de "código desconhecido" própria aqui.
+    private static ReferenciaTemporalFatos? CriarReferenciaTemporal(LeitorEnvelope leitor, string tipoCodigo, DateOnly? data, Guid? faseId)
+    {
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(ReferenciaTipoCodigo.FromCodigo(tipoCodigo), data, faseId);
         return resultado.IsFailure ? leitor.Propagar<ReferenciaTemporalFatos>(resultado.Error!) : resultado.Value;
     }
 
@@ -104,61 +102,67 @@ internal static class LeituraDosFatos
         return fatos;
     }
 
+    /// <summary>
+    /// A unicidade do código do fato é reconferida pela conferência do bloco de fatos mais adiante:
+    /// um envelope adulterado com fato duplicado sobrescreve a entrada de <paramref name="valoresSelecionaveis"/>
+    /// aqui e é recusado lá.
+    /// </summary>
     private static FatoColetado? LerFatoColetado(
         LeitorEnvelope leitor,
         JsonObject item,
         string path,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
     {
-        leitor.ExigirChaves(item, path, ChavesDoFatoColetado);
-
-        DeclaracaoDoFato d = LerDeclaracao(leitor, item, path);
-        if (leitor.Falhou)
+        if (LerDeclaracaoNoVocabulario(leitor, item, path) is not { } d
+            || LerComponentes(leitor, item, path, d.TipoRenderizacao!.Value, d.Finalidade) is not { } c)
         {
             return null;
         }
 
-        if (VocabularioForaDoCatalogo(d, path) is { } mensagem)
-        {
-            return leitor.Recusar<FatoColetado?>(mensagem);
-        }
-
-        TipoRenderizacao tipoRenderizacao = d.TipoRenderizacao!.Value;
-        ComponentesDoFato? c = LerComponentes(leitor, item, path, tipoRenderizacao, d.Finalidade);
-        if (c is null)
-        {
-            return null;
-        }
-
-        Result<FatoColetado> fato = CriarFato(d, tipoRenderizacao, c);
+        Result<FatoColetado> fato = CriarFato(d, c);
         if (fato.IsFailure)
         {
             return leitor.Propagar<FatoColetado?>(fato.Error!);
         }
 
-        // A unicidade do código do fato é reconferida pela conferência do bloco de fatos mais adiante:
-        // um envelope adulterado com fato duplicado sobrescreve a entrada aqui e é recusado lá.
         valoresSelecionaveis[d.FatoCodigo] = c.ValoresSelecionaveis;
         return fato.Value;
     }
 
-    private static Result<FatoColetado> CriarFato(DeclaracaoDoFato d, TipoRenderizacao tipoRenderizacao, ComponentesDoFato c) =>
+    private static DeclaracaoDoFato? LerDeclaracaoNoVocabulario(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(item, path, ChavesDoFatoColetado);
+        DeclaracaoDoFato d = LerDeclaracao(leitor, item, path);
+        return leitor.Falhou
+            ? null
+            : VocabularioForaDoCatalogo(d, path) is { } mensagem ? leitor.Recusar<DeclaracaoDoFato?>(mensagem) : d;
+    }
+
+    private static Result<FatoColetado> CriarFato(DeclaracaoDoFato d, ComponentesDoFato c) =>
         FatoColetado.Criar(
-            d.FatoCodigo, d.Ordem, d.Rotulo, tipoRenderizacao, c.Obrigatoriedade, c.Precondicoes, d.ClassificacaoProtecao, d.HipoteseLegal, d.FinalidadeTratamento, d.Descricao, d.OrigemValores, d.EtapaCodigo,
-            d.Finalidade, d.Formato, d.Ajuda, d.PedirConfirmacao, c.Restricoes, c.Impedimento, d.ComponenteExibicao);
+            d.FatoCodigo,
+            d.Ordem,
+            d.EtapaCodigo,
+            new ApresentacaoDoCampo(d.Rotulo, d.TipoRenderizacao!.Value, d.Ajuda, d.PedirConfirmacao),
+            c.Regras,
+            d.Copia,
+            d.Finalidade);
 
     private static ComponentesDoFato? LerComponentes(
         LeitorEnvelope leitor, JsonObject item, string path, TipoRenderizacao tipoRenderizacao, FinalidadeFormulario finalidade)
     {
-        List<CondicaoPrecondicaoFato>? precondicoes = LerPrecondicoes(leitor, item, path);
-        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = precondicoes is null
+        PredicadoDnf? exibicao = LerPrecondicoes(leitor, item, path);
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = leitor.Falhou
             ? null
             : LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, tipoRenderizacao);
-        if (leitor.Falhou || precondicoes is null)
-        {
-            return null;
-        }
+        return leitor.Falhou || LerRegrasDoItem(leitor, item, path, exibicao, finalidade) is not { } regras
+            ? null
+            : new ComponentesDoFato(regras, valoresDoFato);
+    }
 
+    private static RegrasDoCampo? LerRegrasDoItem(
+        LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, FinalidadeFormulario finalidade)
+    {
         if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
             || LeituraDasRestricoes.LerRestricoes(leitor, item, path) is not { } restricoes)
         {
@@ -166,69 +170,37 @@ internal static class LeituraDosFatos
         }
 
         Impedimento? impedimento = LeituraDasCondicoes.LerImpedimento(leitor, item, path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
 
         // A forma do item não conhece a finalidade; o agregado recusa o impedimento fora da inscrição ao
         // definir os itens, e o decoder tem de recusar o mesmo.
-        return Impedimento.ConferirFinalidade(finalidade, [impedimento]) is [{ } foraDaInscricao, ..]
-            ? leitor.Recusar<ComponentesDoFato?>($"'{path}.impedimento': {foraDaInscricao.Error.Message}")
-            : new ComponentesDoFato(precondicoes, valoresDoFato, obrigatoriedade, restricoes, impedimento);
+        return leitor.Falhou ? null : Impedimento.ConferirFinalidade(finalidade, [impedimento]) is [{ } foraDaInscricao, ..]
+            ? leitor.Recusar<RegrasDoCampo?>($"'{path}.impedimento': {foraDaInscricao.Error.Message}")
+            : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }
 
-    private sealed record ComponentesDoFato(
-        List<CondicaoPrecondicaoFato> Precondicoes,
-        IReadOnlyList<ValorDominioDeclaradoCongelado>? ValoresSelecionaveis,
-        Obrigatoriedade Obrigatoriedade,
-        List<RestricaoValor> Restricoes,
-        Impedimento? Impedimento);
+    private sealed record ComponentesDoFato(RegrasDoCampo Regras, IReadOnlyList<ValorDominioDeclaradoCongelado>? ValoresSelecionaveis);
 
-    private static string? VocabularioForaDoCatalogo(DeclaracaoDoFato d, string path)
-    {
-        if (!DominioDoCatalogo.HipotesesLegais.Contains(d.HipoteseLegal))
-        {
-            return $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais.";
-        }
-
-        if (d.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim()))
-        {
-            return $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio.";
-        }
-
-        if (d.Finalidade == FinalidadeFormulario.Nenhuma)
-        {
-            return $"'{path}.finalidade' fora do vocabulário de finalidades.";
-        }
-
-        return d.TipoRenderizacao is null
+    private static string? VocabularioForaDoCatalogo(DeclaracaoDoFato d, string path) =>
+        !DominioDoCatalogo.HipotesesLegais.Contains(d.Copia.HipoteseLegal)
+            ? $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais."
+        : d.Copia.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim())
+            ? $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio."
+        : d.Finalidade == FinalidadeFormulario.Nenhuma
+            ? $"'{path}.finalidade' fora do vocabulário de finalidades."
+        : d.TipoRenderizacao is null
             ? $"'{path}.tipoRenderizacao' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
             : null;
-    }
 
-    private static List<CondicaoPrecondicaoFato>? LerPrecondicoes(LeitorEnvelope leitor, JsonObject item, string path)
+    private static PredicadoDnf? LerPrecondicoes(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        IReadOnlyList<LinhaDoPredicado> condicoes = LeituraDasCondicoes.LerDnf(leitor, item, "precondicao", path);
+        IReadOnlyList<LinhaDoPredicado> linhas = LeituraDasCondicoes.LerDnf(leitor, item, "precondicao", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        List<CondicaoPrecondicaoFato> precondicoes = [];
-        foreach ((int clausula, string fato, Operador operador, JsonElement valor) in condicoes)
-        {
-            Result<CondicaoPrecondicaoFato> condicao = CondicaoPrecondicaoFato.Criar(clausula, fato, operador, valor);
-            if (condicao.IsFailure)
-            {
-                leitor.Propagar<CondicaoPrecondicaoFato>(condicao.Error!);
-                return null;
-            }
-
-            precondicoes.Add(condicao.Value!);
-        }
-
-        return precondicoes;
+        Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(linhas);
+        return predicado.IsFailure ? leitor.Propagar<PredicadoDnf?>(predicado.Error!) : predicado.Value;
     }
 
     private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
@@ -241,14 +213,17 @@ internal static class LeituraDosFatos
         TipoRenderizacao = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoRenderizacao", path)),
         Ajuda = leitor.TextoOpcional(item, "ajuda", path, LimitesDoEnvelope.AjudaDoCampo),
         PedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path),
-        OrigemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path),
-        Formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token),
-        ClassificacaoProtecao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token),
-        HipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),
-        FinalidadeTratamento = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento),
-        Descricao = leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato),
-        ComponenteExibicao = leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao),
+        Copia = LerCopiaDoCatalogo(leitor, item, path),
     };
+
+    private static CopiaDoItemNoCatalogo LerCopiaDoCatalogo(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path),
+        leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token),
+        leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token),
+        leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),
+        leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento),
+        leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato),
+        leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao));
 
     private static TipoRenderizacao? TipoDoCodigo(string codigo) =>
         CatalogoDe<TipoRenderizacao>.TentarObter(codigo, out TipoRenderizacao tipo) ? tipo : null;
@@ -271,19 +246,6 @@ internal static class LeituraDosFatos
 
         public bool PedirConfirmacao { get; init; }
 
-        public OrigemValoresColeta OrigemValores { get; init; }
-
-        public string? Formato { get; init; }
-
-        public string ClassificacaoProtecao { get; init; } = string.Empty;
-
-        public string HipoteseLegal { get; init; } = string.Empty;
-
-        public string FinalidadeTratamento { get; init; } = string.Empty;
-
-        public string Descricao { get; init; } = string.Empty;
-
-        public string? ComponenteExibicao { get; init; }
+        public required CopiaDoItemNoCatalogo Copia { get; init; }
     }
-
 }

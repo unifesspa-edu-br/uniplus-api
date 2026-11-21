@@ -58,23 +58,28 @@ public sealed class CondicaoPrecondicaoFato : EntityBase
                 "O ordinal da cláusula não pode ser negativo."));
         }
 
-        Result<CondicaoDnf> condicaoResult = CondicaoDnf.Criar(fato, operador, valor);
-        if (condicaoResult.IsFailure)
-        {
-            return Result<CondicaoPrecondicaoFato>.Failure(condicaoResult.Error!);
-        }
-
-        CondicaoDnf condicao = condicaoResult.Value!;
-        return Result<CondicaoPrecondicaoFato>.Success(new CondicaoPrecondicaoFato
-        {
-            Clausula = clausula,
-            Fato = condicao.Fato,
-            Operador = condicao.Operador,
-            Valor = condicao.Valor,
-        });
+        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
+        return condicao.IsFailure
+            ? Result<CondicaoPrecondicaoFato>.Failure(condicao.Error!)
+            : Result<CondicaoPrecondicaoFato>.Success(DaClausula(clausula, condicao.Value!, Guid.Empty));
     }
 
-    internal void VincularFatoColetado(Guid fatoColetadoId) => FatoColetadoId = fatoColetadoId;
+    /// <summary>
+    /// As condições que representam a exibição de um fato coletado, uma linha por condição, com o
+    /// ordinal da cláusula na ordem do predicado. A exibição já tem a forma das condições provada.
+    /// </summary>
+    internal static IEnumerable<CondicaoPrecondicaoFato> DaExibicao(PredicadoDnf? exibicao, Guid fatoColetadoId) =>
+        (exibicao?.Clausulas ?? []).SelectMany(
+            (clausula, indice) => clausula.Condicoes.Select(condicao => DaClausula(indice, condicao, fatoColetadoId)));
+
+    private static CondicaoPrecondicaoFato DaClausula(int clausula, CondicaoDnf condicao, Guid fatoColetadoId) => new()
+    {
+        FatoColetadoId = fatoColetadoId,
+        Clausula = clausula,
+        Fato = condicao.Fato,
+        Operador = condicao.Operador,
+        Valor = condicao.Valor,
+    };
 
     /// <summary>Reconstrói o VO já validado — a forma foi provada em <see cref="Criar"/>.</summary>
     internal CondicaoDnf ParaCondicaoDnf() => CondicaoDnf.Criar(Fato, Operador, Valor).Value!;

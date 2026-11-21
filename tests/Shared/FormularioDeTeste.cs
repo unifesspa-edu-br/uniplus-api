@@ -201,9 +201,12 @@ internal static class FormularioDeTeste
     /// processo é baseada em ENEM; as opções são as edições declaradas pelo processo.
     /// </summary>
     public static FatoColetado CampoDaEdicaoDoEnem(int ordem) =>
-        FatoColetado.Criar(
-            EdicaoDoEnem.Fato, ordem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-            "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso).Value!;
+        FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, ordem)
+            .ComRotulo("Qual edição do ENEM você vai usar?")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComOrigem(Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso)
+            .Construir();
 
     /// <summary>
     /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): cria o

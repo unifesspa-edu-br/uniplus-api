@@ -84,7 +84,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// <summary>
     /// De onde vêm as opções do campo no processo (ADR-0136). Copiada da fonte dos valores do
     /// fato no catálogo quando a coleta é definida e recopiada ao publicar, enquanto nenhuma versão
-    /// publicada coletou o fato (<see cref="RecopiarDoCatalogo"/>); depois de congelada, a cópia não
+    /// publicada coletou o fato (<see cref="CopiarDoCatalogo"/>); depois de congelada, a cópia não
     /// muda mais.
     /// </summary>
     public OrigemValoresColeta OrigemValores { get; private set; }
@@ -141,79 +141,49 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
     private FatoColetado() { }
 
+    private FatoColetado(
+        string fatoCodigo,
+        int ordem,
+        string? etapaCodigo,
+        ApresentacaoDoCampo apresentacao,
+        RegrasDoCampo regras,
+        CopiaDoItemNoCatalogo copia,
+        FinalidadeFormulario finalidade)
+    {
+        FatoCodigo = (fatoCodigo ?? string.Empty).Trim();
+        Ordem = ordem;
+        EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC);
+
+        // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
+        Finalidade = finalidade;
+        AdotarApresentacao(apresentacao.NaFormaGravada());
+        AdotarRegras(regras.ComRestricoesNaOrdemDoTipo());
+        CopiarDoCatalogo(copia);
+    }
+
     /// <summary>
-    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — os
-    /// quatro campos e a autorreferência de pré-condição não dependem uns dos outros. A
+    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — a forma do
+    /// item, a cópia do catálogo e a autorreferência de pré-condição não dependem umas das outras. A
     /// mensagem de autorreferência não ecoa o código do fato (ADR-0023).
     /// </summary>
+    /// <exception cref="ArgumentException">A cópia do catálogo vem sem hipótese legal, finalidade do tratamento ou descrição.</exception>
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
         int ordem,
-        string rotulo,
-        TipoRenderizacao tipoRenderizacao,
-        Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
-        string classificacaoProtecao,
-        string hipoteseLegal,
-        string finalidadeTratamento,
-        string descricao,
-        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
-        string? etapaCodigo = null,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
-        string? formato = null,
-        string? ajuda = null,
-        bool pedirConfirmacao = false,
-        IReadOnlyList<RestricaoValor>? restricoes = null,
-        Impedimento? impedimento = null,
-        string? componenteExibicao = null)
+        string? etapaCodigo,
+        ApresentacaoDoCampo apresentacao,
+        RegrasDoCampo regras,
+        CopiaDoItemNoCatalogo copia,
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
     {
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
-        ArgumentException.ThrowIfNullOrWhiteSpace(hipoteseLegal);
-        ArgumentException.ThrowIfNullOrWhiteSpace(finalidadeTratamento);
-        ArgumentException.ThrowIfNullOrWhiteSpace(descricao);
-        IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
+        ArgumentNullException.ThrowIfNull(apresentacao);
+        ArgumentNullException.ThrowIfNull(regras);
+        ExigirCopiaCompleta(copia);
 
-        IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
-        ApresentacaoDoCampo apresentacao = new(rotulo, tipoRenderizacao, ajuda, pedirConfirmacao);
-        RegrasDoCampo regras = new(PredicadoDeExibicao(condicoes), obrigatoriedade, restricoesDoItem, impedimento);
-        List<FieldError> erros = ConferirFormaEClassificacao(fatoCodigo, ordem, apresentacao, formato, regras, classificacaoProtecao, componenteExibicao);
-
-        if (erros.Count > 0)
-        {
-            return Result<FatoColetado>.ValidationFailure(erros);
-        }
-
-        ApresentacaoDoCampo gravada = apresentacao.NaFormaGravada();
-        FatoColetado fato = new()
-        {
-            FatoCodigo = (fatoCodigo ?? string.Empty).Trim(),
-            Ordem = ordem,
-            Rotulo = gravada.Rotulo,
-            TipoRenderizacao = tipoRenderizacao,
-            Obrigatoriedade = obrigatoriedade,
-            Ajuda = gravada.Ajuda,
-            PedirConfirmacao = pedirConfirmacao,
-            Restricoes = regras.ComRestricoesNaOrdemDoTipo().Restricoes,
-            Impedimento = impedimento,
-            OrigemValores = origemValores,
-            Formato = FormaDoItem.TextoOpcional(formato),
-            ClassificacaoProtecao = classificacaoProtecao,
-            HipoteseLegal = hipoteseLegal.Trim(),
-            FinalidadeTratamento = FinalidadeNormalizada(finalidadeTratamento),
-            Descricao = DescricaoNormalizada(descricao),
-            ComponenteExibicao = FormaDoItem.TextoOpcional(componenteExibicao),
-            EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
-
-            // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
-            Finalidade = finalidade,
-        };
-        foreach (CondicaoPrecondicaoFato precondicao in condicoes)
-        {
-            precondicao.VincularFatoColetado(fato.Id);
-            fato._precondicoes.Add(precondicao);
-        }
-
-        return Result<FatoColetado>.Success(fato);
+        List<FieldError> erros = ConferirFormaECopia(fatoCodigo, ordem, apresentacao, regras, copia);
+        return erros.Count > 0
+            ? Result<FatoColetado>.ValidationFailure(erros)
+            : Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, etapaCodigo, apresentacao, regras, copia, finalidade));
     }
 
     /// <summary>
@@ -222,64 +192,62 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// </summary>
     internal Result ConferirCopiaDoCatalogo(CopiaDoItemNoCatalogo copia)
     {
+        ExigirCopiaCompleta(copia);
+
+        // A mesma forma e o mesmo vocabulário que Criar confere.
+        List<FieldError> erros = ConferirFormaECopia(FatoCodigo, Ordem, Apresentacao, Regras, copia);
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
+
+    private static void ExigirCopiaCompleta(CopiaDoItemNoCatalogo copia)
+    {
+        ArgumentNullException.ThrowIfNull(copia);
         if (copia.Violacao() is { } violacao)
         {
             throw new ArgumentException(violacao, nameof(copia));
         }
-
-        // A mesma forma e o mesmo vocabulário que Criar confere.
-        List<FieldError> erros = ConferirFormaEClassificacao(
-            FatoCodigo, Ordem, Apresentacao(), copia.Formato, Regras(), copia.ClassificacaoProtecao, copia.ComponenteExibicao);
-        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
     /// <summary>
-    /// A forma do item e o vocabulário fechado da classificação de proteção, uma só para a criação
-    /// e para a cópia refeita do catálogo.
+    /// A forma do item e o vocabulário fechado da cópia do catálogo, uma só para a criação e para a
+    /// cópia refeita.
     /// </summary>
-    private static List<FieldError> ConferirFormaEClassificacao(
-        string fatoCodigo,
-        int ordem,
-        ApresentacaoDoCampo apresentacao,
-        string? formato,
-        RegrasDoCampo regras,
-        string classificacaoProtecao,
-        string? componenteExibicao)
+    private static List<FieldError> ConferirFormaECopia(
+        string fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, RegrasDoCampo regras, CopiaDoItemNoCatalogo copia) =>
+        [.. FormaDoItem.Conferir(fatoCodigo, ordem, apresentacao, copia.Formato, regras), .. copia.ConferirVocabulario()];
+
+    private void AdotarApresentacao(ApresentacaoDoCampo apresentacao)
     {
-        List<FieldError> erros = FormaDoItem.Conferir(fatoCodigo, ordem, apresentacao, formato, regras);
-        if (!ClassificacoesDeProtecao.TokensCanonicos.Contains(classificacaoProtecao))
-        {
-            // A Seleção só copia o valor já validado pelo catálogo, no vocabulário fechado
-            // do Kernel.
-            erros.Add(new("classificacaoProtecao", new DomainError(
-                FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
-                "Classificação de proteção de dados fora do vocabulário fechado.")));
-        }
+        Rotulo = apresentacao.Rotulo;
+        TipoRenderizacao = apresentacao.TipoRenderizacao;
+        Ajuda = apresentacao.Ajuda;
+        PedirConfirmacao = apresentacao.PedirConfirmacao;
+    }
 
-        if (FormaDoItem.TextoOpcional(componenteExibicao) is { } componente && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componente))
-        {
-            erros.Add(new("componenteExibicao", new DomainError(
-                FatoColetadoErrorCodes.ComponenteExibicaoInvalido,
-                "Componente de exibição fora do vocabulário fechado.")));
-        }
-
-        return erros;
+    private void AdotarRegras(RegrasDoCampo regras)
+    {
+        Obrigatoriedade = regras.Obrigatoriedade;
+        Restricoes = regras.Restricoes;
+        Impedimento = regras.Impedimento;
+        _precondicoes.AddRange(CondicaoPrecondicaoFato.DaExibicao(regras.Exibicao, Id));
     }
 
     /// <summary>
     /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato, proteção
-    /// (classificação, hipótese legal e finalidade), descrição e componente de exibição. O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
-    /// cópia já foi conferida por <see cref="ConferirCopiaDoCatalogo"/>.
+    /// (classificação, hipótese legal e finalidade), descrição e componente de exibição, na forma em
+    /// que o envelope as congela. O rótulo, o tipo de campo e as regras do item são do processo e não
+    /// mudam aqui; a cópia já foi conferida por <see cref="ConferirCopiaDoCatalogo"/>.
     /// </summary>
-    internal void RecopiarDoCatalogo(CopiaDoItemNoCatalogo copia)
+    internal void CopiarDoCatalogo(CopiaDoItemNoCatalogo copia)
     {
-        OrigemValores = copia.OrigemValores;
-        Formato = FormaDoItem.TextoOpcional(copia.Formato);
-        ClassificacaoProtecao = copia.ClassificacaoProtecao;
-        HipoteseLegal = copia.HipoteseLegal.Trim();
-        FinalidadeTratamento = FinalidadeNormalizada(copia.FinalidadeTratamento);
-        Descricao = DescricaoNormalizada(copia.Descricao);
-        ComponenteExibicao = FormaDoItem.TextoOpcional(copia.ComponenteExibicao);
+        CopiaDoItemNoCatalogo congelada = copia.NaFormaCongelada();
+        OrigemValores = congelada.OrigemValores;
+        Formato = congelada.Formato;
+        ClassificacaoProtecao = congelada.ClassificacaoProtecao;
+        HipoteseLegal = congelada.HipoteseLegal;
+        FinalidadeTratamento = congelada.FinalidadeTratamento;
+        Descricao = congelada.Descricao;
+        ComponenteExibicao = congelada.ComponenteExibicao;
     }
 
     /// <summary>
@@ -288,17 +256,10 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// </summary>
     internal void RecopiarApresentacaoDoCatalogo(CopiaDoItemNoCatalogo copia)
     {
-        Descricao = DescricaoNormalizada(copia.Descricao);
-        ComponenteExibicao = FormaDoItem.TextoOpcional(copia.ComponenteExibicao);
+        CopiaDoItemNoCatalogo congelada = copia.NaFormaCongelada();
+        Descricao = congelada.Descricao;
+        ComponenteExibicao = congelada.ComponenteExibicao;
     }
-
-    /// <summary>A descrição na forma em que o envelope a congela (NFC, sem espaço nas pontas).</summary>
-    private static string DescricaoNormalizada(string descricao) =>
-        descricao.Trim().Normalize(System.Text.NormalizationForm.FormC);
-
-    /// <summary>A finalidade na forma em que o envelope a congela (NFC, sem espaço nas pontas).</summary>
-    private static string FinalidadeNormalizada(string finalidade) =>
-        finalidade.Trim().Normalize(System.Text.NormalizationForm.FormC);
 
     /// <summary>O item no que o grafo do formulário confere.</summary>
     public ItemDoGrafo ParaGrafo() => new(FatoCodigo, Ordem, EtapaCodigo, FatosCitados);
@@ -311,11 +272,13 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// impedimento, sem repetição. O impedimento cita a resposta do próprio campo, que não é
     /// dependência: só as respostas anteriores entram.
     /// </summary>
-    public IReadOnlyCollection<string> FatosCitados => Regras().FatosCitadosPor(FatoCodigo);
+    public IReadOnlyCollection<string> FatosCitados => Regras.FatosCitadosPor(FatoCodigo);
 
-    private ApresentacaoDoCampo Apresentacao() => new(Rotulo, TipoRenderizacao, Ajuda, PedirConfirmacao);
+    /// <summary>Como o campo se apresenta ao candidato, pelo rótulo, tipo de campo, ajuda e pedido de confirmação que o item guarda.</summary>
+    public ApresentacaoDoCampo Apresentacao => new(Rotulo, TipoRenderizacao, Ajuda, PedirConfirmacao);
 
-    private RegrasDoCampo Regras() => new(ParaPredicado(), Obrigatoriedade, Restricoes, Impedimento);
+    /// <summary>As regras do campo, pela exibição, obrigatoriedade, restrições e impedimento que o item guarda.</summary>
+    public RegrasDoCampo Regras => new(Exibicao, Obrigatoriedade, Restricoes, Impedimento);
 
     /// <summary>
     /// As condições das regras do item, para os vínculos e as referências a valor do processo: a
@@ -346,21 +309,16 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
     internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 
-    /// <summary>A pré-condição de exibição na forma avaliável; nula quando o item sempre aparece.</summary>
-    public PredicadoDnf? Exibicao => ParaPredicado();
-
     /// <summary>
-    /// O predicado de pré-condição na forma avaliável, ou <see langword="null"/> quando o fato é
+    /// A pré-condição de exibição na forma avaliável, ou <see langword="null"/> quando o fato é
     /// coletado incondicionalmente. Um predicado sem cláusula nenhuma avaliaria falso — que é o
     /// oposto de "sem pré-condição" —, então a ausência é representada pelo nulo, nunca por um
     /// predicado vazio.
     /// </summary>
-    internal PredicadoDnf? ParaPredicado() => PredicadoDeExibicao(_precondicoes);
-
-    private static PredicadoDnf? PredicadoDeExibicao(IReadOnlyList<CondicaoPrecondicaoFato> condicoes) =>
-        condicoes.Count == 0
+    public PredicadoDnf? Exibicao =>
+        _precondicoes.Count == 0
             ? null
-            : PredicadoDnf.CriarDeCondicoesAgrupadas([.. condicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
+            : PredicadoDnf.CriarDeCondicoesAgrupadas([.. _precondicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
 }
 
 /// <summary>Códigos de erro de <see cref="FatoColetado"/>.</summary>

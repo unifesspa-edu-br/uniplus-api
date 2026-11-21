@@ -47,12 +47,17 @@ internal static class VocabularioDeFatos
         {
             { Dominio: DominioBooleano } => TipoDominioFato.Booleano,
             { Dominio: DominioNumerico } => TipoDominioFato.Numerico,
-            { Dominio: DominioCategorico, FonteValores: FonteGlobal or FonteTiposDeficiencia } => TipoDominioFato.CategoricoEstatico,
-            { Dominio: DominioCategorico, FonteValores: FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteGeoUf or FonteGeoMunicipio }
-                => TipoDominioFato.CategoricoDinamico,
+            { Dominio: DominioCategorico } => ClassificarCategorico(fato.FonteValores),
             _ => null,
         };
     }
+
+    private static TipoDominioFato? ClassificarCategorico(string? fonteValores) => fonteValores switch
+    {
+        FonteGlobal or FonteTiposDeficiencia => TipoDominioFato.CategoricoEstatico,
+        FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteGeoUf or FonteGeoMunicipio => TipoDominioFato.CategoricoDinamico,
+        _ => null,
+    };
 
     /// <summary>
     /// O vocabulário que o validador de predicado usa: o descritor de cada fato avaliável do
@@ -144,20 +149,34 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(catalogo);
 
         List<FatoCandidatoView> fatos = [.. catalogo];
-        HashSet<string> camposDeGrupo = new(
-            processo.GruposColetados.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo), StringComparer.Ordinal);
         HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        HashSet<string> resolvidos = new(DerivadosDoSistemaResolvidos(coletados), StringComparer.Ordinal);
-        bool DependenciasColetadas(string codigo) => !DerivadosDoSistema.Dependencias.ContainsKey(codigo) || resolvidos.Contains(codigo);
         return new(
             coletados
                 .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
-                .Concat(MembroPorAgregado(fatos).Where(a => camposDeGrupo.Contains(a.Value)).Select(static a => a.Key))
-                .Concat(fatos
-                    .Where(f => f.Binding is { } binding
-                        && ((CalculadoDeAtributo(binding) && DependenciasColetadas(f.Codigo)) || ProduzidoPelaClassificacao(binding)))
-                    .Select(static f => f.Codigo)),
+                .Concat(AgregadosSobreCamposDeGrupo(processo, fatos))
+                .Concat(CalculadosEProduzidosQueOSistemaResolve(fatos, coletados)),
             StringComparer.Ordinal);
+    }
+
+    /// <summary>Os agregados cujo fato de membro é campo de um grupo do processo.</summary>
+    private static IEnumerable<string> AgregadosSobreCamposDeGrupo(ProcessoSeletivo processo, IEnumerable<FatoCandidatoView> fatos)
+    {
+        HashSet<string> camposDeGrupo = new(
+            processo.GruposColetados.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo), StringComparer.Ordinal);
+        return MembroPorAgregado(fatos).Where(a => camposDeGrupo.Contains(a.Value)).Select(static a => a.Key);
+    }
+
+    /// <summary>
+    /// Os fatos que o sistema calcula de atributos do candidato, só quando o processo coleta todas as
+    /// dependências deles, e os que a classificação produz.
+    /// </summary>
+    private static IEnumerable<string> CalculadosEProduzidosQueOSistemaResolve(IEnumerable<FatoCandidatoView> fatos, IReadOnlySet<string> coletados)
+    {
+        HashSet<string> resolvidos = new(DerivadosDoSistemaResolvidos(coletados), StringComparer.Ordinal);
+        return fatos
+            .Where(f => f.Binding is { } binding
+                && ((CalculadoDeAtributo(binding) && (!DerivadosDoSistema.Dependencias.ContainsKey(f.Codigo) || resolvidos.Contains(f.Codigo))) || ProduzidoPelaClassificacao(binding)))
+            .Select(static f => f.Codigo);
     }
 
     /// <summary>
@@ -200,6 +219,14 @@ internal static class VocabularioDeFatos
         };
     }
 
+    /// <summary>O que o item do formulário copia do fato no catálogo, uma só montagem para a escrita e para a reconferência.</summary>
+    public static CopiaDoItemNoCatalogo CopiaNoCatalogo(FatoCandidatoView fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return new(
+            OrigemValores(fato), fato.Formato, fato.ClassificacaoProtecao, fato.HipoteseLegal, fato.FinalidadeTratamento, fato.Descricao, fato.ComponenteExibicao);
+    }
+
     /// <summary>Indica que as opções do fato são as que o processo declara.</summary>
     public static bool OpcoesDoProcesso(FatoCandidatoView fato) =>
         OrigemValores(fato) == OrigemValoresColeta.OpcoesDoProcesso;
@@ -217,39 +244,31 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        Dictionary<string, DominioDeValores> dominios = new(StringComparer.Ordinal);
-        foreach (FatoCandidatoView fato in catalogo)
-        {
-            switch (fato)
-            {
-                case { Dominio: DominioCategorico, FonteValores: FonteProcesso }:
-                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
-                        processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, VinculoDeFato.AgregacaoDeGrupo) ?? fato.Codigo)
-                            .Select(static o => o.Codigo));
-                    break;
-                case { Dominio: DominioCategorico, FonteValores: FonteModalidade }:
-                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
-                        processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo));
-                    break;
-                case { Dominio: DominioCategorico, FonteValores: FonteMunicipiosBonus }:
-                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
-                        MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge));
-                    break;
-                case { Dominio: DominioCategorico, FonteValores: FonteGeoUf }:
-                    dominios[fato.Codigo] = DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs);
-                    break;
-                case { Dominio: DominioCategorico, FonteValores: FonteGeoMunicipio }:
-                    // Os municípios vêm do Geo, que o servidor não enumera: a condição cita um
-                    // código IBGE conferido só pela forma, como toda referência de cidade (ADR-0090).
-                    dominios[fato.Codigo] = DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return dominios;
+        return catalogo
+            .Select(fato => (fato.Codigo, Dominio: DominioDinamico(processo, fato)))
+            .Where(static fato => fato.Dominio is not null)
+            .ToDictionary(static fato => fato.Codigo, static fato => fato.Dominio!, StringComparer.Ordinal);
     }
+
+    private static DominioDeValores? DominioDinamico(ProcessoSeletivo processo, FatoCandidatoView fato) =>
+        fato.Dominio != DominioCategorico
+            ? null
+            : fato.FonteValores switch
+            {
+                FonteProcesso => OpcoesDeclaradasPeloProcesso(processo, fato),
+                FonteModalidade => DominioDeValores.OfertadoPeloProcesso(processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)),
+                FonteMunicipiosBonus => DominioDeValores.OfertadoPeloProcesso(MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge)),
+                FonteGeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
+
+                // Os municípios vêm do Geo, que o servidor não enumera: a condição cita um código
+                // IBGE conferido só pela forma, como toda referência de cidade (ADR-0090).
+                FonteGeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
+                _ => null,
+            };
+
+    private static DominioDeValores OpcoesDeclaradasPeloProcesso(ProcessoSeletivo processo, FatoCandidatoView fato) =>
+        DominioDeValores.OfertadoPeloProcesso(
+            processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, VinculoDeFato.AgregacaoDeGrupo) ?? fato.Codigo).Select(static o => o.Codigo));
 
     /// <summary>
     /// Os municípios da área do bônus regional que o processo configurou, em ordem alfabética de

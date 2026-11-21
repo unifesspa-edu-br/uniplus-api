@@ -51,7 +51,7 @@ internal sealed record FatoColetadoDeTeste
             Rotulo = fato.Rotulo,
             Tipo = fato.TipoRenderizacao,
             Obrigatoriedade = fato.Obrigatoriedade,
-            Exibicao = ExibicaoDe(fato),
+            Exibicao = fato.Exibicao,
             Restricoes = fato.Restricoes,
             Impedimento = fato.Impedimento,
             Secao = fato.EtapaCodigo,
@@ -101,22 +101,14 @@ internal sealed record FatoColetadoDeTeste
     /// <summary>Cria o item pela fábrica, para o teste que olha a recusa.</summary>
     public Result<FatoColetado> Criar() =>
         FatoColetado.Criar(
-            FatoCodigo, Ordem, Rotulo ?? FatoCodigo, Tipo, Obrigatoriedade, Precondicoes(),
-            Copia.ClassificacaoProtecao, Copia.HipoteseLegal, Copia.FinalidadeTratamento, Copia.Descricao, Copia.OrigemValores,
-            Secao, Finalidade, Copia.Formato, Ajuda, Confirmacao, Restricoes, Impedimento, Copia.ComponenteExibicao);
+            FatoCodigo,
+            Ordem,
+            Secao,
+            new ApresentacaoDoCampo(Rotulo ?? FatoCodigo, Tipo, Ajuda, Confirmacao),
+            new RegrasDoCampo(Exibicao, Obrigatoriedade, Restricoes ?? [], Impedimento),
+            Copia,
+            Finalidade);
 
     /// <summary>O item criado, para o teste que parte de um item válido.</summary>
     public FatoColetado Construir() => Criar().Value!;
-
-    private static PredicadoDnf? ExibicaoDe(FatoColetado fato) =>
-        fato.Precondicoes.Count == 0
-            ? null
-            : PredicadoDnf.CriarDeCondicoesAgrupadas(
-                [.. fato.Precondicoes.Select(static c => (c.Clausula, CondicaoDnf.Criar(c.Fato, c.Operador, c.Valor).Value!))]).Value;
-
-    private List<CondicaoPrecondicaoFato>? Precondicoes() =>
-        Exibicao is null
-            ? null
-            : [.. Exibicao.Clausulas.SelectMany(static (clausula, indice) =>
-                clausula.Condicoes.Select(c => CondicaoPrecondicaoFato.Criar(indice, c.Fato, c.Operador, c.Valor).Value!))];
 }
