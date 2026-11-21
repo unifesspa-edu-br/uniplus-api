@@ -28,4 +28,17 @@ public sealed record CodigoComRotulo<TEnum>
     /// <summary>O código e o rótulo que o valor declarou.</summary>
     /// <exception cref="ArgumentOutOfRangeException">O valor não é membro do enum, como num cast de inteiro.</exception>
     public static CodigoComRotulo<TEnum> De(TEnum valor) => new(valor.Codigo(), valor.Rotulo());
+
+    /// <summary>
+    /// O código do valor com um rótulo informado. Serve quando o sentido do valor depende de um eixo do recurso que o
+    /// devolve, como o operador, que lê de um jeito sobre um valor e de outro sobre um conjunto; <see cref="De(TEnum)"/>
+    /// segue sendo o padrão.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">O valor não é membro do enum, como num cast de inteiro.</exception>
+    /// <exception cref="ArgumentException">O rótulo é nulo ou está em branco.</exception>
+    public static CodigoComRotulo<TEnum> De(TEnum valor, string rotulo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rotulo);
+        return new(valor.Codigo(), rotulo);
+    }
 }

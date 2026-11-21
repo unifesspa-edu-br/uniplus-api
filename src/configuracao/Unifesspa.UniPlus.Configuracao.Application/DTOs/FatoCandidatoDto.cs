@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Representação de manutenção de um fato do catálogo (ADR-0136): os eixos, a proteção de dados e
 /// os valores de domínio, com o estado de cada um, as regras padrão do derivado por regra e o circuito de
@@ -30,13 +33,7 @@ public sealed record FatoCandidatoDto(
     IReadOnlyList<FatoValorDominioDto> Valores,
     IReadOnlyList<RegraPadraoDto> RegrasPadrao,
     AprovacaoDaProtecaoDto Aprovacao,
-    IReadOnlyList<OperadorAdmitidoDto> OperadoresAdmitidos);
-
-/// <summary>
-/// Um operador que uma condição sobre o fato aceita, com o rótulo no sentido que a cardinalidade do fato dá a ele:
-/// "é igual a" sobre um valor, "inclui" sobre um conjunto.
-/// </summary>
-public sealed record OperadorAdmitidoDto(string Codigo, string Rotulo);
+    IReadOnlyList<CodigoComRotulo<Operador>> OperadoresAdmitidos);
 
 /// <summary>Um valor de domínio de um fato de fonte global.</summary>
 public sealed record FatoValorDominioDto(string Codigo, string? Descricao, int Ordem, bool Ativo, string? Orientacao);
