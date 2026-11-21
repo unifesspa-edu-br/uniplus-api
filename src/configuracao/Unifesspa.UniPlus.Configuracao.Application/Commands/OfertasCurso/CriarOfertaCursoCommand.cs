@@ -8,11 +8,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cria uma oferta de curso — a instância regulatória que liga um curso vivo a
-/// um local de oferta vivo e à unidade ofertante (story #588, issue #749,
-/// ADR-0066). A unidade chega como <paramref name="UnidadeOfertanteOrigemId"/>:
+/// um local de oferta vivo e à unidade ofertante (ADR-0066). A unidade chega como <paramref name="UnidadeOfertanteOrigemId"/>:
 /// o handler resolve a Unidade viva via <c>IUnidadeReader</c> (ADR-0056) e
-/// congela sigla/nome/tipo por snapshot-copy (ADR-0061) — o payload nunca traz
-/// o snapshot pronto. O <c>Codigo</c> é informado pela gestão, obrigatório e único entre as ofertas vivas. Enums como tokens UPPER_SNAKE: programa obrigatório;
+/// copia sigla, nome e tipo (ADR-0061) — o payload nunca traz
+/// a cópia pronta. O <c>Codigo</c> é informado pela gestão, obrigatório e único entre as ofertas vivas. Os enums chegam como código de contrato: programa obrigatório;
 /// formato pedagógico com default PRESENCIAL quando ausente; regime de
 /// funcionamento, regime de turno e turnos obrigatórios, conferidos entre si
 /// (REGULAR exige um turno; INTEGRAL, dois distintos; INTENSIVO exige INTEGRAL). A base legal é obrigatória quando o programa não é REGULAR
@@ -34,9 +33,9 @@ public sealed record CriarOfertaCursoCommand(
     Guid UnidadeOfertanteOrigemId,
     string? Codigo,
     [property: AceitaCodigosDe<ProgramaDeOferta>] string? ProgramaDeOferta,
-    string? RegimeDeFuncionamento,
-    string? RegimeDeTurno,
-    IReadOnlyList<string?>? Turnos,
+    [property: AceitaCodigosDe<RegimeDeFuncionamento>] string? RegimeDeFuncionamento,
+    [property: AceitaCodigosDe<RegimeDeTurno>] string? RegimeDeTurno,
+    [property: AceitaCodigosDe<TurnoOferta>] IReadOnlyList<string?>? Turnos,
     [property: AceitaCodigosDe<FormatoPedagogico>] string? FormatoPedagogico = null,
     string? EMecCodigo = null,
     string? CodigoSga = null,

@@ -4,80 +4,8 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-/// <summary>
-/// O parsing do regime de funcionamento é por lista textual explícita de códigos aceitos
-/// (UNI-REQ-0138): só INTENSIVO, EXTENSIVO e ALTERNANCIA_PEDAGOGICA são aceitos. A obrigatoriedade do
-/// regime é regra da entidade, não deste mapeamento.
-/// </summary>
 public sealed class RegimesDeFuncionamentoTests
 {
-    [Theory(DisplayName = "Os três códigos canônicos são analisados para o regime correto")]
-    [InlineData("INTENSIVO", RegimeDeFuncionamento.Intensivo)]
-    [InlineData("EXTENSIVO", RegimeDeFuncionamento.Extensivo)]
-    [InlineData("ALTERNANCIA_PEDAGOGICA", RegimeDeFuncionamento.AlternanciaPedagogica)]
-    public void TryAnalisar_CodigoCanonico_Resolve(string codigo, RegimeDeFuncionamento esperado)
-    {
-        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento regime).Should().BeTrue();
-        regime.Should().Be(esperado);
-    }
-
-    [Fact(DisplayName = "Código com espaços é normalizado por Trim antes da resolução")]
-    public void TryAnalisar_ComEspacos_Normaliza()
-    {
-        RegimesDeFuncionamento.TryAnalisar("  INTENSIVO  ", out RegimeDeFuncionamento regime).Should().BeTrue();
-        regime.Should().Be(RegimeDeFuncionamento.Intensivo);
-    }
-
-    [Theory(DisplayName = "Códigos numéricos, PascalCase, de outra dimensão e vazios são rejeitados")]
-    [InlineData("1")]
-    [InlineData("Intensivo")]
-    [InlineData("intensivo")]
-    [InlineData("SEMI_INTENSIVO")]
-    [InlineData("INTEGRAL")]    // regime de turno não é regime de funcionamento
-    [InlineData("REGULAR")]     // idem — e REGULAR também é programa de oferta
-    [InlineData("MATUTINO")]    // turno não é regime de funcionamento
-    [InlineData("PRESENCIAL")]  // formato pedagógico não é regime de funcionamento
-    [InlineData("")]
-    [InlineData("   ")]
-    public void TryAnalisar_ForaDoDominio_Rejeita(string codigo)
-    {
-        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento regime).Should().BeFalse();
-        regime.Should().Be(RegimeDeFuncionamento.Nenhum);
-        RegimesDeFuncionamento.EhValido(codigo).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Código nulo é rejeitado sem lançar")]
-    public void TryAnalisar_Nulo_Rejeita()
-    {
-        RegimesDeFuncionamento.TryAnalisar(null, out RegimeDeFuncionamento regime).Should().BeFalse();
-        regime.Should().Be(RegimeDeFuncionamento.Nenhum);
-    }
-
-    [Theory(DisplayName = "ParaTokenCanonico é o inverso de TryAnalisar (round-trip)")]
-    [InlineData(RegimeDeFuncionamento.Intensivo, "INTENSIVO")]
-    [InlineData(RegimeDeFuncionamento.Extensivo, "EXTENSIVO")]
-    [InlineData(RegimeDeFuncionamento.AlternanciaPedagogica, "ALTERNANCIA_PEDAGOGICA")]
-    public void ParaCodigoCanonico_IdaEVolta(RegimeDeFuncionamento regime, string codigo)
-    {
-        RegimesDeFuncionamento.ParaTokenCanonico(regime).Should().Be(codigo);
-        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento resolvido).Should().BeTrue();
-        resolvido.Should().Be(regime);
-    }
-
-    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (valor de ausência) lança — não é regime válido")]
-    public void ParaTokenCanonico_Nenhum_Lanca()
-    {
-        Action act = () => RegimesDeFuncionamento.ParaTokenCanonico(RegimeDeFuncionamento.Nenhum);
-        act.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [Fact(DisplayName = "TokensCanonicos lista exatamente os três regimes")]
-    public void TokensCanonicos_TemTresValores()
-    {
-        RegimesDeFuncionamento.TokensCanonicos.Should().HaveCount(3)
-            .And.Contain(["INTENSIVO", "EXTENSIVO", "ALTERNANCIA_PEDAGOGICA"]);
-    }
-
     [Fact(DisplayName = "INTENSIVO exige regime de turno INTEGRAL")]
     public void RegimeDeTurnoExigido_Intensivo_ExigeIntegral() =>
         RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.Intensivo)
@@ -93,10 +21,10 @@ public sealed class RegimesDeFuncionamentoTests
         RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.AlternanciaPedagogica)
             .Should().BeNull();
 
-    [Fact(DisplayName = "RegimeDeTurnoExigido do valor de ausência lança — não há compatibilidade sem regime")]
-    public void RegimeDeTurnoExigido_Nenhum_Lanca()
+    [Fact(DisplayName = "RegimeDeTurnoExigido de valor que o enum não declara lança")]
+    public void RegimeDeTurnoExigido_ValorNaoDeclarado_Lanca()
     {
-        Action act = () => RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.Nenhum);
+        Action act = () => RegimesDeFuncionamento.RegimeDeTurnoExigido((RegimeDeFuncionamento)99);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 }

@@ -8,7 +8,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Contrato HTTP dos vocabulários da oferta de curso: o programa de oferta e o formato pedagógico, com código e rótulo
+/// Contrato HTTP dos vocabulários da oferta de curso: o programa de oferta, o formato pedagógico, os regimes de funcionamento e de turno e os turnos, com código e rótulo
 /// literais, na ordem de declaração, sem exigir autenticação.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -55,9 +55,53 @@ public sealed class VocabulariosDaOfertaDeCursoEndpointTests
             new ItemDoVocabulario("EAD", "A distância"));
     }
 
+    [Fact(DisplayName = "GET /vocabularios/regimes-funcionamento devolve os três regimes, na ordem de declaração, sem exigir autenticação")]
+    public async Task ListarRegimesDeFuncionamento_DevolveOsTresRegimes()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+
+        ItemDoVocabulario[] itens = await ApoioDosVocabularios.LerAsync<ItemDoVocabulario>(
+            client, "regimes-funcionamento", "codigo-regime-de-funcionamento");
+
+        itens.Should().Equal(
+            new ItemDoVocabulario("INTENSIVO", "Intensivo"),
+            new ItemDoVocabulario("EXTENSIVO", "Extensivo"),
+            new ItemDoVocabulario("ALTERNANCIA_PEDAGOGICA", "Alternância pedagógica"));
+    }
+
+    [Fact(DisplayName = "GET /vocabularios/regimes-turno devolve os dois regimes, na ordem de declaração, sem exigir autenticação")]
+    public async Task ListarRegimesDeTurno_DevolveOsDoisRegimes()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+
+        ItemDoVocabulario[] itens = await ApoioDosVocabularios.LerAsync<ItemDoVocabulario>(
+            client, "regimes-turno", "codigo-regime-de-turno");
+
+        itens.Should().Equal(
+            new ItemDoVocabulario("REGULAR", "Regular"),
+            new ItemDoVocabulario("INTEGRAL", "Integral"));
+    }
+
+    [Fact(DisplayName = "GET /vocabularios/turnos-oferta devolve os três turnos, na ordem do dia, sem exigir autenticação")]
+    public async Task ListarTurnosOferta_DevolveOsTresTurnos()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+
+        ItemDoVocabulario[] itens = await ApoioDosVocabularios.LerAsync<ItemDoVocabulario>(
+            client, "turnos-oferta", "codigo-turno-oferta");
+
+        itens.Should().Equal(
+            new ItemDoVocabulario("MATUTINO", "Matutino"),
+            new ItemDoVocabulario("VESPERTINO", "Vespertino"),
+            new ItemDoVocabulario("NOTURNO", "Noturno"));
+    }
+
     [Theory(DisplayName = "Versão inexistente da vendor MIME do vocabulário da oferta recusa com 406")]
     [InlineData("/api/configuracao/vocabularios/programas-oferta", "codigo-programa-de-oferta")]
     [InlineData("/api/configuracao/vocabularios/formatos-pedagogicos", "codigo-formato-pedagogico")]
+    [InlineData("/api/configuracao/vocabularios/regimes-funcionamento", "codigo-regime-de-funcionamento")]
+    [InlineData("/api/configuracao/vocabularios/regimes-turno", "codigo-regime-de-turno")]
+    [InlineData("/api/configuracao/vocabularios/turnos-oferta", "codigo-turno-oferta")]
     public async Task Vocabularios_VersaoDesconhecidaDaVendorMime_Recusa(string rota, string recurso)
     {
         using HttpClient client = _fixture.Factory.CreateClient();

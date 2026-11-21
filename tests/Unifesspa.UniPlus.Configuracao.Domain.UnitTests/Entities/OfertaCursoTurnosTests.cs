@@ -12,13 +12,13 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.MontagemDa
 
 public sealed class OfertaCursoTurnosTests
 {
-    [Theory(DisplayName = "Cada um dos três tokens canônicos de turno é aceito sob o regime regular")]
+    [Theory(DisplayName = "Cada um dos três códigos de turno é aceito sob o regime regular")]
     [InlineData("MATUTINO", TurnoOferta.Matutino)]
     [InlineData("VESPERTINO", TurnoOferta.Vespertino)]
     [InlineData("NOTURNO", TurnoOferta.Noturno)]
-    public void Criar_TurnoCanonico_Aceita(string token, TurnoOferta esperado)
+    public void Criar_TurnoCanonico_Aceita(string codigo, TurnoOferta esperado)
     {
-        Criar(d => d with { RegimeDeTurno = "REGULAR", Turnos = [token] }).Value!.Turnos.Should().Equal(esperado);
+        Criar(d => d with { RegimeDeTurno = "REGULAR", Turnos = [codigo] }).Value!.Turnos.Should().Equal(esperado);
     }
 
     [Fact(DisplayName = "Regime integral aceita dois turnos distintos")]
@@ -30,13 +30,13 @@ public sealed class OfertaCursoTurnosTests
         oferta.Turnos.Should().Equal(TurnoOferta.Matutino, TurnoOferta.Vespertino);
     }
 
-    [Theory(DisplayName = "Regime de turno ausente é rejeitado por erro próprio, distinto do token inválido")]
+    [Theory(DisplayName = "Regime de turno ausente é rejeitado por erro próprio, distinto do código inválido")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_SemRegimeDeTurno_Falha(string? token)
+    public void Criar_SemRegimeDeTurno_Falha(string? codigo)
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = token });
+        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = codigo });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio);
@@ -48,9 +48,12 @@ public sealed class OfertaCursoTurnosTests
     [InlineData("PARCIAL")]
     [InlineData("MATUTINO")]
     [InlineData("2")]
-    public void Criar_RegimeDeTurnoInvalido_Falha(string token)
+    [InlineData(" INTEGRAL")]
+    [InlineData("INTEGRAL ")]
+    [InlineData("integral")]
+    public void Criar_RegimeDeTurnoInvalido_Falha(string codigo)
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = token });
+        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = codigo });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
@@ -82,15 +85,27 @@ public sealed class OfertaCursoTurnosTests
     [InlineData("DIURNO")]
     [InlineData("3")]
     [InlineData("INTEGRAL")]
+    [InlineData("matutino")]
+    [InlineData(" MATUTINO")]
+    [InlineData("MATUTINO ")]
+    [InlineData("")]
     [InlineData(null)]
     [InlineData("  ")]
-    public void Criar_TurnoInvalido_Falha(string? token)
+    public void Criar_TurnoInvalido_Falha(string? codigo)
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { Turnos = [token] });
+        Result<OfertaCurso> resultado = Criar(d => d with { Turnos = [codigo] });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnoInvalido);
         resultado.Errors[0].Field.Should().Be("turnos");
+    }
+
+    [Fact(DisplayName = "A mensagem de turno inválido lista os códigos aceitos sem repetir o valor recebido")]
+    public void Criar_TurnoInvalido_MensagemListaOsCodigosSemEcoDoValor()
+    {
+        Result<OfertaCurso> resultado = Criar(d => d with { Turnos = ["DIURNO"] });
+
+        resultado.Error!.Message.Should().Contain("MATUTINO, VESPERTINO, NOTURNO").And.NotContain("DIURNO");
     }
 
     [Fact(DisplayName = "Turno repetido é rejeitado — os dois turnos do integral devem ser distintos")]
@@ -151,7 +166,7 @@ public sealed class OfertaCursoTurnosTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.TurnosObrigatorios);
     }
 
-    [Fact(DisplayName = "Regime inválido não deriva erro de cardinalidade — só o token inválido é reportado")]
+    [Fact(DisplayName = "Regime inválido não deriva erro de cardinalidade — só o código inválido é reportado")]
     public void Criar_RegimeInvalidoComDoisTurnos_NaoDerivaCardinalidade()
     {
         Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = "PARCIAL", Turnos = ["MATUTINO", "VESPERTINO"] });
@@ -161,7 +176,7 @@ public sealed class OfertaCursoTurnosTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
     }
 
-    [Fact(DisplayName = "Turno inválido não deriva erro de cardinalidade — só o token inválido é reportado")]
+    [Fact(DisplayName = "Turno inválido não deriva erro de cardinalidade — só o código inválido é reportado")]
     public void Criar_TurnoInvalidoSobIntegral_NaoDerivaCardinalidade()
     {
         Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeTurno = "INTEGRAL", Turnos = ["DIURNO"] });

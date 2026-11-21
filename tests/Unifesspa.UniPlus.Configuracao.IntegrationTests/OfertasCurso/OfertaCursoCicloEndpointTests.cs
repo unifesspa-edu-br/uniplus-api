@@ -129,8 +129,8 @@ public sealed class OfertaCursoCicloEndpointTests
         JsonElement root = doc.RootElement;
         root.GetProperty("programaDeOferta").GetProperty("codigo").GetString().Should().Be("PARFOR");
         root.GetProperty("formatoPedagogico").GetProperty("codigo").GetString().Should().Be("EAD");
-        root.GetProperty("regimeDeTurno").GetString().Should().Be("REGULAR");
-        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
+        root.GetProperty("regimeDeTurno").GetProperty("codigo").GetString().Should().Be("REGULAR");
+        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetProperty("codigo").GetString())
             .Should().Equal(["NOTURNO"], "a oferta a distância também declara turno");
         root.GetProperty("eMecCodigo").GetString().Should().Be("654321");
         root.GetProperty("vagasAnuaisAutorizadas").GetInt32().Should().Be(0, "zero é teto válido");

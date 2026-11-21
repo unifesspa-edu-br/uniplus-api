@@ -127,33 +127,6 @@ public sealed class OfertaCursoClassificacoesEndpointTests
         corpo.Should().NotContain(valorRecebido).And.NotContain("PARCIAL");
     }
 
-    private static Dictionary<string, object?> CorpoDeAtualizacaoCom(Guid id, params (string Campo, object? Valor)[] ajustes)
-    {
-        Dictionary<string, object?> corpo = CorpoDeAtualizacao(id, NovoCodigoDaOferta());
-        foreach ((string campo, object? valor) in ajustes)
-        {
-            corpo[campo] = valor;
-        }
-
-        return corpo;
-    }
-
-    private static IReadOnlyList<string?> CamposComErro(string corpo)
-    {
-        using JsonDocument problema = JsonDocument.Parse(corpo);
-
-        return [.. problema.RootElement.GetProperty("errors").EnumerateArray().Select(e => e.GetProperty("field").GetString())];
-    }
-
-    private static async Task ConferirRecusaAsync(HttpResponseMessage resposta, string codigoPublicado, string campo)
-    {
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        string corpo = await resposta.Content.ReadAsStringAsync();
-        using JsonDocument problema = JsonDocument.Parse(corpo);
-        problema.RootElement.GetProperty("code").GetString().Should().Be(codigoPublicado);
-        CamposComErro(corpo).Should().Contain(campo);
-    }
-
     private static async Task ConferirClassificacaoAsync(
         HttpClient client, Guid id, (string Codigo, string Rotulo) programa, (string Codigo, string Rotulo) formato)
     {

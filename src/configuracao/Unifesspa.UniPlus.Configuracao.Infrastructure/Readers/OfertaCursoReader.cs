@@ -20,10 +20,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// congela por valor o que precisar (ADR-0061), dispensando releitura quente.
 /// Ordena por <c>Id</c> ascendente.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class OfertaCursoReader : IOfertaCursoReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -114,8 +110,8 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
         return new OfertaCursoView(
             o.Id, o.Codigo, o.CursoId, o.LocalOfertaId, unidade.OrigemId, unidade.Sigla, unidade.Nome, unidade.Tipo,
             o.ProgramaDeOferta.Codigo(), o.FormatoPedagogico.Codigo(),
-            RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
-            [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
+            o.RegimeDeFuncionamento.Codigo(), o.RegimeDeTurno.Codigo(),
+            [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(static turno => turno.Codigo())],
             o.EMecCodigo, o.CodigoSga, o.VagasAnuaisAutorizadas, o.BaseLegal, o.AtoAutorizacaoMec,
             grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo),
             curso?.Nome ?? string.Empty, curso?.Grau ?? string.Empty);

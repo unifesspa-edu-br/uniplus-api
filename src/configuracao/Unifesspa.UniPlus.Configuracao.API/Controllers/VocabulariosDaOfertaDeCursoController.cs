@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
-/// Vocabulários fechados que a oferta de curso referencia por código: o programa de oferta e o formato pedagógico.
+/// Vocabulários fechados que a oferta de curso referencia por código: o programa de oferta, o formato pedagógico, os regimes de funcionamento e de turno e os turnos.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 /// mudam por versão da API, com a regra que os acompanha, e não por cadastro.
 /// </para>
 /// <para>
-/// A leitura é anônima porque a das ofertas de curso, que carregam esses dois campos, já é anônima, e o edital publica o
+/// A leitura é anônima porque a das ofertas de curso, que carregam esses campos, já é anônima, e o edital publica o
 /// que elas descrevem. O vocabulário não traz dado de pessoa.
 /// </para>
 /// </remarks>
@@ -63,5 +63,50 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(formatos);
+    }
+
+    /// <summary>Lista os regimes de funcionamento, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/regimes-funcionamento")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-regime-de-funcionamento", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<RegimeDeFuncionamento>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarRegimesDeFuncionamento(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<RegimeDeFuncionamento>> regimes = await _queryBus
+            .Send(new ListarRegimesDeFuncionamentoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(regimes);
+    }
+
+    /// <summary>Lista os regimes de turno, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/regimes-turno")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-regime-de-turno", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<RegimeDeTurno>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarRegimesDeTurno(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<RegimeDeTurno>> regimes = await _queryBus
+            .Send(new ListarRegimesDeTurnoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(regimes);
+    }
+
+    /// <summary>Lista os turnos da oferta, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/turnos-oferta")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-turno-oferta", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<TurnoOferta>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarTurnosOferta(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<TurnoOferta>> turnos = await _queryBus
+            .Send(new ListarTurnosOfertaQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(turnos);
     }
 }

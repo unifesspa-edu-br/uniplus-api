@@ -117,9 +117,9 @@ public sealed class OfertaCursoRegimesEndpointTests
 
         using JsonDocument doc = await LerOfertaAsync(client, id);
         JsonElement root = doc.RootElement;
-        root.GetProperty("regimeDeFuncionamento").GetString().Should().Be("INTENSIVO");
-        root.GetProperty("regimeDeTurno").GetString().Should().Be("INTEGRAL");
-        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
+        root.GetProperty("regimeDeFuncionamento").GetProperty("codigo").GetString().Should().Be("INTENSIVO");
+        root.GetProperty("regimeDeTurno").GetProperty("codigo").GetString().Should().Be("INTEGRAL");
+        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetProperty("codigo").GetString())
             .Should().Equal(["MATUTINO", "VESPERTINO"]);
     }
 
@@ -198,7 +198,7 @@ public sealed class OfertaCursoRegimesEndpointTests
         HttpClient client, Guid id, string regimeDeFuncionamento, string regimeDeTurno, string porque = "")
     {
         using JsonDocument doc = await LerOfertaAsync(client, id);
-        doc.RootElement.GetProperty("regimeDeFuncionamento").GetString().Should().Be(regimeDeFuncionamento, porque);
-        doc.RootElement.GetProperty("regimeDeTurno").GetString().Should().Be(regimeDeTurno);
+        doc.RootElement.GetProperty("regimeDeFuncionamento").GetProperty("codigo").GetString().Should().Be(regimeDeFuncionamento, porque);
+        doc.RootElement.GetProperty("regimeDeTurno").GetProperty("codigo").GetString().Should().Be(regimeDeTurno);
     }
 }

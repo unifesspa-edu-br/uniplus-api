@@ -59,7 +59,48 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
     public Task RespostaDoFormato_ReferenciaOComponenteDoEnum() =>
         ConferirReferenciaDaRespostaAsync("FormatoPedagogico", "formatoPedagogico", "FormatoPedagogicoCodigo");
 
-    [Theory(DisplayName = "Os pedidos de criação e de atualização da oferta documentam programa e formato com o componente do enum")]
+    [Fact(DisplayName = "O código do regime de funcionamento é componente de texto com enum, sem o valor nenhum")]
+    public Task RegimeDeFuncionamentoCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("RegimeDeFuncionamentoCodigo", ["INTENSIVO", "EXTENSIVO", "ALTERNANCIA_PEDAGOGICA"]);
+
+    [Fact(DisplayName = "O código do regime de turno é componente de texto com enum, sem o valor nenhum")]
+    public Task RegimeDeTurnoCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("RegimeDeTurnoCodigo", ["REGULAR", "INTEGRAL"]);
+
+    [Fact(DisplayName = "O código do turno é componente de texto com enum, sem o valor nenhum")]
+    public Task TurnoOfertaCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("TurnoOfertaCodigo", ["MATUTINO", "VESPERTINO", "NOTURNO"]);
+
+    [Theory(DisplayName = "O código da resposta de cada enum da oferta referencia o componente dele")]
+    [InlineData("RegimeDeFuncionamento", "regimeDeFuncionamento", "RegimeDeFuncionamentoCodigo")]
+    [InlineData("RegimeDeTurno", "regimeDeTurno", "RegimeDeTurnoCodigo")]
+    public Task RespostaDosRegimes_ReferenciaOComponenteDoEnum(string resposta, string campo, string componente) =>
+        ConferirReferenciaDaRespostaAsync(resposta, campo, componente);
+
+    [Fact(DisplayName = "Os turnos da resposta da oferta são uma lista de código e rótulo")]
+    public async Task RespostaDosTurnos_EListaDeCodigoERotulo()
+    {
+        JsonElement schemas = await ObterSchemasAsync();
+
+        schemas.GetProperty("OfertaCursoDto").GetProperty("properties").GetProperty("turnos").GetProperty("items").GetProperty("$ref").GetString()
+            .Should().Be("#/components/schemas/TurnoOferta");
+        schemas.GetProperty("TurnoOferta").GetProperty("properties").GetProperty("codigo").GetProperty("$ref").GetString()
+            .Should().Be("#/components/schemas/TurnoOfertaCodigo");
+    }
+
+    [Theory(DisplayName = "Os pedidos da oferta documentam o item de turnos sem nulo, só com os códigos do enum")]
+    [InlineData("CriarOfertaCursoCommand")]
+    [InlineData("AtualizarOfertaCursoCommand")]
+    public async Task PedidosDaOferta_ItemDeTurnosNaoAceitaNulo(string pedido)
+    {
+        JsonElement schemas = await ObterSchemasAsync();
+        JsonElement itens = schemas.GetProperty(pedido).GetProperty("properties").GetProperty("turnos").GetProperty("items");
+
+        itens.GetProperty("$ref").GetString().Should().Be("#/components/schemas/TurnoOfertaCodigo");
+        itens.TryGetProperty("oneOf", out _).Should().BeFalse("o item nulo é recusado pelo domínio e não é publicado como aceito");
+    }
+
+    [Theory(DisplayName = "Os pedidos de criação e de atualização da oferta documentam programa, formato e regimes com o componente do enum")]
     [InlineData("CriarOfertaCursoCommand")]
     [InlineData("AtualizarOfertaCursoCommand")]
     public async Task PedidosDaOferta_ReferenciamOsComponentesDosEnums(string pedido)
@@ -69,6 +110,8 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
 
         ReferenciasDe(propriedades.GetProperty("programaDeOferta")).Should().Contain("#/components/schemas/ProgramaDeOfertaCodigo");
         ReferenciasDe(propriedades.GetProperty("formatoPedagogico")).Should().Contain("#/components/schemas/FormatoPedagogicoCodigo");
+        ReferenciasDe(propriedades.GetProperty("regimeDeFuncionamento")).Should().Contain("#/components/schemas/RegimeDeFuncionamentoCodigo");
+        ReferenciasDe(propriedades.GetProperty("regimeDeTurno")).Should().Contain("#/components/schemas/RegimeDeTurnoCodigo");
     }
 
     private async Task ConferirComponenteDeCodigosAsync(string componente, string[] codigosEsperados)

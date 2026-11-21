@@ -23,12 +23,9 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
     private CodigoOfertaCurso? _codigo;
     private ProgramaDeOferta? _programa;
     private FormatoPedagogico _formato = FormatoPedagogico.Presencial;
-    private bool _funcionamentoReconhecido;
-    private RegimeDeFuncionamento _funcionamento = RegimeDeFuncionamento.Nenhum;
-    private bool _regimeReconhecido;
-    private RegimeDeTurno _regime = RegimeDeTurno.Nenhum;
-    private List<TurnoOferta> _turnos = [];
-    private bool _turnosResolvidos;
+    private RegimeDeFuncionamento? _funcionamento;
+    private RegimeDeTurno? _regime;
+    private List<TurnoOferta>? _turnos;
 
     public Result<CamposDaOfertaDeCurso> Resolver()
     {
@@ -69,9 +66,9 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
     }
 
     private Result<CamposDaOfertaDeCurso> Concluir(TextosDaOferta textos) =>
-        _erros.Count == 0 && _codigo is { } codigo && _programa is { } programa
+        _erros.Count == 0 && (_codigo, _programa, _funcionamento, _regime, _turnos) is ({ } codigo, { } programa, { } funcionamento, { } regime, { } turnos)
             ? Result<CamposDaOfertaDeCurso>.Success(new(
-                codigo.Valor, programa, _formato, _funcionamento, _regime, TurnosOferta.OrdenarCanonicamente(_turnos),
+                codigo.Valor, programa, _formato, funcionamento, regime, TurnosOferta.OrdenarCanonicamente(turnos),
                 textos.EMecCodigo, textos.CodigoSga, declaracao.VagasAnuaisAutorizadas, textos.BaseLegal, textos.AtoAutorizacaoMec))
             : Result<CamposDaOfertaDeCurso>.ValidationFailure(_erros);
 
@@ -91,7 +88,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
 
     private void ResolverPrograma()
     {
-        _programa = CatalogoDe<ProgramaDeOferta>.TentarObter(declaracao.ProgramaDeOferta, out ProgramaDeOferta programa) ? programa : null;
+        _programa = Reconhecer<ProgramaDeOferta>(declaracao.ProgramaDeOferta);
         if (_programa is null)
         {
             AdicionarErro("programaDeOferta", OfertaCursoErrorCodes.ProgramaDeOfertaInvalido, $"Programa de oferta deve ser um de: {CodigosAceitos<ProgramaDeOferta>()}.");
@@ -116,40 +113,42 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         }
     }
 
-    // Ausência e token fora do domínio são erros distintos: quem não informou nada precisa de orientação diferente de quem errou.
-    private void ResolverFuncionamento()
+    private void ResolverFuncionamento() =>
+        _funcionamento = ResolverObrigatorio<RegimeDeFuncionamento>(
+            declaracao.RegimeDeFuncionamento,
+            "regimeDeFuncionamento",
+            "Regime de funcionamento",
+            OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio,
+            OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido);
+
+    private void ResolverRegime() =>
+        _regime = ResolverObrigatorio<RegimeDeTurno>(
+            declaracao.RegimeDeTurno,
+            "regimeDeTurno",
+            "Regime de turno",
+            OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio,
+            OfertaCursoErrorCodes.RegimeDeTurnoInvalido);
+
+    // Ausência e código fora do catálogo são erros distintos: quem não informou nada precisa de orientação diferente de quem errou.
+    private TEnum? ResolverObrigatorio<TEnum>(string? codigo, string campo, string rotulo, string erroObrigatorio, string erroInvalido)
+        where TEnum : struct, Enum
     {
-        string tokens = string.Join(", ", RegimesDeFuncionamento.TokensCanonicos);
-        if (string.IsNullOrWhiteSpace(declaracao.RegimeDeFuncionamento))
+        if (string.IsNullOrWhiteSpace(codigo))
         {
-            AdicionarErro("regimeDeFuncionamento", OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio, $"Regime de funcionamento é obrigatório e deve ser um de: {tokens}.");
-            return;
+            AdicionarErro(campo, erroObrigatorio, $"{rotulo} é obrigatório e deve ser um de: {CodigosAceitos<TEnum>()}.");
+            return null;
         }
 
-        _funcionamentoReconhecido = RegimesDeFuncionamento.TryAnalisar(declaracao.RegimeDeFuncionamento, out _funcionamento);
-        if (!_funcionamentoReconhecido)
+        TEnum? valor = Reconhecer<TEnum>(codigo);
+        if (valor is null)
         {
-            AdicionarErro("regimeDeFuncionamento", OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido, $"Regime de funcionamento deve ser um de: {tokens}.");
+            AdicionarErro(campo, erroInvalido, $"{rotulo} deve ser um de: {CodigosAceitos<TEnum>()}.");
         }
+
+        return valor;
     }
 
-    private void ResolverRegime()
-    {
-        string tokens = string.Join(", ", RegimesDeTurno.TokensCanonicos);
-        if (string.IsNullOrWhiteSpace(declaracao.RegimeDeTurno))
-        {
-            AdicionarErro("regimeDeTurno", OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio, $"Regime de turno é obrigatório e deve ser um de: {tokens}.");
-            return;
-        }
-
-        _regimeReconhecido = RegimesDeTurno.TryAnalisar(declaracao.RegimeDeTurno, out _regime);
-        if (!_regimeReconhecido)
-        {
-            AdicionarErro("regimeDeTurno", OfertaCursoErrorCodes.RegimeDeTurnoInvalido, $"Regime de turno deve ser um de: {tokens}.");
-        }
-    }
-
-    // Obrigatórios em todo formato pedagógico, a distância inclusive: não há ramo por formato aqui, de propósito.
+    // Obrigatórios em todo formato pedagógico, a distância inclusive: não há distinção por formato aqui, de propósito.
     private void ResolverTurnos()
     {
         if (declaracao.Turnos is null || declaracao.Turnos.Count == 0)
@@ -163,10 +162,10 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
 
     private void ConferirTurnosDeclarados(IReadOnlyList<string?> declarados)
     {
-        List<TurnoOferta> reconhecidos = [.. declarados.Select(ReconhecerTurno).OfType<TurnoOferta>()];
+        List<TurnoOferta> reconhecidos = [.. declarados.Select(static codigo => Reconhecer<TurnoOferta>(codigo)).OfType<TurnoOferta>()];
         if (reconhecidos.Count != declarados.Count)
         {
-            AdicionarErroDeTurnos(OfertaCursoErrorCodes.TurnoInvalido, $"Turno da oferta deve ser um de: {string.Join(", ", TurnosOferta.TokensCanonicos)}.");
+            AdicionarErroDeTurnos(OfertaCursoErrorCodes.TurnoInvalido, $"Turno da oferta deve ser um de: {CodigosAceitos<TurnoOferta>()}.");
         }
         else if (reconhecidos.Distinct().Count() != reconhecidos.Count)
         {
@@ -175,32 +174,38 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         else
         {
             _turnos = reconhecidos;
-            _turnosResolvidos = true;
         }
     }
 
     // O regime é o declarado: dois turnos sob REGULAR é recusa, nunca promoção silenciosa a INTEGRAL.
     private void ConferirCardinalidadeDosTurnos()
     {
-        int exigidos = _regimeReconhecido ? RegimesDeTurno.TurnosExigidos(_regime) : 0;
-        if (_regimeReconhecido && _turnosResolvidos && _turnos.Count != exigidos)
+        if (_regime is not { } regime || _turnos is not { } turnos)
+        {
+            return;
+        }
+
+        int exigidos = RegimesDeTurno.TurnosExigidos(regime);
+        if (turnos.Count != exigidos)
         {
             AdicionarErroDeTurnos(
                 OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime,
-                $"O regime {RegimesDeTurno.ParaTokenCanonico(_regime)} exige exatamente {exigidos} turno(s); foram informados {_turnos.Count}.");
+                $"O regime {regime.Codigo()} exige exatamente {exigidos} turno(s); foram informados {turnos.Count}.");
         }
     }
 
     // INTENSIVO exige regime de turno INTEGRAL; nenhuma dimensão é convertida para acomodar a outra: a recusa é o resultado.
     private void ConferirFuncionamentoComRegime()
     {
-        RegimeDeTurno? exigido = _funcionamentoReconhecido ? RegimesDeFuncionamento.RegimeDeTurnoExigido(_funcionamento) : null;
-        if (_regimeReconhecido && exigido is not null && _regime != exigido)
+        if (_funcionamento is { } funcionamento
+            && _regime is { } regime
+            && RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento) is { } exigido
+            && regime != exigido)
         {
-            _erros.Add(new("regimeDeFuncionamento", new DomainError(
+            AdicionarErro(
+                "regimeDeFuncionamento",
                 OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
-                $"A oferta {RegimesDeFuncionamento.ParaTokenCanonico(_funcionamento)} exige regime de turno "
-                + $"{RegimesDeTurno.ParaTokenCanonico(exigido.Value)}; foi declarado {RegimesDeTurno.ParaTokenCanonico(_regime)}.")));
+                $"A oferta {funcionamento.Codigo()} exige regime de turno {exigido.Codigo()}; foi declarado {regime.Codigo()}.");
         }
     }
 
@@ -245,6 +250,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         where TEnum : struct, Enum =>
         string.Join(", ", CatalogoDe<TEnum>.Todos().Select(static declarado => declarado.Codigo));
 
-    private static TurnoOferta? ReconhecerTurno(string? token) =>
-        TurnosOferta.TryAnalisar(token, out TurnoOferta turno) ? turno : null;
+    private static TEnum? Reconhecer<TEnum>(string? codigo)
+        where TEnum : struct, Enum =>
+        CatalogoDe<TEnum>.TentarObter(codigo, out TEnum valor) ? valor : null;
 }

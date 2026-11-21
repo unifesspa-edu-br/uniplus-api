@@ -22,6 +22,12 @@ public sealed class OfertaLidaDoCursorTests
         new(CamposOrdenacaoOfertaCurso.FormatoPedagogico, SortDirection.Descending),
     ];
 
+    private static readonly IReadOnlyList<SortField> CamposDosRegimes =
+    [
+        new(CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento, SortDirection.Ascending),
+        new(CamposOrdenacaoOfertaCurso.RegimeDeTurno, SortDirection.Descending),
+    ];
+
     [Theory(DisplayName = "Os códigos conhecidos do cursor voltam ao programa e ao formato")]
     [InlineData("REGULAR", "PRESENCIAL", ProgramaDeOferta.Regular, FormatoPedagogico.Presencial)]
     [InlineData("FORMA_PARA", "SEMIPRESENCIAL", ProgramaDeOferta.FormaPara, FormatoPedagogico.Semipresencial)]
@@ -31,7 +37,7 @@ public sealed class OfertaLidaDoCursorTests
     {
         Guid id = Guid.CreateVersion7();
 
-        OfertaCursoOrdenada oferta = Remontar([programa, formato], id);
+        OfertaCursoOrdenada oferta = Remontar(Campos, [programa, formato], id);
 
         oferta.Id.Should().Be(id);
         oferta.ProgramaDeOferta.Should().Be(programaEsperado);
@@ -46,14 +52,43 @@ public sealed class OfertaLidaDoCursorTests
     [InlineData("REGULAR", "")]
     public void Remontar_CodigoDesconhecido_LancaArgumentException(string programa, string formato)
     {
-        Action act = () => Remontar([programa, formato], Guid.CreateVersion7());
+        Action act = () => Remontar(Campos, [programa, formato], Guid.CreateVersion7());
 
         act.Should().Throw<ArgumentException>();
     }
 
-    private static OfertaCursoOrdenada Remontar(string[] partes, Guid id)
+    [Theory(DisplayName = "Os códigos conhecidos do cursor voltam aos regimes de funcionamento e de turno")]
+    [InlineData("INTENSIVO", "INTEGRAL", RegimeDeFuncionamento.Intensivo, RegimeDeTurno.Integral)]
+    [InlineData("EXTENSIVO", "REGULAR", RegimeDeFuncionamento.Extensivo, RegimeDeTurno.Regular)]
+    [InlineData("ALTERNANCIA_PEDAGOGICA", "INTEGRAL", RegimeDeFuncionamento.AlternanciaPedagogica, RegimeDeTurno.Integral)]
+    public void Remontar_RegimesConhecidos_VoltamAoValor(
+        string funcionamento, string regime, RegimeDeFuncionamento funcionamentoEsperado, RegimeDeTurno regimeEsperado)
     {
-        KeysetSort<OfertaCursoOrdenada> ordenacao = OrdenacaoDeCursos.DeOfertas(Campos, []);
+        OfertaCursoOrdenada oferta = Remontar(CamposDosRegimes, [funcionamento, regime], Guid.CreateVersion7());
+
+        oferta.RegimeDeFuncionamento.Should().Be(funcionamentoEsperado);
+        oferta.RegimeDeTurno.Should().Be(regimeEsperado);
+    }
+
+    [Theory(DisplayName = "Regime desconhecido, em outra caixa, com espaço ou vazio lança ArgumentException")]
+    [InlineData("SEMI_INTENSIVO", "INTEGRAL")]
+    [InlineData("intensivo", "INTEGRAL")]
+    [InlineData(" INTENSIVO", "INTEGRAL")]
+    [InlineData("", "INTEGRAL")]
+    [InlineData("INTENSIVO", "PARCIAL")]
+    [InlineData("INTENSIVO", "regular")]
+    [InlineData("INTENSIVO", "REGULAR ")]
+    [InlineData("INTENSIVO", "")]
+    public void Remontar_RegimeDesconhecido_LancaArgumentException(string funcionamento, string regime)
+    {
+        Action act = () => Remontar(CamposDosRegimes, [funcionamento, regime], Guid.CreateVersion7());
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    private static OfertaCursoOrdenada Remontar(IReadOnlyList<SortField> campos, string[] partes, Guid id)
+    {
+        KeysetSort<OfertaCursoOrdenada> ordenacao = OrdenacaoDeCursos.DeOfertas(campos, []);
         PropertyInfo propriedade = typeof(KeysetSort<OfertaCursoOrdenada>)
             .GetProperty("BuildAnchor", BindingFlags.NonPublic | BindingFlags.Instance)
             .Should().NotBeNull().And.Subject.As<PropertyInfo>();

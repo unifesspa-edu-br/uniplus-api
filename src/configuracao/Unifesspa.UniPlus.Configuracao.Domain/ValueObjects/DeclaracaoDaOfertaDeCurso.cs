@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
 /// O que a gestão declara de uma oferta de curso, em criação e em edição: o código, os regimes, os turnos e os atributos
-/// regulatórios, ainda como chegam (tokens textuais UPPER_SNAKE e texto livre). Curso, local e unidade ofertante não fazem
+/// regulatórios, ainda como chegam (códigos de contrato e texto livre). Curso, local e unidade ofertante não fazem
 /// parte da declaração porque nunca mudam depois da criação.
 /// </summary>
 /// <param name="Codigo">Código informado pela gestão, obrigatório.</param>

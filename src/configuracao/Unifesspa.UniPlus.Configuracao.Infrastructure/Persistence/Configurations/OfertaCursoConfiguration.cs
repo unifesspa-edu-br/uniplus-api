@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<OfertaCurso>
@@ -60,12 +60,10 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     private static void ConfigurarRegimes(EntityTypeBuilder<OfertaCurso> builder)
     {
         builder.Property(o => o.RegimeDeFuncionamento)
-            .HasConversion<RegimeDeFuncionamentoValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(o => o.RegimeDeTurno)
-            .HasConversion<RegimeDeTurnoValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
@@ -80,9 +78,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         builder.PrimitiveCollection(o => o.Turnos)
             .HasColumnName("turnos")
-            .ElementType(elemento => elemento
-                .HasConversion<TurnoOfertaValueConverter>()
-                .HasMaxLength(CodigoDeContratoMaxLength))
+            .ElementType(elemento => elemento.HasMaxLength(CodigoDeContratoMaxLength))
             .UsePropertyAccessMode(PropertyAccessMode.Field)
             .IsRequired();
     }
@@ -101,7 +97,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         builder.Property(o => o.AtoAutorizacaoMec).HasMaxLength(AtoAutorizacaoMecMaxLength);
     }
 
-    // Snapshot-copy da unidade ofertante (ADR-0061): owned type obrigatório,
+    // Cópia dos dados da unidade ofertante (ADR-0061): owned type obrigatório,
     // table splitting em colunas unidade_oft_* — todas NOT NULL, SEM FK para
     // Organização (a proveniência é só o origem_id).
     private static void ConfigurarUnidadeOfertante(EntityTypeBuilder<OfertaCurso> builder)
@@ -208,15 +204,15 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_regime_de_turno",
-            $"regime_de_turno IN ({CodigosSql(RegimesDeTurno.TokensCanonicos)})");
+            $"regime_de_turno IN ({SqlDosCodigosDeContrato.Lista<RegimeDeTurno>()})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_regime_de_funcionamento",
-            $"regime_de_funcionamento IN ({CodigosSql(RegimesDeFuncionamento.TokensCanonicos)})");
+            $"regime_de_funcionamento IN ({SqlDosCodigosDeContrato.Lista<RegimeDeFuncionamento>()})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_turnos_dominio",
-            $"turnos::text[] <@ ARRAY[{CodigosSql(TurnosOferta.TokensCanonicos)}]::text[]");
+            $"turnos::text[] <@ ARRAY[{SqlDosCodigosDeContrato.Lista<TurnoOferta>()}]::text[]");
     }
 
     // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
@@ -231,12 +227,20 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     // array_ndims/array_lower são NULL.
     private static void ConfigurarChecksDosTurnos(TableBuilder<OfertaCurso> table)
     {
-        table.HasCheckConstraint(
-            "ck_ofertas_de_curso_turnos_regime",
-            "coalesce(array_ndims(turnos), 0) = 1 "
+        table.HasCheckConstraint("ck_ofertas_de_curso_turnos_regime", CardinalidadeDosTurnosSql());
+    }
+
+    private static string CardinalidadeDosTurnosSql()
+    {
+        string regular = SqlDosCodigosDeContrato.Literal(RegimeDeTurno.Regular);
+        string integral = SqlDosCodigosDeContrato.Literal(RegimeDeTurno.Integral);
+        int turnosDoRegular = RegimesDeTurno.TurnosExigidos(RegimeDeTurno.Regular);
+        int turnosDoIntegral = RegimesDeTurno.TurnosExigidos(RegimeDeTurno.Integral);
+
+        return "coalesce(array_ndims(turnos), 0) = 1 "
             + "AND coalesce(array_lower(turnos, 1), 1) = 1 "
-            + "AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) "
-            + "OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
+            + $"AND ((regime_de_turno = {regular} AND cardinality(turnos) = {turnosDoRegular}) "
+            + $"OR (regime_de_turno = {integral} AND cardinality(turnos) = {turnosDoIntegral} AND turnos[1] <> turnos[2]))";
     }
 
     // Compatibilidade entre as duas dimensões (UNI-REQ-0138): a oferta
@@ -254,23 +258,16 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     // Uma cláusula por regime de funcionamento que restringe o regime de turno;
     // os que não restringem (EXTENSIVO e ALTERNANCIA_PEDAGOGICA) não entram na expressão. Com o
     // vocabulário atual resulta em
-    // `regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL'`.
+    // `(regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL')`.
     private static string CompatibilidadeFuncionamentoRegimeSql()
     {
-        IEnumerable<string> clausulas = RegimesDeFuncionamento.TokensCanonicos
-            .Select(codigo =>
-            {
-                RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento funcionamento);
-                return (Codigo: codigo, Exigido: RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento));
-            })
+        IEnumerable<string> clausulas = CatalogoDe<RegimeDeFuncionamento>.Valores()
+            .Select(funcionamento => (Funcionamento: funcionamento, Exigido: RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento)))
             .Where(par => par.Exigido is not null)
             .Select(par =>
-                $"(regime_de_funcionamento <> '{par.Codigo}' "
-                + $"OR regime_de_turno = '{RegimesDeTurno.ParaTokenCanonico(par.Exigido!.Value)}')");
+                $"(regime_de_funcionamento <> {SqlDosCodigosDeContrato.Literal(par.Funcionamento)} "
+                + $"OR regime_de_turno = {SqlDosCodigosDeContrato.Literal(par.Exigido!.Value)})");
 
         return string.Join(" AND ", clausulas);
     }
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }
