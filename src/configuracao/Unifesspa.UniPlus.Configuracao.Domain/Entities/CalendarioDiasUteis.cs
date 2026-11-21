@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -33,7 +32,21 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
 {
     private const int VersaoDatasetMinLength = 1;
     private const int VersaoDatasetMaxLength = 60;
-    private const int DescricaoMaxLength = 200;
+
+    private static readonly DomainError DataDuplicada = new(
+        CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
+        "Data duplicada no dataset (mesma abrangência, município e UF).");
+
+    private static readonly DomainError VersaoObrigatoria = new(
+        CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria, "Versão do dataset é obrigatória.");
+
+    private static readonly DomainError VersaoComTamanhoInvalido = new(
+        CalendarioDiasUteisErrorCodes.VersaoDatasetTamanho,
+        $"Versão do dataset deve ter entre {VersaoDatasetMinLength} e {VersaoDatasetMaxLength} caracteres.");
+
+    private static readonly DomainError SemDiaNaoUtil = new(
+        CalendarioDiasUteisErrorCodes.SemDiaNaoUtil,
+        "O dataset precisa de ao menos um dia não útil — um calendário vazio não conta nada.");
 
     private readonly List<DiaNaoUtil> _diasNaoUteis = [];
 
@@ -58,31 +71,15 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public static Result<CalendarioDiasUteis> Criar(string? versaoDataset, IReadOnlyList<DiaNaoUtilCriacao?>? diasNaoUteis)
     {
-        Result<(string VersaoDataset, IReadOnlyList<DiaNaoUtilResolvido> DiasNaoUteis)> validacao =
-            ValidarCampos(versaoDataset, diasNaoUteis);
-        if (validacao.IsFailure)
+        var calendario = new CalendarioDiasUteis { Vigente = false };
+        Result<string> versao = ConferirVersaoDoDataset(versaoDataset);
+        FieldError[] recusas = [.. versao.Errors, .. calendario.IncluirDiasDoDataset(diasNaoUteis)];
+        if (versao.Value is not { } versaoConferida || recusas.Length > 0)
         {
-            return Result<CalendarioDiasUteis>.ValidationFailure(validacao.Errors);
+            return Result<CalendarioDiasUteis>.ValidationFailure(recusas);
         }
 
-        var calendario = new CalendarioDiasUteis
-        {
-            VersaoDataset = validacao.Value.VersaoDataset,
-            Vigente = false,
-        };
-
-        foreach (DiaNaoUtilResolvido dia in validacao.Value.DiasNaoUteis)
-        {
-            calendario._diasNaoUteis.Add(DiaNaoUtil.Abrir(
-                calendario.Id,
-                dia.Abrangencia,
-                dia.MunicipioIbge,
-                dia.MunicipioNome,
-                dia.MunicipioUf,
-                dia.Uf,
-                dia.Data,
-                dia.Descricao));
-        }
+        calendario.VersaoDataset = versaoConferida;
 
         return Result<CalendarioDiasUteis>.Success(calendario);
     }
@@ -114,270 +111,94 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// <see cref="Id"/>, <see cref="VersaoDataset"/> e todas as datas já
     /// cadastradas (api#1458). Aplica as mesmas validações de campo usadas em
     /// <see cref="Criar"/> e recusa duplicata contra as datas <b>já persistidas</b>
-    /// no agregado — diferente da checagem de <see cref="Criar"/>, que só compara
-    /// itens dentro do mesmo payload de criação, porque ali o dataset ainda não
-    /// existe para nenhum outro chamador competir. A defesa final contra duplicata
+    /// no agregado, a mesma checagem que <see cref="Criar"/> aplica a cada item
+    /// contra os itens já aceitos da lista. A defesa final contra duplicata
     /// sob concorrência real é o índice único de banco (sem token de concorrência
     /// no pai: inserir um filho não muta o pai, então nada aqui depende de
     /// <c>xmin</c>).
     /// </summary>
     public Result<DiaNaoUtil> IncluirDiaNaoUtil(DiaNaoUtilCriacao? item)
     {
-        Result<DiaNaoUtilResolvido> validacao = ValidarItem(item, "item");
-        if (validacao.IsFailure)
+        Result<DiaNaoUtilResolvido> conferido = ConferenciaDoDiaNaoUtil.Conferir(item, "item");
+        if (conferido.Value is not { } resolvido)
         {
-            return Result<DiaNaoUtil>.ValidationFailure(validacao.Errors);
+            return Result<DiaNaoUtil>.ValidationFailure(conferido.Errors);
         }
 
-        DiaNaoUtilResolvido resolvido = validacao.Value!;
-
-        bool duplicado = _diasNaoUteis.Any(existente =>
-            existente.Data == resolvido.Data
-            && existente.Abrangencia == resolvido.Abrangencia
-            && existente.MunicipioIbge == resolvido.MunicipioIbge
-            && existente.Uf == resolvido.Uf);
-        if (duplicado)
+        if (JaCadastrado(resolvido))
         {
-            return Result<DiaNaoUtil>.Failure(new DomainError(
-                CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
-                "Data duplicada no dataset (mesma abrangência, município e UF)."));
+            return Result<DiaNaoUtil>.Failure(DataDuplicada);
         }
 
-        DiaNaoUtil dia = DiaNaoUtil.Abrir(
-            Id,
-            resolvido.Abrangencia,
-            resolvido.MunicipioIbge,
-            resolvido.MunicipioNome,
-            resolvido.MunicipioUf,
-            resolvido.Uf,
-            resolvido.Data,
-            resolvido.Descricao);
+        return Result<DiaNaoUtil>.Success(Acrescentar(resolvido));
+    }
+
+    private bool JaCadastrado(DiaNaoUtilResolvido dia) => _diasNaoUteis.Any(existente =>
+        existente.Data == dia.Data
+        && existente.Abrangencia == dia.Abrangencia
+        && existente.MunicipioIbge == dia.MunicipioIbge
+        && existente.Uf == dia.Uf);
+
+    private DiaNaoUtil Acrescentar(DiaNaoUtilResolvido resolvido)
+    {
+        DiaNaoUtil dia = DiaNaoUtil.Abrir(Id, resolvido);
         _diasNaoUteis.Add(dia);
 
-        return Result<DiaNaoUtil>.Success(dia);
+        return dia;
     }
 
     /// <summary>
-    /// Valida e normaliza versão do dataset e a lista de dias não úteis,
-    /// acumulando toda violação independente em vez de parar na primeira — cada
-    /// item da lista é rotulado por posição (<c>diasNaoUteis[i]</c> e seus
-    /// subcampos), já que a lista é heterogênea (cada item pode falhar por uma
-    /// causa distinta). Checagens dependentes de um campo (coerência de
-    /// município, obrigatoriedade de UF) só rodam quando esse campo já é válido,
-    /// para não mascarar a causa raiz.
+    /// Inclui os dias da lista de criação, acumulando toda recusa em vez de parar na primeira; cada item é rotulado por
+    /// posição (<c>diasNaoUteis[i]</c> e seus subcampos). Item recusado não entra no dataset, então não provoca recusa
+    /// de repetição derivada.
     /// </summary>
-    private static Result<(string VersaoDataset, IReadOnlyList<DiaNaoUtilResolvido> DiasNaoUteis)> ValidarCampos(
-        string? versaoDataset, IReadOnlyList<DiaNaoUtilCriacao?>? diasNaoUteis)
+    private List<FieldError> IncluirDiasDoDataset(IReadOnlyList<DiaNaoUtilCriacao?>? dias)
     {
-        List<FieldError> erros = [];
+        if (dias is null || dias.Count == 0)
+        {
+            return [new FieldError("diasNaoUteis", SemDiaNaoUtil)];
+        }
 
-        string? versaoNormalizada = null;
+        List<FieldError> recusas = [];
+        for (int indice = 0; indice < dias.Count; indice++)
+        {
+            recusas.AddRange(IncluirDiaDoDataset(dias[indice], $"diasNaoUteis[{indice}]").Errors);
+        }
+
+        return recusas;
+    }
+
+    private Result IncluirDiaDoDataset(DiaNaoUtilCriacao? item, string campo)
+    {
+        Result<DiaNaoUtilResolvido> conferido = ConferenciaDoDiaNaoUtil.Conferir(item, campo);
+        if (conferido.Value is not { } resolvido)
+        {
+            return Result.ValidationFailure(conferido.Errors);
+        }
+
+        if (JaCadastrado(resolvido))
+        {
+            return Result.ValidationFailure([new FieldError(campo, DataDuplicada)]);
+        }
+
+        Acrescentar(resolvido);
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Confere a versão do dataset: obrigatória e dentro do tamanho, devolvendo-a sem espaços nas pontas.
+    /// </summary>
+    private static Result<string> ConferirVersaoDoDataset(string? versaoDataset)
+    {
         if (string.IsNullOrWhiteSpace(versaoDataset))
         {
-            erros.Add(new("versaoDataset", new DomainError(
-                CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria, "Versão do dataset é obrigatória.")));
-        }
-        else
-        {
-            versaoNormalizada = versaoDataset.Trim();
-            if (versaoNormalizada.Length is < VersaoDatasetMinLength or > VersaoDatasetMaxLength)
-            {
-                erros.Add(new("versaoDataset", new DomainError(
-                    CalendarioDiasUteisErrorCodes.VersaoDatasetTamanho,
-                    $"Versão do dataset deve ter entre {VersaoDatasetMinLength} e {VersaoDatasetMaxLength} caracteres.")));
-                versaoNormalizada = null;
-            }
+            return Result<string>.ValidationFailure([new FieldError("versaoDataset", VersaoObrigatoria)]);
         }
 
-        var resolvidos = new List<DiaNaoUtilResolvido>(diasNaoUteis?.Count ?? 0);
-
-        if (diasNaoUteis is null || diasNaoUteis.Count == 0)
-        {
-            erros.Add(new("diasNaoUteis", new DomainError(
-                CalendarioDiasUteisErrorCodes.SemDiaNaoUtil,
-                "O dataset precisa de ao menos um dia não útil — um calendário vazio não conta nada.")));
-        }
-        else
-        {
-            var vistos = new HashSet<(DateOnly Data, Abrangencia Abrangencia, string? Municipio, string? Uf)>();
-
-            for (int indice = 0; indice < diasNaoUteis.Count; indice++)
-            {
-                string prefixo = $"diasNaoUteis[{indice}]";
-                Result<DiaNaoUtilResolvido> validacaoItem = ValidarItem(diasNaoUteis[indice], prefixo);
-                if (validacaoItem.IsFailure)
-                {
-                    erros.AddRange(validacaoItem.Errors);
-                    continue;
-                }
-
-                DiaNaoUtilResolvido resolvido = validacaoItem.Value!;
-
-                if (!vistos.Add((resolvido.Data, resolvido.Abrangencia, resolvido.MunicipioIbge, resolvido.Uf)))
-                {
-                    erros.Add(new(prefixo, new DomainError(
-                        CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
-                        "Data duplicada no dataset (mesma abrangência, município e UF).")));
-                    continue;
-                }
-
-                resolvidos.Add(resolvido);
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, IReadOnlyList<DiaNaoUtilResolvido>)>.ValidationFailure(erros);
-        }
-
-        return Result<(string, IReadOnlyList<DiaNaoUtilResolvido>)>.Success((versaoNormalizada!, resolvidos));
+        string versao = versaoDataset.Trim();
+        return versao.Length is < VersaoDatasetMinLength or > VersaoDatasetMaxLength
+            ? Result<string>.ValidationFailure([new FieldError("versaoDataset", VersaoComTamanhoInvalido)])
+            : Result<string>.Success(versao);
     }
-
-    /// <summary>
-    /// Valida e normaliza um único item de dia não útil, retornando os erros já
-    /// rotulados por <paramref name="prefixo"/> — <c>"diasNaoUteis[i]"</c> quando
-    /// chamado de dentro do laço de <see cref="ValidarCampos"/>, <c>"item"</c>
-    /// quando chamado de <see cref="IncluirDiaNaoUtil"/>. Extraído de
-    /// <see cref="ValidarCampos"/> para reuso entre os dois pontos de entrada — não
-    /// faz checagem de duplicata: cada chamador decide contra qual conjunto (o
-    /// próprio payload em <see cref="Criar"/>, ou o agregado já persistido em
-    /// <see cref="IncluirDiaNaoUtil"/>).
-    /// </summary>
-    private static Result<DiaNaoUtilResolvido> ValidarItem(DiaNaoUtilCriacao? dia, string prefixo)
-    {
-        List<FieldError> erros = [];
-
-        if (dia is null)
-        {
-            erros.Add(new(prefixo, new DomainError(
-                CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo, "Item de dia não útil não pode ser nulo.")));
-            return Result<DiaNaoUtilResolvido>.ValidationFailure(erros);
-        }
-
-        if (dia.Data == default)
-        {
-            // O model binding do ASP.NET Core não recusa "data" ausente no JSON
-            // (RespectRequiredConstructorParameters desabilitado): um payload sem
-            // o campo materializa DateOnly.MinValue (0001-01-01) em vez de falhar
-            // no bind. Sem esta checagem, essa data passaria para o agregado, e um
-            // dataset vigente com ela seria irreconstruível na publicação —
-            // DiaNaoUtilCongelado.Criar (Selecao) recusa o mesmo default (mesma
-            // razão), então o defeito só apareceria ali, longe de onde nasceu.
-            erros.Add(new($"{prefixo}.data", new DomainError(
-                CalendarioDiasUteisErrorCodes.DataAusente,
-                "A data do dia não útil não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")));
-        }
-
-        bool abrangenciaValida = Abrangencias.TryAnalisar(dia.Abrangencia, out Abrangencia abrangencia);
-        if (!abrangenciaValida)
-        {
-            erros.Add(new($"{prefixo}.abrangencia", new DomainError(
-                CalendarioDiasUteisErrorCodes.AbrangenciaInvalida,
-                "Abrangência inválida. Deve ser uma de: " + string.Join(", ", Abrangencias.TokensCanonicos) + ".")));
-        }
-
-        string? municipioIbgeNorm = string.IsNullOrWhiteSpace(dia.MunicipioIbge) ? null : dia.MunicipioIbge.Trim();
-        string? municipioNomeNorm = string.IsNullOrWhiteSpace(dia.MunicipioNome) ? null : dia.MunicipioNome.Trim();
-        string? municipioUfNorm = string.IsNullOrWhiteSpace(dia.MunicipioUf)
-            ? null
-            : dia.MunicipioUf.Trim().ToUpperInvariant();
-
-        if (abrangenciaValida && abrangencia == Abrangencia.Municipal)
-        {
-            Result referenciaMunicipal = ReferenciaCidadeGeo.Validar(
-                municipioIbgeNorm,
-                municipioNomeNorm,
-                municipioUfNorm);
-
-            if (referenciaMunicipal.IsFailure)
-            {
-                foreach (FieldError erroMunicipio in referenciaMunicipal.Errors)
-                {
-                    erros.Add(new($"{prefixo}.{CampoDoMunicipio(erroMunicipio.Error.Code)}", erroMunicipio.Error));
-                }
-            }
-        }
-        else if (abrangenciaValida
-            && (municipioIbgeNorm is not null || municipioNomeNorm is not null || municipioUfNorm is not null))
-        {
-            erros.Add(new(prefixo, new DomainError(
-                CalendarioDiasUteisErrorCodes.SnapshotMunicipalApenasParaMunicipal,
-                "Referência do município só se aplica a abrangência municipal.")));
-        }
-
-        string? ufNorm = string.IsNullOrWhiteSpace(dia.Uf) ? null : dia.Uf.Trim().ToUpperInvariant();
-
-        if (abrangenciaValida && abrangencia == Abrangencia.Estadual)
-        {
-            if (ufNorm is null)
-            {
-                erros.Add(new($"{prefixo}.uf", new DomainError(
-                    CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
-                    "UF é obrigatória para abrangência estadual — sem ela, feriados de estados "
-                    + "diferentes seriam indistinguíveis.")));
-            }
-            else if (ufNorm.Length != ReferenciaCidadeGeo.UfLength || !ReferenciaCidadeGeo.EhUfValida(ufNorm))
-            {
-                erros.Add(new($"{prefixo}.uf", new DomainError(
-                    CalendarioDiasUteisErrorCodes.UfFormatoInvalido,
-                    "UF deve ser uma das 27 siglas válidas.")));
-                ufNorm = null;
-            }
-        }
-        else if (abrangenciaValida && ufNorm is not null)
-        {
-            erros.Add(new($"{prefixo}.uf", new DomainError(
-                CalendarioDiasUteisErrorCodes.UfApenasParaEstadual,
-                "UF só se aplica a abrangência estadual.")));
-            ufNorm = null;
-        }
-
-        string? descricaoNorm = null;
-        if (string.IsNullOrWhiteSpace(dia.Descricao))
-        {
-            erros.Add(new($"{prefixo}.descricao", new DomainError(
-                CalendarioDiasUteisErrorCodes.DescricaoObrigatoria, "Descrição é obrigatória.")));
-        }
-        else
-        {
-            descricaoNorm = dia.Descricao.Trim();
-            if (descricaoNorm.Length > DescricaoMaxLength)
-            {
-                erros.Add(new($"{prefixo}.descricao", new DomainError(
-                    CalendarioDiasUteisErrorCodes.DescricaoTamanho,
-                    $"Descrição deve ter no máximo {DescricaoMaxLength} caracteres.")));
-                descricaoNorm = null;
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<DiaNaoUtilResolvido>.ValidationFailure(erros);
-        }
-
-        return Result<DiaNaoUtilResolvido>.Success(new DiaNaoUtilResolvido(
-            abrangencia,
-            municipioIbgeNorm,
-            municipioNomeNorm,
-            municipioUfNorm,
-            ufNorm,
-            dia.Data,
-            descricaoNorm!));
-    }
-
-    /// <summary>
-    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
-    /// subcampo (camelCase, ADR-0023) do item de dia não útil a que ele se refere
-    /// de fato — sem isso, todo erro de município seria rotulado com o mesmo
-    /// campo, mesmo quando a causa é o nome ou a UF, não o código IBGE.
-    /// </summary>
-    private static string CampoDoMunicipio(string codigoErro) => codigoErro switch
-    {
-        CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
-            or CidadeReferenciaErrorCodes.NomeTamanho => "municipioNome",
-        CidadeReferenciaErrorCodes.UfObrigatoria
-            or CidadeReferenciaErrorCodes.UfIncoerente => "municipioUf",
-        _ => "municipioIbge",
-    };
 }
