@@ -64,7 +64,7 @@ O `docker compose up` já sobe com uma base pronta, restaurada na primeira subid
 e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
 
 - **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas) e `psm-2027` (Medicina, sem inscrições). A inscrição de `psm-2027` vai de
-  08/11/2026 às 00:00 até 23/11/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 08/11/2026 às 00:00 até 21/11/2026 às 05:24:41, horário de Belém.
+  08/11/2026 às 00:00 até 23/11/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 08/11/2026 às 00:00 até 21/11/2026 às 08:50:50, horário de Belém.
 - **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
   senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
   `betina.neves` e `caroline.jesus`; Encarregado de dados: `marlene.martins`.
@@ -98,9 +98,9 @@ anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
 - Use um nome de projeto próprio no compose (`-p base-local`), para não apagar os volumes do seu ambiente de trabalho.
 - Tenha `jq` e `curl` instalados e o repositório `uniplus-developers` clonado ao lado deste: o roteiro das notas do ENEM lê
   `uniplus-developers/src/data/fake-people.json`.
-- A geração sobe o ambiente completo e roda os roteiros: conta como teste pesado. Na geração de prova de 21/11/2026, a subida do ambiente levou cerca de 9 minutos (a maior parte é a construção das imagens),
-  os perfis e as concessões 22 segundos, o processo da Medicina 12 segundos e o processo multicurso 18 segundos; a espera pelo fim do
-  período de inscrição do multicurso (40 minutos) é a maior parte do tempo total. A prova em projeto limpo levou cerca de 1 minuto para subir.
+- A geração sobe o ambiente completo e roda os roteiros: conta como teste pesado. Na geração de prova de 21/11/2026, a subida do ambiente levou cerca de 2 minutos (com as imagens já construídas; sem elas, a construção leva a maior parte do tempo),
+  os perfis e as concessões 21 segundos, o processo da Medicina 16 segundos e o processo multicurso 15 segundos; a espera pelo fim do
+  período de inscrição do multicurso (40 minutos) é a maior parte do tempo total. A prova em projeto limpo levou cerca de 1,5 minuto para subir.
 
 **Passos** (a partir da raiz do repositório)
 

@@ -14542,6 +14542,7 @@
       "CronogramaDaFaseDto": {
         "required": [
           "ordem",
+          "noMesmoMomentoDaAnterior",
           "inicio",
           "fim",
           "unidadeResponsavel"
@@ -14551,6 +14552,9 @@
           "ordem": {
             "type": "integer",
             "format": "int32"
+          },
+          "noMesmoMomentoDaAnterior": {
+            "type": "boolean"
           },
           "inicio": {
             "type": [
@@ -16374,7 +16378,7 @@
         "properties": {
           "fases": {
             "title": "Fases",
-            "description": "Fases do cronograma, na ordem da linha do tempo do processo: a posi\u00E7\u00E3o na lista \u00E9 a ordem de cada fase. A chave de cada fase \u00E9 \u00FAnica no documento.",
+            "description": "Fases do cronograma, na ordem da linha do tempo do processo: a posi\u00E7\u00E3o na lista \u00E9 a ordem de cada fase, e cada fase acontece depois da anterior, salvo a que est\u00E1 marcada para acontecer no mesmo momento dela. A chave de cada fase \u00E9 \u00FAnica no documento.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronogramaFase"
@@ -16401,6 +16405,12 @@
             "title": "Fase can\u00F4nica",
             "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "noMesmoMomentoDaAnterior": {
+            "title": "No mesmo momento da fase anterior",
+            "description": "A fase acontece no mesmo momento da fase que a antecede na lista. N\u00E3o vale na primeira fase.",
+            "type": "boolean",
+            "default": false
           },
           "inicio": {
             "title": "In\u00EDcio da fase",
@@ -20313,6 +20323,9 @@
                 "$ref": "#/components/schemas/RegraDeHomologacaoInput"
               }
             ]
+          },
+          "noMesmoMomentoDaAnterior": {
+            "type": "boolean"
           }
         }
       },

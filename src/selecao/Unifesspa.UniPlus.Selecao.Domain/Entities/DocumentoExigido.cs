@@ -192,7 +192,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         {
             erros.Add(new("condicoes", new DomainError(
                 "DocumentoExigido.GeralComCondicao",
-                "A exigência é GERAL e não pode conviver com condição de gatilho viva.")));
+                "A exigência é geral e não pode ter condição de aplicação ativa.")));
         }
 
         return erros;
@@ -557,7 +557,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         {
             return new DomainError(
                 "DocumentoExigido.GeralComCondicao",
-                $"A exigência '{TipoDocumentoCodigo}' é GERAL e não pode conviver com condição de gatilho viva.");
+                $"A exigência '{TipoDocumentoCodigo}' é geral e não pode ter condição de aplicação ativa.");
         }
 
         return null;

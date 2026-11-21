@@ -5359,7 +5359,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior",
       "status": 422,
-      "titulo": "O fato citado na condição de gatilho só é conhecido numa fase posterior à fase em que o documento é exigido"
+      "titulo": "O documento é exigido por um fato que só se conhece numa fase posterior"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.fatos_comprovados_invalidos",
@@ -5374,7 +5374,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.geral_com_condicao",
       "status": 422,
-      "titulo": "Exigência GERAL não pode conviver com condição de gatilho viva"
+      "titulo": "A exigência geral não pode ter condição de aplicação ativa"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.modelo_nao_encontrado",
@@ -5389,7 +5389,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma",
       "status": 422,
-      "titulo": "A fase em que o fato citado na condição de gatilho é conhecido não pertence ao cronograma deste processo"
+      "titulo": "A fase em que o fato citado na condição de aplicação é conhecido não pertence ao cronograma deste processo"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva",
@@ -7192,6 +7192,11 @@
       "titulo": "Toda fase do cronograma precisa de uma unidade responsável para o processo ser publicado"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.fases_com_precedencia_no_mesmo_momento",
+      "status": 422,
+      "titulo": "Fases ligadas por precedência não podem estar no mesmo momento"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.fato_coletado_nao_mais_declarado",
       "status": 422,
       "titulo": "Fato coletado deixou de ser declarado/vinculado a campo de inscrição no catálogo de fatos do candidato"
@@ -7475,6 +7480,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.pressuposto_sem_cadastro",
       "status": 422,
       "titulo": "Fato citado pelas regras de um formulário não encontrado no catálogo de fatos do candidato"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.primeira_fase_no_mesmo_momento_da_anterior",
+      "status": 422,
+      "titulo": "A primeira fase do cronograma não pode estar no mesmo momento da anterior"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.recurso_acessibilidade_referenciado_por_condicao_viva",

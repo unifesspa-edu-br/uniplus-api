@@ -27,7 +27,7 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// Estrutura do cronograma: ordem, fase canônica, precedência, janelas e o piso mínimo derivado da origem dos
+    /// Estrutura do cronograma: ordem, fase canônica, marca de mesmo momento, precedência, janelas e o piso mínimo derivado da origem dos
     /// candidatos e das vagas ofertadas. Todos 422.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EstruturaDoCronograma() =>
@@ -37,6 +37,8 @@ internal static class ErrosDoCronograma
         new("ProcessoSeletivo.FaseCanonicaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_canonica_duplicada", "A mesma fase canônica não pode aparecer duas vezes no cronograma")),
         new("ProcessoSeletivo.PrecedenciaFaseViolada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.precedencia_fase_violada", "A ordem declarada viola a precedência entre fases do cadastro")),
         new("ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida", "Os períodos de duas fases coincidem em parte, e o cadastro não permite essa coincidência")),
+        new(ProcessoSeletivoErrorCodes.PrimeiraFaseNoMesmoMomentoDaAnterior, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.primeira_fase_no_mesmo_momento_da_anterior", "A primeira fase do cronograma não pode estar no mesmo momento da anterior")),
+        new(ProcessoSeletivoErrorCodes.FasesComPrecedenciaNoMesmoMomento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fases_com_precedencia_no_mesmo_momento", "Fases ligadas por precedência não podem estar no mesmo momento")),
         new("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta", "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição")),
         new("ProcessoSeletivo.VagasSemFaseQueProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.vagas_sem_fase_que_produz_resultado", "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado")),
     ];

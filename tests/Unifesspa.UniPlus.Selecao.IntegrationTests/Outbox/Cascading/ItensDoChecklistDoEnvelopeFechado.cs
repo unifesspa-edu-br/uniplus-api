@@ -106,6 +106,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_janela_de_isencao",
         "cronograma_fase_sem_definitivo_sem_data_final",
         "cronograma_vagas_sem_fase_que_produz_resultado",
+        "cronograma_precedencia_entre_fases",
         "cronograma_conclusao_do_ciclo_recursal",
         "cronograma_ancora_do_recurso",
         "cronograma_ancora_do_recurso_da_etapa",

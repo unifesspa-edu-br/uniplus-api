@@ -59,6 +59,7 @@ internal static class SerializacaoDoCronograma
     private static void AcrescentarDecisoesDeCronograma(JsonObject item, FaseCronograma fase)
     {
         item["ordem"] = fase.Ordem;
+        item["noMesmoMomentoDaAnterior"] = fase.NoMesmoMomentoDaAnterior;
         item["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null;
         item["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null;
         item["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null;

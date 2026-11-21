@@ -34,7 +34,17 @@ internal static class CadastrosDeTeste
             .ToDictionary(r => (r.Codigo, r.Versao), r => new RegraDoCatalogoCitada(default, r));
         return new CadastrosDaConfiguracao(cadastros.ContagemDePrazos, cadastros.FatosDeModalidade, cadastros.TiposDeAtoUnicos,
             cadastros.Corretores, cadastros.Protecao, cadastros.MotivosEscolhidos, cadastros.FatosDasVersoesPublicadas)
-        { Regras = regras };
+        { Regras = regras, Precedencias = cadastros.Precedencias, NomesDasFases = cadastros.NomesDasFases };
+    }
+
+    /// <summary>Os mesmos cadastros, com a precedência entre fases que o cenário declara.</summary>
+    public static CadastrosDaConfiguracao ComPrecedencias(this CadastrosDaConfiguracao cadastros, PrecedenciasDosCadastros precedencias)
+    {
+        ArgumentNullException.ThrowIfNull(cadastros);
+
+        return new CadastrosDaConfiguracao(cadastros.ContagemDePrazos, cadastros.FatosDeModalidade, cadastros.TiposDeAtoUnicos,
+            cadastros.Corretores, cadastros.Protecao, cadastros.MotivosEscolhidos, cadastros.FatosDasVersoesPublicadas)
+        { Regras = cadastros.Regras, NomesDasFases = cadastros.NomesDasFases, Precedencias = precedencias };
     }
 
     /// <summary>Os cadastros padrão, trocando só o que o cenário declara.</summary>
@@ -52,5 +62,6 @@ internal static class CadastrosDeTeste
             corretores ?? CorretoresDeTeste.SemConsolidacao,
             protecao ?? SemProtecaoVigente,
             motivosEscolhidos ?? SemMotivosEscolhidos,
-            fatosDasVersoesPublicadas);
+            fatosDasVersoesPublicadas)
+        { Precedencias = PrecedenciasDosCadastros.Lidas([]) };
 }

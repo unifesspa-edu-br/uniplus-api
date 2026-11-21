@@ -8,7 +8,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class FaseDeTeste
 {
     internal static FaseCronograma Criar(
-        int ordem, string codigo, bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false, bool comDatas = true) =>
+        int ordem,
+        string codigo,
+        bool coletaInscricao = false,
+        bool coletaSolicitacaoIsencao = false,
+        bool comDatas = true,
+        bool noMesmoMomentoDaAnterior = false) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, comDatas ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, AgrupaEtapas: false,
@@ -16,7 +21,8 @@ internal static class FaseDeTeste
             new DecisoesDeCronogramaDaFase(
                 ordem, comDatas ? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) : null,
                 comDatas ? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero) : null,
-                UnidadesDeTeste.Ceps),
+                UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []).Value!;
 }

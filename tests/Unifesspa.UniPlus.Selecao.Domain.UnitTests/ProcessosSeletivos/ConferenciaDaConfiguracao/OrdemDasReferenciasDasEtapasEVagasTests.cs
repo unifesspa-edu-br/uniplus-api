@@ -142,7 +142,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         CadastrosDaConfiguracao padrao = Unifesspa.UniPlus.Testes.Compartilhado.CadastrosDeTeste.Padrao;
         return new(padrao.ContagemDePrazos, padrao.FatosDeModalidade, padrao.TiposDeAtoUnicos,
             padrao.Corretores, padrao.Protecao, padrao.MotivosEscolhidos)
-        { NomesDasFases = new Dictionary<Guid, string> { [primeira] = "Inscrição", [segunda] = "Classificação" } };
+        { NomesDasFases = new Dictionary<Guid, string> { [primeira] = "Inscrição", [segunda] = "Classificação" }, Precedencias = padrao.Precedencias };
     }
 
     private static CadastrosDaConfiguracao CadastrosComNome(Guid id, string nome)
@@ -150,7 +150,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         CadastrosDaConfiguracao padrao = Unifesspa.UniPlus.Testes.Compartilhado.CadastrosDeTeste.Padrao;
         return new(padrao.ContagemDePrazos, padrao.FatosDeModalidade, padrao.TiposDeAtoUnicos,
             padrao.Corretores, padrao.Protecao, padrao.MotivosEscolhidos)
-        { NomesDasFases = new Dictionary<Guid, string> { [id] = nome } };
+        { NomesDasFases = new Dictionary<Guid, string> { [id] = nome }, Precedencias = padrao.Precedencias };
     }
 
     private static ConfiguracaoDeclarada ConfiguracaoComOrdemDeEntradaDiferente()

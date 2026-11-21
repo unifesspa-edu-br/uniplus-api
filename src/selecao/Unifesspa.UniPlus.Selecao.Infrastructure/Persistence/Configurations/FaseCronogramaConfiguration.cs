@@ -34,6 +34,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Id).ValueGeneratedNever();
 
         builder.Property(f => f.Ordem).IsRequired();
+        builder.Property(f => f.NoMesmoMomentoDaAnterior).HasColumnName("no_mesmo_momento_da_anterior").HasDefaultValue(false).IsRequired();
         builder.Property(f => f.FaseCanonicaOrigemId).IsRequired();
         builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired();

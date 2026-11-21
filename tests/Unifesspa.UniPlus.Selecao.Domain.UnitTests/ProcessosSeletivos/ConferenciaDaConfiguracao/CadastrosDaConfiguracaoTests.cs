@@ -20,7 +20,7 @@ public sealed class CadastrosDaConfiguracaoTests
         CadastrosDaConfiguracao cadastros = new(
             padrao.ContagemDePrazos, padrao.FatosDeModalidade, padrao.TiposDeAtoUnicos,
             padrao.Corretores, padrao.Protecao, padrao.MotivosEscolhidos)
-        { Regras = regras };
+        { Regras = regras, Precedencias = padrao.Precedencias };
 
         regras.Clear();
 

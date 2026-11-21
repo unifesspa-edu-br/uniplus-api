@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Os resultados preliminares publicados cujo ciclo a retificação precisa refazer, calculados do documento: o
-/// preliminar entra quando o lugar dele (a fase ou a etapa que o declara) mudou o que entra no preliminar, ou
-/// quando mudou uma fase de momento anterior ao da fase dele, porque o que vem antes alimenta o que vem depois.
+/// preliminar entra quando o lugar dele (a fase ou a etapa que o declara) mudou o que entra no preliminar, quando a
+/// fase mudou de momento (ganhou ou perdeu fase anterior, pela marca "no mesmo momento da anterior" ou pela ordem), ou quando
+/// mudou uma fase que vem antes dela, na versão publicada ou na nova, porque o que vem antes alimenta o que vem depois.
 /// Para a etapa, a fase onde ela acontece também conta. O lugar que sai do cronograma novo não conta aqui,
 /// porque a saída do item é recusa do ciclo recursal aberto. O sistema não sabe o que é dado de entrada de cada
 /// tipo de ato: este é o piso, e o bloco da retificação pode declarar mais.
@@ -37,23 +37,45 @@ internal static class PisoDoCicloNovo
     private static HashSet<Guid> FasesAtingidas(IReadOnlyCollection<FaseCronograma> fasesDaBase, IReadOnlyCollection<FaseCronograma> fasesNovas)
     {
         Dictionary<Guid, FaseCronograma> novasPorOrigem = fasesNovas.ToDictionary(static fase => fase.FaseCanonicaOrigemId);
-        HashSet<Guid> alteradas = FasesAlteradas(fasesDaBase, novasPorOrigem);
-        Dictionary<Guid, int> momentos = fasesDaBase.ToDictionary(static fase => fase.FaseCanonicaOrigemId, fase => MomentoDaFase.Da(fase, fasesDaBase));
+        HashSet<Guid> mantidas = [.. fasesDaBase.Select(static fase => fase.FaseCanonicaOrigemId).Where(novasPorOrigem.ContainsKey)];
+        Dictionary<Guid, HashSet<Guid>> antesNaBase = MantidasAntesDeCada(fasesDaBase, mantidas);
+        Dictionary<Guid, HashSet<Guid>> antesNasNovas = MantidasAntesDeCada(fasesNovas, mantidas);
+        HashSet<Guid> alteradas = FasesAlteradas(fasesDaBase, novasPorOrigem, antesNaBase, antesNasNovas);
 
         return
         [
-            .. momentos.Keys.Where(origem => novasPorOrigem.ContainsKey(origem)
-                && (alteradas.Contains(origem) || alteradas.Any(outra => momentos[outra] < momentos[origem]))),
+            .. mantidas.Where(origem => alteradas.Contains(origem)
+                || alteradas.Any(alterada => antesNaBase[origem].Contains(alterada) || antesNasNovas[origem].Contains(alterada))),
         ];
     }
 
-    private static HashSet<Guid> FasesAlteradas(IReadOnlyCollection<FaseCronograma> fasesDaBase, Dictionary<Guid, FaseCronograma> novasPorOrigem) =>
+    // Alterada é a fase mantida cuja entrada do preliminar, marca ou momento mudou, ainda que nenhum campo dela tenha sido editado.
+    private static HashSet<Guid> FasesAlteradas(
+        IReadOnlyCollection<FaseCronograma> fasesDaBase,
+        Dictionary<Guid, FaseCronograma> novasPorOrigem,
+        Dictionary<Guid, HashSet<Guid>> antesNaBase,
+        Dictionary<Guid, HashSet<Guid>> antesNasNovas) =>
     [
         .. fasesDaBase
             .Where(fase => novasPorOrigem.TryGetValue(fase.FaseCanonicaOrigemId, out FaseCronograma? nova)
-                && !fase.EntradaDoPreliminar().Equals(nova.EntradaDoPreliminar()))
+                && (EntradaOuMarcaMudou(fase, nova) || !antesNaBase[fase.FaseCanonicaOrigemId].SetEquals(antesNasNovas[fase.FaseCanonicaOrigemId])))
             .Select(static fase => fase.FaseCanonicaOrigemId),
     ];
+
+    private static bool EntradaOuMarcaMudou(FaseCronograma daBase, FaseCronograma nova) =>
+        !daBase.EntradaDoPreliminar().Equals(nova.EntradaDoPreliminar()) || daBase.NoMesmoMomentoDaAnterior != nova.NoMesmoMomentoDaAnterior;
+
+    // O momento da fase mantida é o conjunto das fases mantidas que vêm antes dela na ordem da versão: o número do momento muda
+    // em todas só por entrar uma fase no começo, e o conjunto muda só nas que ganham ou perdem uma anterior.
+    private static Dictionary<Guid, HashSet<Guid>> MantidasAntesDeCada(IReadOnlyCollection<FaseCronograma> fasesDaVersao, HashSet<Guid> mantidas)
+    {
+        OrdemDoCronograma ordem = OrdemDoCronograma.Do(fasesDaVersao);
+        FaseCronograma[] daVersao = [.. fasesDaVersao.Where(fase => mantidas.Contains(fase.FaseCanonicaOrigemId))];
+
+        return daVersao.ToDictionary(
+            static fase => fase.FaseCanonicaOrigemId,
+            fase => daVersao.Where(outra => ordem.Posterior(fase, outra)).Select(static outra => outra.FaseCanonicaOrigemId).ToHashSet());
+    }
 
     private static HashSet<Guid> EtapasAtingidas(
         IReadOnlyCollection<FaseCronograma> fasesDaBase,

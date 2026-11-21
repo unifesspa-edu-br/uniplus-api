@@ -1,15 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// Quais respostas um ponto de uso alcança (ADR-0171): as de um formulário obrigatório respondido
 /// antes dele, ou na mesma fase quando o ponto é um formulário facultativo ou não é formulário. A resposta
 /// de um formulário facultativo não é fonte de ninguém, o que impede o ciclo; dois obrigatórios na
-/// mesma fase não se alcançam. A fase que abre a solicitação de isenção conta como contemporânea da
-/// inscrição quando a ordem a coloca antes; havendo mais de uma fase que coleta a inscrição, vale a de
-/// menor ordem. Os códigos dos formulários são únicos no processo, o que a conferência dos formulários
+/// mesma fase não se alcançam. O pedido de isenção só abre depois do envio da inscrição (UNI-REQ-0149): quando
+/// a lista o coloca antes, ele alcança o formulário obrigatório da inscrição, com ou sem a marca "no mesmo momento da
+/// anterior", porque o alcance decide pelo envio já feito (<see cref="MomentoDoEnvio"/>), e não pela ordem do
+/// cronograma; havendo mais de uma fase que coleta a inscrição, vale a de menor ordem. Os códigos dos formulários são únicos no processo, o que a conferência dos formulários
 /// declarados garante antes de o alcance ser consultado.
 /// </summary>
 public static class AlcanceDasRespostas
@@ -43,10 +43,10 @@ public static class AlcanceDasRespostas
     /// </summary>
     private static bool JaRespondidaQuandoOPontoUsa(PontoDeUso ponto, FaseCronograma faseDoProdutor, IEnumerable<FaseCronograma> cronograma)
     {
-        int momentoDoProdutor = MomentoDaFase.Da(faseDoProdutor, cronograma);
-        int momentoDoPonto = MomentoDaFase.Da(ponto.Fase, cronograma);
-        return momentoDoProdutor < momentoDoPonto
-            || (momentoDoProdutor == momentoDoPonto && ponto.Formulario is not { Obrigatorio: true });
+        int envioDoProdutor = MomentoDoEnvio.Da(faseDoProdutor, cronograma);
+        int envioDoPonto = MomentoDoEnvio.Da(ponto.Fase, cronograma);
+        return envioDoProdutor < envioDoPonto
+            || (envioDoProdutor == envioDoPonto && ponto.Formulario is not { Obrigatorio: true });
     }
 
     private static FaseCronograma? FaseDoProdutor(FormularioDeclarado produtor, IEnumerable<FaseCronograma> cronograma) =>

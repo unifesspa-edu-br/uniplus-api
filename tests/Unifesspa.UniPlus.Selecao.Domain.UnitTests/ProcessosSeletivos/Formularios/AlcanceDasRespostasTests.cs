@@ -101,6 +101,32 @@ public sealed class AlcanceDasRespostasTests
         AlcanceDasRespostas.Alcanca(new PontoDeUso(isencao, usuario), produtor, [isencao, inscricao]).Should().BeTrue();
     }
 
+    [Theory(DisplayName = "A isenção antes da inscrição alcança a resposta enviada no formulário obrigatório da inscrição, com e sem a marca")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IsencaoAntesDaInscricao_AlcancaComESemAMarca(bool inscricaoMarcada)
+    {
+        FaseCronograma isencao = FaseDeTeste.Criar(1, "ISENCAO", coletaSolicitacaoIsencao: true);
+        FaseCronograma inscricao = FaseDeTeste.Criar(2, "INSCRICAO", coletaInscricao: true, noMesmoMomentoDaAnterior: inscricaoMarcada);
+        FormularioDeclarado produtor = Obrigatorio("INSCRICAO", inscricao);
+        FormularioDeclarado usuario = Facultativo("ISENCAO", isencao);
+
+        AlcanceDasRespostas.Alcanca(new PontoDeUso(isencao, usuario), produtor, [isencao, inscricao]).Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "O reaproveitamento segue o envio e não a marca: o produtor de fase posterior não é alcançado, com ou sem a marca")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ProdutorDeFasePosterior_NaoAlcancaComESemAMarca(bool marcada)
+    {
+        FaseCronograma inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
+        FaseCronograma habilitacao = FaseDeTeste.Criar(2, "HABILITACAO", noMesmoMomentoDaAnterior: marcada);
+        FormularioDeclarado produtor = Obrigatorio("HABILITACAO", habilitacao);
+        FormularioDeclarado usuario = Obrigatorio("INSCRICAO", inscricao);
+
+        AlcanceDasRespostas.Alcanca(new PontoDeUso(inscricao, usuario), produtor, [inscricao, habilitacao]).Should().BeFalse();
+    }
+
     [Fact(DisplayName = "A solicitação de isenção ordenada depois da inscrição vale a própria ordem, e a inscrição a antecede")]
     public void JanelaDeIsencaoOrdenadaDepois_ValeAPropriaOrdem()
     {

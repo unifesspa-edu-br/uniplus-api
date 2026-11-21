@@ -39,7 +39,7 @@ internal static class LeituraDasFases
         ValorLido<RegraDeHomologacaoDasInscricoes?> homologacao = LeituraDaRegraDeHomologacaoDaFase.Ler(fase);
 
         return new(
-            new(fase.PosicaoNoDocumento + 1, fase.Janela.Inicio, fase.Janela.Fim, unidade.Valor),
+            new(fase.PosicaoNoDocumento + 1, fase.Janela.Inicio, fase.Janela.Fim, unidade.Valor) { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new([.. produtos.Valor.Select(static par => par.Item)], fase.Publicacoes.EmiteParecerIndividual, regra.Valor.Regra, fase.Publicacoes.TiposDeDecisao, homologacao.Valor),
             [.. bancas.Valor.Select(static par => par.Item)],
             new(produtos.Valor, bancas.Valor, regra.Valor.Procedimentos),

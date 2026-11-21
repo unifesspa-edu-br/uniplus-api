@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261121045419_Inicial")]
+    [Migration("20261121103511_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -12438,6 +12438,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("inicio");
+
+                    b.Property<bool>("NoMesmoMomentoDaAnterior")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("no_mesmo_momento_da_anterior");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")

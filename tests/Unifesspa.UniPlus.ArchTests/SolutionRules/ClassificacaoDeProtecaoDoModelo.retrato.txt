@@ -1575,6 +1575,7 @@ selecao.fases_cronograma.fase_canonica_origem_id: Interno
 selecao.fases_cronograma.fim: Interno
 selecao.fases_cronograma.id: Interno
 selecao.fases_cronograma.inicio: Interno
+selecao.fases_cronograma.no_mesmo_momento_da_anterior: Interno
 selecao.fases_cronograma.ordem: Interno
 selecao.fases_cronograma.origem_data: Interno
 selecao.fases_cronograma.permite_complementacao: Interno
