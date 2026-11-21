@@ -90,6 +90,7 @@ ato operacional pós-deploy via endpoint admin — a mesma política já vigente
 <!-- Cláusula revogada pela Emenda 1 (2026-09-01), no fim deste documento. -->
 <!-- Cláusula ampliada pela Emenda 6 (2026-11-20), no fim deste documento: a ordem entre fases também vale no início da fase. -->
 
+<!-- Duas das seis arestas saíram pela Emenda 7 (2026-11-21), no fim deste documento. -->
 A precedência entre fases é **dado de cadastro, não código**: `PrecedenciaFase`
 (Configuração, novo cadastro) declara arestas `(AntecessoraCodigo,
 SucessoraCodigo, PermiteSobreposicao)`, seed-governado com as seis arestas
@@ -328,6 +329,14 @@ A ordem entre fases, conferida na publicação do cronograma contra a precedênc
 Há uma exceção à primeira condição: as **fases de períodos sobrepostos** no cronograma publicado, o que só é possível onde a precedência permite a sobreposição. A sobreposição de datas só dispensa a espera pelo definitivo: a fase posterior na ordem do cronograma, com datas sobrepostas, continua sujeita à suspensão. Isso não se confunde com a marca "no mesmo momento da anterior", que define a ordem: a fase marcada junto com a origem não é posterior a ela, e a suspensão nascida na origem não a alcança.
 
 **Cada fase publica o próprio definitivo.** O ciclo de recurso da fase, do preliminar ao definitivo, fecha dentro dela, como na etapa. Deixa de existir a fase que publica o definitivo de outra, a fase concluinte do ciclo. Cada resultado preliminar da fase tem, na mesma fase, o definitivo correspondente, do mesmo lugar e do mesmo tipo de ato, nos papéis complementares de preliminar e de definitivo da publicação prevista da fase. Quem precisa de uma fase no meio do ciclo estende o período da fase de origem até o definitivo e declara sobreposta a fase do meio. O resto desta ADR permanece.
+
+## Emenda 7 (2026-11-21) — as fases de resultado preliminar e de recursos deixam de existir, e duas arestas saem
+
+Cada fase que publica resultado preliminar publica, nela mesma, o resultado definitivo do mesmo tipo de ato, e o recurso corre dentro da fase, como decide a [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md). As fases canônicas `RESULTADO_PRELIMINAR` e `RECURSOS` perdem a razão de existir e saem do catálogo semeado.
+
+Com elas saem as duas arestas de precedência que as ligavam, `RESULTADO_PRELIMINAR→RECURSOS` e `RECURSOS→RESULTADO_FINAL`. O seed de precedência passa a ter quatro arestas: `INSCRICAO→HOMOLOGACAO_INSCRICOES`, `RESULTADO_FINAL→HABILITACAO`, `HABILITACAO→MATRICULA` e `HETEROIDENTIFICACAO→HOMOLOGACAO_RESULTADO_FINAL`. O resto desta ADR não muda: dois eixos distintos, a precedência como dado de cadastro e o agrupamento de etapas.
+
+Não há dado a migrar: a migration única é gerada de novo com o catálogo e as arestas já na forma nova, e os dois códigos deixam de ser canônicos, de modo que o cadastro de fases os recusa.
 
 ## Mais informações
 
