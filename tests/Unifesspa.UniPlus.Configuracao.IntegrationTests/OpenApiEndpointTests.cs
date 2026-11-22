@@ -114,6 +114,51 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         ReferenciasDe(propriedades.GetProperty("regimeDeTurno")).Should().Contain("#/components/schemas/RegimeDeTurnoCodigo");
     }
 
+    [Fact(DisplayName = "O código da natureza legal é componente de texto com enum, sem o valor nenhum")]
+    public Task NaturezaLegalCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("NaturezaLegalCodigo", ["COTA_RESERVADA", "AMPLA", "ACAO_AFIRMATIVA"]);
+
+    [Fact(DisplayName = "O código da ação quando indeferido é componente de texto com enum, sem o valor nenhum")]
+    public Task AcaoQuandoIndeferidoCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("AcaoQuandoIndeferidoCodigo", ["RECLASSIFICAR_AC", "RECLASSIFICAR_REGRA_EDITAL"]);
+
+    [Fact(DisplayName = "O código da composição de vagas é componente de texto com enum, sem o valor nenhum")]
+    public Task ComposicaoVagasCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync(
+            "ComposicaoVagasCodigo",
+            ["RESTANTE_DAS_VAGAS_OFERTADAS", "DENTRO_DA_RESERVA_LEGAL", "RETIRADA_DE_OUTRA_MODALIDADE", "SUPLEMENTAR_AO_TOTAL"]);
+
+    [Fact(DisplayName = "O código da regra de remanejamento é componente de texto com enum, sem o valor nenhum")]
+    public Task RegraRemanejamentoCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("RegraRemanejamentoCodigo", ["SEGUE_CASCATA", "DESTINO_UNICO", "CRUZADO"]);
+
+    [Theory(DisplayName = "O código da resposta de natureza legal e de composição de vagas da modalidade referencia o componente dele")]
+    [InlineData("NaturezaLegal", "naturezaLegal", "NaturezaLegalCodigo")]
+    [InlineData("ComposicaoVagas", "composicaoVagas", "ComposicaoVagasCodigo")]
+    public Task RespostaDaModalidade_ReferenciaOComponenteDoEnum(string resposta, string campo, string componente) =>
+        ConferirReferenciaDaRespostaAsync(resposta, campo, componente, "ModalidadeDto");
+
+    [Theory(DisplayName = "Os pedidos de criação e de atualização da modalidade documentam os enums com o componente dos códigos")]
+    [InlineData("CriarModalidadeCommand")]
+    [InlineData("AtualizarModalidadeCommand")]
+    public async Task PedidosDaModalidade_ReferenciamOsComponentesDosEnums(string pedido)
+    {
+        JsonElement schemas = await ObterSchemasAsync();
+        JsonElement propriedades = schemas.GetProperty(pedido).GetProperty("properties");
+
+        ReferenciasDe(propriedades.GetProperty("naturezaLegal")).Should().Contain("#/components/schemas/NaturezaLegalCodigo");
+        ReferenciasDe(propriedades.GetProperty("composicaoVagas")).Should().Contain("#/components/schemas/ComposicaoVagasCodigo");
+        ReferenciasDe(propriedades.GetProperty("acaoQuandoIndeferido")).Should().Contain("#/components/schemas/AcaoQuandoIndeferidoCodigo");
+    }
+
+    [Fact(DisplayName = "O bloco de remanejamento do pedido da modalidade documenta a regra com o componente dos códigos")]
+    public async Task PedidoDoRemanejamento_ReferenciaOComponenteDaRegra()
+    {
+        JsonElement bloco = (await ObterSchemasAsync()).GetProperty("RemanejamentoDasVagasInformado").GetProperty("properties");
+
+        ReferenciasDe(bloco.GetProperty("regra")).Should().Contain("#/components/schemas/RegraRemanejamentoCodigo");
+    }
+
     private async Task ConferirComponenteDeCodigosAsync(string componente, string[] codigosEsperados)
     {
         JsonElement codigos = (await ObterSchemasAsync()).GetProperty(componente);
@@ -122,13 +167,13 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         codigos.GetProperty("enum").EnumerateArray().Select(c => c.GetString()).Should().Equal(codigosEsperados);
     }
 
-    private async Task ConferirReferenciaDaRespostaAsync(string resposta, string campo, string componente)
+    private async Task ConferirReferenciaDaRespostaAsync(string resposta, string campo, string componente, string dto = "OfertaCursoDto")
     {
         JsonElement schemas = await ObterSchemasAsync();
 
         schemas.GetProperty(resposta).GetProperty("properties").GetProperty("codigo").GetProperty("$ref").GetString()
             .Should().Be($"#/components/schemas/{componente}");
-        schemas.GetProperty("OfertaCursoDto").GetProperty("properties").GetProperty(campo).GetProperty("$ref").GetString()
+        schemas.GetProperty(dto).GetProperty("properties").GetProperty(campo).GetProperty("$ref").GetString()
             .Should().Be($"#/components/schemas/{resposta}");
     }
 

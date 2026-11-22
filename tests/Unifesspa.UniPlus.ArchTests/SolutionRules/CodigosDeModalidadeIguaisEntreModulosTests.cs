@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -18,23 +19,27 @@ public sealed class CodigosDeModalidadeIguaisEntreModulosTests
         [.. Enum.GetValues<TEnum>().Where(static valor => !valor.ToString().Equals("Nenhuma", StringComparison.Ordinal))
             .Select(paraCodigo).OfType<string>()];
 
+    private static string[] CodigosDoCatalogo<TEnum>()
+        where TEnum : struct, Enum =>
+        [.. CatalogoDe<TEnum>.Todos().Select(static declarado => declarado.Codigo)];
+
     [Fact(DisplayName = "A composição de vagas tem os mesmos códigos na Configuração e na Seleção")]
     public void Composicao_MesmosCodigos() =>
         CodigosDaSelecao<ComposicaoVagasModalidade>(static valor => valor.ToCodigo())
-            .Should().BeEquivalentTo(ComposicoesVagas.TokensCanonicos);
+            .Should().BeEquivalentTo(CodigosDoCatalogo<ComposicaoVagas>());
 
     [Fact(DisplayName = "A natureza legal tem os mesmos códigos na Configuração e na Seleção")]
     public void Natureza_MesmosCodigos() =>
         CodigosDaSelecao<NaturezaLegalModalidade>(static valor => valor.ToCodigo())
-            .Should().BeEquivalentTo(NaturezasLegais.TokensCanonicos);
+            .Should().BeEquivalentTo(CodigosDoCatalogo<NaturezaLegal>());
 
     [Fact(DisplayName = "A regra de remanejamento tem os mesmos códigos na Configuração e na Seleção")]
     public void Remanejamento_MesmosCodigos() =>
         CodigosDaSelecao<RegraRemanejamentoModalidade>(static valor => valor.ToCodigo())
-            .Should().BeEquivalentTo(RegrasRemanejamento.TokensCanonicos);
+            .Should().BeEquivalentTo(CodigosDoCatalogo<RegraRemanejamento>());
 
     [Fact(DisplayName = "Os códigos de composição são os da lista fechada, sem abreviação")]
     public void Composicao_ListaFechada() =>
-        ComposicoesVagas.TokensCanonicos.Should().BeEquivalentTo(
+        CodigosDoCatalogo<ComposicaoVagas>().Should().BeEquivalentTo(
             "DENTRO_DA_RESERVA_LEGAL", "RESTANTE_DAS_VAGAS_OFERTADAS", "RETIRADA_DE_OUTRA_MODALIDADE", "SUPLEMENTAR_AO_TOTAL");
 }

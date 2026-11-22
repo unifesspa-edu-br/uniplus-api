@@ -19,9 +19,9 @@ internal static class CoerenciaDosCamposDaModalidade
     private static readonly (Func<CamposResolvidosDaModalidade, string?> Ler, string Field, string Code, string Rotulo)[] ReferenciasAOutraModalidade =
     [
         (static c => c.ComposicaoOrigem, "composicaoOrigem", ModalidadeErrorCodes.ComposicaoOrigemCircular, "origem da composição"),
-        (static c => c.RemanejamentoParametros.Destino, "remanejamentoDestino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
-        (static c => c.RemanejamentoParametros.Par, "remanejamentoPar", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
-        (static c => c.RemanejamentoParametros.Fallback, "remanejamentoFallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
+        (static c => c.RemanejamentoParametros.Destino, "remanejamento.destino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
+        (static c => c.RemanejamentoParametros.Par, "remanejamento.par", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
+        (static c => c.RemanejamentoParametros.Fallback, "remanejamento.fallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
     ];
 
     /// <remarks>
@@ -153,7 +153,7 @@ internal static class CoerenciaDosCamposDaModalidade
     }
 
     private static FieldError RecusaDoRemanejamento(string codigoDaRecusa, string mensagem) =>
-        new("regraRemanejamento", new DomainError(codigoDaRecusa, mensagem));
+        new("remanejamento.regra", new DomainError(codigoDaRecusa, mensagem));
 
     /// <remarks>
     /// A natureza fixa a forma da regra: todo candidato concorre à ampla concorrência, e o candidato

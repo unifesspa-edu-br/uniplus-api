@@ -92,9 +92,9 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     // deixar o inválido sem marca.
     [Theory(DisplayName = "Modalidade que referencia a si mesma é rejeitada, apontando o campo da referência")]
     [InlineData("origem", "Modalidade.ComposicaoOrigemCircular", "composicaoOrigem")]
-    [InlineData("destino", "Modalidade.RemanejamentoDestinoCircular", "remanejamentoDestino")]
-    [InlineData("par", "Modalidade.RemanejamentoParCircular", "remanejamentoPar")]
-    [InlineData("fallback", "Modalidade.RemanejamentoFallbackCircular", "remanejamentoFallback")]
+    [InlineData("destino", "Modalidade.RemanejamentoDestinoCircular", "remanejamento.destino")]
+    [InlineData("par", "Modalidade.RemanejamentoParCircular", "remanejamento.par")]
+    [InlineData("fallback", "Modalidade.RemanejamentoFallbackCircular", "remanejamento.fallback")]
     public void Criar_ReferenciandoSiMesma_Falha(string referencia, string codeEsperado, string fieldEsperado)
     {
         Result<Modalidade> resultado = referencia switch

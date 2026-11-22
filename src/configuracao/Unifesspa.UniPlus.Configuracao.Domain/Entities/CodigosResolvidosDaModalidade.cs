@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,8 +18,6 @@ internal sealed record CodigosResolvidosDaModalidade(
     IReadOnlyList<FieldError?> Recusas,
     CodigosReconhecidosDaModalidade Reconhecidos)
 {
-    private delegate bool Analisador<T>(string? codigo, out T valor);
-
     public static CodigosResolvidosDaModalidade De(DeclaracaoDaModalidade declaracao)
     {
         (NaturezaLegal natureza, FieldError? recusaNatureza) = ResolverNatureza(declaracao.CodigoDaNaturezaLegal);
@@ -38,34 +37,30 @@ internal sealed record CodigosResolvidosDaModalidade(
     private static (NaturezaLegal Valor, FieldError? Recusa) ResolverNatureza(string? codigo)
     {
         (NaturezaLegal? valor, FieldError? recusa) = Resolver<NaturezaLegal>(
-            codigo, NaturezasLegais.TryAnalisar, "naturezaLegal", ModalidadeErrorCodes.NaturezaInvalida,
-            "Natureza legal", NaturezasLegais.TokensCanonicos);
+            codigo, "naturezaLegal", ModalidadeErrorCodes.NaturezaInvalida, "Natureza legal");
         return (valor ?? NaturezaLegal.Ampla, recusa);
     }
 
     private static (ComposicaoVagas Valor, FieldError? Recusa) ResolverComposicao(string? codigo)
     {
         (ComposicaoVagas? valor, FieldError? recusa) = Resolver<ComposicaoVagas>(
-            codigo, ComposicoesVagas.TryAnalisar, "composicaoVagas", ModalidadeErrorCodes.ComposicaoVagasInvalida,
-            "Composição de vagas", ComposicoesVagas.TokensCanonicos);
+            codigo, "composicaoVagas", ModalidadeErrorCodes.ComposicaoVagasInvalida, "Composição de vagas");
         return (valor ?? ComposicaoVagas.RestanteDasVagasOfertadas, recusa);
     }
 
     private static (RegraRemanejamento? Valor, FieldError? Recusa) ResolverRegra(string? codigo) =>
         Resolver<RegraRemanejamento>(
-            codigo, RegrasRemanejamento.TryAnalisar, "regraRemanejamento", ModalidadeErrorCodes.RegraRemanejamentoInvalida,
-            "Regra de remanejamento", RegrasRemanejamento.TokensCanonicos);
+            codigo, "remanejamento.regra", ModalidadeErrorCodes.RegraRemanejamentoInvalida, "Regra de remanejamento");
 
     private static (AcaoQuandoIndeferido? Valor, FieldError? Recusa) ResolverAcao(string? codigo) =>
         Resolver<AcaoQuandoIndeferido>(
-            codigo, AcoesQuandoIndeferido.TryAnalisar, "acaoQuandoIndeferido", ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
-            "Ação quando indeferido", AcoesQuandoIndeferido.TokensCanonicos);
+            codigo, "acaoQuandoIndeferido", ModalidadeErrorCodes.AcaoIndeferimentoInvalida, "Ação quando indeferido");
 
-    private static (T? Valor, FieldError? Recusa) Resolver<T>(
-        string? codigo, Analisador<T> analisar, string campo, string codigoDaRecusa, string rotulo, IEnumerable<string> codigos)
-        where T : struct =>
-        string.IsNullOrWhiteSpace(codigo) ? (null, null)
-        : analisar(codigo, out T valor) ? (valor, null)
+    private static (T? Valor, FieldError? Recusa) Resolver<T>(string? codigo, string campo, string codigoDaRecusa, string rotulo)
+        where T : struct, Enum =>
+        codigo is null ? (null, null)
+        : CatalogoDe<T>.TentarObter(codigo, out T valor) ? (valor, null)
         : (null, new FieldError(campo, new DomainError(
-            codigoDaRecusa, $"{rotulo} deve ser uma de: {string.Join(", ", codigos)}.")));
+            codigoDaRecusa,
+            $"{rotulo} deve ser uma de: {string.Join(", ", CatalogoDe<T>.Todos().Select(static declarado => declarado.Codigo))}.")));
 }

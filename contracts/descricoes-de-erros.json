@@ -5451,14 +5451,14 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Este código é compartilhado por duas causas distintas, que a entrada do\ncatálogo não distingue no `detail`:",
-        "- O **código da própria modalidade** não respeita o formato fechado —\n  `^[A-Z0-9_]+$` (letras maiúsculas, dígitos e sublinhado, sem hífen), com no\n  máximo 60 caracteres (ex.: `AC`, `LB_PPI`, `LI_Q`).\n- O **código de origem** da composição `RETIRA_DE` (`composicao_origem`)\n  excede 60 caracteres — este segundo caso só confere o tamanho, não o\n  formato: um código de origem com caracteres fora do padrão `^[A-Z0-9_]+$`\n  não é recusado aqui (a integridade referencial de que ele aponta para uma\n  modalidade viva é conferida à parte, ver\n  [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
+        "- O **código da própria modalidade** não respeita o formato fechado —\n  `^[A-Z0-9_]+$` (letras maiúsculas, dígitos e sublinhado, sem hífen), com no\n  máximo 60 caracteres (ex.: `AC`, `LB_PPI`, `LI_Q`).\n- O **código de origem** da composição `RETIRADA_DE_OUTRA_MODALIDADE` (`composicao_origem`)\n  excede 60 caracteres — este segundo caso só confere o tamanho, não o\n  formato: um código de origem com caracteres fora do padrão `^[A-Z0-9_]+$`\n  não é recusado aqui (a integridade referencial de que ele aponta para uma\n  modalidade viva é conferida à parte, ver\n  [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
       ],
       "comoResolver": [
-        "Se a causa é o código próprio: use apenas letras maiúsculas, dígitos e\nsublinhado, com até 60 caracteres. Se a causa é o código de origem da\ncomposição `RETIRA_DE`: reduza-o para até 60 caracteres."
+        "Se a causa é o código próprio: use apenas letras maiúsculas, dígitos e\nsublinhado, com até 60 caracteres. Se a causa é o código de origem da\ncomposição `RETIRADA_DE_OUTRA_MODALIDADE`: reduza-o para até 60 caracteres."
       ],
       "ondeAparece": [
         "Criação de uma modalidade de concorrência, quando o código próprio é inválido",
-        "Criação ou atualização de uma modalidade de concorrência, quando o código de origem da composição RETIRA_DE excede o tamanho máximo"
+        "Criação ou atualização de uma modalidade de concorrência, quando o código de origem da composição RETIRADA_DE_OUTRA_MODALIDADE excede o tamanho máximo"
       ]
     },
     {
@@ -5508,11 +5508,11 @@
       "codigo": "uniplus.configuracao.modalidade.composicao_vagas_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A **composição de vagas** informada não é um dos quatro códigos aceitos: `RESIDUAL_DO_VO`, `DENTRO_DO_VR`, `RETIRA_DE` ou\n`SUPLEMENTAR_AO_TOTAL`.",
-        "A composição de vagas tem valor padrão: se omitida, a modalidade assume\n`RESIDUAL_DO_VO` silenciosamente. Este erro só dispara quando um código é\ninformado e não é um dos quatro válidos."
+        "A **composição de vagas** informada não é um dos quatro códigos aceitos: `RESTANTE_DAS_VAGAS_OFERTADAS`, `DENTRO_DA_RESERVA_LEGAL`, `RETIRADA_DE_OUTRA_MODALIDADE` ou\n`SUPLEMENTAR_AO_TOTAL`.",
+        "A composição de vagas tem valor padrão: se omitida, a modalidade assume\n`RESTANTE_DAS_VAGAS_OFERTADAS` silenciosamente. Este erro só dispara quando um código é\ninformado e não é um dos quatro válidos."
       ],
       "comoResolver": [
-        "Informe um dos quatro códigos válidos — `RESIDUAL_DO_VO`, `DENTRO_DO_VR`,\n`RETIRA_DE` ou `SUPLEMENTAR_AO_TOTAL` — ou omita o campo para aceitar o\npadrão `RESIDUAL_DO_VO`."
+        "Informe um dos quatro códigos válidos — `RESTANTE_DAS_VAGAS_OFERTADAS`, `DENTRO_DA_RESERVA_LEGAL`,\n`RETIRADA_DE_OUTRA_MODALIDADE` ou `SUPLEMENTAR_AO_TOTAL` — ou omita o campo para aceitar o\npadrão `RESTANTE_DAS_VAGAS_OFERTADAS`."
       ],
       "ondeAparece": [
         "Criação de uma modalidade de concorrência",
@@ -5677,7 +5677,7 @@
       "codigo": "uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um ou mais códigos de modalidade referenciados — como origem da composição\n`RETIRA_DE`, ou como destino/par/fallback do remanejamento — não\ncorrespondem a nenhuma modalidade **viva**.",
+        "Um ou mais códigos de modalidade referenciados — como origem da composição\n`RETIRADA_DE_OUTRA_MODALIDADE`, ou como destino/par/fallback do remanejamento — não\ncorrespondem a nenhuma modalidade **viva**.",
         "O sistema confere se todos os códigos informados correspondem a modalidades ativas."
       ],
       "comoResolver": [
@@ -5825,11 +5825,11 @@
       "codigo": "uniplus.configuracao.modalidade.remanejamento_destino_circular",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `remanejamentoDestino` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas ociosas passam, na regra de remanejamento de destino único. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
+        "O campo `remanejamento.destino` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas ociosas passam, na regra de remanejamento de destino único. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
-        "Informe em `remanejamentoDestino` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
+        "Informe em `remanejamento.destino` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
       ],
       "ondeAparece": [
         "Criação de uma modalidade (POST /api/configuracao/admin/modalidades)",
@@ -5840,11 +5840,11 @@
       "codigo": "uniplus.configuracao.modalidade.remanejamento_fallback_circular",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `remanejamentoFallback` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas passam quando a modalidade par não as absorve, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
+        "O campo `remanejamento.fallback` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas passam quando a modalidade par não as absorve, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
-        "Informe em `remanejamentoFallback` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
+        "Informe em `remanejamento.fallback` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
       ],
       "ondeAparece": [
         "Criação de uma modalidade (POST /api/configuracao/admin/modalidades)",
@@ -5855,11 +5855,11 @@
       "codigo": "uniplus.configuracao.modalidade.remanejamento_par_circular",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `remanejamentoPar` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica a modalidade com a qual as vagas ociosas são trocadas, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
+        "O campo `remanejamento.par` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica a modalidade com a qual as vagas ociosas são trocadas, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
-        "Informe em `remanejamentoPar` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
+        "Informe em `remanejamento.par` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
       ],
       "ondeAparece": [
         "Criação de uma modalidade (POST /api/configuracao/admin/modalidades)",
@@ -5884,7 +5884,7 @@
       "codigo": "uniplus.configuracao.modalidade.remocao_bloqueada_por_referencia",
       "requisitos": [],
       "oQueAconteceu": [
-        "A modalidade que a operação tentou remover é referenciada por outra\nmodalidade **viva** — como código de origem de uma composição `RETIRA_DE`,\nou como destino, par ou fallback de remanejamento.",
+        "A modalidade que a operação tentou remover é referenciada por outra\nmodalidade **viva** — como código de origem de uma composição `RETIRADA_DE_OUTRA_MODALIDADE`,\nou como destino, par ou fallback de remanejamento.",
         "Removê-la deixaria a modalidade que referencia apontando para um código\ninexistente. A conferência exclui a própria modalidade — uma modalidade que\nreferencia a si mesma não bloqueia a própria remoção por essa causa."
       ],
       "comoResolver": [
@@ -15612,7 +15612,7 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.composicao_origem_nao_selecionada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma modalidade com `composicaoVagas: RETIRA_DE` declara um\n`composicaoOrigemCodigo` que existe no cadastro de modalidades, mas **não\nestá entre as modalidades selecionadas nesta mesma oferta**. A validação de\n[`modalidade_selecionada.composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria)\nsó prova que o campo foi preenchido — esta conferência, separada, prova que ele\naponta para algo que de fato existe **nesta** distribuição. Uma modalidade\nnão pode retirar vagas de outra que a oferta nem ofereceu.",
+        "Uma modalidade com `composicaoVagas: RETIRADA_DE_OUTRA_MODALIDADE` declara um\n`composicaoOrigemCodigo` que existe no cadastro de modalidades, mas **não\nestá entre as modalidades selecionadas nesta mesma oferta**. A validação de\n[`modalidade_selecionada.composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria)\nsó prova que o campo foi preenchido — esta conferência, separada, prova que ele\naponta para algo que de fato existe **nesta** distribuição. Uma modalidade\nnão pode retirar vagas de outra que a oferta nem ofereceu.",
         "Esta conferência roda depois que todas as modalidades da distribuição já foram\ncriadas individualmente (todas passaram pelas conferências de forma, incluindo\n`composicao_origem_obrigatoria`), sobre o conjunto delas — por isso é uma\ncausa de `ConfiguracaoDistribuicaoVagas`, não de `ModalidadeSelecionada`.\nVerifica só a primeira modalidade do conjunto cuja referência falhar, e só a\nprimeira referência dessa modalidade (origem, antes de destino/par/fallback\n— ver\n[`remanejamento_destino_nao_selecionado`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.remanejamento_destino_nao_selecionado)).\nAcumula, no mesmo array `errors[]`, com\n[`configuracao_distribuicao_vagas.modalidade_duplicada`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidade_duplicada)\n— a conferência irmã do mesmo bloco —, sob o campo\n`distribuicaoVagas[<índice>].modalidadeIds`."
       ],
       "comoResolver": [
@@ -15855,14 +15855,14 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Este código dispara em duas situações distintas, ambas sobre a mesma\nfronteira entre o que é calculado e o que é declarado:",
-        "- **Ramo institucional.** Numa distribuição de vagas com\n  `regraDistribuicaoCodigo` institucional (não Lei 12.711), uma das\n  modalidades selecionadas não tem quantidade fixada em `quadro`. No ramo\n  institucional não há cálculo — o quadro é inteiramente declarado pelo\n  edital, então toda modalidade selecionada precisa ter sua quantidade\n  explícita; não há valor padrão nem fórmula que preencha a lacuna.\n- **Ramo federal, modalidade com código fora do vocabulário legal.** Numa\n  distribuição pela Lei 12.711, uma modalidade selecionada tem composição\n  `DENTRO_DO_VR` ou `RESIDUAL_DO_VO` (as composições que a fórmula do art.\n  10 calcula), mas o código dela não é um dos 9 códigos federais fixos (as\n  8 sub-reservas mais `AC` — ver\n  [`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)).\n  O cadastro de modalidades de Configuração não impede essa combinação —\n  nada impede cadastrar, por exemplo, uma modalidade de código próprio com\n  composição `DENTRO_DO_VR` —, mas a fórmula legal só calcula quantidade\n  para os 9 códigos que ela conhece; uma modalidade calculada com outro\n  código nunca aparece no quadro que a fórmula produz.",
+        "- **Distribuição institucional.** Numa distribuição de vagas com\n  `regraDistribuicaoCodigo` institucional (não Lei 12.711), uma das\n  modalidades selecionadas não tem quantidade fixada em `quadro`. No ramo\n  institucional não há cálculo — o quadro é inteiramente declarado pelo\n  edital, então toda modalidade selecionada precisa ter sua quantidade\n  explícita; não há valor padrão nem fórmula que preencha a lacuna.\n- **Ramo federal, modalidade com código fora do vocabulário legal.** Numa\n  distribuição pela Lei 12.711, uma modalidade selecionada tem composição\n  `DENTRO_DA_RESERVA_LEGAL` ou `RESTANTE_DAS_VAGAS_OFERTADAS` (as composições que a fórmula do art.\n  10 calcula), mas o código dela não é um dos 9 códigos federais fixos (as\n  8 sub-reservas mais `AC` — ver\n  [`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)).\n  O cadastro de modalidades de Configuração não impede essa combinação —\n  nada impede cadastrar, por exemplo, uma modalidade de código próprio com\n  composição `DENTRO_DA_RESERVA_LEGAL` —, mas a fórmula legal só calcula quantidade\n  para os 9 códigos que ela conhece; uma modalidade calculada com outro\n  código nunca aparece no quadro que a fórmula produz.",
         "Nos dois casos, as operações emissoras são as mesmas, mas a remediação é\ndiferente — leia com atenção qual dos dois cenários corresponde ao seu caso\nantes de agir. Não acumula com nenhuma outra violação — é a primeira\nmodalidade com o problema, na ordem em que foram selecionadas, que interrompe\na montagem da distribuição.",
         "A **simulação** da distribuição de vagas devolve a mesma recusa que a\ndefinição, sem gravar nada.",
         "Este código também aparece quando o sistema relê a configuração congelada da\nversão publicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página). Em todas\nelas o quadro de cada oferta é recalculado a partir dos insumos congelados (e\nnão lido do que foi congelado), e a mesma montagem do quadro roda de novo.\nAntes disso, o sistema confere a integridade dos bytes congelados: bytes\nalterados depois do congelamento são recusados por\n[`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada)\ne não chegam a esta causa. Nessas operações a recusa sai como uma violação\núnica (sem a lista `errors[]`) e se refere à versão congelada, não ao pedido\nenviado."
       ],
       "comoResolver": [
         "**Se a distribuição é institucional:** informe a quantidade de vagas\n(`quantidade`, em cada item do bloco `quadro` do corpo do pedido) para toda\nmodalidade selecionada.",
-        "**Se a distribuição é pela Lei 12.711:** o problema não é falta de\nquantidade no corpo do pedido — informar uma produziria\n[`quantidade_calculada_nao_informavel`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quantidade_calculada_nao_informavel),\nnão este código. A modalidade ofensora nunca é uma das 9 federais mal\ncodificada — a conferência de\n[`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)\njá garante que as 9 estão presentes com seus códigos corretos antes de\nchegar aqui; é sempre uma modalidade **extra**, selecionada além delas.\nRemova essa modalidade da seleção da oferta, ou corrija sua composição no\ncadastro de Configuração para `RETIRA_DE`/`SUPLEMENTAR_AO_TOTAL` (que\nexigem quantidade declarada, não calculada) se ela deveria mesmo compor\nesta oferta federal — no ramo federal, `RETIRA_DE` só é aceita com origem\n`AC` (ver\n[`retirada_federal_deve_ser_de_ampla_concorrencia`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.retirada_federal_deve_ser_de_ampla_concorrencia)).\nO código da modalidade, em si, não pode ser alterado — é imutável no\ncadastro.",
+        "**Se a distribuição é pela Lei 12.711:** o problema não é falta de\nquantidade no corpo do pedido — informar uma produziria\n[`quantidade_calculada_nao_informavel`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quantidade_calculada_nao_informavel),\nnão este código. A modalidade ofensora nunca é uma das 9 federais mal\ncodificada — a conferência de\n[`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)\njá garante que as 9 estão presentes com seus códigos corretos antes de\nchegar aqui; é sempre uma modalidade **extra**, selecionada além delas.\nRemova essa modalidade da seleção da oferta, ou corrija sua composição no\ncadastro de Configuração para `RETIRADA_DE_OUTRA_MODALIDADE`/`SUPLEMENTAR_AO_TOTAL` (que\nexigem quantidade declarada, não calculada) se ela deveria mesmo compor\nesta oferta federal — no ramo federal, `RETIRADA_DE_OUTRA_MODALIDADE` só é aceita com origem\n`AC` (ver\n[`retirada_federal_deve_ser_de_ampla_concorrencia`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.retirada_federal_deve_ser_de_ampla_concorrencia)).\nO código da modalidade, em si, não pode ser alterado — é imutável no\ncadastro.",
         "Na simulação, os mesmos caminhos de correção valem, e nada foi gravado.",
         "Se o erro apareceu em uma operação que lê a configuração congelada (qualquer uma das listadas no cabeçalho, exceto a definição da própria configuração e a simulação), o pedido enviado\nagora não é a causa: o sistema recusou a configuração congelada da versão\npublicada, e regravar a distribuição de vagas do processo não a corrige. A\ncausa é investigada pela equipe técnica do Uni+."
       ],
@@ -15926,11 +15926,11 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quantidade_calculada_nao_informavel",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade cuja composição é `DENTRO_DO_VR` (sub-reserva) ou\n`RESIDUAL_DO_VO` (ampla concorrência) declara uma quantidade em `quadro`\n(`quantidade`). A quantidade dessas modalidades é sempre **saída**\ndo cálculo do art. 10 — nunca entrada; o edital não tem como fixar por fora\num valor que a fórmula legal determina.",
+        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade cuja composição é `DENTRO_DA_RESERVA_LEGAL` (sub-reserva) ou\n`RESTANTE_DAS_VAGAS_OFERTADAS` (ampla concorrência) declara uma quantidade em `quadro`\n(`quantidade`). A quantidade dessas modalidades é sempre **saída**\ndo cálculo do art. 10 — nunca entrada; o edital não tem como fixar por fora\num valor que a fórmula legal determina.",
         "Este é o par simétrico de\n[`quantidade_declarada_obrigatoria`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quantidade_declarada_obrigatoria):\na mesma fronteira calculado/declarado, olhada do lado oposto — lá, a\nquantidade faltando quando devia estar presente (retirada/suplemento);\naqui, presente quando devia faltar (sub-reserva/ampla concorrência). Não\nacumula com nenhuma outra violação — é a primeira modalidade com a\nincoerência, na ordem em que foram selecionadas, que interrompe a criação\nda configuração."
       ],
       "comoResolver": [
-        "Remova a entrada de `quadro` correspondente às sub-reservas e à ampla\nconcorrência da oferta — o cálculo determina a quantidade delas\nautomaticamente. Informe quantidade só para modalidades de retirada\n(`RETIRA_DE`) ou suplemento (`SUPLEMENTAR_AO_TOTAL`)."
+        "Remova a entrada de `quadro` correspondente às sub-reservas e à ampla\nconcorrência da oferta — o cálculo determina a quantidade delas\nautomaticamente. Informe quantidade só para modalidades de retirada\n(`RETIRADA_DE_OUTRA_MODALIDADE`) ou suplemento (`SUPLEMENTAR_AO_TOTAL`)."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -15940,7 +15940,7 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quantidade_declarada_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade cuja composição é `RETIRA_DE` ou `SUPLEMENTAR_AO_TOTAL` não\ndeclara quantidade em `quadro`. Diferente das sub-reservas e da ampla\nconcorrência — calculadas pela fórmula do art. 10 —, retiradas e\nsuplementos são decisões do edital que a lei não prevê: o sistema não tem\ncomo inferir quantas vagas uma retirada tira, ou quantas um suplemento\nacrescenta, sem que o edital declare.",
+        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade cuja composição é `RETIRADA_DE_OUTRA_MODALIDADE` ou `SUPLEMENTAR_AO_TOTAL` não\ndeclara quantidade em `quadro`. Diferente das sub-reservas e da ampla\nconcorrência — calculadas pela fórmula do art. 10 —, retiradas e\nsuplementos são decisões do edital que a lei não prevê: o sistema não tem\ncomo inferir quantas vagas uma retirada tira, ou quantas um suplemento\nacrescenta, sem que o edital declare.",
         "Não acumula com nenhuma outra violação — é a primeira modalidade sem\nquantidade, na ordem em que foram selecionadas, que interrompe a criação da\nconfiguração."
       ],
       "comoResolver": [
@@ -16145,7 +16145,7 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.retirada_federal_deve_ser_de_ampla_concorrencia",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade selecionada com `composicaoVagas: RETIRA_DE` tem\n`composicaoOrigemCodigo` diferente de `AC` (ampla concorrência). Como nas\ndemais causas de coerência de modalidade desta série,\n`composicaoOrigemCodigo` **não vem do corpo do pedido da definição de distribuição\nde vagas** — é copiado do cadastro de modalidades de Configuração, no\nmomento em que a modalidade é selecionada (`IModalidadeReader`).",
+        "Numa distribuição de vagas com `regraDistribuicaoCodigo` do tipo Lei 12.711,\numa modalidade selecionada com `composicaoVagas: RETIRADA_DE_OUTRA_MODALIDADE` tem\n`composicaoOrigemCodigo` diferente de `AC` (ampla concorrência). Como nas\ndemais causas de coerência de modalidade desta série,\n`composicaoOrigemCodigo` **não vem do corpo do pedido da definição de distribuição\nde vagas** — é copiado do cadastro de modalidades de Configuração, no\nmomento em que a modalidade é selecionada (`IModalidadeReader`).",
         "A fórmula do art. 10 é `AC = VO − VR_final − Σ(retiradas)` — toda retirada,\nno ramo federal, é sempre descontada de `AC` no cálculo, **independente**\nde qual código de origem a modalidade declara. O campo\n`composicaoOrigemCodigo` existe para servir também o ramo institucional e o\nmecanismo de remanejamento (onde uma retirada pode legitimamente vir de\noutra modalidade qualquer) — mas, no ramo federal, uma retirada com origem\ndiferente de `AC` descontaria de `AC` sem nunca reduzir de fato a\nmodalidade que ela alega retirar: a conta e a declaração ficariam\ndessincronizadas.",
         "Não acumula com nenhuma outra violação — é a primeira que falhar que\ninterrompe a criação da configuração."
       ],
@@ -21002,7 +21002,7 @@
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_indevida",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma modalidade selecionada declarou `composicaoOrigemCodigo` sem ter\n`composicaoVagas: RETIRA_DE`. O código de origem só tem sentido quando a\nmodalidade retira vagas de outra — nas demais composições (ampla\nconcorrência residual, sub-reserva da Lei 12.711, suplemento ao total), a\nmodalidade tem seu próprio quadro, sem depender de outra.",
+        "Uma modalidade selecionada declarou `composicaoOrigemCodigo` sem ter\n`composicaoVagas: RETIRADA_DE_OUTRA_MODALIDADE`. O código de origem só tem sentido quando a\nmodalidade retira vagas de outra — nas demais composições (ampla\nconcorrência residual, sub-reserva da Lei 12.711, suplemento ao total), a\nmodalidade tem seu próprio quadro, sem depender de outra.",
         "Este é o par simétrico de\n[`composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria):\na mesma coerência, olhada do lado oposto — lá, o campo faltando quando devia\nestar presente; aqui, presente quando devia faltar. Não acumula com nenhuma\noutra violação — é a primeira que falhar que interrompe a criação da\nmodalidade.",
         "**`composicaoVagas` e `composicaoOrigemCodigo` não vêm do corpo do pedido da\ndefinição de distribuição de vagas** — são copiados do cadastro de\nmodalidades de Configuração, no momento em que a modalidade é selecionada\n(`IModalidadeReader`). O próprio cadastro já impede esta incoerência na\nescrita (as invariantes cruzadas de `Modalidade`, tanto na criação quanto na\natualização); pela definição de\ndistribuição de vagas, este código só aparece se a modalidade estiver\ngravada no cadastro de um jeito que contorna essa validação — a conferência\naqui é defesa em profundidade, não a primeira linha.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
@@ -21020,14 +21020,14 @@
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma modalidade selecionada declarou `composicaoVagas: RETIRA_DE` sem\ndeclarar `composicaoOrigemCodigo`. A composição de vagas é a dimensão que\ndecide como a modalidade entra na aritmética do quadro de vagas — `RETIRA_DE`\nsignifica que ela não tem quadro próprio, ela **subtrai** vagas de outra\nmodalidade selecionada na mesma oferta; sem saber de qual, a subtração não\ntem como ser calculada.",
-        "Composição de vagas (`RETIRA_DE`, entre outras) e regra de remanejamento\n(`DESTINO_UNICO`, `CRUZADO`, entre outras — ver\n[`remanejamento_destino_obrigatorio`](/erros/uniplus.selecao.modalidade_selecionada.remanejamento_destino_obrigatorio))\nsão duas dimensões independentes da mesma modalidade: a primeira decide como\nela entra no cálculo do quadro; a segunda, o que acontece com as vagas dela\nque sobram sem candidato aprovado. Este código é só sobre a primeira.",
+        "Uma modalidade selecionada declarou `composicaoVagas: RETIRADA_DE_OUTRA_MODALIDADE` sem\ndeclarar `composicaoOrigemCodigo`. A composição de vagas é a dimensão que\ndecide como a modalidade entra na aritmética do quadro de vagas — `RETIRADA_DE_OUTRA_MODALIDADE`\nsignifica que ela não tem quadro próprio, ela **subtrai** vagas de outra\nmodalidade selecionada na mesma oferta; sem saber de qual, a subtração não\ntem como ser calculada.",
+        "Composição de vagas (`RETIRADA_DE_OUTRA_MODALIDADE`, entre outras) e regra de remanejamento\n(`DESTINO_UNICO`, `CRUZADO`, entre outras — ver\n[`remanejamento_destino_obrigatorio`](/erros/uniplus.selecao.modalidade_selecionada.remanejamento_destino_obrigatorio))\nsão duas dimensões independentes da mesma modalidade: a primeira decide como\nela entra no cálculo do quadro; a segunda, o que acontece com as vagas dela\nque sobram sem candidato aprovado. Este código é só sobre a primeira.",
         "Esta conferência roda dentro da criação da modalidade, verificando só os campos\ndela mesma — não confere se o código de origem declarado de fato corresponde\na outra modalidade selecionada nesta oferta (essa é uma conferência separada, ver\n[`configuracao_distribuicao_vagas.composicao_origem_nao_selecionada`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.composicao_origem_nao_selecionada)).\nNão acumula com nenhuma outra violação — é a primeira que falhar que\ninterrompe a criação da modalidade.",
         "**`composicaoVagas` e `composicaoOrigemCodigo` não vêm do corpo do pedido da\ndefinição de distribuição de vagas** — são copiados do cadastro de\nmodalidades de Configuração, no momento em que a modalidade é selecionada\n(`IModalidadeReader`). O próprio cadastro já impede esta incoerência na\nescrita (as invariantes cruzadas de `Modalidade`, tanto na criação quanto na\natualização); pela definição de\ndistribuição de vagas, este código só aparece se a modalidade estiver\ngravada no cadastro de um jeito que contorna essa validação — a conferência\naqui é defesa em profundidade, não a primeira linha.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
       ],
       "comoResolver": [
-        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre `composicaoVagas:\nRETIRA_DE` e o código de origem da modalidade indicada, ou investigue como\nela foi gravada sem essa coerência.",
+        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre `composicaoVagas:\nRETIRADA_DE_OUTRA_MODALIDADE` e o código de origem da modalidade indicada, ou investigue como\nela foi gravada sem essa coerência.",
         "Se o erro apareceu na retificação em ato único, o problema também não está\nno que foi enviado agora — está em uma versão já publicada, que reflete\numa modalidade já incoerente no momento em que foi selecionada."
       ],
       "ondeAparece": [
@@ -21039,8 +21039,8 @@
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_vagas_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma modalidade selecionada não declarou `composicaoVagas`. A composição de\nvagas decide como a modalidade entra na aritmética do quadro de vagas —\nampla concorrência residual, sub-reserva da Lei 12.711, retirada de outra\nmodalidade (`RETIRA_DE`, ver\n[`composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria)),\nou suplemento ao total publicado. Roda antes das conferências de coerência de\n`RETIRA_DE` — sem uma composição declarada, não há como avaliar se o código\nde origem é coerente com ela.",
-        "**`composicaoVagas` não vem do corpo do pedido da definição de distribuição de\nvagas** — é copiada do cadastro de modalidades de Configuração, no momento\nem que a modalidade é selecionada (`IModalidadeReader`). O cadastro nunca\ngrava uma modalidade sem esse campo — quando ele é omitido no cadastro, um\nvalor padrão (`RESIDUAL_DO_VO`) é aplicado; não existe modalidade cadastrada\ncom composição de vagas literalmente vazia. O que dispara este código, na\nprática, é o token de composição do cadastro **não ser reconhecido** pelo\nvocabulário do módulo Seleção — hoje os dois vocabulários coincidem, então\no cenário real é uma divergência futura entre eles (o cadastro evoluindo\nantes deste módulo), não um dado corrompido.",
+        "Uma modalidade selecionada não declarou `composicaoVagas`. A composição de\nvagas decide como a modalidade entra na aritmética do quadro de vagas —\nampla concorrência residual, sub-reserva da Lei 12.711, retirada de outra\nmodalidade (`RETIRADA_DE_OUTRA_MODALIDADE`, ver\n[`composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria)),\nou suplemento ao total publicado. Roda antes das conferências de coerência de\n`RETIRADA_DE_OUTRA_MODALIDADE` — sem uma composição declarada, não há como avaliar se o código\nde origem é coerente com ela.",
+        "**`composicaoVagas` não vem do corpo do pedido da definição de distribuição de\nvagas** — é copiada do cadastro de modalidades de Configuração, no momento\nem que a modalidade é selecionada (`IModalidadeReader`). O cadastro nunca\ngrava uma modalidade sem esse campo — quando ele é omitido no cadastro, um\nvalor padrão (`RESTANTE_DAS_VAGAS_OFERTADAS`) é aplicado; não existe modalidade cadastrada\ncom composição de vagas literalmente vazia. O que dispara este código, na\nprática, é o token de composição do cadastro **não ser reconhecido** pelo\nvocabulário do módulo Seleção — hoje os dois vocabulários coincidem, então\no cenário real é uma divergência futura entre eles (o cadastro evoluindo\nantes deste módulo), não um dado corrompido.",
         "Não acumula com nenhuma outra violação — é a primeira que falhar que\ninterrompe a criação da modalidade.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
       ],
@@ -21063,7 +21063,7 @@
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
       ],
       "comoResolver": [
-        "O vínculo incoerente não está no corpo do pedido que você enviou — está na\nmodalidade cadastrada em Configuração. Corrija lá: para uma modalidade de\ncota reservada, `regraRemanejamento` precisa ser `SEGUE_CASCATA`, com a\ncascata legal correspondente configurada; se a intenção era uma modalidade\nsem vínculo com a Lei 12.711, reveja a `naturezaLegal` cadastrada.",
+        "O vínculo incoerente não está no corpo do pedido que você enviou — está na\nmodalidade cadastrada em Configuração. Corrija lá: para uma modalidade de\ncota reservada, `remanejamento.regra` precisa ser `SEGUE_CASCATA`, com a\ncascata legal correspondente configurada; se a intenção era uma modalidade\nsem vínculo com a Lei 12.711, reveja a `naturezaLegal` cadastrada.",
         "Se o erro apareceu na retificação em ato único, o problema também não está\nno que foi enviado agora — está em uma versão já publicada, que reflete\numa modalidade já incoerente no momento em que foi selecionada."
       ],
       "ondeAparece": [
@@ -21112,7 +21112,7 @@
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
       ],
       "comoResolver": [
-        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre\n`regraRemanejamento: CRUZADO` e o par, ou investigue como a modalidade foi\ngravada sem essa coerência.",
+        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre\n`remanejamento.regra: CRUZADO` e o par, ou investigue como a modalidade foi\ngravada sem essa coerência.",
         "Se o erro apareceu na retificação em ato único, o problema também não está\nno que foi enviado agora — está em uma versão já publicada, que reflete\numa modalidade já incoerente no momento em que foi selecionada."
       ],
       "ondeAparece": [
@@ -21161,12 +21161,12 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma modalidade selecionada declarou `regraRemanejamento: DESTINO_UNICO` sem\ndeclarar `remanejamentoDestino`. Ao contrário da cascata legal (obrigatória\npara cota reservada, ver\n[`cota_reservada_exige_cascata`](/erros/uniplus.selecao.modalidade_selecionada.cota_reservada_exige_cascata)),\n`DESTINO_UNICO` é um remanejamento simples, de uma modalidade para uma única\noutra — mas precisa dizer qual; sem o destino, as vagas ociosas não têm para\nonde ir.",
-        "Regra de remanejamento (`DESTINO_UNICO`, `CRUZADO`, `SEGUE_CASCATA` — o\nvocabulário inteiro) é independente da composição de vagas (`RETIRA_DE`, ver\n[`composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria))\n— a primeira decide o destino das vagas ociosas da modalidade; a segunda,\ncomo ela entra no cálculo do quadro. Não acumula com nenhuma outra violação\n— é a primeira que falhar que interrompe a criação da modalidade.",
+        "Regra de remanejamento (`DESTINO_UNICO`, `CRUZADO`, `SEGUE_CASCATA` — o\nvocabulário inteiro) é independente da composição de vagas (`RETIRADA_DE_OUTRA_MODALIDADE`, ver\n[`composicao_origem_obrigatoria`](/erros/uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria))\n— a primeira decide o destino das vagas ociosas da modalidade; a segunda,\ncomo ela entra no cálculo do quadro. Não acumula com nenhuma outra violação\n— é a primeira que falhar que interrompe a criação da modalidade.",
         "**`regraRemanejamento` e `remanejamentoDestino` não vêm do corpo do pedido da\ndefinição de distribuição de vagas** — são copiados do cadastro de\nmodalidades de Configuração, no momento em que a modalidade é selecionada\n(`IModalidadeReader`). O próprio cadastro já impede esta incoerência na\nescrita (as invariantes cruzadas de `Modalidade`, tanto na criação quanto na\natualização); pela definição de\ndistribuição de vagas, este código só aparece se a modalidade estiver\ngravada no cadastro de um jeito que contorna essa validação — a conferência\naqui é defesa em profundidade, não a primeira linha.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada modalidade selecionada a partir do que foi\ncongelado — a mesma conferência roda de novo, sozinha."
       ],
       "comoResolver": [
-        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre `regraRemanejamento:\nDESTINO_UNICO` e o destino, ou investigue como a modalidade foi gravada sem\nessa coerência.",
+        "O campo que falta não está no corpo do pedido que você enviou — está na modalidade\ncadastrada em Configuração. Corrija lá o vínculo entre `remanejamento.regra:\nDESTINO_UNICO` e o destino, ou investigue como a modalidade foi gravada sem\nessa coerência.",
         "Se o erro apareceu na retificação em ato único, o problema também não está\nno que foi enviado agora — está em uma versão já publicada, que reflete\numa modalidade já incoerente no momento em que foi selecionada."
       ],
       "ondeAparece": [
@@ -22931,7 +22931,7 @@
         "Roda como parte da conferência de conformidade estrutural para publicação\n(`PendenciaDaCascata`), avaliada oferta por oferta, em ordem determinística\n(por `OfertaCursoOrigemId`). É a primeira condição conferida para cada\noferta com ao menos uma modalidade `SEGUE_CASCATA` — antes de checar se o\nprocesso tem cascata configurada. Sequencial: a primeira oferta com essa\ninconsistência interrompe a avaliação; nunca acumula com nenhuma outra\ncausa desta série."
       ],
       "comoResolver": [
-        "Se a modalidade de fato pertence a uma cota reservada da Lei 12.711/2012,\nconfirme que a oferta está configurada com a regra de distribuição de\nvagas correspondente. Se a oferta não segue esse regime, corrija o\n`regraRemanejamento` da modalidade para `DESTINO_UNICO` ou `CRUZADO`."
+        "Se a modalidade de fato pertence a uma cota reservada da Lei 12.711/2012,\nconfirme que a oferta está configurada com a regra de distribuição de\nvagas correspondente. Se a oferta não segue esse regime, corrija o\n`remanejamento.regra` da modalidade para `DESTINO_UNICO` ou `CRUZADO`."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -22949,7 +22949,7 @@
         "O primeiro cenário é conferido uma vez por oferta, antes de examinar cada\nmodalidade individualmente — a partir daí, se o processo tiver cascata, o\nsegundo cenário é conferido para cada modalidade `SEGUE_CASCATA` da\noferta, em ordem determinística (por código). Sequencial: a primeira\noferta ou modalidade com essa inconsistência interrompe a avaliação de\nconformidade estrutural para publicação; nunca acumula com nenhuma outra\ncausa desta série."
       ],
       "comoResolver": [
-        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione a modalidade apontada como origem na cascata já configurada —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `regraRemanejamento` dela."
+        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione a modalidade apontada como origem na cascata já configurada —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `remanejamento.regra` dela."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -22966,7 +22966,7 @@
         "Diferente das causas anteriores desta série, que rodam durante a\navaliação oferta por oferta, esta roda **depois**, numa segunda passada\nque só acontece se nenhuma oferta reprovou nenhuma delas: percorre as\norigens da cascata, em ordem determinística, e confere cada uma contra o\nconjunto de todos os códigos de modalidade `SEGUE_CASCATA` do processo,\nsomando todas as ofertas. Sequencial: a primeira origem com essa\ninconsistência interrompe a avaliação; nunca acumula com nenhuma outra\ncausa desta série, e nunca coexiste com as quatro anteriores — se alguma\ndelas tivesse disparado, a avaliação já teria parado antes de chegar\naqui."
       ],
       "comoResolver": [
-        "Remova a origem apontada da cascata, ou configure alguma modalidade do\nprocesso com `regraRemanejamento` igual a `SEGUE_CASCATA` e o mesmo código\ndessa origem."
+        "Remova a origem apontada da cascata, ou configure alguma modalidade do\nprocesso com `remanejamento.regra` igual a `SEGUE_CASCATA` e o mesmo código\ndessa origem."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",

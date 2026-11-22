@@ -4,16 +4,14 @@ using AwesomeAssertions;
 
 // `using` de namespace (não alias): os métodos de extensão `ToCodigo` de Seleção só entram
 // em escopo assim. Os tipos homônimos do catálogo chegam por alias, para não colidir.
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using ComposicaoVagasDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.ComposicaoVagas;
-using ComposicoesVagas = Unifesspa.UniPlus.Configuracao.Domain.Enums.ComposicoesVagas;
 using NaturezaLegalDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.NaturezaLegal;
-using NaturezasLegais = Unifesspa.UniPlus.Configuracao.Domain.Enums.NaturezasLegais;
 using OrigemDataDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.OrigemDataFase;
 using OrigensDataFase = Unifesspa.UniPlus.Configuracao.Domain.Enums.OrigensDataFase;
 using RegraRemanejamentoDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.RegraRemanejamento;
-using RegrasRemanejamento = Unifesspa.UniPlus.Configuracao.Domain.Enums.RegrasRemanejamento;
 
 /// <summary>
 /// Amarra os códigos que a leitura de Seleção emite aos que o catálogo de Configuração
@@ -44,14 +42,14 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
         CadaMembroExceto<NaturezaLegalModalidade, NaturezaLegalDoCatalogo>(
             NaturezaLegalModalidade.Nenhuma,
             static local => local.ToCodigo(),
-            NaturezasLegais.ParaTokenCanonico);
+            CodigoDeContratoExtensions.Codigo);
 
     [Fact(DisplayName = "Composição de vagas: o código que Seleção lê é o que o catálogo publica")]
     public void ComposicaoVagas_MesmoCodigoNosDoisModulos() =>
         CadaMembroExceto<ComposicaoVagasModalidade, ComposicaoVagasDoCatalogo>(
             ComposicaoVagasModalidade.Nenhuma,
             static local => local.ToCodigo(),
-            ComposicoesVagas.ParaTokenCanonico);
+            CodigoDeContratoExtensions.Codigo);
 
     [Fact(DisplayName = "Origem da data da fase: o código que Seleção lê é o que o catálogo publica")]
     public void OrigemDataFase_MesmoCodigoNosDoisModulos() =>
@@ -72,7 +70,7 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
         CadaMembroExceto<RegraRemanejamentoModalidade, RegraRemanejamentoDoCatalogo>(
             RegraRemanejamentoModalidade.Nenhuma,
             static local => local.ToCodigo()!,
-            RegrasRemanejamento.ParaTokenCanonico);
+            CodigoDeContratoExtensions.Codigo);
 
         RegraRemanejamentoModalidade.Nenhuma.ToCodigo().Should().BeNull(
             "o catálogo publica ausência (o campo é opcional na origem) para a modalidade que não "

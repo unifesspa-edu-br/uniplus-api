@@ -1,11 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Ação a aplicar ao candidato de uma <see cref="Entities.Modalidade"/> de
 /// concorrência quando a comprovação exigida para a reserva é indeferida
 /// (UNI-REQ-0011): descreve, em domínio fechado, se o candidato é reclassificado na
-/// ampla concorrência ou conforme a regra específica do edital. Persistida como código
-/// UPPER_SNAKE (<see cref="AcoesQuandoIndeferido"/>).
+/// ampla concorrência ou conforme a regra específica do edital. A ordem de declaração é a de exibição.
 /// </summary>
 /// <remarks>
 /// <para>É opcional, e a <b>ausência é declaração, não omissão</b>: a modalidade não
@@ -21,12 +22,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </remarks>
 public enum AcaoQuandoIndeferido
 {
-    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
-    Nenhuma = 0,
-
     /// <summary>Reclassifica o candidato na ampla concorrência (AC).</summary>
+    [CodigoDeContrato("RECLASSIFICAR_AC", "Reclassificar na ampla concorrência")]
     ReclassificarAc = 1,
 
     /// <summary>Reclassifica o candidato conforme a regra específica do edital.</summary>
+    [CodigoDeContrato("RECLASSIFICAR_REGRA_EDITAL", "Reclassificar conforme a regra do edital")]
     ReclassificarRegraEdital = 2,
 }

@@ -15376,6 +15376,326 @@
         }
       }
     },
+    "/api/configuracao/vocabularios/naturezas-legais": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-natureza-legal.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NaturezaLegal"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/acoes-quando-indeferido": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-acao-quando-indeferido.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AcaoQuandoIndeferido"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/composicoes-vagas": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-composicao-vagas.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComposicaoVagas"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/regras-remanejamento": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-regra-remanejamento.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegraRemanejamento"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/programas-de-oferta": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-programa-de-oferta.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramaDeOferta"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/formatos-pedagogicos": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-formato-pedagogico.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormatoPedagogico"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/regimes-de-funcionamento": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-regime-de-funcionamento.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegimeDeFuncionamento"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/regimes-de-turno": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-regime-de-turno.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegimeDeTurno"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/turnos-da-oferta": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-turno-oferta.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TurnoOferta"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/abrangencias-dia-nao-util": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-abrangencia-dia-nao-util.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Abrangencia"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/configuracao/vocabularios/grupos-area-enem": {
       "get": {
         "tags": [
@@ -15439,38 +15759,6 @@
           }
         }
       }
-    },
-    "/api/configuracao/vocabularios/abrangencias-dia-nao-util": {
-      "get": {
-        "tags": [
-          "Vocabularios"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/vnd.uniplus.codigo-abrangencia-dia-nao-util.v1\u002Bjson": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Abrangencia"
-                  }
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Not Acceptable",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -15499,6 +15787,29 @@
         ],
         "type": "string",
         "description": "- \u0060NACIONAL\u0060: Nacional\n- \u0060ESTADUAL\u0060: Estadual\n- \u0060MUNICIPAL\u0060: Municipal\n- \u0060INSTITUCIONAL\u0060: Institucional"
+      },
+      "AcaoQuandoIndeferido": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/AcaoQuandoIndeferidoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "AcaoQuandoIndeferidoCodigo": {
+        "enum": [
+          "RECLASSIFICAR_AC",
+          "RECLASSIFICAR_REGRA_EDITAL"
+        ],
+        "type": "string",
+        "description": "- \u0060RECLASSIFICAR_AC\u0060: Reclassificar na ampla concorr\u00EAncia\n- \u0060RECLASSIFICAR_REGRA_EDITAL\u0060: Reclassificar conforme a regra do edital"
       },
       "AgregadoPortavel": {
         "required": [
@@ -16149,15 +16460,23 @@
             ]
           },
           "naturezaLegal": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NaturezaLegalCodigo"
+              }
             ]
           },
           "composicaoVagas": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComposicaoVagasCodigo"
+              }
             ]
           },
           "composicaoOrigem": {
@@ -16166,28 +16485,14 @@
               "string"
             ]
           },
-          "regraRemanejamento": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoDestino": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoPar": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoFallback": {
-            "type": [
-              "null",
-              "string"
+          "remanejamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RemanejamentoDasVagasInput"
+              }
             ]
           },
           "regraDeAplicabilidade": {
@@ -16203,9 +16508,13 @@
             }
           },
           "acaoQuandoIndeferido": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcaoQuandoIndeferidoCodigo"
+              }
             ]
           },
           "baseLegal": {
@@ -16238,21 +16547,33 @@
             ]
           },
           "programaDeOferta": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProgramaDeOfertaCodigo"
+              }
             ]
           },
           "regimeDeFuncionamento": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegimeDeFuncionamentoCodigo"
+              }
             ]
           },
           "regimeDeTurno": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegimeDeTurnoCodigo"
+              }
             ]
           },
           "turnos": {
@@ -16261,13 +16582,17 @@
               "array"
             ],
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TurnoOfertaCodigo"
             }
           },
           "formatoPedagogico": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoPedagogicoCodigo"
+              }
             ]
           },
           "eMecCodigo": {
@@ -17295,6 +17620,31 @@
           }
         }
       },
+      "ComposicaoVagas": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ComposicaoVagasCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ComposicaoVagasCodigo": {
+        "enum": [
+          "RESTANTE_DAS_VAGAS_OFERTADAS",
+          "DENTRO_DA_RESERVA_LEGAL",
+          "RETIRADA_DE_OUTRA_MODALIDADE",
+          "SUPLEMENTAR_AO_TOTAL"
+        ],
+        "type": "string",
+        "description": "- \u0060RESTANTE_DAS_VAGAS_OFERTADAS\u0060: Restante das vagas ofertadas\n- \u0060DENTRO_DA_RESERVA_LEGAL\u0060: Dentro da reserva legal\n- \u0060RETIRADA_DE_OUTRA_MODALIDADE\u0060: Retirada de outra modalidade\n- \u0060SUPLEMENTAR_AO_TOTAL\u0060: Suplementar ao total"
+      },
       "ConceitoAdmitidoDto": {
         "required": [
           "codigo",
@@ -18185,15 +18535,23 @@
             ]
           },
           "naturezaLegal": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NaturezaLegalCodigo"
+              }
             ]
           },
           "composicaoVagas": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComposicaoVagasCodigo"
+              }
             ]
           },
           "composicaoOrigem": {
@@ -18202,28 +18560,14 @@
               "string"
             ]
           },
-          "regraRemanejamento": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoDestino": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoPar": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoFallback": {
-            "type": [
-              "null",
-              "string"
+          "remanejamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RemanejamentoDasVagasInput"
+              }
             ]
           },
           "regraDeAplicabilidade": {
@@ -18239,9 +18583,13 @@
             }
           },
           "acaoQuandoIndeferido": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcaoQuandoIndeferidoCodigo"
+              }
             ]
           },
           "baseLegal": {
@@ -18321,21 +18669,33 @@
             ]
           },
           "programaDeOferta": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProgramaDeOfertaCodigo"
+              }
             ]
           },
           "regimeDeFuncionamento": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegimeDeFuncionamentoCodigo"
+              }
             ]
           },
           "regimeDeTurno": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegimeDeTurnoCodigo"
+              }
             ]
           },
           "turnos": {
@@ -18344,13 +18704,17 @@
               "array"
             ],
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TurnoOfertaCodigo"
             }
           },
           "formatoPedagogico": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoPedagogicoCodigo"
+              }
             ]
           },
           "eMecCodigo": {
@@ -20691,6 +21055,30 @@
           }
         }
       },
+      "FormatoPedagogico": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormatoPedagogicoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormatoPedagogicoCodigo": {
+        "enum": [
+          "PRESENCIAL",
+          "SEMIPRESENCIAL",
+          "EAD"
+        ],
+        "type": "string",
+        "description": "- \u0060PRESENCIAL\u0060: Presencial\n- \u0060SEMIPRESENCIAL\u0060: Semipresencial\n- \u0060EAD\u0060: A dist\u00E2ncia"
+      },
       "FormularioPortavel": {
         "required": [
           "etapas",
@@ -21426,10 +21814,7 @@
           "naturezaLegal",
           "composicaoVagas",
           "composicaoOrigem",
-          "regraRemanejamento",
-          "remanejamentoDestino",
-          "remanejamentoPar",
-          "remanejamentoFallback",
+          "remanejamento",
           "regraDeAplicabilidade",
           "acaoQuandoIndeferido",
           "baseLegal",
@@ -21454,10 +21839,10 @@
             ]
           },
           "naturezaLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/NaturezaLegal"
           },
           "composicaoVagas": {
-            "type": "string"
+            "$ref": "#/components/schemas/ComposicaoVagas"
           },
           "composicaoOrigem": {
             "type": [
@@ -21465,28 +21850,14 @@
               "string"
             ]
           },
-          "regraRemanejamento": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoDestino": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoPar": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "remanejamentoFallback": {
-            "type": [
-              "null",
-              "string"
+          "remanejamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RemanejamentoDasVagasDto"
+              }
             ]
           },
           "regraDeAplicabilidade": {
@@ -21499,9 +21870,13 @@
             }
           },
           "acaoQuandoIndeferido": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcaoQuandoIndeferido"
+              }
             ]
           },
           "baseLegal": {
@@ -21579,6 +21954,30 @@
         ],
         "type": "string",
         "description": "Como o conceito que avalia uma etapa se expressa: numa escala num\u00E9rica ou entre valores categ\u00F3ricos.\n\n- \u0060NUMERICO\u0060: Num\u00E9rico \u2014 Conceito medido numa escala de m\u00EDnimo, m\u00E1ximo e casas decimais.\n- \u0060CATEGORICO\u0060: Categ\u00F3rico \u2014 Conceito escolhido entre valores categ\u00F3ricos ordenados."
+      },
+      "NaturezaLegal": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/NaturezaLegalCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "NaturezaLegalCodigo": {
+        "enum": [
+          "COTA_RESERVADA",
+          "AMPLA",
+          "ACAO_AFIRMATIVA"
+        ],
+        "type": "string",
+        "description": "- \u0060COTA_RESERVADA\u0060: Cota reservada\n- \u0060AMPLA\u0060: Ampla concorr\u00EAncia\n- \u0060ACAO_AFIRMATIVA\u0060: A\u00E7\u00E3o afirmativa"
       },
       "ObrigatoriedadeDto": {
         "required": [
@@ -21806,21 +22205,21 @@
             "$ref": "#/components/schemas/UnidadeOfertanteDto"
           },
           "programaDeOferta": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProgramaDeOferta"
           },
           "formatoPedagogico": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormatoPedagogico"
           },
           "regimeDeFuncionamento": {
-            "type": "string"
+            "$ref": "#/components/schemas/RegimeDeFuncionamento"
           },
           "regimeDeTurno": {
-            "type": "string"
+            "$ref": "#/components/schemas/RegimeDeTurno"
           },
           "turnos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TurnoOferta"
             }
           },
           "eMecCodigo": {
@@ -22473,6 +22872,34 @@
           }
         }
       },
+      "ProgramaDeOferta": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ProgramaDeOfertaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ProgramaDeOfertaCodigo": {
+        "enum": [
+          "REGULAR",
+          "FORMA_PARA",
+          "PARFOR",
+          "PRONERA",
+          "PEPETI",
+          "CONVENIO_OUTRO",
+          "OUTRO"
+        ],
+        "type": "string",
+        "description": "- \u0060REGULAR\u0060: Regular\n- \u0060FORMA_PARA\u0060: Forma Par\u00E1\n- \u0060PARFOR\u0060: Parfor\n- \u0060PRONERA\u0060: Pronera\n- \u0060PEPETI\u0060: PEPETI\n- \u0060CONVENIO_OUTRO\u0060: Outro conv\u00EAnio\n- \u0060OUTRO\u0060: Outro programa"
+      },
       "ProtecaoDoFatoDto": {
         "required": [
           "classificacao",
@@ -22585,6 +23012,53 @@
             }
           }
         }
+      },
+      "RegimeDeFuncionamento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/RegimeDeFuncionamentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "RegimeDeFuncionamentoCodigo": {
+        "enum": [
+          "INTENSIVO",
+          "EXTENSIVO",
+          "ALTERNANCIA_PEDAGOGICA"
+        ],
+        "type": "string",
+        "description": "- \u0060INTENSIVO\u0060: Intensivo\n- \u0060EXTENSIVO\u0060: Extensivo\n- \u0060ALTERNANCIA_PEDAGOGICA\u0060: Altern\u00E2ncia pedag\u00F3gica"
+      },
+      "RegimeDeTurno": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/RegimeDeTurnoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "RegimeDeTurnoCodigo": {
+        "enum": [
+          "REGULAR",
+          "INTEGRAL"
+        ],
+        "type": "string",
+        "description": "- \u0060REGULAR\u0060: Regular\n- \u0060INTEGRAL\u0060: Integral"
       },
       "RegistrarManifestacaoDaProtecaoRequest": {
         "required": [
@@ -22709,6 +23183,30 @@
             }
           }
         }
+      },
+      "RegraRemanejamento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/RegraRemanejamentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "RegraRemanejamentoCodigo": {
+        "enum": [
+          "SEGUE_CASCATA",
+          "DESTINO_UNICO",
+          "CRUZADO"
+        ],
+        "type": "string",
+        "description": "- \u0060SEGUE_CASCATA\u0060: Segue a cascata\n- \u0060DESTINO_UNICO\u0060: Destino \u00FAnico\n- \u0060CRUZADO\u0060: Cruzado"
       },
       "RegrasDoCampoAvaliadas": {
         "required": [
@@ -22839,6 +23337,74 @@
             "items": {
               "$ref": "#/components/schemas/RegraPadraoInput"
             }
+          }
+        }
+      },
+      "RemanejamentoDasVagasDto": {
+        "required": [
+          "regra",
+          "destino",
+          "par",
+          "fallback"
+        ],
+        "type": "object",
+        "properties": {
+          "regra": {
+            "$ref": "#/components/schemas/RegraRemanejamento"
+          },
+          "destino": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "par": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fallback": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RemanejamentoDasVagasInput": {
+        "required": [
+          "regra"
+        ],
+        "type": "object",
+        "properties": {
+          "regra": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraRemanejamentoCodigo"
+              }
+            ]
+          },
+          "destino": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "par": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fallback": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -23858,6 +24424,30 @@
         ],
         "type": "string",
         "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero\n- \u0060BOOLEANO\u0060: Sim ou n\u00E3o\n- \u0060SELECAO_UNICA\u0060: Escolha de um valor\n- \u0060SELECAO_MULTIPLA\u0060: Escolha de v\u00E1rios valores\n- \u0060TEXTO\u0060: Texto\n- \u0060DATA\u0060: Data\n- \u0060ENDERECO\u0060: Endere\u00E7o\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio"
+      },
+      "TurnoOferta": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TurnoOfertaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TurnoOfertaCodigo": {
+        "enum": [
+          "MATUTINO",
+          "VESPERTINO",
+          "NOTURNO"
+        ],
+        "type": "string",
+        "description": "- \u0060MATUTINO\u0060: Matutino\n- \u0060VESPERTINO\u0060: Vespertino\n- \u0060NOTURNO\u0060: Noturno"
       },
       "UnidadeOfertanteDto": {
         "required": [

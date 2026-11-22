@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -67,27 +68,23 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static void ConfigurarNaturezaEComposicaoDasVagas(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.NaturezaLegal)
-            .HasConversion<NaturezaLegalValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoVagas)
-            .HasConversion<ComposicaoVagasValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoOrigem).HasMaxLength(CodigoReferenciaMaxLength);
     }
 
-    // Enums nullable: o converter cobre o valor não-nulo; o EF encapsula null.
+    // Enums opcionais: a ausência é null na coluna.
     private static void ConfigurarRemanejamento(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.RegraRemanejamento)
-            .HasConversion(new RegraRemanejamentoValueConverter())
             .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(m => m.AcaoQuandoIndeferido)
-            .HasConversion(new AcaoQuandoIndeferidoValueConverter())
             .HasMaxLength(CodigoDeContratoMaxLength);
     }
 
@@ -170,22 +167,22 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         table.HasCheckConstraint(
             "ck_modalidades_natureza_legal",
-            $"natureza_legal IN ({CodigosSql(NaturezasLegais.TokensCanonicos)})");
+            $"natureza_legal IN ({SqlDosCodigosDeContrato.Lista<NaturezaLegal>()})");
 
         table.HasCheckConstraint(
             "ck_modalidades_composicao_vagas",
-            $"composicao_vagas IN ({CodigosSql(ComposicoesVagas.TokensCanonicos)})");
+            $"composicao_vagas IN ({SqlDosCodigosDeContrato.Lista<ComposicaoVagas>()})");
     }
 
     private static void ConfigurarChecksDosDominiosDoRemanejamento(TableBuilder<Modalidade> table)
     {
         table.HasCheckConstraint(
             "ck_modalidades_regra_remanejamento",
-            $"regra_remanejamento IS NULL OR regra_remanejamento IN ({CodigosSql(RegrasRemanejamento.TokensCanonicos)})");
+            $"regra_remanejamento IS NULL OR regra_remanejamento IN ({SqlDosCodigosDeContrato.Lista<RegraRemanejamento>()})");
 
         table.HasCheckConstraint(
             "ck_modalidades_acao_quando_indeferido",
-            $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({CodigosSql(AcoesQuandoIndeferido.TokensCanonicos)})");
+            $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({SqlDosCodigosDeContrato.Lista<AcaoQuandoIndeferido>()})");
     }
 
     // Formato fechado do código — alinhado ao value object CodigoModalidade.
@@ -199,11 +196,8 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
 
         table.HasCheckConstraint(
             "ck_modalidades_retirada_de_outra_modalidade_origem",
-            "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
+            $"(composicao_vagas = {SqlDosCodigosDeContrato.Literal(ComposicaoVagas.RetiradaDeOutraModalidade)}) = (composicao_origem IS NOT NULL)");
     }
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 
     // ── Conversores/comparadores jsonb ────────────────────────────────────────
 

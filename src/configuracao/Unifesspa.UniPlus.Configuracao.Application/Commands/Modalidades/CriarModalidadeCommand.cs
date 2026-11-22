@@ -3,15 +3,17 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Cria uma modalidade de concorrência (UNI-REQ-0011): código (chave natural
-/// imutável), descrição opcional, e os campos de cota como tokens canônicos
-/// UPPER_SNAKE para os enums (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>,
-/// <c>RegraRemanejamento</c>, <c>AcaoQuandoIndeferido</c>). Quando ausentes,
-/// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESTANTE_DAS_VAGAS_OFERTADAS.
+/// imutável), descrição opcional, e os campos de cota, em que os enums chegam como código de contrato
+/// (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>, a regra do bloco <c>Remanejamento</c> e
+/// <c>AcaoQuandoIndeferido</c>). Quando ausentes, <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume
+/// RESTANTE_DAS_VAGAS_OFERTADAS; sem o bloco <c>Remanejamento</c>, a modalidade não remaneja.
 /// A <c>RegraDeAplicabilidade</c> é o OU de cláusulas, cada uma o E de condições, que diz quem
 /// concorre à modalidade (ADR-0144); a lista vazia é a regra incondicional, e a ausente é recusada.
 /// O ator de auditoria (<c>created_by</c>) é carimbado server-side via
@@ -28,19 +30,16 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed record CriarModalidadeCommand(
     string? Codigo,
     string? Descricao = null,
-    string? NaturezaLegal = null,
-    string? ComposicaoVagas = null,
+    [property: AceitaCodigosDe<NaturezaLegal>] string? NaturezaLegal = null,
+    [property: AceitaCodigosDe<ComposicaoVagas>] string? ComposicaoVagas = null,
     string? ComposicaoOrigem = null,
-    string? RegraRemanejamento = null,
-    string? RemanejamentoDestino = null,
-    string? RemanejamentoPar = null,
-    string? RemanejamentoFallback = null,
+    RemanejamentoDasVagasInformado? Remanejamento = null,
     IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? RegraDeAplicabilidade = null,
-    string? AcaoQuandoIndeferido = null,
+    [property: AceitaCodigosDe<AcaoQuandoIndeferido>] string? AcaoQuandoIndeferido = null,
     string? BaseLegal = null) : ICommand<Result<Guid>>
 {
     /// <summary>Os campos editáveis como o agregado os recebe, com a regra de aplicabilidade já montada.</summary>
     public DeclaracaoDaModalidade Declaracao(PredicadoDnf? regraDeAplicabilidade) => new(
-        Descricao, NaturezaLegal, ComposicaoVagas, ComposicaoOrigem, RegraRemanejamento, RemanejamentoDestino,
-        RemanejamentoPar, RemanejamentoFallback, regraDeAplicabilidade, AcaoQuandoIndeferido, BaseLegal);
+        Descricao, NaturezaLegal, ComposicaoVagas, ComposicaoOrigem, Remanejamento?.Regra, Remanejamento?.Destino,
+        Remanejamento?.Par, Remanejamento?.Fallback, regraDeAplicabilidade, AcaoQuandoIndeferido, BaseLegal);
 }

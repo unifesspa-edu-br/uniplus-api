@@ -26,6 +26,57 @@ public sealed class ModalidadeValidacaoDosCamposTests
         r.Errors[2].Field.Should().Be("naturezaLegal");
     }
 
+    [Fact(DisplayName = "Os quatro códigos de enum desconhecidos acumulam uma recusa cada, sem repetir o valor recebido")]
+    public void Criar_QuatroCodigosDesconhecidos_AcumulaUmaRecusaPorCampo()
+    {
+        Result<Modalidade> r = Criar("AC_X", d => d with
+        {
+            CodigoDaNaturezaLegal = "ampla",
+            CodigoDaComposicaoDeVagas = " DENTRO_DA_RESERVA_LEGAL",
+            CodigoDaRegraDeRemanejamento = "CRUZADO ",
+            CodigoDaAcaoQuandoIndeferido = "ELIMINA",
+        });
+
+        r.Errors.Select(erro => erro.Field).Should().Equal("naturezaLegal", "composicaoVagas", "remanejamento.regra", "acaoQuandoIndeferido");
+        r.Errors.Select(erro => erro.Error.Message).Should().NotContain(mensagem => mensagem.Contains("ELIMINA", StringComparison.Ordinal));
+        r.Errors[0].Error.Message.Should().Be("Natureza legal deve ser uma de: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
+    }
+
+    [Theory(DisplayName = "Códigos vazios, em branco ou minúsculos são recusados por campo")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("ampla")]
+    public void Criar_CodigosInvalidos_RecusaCadaCampo(string codigo)
+    {
+        Result<Modalidade> resultado = Criar("AC_X", d => d with
+        {
+            CodigoDaNaturezaLegal = codigo,
+            CodigoDaComposicaoDeVagas = codigo,
+            CodigoDaRegraDeRemanejamento = codigo,
+            CodigoDaAcaoQuandoIndeferido = codigo,
+        });
+
+        resultado.Errors.Select(erro => erro.Error.Code).Should().Equal(
+            ModalidadeErrorCodes.NaturezaInvalida, ModalidadeErrorCodes.ComposicaoVagasInvalida,
+            ModalidadeErrorCodes.RegraRemanejamentoInvalida, ModalidadeErrorCodes.AcaoIndeferimentoInvalida);
+    }
+
+    [Fact(DisplayName = "Códigos ausentes usam os padrões e mantêm os campos opcionais ausentes")]
+    public void Criar_CodigosAusentes_AceitaPadroes()
+    {
+        Result<Modalidade> resultado = Criar("AC_X", d => d with
+        {
+            CodigoDaNaturezaLegal = null,
+            CodigoDaComposicaoDeVagas = null,
+            CodigoDaRegraDeRemanejamento = null,
+            CodigoDaAcaoQuandoIndeferido = null,
+        });
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.NaturezaLegal.Should().Be(Unifesspa.UniPlus.Configuracao.Domain.Enums.NaturezaLegal.Ampla);
+        resultado.Value.ComposicaoVagas.Should().Be(Unifesspa.UniPlus.Configuracao.Domain.Enums.ComposicaoVagas.RestanteDasVagasOfertadas);
+    }
+
     [Fact(DisplayName = "Regra fora do domínio com parâmetro presente reporta só o código inválido, não a incoerência derivada")]
     public void Criar_RegraInvalidaComParametro_NaoDerivaIncoerenciaDeParametro()
     {
