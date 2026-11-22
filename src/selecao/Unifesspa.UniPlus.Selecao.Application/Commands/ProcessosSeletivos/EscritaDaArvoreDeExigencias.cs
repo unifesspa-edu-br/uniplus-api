@@ -61,7 +61,7 @@ internal static class EscritaDaArvoreDeExigencias
 
     private static List<FieldError> FormaDoNo(NoExigenciaInput no)
     {
-        bool ehFolha = ArvoreDeEntradaDasExigencias.EhFolha(no);
+        bool ehFolha = RegrasDeComprovacaoInformadas.EhFolha(no);
         List<FieldError> erros = ehFolha && no.Documento is { } documento
             ? FormaDoDocumento(documento).Select(erro => erro.NoCaminhoDe("documento")).ToList() : [];
         IReadOnlyList<BaseLegalInput> basesLegais = ehFolha ? no.Documento?.BasesLegais() ?? [] : no.BasesLegaisDoGrupo();
