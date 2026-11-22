@@ -12,7 +12,7 @@ internal static class TermoExigidoMapping
         new(
             termo.Codigo,
             termo.Ordem,
-            new VersaoDoTermoDto(
+            new VersaoDoTermoExigidoDto(
                 termo.TermoId,
                 termo.VersaoId,
                 termo.TermoCodigo,
