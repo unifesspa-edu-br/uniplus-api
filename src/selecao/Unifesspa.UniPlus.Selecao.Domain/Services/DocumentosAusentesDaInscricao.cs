@@ -23,7 +23,7 @@ public static class DocumentosAusentesDaInscricao
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(resultado);
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade = resultado.EstadosPorEntidade
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade = resultado.EstadosPorEntidade
             .ToDictionary(static e => (e.NoExigenciaId, e.EntidadeId), static e => e.Estado);
         List<DocumentoAusente> ausentes = [];
         foreach (NoExigencia raiz in arvore.Raizes.OrderBy(static r => r.Ordem))
@@ -34,7 +34,7 @@ public static class DocumentosAusentesDaInscricao
     }
 
     private static void Percorrer(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         if (no.RepetePorEntidade is not null && entidadeId is null)
         {
@@ -48,23 +48,23 @@ public static class DocumentosAusentesDaInscricao
     }
 
     private static void PercorrerNoEscopo(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         if (no.Tipo == TipoNo.GrupoE)
         {
             PercorrerGrupoE(no, entidadeId, resultado, porEntidade, ausentes);
             return;
         }
-        if (EstadoDe(no, entidadeId, resultado, porEntidade) == EstadoSatisfacao.Pendente)
+        if (EstadoDe(no, entidadeId, resultado, porEntidade) == SituacaoDaComprovacao.Pendente)
         {
             RegistrarAusentes(no, entidadeId, resultado, porEntidade, ausentes);
         }
     }
 
     private static void PercorrerGrupoE(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
-        if (EstadoDe(no, entidadeId, resultado, porEntidade) is not (EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel))
+        if (EstadoDe(no, entidadeId, resultado, porEntidade) is not (SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Impossivel))
         {
             return;
         }
@@ -75,11 +75,11 @@ public static class DocumentosAusentesDaInscricao
     }
 
     private static void RegistrarAusentes(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
             .Where(static n => n.Tipo == TipoNo.Folha && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
-            .Where(n => EstadoDe(n, entidadeId, resultado, porEntidade) == EstadoSatisfacao.Pendente)
+            .Where(n => EstadoDe(n, entidadeId, resultado, porEntidade) == SituacaoDaComprovacao.Pendente)
             .Select(static n => n.DocumentoExigido!)
             .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
         if (faltantes.Length > 0)
@@ -88,8 +88,8 @@ public static class DocumentosAusentesDaInscricao
         }
     }
 
-    private static EstadoSatisfacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
-        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade) => entidadeId is null
-        ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, EstadoSatisfacao.Indeterminado)
-        : porEntidade.GetValueOrDefault((no.Id, entidadeId), EstadoSatisfacao.Indeterminado);
+    private static SituacaoDaComprovacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade) => entidadeId is null
+        ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, SituacaoDaComprovacao.Indeterminado)
+        : porEntidade.GetValueOrDefault((no.Id, entidadeId), SituacaoDaComprovacao.Indeterminado);
 }

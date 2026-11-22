@@ -62,7 +62,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaDeEntidade(rg, "membro_2"), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.Consequencia))
             .Should().BeEquivalentTo([("membro_1", "ELIMINA"), ("membro_3", "ELIMINA")]);
         ConferirStatusDosMembros(resultado.Value, rg.Id, "membro_2", ["membro_1", "membro_3"]);
@@ -100,7 +100,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.EntidadeId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
     }
@@ -120,7 +120,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(
             Arvore(grupo), apresentacoes: ApresentaDeEntidade(extrato, "pj_1"), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[grupo.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.EstadosPorNo[grupo.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.NoExigenciaId)).Should().BeEquivalentTo([("pj_1", folhaIrpj.Id), ("pj_2", folhaExtrato.Id), ("pj_2", folhaIrpj.Id)]);
     }
 
@@ -132,7 +132,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.NaoAplicavel);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 
@@ -149,7 +149,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes, instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 

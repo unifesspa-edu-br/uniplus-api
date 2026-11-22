@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Story #928, §6 — a fronteira de disponibilidade (<c>BLOQUEADO</c>) e o predicado recursivo
 /// <c>emissionBlocked</c> sobre a árvore de satisfação. <c>BLOQUEADO</c> não é um 6º estado: a folha
-/// projeta <see cref="EstadoSatisfacao.Indeterminado"/> na agregação e tem a emissão suprimida.
+/// projeta <see cref="SituacaoDaComprovacao.Indeterminado"/> na agregação e tem a emissão suprimida.
 /// Cobre os cenários do delta "Consequência por nó e fronteira ativa de emissão" e da requirement
 /// "Grafo de dependência executável e ordem de coleta".
 /// </summary>
@@ -68,7 +68,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
 
         ResultadoResolucaoArvore r = Resolver(Arvore(raiz), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
-        r.EstadosPorNo[folhaBloqueada.Id].Should().Be(EstadoSatisfacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
+        r.EstadosPorNo[folhaBloqueada.Id].Should().Be(SituacaoDaComprovacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folhaAberta.Id && c.Consequencia == "REMOVE_VANTAGEM");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "o ramo bloqueado não emite");
@@ -217,7 +217,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
 
     private static void VerificarImpossivelComConsequencia(ResultadoResolucaoArvore r, NoExigencia raiz)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
+        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
         r.NosEmissaoSuprimida.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca é emissionBlocked");
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
@@ -225,7 +225,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
     private static void VerificarBloqueioSobGrupoImpossivel(
         ResultadoResolucaoArvore r, NoExigencia raiz, NoExigencia folhaBloqueada, NoExigencia ouInterno)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Impossivel);
+        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id, "a folha bloqueada sob grupo terminal continua suprimida");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não emite o ELIMINA");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == ouInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o OU IMPOSSIVEL emite o inevitável");
@@ -233,7 +233,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
 
     private static void VerificarOrientacaoBloqueada(ResultadoResolucaoArvore r, NoExigencia raiz, NoExigencia folhaBloqueada)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Impossivel);
+        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
         r.PendenciasDeOrientacao.Should().NotContain(p => p.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não vira orientação");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");

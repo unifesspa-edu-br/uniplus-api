@@ -67,7 +67,7 @@ public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
         // docB satisfeito (apresentado); docA indeterminado (FATO_X não resolvido).
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(docB));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.NoExigenciaId == noA.Id && c.TipoOrigem == TipoNo.Folha && c.Consequencia == "ELIMINA");
     }
