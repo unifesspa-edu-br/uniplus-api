@@ -213,6 +213,12 @@ jobs:
       - name: Restore .NET tools
         run: dotnet tool restore
 
+      - name: Testar conferência das fontes de cobertura
+        run: python3 tools/test-coverage-sources.py
+
+      - name: Registrar checkout da compilação
+        run: python3 tools/coverage-sources.py record build-coverage-source.json
+
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore
 
@@ -237,8 +243,9 @@ jobs:
       # que o exato output do build deste run chega aos test jobs.
       - name: Pack build output
         run: |
+          python3 tools/coverage-sources.py verify build-coverage-source.json
           find src tests -type d \( -path '*/bin/${{ env.BUILD_CONFIG }}' -o -name 'obj' \) > build-paths.txt
-          tar -cf build-output.tar -T build-paths.txt
+          tar -cf build-output.tar -T build-paths.txt build-coverage-source.json
           ls -lh build-output.tar
 
       - name: Upload build output
@@ -287,6 +294,12 @@ jobs:
       - name: Unpack build output
         run: tar -xf build-output.tar
 
+      - name: Conferir checkout do build
+        run: |
+          python3 tools/coverage-sources.py verify build-coverage-source.json
+          mkdir -p "${{ env.COVERAGE_DIR }}"
+          cp build-coverage-source.json "${{ env.COVERAGE_DIR }}/source.json"
+
       - name: Run unit + arch tests with coverage
         # Filtra fora qualquer FullyQualifiedName contendo "IntegrationTests"
         # — assemblies *.IntegrationTests.dll são carregados mas dotnet test
@@ -307,7 +320,9 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: coverage-unit
-          path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+          path: |
+            ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+            ${{ env.COVERAGE_DIR }}/source.json
           if-no-files-found: error
           retention-days: 1
 
@@ -358,6 +373,12 @@ jobs:
 
       - name: Unpack build output
         run: tar -xf build-output.tar
+
+      - name: Conferir checkout do build
+        run: |
+          python3 tools/coverage-sources.py verify build-coverage-source.json
+          mkdir -p "${{ env.COVERAGE_DIR }}"
+          cp build-coverage-source.json "${{ env.COVERAGE_DIR }}/source.json"
 
       - name: Run integration tests with coverage
         run: |
@@ -448,7 +469,9 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: coverage-integration
-          path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+          path: |
+            ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+            ${{ env.COVERAGE_DIR }}/source.json
           if-no-files-found: error
           retention-days: 1
 
@@ -499,12 +522,24 @@ jobs:
           path: ${{ env.COVERAGE_DIR }}/integration
         continue-on-error: true
 
+      - name: Conferir e preparar fontes locais
+        run: |
+          set -euo pipefail
+          for group in unit integration; do
+            directory="${{ env.COVERAGE_DIR }}/$group"
+            if [ -d "$directory" ]; then
+              python3 tools/coverage-sources.py prepare "$directory/source.json" \
+                --reports "$directory" --output "coverage-prepared/$group"
+            fi
+          done
+
       - name: Merge coverage reports
         run: |
           dotnet reportgenerator \
-            "-reports:${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml" \
+            "-reports:coverage-prepared/**/coverage.cobertura.xml" \
             "-targetdir:${{ env.COVERAGE_DIR }}/report" \
-            "-reporttypes:Cobertura;HtmlSummary;TextSummary;MarkdownSummaryGithub"
+            "-reporttypes:Cobertura;Html;HtmlSummary;TextSummary;MarkdownSummaryGithub" \
+            --settings:preserveTrailingEmptyLine=true
 
       - name: Publish coverage summary
         if: always()
