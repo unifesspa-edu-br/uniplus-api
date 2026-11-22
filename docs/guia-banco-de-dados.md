@@ -84,7 +84,8 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 | `string` (limite explícito) | `varchar(N)` | Sempre defina limite via `HasMaxLength` |
 | `string` (texto longo) | `text` | Quando o conteúdo varia muito (>1000 chars) |
 | `decimal` (dinheiro/nota) | `numeric(p,s)` | Sempre `HasPrecision(p, s)` explícito |
-| Enum | `int4` | `HasConversion<int>()` por entidade |
+| Enum com código de contrato | `text` ou `varchar(N)` | Gravado pelo código declarado, com conversão por convenção ([ADR-0176](adrs/0176-codigo-de-contrato-dos-enums-declarado-por-atributo-e-lido-por-catalogo-no-kernel.md)) |
+| Enum ainda sem código de contrato | `int4` | Conversão para inteiro conforme o mapeamento existente |
 | JSON estruturado | `jsonb` | Sempre `jsonb`, nunca `json` |
 | Bool | `boolean` | EF padrão |
 | `byte[]` | `bytea` | Para payloads cifrados (Idempotency, etc.) |
@@ -413,7 +414,7 @@ Não: mude o modelo (a Configuration) e gere a migration `Inicial` de novo. Não
 
 ### Como adiciono enum value?
 
-C# enum value novo. Para `HasConversion<int>` (padrão Uni+), basta adicionar o valor no enum C#: o banco não muda. Se for PG enum, mude o modelo e gere a migration de novo.
+Declare o novo membro com seu código de contrato e rótulo, conforme a [ADR-0176](adrs/0176-codigo-de-contrato-dos-enums-declarado-por-atributo-e-lido-por-catalogo-no-kernel.md). O banco grava esse código em texto; confira as restrições e gere a migration novamente se o modelo mudar. Enums ainda não migrados podem usar inteiro conforme seu mapeamento existente; para um enum PostgreSQL, altere o modelo e gere a migration novamente.
 
 ### Como mudo tipo de coluna?
 
