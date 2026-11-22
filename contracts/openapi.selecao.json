@@ -14781,7 +14781,34 @@
             "type": "string"
           },
           "formaAceite": {
+            "$ref": "#/components/schemas/FormaAceite"
+          },
+          "hashVersao": {
             "type": "string"
+          }
+        }
+      },
+      "ConteudoDoTermoExigidoDto": {
+        "required": [
+          "nome",
+          "texto",
+          "baseLegal",
+          "formaAceite",
+          "hashVersao"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "texto": {
+            "type": "string"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "formaAceite": {
+            "$ref": "#/components/schemas/FormaAceite"
           },
           "hashVersao": {
             "type": "string"
@@ -21015,6 +21042,30 @@
           "documentoDeAto"
         ],
         "type": "string"
+      },
+      "FormaAceite": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaAceiteCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaAceiteCodigo": {
+        "enum": [
+          "A_DEFINIR",
+          "REGISTRO_DIGITAL_SEM_LOG_IP",
+          "REGISTRO_DIGITAL_COM_LOG_IP"
+        ],
+        "type": "string",
+        "description": "- \u0060A_DEFINIR\u0060: A definir\n- \u0060REGISTRO_DIGITAL_SEM_LOG_IP\u0060: Registro digital sem log do endere\u00E7o IP\n- \u0060REGISTRO_DIGITAL_COM_LOG_IP\u0060: Registro digital com log do endere\u00E7o IP"
       },
       "FormaDeComprovacao": {
         "required": [
@@ -28446,7 +28497,7 @@
             "format": "int32"
           },
           "conteudo": {
-            "$ref": "#/components/schemas/ConteudoDoTermoDto"
+            "$ref": "#/components/schemas/ConteudoDoTermoExigidoDto"
           }
         }
       },
