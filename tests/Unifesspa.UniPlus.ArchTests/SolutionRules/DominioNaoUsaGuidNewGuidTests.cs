@@ -24,9 +24,8 @@ public sealed class DominioNaoUsaGuidNewGuidTests
             .AreDeclaredIn(typeof(Guid))
             .And().HaveNameStartingWith("NewGuid(");
 
-        Types().That().HaveFullName(typeof(CanarioGuid).FullName!).And().CallAny(chamada)
-            .GetObjects(Arquitetura).Should().NotBeEmpty("a regra deve detectar uma chamada real");
-
+        Types().That().HaveFullName(typeof(ChamadaDeGuidParaTeste).FullName!).Should().CallAny(chamada)
+            .Evaluate(Arquitetura).Should().Contain(static resultado => resultado.Passed, "a regra deve detectar uma chamada real");
         Types().That().ResideInNamespaceMatching(dominio).GetObjects(Arquitetura)
             .Should().NotBeEmpty("os assemblies de domínio precisam estar carregados");
 
@@ -41,7 +40,7 @@ public sealed class DominioNaoUsaGuidNewGuidTests
         ReflectionAssembly[] assemblies =
         [
             typeof(Guid).Assembly,
-            typeof(CanarioGuid).Assembly,
+            typeof(ChamadaDeGuidParaTeste).Assembly,
             .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.Domain.dll")
                 .Select(ReflectionAssembly.LoadFrom),
             ReflectionAssembly.Load("Unifesspa.UniPlus.Kernel"),
@@ -50,7 +49,7 @@ public sealed class DominioNaoUsaGuidNewGuidTests
         return new ArchLoader().LoadAssemblies(assemblies).Build();
     }
 
-    private static class CanarioGuid
+    private static class ChamadaDeGuidParaTeste
     {
         public static Guid Criar() => Guid.NewGuid();
     }
