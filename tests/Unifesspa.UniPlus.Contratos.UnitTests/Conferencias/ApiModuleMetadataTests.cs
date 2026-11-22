@@ -1,95 +1,42 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
-using Unifesspa.UniPlus.Portal.API.Controllers;
 
 public sealed class ApiModuleMetadataTests
 {
-    private const string UniPlusAssemblyPrefix = "Unifesspa.UniPlus.";
-    private const string ApiAssemblySuffix = ".API";
-
-    private static readonly Assembly[] ApiAssemblies = DiscoverApiAssemblies();
-
     [Fact]
-    public void ApiAssemblies_DeclareSingleModuleName()
+    public void Acoes_UsamPrefixoDoModuloDeclarado()
     {
-        foreach (Assembly assembly in ApiAssemblies)
-        {
-            assembly.GetCustomAttributes<ApiModuleAttribute>()
-                .Should().ContainSingle()
-                .Which.Name.Should().NotBeNullOrWhiteSpace(
-                    $"o assembly {assembly.GetName().Name} deve declarar seu contrato público de módulo");
-        }
+        ControllerActionDescriptor[] acoes = [.. HostsDoProdutoIniciados.Executaveis
+            .SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos
+                .GetRequiredService<IActionDescriptorCollectionProvider>().ActionDescriptors.Items)
+            .OfType<ControllerActionDescriptor>()];
+
+        acoes.Should().NotBeEmpty();
+        acoes.Should().OnlyContain(static acao => acao.AttributeRouteInfo != null
+            && acao.AttributeRouteInfo.Template!.StartsWith(
+                $"api/{ApiModuleMetadata.GetRequiredName(acao.ControllerTypeInfo.Assembly)}/", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void ApiAssemblies_ModuleNamesAreUnique()
+    public void AssembliesComAcoes_DeclaramNomesDeModuloUnicos()
     {
-        IEnumerable<string> names = ApiAssemblies
-            .Select(ApiModuleMetadata.GetRequiredName);
+        System.Reflection.Assembly[] assemblies = HostsDoProdutoIniciados.Executaveis
+            .SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos
+                .GetRequiredService<IActionDescriptorCollectionProvider>().ActionDescriptors.Items)
+            .OfType<ControllerActionDescriptor>()
+            .Select(static acao => acao.ControllerTypeInfo.Assembly)
+            .Distinct()
+            .ToArray();
 
-        names.Should().OnlyHaveUniqueItems(
-            "dois assemblies de API não podem disputar o mesmo prefixo e documento OpenAPI");
-    }
-
-    [Fact]
-    public void ModuleRoutePrefixConvention_PortalPing_CombinesAssemblyModuleAndControllerRoute()
-    {
-        TypeInfo controllerType = typeof(PingController).GetTypeInfo();
-        RouteAttribute route = controllerType.GetCustomAttribute<RouteAttribute>()
-            ?? throw new InvalidOperationException("PingController deve declarar o recurso relativo.");
-        ControllerModel controller = ControllerDoPortal();
-        controller.Selectors.Add(new SelectorModel
-        {
-            AttributeRouteModel = new AttributeRouteModel(route),
-        });
-
-        new ModuleRoutePrefixConvention().Apply(controller);
-
-        controller.Selectors.Should().ContainSingle()
-            .Which.AttributeRouteModel!.Template.Should().Be("api/portal/ping");
-    }
-
-    [Fact]
-    public void ModuleRoutePrefixConvention_SelectorWithoutRoute_UsesAssemblyModulePrefix()
-    {
-        ControllerModel controller = new(typeof(PingController).GetTypeInfo(), []);
-        controller.Selectors.Add(new SelectorModel());
-
-        new ModuleRoutePrefixConvention().Apply(controller);
-
-        controller.Selectors.Should().ContainSingle()
-            .Which.AttributeRouteModel!.Template.Should().Be("api/portal");
-    }
-
-    private static ControllerModel ControllerDoPortal()
-    {
-        TypeInfo tipo = typeof(PingController).GetTypeInfo();
-        return new ControllerModel(tipo, tipo.GetCustomAttributes(inherit: true).ToArray());
-    }
-
-    private static Assembly[] DiscoverApiAssemblies()
-    {
-        string searchPattern = $"{UniPlusAssemblyPrefix}*{ApiAssemblySuffix}.dll";
-        Assembly[] assemblies = [.. Directory
-            .EnumerateFiles(AppContext.BaseDirectory, searchPattern, SearchOption.TopDirectoryOnly)
-            .Select(Path.GetFileNameWithoutExtension)
-            .Order(StringComparer.Ordinal)
-            .Select(static name => Assembly.Load(
-                new AssemblyName(name
-                    ?? throw new InvalidOperationException(
-                        "Arquivo de assembly de API sem nome."))))];
-
-        assemblies.Should().NotBeEmpty(
-            "o projeto de contratos referencia por glob todos os projetos Unifesspa.UniPlus.*.API");
-
-        return assemblies;
+        assemblies.Should().NotBeEmpty();
+        assemblies.Select(ApiModuleMetadata.GetRequiredName).Should().OnlyHaveUniqueItems();
     }
 }

@@ -42,6 +42,7 @@ internal static class ArquiteturaDasTravas
                     typeof(RelationalDatabaseFacadeExtensions).Assembly,
                     typeof(IMessageBus).Assembly,
                     typeof(ControllerBase).Assembly,
+                    typeof(Attribute).Assembly,
                 ])
             .Build();
 }

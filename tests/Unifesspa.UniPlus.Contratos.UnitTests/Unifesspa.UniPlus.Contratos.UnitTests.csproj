@@ -54,6 +54,7 @@
     <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
+    <Compile Include="../Shared/ExcecoesDeAcessoDasAcoes.cs" Link="ExcecoesDeAcessoDasAcoes.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 
