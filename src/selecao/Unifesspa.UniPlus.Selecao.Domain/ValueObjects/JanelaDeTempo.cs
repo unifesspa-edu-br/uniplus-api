@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// Um intervalo de tempo com extremos opcionais, sempre em UTC. O offset com que o instante chegou é forma
 /// de transporte, e não dado de domínio; a comparação é por instante.
@@ -25,7 +27,9 @@ public sealed record JanelaDeTempo
     /// <summary>O primeiro extremo que falta (<c>inicio</c> ou <c>fim</c>), ou nulo quando a janela é completa.</summary>
     public string? ExtremoAusente => ExtremoQueFalta();
 
-    public static DateTimeOffset? EmUtc(DateTimeOffset? instante) => instante?.ToUniversalTime();
+    /// <summary>Converte para UTC e descarta a fração de microssegundo que o banco não guarda.</summary>
+    public static DateTimeOffset? EmUtc(DateTimeOffset? instante) =>
+        instante?.ToUniversalTime().TruncadoEmMicrossegundos();
 
     public PosicaoNaJanela PosicaoDe(DateTimeOffset instante)
     {
