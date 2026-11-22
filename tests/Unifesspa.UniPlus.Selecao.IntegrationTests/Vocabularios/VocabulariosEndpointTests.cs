@@ -61,11 +61,12 @@ public sealed class VocabulariosEndpointTests
         AfirmarFlagsDeObrigatoriedadeEJustificativa(campos);
     }
 
-    [Theory(DisplayName = "As leituras de vocabulário do recurso devolvem código e rótulo, na ordem do enum, sem exigir autenticação")]
+    [Theory(DisplayName = "As leituras de vocabulário devolvem código e rótulo, na ordem do enum, sem exigir autenticação")]
+    [InlineData("/api/selecao/vocabularios/formas-comprovacao", "forma-de-comprovacao", new[] { "DOCUMENTO", "TODOS_OS_ITENS", "QUANTIDADE_MINIMA_DE_ITENS" })]
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "horas", "diasUteis" })]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "semEfeitoSuspensivo" })]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga", new[] { "ateOResultadoDefinitivo", "naoGuarda" })]
-    public async Task VocabulariosDoRecurso_DevolvemCodigoERotulo(string rota, string recurso, string[] codigos)
+    public async Task Vocabularios_DevolvemCodigoERotulo(string rota, string recurso, string[] codigos)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
@@ -90,11 +91,12 @@ public sealed class VocabulariosEndpointTests
         opcoes.Should().AllSatisfy(static o => o.Descricao.Should().NotBeNullOrWhiteSpace($"a opção '{o.Codigo}' precisa explicar o que significa"));
     }
 
-    [Theory(DisplayName = "A leitura de vocabulário do recurso com versão inexistente da vendor MIME recusa com 406")]
+    [Theory(DisplayName = "A leitura de vocabulário com versão inexistente da vendor MIME recusa com 406")]
+    [InlineData("/api/selecao/vocabularios/formas-comprovacao", "forma-de-comprovacao")]
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso")]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo")]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga")]
-    public async Task VocabulariosDoRecurso_VersaoDesconhecida_Recusa(string rota, string recurso)
+    public async Task Vocabularios_VersaoDesconhecida_Recusa(string rota, string recurso)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
@@ -108,6 +110,7 @@ public sealed class VocabulariosEndpointTests
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/selecao/fundamentos-isencao")]
     [InlineData("/api/selecao/campos-divulgacao")]
+    [InlineData("/api/selecao/vocabularios/formas-comprovacao")]
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso")]
     [InlineData("/api/selecao/efeitos-suspensivos")]
     [InlineData("/api/selecao/guardas-da-vaga")]
