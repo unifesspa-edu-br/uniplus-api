@@ -11,7 +11,7 @@ internal static class ConferenciaDasDescricoesDeErros
         [
             .. ConferirDocumento(documento),
             .. ConferirPares(esperados, codigos),
-            .. descricoes.SelectMany(ConferirDescricao).Distinct(StringComparer.Ordinal),
+            .. descricoes.SelectMany(descricao => ConferirDescricao(descricao, esperados)).Distinct(StringComparer.Ordinal),
         ];
     }
 
@@ -33,7 +33,7 @@ internal static class ConferenciaDasDescricoesDeErros
             yield return $"{repetido.Key}: descrição repetida.";
     }
 
-    private static IEnumerable<string> ConferirDescricao(DescricaoDeErro? descricao)
+    private static IEnumerable<string> ConferirDescricao(DescricaoDeErro? descricao, HashSet<string> publicados)
     {
         string codigo = CodigoSeguro(descricao?.Codigo);
         if (descricao is null || codigo.Length == 0)
@@ -41,9 +41,9 @@ internal static class ConferenciaDasDescricoesDeErros
         return
         [
             .. ConferirRequisitos(descricao, codigo),
-            .. ConferirSecao(codigo, "oQueAconteceu", descricao.OQueAconteceu),
-            .. ConferirSecao(codigo, "comoResolver", descricao.ComoResolver),
-            .. descricao.OndeAparece is null ? [] : ConferirSecao(codigo, "ondeAparece", descricao.OndeAparece),
+            .. ConferirSecao(codigo, "oQueAconteceu", descricao.OQueAconteceu, publicados),
+            .. ConferirSecao(codigo, "comoResolver", descricao.ComoResolver, publicados),
+            .. descricao.OndeAparece is null ? [] : ConferirSecao(codigo, "ondeAparece", descricao.OndeAparece, publicados),
         ];
     }
 
@@ -53,20 +53,22 @@ internal static class ConferenciaDasDescricoesDeErros
             yield return $"{codigo}: requisitos devem usar UNI-REQ-NNNN.";
     }
 
-    private static IEnumerable<string> ConferirSecao(string codigo, string secao, IReadOnlyList<string?>? blocos)
+    private static IEnumerable<string> ConferirSecao(string codigo, string secao, IReadOnlyList<string?>? blocos, HashSet<string> publicados)
     {
         if (blocos is null or { Count: 0 })
             return [$"{codigo}: {secao} deve conter pelo menos um bloco."];
-        return blocos.SelectMany(ConferirBloco).Select(regra => $"{codigo}: {secao}, {regra}.");
+        return blocos.SelectMany(bloco => ConferirBloco(bloco, publicados)).Select(regra => $"{codigo}: {secao}, {regra}.");
     }
 
-    private static IEnumerable<string> ConferirBloco(string? bloco) =>
+    private static IEnumerable<string> ConferirBloco(string? bloco, HashSet<string> publicados) =>
         string.IsNullOrWhiteSpace(bloco)
             ? ["bloco vazio"]
             : [
                 .. RegrasDoTextoDaDescricao.Conferir(bloco),
                 .. RegrasDoTextoDaDescricao.Conferir(MarkdownDaDescricao.TextoVisivel(bloco)),
                 .. MarkdownDaDescricao.Conferir(bloco),
+                .. MarkdownDaDescricao.CodigosDeErroVinculados(bloco).Where(codigo => !publicados.Contains(codigo))
+                    .Select(codigo => $"link para código de erro não publicado: {codigo}"),
                 .. MarkdownDaDescricao.TemTermoDeImplementacao(bloco) ? ["termo de implementação fora de código"] : Array.Empty<string>(),
             ];
 

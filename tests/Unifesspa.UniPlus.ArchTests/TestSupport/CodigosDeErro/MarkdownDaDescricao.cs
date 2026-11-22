@@ -32,6 +32,12 @@ internal static partial class MarkdownDaDescricao
 
     internal static string TextoVisivel(string bloco) => Markdown.ToPlainText(bloco, Formato);
 
+    internal static IEnumerable<string> CodigosDeErroVinculados(string bloco) =>
+        Markdown.Parse(bloco, Formato).Descendants<LinkInline>()
+            .Where(static link => !link.IsImage && link.Url is not null && link.Url.StartsWith("/erros/", StringComparison.Ordinal))
+            .Select(static link => link.Url!["/erros/".Length..].Split('?', '#')[0].TrimEnd('/'))
+            .Where(static codigo => codigo.Length > 0);
+
     internal static bool TemTermoDeImplementacao(string bloco)
     {
         string semCodigo = CodigoEmLinhaParaLinguagem().Replace(BlocoCercado().Replace(bloco, string.Empty), string.Empty);
