@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -68,11 +69,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        bool existe = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
-            .AnyAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
-        existe.Should().BeFalse("cobra:null explícito remove deliberadamente a declaração existente");
+        (await ctx.ObterTaxaAsync()).Should().BeNull("cobra:null explícito remove deliberadamente a declaração existente");
     }
 
     [Fact(DisplayName = "cobra=false explícito é aceito e persiste a declaração de não cobrança")]
@@ -108,13 +105,8 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         string corpo = await resposta.Content.ReadAsStringAsync();
         corpo.Should().Contain("uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra");
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
-            .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
-        taxa.Cobra.Should().BeFalse(
-            "a recusa precede a escrita — a declaração de não cobrança que a semeadura gravou " +
-            "continua intacta, e não virou uma declaração de cobrança sem fundamento");
+        (await ctx.ObterTaxaAsync())!.Cobra.Should().BeFalse(
+            "a recusa preserva a declaração de não cobrança");
     }
 
     [Fact(DisplayName = "cobra=true com fundamento é aceito e persiste o fundamento (issue #1310)")]
@@ -134,6 +126,34 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         taxa.Fundamentos.Should().Equal(FundamentoIsencao.CadastroUnico);
     }
 
+    [Fact]
+    public async Task ComValorDePrecisaoExcedida_AcumulaRecusas()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ComValorDePrecisaoExcedida_AcumulaRecusas));
+        HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(
+            """{ "cobra": true, "valor": 50.555, "fundamentos": [] }""");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.validacao.formato");
+        corpo.Should().Contain("uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra");
+    }
+
+    [Fact]
+    public async Task ComValorNaPrecisao_GravaMesmoNumero()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(ComValorNaPrecisao_GravaMesmoNumero));
+        HttpResponseMessage resposta = await ctx.PutTaxaInscricaoAsync(CorpoComCobranca(true, 50.25m));
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using HttpRequestMessage consulta = new(HttpMethod.Get,
+            new Uri($"/api/selecao/processos-seletivos/{ctx.ProcessoId}", UriKind.Relative));
+        Autenticar(consulta);
+        HttpResponseMessage consultada = await ctx.Client.SendAsync(consulta);
+        consultada.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument corpo = JsonDocument.Parse(await consultada.Content.ReadAsStringAsync());
+        corpo.RootElement.GetProperty("configuracaoTaxaInscricao").GetProperty("valor").GetDecimal().Should().Be(50.25m);
+    }
+
     private static object CorpoComCobranca(bool cobra, decimal? valor) => new
     {
         cobra,
@@ -143,6 +163,14 @@ public sealed class DefinirTaxaInscricaoEndpointTests
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)
     {
+        public async Task<ConfiguracaoTaxaInscricao?> ObterTaxaAsync()
+        {
+            await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+            return await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
+                .SingleOrDefaultAsync(t => t.ProcessoSeletivoId == ProcessoId).ConfigureAwait(false);
+        }
+
         public async Task<HttpResponseMessage> PutTaxaInscricaoAsync(object corpo)
         {
             using HttpRequestMessage request = new(

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Configuração de taxa de inscrição e fundamentos de isenção do processo (issue #1112).
@@ -62,84 +63,61 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
         decimal? valor,
         IReadOnlyList<string>? fundamentosCodigos)
     {
-        List<FieldError> erros = [];
-
-        if (cobra)
-        {
-            if (valor is not { } valorInformado || valorInformado <= 0)
+        List<FieldError> erros = RecusasDoValor(cobra, valor);
+        List<FundamentoIsencao> fundamentos = ConferirFundamentos(cobra, fundamentosCodigos, erros);
+        return erros.Count > 0
+            ? Result<ConfiguracaoTaxaInscricao>.ValidationFailure(erros)
+            : Result<ConfiguracaoTaxaInscricao>.Success(new ConfiguracaoTaxaInscricao
             {
-                erros.Add(new("valor", new DomainError(
-                    "ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra",
-                    "Processo que cobra taxa exige valor positivo.")));
-            }
-        }
-        else if (valor is not null)
+                Cobra = cobra,
+                Valor = valor,
+                Fundamentos = fundamentos,
+            });
+    }
+
+    private static List<FieldError> RecusasDoValor(bool cobra, decimal? valor)
+    {
+        FieldError? faixa = cobra && valor is not > 0
+            ? new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", "Processo que cobra taxa exige valor positivo."))
+            : !cobra && valor is not null
+                ? new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", "Processo que declara não cobrar taxa não pode informar valor."))
+                : null;
+        FieldError? formato = PrecisaoDecimal.Recusa(valor, ValorPrecisao, ValorEscala, "valor",
+            "O valor da taxa deve ter no máximo 10 dígitos inteiros e 2 casas decimais.");
+        return [.. new[] { faixa, formato }.OfType<FieldError>()];
+    }
+
+    private static List<FundamentoIsencao> ConferirFundamentos(bool cobra, IReadOnlyList<string>? codigos, List<FieldError> erros)
+    {
+        FieldError? recusa = RecusaDaDeclaracaoDosFundamentos(cobra, codigos);
+        if (recusa is not null)
         {
-            erros.Add(new("valor", new DomainError(
-                "ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra",
-                "Processo que declara não cobrar taxa não pode informar valor.")));
-        }
-
-        List<FundamentoIsencao> fundamentos = [];
-        if (fundamentosCodigos is { Count: > 0 })
-        {
-            if (!cobra)
-            {
-                erros.Add(new("fundamentos", new DomainError(
-                    "ConfiguracaoTaxaInscricao.FundamentoExigeCobranca",
-                    "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — "
-                    + "\"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas.")));
-            }
-
-            // O vocabulário roda independente de `cobra`: token que não pertence ao catálogo
-            // é violação detectável por si só, então reportá-la junto de FundamentoExigeCobranca
-            // no mesmo lote poupa o cliente de descobri-las uma de cada vez, a cada reenvio.
-            bool temFundamentoDesconhecido = false;
-            foreach (string codigo in fundamentosCodigos)
-            {
-                FundamentoIsencao fundamento = FundamentoIsencaoCodigo.FromCodigo(codigo);
-                if (fundamento == FundamentoIsencao.Nenhum)
-                {
-                    temFundamentoDesconhecido = true;
-                    continue;
-                }
-
-                fundamentos.Add(fundamento);
-            }
-
-            fundamentos = [.. fundamentos.Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
-
-            if (temFundamentoDesconhecido)
-            {
-                // ADR-0023: errors[].message nunca ecoa o valor rejeitado — sem o código
-                // específico, mesmo raciocínio do vocabulário de ConfiguracaoDivulgacao.
-                erros.Add(new("fundamentos", new DomainError(
-                    "ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
-                    "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
-            }
-        }
-        else if (cobra)
-        {
-            // A obrigatoriedade se apoia na LISTA DE ENTRADA vazia, não no conjunto resultante.
-            // Entrada com token fora do vocabulário já recebe FundamentoDesconhecido, que nomeia
-            // o que corrigir; acrescentar "informe ao menos um" ao mesmo lote não daria ação nova
-            // a quem tentou declarar um fundamento e errou o token.
-            erros.Add(new("fundamentos", new DomainError(
-                "ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra",
-                "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção.")));
+            erros.Add(recusa);
         }
 
-        if (erros.Count > 0)
+        return codigos is { Count: > 0 } ? LerFundamentos(codigos, erros) : [];
+    }
+
+    private static FieldError? RecusaDaDeclaracaoDosFundamentos(bool cobra, IReadOnlyList<string>? codigos) =>
+        cobra && codigos is not { Count: > 0 }
+            ? new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra",
+                "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção."))
+            : !cobra && codigos is { Count: > 0 }
+                ? new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca",
+                    "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — \"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas."))
+                : null;
+
+    private static List<FundamentoIsencao> LerFundamentos(IReadOnlyList<string> codigos, List<FieldError> erros)
+    {
+        FundamentoIsencao[] fundamentos = [.. codigos.Select(FundamentoIsencaoCodigo.FromCodigo)];
+        if (fundamentos.Contains(FundamentoIsencao.Nenhum))
         {
-            return Result<ConfiguracaoTaxaInscricao>.ValidationFailure(erros);
+            erros.Add(new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
+                "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
         }
 
-        return Result<ConfiguracaoTaxaInscricao>.Success(new ConfiguracaoTaxaInscricao
-        {
-            Cobra = cobra,
-            Valor = valor,
-            Fundamentos = fundamentos,
-        });
+        return [.. fundamentos.Where(static f => f != FundamentoIsencao.Nenhum)
+            .Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>

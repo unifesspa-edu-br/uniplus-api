@@ -43,13 +43,13 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha com Valor de mais de duas casas decimais")]
-    public void Rejeita_ValorComEscalaExcedida()
+    [Fact]
+    public void Aceita_ValorComEscalaExcedida()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
             Guid.CreateVersion7(), true, 100.001m, null));
 
-        result.IsValid.Should().BeFalse();
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Passa com Valor nulo — o validator não decide se Cobra exige Valor, isso é regra de domínio")]

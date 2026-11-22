@@ -14,6 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ItemDeAvaliacao : EntityBase
 {
+    private const int ValorPrecisao = 18;
+    private const int ValorEscala = 4;
+
     /// <summary>Alinhado a <c>ItemDeAvaliacaoConfiguration</c> (varchar(300)).</summary>
     public const int RotuloMaxLength = 300;
 
@@ -76,7 +79,7 @@ public sealed class ItemDeAvaliacao : EntityBase
                     "O mesmo id de item de avaliação não pode ser informado mais de uma vez na etapa.")));
             }
 
-            if (PrecisaoDecimal.Recusa(item.PontuacaoMaxima, $"{campo}.pontuacaoMaxima", PrecisaoDecimal.Pontuacao) is { } recusa)
+            if (PrecisaoDecimal.Recusa(item.PontuacaoMaxima, ValorPrecisao, ValorEscala, $"{campo}.pontuacaoMaxima", "A pontuação máxima do item deve ter no máximo 14 dígitos inteiros e 4 casas decimais.") is { } recusa)
             {
                 erros.Add(recusa);
             }
