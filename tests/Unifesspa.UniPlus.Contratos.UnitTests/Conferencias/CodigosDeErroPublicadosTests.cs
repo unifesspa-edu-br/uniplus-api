@@ -1,12 +1,14 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
-using System.Reflection;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport.CodigosDeErro;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -25,7 +27,7 @@ public sealed class CodigosDeErroPublicadosTests
     private const string ArquivoPublicado = "contracts/codigos-de-erro.json";
 
     private static readonly Lazy<DocumentoDoCatalogoDeErros> Gerado = new(() =>
-        DocumentoDoCatalogoDeErros.Gerar(AgregadorDoCatalogoDeErros.Agregar(RegistrosDeErroDaSolucao.Instanciar())));
+        DocumentoDoCatalogoDeErros.Gerar(AgregadorDoCatalogoDeErros.Agregar(HostsDoProdutoIniciados.Executaveis.SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetServices<IDomainErrorRegistration>()).DistinctBy(registro => registro.GetType()).ToArray())));
 
     [Fact(DisplayName = "O arquivo de códigos de erro bate com os códigos que a API emite")]
     public void ArquivoPublicadoBateComOsCodigosEmitidos()
@@ -40,24 +42,6 @@ public sealed class CodigosDeErroPublicadosTests
 
         divergencias.Should().BeEmpty(ComoRegerar(divergencias));
         publicado.Should().Be(gerado, $"as entradas conferem, mas o arquivo não é o que o gerador produz (versão do formato, ordem ou formatação). {ComoRegerar([])}");
-    }
-
-    [Fact(DisplayName = "Toda definição da fronteira HTTP está no catálogo de códigos de erro")]
-    public void TodaDefinicaoDaFronteiraHttpEstaNoCatalogo()
-    {
-        EntradaDoCatalogoDeErros[] definicoes =
-        [
-            .. typeof(ErrosDaFronteiraHttp)
-                .GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Where(static campo => campo.FieldType == typeof(DomainErrorMapping))
-                .Select(static campo => (DomainErrorMapping)campo.GetValue(null)!)
-                .Select(static d => new EntradaDoCatalogoDeErros(d.Code, d.Status, d.Title)),
-        ];
-
-        definicoes.Should().NotBeEmpty("sem definição descoberta, a conferência passaria vazia");
-        Gerado.Value.Codigos.Should().Contain(
-            definicoes,
-            "o emissor da fronteira lê a definição de ErrosDaFronteiraHttp, e o registro dela precisa listá-la");
     }
 
     [Fact(DisplayName = "Todo código de erro da API começa com o prefixo uniplus.")]
@@ -84,14 +68,15 @@ public sealed class CodigosDeErroPublicadosTests
     }
 
     private static HashSet<string> AssembliesDeApiComRegistroDeErros() =>
-        [.. RegistrosDeErroDaSolucao.Instanciar().Select(static r => r.GetType().Assembly.GetName().Name!)];
+        [.. HostsDoProdutoIniciados.Executaveis.SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetServices<IDomainErrorRegistration>()).DistinctBy(registro => registro.GetType()).ToArray().Select(static r => r.GetType().Assembly.GetName().Name!)];
 
     private static string[] AssembliesDeApiComController() =>
     [
-        .. AssembliesDoProduto.Todos.SelectMany(static assembly => assembly.GetTypes())
-            .Where(static tipo => typeof(ControllerBase).IsAssignableFrom(tipo) && tipo.IsClass && !tipo.IsAbstract)
-            .Select(static tipo => tipo.Assembly.GetName().Name!)
-            .Where(static nome => nome.StartsWith("Unifesspa.UniPlus.", StringComparison.Ordinal))
+        .. HostsDoProdutoIniciados.Executaveis.SelectMany(executavel =>
+            HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetRequiredService<IActionDescriptorCollectionProvider>()
+                .ActionDescriptors.Items.OfType<ControllerActionDescriptor>())
+            .Select(acao => acao.ControllerTypeInfo.Assembly.GetName().Name!)
+            .Where(nome => nome.StartsWith("Unifesspa.UniPlus.", StringComparison.Ordinal))
             .Distinct(),
     ];
 

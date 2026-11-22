@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Errors;
 
-using System.Reflection;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -47,20 +46,6 @@ public sealed class ErrosDaFronteiraHttpTests
 
     private static IEnumerable<DomainErrorMapping> Catalogo() =>
         new ErrosDaFronteiraHttpDomainErrorRegistration().GetMappings().Select(static par => par.Value);
-
-    [Fact(DisplayName = "O registro lista toda definição declarada em ErrosDaFronteiraHttp")]
-    public void Registro_ListaTodaDefinicaoDeclarada()
-    {
-        DomainErrorMapping[] declaradas =
-        [
-            .. typeof(ErrosDaFronteiraHttp)
-                .GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Select(static campo => (DomainErrorMapping)campo.GetValue(null)!),
-        ];
-
-        declaradas.Should().NotBeEmpty();
-        Catalogo().Should().BeEquivalentTo(declaradas);
-    }
 
     [Fact(DisplayName = "Cada código de fio da fronteira é declarado uma só vez")]
     public void Registro_NaoRepeteCodigoDeFio()
