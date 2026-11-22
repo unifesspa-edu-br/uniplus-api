@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
@@ -19,15 +19,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 /// </remarks>
 public sealed class CatalogoDeCategoriasDocumentoTests
 {
-    [Fact(DisplayName = "O seed é exatamente o catálogo aprovado — código, nome e ordem")]
-    public void Seed_BateComOCatalogoAprovado()
-    {
-        // Oráculo independente da fonte única: comparar o banco contra
-        // CategoriaDocumentoSeed pega migration ausente, mas não pega uma edição
-        // feita na lista e no HasData no mesmo commit. Esta tabela é o que a
-        // decisão de negócio aprovou; alterá-la é ato deliberado.
-        (string Codigo, string Nome, int Ordem)[] aprovadas =
-        [
+    private static readonly (string Codigo, string Nome, int Ordem)[] CategoriasAprovadas =
+    [
             ("IDENTIFICACAO", "Identificação", 1),
             ("ESCOLARIDADE", "Escolaridade", 2),
             ("TITULACAO_EXPERIENCIA", "Titulação e experiência", 3),
@@ -38,11 +31,15 @@ public sealed class CatalogoDeCategoriasDocumentoTests
             ("DOCUMENTO_PROCESSUAL", "Documento processual", 8),
             ("PRODUCAO_AVALIATIVA", "Produção avaliativa", 9),
             ("OUTROS", "Outros", 10),
-        ];
+    ];
 
+
+    [Fact(DisplayName = "O seed é exatamente o catálogo aprovado — código, nome e ordem")]
+    public void Seed_BateComOCatalogoAprovado()
+    {
         CategoriaDocumentoSeed.Itens
             .Select(item => (item.Codigo, item.Nome, item.Ordem))
-            .Should().Equal(aprovadas);
+            .Should().Equal(CategoriasAprovadas);
     }
 
     [Fact(DisplayName = "Cada item do seed passa nas invariantes do agregado")]

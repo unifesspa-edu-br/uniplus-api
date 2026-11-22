@@ -21,9 +21,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Application/Unifesspa.UniPlus.Configuracao.Application.csproj" />
+    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

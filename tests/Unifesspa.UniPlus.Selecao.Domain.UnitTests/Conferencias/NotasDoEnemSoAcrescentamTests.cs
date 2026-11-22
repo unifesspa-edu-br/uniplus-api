@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using System.Reflection;
 
@@ -7,8 +7,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Nenhum caminho altera ou apaga um lote, uma geração ou um lançamento de nota (ADR-0149): as
-/// portas só acrescentam e consultam. Corrigir uma nota é importar outro lote.
+/// Nenhum caminho altera ou apaga uma importação, uma geração ou um lançamento de nota (ADR-0149): as
+/// portas só acrescentam e consultam. Corrigir uma nota é realizar outra importação.
 /// </summary>
 public sealed class NotasDoEnemSoAcrescentamTests
 {

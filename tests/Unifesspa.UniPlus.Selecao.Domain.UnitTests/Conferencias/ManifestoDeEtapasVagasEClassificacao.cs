@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -25,8 +25,8 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ["Ancora", "Regra", "Parametros", "ProdutoAncoraId", "Procedimentos"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
-        // Os procedimentos de recurso da janela, iguais na etapa e na fase. A coleção guarda a ordem canônica e cada
-        // procedimento é valor da janela que o declara: sem Id no envelope.
+        // Os procedimentos de recurso do período, iguais na etapa e na fase. A coleção guarda a ordem canônica e cada
+        // procedimento é valor do período que o declara: sem Id no envelope.
         [typeof(ProcedimentosDeRecurso)] = (
             ["Itens"],
             []),
@@ -85,7 +85,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ],
             [
                 ("ProcessoSeletivoId", "FK interna."),
-                ("Quadro", "Derivada das vagas ofertadas e das colunas do ramo — recomputada, nunca persistida."),
+                ("Quadro", "Derivada das vagas ofertadas e das colunas do critério — recomputada, nunca persistida."),
             ]),
 
         [typeof(ParametrosReduzirDe)] = (["ModalidadeCodigo"], []),

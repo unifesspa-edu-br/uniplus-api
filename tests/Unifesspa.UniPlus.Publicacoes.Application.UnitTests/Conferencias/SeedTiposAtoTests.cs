@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
+namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Conferencias;
 
 using System.IO;
 using System.Text.Json;
@@ -6,11 +6,11 @@ using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
 
-using TestSupport;
+using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// Guarda o arquivo de seed dos tipos de ato (<c>seeds/seed-tipos-ato.json</c>) contra
-/// edições que passariam despercebidas: um código fora do formato, uma janela de
+/// edições que passariam despercebidas: um código fora do formato, um período de
 /// vigência incoerente, ou a quebra da invariante da ADR-0103.
 /// </summary>
 /// <remarks>
@@ -27,6 +27,22 @@ public sealed partial class SeedTiposAtoTests
     private const string CaminhoRelativo = "seeds/seed-tipos-ato.json";
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
+
+    private static readonly string[] ResultadosPermitidos =
+    [
+            "CONFIRMACAO_INTERESSE",
+            "GABARITO",
+            "HOMOLOGACAO_ANALISE_DOCUMENTAL",
+            "HOMOLOGACAO_HABILITACAO",
+            "HOMOLOGACAO_INSCRICOES",
+            "HOMOLOGACAO_RECURSOS",
+            "LISTA_ESPERA",
+            "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
+            "RESULTADO_CLASSIFICACAO",
+            "RESULTADO_HETEROIDENTIFICACAO",
+            "RESULTADO_HOMOLOGACAO",
+            "RESULTADO_ISENCAO",
+    ];
 
     [Fact(DisplayName = "O arquivo de seed existe e traz os dezenove tipos de ato")]
     public void Seed_TrazOsDezenoveTipos()
@@ -97,7 +113,7 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> irreversiveis =
             [.. Carregar().Where(l => l.EfeitoIrreversivel).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        // CONVOCACAO passa a integrar a lista (uniplus-api#1432): ela concede o
+        // CONVOCACAO integra a lista: ela concede o
         // direito de ocupar a vaga, ato que não se desfaz — o UNI-REQ-0080 usa a
         // convocação como exemplo canônico de irreversibilidade.
         // O tipo nomeia a matéria e serve ao preliminar e ao definitivo, então um tipo de
@@ -112,30 +128,9 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> resultado =
             [.. Carregar().Where(l => l.EhResultado).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        // false é proibição permanente: aquele ato nunca integra ciclo recursal, em
-        // edital nenhum. CONVOCACAO e CHAMADA ficam de fora — concedem o direito de
-        // ocupar a vaga, e o recurso é contra a habilitação que as antecede, não
-        // contra elas. ERRATA fica de fora por decisão consciente: o recurso cabe
-        // contra o resultado corrigido, não contra a errata. Os cinco códigos abaixo
-        // entram porque cada um determina a situação do candidato na respectiva
-        // matéria — isenção, heteroidentificação, habilitação, avaliação
-        // biopsicossocial e homologação das inscrições (uniplus-api#1436).
-        // Cada tipo nomeia a matéria; o papel (preliminar ou definitivo) é do produto que o
-        // cronograma declara, e não do código do tipo.
-        resultado.Should().BeEquivalentTo([
-            "CONFIRMACAO_INTERESSE",
-            "GABARITO",
-            "HOMOLOGACAO_ANALISE_DOCUMENTAL",
-            "HOMOLOGACAO_HABILITACAO",
-            "HOMOLOGACAO_INSCRICOES",
-            "HOMOLOGACAO_RECURSOS",
-            "LISTA_ESPERA",
-            "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
-            "RESULTADO_CLASSIFICACAO",
-            "RESULTADO_HETEROIDENTIFICACAO",
-            "RESULTADO_HOMOLOGACAO",
-            "RESULTADO_ISENCAO",
-        ]);
+        // Convocação e chamada concedem o direito à vaga; o recurso é contra a habilitação anterior.
+        // A errata corrige um ato; o recurso cabe contra o resultado corrigido.
+        resultado.Should().BeEquivalentTo(ResultadosPermitidos);
     }
 
     [Fact(DisplayName = "Só aviso, comunicado e errata são publicáveis como documento avulso")]
@@ -168,17 +163,8 @@ public sealed partial class SeedTiposAtoTests
         IReadOnlyList<string> unicos =
             [.. Carregar().Where(l => l.UnicoPorObjeto).Select(l => l.Codigo).Order(StringComparer.Ordinal)];
 
-        // Isenção, heteroidentificação, habilitação, avaliação biopsicossocial e
-        // homologação das inscrições podem recorrer por chamada num certame de
-        // múltiplas convocações — únicos por objeto bloquearia uma segunda
-        // publicação legítima. Mesma classe de HOMOLOGACAO_ANALISE_DOCUMENTAL e
-        // HOMOLOGACAO_RECURSOS, não de HOMOLOGACAO_INSCRICOES.
         unicos.Should().BeEquivalentTo(["EDITAL_ABERTURA", "HOMOLOGACAO_INSCRICOES"]);
 
-        // Único é só o ato que sai uma vez no processo, sem preliminar e definitivo. Os tipos
-        // por matéria saem nos dois papéis ou em mais de um ciclo, então nunca são únicos; a
-        // garantia deles é a publicação única de cada item declarado no edital. A homologação
-        // das inscrições é o único resultado ainda único no seed.
         Carregar().Where(l => l.UnicoPorObjeto && l.EhResultado).Select(l => l.Codigo)
             .Should().BeEquivalentTo(["HOMOLOGACAO_INSCRICOES"]);
         Carregar().Where(l => l.Codigo is "GABARITO" or "RESULTADO_CLASSIFICACAO" or "RESULTADO_ISENCAO")
@@ -206,9 +192,9 @@ public sealed partial class SeedTiposAtoTests
         // Path.Combine descarta os segmentos anteriores quando um deles é enraizado.
         // O precedente é OpenApiEndpointTests.ResolveRepoPath, que valida o mesmo.
         Path.IsPathRooted(CaminhoRelativo).Should().BeFalse(
-            "o caminho do seed é relativo à raiz do repositório");
+            "o caminho do seed é relativo à diretório do repositório");
 
-        string caminho = Path.Combine(SolutionRootLocator.Locate(), CaminhoRelativo);
+        string caminho = Path.Combine(LocalizadorDaSolucao.Locate(), CaminhoRelativo);
 
         File.Exists(caminho).Should().BeTrue($"o seed dos tipos de ato precisa existir em {CaminhoRelativo}");
 
@@ -218,11 +204,7 @@ public sealed partial class SeedTiposAtoTests
         return linhas!;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Performance",
-        "CA1812:Avoid uninstantiated internal classes",
-        Justification = "Instanciada por System.Text.Json ao desserializar o arquivo de seed.")]
-    private sealed record LinhaSeed(
+    public sealed record LinhaSeed(
         string Codigo,
         string Nome,
         bool CongelaConfiguracao,

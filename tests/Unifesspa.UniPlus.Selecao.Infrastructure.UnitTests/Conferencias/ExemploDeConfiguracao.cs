@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
 
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -10,18 +10,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Agregado mínimo e conforme, só para que os codecs tenham o que codificar nos fitness
-/// tests. O corpus <b>rico</b> — o que prova a reidratação — vive nos testes de
+/// Agregado mínimo e conforme, só para que os codecs tenham o que codificar nos testes. O corpus <b>rico</b> — o que prova a reidratação — vive nos testes de
 /// integração; aqui o que se verifica é a <b>forma que o codec emite</b>, não o conteúdo.
 /// </summary>
-internal static class CorpusFitness
+internal static class ExemploDeConfiguracao
 {
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static EntradaCanonicalizacao Entrada()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Exemplo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         DefinirEtapa(processo);
         DefinirCronograma(processo);
