@@ -14826,13 +14826,19 @@
         }
       },
       "CriterioDeVotacao": {
-        "enum": [
-          "maioriaSimples",
-          "maioriaAbsoluta",
-          "unanimidade",
-          null
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CriterioDeVotacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "CriterioDeVotacaoCodigo": {
         "enum": [
@@ -15429,12 +15435,19 @@
         }
       },
       "DesempateDaVotacao": {
-        "enum": [
-          "votoDaPresidencia",
-          "novaVotacao",
-          null
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/DesempateDaVotacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "DesempateDaVotacaoCodigo": {
         "enum": [
@@ -19790,12 +19803,19 @@
         }
       },
       "EncerramentoDaVotacao": {
-        "enum": [
-          "todosOsTitulares",
-          "presidenciaNoQuorum",
-          null
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EncerramentoDaVotacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "EncerramentoDaVotacaoCodigo": {
         "enum": [
@@ -23365,11 +23385,19 @@
         }
       },
       "ModoDeDeliberacao": {
-        "enum": [
-          "colegiadaComVotacao",
-          "atoIndividual"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ModoDeDeliberacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "ModoDeDeliberacaoCodigo": {
         "enum": [
@@ -27253,13 +27281,19 @@
         }
       },
       "ResultadoSemUnanimidade": {
-        "enum": [
-          "favoravel",
-          "desfavoravel",
-          "novaVotacao",
-          null
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ResultadoSemUnanimidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "ResultadoSemUnanimidadeCodigo": {
         "enum": [
