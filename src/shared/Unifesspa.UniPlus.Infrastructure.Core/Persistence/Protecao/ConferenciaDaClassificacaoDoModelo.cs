@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Confere que toda coluna mapeada do modelo resolve uma classificação de proteção e gera o retrato
-/// do mapa coluna → classificação (ADR-0153). A conferência falha fechada: sem classificação resolvida,
+/// Confere que toda coluna mapeada do modelo resolve uma classificação de proteção e gera o conteúdo do
+/// arquivo do mapa coluna → classificação (ADR-0153). A conferência falha fechada: sem classificação resolvida,
 /// ou com um mapeamento que ela não sabe conferir (tipo sem tabela, propriedade sem coluna, complex
 /// property, tabela de fragmento), reprova — nunca ignora em silêncio.
 /// </summary>
@@ -18,10 +18,10 @@ public static class ConferenciaDaClassificacaoDoModelo
 {
     /// <summary>
     /// As violações, cada uma com a mensagem que nomeia a tabela, a coluna e o tipo que não declarou (a coluna sem
-    /// classificação e o mapeamento que a conferência não sabe verificar), e o retrato do modelo: uma linha
+    /// classificação e o mapeamento que a conferência não sabe verificar), e o conteúdo do arquivo do modelo: uma linha
     /// <c>tabela.coluna: Classificacao</c> por coluna, em ordem estável.
     /// </summary>
-    public static (IReadOnlyList<string> Violacoes, string Retrato) Conferir(IModel modelo)
+    public static (IReadOnlyList<string> Violacoes, string ConteudoDoArquivo) Conferir(IModel modelo)
     {
         (SortedDictionary<string, ClassificacaoDeProtecao?> colunas, List<string> naoConferidos, Dictionary<string, SortedSet<string>> semDeclaracao) = Analisar(modelo);
 
@@ -33,13 +33,13 @@ public static class ConferenciaDaClassificacaoDoModelo
                 .Select(c => $"{c.Key}: sem classificação de proteção em {string.Join(", ", semDeclaracao[c.Key])}; declare o padrão do tipo (ClassificaPorPadrao) ou a coluna (ClassificaComo)."),
         ];
 
-        StringBuilder retrato = new();
+        StringBuilder conteudo = new();
         foreach ((string coluna, ClassificacaoDeProtecao? classificacao) in colunas)
         {
-            retrato.Append(coluna).Append(": ").Append(classificacao?.ToString() ?? "SemClassificacao").Append('\n');
+            conteudo.Append(coluna).Append(": ").Append(classificacao?.ToString() ?? "SemClassificacao").Append('\n');
         }
 
-        return (violacoes, retrato.ToString());
+        return (violacoes, conteudo.ToString());
     }
 
     /// <summary>A classificação de cada coluna mapeada, por <c>schema.tabela.coluna</c>; a coluna sem classificação fica fora.</summary>
@@ -73,7 +73,7 @@ public static class ConferenciaDaClassificacaoDoModelo
             if (tipo.GetMappingStrategy() is RelationalAnnotationNames.TptMappingStrategy or RelationalAnnotationNames.TpcMappingStrategy
                 && (tipo.BaseType is not null || tipo.GetDirectlyDerivedTypes().Any()))
             {
-                naoConferidos.Add($"{nomeDoTipo}: herança mapeada como TPT ou TPC não é conferida; as colunas herdadas ficariam fora do retrato.");
+                naoConferidos.Add($"{nomeDoTipo}: herança mapeada como TPT ou TPC não é conferida; as colunas herdadas ficariam fora do arquivo.");
             }
 
             if (StoreObjectIdentifier.Create(tipo, StoreObjectType.Table) is not null && StoreObjectIdentifier.Create(tipo, StoreObjectType.View) is not null)

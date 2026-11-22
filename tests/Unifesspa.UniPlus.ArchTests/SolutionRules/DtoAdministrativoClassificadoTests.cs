@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Fitness function do DTO administrativo (ADR-0153): nenhuma propriedade lida direto de uma coluna fica abaixo da
-/// classificação dela no retrato versionado do modelo, e o valor derivado declara a transformação.
+/// classificação dela no arquivo versionado da classificação do modelo, e o valor derivado declara a transformação.
 /// </summary>
 public sealed class DtoAdministrativoClassificadoTests
 {
@@ -19,7 +19,7 @@ public sealed class DtoAdministrativoClassificadoTests
     [Fact(DisplayName = "Toda propriedade classificada do DTO administrativo respeita a classificação da coluna de onde é lida")]
     public void PropriedadeLidaDiretoNaoFicaAbaixoDaFonte()
     {
-        IReadOnlyList<string> violacoes = ConferenciaDoDtoClassificado.Conferir(TiposDeDto(), RetratoVersionado());
+        IReadOnlyList<string> violacoes = ConferenciaDoDtoClassificado.Conferir(TiposDeDto(), ArquivoVersionado());
 
         violacoes.Should().BeEmpty("a resposta não pode classificar o dado abaixo de onde ele está guardado. Violações:\n" + string.Join("\n", violacoes));
     }
@@ -53,8 +53,8 @@ public sealed class DtoAdministrativoClassificadoTests
     private static IEnumerable<Assembly> AssembliesDeApplication() =>
         Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.Application.dll").Select(Assembly.LoadFrom);
 
-    private static Dictionary<string, ClassificacaoDeProtecao> RetratoVersionado() =>
-        File.ReadAllLines(Path.Join(SolutionRootLocator.Locate(), "tests/Unifesspa.UniPlus.ArchTests/SolutionRules/ClassificacaoDeProtecaoDoModelo.retrato.txt"))
+    private static Dictionary<string, ClassificacaoDeProtecao> ArquivoVersionado() =>
+        ArquivoDaClassificacaoDeProtecao.LerLinhas()
             .Where(static l => l.Length > 0 && l[0] != '#')
             .Select(static l => l.Split(": ", 2))
             .Where(static p => Enum.TryParse(p[1], out ClassificacaoDeProtecao _))
