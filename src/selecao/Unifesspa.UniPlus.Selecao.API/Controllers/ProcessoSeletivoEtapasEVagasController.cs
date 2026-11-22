@@ -65,7 +65,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação.")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(IReadOnlyList<EtapaProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -74,9 +74,9 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
         [FromBody] IReadOnlyList<EtapaProcessoInput> etapas,
         CancellationToken cancellationToken)
     {
-        Result resultado = await _commandBus.Send(
+        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await _commandBus.Send(
             new DefinirEtapasCommand(id, etapas), cancellationToken);
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -141,8 +141,8 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente a distribuição de vagas do processo: uma configuração por oferta de curso. O <c>QuadroDeVagas</c>
-    /// (quantidade calculada por modalidade — Lei 12.711 no ramo federal,
-    /// fixa no institucional) é materializado na mesma operação pelo motor
+    /// (quantidade calculada por modalidade — Lei 12.711 na reserva federal,
+    /// fixa no institucional) é materializado na mesma operação pelo serviço
     /// de cálculo, e devolvido no corpo da resposta — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
     /// (preview sem persistir) e o <c>GET</c> do processo devolvem.
     /// </summary>

@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Item de entrada de uma etapa pontuada, usado por
@@ -37,7 +38,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// substitui a coleção inteira, e uma chave ausente era indistinguível de "a etapa não tem
 /// nenhum". Um cliente que não conhecesse os campos — uma tela anterior, um script de
 /// importação, uma chamada montada a partir de exemplo antigo — apagava em silêncio os
-/// produtos, as bancas e as janelas recursais de TODAS as etapas do processo, e recebia 204.
+/// produtos, as bancas e os recursos de todas as etapas do processo.
 /// </para>
 /// <para>
 /// Exigir a chave torna a omissão um 400 e mantém a lista vazia como o que ela deve ser: uma
@@ -134,11 +135,11 @@ public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao);
 public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null, Guid? Id = null);
 
 /// <summary>
-/// Uma janela recursal da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na âncora de
+/// Um recurso da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na referência de
 /// ato publicado: é por ele que Application resolve, dentro dos produtos da própria etapa,
-/// qual publicação abre a janela. <paramref name="AdmiteInstanciaSuperior"/> é
+/// qual publicação inicia o prazo. <paramref name="AdmiteInstanciaSuperior"/> é
 /// <c>[JsonRequired]</c> pela mesma razão das listas da etapa: o ausente virava <c>false</c> em
-/// silêncio, e a janela seria congelada sem instância superior sem que ninguém o tivesse decidido.
+/// silêncio, e o recurso seria guardado sem instância superior sem que ninguém o tivesse decidido.
 /// <paramref name="Procedimentos"/> declara como o recurso de cada matéria que a etapa produz é revisado.
 /// </summary>
 /// <param name="PrazoValor">Valor do prazo de interposição; ausente é recusado pelo domínio.</param>
@@ -172,4 +173,4 @@ public sealed record ProdutoDaEtapaInput(string AtoCodigo, string? Papel);
 /// </summary>
 public sealed record DefinirEtapasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result>;
+    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result<IReadOnlyList<EtapaProcessoDto>>>;

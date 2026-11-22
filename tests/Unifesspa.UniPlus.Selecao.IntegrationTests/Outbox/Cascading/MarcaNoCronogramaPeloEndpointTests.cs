@@ -29,7 +29,7 @@ public sealed class MarcaNoCronogramaPeloEndpointTests(CascadingFixture fixture)
         using HttpResponseMessage gravada = await processo.GravarAsync(
             processo.Fase("ENSALAMENTO", 1), processo.Fase("AVALIACAO_BIOPSICOSSOCIAL", 2, marca: true), processo.Fase("CLASSIFICACAO", 3, marca: false));
 
-        gravada.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravada.Content.ReadAsStringAsync());
+        gravada.StatusCode.Should().Be(HttpStatusCode.OK, await gravada.Content.ReadAsStringAsync());
         (await processo.MarcasLidasAsync()).Should().Equal(false, true, false);
     }
 
@@ -38,11 +38,11 @@ public sealed class MarcaNoCronogramaPeloEndpointTests(CascadingFixture fixture)
     {
         ProcessoEmRascunhoParaOCronograma processo = await ProcessoEmRascunhoParaOCronograma.PrepararAsync(fixture, "ENSALAMENTO", "AVALIACAO_BIOPSICOSSOCIAL");
         using HttpResponseMessage comMarca = await processo.GravarAsync(processo.Fase("ENSALAMENTO", 1), processo.Fase("AVALIACAO_BIOPSICOSSOCIAL", 2, marca: true));
-        comMarca.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        comMarca.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using HttpResponseMessage semMarca = await processo.GravarAsync(processo.Fase("ENSALAMENTO", 1), processo.Fase("AVALIACAO_BIOPSICOSSOCIAL", 2));
 
-        semMarca.StatusCode.Should().Be(HttpStatusCode.NoContent, await semMarca.Content.ReadAsStringAsync());
+        semMarca.StatusCode.Should().Be(HttpStatusCode.OK, await semMarca.Content.ReadAsStringAsync());
         (await processo.MarcasLidasAsync()).Should().Equal(false, false);
     }
 
@@ -92,7 +92,7 @@ public sealed class MarcaNoCronogramaPeloEndpointTests(CascadingFixture fixture)
 
         using HttpResponseMessage gravada = await processo.GravarAsync(processo.Fase("RESULTADO_FINAL", 1), processo.Fase("HABILITACAO", 2));
 
-        gravada.StatusCode.Should().Be(HttpStatusCode.NoContent, await gravada.Content.ReadAsStringAsync());
+        gravada.StatusCode.Should().Be(HttpStatusCode.OK, await gravada.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "A ordem invertida entre fases ligadas por precedência continua recusada como precedência violada, sem a recusa da marca")]

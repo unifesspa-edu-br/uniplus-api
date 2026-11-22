@@ -65,15 +65,15 @@ public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
 
     public CronogramaFasesPeriodoComDeslocamentoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Theory(DisplayName = "Período com deslocamento negativo, positivo ou UTC conclui em 204 e persiste o mesmo instante")]
+    [Theory(DisplayName = "Período com deslocamento negativo, positivo ou UTC conclui em 200 e persiste o mesmo instante")]
     [InlineData("2027-01-25T08:00:00-03:00", "2027-01-27T18:00:00-03:00")]
     [InlineData("2027-01-25T16:30:00+05:30", "2027-01-28T02:30:00+05:30")]
     [InlineData("2027-01-25T11:00:00Z", "2027-01-27T21:00:00Z")]
-    public async Task PeriodoComDeslocamento_204EPersisteInstanteEmUtc(string inicio, string fim)
+    public async Task PeriodoComDeslocamento_200EPersisteInstanteEmUtc(string inicio, string fim)
     {
         Contexto ctx = await SemearAsync($"offset {inicio}");
         HttpResponseMessage resposta = await ctx.PutCronogramaFasesAsync(inicio, fim);
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent,
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK,
             $"'{inicio}' é um instante válido pelo contrato date-time — o offset é forma de escrita, não erro do cliente");
 
         AfirmarPeriodoPersistidoEmUtc(await ctx.ObterFasePersistidaAsync(), InicioEsperadoUtc, FimEsperadoUtc);
@@ -88,12 +88,12 @@ public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
     {
         Contexto ctx = await SemearAsync(nameof(RedefinirMesmaFaseComOutroOffset_AtualizaInstanteEmUtc));
         HttpResponseMessage primeira = await ctx.PutCronogramaFasesAsync("2027-01-25T11:00:00Z", "2027-01-27T21:00:00Z");
-        primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        primeira.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Mesma fase canônica: DefinirCronogramaFases reconcilia a linha existente por
         // FaseCanonicaOrigemId (AtualizarDe) em vez de recriá-la.
         HttpResponseMessage segunda = await ctx.PutCronogramaFasesAsync("2027-02-01T05:00:00-03:00", "2027-02-03T15:00:00-03:00");
-        segunda.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        segunda.StatusCode.Should().Be(HttpStatusCode.OK);
 
         AfirmarPeriodoPersistidoEmUtc(
             await ctx.ObterFasePersistidaAsync(),

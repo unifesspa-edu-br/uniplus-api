@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDo
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PublicacaoPeloEndpointDeTeste;
 
 /// <summary>
-/// O lote de recusas do cronograma chegando ao cliente, pelo HTTP: duas fases mal
+/// As recusas do cronograma chegando ao cliente, pelo HTTP: duas fases mal
 /// declaradas produzem <b>duas</b> entradas em <c>errors[]</c>, cada uma com o campo que a
 /// localiza.
 /// </summary>
@@ -34,11 +34,11 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Publica
 [Trait("Category", "Integration")]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
-public sealed class CronogramaFasesLoteDeRecusasEndpointTests
+public sealed class CronogramaFasesRecusasEndpointTests
 {
     /// <summary>
     /// Duas fases do catálogo canônico, já semeadas, ligadas por uma aresta de precedência
-    /// que a ordem 1→2 respeita, sem sobreposição de janelas; nenhuma das duas agrupa etapas.
+    /// que a ordem 1→2 respeita, sem sobreposição de períodos; nenhuma das duas agrupa etapas.
     /// O código da fase canônica pertence a um vocabulário fechado, então não há como
     /// inventar um par privado para esta suíte.
     /// </summary>
@@ -67,9 +67,9 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
     private static readonly (string Codigo, string Nome, bool EhResultado)[] TiposDeAtoDoCenario =
     [
-        (CodigoAtoPreliminar, "Resultado preliminar do lote de recusas", true),
-        (CodigoAtoDefinitivo, "Resultado definitivo do lote de recusas", true),
-        (CodigoAtoQueNaoEhResultado, "Aviso do lote de recusas", false),
+        (CodigoAtoPreliminar, "Resultado preliminar das recusas", true),
+        (CodigoAtoDefinitivo, "Resultado definitivo das recusas", true),
+        (CodigoAtoQueNaoEhResultado, "Aviso das recusas", false),
     ];
 
     // As duas fases têm a data fixada no edital (NO_EDITAL) e exigem o período; sem ele a fábrica
@@ -82,7 +82,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
     private readonly CascadingFixture _fixture;
 
-    public CronogramaFasesLoteDeRecusasEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public CronogramaFasesRecusasEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
     [Fact(DisplayName = "Duas fases mal declaradas devolvem 422 com as DUAS violações em errors[], cada uma com o seu campo")]
     public async Task DuasFasesMalDeclaradas_422ComOsDoisErrosECampos()
@@ -91,7 +91,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
         object[] fases = FasesComPapelEmAtoQueNaoEhResultado(cenario);
 
         ErroDoProblema[] reportados = await EnviarERecusarAsync(
-            cenario, fases, "reduzir o lote ao primeiro erro apaga os campos, e sem campo nenhum a resposta sai sem errors[]");
+            cenario, fases, "reduzir as recusas ao primeiro erro apaga os campos, e sem campo nenhum a resposta sai sem errors[]");
 
         AfirmarCampoECodigoDeCadaErro(
             reportados,
@@ -177,7 +177,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
         using HttpResponseMessage resposta = await EnviarCronogramaAsync(api.CreateClient(), processoId, fases);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "A publicação aceita o processo cuja fase de data definida na execução declara só a data final, e a leitura devolve a fase sem início")]
@@ -227,7 +227,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
         await TiposDeAtoSeeder.SemearTiposAsync(api.Services, TiposDeAtoDoCenario);
         Guid fasePreliminarId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFasePreliminar);
         Guid faseDefinitivaId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFaseDefinitiva);
-        Guid processoId = await SemearProcessoEmRascunhoAsync(api, "PS lote de recusas", OrigemCandidatos.ImportacaoExterna);
+        Guid processoId = await SemearProcessoEmRascunhoAsync(api, "PS recusas", OrigemCandidatos.ImportacaoExterna);
 
         return new CenarioDoCronograma(client, processoId, fasePreliminarId, faseDefinitivaId);
     }

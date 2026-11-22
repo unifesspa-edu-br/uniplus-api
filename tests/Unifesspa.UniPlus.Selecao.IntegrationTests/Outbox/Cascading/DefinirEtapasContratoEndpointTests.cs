@@ -60,15 +60,15 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
     }
 
     [Fact]
-    public async Task Definir_ProcessoComClassificacaoImportadaEAListaVazia_204SemCorpo()
+    public async Task Definir_ProcessoComClassificacaoImportadaEAListaVazia_200ComListaVazia()
     {
         Guid processoId = await SemearProcessoSemEtapasAsync();
         using HttpClient client = fixture.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(new JsonArray()));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await resposta.Content.ReadAsStringAsync()).Should().BeEmpty();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await resposta.Content.ReadAsStringAsync()).Should().Be("[]");
     }
 
     [Fact]

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -47,7 +48,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo:
-    /// janela, produtos publicados com o papel de cada um, fase que conclui o ciclo
+    /// período, produtos publicados com o papel de cada um, fase que conclui o ciclo
     /// recursal, parecer individual, bancas requeridas, regra de recurso e regra de homologação das inscrições, por fase. A
     /// regra de homologação ausente remove a que a fase tinha, e a fase que não a declara não homologa: o cliente devolve a
     /// regra que leu. As recusas da regra se acumulam, cada uma no campo da fase, da alternativa, da condição e do campo
@@ -61,7 +62,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(IReadOnlyList<FaseCronogramaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -70,9 +71,9 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
         [FromBody] IReadOnlyList<FaseCronogramaInput> fases,
         CancellationToken cancellationToken)
     {
-        Result resultado = await _commandBus.Send(
+        Result<IReadOnlyList<FaseCronogramaDto>> resultado = await _commandBus.Send(
             new DefinirCronogramaFasesCommand(id, fases), cancellationToken);
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Substitui as regras de comprovação e os documentos exigidos do processo.</summary>
@@ -167,7 +168,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     }
 
     /// <summary>
-    /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação. <c>Tipo</c> nulo remove a referência.
+    /// Define (ou remove) a política que vincula <c>FAIXA_ETARIA</c> na publicação. <c>Tipo</c> nulo remove a referência.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
@@ -192,7 +193,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// <summary>
     /// Substitui integralmente as regras que derivam os fatos derivados do processo — hoje a
     /// modalidade de concorrência. Cada configuração traz o fato derivado e a lista de
-    /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional (âncora) tem <c>quando</c>
+    /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional tem <c>quando</c>
     /// nulo. Só um fato derivado com binding de regra de derivação é alvo válido — para a
     /// modalidade, cada código contribuído tem de ser uma das modalidades ofertadas pelo processo.
     /// Editável só em rascunho; o processo publicado é recusado com <c>422</c>.

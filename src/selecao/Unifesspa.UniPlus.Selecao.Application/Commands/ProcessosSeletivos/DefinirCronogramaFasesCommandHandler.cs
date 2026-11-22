@@ -6,16 +6,15 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 /// <summary>
-/// Handler do <see cref="DefinirCronogramaFasesCommand"/>: trava o processo para edição, delega a definição do
-/// cronograma (ver <see cref="DefinicaoDoCronogramaDeFases"/>) com o relógio injetado lido <b>uma vez</b> por
-/// operação (ADR-0068) e grava. A recusa do domínio sai como LOTE: a conclusão do ciclo recursal acumula uma
-/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma.
+/// Define e grava o cronograma, preservando todas as recusas do domínio.
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
-    public static async Task<Result> Handle(
+    public static async Task<Result<IReadOnlyList<FaseCronogramaDto>>> Handle(
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDoCronogramaDeFases definicao,
@@ -31,7 +30,7 @@ public static class DefinirCronogramaFasesCommandHandler
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
-            ? Result.Failure(obtido.Error!)
+            ? Result<IReadOnlyList<FaseCronogramaDto>>.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
@@ -52,7 +51,7 @@ public static class DefinirCronogramaFasesCommandHandler
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    private static async Task<Result> DefinirEGravarAsync(
+    private static async Task<Result<IReadOnlyList<FaseCronogramaDto>>> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
         DefinicaoDoCronogramaDeFases definicao,
@@ -63,10 +62,10 @@ public static class DefinirCronogramaFasesCommandHandler
         Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
-            return Result.ValidationFailure(definida.Errors);
+            return Result<IReadOnlyList<FaseCronogramaDto>>.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result.Success();
+        return Result<IReadOnlyList<FaseCronogramaDto>>.Success(ProjecaoDaFaseDoCronograma.ProjetarCronograma(processo));
     }
 }

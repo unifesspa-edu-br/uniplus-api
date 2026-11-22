@@ -66,7 +66,7 @@ internal static class PassosDoEnvelopeFechado
 
     // Os últimos 8 hex de um GUID v7 (rand_b) são aleatórios — os PRIMEIROS 8 são o timestamp
     // em milissegundos, que só muda a cada ~65s e colidiria com LimpezaRegrasDistribuicaoMigrationTests
-    // (mesma coleção sequencial, mesmo semeador) se os dois rodassem dentro da mesma janela.
+    // (mesma coleção sequencial, mesmo semeador) se os dois rodassem dentro da mesmo período.
     internal static async Task<Cenario> PrepararAsync(CascadingApiFactory api)
     {
         string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
@@ -115,9 +115,9 @@ internal static class PassosDoEnvelopeFechado
     // Passo 2 — cronograma e etapas (ordem de §4.2 do plano: etapas antes de tudo que as referencia).
     internal static async Task DeclararEtapasAsync(Cenario c)
     {
-        await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
+        await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.OK, "PUT cronograma-fases", "/cronograma-fases");
         await EscolherOMotivoDaHomologacaoAsync(c);
-        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
+        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.OK, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
         c.ObjetivaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Prova Objetiva").Id;
