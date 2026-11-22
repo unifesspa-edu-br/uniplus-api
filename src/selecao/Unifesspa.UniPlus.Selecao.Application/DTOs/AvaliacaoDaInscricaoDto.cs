@@ -46,19 +46,24 @@ public sealed record AvaliacaoDaInscricaoDto(
         ArgumentNullException.ThrowIfNull(enderecoDoModelo);
         ArgumentNullException.ThrowIfNull(arquivos);
 
-        ILookup<Guid, DocumentoAvaliado> documentosPorFase = resultado.Documentos.Itens
-            .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
-            .ToLookup(static d => d.Documento.ExigidoNaFaseId);
         return new AvaliacaoDaInscricaoDto(
             ProjetarModalidades(resultado.Modalidades),
-            new DocumentosDaInscricaoDto(
-                [.. fases.OrderBy(static f => f.Ordem).Select(f => new FaseDosDocumentosDto(
-                    f.Id,
-                    f.Codigo,
-                    f.Ordem,
-                    [.. documentosPorFase[f.Id].Select(d => Documento(d, enderecoDoModelo, arquivos))],
-                    [.. resultado.Documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]),
+            ProjetarDocumentos(resultado.Documentos, fases, enderecoDoModelo, arquivos),
             resultado.ModalidadesSegundaOpcao is { } daSegunda ? ProjetarModalidades(daSegunda) : null);
+    }
+
+    private static DocumentosDaInscricaoDto ProjetarDocumentos(
+        DocumentosDaInscricao documentos, IEnumerable<FaseCronograma> fases,
+        Func<ModeloDaExigencia, Uri?> enderecoDoModelo, IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
+    {
+        ILookup<Guid, DocumentoAvaliado> porFase = documentos.Itens
+            .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
+            .ToLookup(static d => d.Documento.ExigidoNaFaseId);
+        return new DocumentosDaInscricaoDto(
+            [.. fases.OrderBy(static f => f.Ordem).Select(f => new FaseDosDocumentosDto(
+                f.Id, f.Codigo, f.Ordem,
+                [.. porFase[f.Id].Select(d => Documento(d, enderecoDoModelo, arquivos))],
+                [.. documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]);
     }
 
     private static ModalidadesDaInscricaoDto ProjetarModalidades(ModalidadesDeConcorrencia modalidades) =>
@@ -75,28 +80,25 @@ public sealed record AvaliacaoDaInscricaoDto(
     {
         DocumentoExigido documento = avaliado.Documento;
         return new DocumentoDaInscricaoDto(
-            documento.Id,
-            documento.TipoDocumentoCodigo,
-            documento.TipoDocumentoNome,
-            documento.Obrigatorio,
+            documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
             documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
-            documento.ExigidoNaEtapaId,
-            new FormatosAceitosCertameDto(
-                documento.FormatosPermitidos.Qualquer,
-                documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.ToCodigo()).ToList()),
-            documento.Modelo is { } modelo
-                ? new ModeloDocumentalCertameDto(modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256, enderecoDoModelo(modelo))
-                : null,
-            avaliado.Situacao.ToCodigo(),
-            avaliado.GrupoCodigo,
-            avaliado.OcorrenciaId,
-            [.. avaliado.Grupos.Select(static g => new GrupoDaArvoreDto(g.GrupoId, g.Tipo.ToCodigo(), g.Minimo, g.RepetePorEntidade))],
+            documento.ExigidoNaEtapaId, Formatos(documento), Modelo(documento, enderecoDoModelo),
+            avaliado.Situacao.ToCodigo(), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
+            [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, g.Tipo.ToCodigo(), g.Minimo, g.RepetePorEntidade))],
             avaliado.RepetePorEntidade,
             [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.ToCodigo())],
-            ArquivoDaApresentacao.LimiteAnunciadoDe(documento),
-            avaliado.QuantidadeMinima,
+            ArquivoDaApresentacao.LimiteAnunciadoDe(documento), avaliado.QuantidadeMinima,
             [.. arquivos.Where(a => a.ExigenciaId == documento.Id && a.OcorrenciaId == avaliado.OcorrenciaId)]);
     }
+
+    private static FormatosAceitosCertameDto Formatos(DocumentoExigido documento) =>
+        new(documento.FormatosPermitidos.Qualquer, documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.ToCodigo()).ToList());
+
+    private static ModeloDocumentalCertameDto? Modelo(DocumentoExigido documento, Func<ModeloDaExigencia, Uri?> enderecoDoModelo) =>
+        documento.Modelo is { } modelo
+            ? new ModeloDocumentalCertameDto(modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256, enderecoDoModelo(modelo))
+            : null;
+
 }
 
 /// <summary>
@@ -154,7 +156,7 @@ public sealed record DocumentoDaInscricaoDto(
     string Situacao,
     string? GrupoCodigo,
     string? OcorrenciaId,
-    IReadOnlyList<GrupoDaArvoreDto> Grupos,
+    IReadOnlyList<GrupoDeComprovacaoDto> Grupos,
     string? RepetePorEntidade,
     IReadOnlyList<string> FormatosAceitos,
     long TamanhoMaximoBytes,
@@ -167,7 +169,7 @@ public sealed record DocumentoDaInscricaoDto(
 /// nulo no E, e o grupo de membros pelo qual o nó se repete, quando a repetição começa nele: a escolha
 /// vale então para cada membro.
 /// </summary>
-public sealed record GrupoDaArvoreDto(Guid GrupoId, string Tipo, int? Minimo, string? RepetePorEntidade);
+public sealed record GrupoDeComprovacaoDto(Guid GrupoId, string Tipo, int? Minimo, string? RepetePorEntidade);
 
 /// <summary>
 /// As modalidades em que o candidato concorre (UNI-REQ-0076). Sem derivação da modalidade na versão,
