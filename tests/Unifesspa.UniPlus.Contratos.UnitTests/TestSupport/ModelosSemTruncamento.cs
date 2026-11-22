@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
+
 /// <summary>
 /// Os modelos de design-time dos <see cref="DbContext"/> da solução construídos sem o limite de 63 bytes do PostgreSQL. O EF e o
 /// plugin de <c>snake_case</c> cortam em silêncio o nome de FK, índice e restrição que eles mesmos derivam, e o modelo comum
@@ -27,19 +30,16 @@ internal static class ModelosSemTruncamento
         return opcoes.WithExtension(new ExtensaoSemTruncamento());
     }
 
-    private static List<(string Contexto, IModel Modelo)> Construir() =>
-    [
-        .. ModelosDaSolucao.FabricasDeContexto()
-            .OrderBy(f => f.Contexto.Name, StringComparer.Ordinal)
-            .Select(f => (f.Contexto.Name, Modelo(f.Fabrica, f.Contexto, f.Metodo))),
-    ];
-
-    private static IModel Modelo(Type fabrica, Type tipoDoContexto, System.Reflection.MethodInfo criar)
+    private static List<(string Contexto, IModel Modelo)> Construir()
     {
-        using DbContext original = (DbContext)criar.Invoke(Activator.CreateInstance(fabrica), [Array.Empty<string>()])!;
-        DbContextOptions opcoes = SemTruncamento((DbContextOptions)original.GetService<IDbContextOptions>());
-        using DbContext contexto = (DbContext)Activator.CreateInstance(tipoDoContexto, opcoes)!;
-        return contexto.GetService<IDesignTimeModel>().Model;
+        using MonolitoDbContext originalMonolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext originalPortal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
+        using MonolitoDbContext monolito = new((DbContextOptions<MonolitoDbContext>)SemTruncamento((DbContextOptions)originalMonolito.GetService<IDbContextOptions>()));
+        using PortalDbContext portal = new((DbContextOptions<PortalDbContext>)SemTruncamento((DbContextOptions)originalPortal.GetService<IDbContextOptions>()));
+        return [
+            (nameof(MonolitoDbContext), monolito.GetService<IDesignTimeModel>().Model),
+            (nameof(PortalDbContext), portal.GetService<IDesignTimeModel>().Model),
+        ];
     }
 
     private sealed class ExtensaoSemTruncamento : IDbContextOptionsExtension

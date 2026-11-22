@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixa o nome e o texto SQL de cada restrição de verificação das tabelas de enum com código de contrato. A leitura é do
@@ -78,12 +78,7 @@ public sealed class ChecksDoModeloDoMonolitoTests
 
     private static (IModel Projeto, IModel InstantaneoDaMigration) Construir()
     {
-        (Type fabrica, _, System.Reflection.MethodInfo criar) = ModelosDaSolucao.FabricasDeContexto()
-            .Single(f => f.Contexto.Name == "MonolitoDbContext");
-        object instanciaDaFabrica = Activator.CreateInstance(fabrica)
-            ?? throw new InvalidOperationException("A fábrica do contexto do monólito não pôde ser instanciada.");
-        using DbContext contexto = criar.Invoke(instanciaDaFabrica, [Array.Empty<string>()]) as DbContext
-            ?? throw new InvalidOperationException("A fábrica do contexto do monólito não devolveu um contexto.");
+        using MonolitoDbContext contexto = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
         IModel instantaneo = contexto.GetService<IMigrationsAssembly>().ModelSnapshot?.Model
             ?? throw new InvalidOperationException("A migration do monólito não tem instantâneo do modelo.");
 

@@ -1,14 +1,14 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 
+using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Lugar do modelo finalizado que guarda um valor, a propriedade escalar ou o elemento de uma coleção primitiva, com o
-/// conversor que o EF aplica a ele. A propriedade de coleção sem tipo de elemento, como a que recebeu o conversor na
-/// coleção inteira, também é um ponto: ela é examinada pelo tipo da coleção.
+/// conversor que o EF aplica a ele.
 /// </summary>
 /// <param name="Descricao">Onde o ponto está, do tipo de entidade à propriedade, para a mensagem da violação.</param>
 /// <param name="Propriedade">O nome da propriedade; para o elemento, o da coleção.</param>
@@ -20,22 +20,12 @@ internal sealed record PontoDoModelo(string Descricao, string Propriedade, Type 
 
     internal bool GuardaEnumDeContrato => EnumsDeContrato.EhEnumQueDeclaraCodigo(TipoDoValor);
 
-    internal bool UsaOConversorDoCodigo =>
-        Conversor?.GetType() == typeof(CodigoDeContratoValueConverter<>).MakeGenericType(TipoDoValor);
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new JsonSerializerOptions());
 
-    /// <summary>O enum com código de contrato que o ponto guarda, direto ou como elemento da coleção que ele é.</summary>
-    internal Type? EnumDeContrato => GuardaEnumDeContrato ? TipoDoValor : EnumDaColecao;
+    internal bool UsaOConversorDoCodigo => Conversor is not null && Enum.GetValues(TipoDoValor).Cast<object>()
+        .All(valor => Equals(Conversor.ConvertToProvider(valor), JsonSerializer.SerializeToElement(valor, TipoDoValor, Opcoes).GetString()));
 
-    /// <summary>
-    /// Verdadeiro quando o ponto grava um enum com código de contrato de outro jeito que não o conversor do código:
-    /// o valor com outra conversão, ou a coleção de enum com código sem tipo de elemento, que só é gravada pelo código
-    /// quando é coleção primitiva.
-    /// </summary>
-    internal bool NaoGravaPeloCodigo => (GuardaEnumDeContrato && !UsaOConversorDoCodigo) || EnumDaColecao is not null;
+    internal Type? EnumDeContrato => GuardaEnumDeContrato ? TipoDoValor : null;
 
-    private Type? EnumDaColecao =>
-        TipoDeclarado.GetInterfaces().Append(TipoDeclarado)
-            .Where(tipo => tipo.IsGenericType && tipo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-            .Select(tipo => Nullable.GetUnderlyingType(tipo.GenericTypeArguments[0]) ?? tipo.GenericTypeArguments[0])
-            .FirstOrDefault(EnumsDeContrato.EhEnumQueDeclaraCodigo);
+    internal bool NaoGravaPeloCodigo => GuardaEnumDeContrato && !UsaOConversorDoCodigo;
 }

@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -16,15 +18,21 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class NomesDeTabelaDoModeloTests
 {
     [Fact(DisplayName = "A descoberta encontra tabelas mapeadas")]
-    public void DescobertaEncontraTabelas() =>
-        TabelasMapeadas(ModelosDaSolucao.Modelos().SelectMany(m => m.Modelo.GetEntityTypes())).Should().NotBeEmpty(
+    public void DescobertaEncontraTabelas()
+    {
+        using MonolitoDbContext monolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext portal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
+        TabelasMapeadas(monolito.GetService<IDesignTimeModel>().Model.GetEntityTypes().Concat(portal.GetService<IDesignTimeModel>().Model.GetEntityTypes())).Should().NotBeEmpty(
             "sem tabela descoberta, a conferência dos nomes passaria vazia");
+    }
 
     [Fact(DisplayName = "Toda tabela mapeada tem o núcleo no plural, snake_case e até 30 caracteres")]
     public void TodaTabelaMapeadaSegueARegraDeNome()
     {
+        using MonolitoDbContext monolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext portal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
         IReadOnlyList<string> violacoes = RegraDeNomeDeTabela.Violacoes(
-            TabelasMapeadas(ModelosDaSolucao.Modelos().SelectMany(m => m.Modelo.GetEntityTypes())));
+            TabelasMapeadas(monolito.GetService<IDesignTimeModel>().Model.GetEntityTypes().Concat(portal.GetService<IDesignTimeModel>().Model.GetEntityTypes())));
 
         violacoes.Should().BeEmpty(
             "o nome de tabela segue o docs/guia-banco-de-dados.md: núcleo no plural, snake_case, até 30 caracteres. Violações:\n"

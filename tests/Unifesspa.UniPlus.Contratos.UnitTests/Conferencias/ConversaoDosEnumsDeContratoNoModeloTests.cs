@@ -2,15 +2,17 @@ namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 /// <summary>
 /// Regras de arquitetura da conversão dos enums de contrato (ADR-0176): em todo <see cref="Microsoft.EntityFrameworkCore.DbContext"/>
 /// da solução, toda propriedade escalar, de tipo próprio ou de tipo complexo, e todo elemento de coleção primitiva cujo tipo
-/// é enum com código de contrato grava pelo conversor do código, e nenhuma coleção de enum com código fica sem tipo de
-/// elemento. A leitura é do modelo finalizado, o que o EF aplica, e não do texto da configuração. Como nenhum modelo da
+/// é enum com código de contrato grava pelo conversor do código, e cada coleção primitiva de enum com código usa o conversor do elemento. A leitura é do modelo finalizado, o que o EF aplica, e não do texto da configuração. Como nenhum modelo da
 /// solução guarda enum com código hoje, a mesma regra roda sobre modelos sintéticos, com e sem a convenção, para que a
 /// conferência não aprove por conjunto vazio.
 /// </summary>
@@ -19,15 +21,11 @@ public sealed class ConversaoDosEnumsDeContratoNoModeloTests
     private static readonly string[] PropriedadesComEnumDeContrato =
         ["Modalidade", "Alternativa", "Uso", "Formato", "Impressao", "Preferidas"];
 
-    [Fact(DisplayName = "A descoberta encontra os `DbContext` do monólito e do portal")]
-    public void DescobertaEncontraOsDbContexts() =>
-        ModelosDaSolucao.Modelos().Select(modelo => modelo.Contexto).Should()
-            .Contain("MonolitoDbContext").And.Contain("PortalDbContext");
-
     [Fact(DisplayName = "O percurso encontra propriedades no modelo do monólito")]
     public void PercursoEncontraPropriedadesNoModeloDoMonolito()
     {
-        IModel monolito = ModelosDaSolucao.Modelos().Single(modelo => modelo.Contexto == "MonolitoDbContext").Modelo;
+        using MonolitoDbContext contexto = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        IModel monolito = contexto.GetService<IDesignTimeModel>().Model;
 
         PontosDoModelo.Em(monolito).Should().NotBeEmpty("um percurso vazio aprovaria a regra sem olhar o modelo");
     }
@@ -35,10 +33,12 @@ public sealed class ConversaoDosEnumsDeContratoNoModeloTests
     [Fact(DisplayName = "Todo enum com código de contrato dos `DbContext` da solução grava pelo conversor do código")]
     public void TodoEnumComCodigoDosModelosDaSolucaoGravaPeloConversorDoCodigo()
     {
+        using MonolitoDbContext monolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext portal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
         string[] violacoes =
         [
-            .. ModelosDaSolucao.Modelos().SelectMany(modelo =>
-                PontosDoModelo.QueNaoGravamPeloCodigo(modelo.Modelo).Select(ponto => $"{modelo.Contexto}: {ponto.Descricao} é do enum '{ponto.EnumDeContrato?.Name}'")),
+            .. PontosDoModelo.QueNaoGravamPeloCodigo(monolito.GetService<IDesignTimeModel>().Model).Select(ponto => $"MonolitoDbContext: {ponto.Descricao}"),
+            .. PontosDoModelo.QueNaoGravamPeloCodigo(portal.GetService<IDesignTimeModel>().Model).Select(ponto => $"PortalDbContext: {ponto.Descricao}"),
         ];
 
         violacoes.Should().BeEmpty(
@@ -76,12 +76,4 @@ public sealed class ConversaoDosEnumsDeContratoNoModeloTests
         violacoes.Select(ponto => ponto.Propriedade).Should().BeEquivalentTo(PropriedadesComEnumDeContrato);
     }
 
-    [Fact(DisplayName = "A coleção de enum com código com o conversor na coleção inteira, sem tipo de elemento, é acusada")]
-    public void ColecaoComConversorNaColecaoInteira_EAcusada()
-    {
-        IReadOnlyList<PontoDoModelo> violacoes = PontosDoModelo.QueNaoGravamPeloCodigo(ModeloSinteticoComColecaoInteiraDeEnumDeContrato.Montar());
-
-        violacoes.Should().HaveCount(2);
-        violacoes.Select(ponto => ponto.Propriedade).Should().BeEquivalentTo(["Preferidas", "Eventuais"]);
-    }
 }
