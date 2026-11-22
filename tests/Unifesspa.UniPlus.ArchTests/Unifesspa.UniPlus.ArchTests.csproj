@@ -58,6 +58,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
+    <Compile Include="../Shared/ExcecoesDeAcessoDasAcoes.cs" Link="ExcecoesDeAcessoDasAcoes.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

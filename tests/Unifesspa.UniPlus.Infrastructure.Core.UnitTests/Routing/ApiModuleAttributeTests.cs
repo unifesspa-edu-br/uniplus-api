@@ -33,7 +33,7 @@ public sealed class ApiModuleAttributeTests
     public void GetRequiredName_AssemblyWithoutMetadata_ThrowsInvalidOperationException()
     {
         Action act = () => ApiModuleMetadata.GetRequiredName(
-            typeof(ApiModuleAttributeTests).Assembly);
+            typeof(string).Assembly);
 
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("*não declara*ApiModuleAttribute*");

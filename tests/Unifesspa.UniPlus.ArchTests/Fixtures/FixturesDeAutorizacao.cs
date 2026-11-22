@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.Fixtures;
 
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-
 using Unifesspa.UniPlus.Authorization.Abstractions;
 
 /// <summary>
@@ -11,85 +8,6 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 /// </summary>
 internal static class FixturesDeAutorizacao
 {
-    [Authorize(Policy = "PodeAprovarEdital")]
-    internal sealed class PoliticaDeNegocioNaClasse
-    {
-        [HttpGet]
-        public int Ler()
-        {
-            return GetHashCode();
-        }
-    }
-
-    internal sealed class PoliticaDeNegocioNaAcao
-    {
-        [Authorize(Policy = "CoordenadorDaUnidade")]
-        [HttpPost]
-        public int Aprovar()
-        {
-            return GetHashCode();
-        }
-    }
-
-    [Authorize]
-    internal sealed class SoAutenticacao
-    {
-        [HttpGet]
-        public int Ler()
-        {
-            return GetHashCode();
-        }
-    }
-
-    internal sealed class PoliticaDeIdentidade
-    {
-        [Authorize(Policy = "Instalacao")]
-        [HttpGet]
-        public int Ler()
-        {
-            return GetHashCode();
-        }
-    }
-
-    internal sealed class PapelFixoDaUnidade
-    {
-        [Authorize(Roles = "coordenador-ceps")]
-        public int Aprovar()
-        {
-            return GetHashCode();
-        }
-    }
-
-    [Authorize]
-    internal sealed class AcaoAdministrativaSoAutenticada
-    {
-        [HttpPost]
-        public int Publicar()
-        {
-            return GetHashCode();
-        }
-    }
-
-    internal sealed class AcaoAdministrativaSemAtributo
-    {
-        [HttpPost]
-        public int Publicar()
-        {
-            return GetHashCode();
-        }
-    }
-
-    [Authorize]
-    internal sealed class AcaoAdministrativaDecididaPeloPontoUnico
-    {
-        [Unifesspa.UniPlus.Selecao.API.Authorization.ExigePermissaoNoProcesso(Unifesspa.UniPlus.Selecao.Application.Permissoes.PermissaoSelecao.ProcessosConfigurar)]
-        [HttpPost]
-        public int Publicar()
-        {
-            return GetHashCode();
-        }
-    }
-
     /// <summary>Serviço de aplicação que decide pelo ponto único: recebe o verificador no construtor.</summary>
     internal sealed class ServicoQueRecebeOVerificador
     {
@@ -105,4 +23,30 @@ internal static class FixturesDeAutorizacao
 
         public TimeProvider Relogio { get; }
     }
+    internal sealed class MensagemDireta;
+    internal sealed class MensagemPorServico;
+    internal sealed class MensagemSemVerificador;
+
+    internal static class HandlerDireto
+    {
+        public static void Handle(MensagemDireta mensagem, IVerificadorDeAcesso verificador) { }
+    }
+
+    internal static class HandlerPorServico
+    {
+        public static void Handle(MensagemPorServico mensagem, ServicoQueRecebeOVerificador servico) { }
+    }
+
+    internal static class HandlerSemVerificador
+    {
+        public static void Handle(MensagemSemVerificador mensagem, ServicoQueNaoRecebeOVerificador servico) { }
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal sealed class FiltroSemMarca : Attribute, Microsoft.AspNetCore.Mvc.Filters.IAuthorizationFilter
+    {
+        public void OnAuthorization(Microsoft.AspNetCore.Mvc.Filters.AuthorizationFilterContext context) { }
+    }
+    [AttributeUsage(AttributeTargets.Method)]
+    internal sealed class ExigenciaSemVerificador : Attribute, Unifesspa.UniPlus.Infrastructure.Core.Authorization.IExigeAutorizacaoAlemDoLogin;
 }

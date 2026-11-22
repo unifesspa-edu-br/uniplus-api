@@ -240,4 +240,7 @@ suas convenções específicas e não recebem automaticamente o prefixo de módu
 
 ## Emenda (2026-11-22) — projeto de testes
 
-`ApiModuleMetadataTests` é executado no projeto `Unifesspa.UniPlus.Contratos.UnitTests`.
+`ApiModuleMetadataTests`, em `Unifesspa.UniPlus.Contratos.UnitTests`, confere
+os nomes e prefixos das rotas das ações descritas pelos hosts. O compilador
+impede a repetição do atributo no assembly; o construtor valida o nome. A
+convenção de rotas é exercitada em `Infrastructure.Core.UnitTests`.
