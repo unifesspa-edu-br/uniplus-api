@@ -351,7 +351,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         new(
             DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            ArvoreExigenciasCongelada.DeGrafoReidratado(raizes),
+            RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes),
             [Campo(BaixaRenda), Campo(PediuFator)],
             [GrupoDaFamilia()],
             [],

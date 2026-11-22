@@ -33,7 +33,7 @@ public sealed class AvaliadorDaComprovacao
     }
 
     public static Result<ResultadoDaComprovacao> Resolver(
-        ArvoreExigenciasCongelada arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
+        RegrasDeComprovacaoDaVersao arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
@@ -48,7 +48,7 @@ public sealed class AvaliadorDaComprovacao
                 fatosResolvidos, apresentacoesPorExigenciaId, instancias, exigenciasBloqueadas ?? new HashSet<Guid>()).Avaliar(arvore!));
     }
 
-    private static DomainError? RecusaDaArvore(ArvoreExigenciasCongelada arvore)
+    private static DomainError? RecusaDaArvore(RegrasDeComprovacaoDaVersao arvore)
     {
         List<NoExigencia> folhas = [.. arvore.Raizes.SelectMany(static r => r.AchatarComDescendentes()).Where(static n => n.Tipo == TipoNo.Folha)];
         return RecusaDasFolhas(folhas) ?? (arvore.Raizes.Any(ContemRepeticaoAninhada)
@@ -83,7 +83,7 @@ public sealed class AvaliadorDaComprovacao
         return null;
     }
 
-    private ResultadoDaComprovacao Avaliar(ArvoreExigenciasCongelada arvore)
+    private ResultadoDaComprovacao Avaliar(RegrasDeComprovacaoDaVersao arvore)
     {
         foreach (NoExigencia raiz in arvore.Raizes)
         {

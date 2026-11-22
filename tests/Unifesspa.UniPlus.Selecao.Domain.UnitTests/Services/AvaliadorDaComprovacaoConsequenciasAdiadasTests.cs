@@ -42,11 +42,11 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
             static f => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(f.Valor)),
             StringComparer.Ordinal);
 
-    private static ArvoreExigenciasCongelada Arvore(params NoExigencia[] raizes) =>
-        ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
+    private static RegrasDeComprovacaoDaVersao Arvore(params NoExigencia[] raizes) =>
+        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
 
     private static Result<ResultadoDaComprovacao> Resolver(
-        ArvoreExigenciasCongelada arvore,
+        RegrasDeComprovacaoDaVersao arvore,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlySet<Guid>? bloqueadas = null) =>
@@ -125,7 +125,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         DocumentoExigido documento = DocumentoGeral("ELIMINA");
         NoExigencia folha = NoExigencia.CriarFolha(documento, 0).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha]).Value!;
-        ArvoreExigenciasCongelada arvore = Arvore(raiz);
+        RegrasDeComprovacaoDaVersao arvore = Arvore(raiz);
 
         ResultadoDaComprovacao bloqueado = Resolver(arvore, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
         bloqueado.RegrasComConsequenciaAdiada.Should().Contain(folha.Id);

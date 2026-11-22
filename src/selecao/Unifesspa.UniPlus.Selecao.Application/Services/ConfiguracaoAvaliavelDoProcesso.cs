@@ -27,7 +27,7 @@ public static class ConfiguracaoAvaliavelDoProcesso
         return new ConfiguracaoAvaliavel(
             avaliavel.Definicao,
             avaliavel.Ofertas,
-            ArvoreExigenciasCongelada.DaConfiguracaoViva(processo),
+            RegrasDeComprovacaoDaVersao.DaConfiguracaoViva(processo),
             processo.FatosColetados,
             processo.GruposColetados,
             [.. processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)],
@@ -47,7 +47,7 @@ public static class ConfiguracaoAvaliavelDoProcesso
         return new ConfiguracaoAvaliavel(
             avaliavel.Definicao,
             avaliavel.Ofertas,
-            ArvoreExigenciasCongelada.DeGrafoReidratado([.. configuracao.Exigencias.NosExigencia.Where(static n => n.NoPaiId is null)]),
+            RegrasDeComprovacaoDaVersao.DeGrafoReidratado([.. configuracao.Exigencias.NosExigencia.Where(static n => n.NoPaiId is null)]),
             [.. configuracao.Coleta.Itens],
             configuracao.Coleta.GruposColetados,
             [.. DerivacoesDaOferta.DistribuicaoDasOfertas(configuracao.Vagas.DistribuicaoVagas, ofertasDeCurso ?? []).SelectMany(static d => d.Modalidades)],

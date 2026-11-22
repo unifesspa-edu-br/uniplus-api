@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 public sealed record ConfiguracaoAvaliavel(
     DefinicaoFormulario Definicao,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
-    ArvoreExigenciasCongelada Arvore,
+    RegrasDeComprovacaoDaVersao Arvore,
     IReadOnlyCollection<FatoColetado> Campos,
     IReadOnlyCollection<GrupoColetado> Grupos,
     IReadOnlyCollection<ModalidadeSelecionada> ModalidadesOfertadas,
