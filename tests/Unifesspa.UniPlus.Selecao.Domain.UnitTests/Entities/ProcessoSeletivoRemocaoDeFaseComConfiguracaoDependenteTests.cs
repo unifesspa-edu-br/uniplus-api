@@ -23,7 +23,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
             ReferenciaRegra.De(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", new string('a', 64)),
             new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 
-    private static RegraDeComprovacao GrupoAninhadoDaFase(FaseCronograma fase)
+    private static RegraDeComprovacao GrupoDaFaseComItens(FaseCronograma fase)
     {
         RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(
             FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeDocumentoDaFase(fase.Id, 0), RegraDeDocumentoDaFase(fase.Id, 1)]).Value!;
@@ -121,7 +121,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         FaseCronograma faseQueSai = Fase(2, "RECURSO");
         ProcessoSeletivo processo = ProcessoComFases(faseQueFica, faseQueSai);
         RegraDeComprovacao regraDeDocumentoQueFica = RegraDeDocumentoDaFase(faseQueFica.Id, 0);
-        processo.DefinirDocumentosExigidos([regraDeDocumentoQueFica, GrupoAninhadoDaFase(faseQueSai)])
+        processo.DefinirDocumentosExigidos([regraDeDocumentoQueFica, GrupoDaFaseComItens(faseQueSai)])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(

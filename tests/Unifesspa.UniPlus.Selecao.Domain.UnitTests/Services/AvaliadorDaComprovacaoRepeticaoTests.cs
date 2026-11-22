@@ -183,7 +183,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
     }
 
     [Fact(DisplayName = "Regras reidratadas com repetição dentro de repetição são recusadas")]
-    public void RepeticaoPorGrupo_AninhadaViaReidratar_Recusa()
+    public void RepeticaoDentroDeRepeticao_ViaReidratar_Recusa()
     {
         DocumentoExigido documento = DocumentoGeral();
         RegraDeComprovacao regraInterna = RegraDeComprovacao.ReidratarRegraDeDocumento(

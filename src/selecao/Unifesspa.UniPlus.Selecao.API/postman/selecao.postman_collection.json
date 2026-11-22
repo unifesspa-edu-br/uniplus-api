@@ -4611,11 +4611,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('regra de todos os itens com 2 regras de documento', () => {",
-                  "  const raizes = pm.response.json().regrasDeComprovacao;",
-                  "  pm.expect(raizes).to.have.lengthOf(1);",
-                  "  pm.expect(raizes[0].forma.codigo).to.eql('TODOS_OS_ITENS');",
-                  "  pm.expect(raizes[0].itens).to.have.lengthOf(2);",
-                  "  raizes[0].itens.forEach(f => pm.expect(f.forma.codigo).to.eql('DOCUMENTO'));",
+                  "  const regrasSemGrupo = pm.response.json().regrasDeComprovacao;",
+                  "  pm.expect(regrasSemGrupo).to.have.lengthOf(1);",
+                  "  pm.expect(regrasSemGrupo[0].forma.codigo).to.eql('TODOS_OS_ITENS');",
+                  "  pm.expect(regrasSemGrupo[0].itens).to.have.lengthOf(2);",
+                  "  regrasSemGrupo[0].itens.forEach(f => pm.expect(f.forma.codigo).to.eql('DOCUMENTO'));",
                   "});"
                 ]
               }
@@ -5124,7 +5124,7 @@
           }
         },
         {
-          "name": "Padrão 2 — E[OU[RG,CPF], Certidão] por membro da composição familiar: PUT",
+          "name": "Padrão 2 — RG ou CPF e Certidão por membro da composição familiar: PUT",
           "request": {
             "method": "PUT",
             "header": [
@@ -5179,7 +5179,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"204 No Content — E[OU[RG,CPF], Certidão] por membro da composição familiar: PUT\", () => {",
+                  "pm.test(\"204 No Content — RG ou CPF e Certidão por membro da composição familiar: PUT\", () => {",
                   "  pm.response.to.have.status(204);",
                   "});"
                 ]
@@ -5188,7 +5188,7 @@
           ]
         },
         {
-          "name": "Padrão 2 — E[OU[RG,CPF], Certidão]: verificar regras persistidas",
+          "name": "Padrão 2 — RG ou CPF e Certidão: verificar regras persistidas",
           "request": {
             "method": "GET",
             "header": [],
@@ -5223,17 +5223,17 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('grupo repetível com quantidade mínima de itens e regra de documento', () => {",
-                  "  const raiz = pm.response.json().regrasDeComprovacao[0];",
-                  "  pm.expect(raiz.forma.codigo).to.eql('TODOS_OS_ITENS');",
-                  "  pm.expect(raiz.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
-                  "  pm.expect(raiz.itens).to.have.lengthOf(2);",
-                  "  const ou = raiz.itens.find(f => f.forma.codigo === 'QUANTIDADE_MINIMA_DE_ITENS');",
-                  "  pm.expect(ou, 'grupo de quantidade mínima (RG ou CPF)').to.not.be.undefined;",
-                  "  pm.expect(ou.itens).to.have.lengthOf(2);",
-                  "  pm.expect(ou.cardinalidade.quantidadeMinima).to.eql(1);",
-                  "  const certidao = raiz.itens.find(f => f.forma.codigo === 'DOCUMENTO');",
+                  "  const grupoDeTodosOsItens = pm.response.json().regrasDeComprovacao[0];",
+                  "  pm.expect(grupoDeTodosOsItens.forma.codigo).to.eql('TODOS_OS_ITENS');",
+                  "  pm.expect(grupoDeTodosOsItens.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
+                  "  pm.expect(grupoDeTodosOsItens.itens).to.have.lengthOf(2);",
+                  "  const grupoDeQuantidadeMinima = grupoDeTodosOsItens.itens.find(f => f.forma.codigo === 'QUANTIDADE_MINIMA_DE_ITENS');",
+                  "  pm.expect(grupoDeQuantidadeMinima, 'grupo de quantidade mínima (RG ou CPF)').to.not.be.undefined;",
+                  "  pm.expect(grupoDeQuantidadeMinima.itens).to.have.lengthOf(2);",
+                  "  pm.expect(grupoDeQuantidadeMinima.cardinalidade.quantidadeMinima).to.eql(1);",
+                  "  const certidao = grupoDeTodosOsItens.itens.find(f => f.forma.codigo === 'DOCUMENTO');",
                   "  pm.expect(certidao, 'regra de documento (Certidão)').to.not.be.undefined;",
-                  "  pm.expect(ou.grupoDoFormularioParaRepeticao, 'repetição não aninha — só a raiz carrega').to.be.null;",
+                  "  pm.expect(grupoDeQuantidadeMinima.grupoDoFormularioParaRepeticao, 'não há repetição dentro de repetição').to.be.null;",
                   "});"
                 ]
               }
@@ -5841,10 +5841,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('regra de documento repetível com gatilho por atributo do grupo', () => {",
-                  "  const raiz = pm.response.json().regrasDeComprovacao[0];",
-                  "  pm.expect(raiz.forma.codigo).to.eql('DOCUMENTO');",
-                  "  pm.expect(raiz.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
-                  "  pm.expect(raiz.documento.aplicabilidade.condicoes[0].fato).to.eql('SOB_GUARDA');",
+                  "  const regraDeDocumento = pm.response.json().regrasDeComprovacao[0];",
+                  "  pm.expect(regraDeDocumento.forma.codigo).to.eql('DOCUMENTO');",
+                  "  pm.expect(regraDeDocumento.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
+                  "  pm.expect(regraDeDocumento.documento.aplicabilidade.condicoes[0].fato).to.eql('SOB_GUARDA');",
                   "});"
                 ]
               }
@@ -6451,14 +6451,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('raiz OU com consequência e base legal própria', () => {",
-                  "  const raiz = pm.response.json().regrasDeComprovacao[0];",
-                  "  pm.expect(raiz.forma.codigo).to.eql('QUANTIDADE_MINIMA_DE_ITENS');",
-                  "  pm.expect(raiz.indeferimento.consequencia).to.eql('ELIMINA');",
-                  "  pm.expect(raiz.indeferimento.basesLegais).to.have.lengthOf(1);",
-                  "  pm.expect(raiz.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
-                  "  pm.expect(raiz.itens).to.have.lengthOf(2);",
-                  "  const fatos = raiz.itens[0].documento.aplicabilidade.condicoes.map(c => c.fato).sort();",
+                  "pm.test('grupo com quantidade mínima de itens, consequência e base legal própria', () => {",
+                  "  const grupoDeQuantidadeMinima = pm.response.json().regrasDeComprovacao[0];",
+                  "  pm.expect(grupoDeQuantidadeMinima.forma.codigo).to.eql('QUANTIDADE_MINIMA_DE_ITENS');",
+                  "  pm.expect(grupoDeQuantidadeMinima.indeferimento.consequencia).to.eql('ELIMINA');",
+                  "  pm.expect(grupoDeQuantidadeMinima.indeferimento.basesLegais).to.have.lengthOf(1);",
+                  "  pm.expect(grupoDeQuantidadeMinima.grupoDoFormularioParaRepeticao).to.eql('COMPOSICAO_FAMILIAR');",
+                  "  pm.expect(grupoDeQuantidadeMinima.itens).to.have.lengthOf(2);",
+                  "  const fatos = grupoDeQuantidadeMinima.itens[0].documento.aplicabilidade.condicoes.map(c => c.fato).sort();",
                   "  pm.expect(fatos, 'AND entre MAIOR_IDADE e SEM_RENDA na mesma cláusula').to.eql(['MAIOR_IDADE', 'SEM_RENDA']);",
                   "});"
                 ]
@@ -7108,10 +7108,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('grupo de todos os itens repetível por pessoa jurídica', () => {",
-                  "  const raiz = pm.response.json().regrasDeComprovacao[0];",
-                  "  pm.expect(raiz.forma.codigo).to.eql('TODOS_OS_ITENS');",
-                  "  pm.expect(raiz.grupoDoFormularioParaRepeticao).to.eql('PESSOAS_JURIDICAS');",
-                  "  pm.expect(raiz.itens).to.have.lengthOf(2);",
+                  "  const grupoDeTodosOsItens = pm.response.json().regrasDeComprovacao[0];",
+                  "  pm.expect(grupoDeTodosOsItens.forma.codigo).to.eql('TODOS_OS_ITENS');",
+                  "  pm.expect(grupoDeTodosOsItens.grupoDoFormularioParaRepeticao).to.eql('PESSOAS_JURIDICAS');",
+                  "  pm.expect(grupoDeTodosOsItens.itens).to.have.lengthOf(2);",
                   "});"
                 ]
               }

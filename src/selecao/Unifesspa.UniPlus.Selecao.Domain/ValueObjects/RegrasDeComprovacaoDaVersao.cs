@@ -19,7 +19,7 @@ public sealed record RegrasDeComprovacaoDaVersao
     /// <summary>
     /// Constrói as regras sem grupo que as contenha a partir da configuração reidratada da versão publicada.
     /// </summary>
-    public static RegrasDeComprovacaoDaVersao DeGrafoReidratado(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
+    public static RegrasDeComprovacaoDaVersao DaConfiguracaoPublicada(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
         ArgumentNullException.ThrowIfNull(regrasSemGrupo);
         return new RegrasDeComprovacaoDaVersao([.. regrasSemGrupo]);

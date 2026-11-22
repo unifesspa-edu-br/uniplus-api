@@ -187,14 +187,14 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
 
     internal void VincularPai(Guid regraQueContemId) => RegraQueContemId = regraQueContemId;
 
-    public IEnumerable<RegraDeComprovacao> AchatarComDescendentes()
+    public IEnumerable<RegraDeComprovacao> EnumerarRegraEItens()
     {
         yield return this;
         foreach (RegraDeComprovacao item in _itens)
         {
-            foreach (RegraDeComprovacao descendente in item.AchatarComDescendentes())
+            foreach (RegraDeComprovacao regraContida in item.EnumerarRegraEItens())
             {
-                yield return descendente;
+                yield return regraContida;
             }
         }
     }

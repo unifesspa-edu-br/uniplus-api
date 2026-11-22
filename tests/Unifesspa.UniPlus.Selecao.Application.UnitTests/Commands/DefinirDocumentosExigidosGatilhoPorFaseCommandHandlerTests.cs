@@ -27,7 +27,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDosDo
 /// </summary>
 public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
 {
-    [Theory(DisplayName = "O gatilho da regra de documento repetida cita o campo do grupo, marcada na regraDeDocumento ou herdada do grupo ancestral")]
+    [Theory(DisplayName = "O gatilho da regra de documento repetida cita o campo do grupo, marcada na regra de documento ou herdada do grupo que contém a regra")]
     [InlineData(false)]
     [InlineData(true)]
     public async Task Handle_GatilhoPorCampoDoGrupo_AceitoNasRegrasRepetidas(bool herdadaDoGrupo)

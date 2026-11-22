@@ -153,7 +153,7 @@ public sealed class ExigenciasDeFasePosteriorTests
         ConfiguracaoAvaliavel configuracao = new(
             DefinicaoComUmaEtapaPorFinalidade(),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            RegrasDeComprovacaoDaVersao.DeGrafoReidratado([.. Finalidades.Select((f, indice) => RegraDeComprovacao.CriarRegraDeDocumento(documentos[f], indice).Value!)]),
+            RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([.. Finalidades.Select((f, indice) => RegraDeComprovacao.CriarRegraDeDocumento(documentos[f], indice).Value!)]),
             [],
             [],
             [],

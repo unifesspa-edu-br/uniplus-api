@@ -197,8 +197,8 @@ public sealed class RegraDeComprovacaoTests
         resultado.Value!.DeterminaResultado().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "CriarGrupo recusa repetição aninhada — grupo repetido com regra de documento também repetida")]
-    public void CriarGrupo_RepeticaoAninhadaDireta_Recusa()
+    [Fact(DisplayName = "CriarGrupo recusa repetição dentro de repetição — grupo repetido com regra de documento também repetida")]
+    public void CriarGrupo_RepeticaoDentroDeRepeticaoDireta_Recusa()
     {
         RegraDeComprovacao regraDeDocumentoRepetida = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
@@ -210,8 +210,8 @@ public sealed class RegraDeComprovacaoTests
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.RepeticaoDentroDeRepeticao");
     }
 
-    [Fact(DisplayName = "CriarGrupo recusa repetição aninhada mesmo profunda (grupo repetido → grupo de todos os itens → regra de documento repetida)")]
-    public void CriarGrupo_RepeticaoAninhadaProfunda_Recusa()
+    [Fact(DisplayName = "CriarGrupo recusa repetição dentro de repetição mesmo profunda (grupo repetido → grupo de todos os itens → regra de documento repetida)")]
+    public void CriarGrupo_RepeticaoDentroDeRepeticaoProfunda_Recusa()
     {
         RegraDeComprovacao regraDeDocumentoRepetida = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
@@ -255,8 +255,8 @@ public sealed class RegraDeComprovacaoTests
         grupoDeQuantidadeMinima.DeterminaResultado().Should().BeFalse();
     }
 
-    [Fact(DisplayName = "AchatarComDescendentes devolve a regra e todos os itens contidos")]
-    public void AchatarComDescendentes_RegrasAninhadas_DevolveTodasAsRegras()
+    [Fact(DisplayName = "EnumerarRegraEItens devolve a regra e todos os itens contidos")]
+    public void EnumerarRegraEItens_RegrasDentroDeGrupo_DevolveTodasAsRegras()
     {
         Guid faseId = Guid.CreateVersion7();
         RegraDeComprovacao rg = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!;
@@ -265,7 +265,7 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao cin = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, cin]).Value!;
 
-        List<RegraDeComprovacao> regras = [.. regraSemGrupo.AchatarComDescendentes()];
+        List<RegraDeComprovacao> regras = [.. regraSemGrupo.EnumerarRegraEItens()];
 
         regras.Should().HaveCount(5);
         regras.Should().Contain(new[] { regraSemGrupo, grupoDeTodos, rg, cpf, cin });

@@ -15,7 +15,7 @@ public static class RegrasDasExigencias
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        List<RegraDeComprovacao> todasAsRegras = [.. regrasSemGrupo.SelectMany(static regra => regra.AchatarComDescendentes())];
+        List<RegraDeComprovacao> todasAsRegras = [.. regrasSemGrupo.SelectMany(static regra => regra.EnumerarRegraEItens())];
         List<DocumentoExigido> documentos = [.. todasAsRegras
             .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
             .Select(static regra => regra.DocumentoExigido!)];

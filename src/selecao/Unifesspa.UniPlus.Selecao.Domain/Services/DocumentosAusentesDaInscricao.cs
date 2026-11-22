@@ -69,7 +69,7 @@ public static class DocumentosAusentesDaInscricao
     private static void RegistrarAusentes(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
     {
-        DocumentoExigido[] faltantes = [.. regra.AchatarComDescendentes()
+        DocumentoExigido[] faltantes = [.. regra.EnumerarRegraEItens()
             .Where(static n => n.Forma == FormaDeComprovacao.Documento && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
             .Where(n => SituacaoDe(n, ocorrenciaId, resultado, porOcorrencia) == SituacaoDaComprovacao.PendenteDeComprovacao)
             .Select(static n => n.DocumentoExigido!)

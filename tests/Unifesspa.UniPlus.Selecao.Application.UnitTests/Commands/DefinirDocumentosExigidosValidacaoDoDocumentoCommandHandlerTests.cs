@@ -27,8 +27,8 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDosDo
 /// </summary>
 public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerTests
 {
-    [Fact(DisplayName = "ADR-0125: base legal inválida em regra aninhada é recusada e consulta os cadastros")]
-    public async Task Handle_BaseLegalInvalidaEmRegraDeDocumentoAninhada_RecusaEConsultaReaders()
+    [Fact(DisplayName = "ADR-0125: base legal inválida em regra dentro de grupo é recusada e consulta os cadastros")]
+    public async Task Handle_BaseLegalInvalidaEmRegraDeDocumentoDentroDeGrupo_RecusaEConsultaReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput documentoInformado = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("", "FEDERAL", "RESOLVIDO", null)).Construir();
@@ -39,8 +39,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         await cenario.Mocks.TipoDocumentoReader.Received().ObterPorIdAsync(cenario.TipoDocumentoId, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "ADR-0125: aplicabilidade inválida em regra aninhada é recusada e consulta os cadastros")]
-    public async Task Handle_AplicabilidadeInvalidaEmRegraDeDocumentoAninhada_RecusaEConsultaReaders()
+    [Fact(DisplayName = "ADR-0125: aplicabilidade inválida em regra dentro de grupo é recusada e consulta os cadastros")]
+    public async Task Handle_AplicabilidadeInvalidaEmRegraDeDocumentoDentroDeGrupo_RecusaEConsultaReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput documentoInformado = cenario.ItemGeral().ComAplicabilidade("INVALIDA").Construir();

@@ -81,7 +81,7 @@ internal static class DependenciasDaInscricao
     /// <summary>
     /// O que os fatos alcançam: as dependências das derivações e, de cada campo e agregado alcançado,
     /// o que decide se ele aparece e é exigido — a resposta que esconde o campo também muda a
-    /// avaliação, porque a resposta escondida deixa de valer.
+    /// avaliação, pois a resposta escondida não é considerada.
     /// </summary>
     internal static FechamentoDasDependencias Fechamento(DefinicaoFormulario definicao, IEnumerable<string> citados)
     {

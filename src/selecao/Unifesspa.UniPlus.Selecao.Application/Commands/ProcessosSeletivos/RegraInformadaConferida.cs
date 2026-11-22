@@ -4,7 +4,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-/// <summary>Um item enviado, sua declaração e recusas, com seus descendentes e posição de origem.</summary>
+/// <summary>Um item enviado, sua declaração e recusas, com os itens contidos e posição de origem.</summary>
 internal sealed record RegraInformadaConferida(
     RegraDeComprovacaoInformada Entrada,
     DeclaracaoDaRegraDeComprovacao Declaracao,

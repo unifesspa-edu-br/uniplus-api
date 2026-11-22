@@ -37,7 +37,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         ItemGeral().ComIdadeMaxima(idadeMaximaEmissao).ComTamanhoMaximo(tamanhoMaximoBytes).Construir();
 
     private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
-        ValidarRaiz(RegraDeComprovacaoDeTeste.DeDocumento(item).Construir());
+        ValidarRegra(RegraDeComprovacaoDeTeste.DeDocumento(item).Construir());
 
     [Fact(DisplayName = "Item sem base legal (lista vazia) é aceito — a coerência com o gate é da publicação")]
     public void Aceita_SemBaseLegal() =>
@@ -192,18 +192,18 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
 
     // ── Cardinalidade qualificada — RegraDeComprovacaoInformadaValidator, chave da distinção ──
 
-    private static ValidationResult ValidarRaiz(RegraDeComprovacaoInformada raiz) =>
+    private static ValidationResult ValidarRegra(RegraDeComprovacaoInformada regraInformada) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(
-            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz]));
+            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [regraInformada]));
 
     [Theory(DisplayName = "Critério de distinção desconhecido segue para a conferência do domínio")]
     [InlineData("")]
     [InlineData("   ")]
     public void AceitaForma_CriterioDeDistincaoDasApresentacoesVaziaOuEmBranco(string chaveInvalida)
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComDistincao(chaveInvalida).Construir();
+        RegraDeComprovacaoInformada regraComDistincao = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComDistincao(chaveInvalida).Construir();
 
-        ValidationResult resultado = ValidarRaiz(raiz);
+        ValidationResult resultado = ValidarRegra(regraComDistincao);
 
         resultado.IsValid.Should().BeTrue();
     }
@@ -211,56 +211,56 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     [Fact(DisplayName = "A chave de distinção do catálogo fechado é aceita")]
     public void Aceita_CriterioDeDistincaoDasApresentacoesValida()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom())
+        RegraDeComprovacaoInformada regraComDistincao = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom())
             .ComQuantidadeMinima(1)
             .ComDistincao("COMPETENCIA_MENSAL", new DateOnly(2026, 1, 1))
             .Construir();
 
-        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+        ValidarRegra(regraComDistincao).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Quantidade mínima do grupo é conferida pelo domínio")]
     public void Aceita_QuantidadeMinimaEmGrupoDeTodosOsItens_ParaConferenciaPeloDominio()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("TODOS_OS_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComQuantidadeMinima(2).Construir();
+        RegraDeComprovacaoInformada grupoDeTodosOsItens = RegraDeComprovacaoDeTeste.Grupo("TODOS_OS_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComQuantidadeMinima(2).Construir();
 
-        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+        ValidarRegra(grupoDeTodosOsItens).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Grupo com quantidade mínima de itens não admite distinção de apresentações")]
     public void Rejeita_DistincaoEmGrupoDeQuantidadeMinima()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComDistincao("OCORRENCIA").Construir();
+        RegraDeComprovacaoInformada grupoDeQuantidadeMinima = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComDistincao("OCORRENCIA").Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("critério de distinção", StringComparison.Ordinal));
+        ValidarRegra(grupoDeQuantidadeMinima).Errors.Should().Contain(e => e.ErrorMessage.Contains("critério de distinção", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Regra de documento não admite consequência própria de grupo")]
     public void Rejeita_IndeferimentoDeGrupoEmRegraDeDocumento()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComIndeferimento("ELIMINA").Construir();
+        RegraDeComprovacaoInformada regraDeDocumento = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComIndeferimento("ELIMINA").Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("consequência própria", StringComparison.Ordinal));
+        ValidarRegra(regraDeDocumento).Errors.Should().Contain(e => e.ErrorMessage.Contains("consequência própria", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Base legal sem consequência é conferida pelo domínio")]
     public void Rejeita_BasesLegaisDeGrupoSemConsequencia()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
+        RegraDeComprovacaoInformada grupoDeQuantidadeMinima = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
             .ComIndeferimento(null, new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
             .Construir();
 
-        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+        ValidarRegra(grupoDeQuantidadeMinima).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Grupo com quantidade mínima de itens aceita consequência e bases legais")]
     public void Aceita_GrupoDeQuantidadeMinimaComConsequenciaEBasesLegais()
     {
-        RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
+        RegraDeComprovacaoInformada grupoDeQuantidadeMinima = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
             .ComQuantidadeMinima(1)
             .ComIndeferimento("ELIMINA", new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
             .Construir();
 
-        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+        ValidarRegra(grupoDeQuantidadeMinima).IsValid.Should().BeTrue();
     }
 }

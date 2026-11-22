@@ -28,7 +28,7 @@ internal static class CoerenciaEntreBlocos
     /// <returns>O envelope reidratado, ou a primeira incoerência.</returns>
     internal static Result<EnvelopeReidratado> Conferir(BlocosDoEnvelope blocos, VersaoConfiguracao versao, JsonObject payload)
     {
-        IReadOnlyList<RegraDeComprovacao> todasAsRegras = [.. blocos.RegrasSemGrupo.SelectMany(static regra => regra.AchatarComDescendentes())];
+        IReadOnlyList<RegraDeComprovacao> todasAsRegras = [.. blocos.RegrasSemGrupo.SelectMany(static regra => regra.EnumerarRegraEItens())];
         if (PrimeiraIncoerencia(blocos, versao, payload, todasAsRegras) is { } incoerencia)
         {
             return Result<EnvelopeReidratado>.Failure(incoerencia);

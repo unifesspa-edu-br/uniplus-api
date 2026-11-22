@@ -47,7 +47,7 @@ public static class ConfiguracaoAvaliavelDoProcesso
         return new ConfiguracaoAvaliavel(
             avaliavel.Definicao,
             avaliavel.Ofertas,
-            RegrasDeComprovacaoDaVersao.DeGrafoReidratado([.. configuracao.Exigencias.RegrasDeComprovacao.Where(static n => n.RegraQueContemId is null)]),
+            RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([.. configuracao.Exigencias.RegrasDeComprovacao.Where(static regra => regra.RegraQueContemId is null)]),
             [.. configuracao.Coleta.Itens],
             configuracao.Coleta.GruposColetados,
             [.. DerivacoesDaOferta.DistribuicaoDasOfertas(configuracao.Vagas.DistribuicaoVagas, ofertasDeCurso ?? []).SelectMany(static d => d.Modalidades)],
