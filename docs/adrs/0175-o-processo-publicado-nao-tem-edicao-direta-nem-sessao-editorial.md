@@ -59,7 +59,7 @@ A conferência única da configuração ([ADR-0174](0174-conferencia-unica-da-co
 
 ## Confirmação
 
-Testes de unidade fixam, por dimensão, a recusa em processo publicado e em processo encerrado e a gravação em rascunho sem `If-Match`; fixam também a recusa, no congelamento, do fato ausente de versão publicada e do fato coletado retirado, a conferência do identificador imutável e a da justificativa do motivo. Os testes de arquitetura de catálogo de erros e de baseline do OpenAPI garantem que nenhum código ou rota da sessão sobrevive.
+Testes de unidade fixam, por dimensão, a recusa em processo publicado e em processo encerrado e a gravação em rascunho sem `If-Match`; fixam também a recusa, no congelamento, do fato ausente de versão publicada e do fato coletado retirado, a conferência do identificador imutável e a da justificativa do motivo. Os testes de contrato do catálogo de erros e do OpenAPI garantem que nenhum código ou rota da sessão sobrevive.
 
 ## Prós e contras das opções
 
@@ -77,3 +77,7 @@ Testes de unidade fixam, por dimensão, a recusa em processo publicado e em proc
 
 - Substitui a [ADR-0110](0110-retificacao-como-sessao-editorial.md). Emenda a [ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md).
 - Relacionadas: [ADR-0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md), [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md), [ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md).
+
+## Emenda (2026-11-22) — projeto de testes
+
+O catálogo de erros e os contratos OpenAPI são conferidos em `Unifesspa.UniPlus.Contratos.UnitTests`.

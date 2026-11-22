@@ -349,7 +349,7 @@ public static class ObterProcessoSeletivoQueryHandler
 # Compilar: só os avisos das métricas de qualidade (MA0051, S104, S107, S3776, S1541) são admitidos
 dotnet build
 
-# Testes unitários
+# Testes unitários e de arquitetura (inclui Contratos.UnitTests)
 dotnet test --filter "FullyQualifiedName!~IntegrationTests"
 
 # Testes de integração (requer Docker)

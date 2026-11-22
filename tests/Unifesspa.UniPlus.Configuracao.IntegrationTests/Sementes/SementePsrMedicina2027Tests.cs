@@ -76,14 +76,14 @@ public sealed class SementePsrMedicina2027Tests
     public async Task Reaplicar_NaoDuplicaNemAltera()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        string antes = await ConsultarDadosDaSementeAsync(ctx);
+        string antes = await LerEstadoAsync(ctx);
 
         foreach (ComandoDaSemente comando in SementePsrMedicina2027.ComandosDoTipoTermosEFatos())
         {
             await ctx.Database.ExecuteSqlRawAsync(comando.Texto);
         }
 
-        (await ConsultarDadosDaSementeAsync(ctx)).Should().Be(antes);
+        (await LerEstadoAsync(ctx)).Should().Be(antes);
     }
 
     [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município conforme a forma de conclusão do ensino médio")]
@@ -283,7 +283,7 @@ public sealed class SementePsrMedicina2027Tests
     }
 
     /// <summary>A contagem e o conteúdo das linhas que a semente grava, para comparar antes e depois.</summary>
-    private static async Task<string> ConsultarDadosDaSementeAsync(UniPlusDbContext ctx)
+    private static async Task<string> LerEstadoAsync(UniPlusDbContext ctx)
     {
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """

@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.Fixtures;
+namespace Unifesspa.UniPlus.Contratos.UnitTests.Fixtures;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

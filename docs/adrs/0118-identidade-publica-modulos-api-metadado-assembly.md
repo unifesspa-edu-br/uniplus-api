@@ -237,3 +237,7 @@ suas convenções específicas e não recebem automaticamente o prefixo de módu
 - [Microsoft — Work with the application model in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/mvc/controllers/application-model?view=aspnetcore-10.0).
 - [Microsoft — Application Parts in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/mvc/advanced/app-parts?view=aspnetcore-10.0).
 - [Microsoft — Assembly-level attributes in C#](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/attributes/global).
+
+## Emenda (2026-11-22) — projeto de testes
+
+`ApiModuleMetadataTests` é executado no projeto `Unifesspa.UniPlus.Contratos.UnitTests`.
