@@ -116,7 +116,7 @@ public sealed record RequisitosDoDocumentoInput(
 }
 
 /// <summary>
-/// Entrada de uma exigência documental, usada por <see cref="NoExigenciaInput"/>. O handler resolve o tipo
+/// Entrada de uma exigência documental, usada por <see cref="RegraDeComprovacaoInformada"/>. O handler resolve o tipo
 /// de documento contra o módulo Configuração e congela os atributos vigentes por valor (ADR-0061): o cliente
 /// não os declara.
 /// </summary>
@@ -184,12 +184,12 @@ public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IRea
 /// ocorrência do grupo, nunca aninhada. Grupo que o processo não tem é recusado como
 /// <c>NoExigencia.TipoEntidadeInvalido</c>. Ausente, o nó não repete.
 /// </param>
-public sealed record NoExigenciaInput(
+public sealed record RegraDeComprovacaoInformada(
     string Tipo,
     ItemDocumentoExigidoInput? Documento = null,
     CardinalidadeQualificadaInput? Cardinalidade = null,
     IndeferimentoDoGrupoInput? Indeferimento = null,
-    IReadOnlyList<NoExigenciaInput>? Filhos = null,
+    IReadOnlyList<RegraDeComprovacaoInformada>? Filhos = null,
     string? RepetePorEntidade = null);
 
 /// <summary>
@@ -199,4 +199,4 @@ public sealed record NoExigenciaInput(
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<NoExigenciaInput> Raizes) : ICommand<Result>;
+    IReadOnlyList<RegraDeComprovacaoInformada> Raizes) : ICommand<Result>;

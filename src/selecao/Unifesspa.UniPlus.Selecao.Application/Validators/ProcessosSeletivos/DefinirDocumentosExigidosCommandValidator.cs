@@ -33,7 +33,7 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
         RuleForEach(x => x.Raizes)
             .NotNull()
             .WithMessage("Nó raiz não pode ser nulo.")
-            .SetValidator(new NoExigenciaInputValidator());
+            .SetValidator(new RegraDeComprovacaoInformadaValidator());
 
         RuleFor(x => x.Raizes)
             .Must(static raizes => ProfundidadeMaxima(raizes, 1) <= MaxProfundidadeArvore)
@@ -41,7 +41,7 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
             .WithMessage($"A árvore de satisfação excede a profundidade operacional máxima ({MaxProfundidadeArvore}).");
     }
 
-    private static int ProfundidadeMaxima(IReadOnlyList<NoExigenciaInput>? nos, int profundidadeAtual) =>
+    private static int ProfundidadeMaxima(IReadOnlyList<RegraDeComprovacaoInformada>? nos, int profundidadeAtual) =>
         nos is not { Count: > 0 }
             ? profundidadeAtual - 1
             : nos.Max(no => ProfundidadeMaxima(no.Filhos, profundidadeAtual + 1));

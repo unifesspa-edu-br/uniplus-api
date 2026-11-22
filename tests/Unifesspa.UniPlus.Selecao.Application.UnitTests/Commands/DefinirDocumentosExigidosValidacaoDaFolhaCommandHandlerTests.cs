@@ -80,9 +80,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_DeclaracoesInvalidasEmNosDiferentes_AcumulaComCaminhos()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        NoExigenciaInput semDocumento = new("FOLHA");
-        NoExigenciaInput desconhecido = new("XOR");
-        NoExigenciaInput grupo = new("E", Filhos: [desconhecido]);
+        RegraDeComprovacaoInformada semDocumento = new("FOLHA");
+        RegraDeComprovacaoInformada desconhecido = new("XOR");
+        RegraDeComprovacaoInformada grupo = new("E", Filhos: [desconhecido]);
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, grupo]));
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             ("nos[0].documento", "NoExigencia.DocumentoObrigatorioEmFolha"),
@@ -94,8 +94,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_DistincaoEOutroNoInvalidos_AcumulaAntesDosCadastros()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        NoExigenciaInput folha = NoExigenciaDeTeste.Folha(cenario.ItemGeral().Construir()).ComDistincao("COMPETENCIA_MENSAL").Construir();
-        NoExigenciaInput semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada folha = NoExigenciaDeTeste.Folha(cenario.ItemGeral().Construir()).ComDistincao("COMPETENCIA_MENSAL").Construir();
+        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [folha, semDocumento]));
 
@@ -109,8 +109,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_RepeticaoEOutroNoInvalidos_AcumulaSemRepetirCodigo()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        NoExigenciaInput repetida = new("FOLHA", cenario.ItemGeral().Construir(), RepetePorEntidade: "INEXISTENTE");
-        NoExigenciaInput semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada repetida = new("FOLHA", cenario.ItemGeral().Construir(), RepetePorEntidade: "INEXISTENTE");
+        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [repetida, semDocumento]));
 
@@ -125,7 +125,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), Finalidade = "ISENCAO_TAXA" } };
-        NoExigenciaInput grupo = GrupoCom(primeira, outra);
+        RegraDeComprovacaoInformada grupo = GrupoCom(primeira, outra);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo, grupo]));
 
@@ -134,7 +134,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
             ("nos[1].filhos", "NoExigencia.GrupoComFasesDiferentes"), ("nos[1].filhos", "NoExigencia.GrupoComFinalidadesDiferentes"));
     }
 
-    private static NoExigenciaInput GrupoCom(ItemDocumentoExigidoInput primeira, ItemDocumentoExigidoInput outra) =>
+    private static RegraDeComprovacaoInformada GrupoCom(ItemDocumentoExigidoInput primeira, ItemDocumentoExigidoInput outra) =>
         new("E", Filhos: [new("FOLHA", primeira), new("FOLHA", outra)]);
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), Finalidade = "ISENCAO_TAXA" } };
-        NoExigenciaInput semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, GrupoCom(primeira, outra)]));
 
@@ -157,8 +157,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
         ItemDocumentoExigidoInput item = cenario.ItemCondicional(new CondicaoGatilhoInput(0, "FATO_FICTICIO", "IGUAL", "SIM")).Construir();
-        NoExigenciaInput folha = new("FOLHA", item, null, null, null, null);
-        NoExigenciaInput grupo = new("E", Filhos: [folha], RepetePorEntidade: "GRUPO_INEXISTENTE");
+        RegraDeComprovacaoInformada folha = new("FOLHA", item, null, null, null, null);
+        RegraDeComprovacaoInformada grupo = new("E", Filhos: [folha], RepetePorEntidade: "GRUPO_INEXISTENTE");
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo]));
 

@@ -12,7 +12,7 @@ internal sealed record NoExigenciaDeTeste
 
     private ItemDocumentoExigidoInput? Documento { get; init; }
 
-    private IReadOnlyList<NoExigenciaInput>? Filhos { get; init; }
+    private IReadOnlyList<RegraDeComprovacaoInformada>? Filhos { get; init; }
 
     private int? QuantidadeMinima { get; init; }
 
@@ -29,7 +29,7 @@ internal sealed record NoExigenciaDeTeste
     public static NoExigenciaDeTeste Folha(ItemDocumentoExigidoDeTeste documento) => Folha(documento.Construir());
 
     /// <summary>O grupo <c>E</c> ou <c>OU</c> dos filhos.</summary>
-    public static NoExigenciaDeTeste Grupo(string tipo, params NoExigenciaInput[] filhos) => new() { Tipo = tipo, Filhos = filhos };
+    public static NoExigenciaDeTeste Grupo(string tipo, params RegraDeComprovacaoInformada[] filhos) => new() { Tipo = tipo, Filhos = filhos };
 
     public NoExigenciaDeTeste ComTipo(string tipo) => this with { Tipo = tipo };
 
@@ -44,7 +44,7 @@ internal sealed record NoExigenciaDeTeste
 
     public NoExigenciaDeTeste RepetidoPor(string grupo) => this with { RepetePorEntidade = grupo };
 
-    public NoExigenciaInput Construir() =>
+    public RegraDeComprovacaoInformada Construir() =>
         new(
             Tipo,
             Documento,

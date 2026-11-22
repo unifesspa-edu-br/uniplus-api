@@ -167,7 +167,7 @@ internal static class ProjecaoDaColeta
     private static ModeloDaExigenciaDto? ProjetarModelo(ModeloDaExigencia? modelo) => modelo is null ? null
         : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256);
 
-    // Um nó da árvore de satisfação, recursivamente, no mesmo formato de NoExigenciaInput (comando de escrita).
+    // Um nó da árvore de satisfação, recursivamente, no mesmo formato de RegraDeComprovacaoInformada (comando de escrita).
     private static NoExigenciaDto ProjetarNo(NoExigencia no) => new(
         no.Id,
         no.Tipo.ToCodigo(),

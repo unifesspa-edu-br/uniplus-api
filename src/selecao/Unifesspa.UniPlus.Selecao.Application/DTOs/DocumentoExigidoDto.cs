@@ -95,7 +95,7 @@ public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia
 
 /// <summary>
 /// DTO de leitura de UM nó da árvore de satisfação (<see cref="Domain.Entities.NoExigencia"/>,
-/// Story #920) — mesmo formato recursivo de <c>NoExigenciaInput</c> (comando de escrita),
+/// Story #920) — mesmo formato recursivo de <c>RegraDeComprovacaoInformada</c> (comando de escrita),
 /// round-trip GET→PUT direto (<see cref="Filhos"/> já vem na ORDEM persistida).
 /// </summary>
 public sealed record NoExigenciaDto(

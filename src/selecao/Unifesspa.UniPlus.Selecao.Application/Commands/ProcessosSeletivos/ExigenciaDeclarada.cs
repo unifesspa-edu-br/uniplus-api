@@ -37,12 +37,12 @@ internal static class ExigenciaDeclarada
 
     public static Guid? ModeloId(this ItemDocumentoExigidoInput item) => item.Requisitos?.Modelo?.ModeloId;
 
-    public static int? QuantidadeMinima(this NoExigenciaInput no) => no.Cardinalidade?.QuantidadeMinima;
+    public static int? QuantidadeMinima(this RegraDeComprovacaoInformada no) => no.Cardinalidade?.QuantidadeMinima;
 
-    public static DistincaoDasApresentacoesInput? Distincao(this NoExigenciaInput no) => no.Cardinalidade?.Distincao;
+    public static DistincaoDasApresentacoesInput? Distincao(this RegraDeComprovacaoInformada no) => no.Cardinalidade?.Distincao;
 
-    public static string? ConsequenciaDoGrupo(this NoExigenciaInput no) => no.Indeferimento?.Consequencia;
+    public static string? ConsequenciaDoGrupo(this RegraDeComprovacaoInformada no) => no.Indeferimento?.Consequencia;
 
-    public static IReadOnlyList<BaseLegalInput> BasesLegaisDoGrupo(this NoExigenciaInput no) =>
+    public static IReadOnlyList<BaseLegalInput> BasesLegaisDoGrupo(this RegraDeComprovacaoInformada no) =>
         no.Indeferimento?.BasesLegais ?? [];
 }

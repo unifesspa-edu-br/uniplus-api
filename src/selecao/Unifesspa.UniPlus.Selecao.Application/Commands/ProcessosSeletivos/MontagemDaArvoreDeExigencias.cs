@@ -100,7 +100,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
     }
 
     private async Task<Result<NoExigencia>> FolhaAsync(
-        NoExigenciaInput no, int ordem, string? grupoDaRepeticao, CancellationToken cancellationToken)
+        RegraDeComprovacaoInformada no, int ordem, string? grupoDaRepeticao, CancellationToken cancellationToken)
     {
         if (no.Documento is not { } folha)
         {
@@ -113,7 +113,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
             : CriarFolha(no, documento.Value!, ordem);
     }
 
-    private static Result<NoExigencia> CriarFolha(NoExigenciaInput no, DocumentoExigido documento, int ordem)
+    private static Result<NoExigencia> CriarFolha(RegraDeComprovacaoInformada no, DocumentoExigido documento, int ordem)
     {
         DeclaracaoDoNoDeExigencia declaracao = Declarar(no);
         return NoExigencia.CriarFolha(documento, ordem, declaracao.QuantidadeMinima,
@@ -121,7 +121,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
             no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas, no.RepetePorEntidade);
     }
 
-    private static Result<NoExigencia> CriarGrupo(NoExigenciaInput no, int ordem, DeclaracaoDoNoDeExigencia declaracao, IReadOnlyList<NoExigencia> filhos)
+    private static Result<NoExigencia> CriarGrupo(RegraDeComprovacaoInformada no, int ordem, DeclaracaoDoNoDeExigencia declaracao, IReadOnlyList<NoExigencia> filhos)
     {
         Result<IReadOnlyList<BaseLegalDaComprovacao>> basesLegais = BasesLegaisDoGrupo(no.BasesLegaisDoGrupo());
         return basesLegais.IsFailure
@@ -130,7 +130,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
                 declaracao.Tipo, ordem, declaracao.QuantidadeMinima, declaracao.Consequencia, basesLegais.Value!, filhos, no.RepetePorEntidade);
     }
 
-    private static DeclaracaoDoNoDeExigencia Declarar(NoExigenciaInput no) =>
+    private static DeclaracaoDoNoDeExigencia Declarar(RegraDeComprovacaoInformada no) =>
         DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, no.Documento is not null, no.Filhos?.Count ?? 0,
             no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no));
 
@@ -139,7 +139,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
             declaradas,
             static b => BaseLegalDaComprovacao.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
             static b => BaseLegalDaComprovacao.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
-    private static DistincaoDeclarada DistincaoDe(NoExigenciaInput no) =>
+    private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada no) =>
         DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);
 
 }

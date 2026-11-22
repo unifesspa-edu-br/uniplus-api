@@ -15,13 +15,13 @@ internal static class DefinicaoDosDocumentosExigidos
 {
     public static async Task<Result> DefinirAsync(
         ProcessoSeletivo processo,
-        IReadOnlyList<NoExigenciaInput> entradas,
+        IReadOnlyList<RegraDeComprovacaoInformada> entradas,
         IReadOnlyList<NoExigencia> mantidas,
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
         List<NoDeEntradaConferido> conferidos = EscritaDaArvoreDeExigencias.Conferir(entradas, processo.GruposColetados);
-        List<NoExigenciaInput> folhas = EscritaDaArvoreDeExigencias.FolhasConferidas(conferidos);
+        List<RegraDeComprovacaoInformada> folhas = EscritaDaArvoreDeExigencias.FolhasConferidas(conferidos);
         ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, folhas, cadastros, cancellationToken).ConfigureAwait(false);
         Result<List<NoExigencia>> raizes = await new MontagemDaArvoreDeExigencias(new MontagemDoDocumentoExigido(contexto))
             .MontarRaizesAsync(conferidos, ProximaOrdemDaRaiz(mantidas), cancellationToken).ConfigureAwait(false);
@@ -54,7 +54,7 @@ internal static class DefinicaoDosDocumentosExigidos
     // folha declara gatilho ou fato comprovado, que também é vínculo novo a conferir.
     private static async Task<ContextoDaMontagemDasExigencias> LerContextoAsync(
         ProcessoSeletivo processo,
-        IReadOnlyList<NoExigenciaInput> entradas,
+        IReadOnlyList<RegraDeComprovacaoInformada> entradas,
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {

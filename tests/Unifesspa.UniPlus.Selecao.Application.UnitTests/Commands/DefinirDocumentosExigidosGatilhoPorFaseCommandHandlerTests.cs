@@ -34,7 +34,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
         NoExigenciaDeTeste folha = NoExigenciaDeTeste.Folha(ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId));
-        NoExigenciaInput raiz = herdadaDoAncestral
+        RegraDeComprovacaoInformada raiz = herdadaDoAncestral
             ? NoExigenciaDeTeste.Grupo("E", folha.Construir()).RepetidoPor("COMPOSICAO_FAMILIAR").Construir()
             : folha.RepetidoPor("COMPOSICAO_FAMILIAR").Construir();
 

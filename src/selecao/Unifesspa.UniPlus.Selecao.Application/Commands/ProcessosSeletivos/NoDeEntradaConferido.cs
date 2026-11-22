@@ -6,7 +6,7 @@ using Kernel.Results;
 
 /// <summary>Um item enviado, sua declaração e recusas, com seus descendentes e posição de origem.</summary>
 internal sealed record NoDeEntradaConferido(
-    NoExigenciaInput Entrada,
+    RegraDeComprovacaoInformada Entrada,
     DeclaracaoDoNoDeExigencia Declaracao,
     string Caminho,
     int Indice,

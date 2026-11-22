@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Mapeamento único entre <see cref="TipoNo"/> e o código textual canônico do wire — mesma
 /// convenção de <see cref="ChaveDistincaoCodigo"/>, mas os
 /// tokens NÃO são UPPER_SNAKE do nome do membro: <c>FOLHA</c>/<c>E</c>/<c>OU</c> são os
-/// tokens já estabelecidos por <c>NoExigenciaInput</c>/<c>NoExigenciaDto</c> (comando de
+/// tokens já estabelecidos por <c>RegraDeComprovacaoInformada</c>/<c>NoExigenciaDto</c> (comando de
 /// escrita e DTO de leitura, Story #920) — este mapeamento só os centraliza para que o
 /// envelope canônico (Story #923) use exatamente os mesmos, sem uma terceira grafia.
 /// </summary>

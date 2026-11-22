@@ -43,7 +43,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             return Result.Success();
         }
 
-        Result<List<NoExigenciaInput>> entradas = await EntradasAsync(documentos, catalogo, cancellationToken).ConfigureAwait(false);
+        Result<List<RegraDeComprovacaoInformada>> entradas = await EntradasAsync(documentos, catalogo, cancellationToken).ConfigureAwait(false);
         if (entradas.IsFailure)
         {
             return Result.ValidationFailure(entradas.Errors);
@@ -116,13 +116,13 @@ internal sealed class SelecaoDosDocumentosDoModelo(
                 || c.Valor.ValueKind != JsonValueKind.String
                 || dominio.Valores.Contains(c.Valor.GetString()!)))];
 
-    private async Task<Result<List<NoExigenciaInput>>> EntradasAsync(
+    private async Task<Result<List<RegraDeComprovacaoInformada>>> EntradasAsync(
         IReadOnlyList<DocumentoExigidoDoModeloInput> documentos,
         IReadOnlyList<FatoCandidatoView> catalogo,
         CancellationToken cancellationToken)
     {
         List<FieldError> erros = [];
-        List<NoExigenciaInput> entradas = [];
+        List<RegraDeComprovacaoInformada> entradas = [];
         IReadOnlyDictionary<string, DominioDeValores> ofertados = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
         foreach ((int i, DocumentoExigidoDoModeloInput copia) in documentos.SelectMany((d, i) => PorOpcaoOfertada(d, ofertados).Select(c => (i, c))))
         {
@@ -146,12 +146,12 @@ internal sealed class SelecaoDosDocumentosDoModelo(
 
     // As cópias de um documento multiplicado pelas opções têm a mesma fase e o mesmo tipo: a recusa sai
     // uma vez, na posição do documento no modelo.
-    private static Result<List<NoExigenciaInput>> ResultadoDasEntradas(List<FieldError> erros, List<NoExigenciaInput> entradas) =>
+    private static Result<List<RegraDeComprovacaoInformada>> ResultadoDasEntradas(List<FieldError> erros, List<RegraDeComprovacaoInformada> entradas) =>
         erros.Count > 0
-            ? Result<List<NoExigenciaInput>>.ValidationFailure([.. erros.DistinctBy(static e => (e.Field, e.Error.Code))])
-            : Result<List<NoExigenciaInput>>.Success(entradas);
+            ? Result<List<RegraDeComprovacaoInformada>>.ValidationFailure([.. erros.DistinctBy(static e => (e.Field, e.Error.Code))])
+            : Result<List<RegraDeComprovacaoInformada>>.Success(entradas);
 
-    private async Task<NoExigenciaInput?> EntradaAsync(
+    private async Task<RegraDeComprovacaoInformada?> EntradaAsync(
         DocumentoExigidoDoModeloInput documento, string campo, List<FieldError> erros, CancellationToken cancellationToken)
     {
         FaseCronograma? fase = processo.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, documento.FaseCodigo, StringComparison.Ordinal));
@@ -179,7 +179,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente,
             $"O modelo exige o tipo de documento '{documento.TipoDocumentoCodigo}', que o catálogo não tem."));
 
-    private NoExigenciaInput FolhaDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
+    private RegraDeComprovacaoInformada FolhaDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
         new("FOLHA", DocumentoDaFolha(documento, fase, tipo), Cardinalidade: null, Indeferimento: null, Filhos: null);
 
     private ItemDocumentoExigidoInput DocumentoDaFolha(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
