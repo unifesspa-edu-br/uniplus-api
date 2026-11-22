@@ -7,7 +7,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// <c>Selecao.Infrastructure</c> (que é quem conhece o bucket via <c>StorageOptions</c> e envolve
 /// o <c>IStorageService</c> compartilhado de <c>Infrastructure.Core</c>). Application não
 /// referencia <c>Infrastructure.Core</c> diretamente (ADR-0042 — Application depende só de
-/// Domain/SharedKernel; a fitness test R3 do módulo protege a direção de dependência).
+/// Domain/SharedKernel; as referências dos projetos garantem a direção de dependência).
 /// </summary>
 public interface IArquivoArmazenadoStorage
 {

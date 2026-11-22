@@ -59,12 +59,12 @@ public static IActionResult ToActionResult<T>(this Result<T> result, IDomainErro
 
 Controllers consomem o mapper apenas via essa extension. Nenhum controller chama `Resolve` diretamente nem instancia `ProblemDetails` à mão. A construção do payload RFC 9457 (com `traceId`, `instance`, `errors[]`, `legal_reference`) é responsabilidade do `GlobalExceptionMiddleware` evoluído + dessa extension — não dos controllers individuais.
 
-### Boundary enforçado por ArchUnit
+### Conferências do boundary
 
-Três fitness tests ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md), pacote `TngTech.ArchUnitNET`):
+Três conferências ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)):
 
-1. **Cobertura do registry.** Verificação estática no CI (Roslyn analyzer dedicado ou equivalente — escolha de implementação) garante que todo `code` construído em `DomainError(...)` ou `Result.Failure(...)` no código-fonte de `Domain` e `Application` está registrado no `DomainErrorMappingRegistry`. Falha lista os codes órfãos. ArchUnitNET cobre os testes 2 e 3 abaixo, que são puramente estruturais.
-2. **Direção de dependência.** Tipos em `Unifesspa.UniPlus.*.Domain` e `Unifesspa.UniPlus.*.Application` não dependem de qualquer tipo em `Microsoft.AspNetCore.*` ou em `Unifesspa.UniPlus.*.API`.
+1. **Cobertura do registry.** Verificação estática no CI (Roslyn analyzer dedicado ou equivalente — escolha de implementação) garante que todo `code` construído em `DomainError(...)` ou `Result.Failure(...)` no código-fonte de `Domain` e `Application` está registrado no `DomainErrorMappingRegistry`. Falha lista os codes órfãos.
+2. **Direção de dependência.** As referências entre projetos garantem que Domain e Application não dependam da API. `Selecao.ArchTests` proíbe dependências de `Microsoft.AspNetCore.*` em `Selecao.Domain` e `Selecao.Application`.
 3. **Controllers sem acesso direto a `DomainError`.** Controllers retornam apenas `IActionResult` produzido por `result.ToActionResult(mapper)` ou `ObjectResult` tipado para o sucesso — nunca `BadRequest(domainError)`, `NotFound(domainError.Message)` ou similar.
 
 ### Domain e Application permanecem como já estão
@@ -83,7 +83,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 
 - **Clean Architecture preservada.** Único lugar onde HTTP encosta na semântica de erro é a camada `API`. Mover slices, refatorar handlers ou trocar framework HTTP não exige tocar `Domain`/`Application`.
 - **Fonte única de verdade.** Registry serve simultaneamente os controllers, o catálogo público, a documentação OpenAPI (via transformer da [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)) e os logs estruturados. Drift entre essas vistas é tecnicamente impossível.
-- **Drift detectado em PR.** Adicionar `code` novo no `Domain` sem registrar quebra o ArchUnit no CI — chega como erro acionável no PR, nunca silencia para produção.
+- **Drift detectado em PR.** Adicionar `code` novo no `Domain` sem registrar quebra a conferência de catálogo no CI — chega como erro acionável no PR, nunca silencia para produção.
 - **Testes mais simples.** Stub do `IDomainErrorMapper` cobre cenários de mapping em testes de controller sem precisar do registry real.
 
 ### Negativas
@@ -98,8 +98,8 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 
 ## Confirmação
 
-1. **Verificações estáticas no CI** — três checks nomeados na seção "Boundary enforçado por ArchUnit". O check 1 (cobertura) roda como Roslyn analyzer ou equivalente; os checks 2 e 3 (direção de dependência e ausência de `DomainError` em controllers) rodam em `tests/Unifesspa.UniPlus.*.ArchTests` via ArchUnitNET ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
-2. **Cobertura do mapper.** Suite de testes de unidade verifica que `DomainErrorMappingRegistry.Resolve` cobre 100% dos codes coletados pelo ArchUnit. Falha indica registry desincronizado com o código real.
+1. **Verificações estáticas no CI** — conforme a seção "Conferências do boundary": referências entre projetos garantem a direção até a API; `Selecao.ArchTests` confere a ausência de ASP.NET Core em Domain e Application; a conferência de controllers usa ArchUnitNET ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
+2. **Cobertura do mapper.** Suite de testes de unidade verifica que `DomainErrorMappingRegistry.Resolve` cobre 100% dos codes do catálogo. Falha indica registry desincronizado com o código real.
 3. **Smoke E2E (Postman/Newman).** Cenários conhecidos de erro batem `code` retornado contra valor esperado e contra entrada do catálogo `/erros/{code}` quando o portal estiver no ar ([ADR-0023](0023-wire-formato-erro-rfc-9457.md), Confirmação 3).
 4. **Revisão arquitetural de PR.** O PR que expõe um novo código deve incluir a entrada no registro e a descrição no contrato da API ([ADR-0178](0178-texto-publico-dos-erros-na-api.md)).
 

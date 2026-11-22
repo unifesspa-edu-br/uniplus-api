@@ -174,7 +174,7 @@ public void ApplicationEDomain_NaoDependemDeWolverine()
 }
 ```
 
-Regras análogas existem em `Unifesspa.UniPlus.Ingresso.ArchTests` e na suíte solution-wide `Unifesspa.UniPlus.ArchTests` (impede que qualquer assembly do produto importe `MediatR.*`).
+A regra de Seleção confere o encapsulamento do Wolverine; as referências declaradas pelos projetos de Ingresso garantem a ausência dessa dependência.
 
 ## Passo 1 — definir o command (ou query)
 
@@ -279,7 +279,7 @@ public static class PublicarProcessoSeletivoCommandHandler
 **Pontos críticos:**
 
 1. **Dependências vêm pelos parâmetros do método**, não pelo construtor. `IRepository<T>`, `IUnitOfWork`, `ILogger<T>`, services DI quaisquer — todos no método `Handle`. Convenção do Wolverine.
-2. **Sem `IRequestHandler<,>` de MediatR.** Fitness test bloqueia o build. MediatR foi removido do projeto.
+2. **Sem `IRequestHandler<,>` de MediatR.** A proibição consta da ADR-0003 e é conferida na revisão.
 3. **`Handle` é `static` por padrão.** Reduz pressão de GC e elimina necessidade de instanciar a classe a cada request.
 4. **Retorne `Result` ou `Result<T>`.** `throw` é apenas para erros técnicos inesperados ([ADR-0046](adrs/0046-validacao-de-regras-sem-excecao-result-failure.md)).
 5. **Transaction é automática.** `Policies.AutoApplyTransactions()` envolve todo handler que toque `DbContext`.
@@ -427,7 +427,7 @@ O middleware Wolverine intercepta antes do handler. Quando `ValidationResult` te
 Lista prescritiva. Cada item é uma violação que CI ou review vai sinalizar:
 
 - ❌ **Não** importar `Wolverine.*` em código de `Application`, `Domain` ou módulos. Use apenas `ICommandBus`/`IQueryBus`. Fitness test ArchUnitNET bloqueia.
-- ❌ **Não** declarar `IRequestHandler<,>` de MediatR. Fitness test solution-wide bloqueia (zero tolerância — MediatR foi removido).
+- ❌ **Não** declarar `IRequestHandler<,>` de MediatR. A proibição consta da ADR-0003 e é conferida na revisão.
 - ❌ **Não** registrar handlers manualmente no DI (`services.AddTransient<...>`). Wolverine descobre via assembly scan ([ADR-0043](adrs/0043-discovery-explicito-application-via-includeassembly.md)).
 - ❌ **Não** adicionar `[Handler]`, `[Command]` ou markers semelhantes. A convenção (classe pública + método `Handle`) basta.
 - ❌ **Não** introduzir `ISaga`, `IScheduler`, `IOutbox` como contratos de aplicação. Se precisar da capacidade, abra PR propondo emenda à ADR-0003.

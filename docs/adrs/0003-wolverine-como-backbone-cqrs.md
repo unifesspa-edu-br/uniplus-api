@@ -100,7 +100,7 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 
 ## Confirmação
 
-- Fitness test ArchUnitNET `Stage1ArchitectureRulesTests.ApplicationEDomain_NaoDependemDeWolverine` (presente nos projetos `Unifesspa.UniPlus.Selecao.ArchTests` e `Unifesspa.UniPlus.Ingresso.ArchTests`) falha o build se `Application.Abstractions`, `Selecao.Application`/`Ingresso.Application` ou `Selecao.Domain`/`Ingresso.Domain` importarem `Wolverine.*` (ver ADR-0012) — com a exceção estreita de `Wolverine.Attributes` registrada na emenda de 2026-08-04.
+- Fitness test ArchUnitNET `Stage1ArchitectureRulesTests.ApplicationEDomain_NaoDependemDeWolverine` (presente nos projetos de arquitetura de Seleção e Portal) falha o build se `Application.Abstractions`, as camadas Application ou Domain desses módulos importarem `Wolverine.*` (ver ADR-0012) — com a exceção estreita de `Wolverine.Attributes` registrada na emenda de 2026-08-04.
 - A proibição do MediatR no produto fica registrada nesta ADR, sem teste de arquitetura dedicado (emenda de 2026-11-22).
 
 ## Prós e contras das opções
@@ -135,3 +135,7 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 - [Wolverine documentation](https://wolverinefx.net/)
 - [Brighter (escape-hatch nomeado)](https://github.com/BrighterCommand/Brighter)
 - **Origem:** revisão das ADRs internas Uni+ ADR-002 (parte CQRS) e ADR-022 (não publicadas).
+
+## Emenda (2026-11-22) — conferência das dependências
+
+Em Ingresso, as referências dos projetos garantem a ausência de dependência de Wolverine; não há projeto de testes de arquitetura específico para o módulo.

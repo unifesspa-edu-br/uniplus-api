@@ -19,7 +19,7 @@ Esse padrão tem três problemas que escalariam com cada novo endpoint user-scop
 
 1. **String mágica** — `"sub"` é convenção OIDC (RFC 7519) mas `ClaimTypes.NameIdentifier` é convenção .NET. Dois devs vão divergir; mudança de IdP fica espalhada.
 2. **`!` (null-forgiving) sem garantia** — endpoint anônimo, middleware fora de ordem, ou bug de configuração geram `NullReferenceException` em runtime em vez de erro semântico.
-3. **Acoplamento HTTP em handlers de Application** — `User.FindFirstValue` exige `HttpContext` ou `ClaimsPrincipal`, dependências que Application camada não deveria carregar (Clean Architecture, ADR-0002, fitness test R3 da ADR-0012).
+3. **Acoplamento HTTP em handlers de Application** — `User.FindFirstValue` exige `HttpContext` ou `ClaimsPrincipal`, dependências que Application camada não deveria carregar (Clean Architecture, ADR-0002, as referências dos projetos e a conferência de ASP.NET Core em Seleção, ADR-0012).
 
 A issue #313 propôs criar `ICurrentUser` + `IRequiredCurrentUser`. Durante a implementação, descobriu-se que **`IUserContext`** já existia em `Application.Abstractions/Authentication/` (introduzido em PRs anteriores) com cobertura idêntica: `UserId`, `Name`, `Email`, `Cpf`, `NomeSocial`, `Roles`, `HasRole`, `GetResourceRoles`. A pergunta passou a ser: criar nova abstração paralela ou consolidar a existente?
 

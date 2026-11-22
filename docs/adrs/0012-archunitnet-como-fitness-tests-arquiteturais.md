@@ -11,7 +11,7 @@ consulted:
 
 ## Contexto e enunciado do problema
 
-O `uniplus-api` declara fitness tests arquiteturais como quality gate obrigatório de CI. Esses testes enforçam invariantes não-negociáveis: isolamento entre módulos (ADR-0001), conformidade de camadas (ADR-0002), encapsulamento de Wolverine dentro de `Infrastructure.Core` (ADR-0003) e ausência de qualquer referência a `MediatR.*`.
+O `uniplus-api` executa testes arquiteturais no CI para conferir o isolamento entre módulos (ADR-0001) e o uso de Wolverine (ADR-0003). As referências dos projetos garantem a direção de camadas (ADR-0002); a proibição de `MediatR.*` está registrada na ADR-0003.
 
 O ecossistema .NET tem dois candidatos: NetArchTest (BenMorris, MIT) e ArchUnitNET (TNG Technology Consulting, Apache 2.0).
 
@@ -53,15 +53,13 @@ A equipe não tem experiência prévia com nenhuma das duas — curva de aprendi
 
 > **Nota sobre nomenclatura:** o publisher prefixa o package id com `TngTech.`, mas a namespace C# dentro dos assemblies é `ArchUnitNET.*` (sem prefixo). `<PackageReference>` usa `TngTech.ArchUnitNET`; `using ArchUnitNET.Fluent;` no código.
 
-Cada módulo tem projeto `*.ArchTests` próprio (`Unifesspa.UniPlus.<Modulo>.ArchTests`) que chama a DSL diretamente. **Nenhuma camada wrapper especulativa.** Helpers emergem bottom-up — extrair se a mesma forma de regra for copiada em três ou mais fixtures.
+Os projetos `*.ArchTests` existentes usam a DSL diretamente para regras que precisam de conferência própria.
 
-Conjunto inicial mínimo de regras (todas verdes em `main` antes de qualquer outra entrega depender delas):
-
-| # | Regra | Invariante |
-|---|-------|------------|
-| R1 | `Modulos_NaoSeReferenciam` | `Selecao.*` não depende de `Ingresso.*` e vice-versa |
-| R2 | `ApplicationEDomain_NaoDependemDeWolverine` | `*.Application.*` e `*.Domain.*` não referenciam `Wolverine.*` |
-| R3 | `Camadas_RespeitamDirecaoDeDependencia` | Domain → Application → Infrastructure → API (uma só direção) |
+| Regra | Garantia atual |
+|---|---|
+| Isolamento entre módulos | `CrossModuleReadIsolationTests` confere o acesso entre módulos. |
+| R2 | Domínio e aplicação não dependem de Wolverine, salvo a exceção documentada para atributos. |
+| Direção de camadas | As referências dos projetos impedem as dependências inversas; Seleção também confere a ausência de dependência de ASP.NET Core no domínio e na aplicação. |
 
 > **Emenda (2026-11-22):** a regra que proibia referências a `MediatR.*` saiu do conjunto. Biblioteca banida fica registrada na ADR que a proíbe (ADR-0003), sem teste de arquitetura dedicado.
 
@@ -89,7 +87,7 @@ Política de upgrade:
 
 - **ArchUnitNET estagnar.** Mitigado pelo exit criterion + pinning + isolamento por módulo (`*.ArchTests`).
 - **Mudanças de API pré-1.0 disrompem regras existentes.** Mitigado pela política de PR dedicado para minor bump.
-- **Proliferação de regras sem revisão.** Mitigado pela convenção de um projeto `*.ArchTests` por módulo + code review em qualquer PR que adicione duas ou mais fitness tests novas em uma única alteração.
+- **Proliferação de regras sem revisão.** Mitigado por projetos `*.ArchTests` onde necessários e revisão de código em qualquer PR que adicione duas ou mais fitness tests novas em uma única alteração.
 
 ## Confirmação
 
@@ -124,3 +122,7 @@ Política de upgrade:
 - [ArchUnitNET — repositório](https://github.com/TNG/ArchUnitNET)
 - [ArchUnitNET — user guide](https://archunitnet.readthedocs.io/en/stable/guide/)
 - **Origem:** revisão da ADR interna Uni+ ADR-023 (não publicada).
+
+## Emenda (2026-11-22) — conferência das dependências
+
+Os projetos de arquitetura existem onde há regras que precisam de conferência própria. A direção de camadas garantida pelas referências dos projetos não é repetida nesses testes.
