@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -45,7 +46,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [RegraLida] = CorretoresDaRegra.SemNovoCorretor(3) });
 
     private static RegraDeDeliberacao AtoIndividualSemVotacao() =>
-        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual, 1, 0, null, null, null, null, null)).Value!;
+        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 1, 0, new(null, null, null, null, null))).Value!;
 
     private static BancaDaEtapa AvaliadoraSemVotacao() => BancaDaEtapa.Criar(Entrevista, AtoIndividualSemVotacao());
 

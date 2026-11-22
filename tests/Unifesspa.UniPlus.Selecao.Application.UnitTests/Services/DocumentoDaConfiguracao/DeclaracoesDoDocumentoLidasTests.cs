@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -177,8 +178,8 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         banca.TipoBancaCodigo.Should().Be("BANCA_COLEGIADA");
         banca.CategoriasDocumentoCodigos.Should().BeEmpty();
         banca.RegraDeDeliberacao.Should().Be(new Domain.ValueObjects.DeclaracaoDaDeliberacao(
-            ModoDeDeliberacao.ColegiadaComVotacao, 3, 1, 2, CriterioDeVotacao.MaioriaAbsoluta,
-            DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null));
+            ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 3, 1, new(2, CriterioDeVotacao.MaioriaAbsoluta.Codigo(),
+            DesempateDaVotacao.VotoDaPresidencia.Codigo(), EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null)));
     }
 
     [Fact(DisplayName = "A regra de recurso copia a regra, o ato cuja publicação inicia o prazo e os parâmetros, cada código como texto")]

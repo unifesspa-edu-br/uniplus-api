@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -26,10 +27,10 @@ public sealed class SuspensaoDaRegraDeDeliberacaoPorParteRecusadaTests
     private const string ItemDaDeliberacao = "cronograma_banca_com_regra_de_deliberacao";
 
     private static readonly DeclaracaoDaDeliberacao Valida =
-        new(ModoDeDeliberacao.ColegiadaComVotacao, 3, 0, 2, CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null);
+        new(ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 3, 0, new(2, CriterioDeVotacao.MaioriaSimples.Codigo(), DesempateDaVotacao.VotoDaPresidencia.Codigo(), EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null));
 
     private static readonly DeclaracaoDaDeliberacao Invalida =
-        new(ModoDeDeliberacao.ColegiadaComVotacao, 0, 0, 0, CriterioDeVotacao.MaioriaSimples, null, EncerramentoDaVotacao.PresidenciaNoQuorum, null);
+        new(ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 0, 0, new(0, CriterioDeVotacao.MaioriaSimples.Codigo(), null, EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null));
 
     private static readonly CorretoresDasEtapas NenhumLido = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra>());
 

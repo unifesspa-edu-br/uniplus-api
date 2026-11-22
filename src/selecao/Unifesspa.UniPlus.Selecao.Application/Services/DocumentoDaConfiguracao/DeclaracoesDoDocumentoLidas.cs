@@ -72,14 +72,14 @@ internal static class DeclaracoesDoDocumentoLidas
     private static DeclaracaoDaDeliberacao? Deliberacao(JsonObject? bloco) => bloco is null
         ? null
         : new(
-            Enumeracao<ModoDeDeliberacao>(bloco, "modo") ?? default,
+            Texto(bloco, "modo"),
             Valor<int>(bloco, "integrantes") ?? 0,
             Valor<int>(bloco, "suplentes") ?? 0,
-            Valor<int>(bloco, "quorum"),
-            Enumeracao<CriterioDeVotacao>(bloco, "criterio"),
-            Enumeracao<DesempateDaVotacao>(bloco, "desempate"),
-            Enumeracao<EncerramentoDaVotacao>(bloco, "encerramento"),
-            Enumeracao<ResultadoSemUnanimidade>(bloco, "semUnanimidade"));
+            new(Valor<int>(bloco, "quorum"),
+            Texto(bloco, "criterio"),
+            Texto(bloco, "desempate"),
+            Texto(bloco, "encerramento"),
+            Texto(bloco, "semUnanimidade")));
 
     private static RegraDeRecursoNoDocumento? RegraDeRecurso(JsonObject? regra) => regra is null
         ? null

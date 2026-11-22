@@ -31,7 +31,7 @@ using Xunit;
 
 internal static class ApoioDoEnvelopeCodec
 {
-    internal const string SchemaCorrente = "0.0.56";
+    internal const string SchemaCorrente = "0.0.57";
 
     internal static (ProcessoSeletivo Processo, FaseCronograma Fase) ProcessoDeInscricao(string titulo)
     {

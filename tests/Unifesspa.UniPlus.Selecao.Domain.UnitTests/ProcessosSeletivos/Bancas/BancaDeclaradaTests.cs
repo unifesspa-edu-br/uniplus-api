@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -45,7 +46,7 @@ public sealed class BancaDeclaradaTests
     public void JulgaRecursoSemVotacao_PapelEModo()
     {
         RegraDeDeliberacao semVotacao = RegraDeDeliberacao.Criar(
-            new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual, 1, 0, null, null, null, null, null)).Value!;
+            new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 1, 0, new(null, null, null, null, null))).Value!;
 
         new BancaDeclarada(0, 1, TiposDeBancaCopiadosDeTeste.DeRecursos(), semVotacao).JulgaRecursoSemVotacao.Should().BeTrue();
         new BancaDeclarada(0, 1, TiposDeBancaCopiadosDeTeste.Avaliadora(), semVotacao).JulgaRecursoSemVotacao.Should().BeFalse();

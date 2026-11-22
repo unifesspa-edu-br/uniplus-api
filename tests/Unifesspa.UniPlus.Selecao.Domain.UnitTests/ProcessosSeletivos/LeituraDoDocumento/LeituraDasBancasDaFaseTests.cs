@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -61,7 +62,7 @@ public sealed class LeituraDasBancasDaFaseTests
     [Fact(DisplayName = "A regra de deliberação que o domínio recusa deixa a banca de fora e aponta o campo da regra")]
     public void Banca_DeliberacaoInvalida_ApontaOCampoDaRegra()
     {
-        DeclaracaoDaDeliberacao invalida = new(ModoDeDeliberacao.ColegiadaComVotacao, 0, 0, 0, CriterioDeVotacao.MaioriaSimples, null, EncerramentoDaVotacao.PresidenciaNoQuorum, null);
+        DeclaracaoDaDeliberacao invalida = new(ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 0, 0, new(0, CriterioDeVotacao.MaioriaSimples.Codigo(), null, EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null));
 
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", [], invalida))));
 

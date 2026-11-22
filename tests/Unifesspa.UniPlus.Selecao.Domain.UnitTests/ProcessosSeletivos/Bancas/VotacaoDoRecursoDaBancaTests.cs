@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -27,14 +28,14 @@ public sealed class VotacaoDoRecursoDaBancaTests
     private const string CodigoDaRecusa = "Banca.RegraDeDeliberacaoObrigatoria";
 
     private static RegraDeDeliberacao AtoIndividualSemVotacao() =>
-        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual, 1, 0, null, null, null, null, null)).Value!;
+        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 1, 0, new(null, null, null, null, null))).Value!;
 
     private static RegraDeDeliberacao AtoIndividualSoComOQuorum() =>
-        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual, 3, 1, 2, null, null, null, null)).Value!;
+        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 1, new(2, null, null, null, null))).Value!;
 
     private static RegraDeDeliberacao AtoIndividualComVotacao() =>
         RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
-            ModoDeDeliberacao.AtoIndividual, 3, 1, 2, CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null)).Value!;
+            ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 1, new(2, CriterioDeVotacao.MaioriaSimples.Codigo(), DesempateDaVotacao.VotoDaPresidencia.Codigo(), EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null))).Value!;
 
     private static TipoDeBancaCopiado ComPapel(PapelDaBanca papel) => TiposDeBancaCopiadosDeTeste.Com(TipoDeBanca.AnaliseDeRecursos, papel);
 

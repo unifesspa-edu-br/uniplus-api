@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -17,9 +18,9 @@ public sealed class ProjecaoDaRegraDeDeliberacaoTests
     public void De_ColegiadaComVotacao_ProjetaTodosOsCampos()
     {
         RegraDeDeliberacao regra = RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
-            ModoDeDeliberacao.ColegiadaComVotacao, Integrantes: 3, Suplentes: 1, Quorum: 2,
-            CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia,
-            EncerramentoDaVotacao.PresidenciaNoQuorum, SemUnanimidade: null)).Value!;
+            ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), Integrantes: 3, Suplentes: 1, new(Quorum: 2,
+            CriterioDeVotacao.MaioriaSimples.Codigo(), DesempateDaVotacao.VotoDaPresidencia.Codigo(),
+            EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), SemUnanimidade: null))).Value!;
 
         RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
 
@@ -33,8 +34,8 @@ public sealed class ProjecaoDaRegraDeDeliberacaoTests
     public void De_AtoIndividual_ProjetaSoAComposicao()
     {
         RegraDeDeliberacao regra = RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
-            ModoDeDeliberacao.AtoIndividual, Integrantes: 1, Suplentes: 0,
-            Quorum: null, Criterio: null, Desempate: null, Encerramento: null, SemUnanimidade: null)).Value!;
+            ModoDeDeliberacao.AtoIndividual.Codigo(), Integrantes: 1, Suplentes: 0, new(
+            Quorum: null, Criterio: null, Desempate: null, Encerramento: null, SemUnanimidade: null))).Value!;
 
         RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
 

@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -19,14 +19,14 @@ internal static class RegraDeDeliberacaoNoEnvelope
         ? null
         : new JsonObject
         {
-            ["modo"] = regra.Modo.ToString(),
+            ["modo"] = regra.Modo.Codigo(),
             ["integrantes"] = regra.Integrantes,
             ["suplentes"] = regra.Suplentes,
             ["quorum"] = regra.Quorum,
-            ["criterio"] = regra.Criterio?.ToString(),
-            ["desempate"] = regra.Desempate?.ToString(),
-            ["encerramento"] = regra.Encerramento?.ToString(),
-            ["semUnanimidade"] = regra.SemUnanimidade?.ToString(),
+            ["criterio"] = regra.Criterio?.Codigo(),
+            ["desempate"] = regra.Desempate?.Codigo(),
+            ["encerramento"] = regra.Encerramento?.Codigo(),
+            ["semUnanimidade"] = regra.SemUnanimidade?.Codigo(),
         };
 
     internal static RegraDeDeliberacao? Ler(LeitorEnvelope leitor, JsonObject banca, string pathDaBanca)
@@ -51,14 +51,14 @@ internal static class RegraDeDeliberacaoNoEnvelope
     {
         leitor.ExigirChaves(bloco, path, Chaves);
         DeclaracaoDaDeliberacao declaracao = new(
-            leitor.Enumeracao<ModoDeDeliberacao>(bloco, "modo", path),
+            leitor.Texto(bloco, "modo", path),
             leitor.Inteiro(bloco, "integrantes", path),
             leitor.Inteiro(bloco, "suplentes", path),
-            leitor.InteiroOpcional(bloco, "quorum", path),
-            leitor.EnumeracaoOpcional<CriterioDeVotacao>(bloco, "criterio", path),
-            leitor.EnumeracaoOpcional<DesempateDaVotacao>(bloco, "desempate", path),
-            leitor.EnumeracaoOpcional<EncerramentoDaVotacao>(bloco, "encerramento", path),
-            leitor.EnumeracaoOpcional<ResultadoSemUnanimidade>(bloco, "semUnanimidade", path));
+            new(leitor.InteiroOpcional(bloco, "quorum", path),
+            leitor.TextoOpcional(bloco, "criterio", path),
+            leitor.TextoOpcional(bloco, "desempate", path),
+            leitor.TextoOpcional(bloco, "encerramento", path),
+            leitor.TextoOpcional(bloco, "semUnanimidade", path)));
         return leitor.Falhou ? null : declaracao;
     }
 }

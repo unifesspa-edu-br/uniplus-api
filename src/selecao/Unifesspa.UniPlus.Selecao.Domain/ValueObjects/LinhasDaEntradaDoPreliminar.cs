@@ -59,14 +59,14 @@ internal static class LinhasDaEntradaDoPreliminar
             ? []
             :
             [
-                Linha($"{campo}.modo", regra.Modo),
+                Linha($"{campo}.modo", regra.Modo.Codigo()),
                 Linha($"{campo}.integrantes", regra.Integrantes),
                 Linha($"{campo}.suplentes", regra.Suplentes),
                 Linha($"{campo}.quorum", regra.Quorum),
-                Linha($"{campo}.criterio", regra.Criterio),
-                Linha($"{campo}.desempate", regra.Desempate),
-                Linha($"{campo}.encerramento", regra.Encerramento),
-                Linha($"{campo}.semUnanimidade", regra.SemUnanimidade),
+                Linha($"{campo}.criterio", regra.Criterio?.Codigo()),
+                Linha($"{campo}.desempate", regra.Desempate?.Codigo()),
+                Linha($"{campo}.encerramento", regra.Encerramento?.Codigo()),
+                Linha($"{campo}.semUnanimidade", regra.SemUnanimidade?.Codigo()),
             ];
 
     /// <summary>Uma linha por tipo de decisão declarado: a mesma declaração em outra ordem dá as mesmas linhas.</summary>
