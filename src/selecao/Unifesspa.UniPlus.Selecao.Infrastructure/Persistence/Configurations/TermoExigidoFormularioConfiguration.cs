@@ -20,7 +20,7 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
     private const int NomeMaxLength = 200;
     private const int TextoMaxLength = 20_000;
     private const int BaseLegalMaxLength = 500;
-    private const int FormaAceiteMaxLength = 40;
+    private const int FormaAceiteMaxLength = 30;
     private const int HashMaxLength = 64;
 
     public void Configure(EntityTypeBuilder<TermoExigidoFormulario> builder)

@@ -6,12 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Implementação de <see cref="ITermoConsentimentoReader"/> (ADR-0056). A junção com o termo aplica
@@ -76,7 +75,7 @@ internal sealed class TermoConsentimentoReader : ITermoConsentimentoReader
         l.Nome,
         l.Texto,
         l.BaseLegal,
-        l.FormaAceite.Codigo(),
+        l.FormaAceite,
         l.Hash);
 
     private sealed record LinhaDaVersao(

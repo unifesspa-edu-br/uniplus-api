@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TermosConsentimento;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -10,16 +8,13 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// O leitor cross-módulo das versões de termo (UNI-REQ-0086), contra Postgres real: é por ele que
 /// a Seleção congela o conteúdo do termo que o formulário exige.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TermoConsentimentoReaderTests
 {
     private const string AdminA = "admin-a";
@@ -45,7 +40,7 @@ public sealed class TermoConsentimentoReaderTests
             await reader.ListarVersoesAsync([versaoViva.Id, versaoRemovida.Id], CancellationToken.None);
 
         versoes.Should().ContainSingle().Which.Should().BeEquivalentTo(new VersaoTermoConsentimentoView(
-            vivo.Id, versaoViva.Id, vivo.Codigo.Valor, 1, vivo.Nome, "Texto do termo", "Lei 13.709/2018", "A_DEFINIR", versaoViva.Hash));
+            vivo.Id, versaoViva.Id, vivo.Codigo.Valor, 1, vivo.Nome, "Texto do termo", "Lei 13.709/2018", FormaAceite.ADefinir, versaoViva.Hash));
     }
 
     [Fact(DisplayName = "A versão sai pelo código do termo vivo e pelo número; código ou número desconhecido, malformado ou de termo removido, não")]

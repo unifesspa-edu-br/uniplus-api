@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using System.Text;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Uma versão promovida e imutável de um <see cref="TermoConsentimento"/>

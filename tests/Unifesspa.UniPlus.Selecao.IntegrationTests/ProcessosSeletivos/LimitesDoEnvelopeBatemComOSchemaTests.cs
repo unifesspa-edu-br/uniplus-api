@@ -120,7 +120,6 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("NomeDoTermo", LimitesDoEnvelope.NomeDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),
         ("TextoDoTermo", LimitesDoEnvelope.TextoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Texto)),
         ("BaseLegalDoTermo", LimitesDoEnvelope.BaseLegalDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.BaseLegal)),
-        ("FormaAceiteDoTermo", LimitesDoEnvelope.FormaAceiteDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.FormaAceite)),
         ("HashDaVersaoDoTermo", LimitesDoEnvelope.HashDaVersaoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.HashVersao)),
 
         // Issue #563 — divulgação pública.
@@ -192,7 +191,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             coluna.GetPrecision().Should().Be(precisaoNoCodec,
                 $"LimitesDoEnvelope.{nome} tem de ser a precisão de {entidade.Name}.{propriedade} — sem ela, um " +
                 "decimal com escala impecável mas dígitos demais recanonicaliza nos MESMOS bytes, a prova de " +
-                "round-trip aprova, e o numeric(p,s) só estoura no SaveChanges (22003).");
+                "a conversão é aceita, mas o numeric(p,s) excede o limite no SaveChanges (22003).");
             coluna.GetScale().Should().Be(escalaNoCodec);
         }
     }

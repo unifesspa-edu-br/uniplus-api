@@ -49,7 +49,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
             new VersaoTermoConsentimentoView(TermoId, VersaoId, "AUTORIZACAO_DE_CONSULTA", 1, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
-                "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64)),
+                FormaAceite.RegistroDigitalComLogIp, new string('b', 64)),
         ]);
         return mocks;
     }
@@ -124,7 +124,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         TermoExigidoFormulario termo = processo.TermosExigidos.Should().ContainSingle().Which;
-        termo.Should().BeEquivalentTo(new { Texto = "Autorizo a consulta.", FormaAceite = "REGISTRO_DIGITAL_COM_LOG_IP", HashVersao = new string('b', 64) });
+        termo.Should().BeEquivalentTo(new { Texto = "Autorizo a consulta.", FormaAceite = FormaAceite.RegistroDigitalComLogIp, HashVersao = new string('b', 64) });
         termo.Obrigatoriedade.Tipo.Should().Be(TipoObrigatoriedade.Quando);
         termo.Exibicao!.FatosCitados.Should().Equal("COR_RACA");
     }
@@ -225,7 +225,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
     private static EntradaDoTermoExigidoDeTeste Termo(string codigo, Guid termoId, Guid versaoId, int ordem = 0) =>
         EntradaDoTermoExigidoDeTeste.Exigindo(codigo, ordem).DaVersao(termoId, versaoId);
 
-    [Fact(DisplayName = "Forma, versão e unicidade saem no mesmo lote, entre termos diferentes")]
+    [Fact(DisplayName = "Forma, versão e unicidade saem na mesma resposta, entre termos diferentes")]
     public async Task Handle_RecusasDeFasesDiferentes_SaemJuntas()
     {
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();

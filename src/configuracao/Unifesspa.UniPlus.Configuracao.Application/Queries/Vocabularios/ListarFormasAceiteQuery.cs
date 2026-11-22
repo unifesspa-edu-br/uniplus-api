@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Lê as formas de aceite de um termo de consentimento, com o código e o rótulo de cada um, na ordem em que o enum os declara. Não há estado a consultar: o conjunto

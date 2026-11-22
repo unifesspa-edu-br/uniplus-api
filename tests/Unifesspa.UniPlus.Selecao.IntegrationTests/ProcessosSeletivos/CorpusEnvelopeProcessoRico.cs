@@ -261,7 +261,7 @@ internal static class CorpusEnvelopeProcessoRico
         processo.DefinirTermos(
             [
                 Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta)),
-                Termo("AUTORIZACAO_REGISTRO_DE_ACESSO", 1, formaAceite: "REGISTRO_DIGITAL_COM_LOG_IP"),
+                Termo("AUTORIZACAO_REGISTRO_DE_ACESSO", 1, formaAceite: FormaAceite.RegistroDigitalComLogIp),
             ]).IsSuccess.Should().BeTrue();
     }
 
@@ -307,7 +307,7 @@ internal static class CorpusEnvelopeProcessoRico
             ]).Value!,
         ]).Value!;
 
-    // Derivado booleano: as regras não contribuem código, e o envelope grava contribui nulo.
+    // Derivado booleano: as regras não contribuem código, e o registro publicado grava contribui nulo.
     internal static ConfiguracaoDerivacaoFato DerivacaoDoPretoDeclarado() =>
         ConfiguracaoDerivacaoFato.Criar("PRETO_DECLARADO", [
             RegraDerivacaoConfigurada.Criar(0, null, [

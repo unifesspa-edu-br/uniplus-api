@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class TermoConsentimentoMapping
 {

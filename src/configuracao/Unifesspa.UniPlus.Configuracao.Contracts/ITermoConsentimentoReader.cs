@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Leitura cross-módulo das versões promovidas do catálogo de termos de consentimento (UNI-REQ-0086):
 /// o processo escolhe termo e versão, e congela o conteúdo da versão.
@@ -22,8 +24,7 @@ public interface ITermoConsentimentoReader
 }
 
 /// <summary>
-/// Uma versão promovida de termo, imutável: código e nome do termo, número da versão, texto, base legal, forma de aceite em
-/// token canônico e o hash do conteúdo.
+/// Uma versão promovida de termo, imutável: código e nome do termo, número da versão, texto, base legal, forma de aceite e o hash do conteúdo.
 /// </summary>
 public sealed record VersaoTermoConsentimentoView(
     Guid TermoId,
@@ -33,5 +34,5 @@ public sealed record VersaoTermoConsentimentoView(
     string Nome,
     string Texto,
     string BaseLegal,
-    string FormaAceite,
+    FormaAceite FormaAceite,
     string Hash);

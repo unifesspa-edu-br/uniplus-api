@@ -92,6 +92,6 @@ public sealed class DefinicaoDoProcessoTests
     private static TermoExigidoFormulario Termo(string codigo) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             null, Obrigatoriedade.Sempre).Value!;
 }

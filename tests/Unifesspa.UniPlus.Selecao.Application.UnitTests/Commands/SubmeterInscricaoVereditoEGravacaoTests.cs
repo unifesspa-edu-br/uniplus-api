@@ -192,7 +192,7 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
     {
         FormularioDeTeste.DefinirItens(processo, [RendaDeclarada()], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
         VersaoTermoEscolhida termo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1,
-            "Termo da isenção", "Declaro a renda informada.", "Lei 12.799/2013", "ACEITE_EXPLICITO", new string('d', 64));
+            "Termo da isenção", "Declaro a renda informada.", "Lei 12.799/2013", FormaAceite.RegistroDigitalSemLogIp, new string('d', 64));
         FormularioDeTeste.DefinirTermos(processo,
             [TermoExigidoFormulario.Criar("TERMO_ISENCAO", 0, termo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.IsencaoTaxa).Value!],
             finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();

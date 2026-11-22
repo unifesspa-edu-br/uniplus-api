@@ -1,11 +1,11 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Enums;
+namespace Unifesspa.UniPlus.Regras.UnitTests.Enums;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
-public sealed class FormaAceiteTests
+public sealed class FormaAceiteCodigosTests
 {
     [Theory(DisplayName = "Cada forma de aceite tem o código e o rótulo do contrato")]
     [InlineData(FormaAceite.ADefinir, "A_DEFINIR", "A definir")]
@@ -18,6 +18,11 @@ public sealed class FormaAceiteTests
         CatalogoDe<FormaAceite>.TentarObter(codigo, out FormaAceite lida).Should().BeTrue();
         lida.Should().Be(forma);
     }
+
+    [Fact(DisplayName = "Os valores numéricos das formas de aceite são preservados")]
+    public void ValoresNumericos_DasFormas_SaoPreservados() =>
+        new[] { (int)FormaAceite.ADefinir, (int)FormaAceite.RegistroDigitalSemLogIp, (int)FormaAceite.RegistroDigitalComLogIp }
+            .Should().Equal(1, 2, 3);
 
     [Fact(DisplayName = "O enum tem exatamente as três formas de aceite, na ordem de exibição")]
     public void Valores_Catalogo_TresFormasNaOrdemDeDeclaracao() =>

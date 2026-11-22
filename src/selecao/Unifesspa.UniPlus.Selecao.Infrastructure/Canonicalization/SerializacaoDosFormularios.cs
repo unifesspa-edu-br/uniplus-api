@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -20,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Projeta no envelope os formulários de inscrição, com etapas e termos exigidos, e as regras de valor
+/// Registra na configuração publicada os formulários de inscrição, com etapas e termos exigidos, e as regras de valor
 /// (obrigatoriedade, impedimento e restrições) que o formulário e as exigências compartilham.
 /// </summary>
 internal static class SerializacaoDosFormularios
@@ -66,7 +67,7 @@ internal static class SerializacaoDosFormularios
         ["nome"] = HashCanonicalComputer.NormalizeNfc(termo.Nome),
         ["texto"] = HashCanonicalComputer.NormalizeNfc(termo.Texto),
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(termo.BaseLegal),
-        ["formaAceite"] = termo.FormaAceite,
+        ["formaAceite"] = termo.FormaAceite.Codigo(),
         ["hashVersao"] = termo.HashVersao,
         ["exibicao"] = termo.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
         ["obrigatoriedade"] = SerializarObrigatoriedade(termo.Obrigatoriedade),

@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Edita o rascunho corrente de um termo de consentimento (texto, base legal,

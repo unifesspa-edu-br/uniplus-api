@@ -52,7 +52,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
 
     private static TermoExigidoFormulario TermoSemForma() => TermoExigidoFormulario.Criar(
         "DECLARACAO", 0,
-        new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
+        new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.ADefinir, new string('a', 64)),
         exibicao: null, Obrigatoriedade.Sempre).Value!;
 
     private static FatoColetado FatoDosMunicipiosDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)

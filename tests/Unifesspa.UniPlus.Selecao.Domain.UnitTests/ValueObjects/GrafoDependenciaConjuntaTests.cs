@@ -227,8 +227,8 @@ public sealed class GrafoDependenciaConjuntaTests
         resultado.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
-    [Fact(DisplayName = "Citação a fato inexistente não vira aresta pendurada — não quebra a construção")]
-    public void CitacaoAFatoInexistente_NaoViraAresta()
+    [Fact(DisplayName = "Citação a fato inexistente não impede a construção")]
+    public void CitacaoAFatoInexistente_NaoImpedeConstrucao()
     {
         // Exigência gatilhada por um fato que o processo não coleta nem deriva: sem nó de fato, sem
         // aresta de gatilho. A recusa por dependência não declarada é do congelamento (§7).
@@ -265,7 +265,7 @@ public sealed class GrafoDependenciaConjuntaTests
     {
         TermoExigidoFormulario termo = TermoExigidoFormulario.Criar(
             "CONSULTA", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Consulta", "Texto", "Base", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Consulta", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
         GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")], termos: [termo]).Value!;
@@ -309,7 +309,7 @@ public sealed class GrafoDependenciaConjuntaTests
     [Fact(DisplayName = "Termos condicionados mantêm a ordem declarada entre si, depois dos campos")]
     public void TermosCondicionados_NaOrdemDeclarada()
     {
-        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64));
+        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64));
         TermoExigidoFormulario primeiro = TermoExigidoFormulario.Criar("Z_PRIMEIRO", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
         TermoExigidoFormulario segundo = TermoExigidoFormulario.Criar("A_SEGUNDO", 1, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 

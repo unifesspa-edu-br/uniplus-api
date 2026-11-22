@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration<TermoConsentimento>
 {
@@ -89,7 +89,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
     }
 
     // Versões promovidas: append-only, o agregado nunca edita/remove uma
-    // versão existente, só adiciona (issue #1018). ClientNoAction (não
+    // versão existente, só adiciona. ClientNoAction (não
     // Restrict/Cascade): com a coleção já rastreada, Restrict/NoAction
     // lançam "required relationship severed" ao marcar o TermoConsentimento
     // como Deleted, ANTES de o interceptor convertê-lo em soft-delete;

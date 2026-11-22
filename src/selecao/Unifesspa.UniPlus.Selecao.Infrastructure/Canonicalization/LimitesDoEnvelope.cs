@@ -90,7 +90,7 @@ public static class LimitesDoEnvelope
 
     // Cronograma de fases.
     /// <summary>
-    /// <c>FaseCronograma.Codigo</c> — snapshot-copy do código canônico de <c>FaseCanonica</c>.
+    /// <c>FaseCronograma.Codigo</c> — cópia do código canônico de <c>FaseCanonica</c>.
     /// Governa também <c>EtapaProcesso.FaseCodigo</c>, o vínculo que a etapa declara com a
     /// fase: é a mesma grandeza um nível abaixo, e a mesma coluna de 60.
     /// </summary>
@@ -104,14 +104,14 @@ public static class LimitesDoEnvelope
     public const int TipoAtoCodigo = 60;
 
     /// <summary>
-    /// <c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de
-    /// <c>TipoBanca</c>. Governa também <c>BancaDaEtapa.Codigo</c>, o mesmo snapshot no nível
+    /// <c>BancaRequerida.Codigo</c> — cópia do código classificatório de
+    /// <c>TipoBanca</c>. Governa também <c>BancaDaEtapa.Codigo</c>, a mesma cópia no nível
     /// da etapa, na mesma coluna de 60.
     /// </summary>
     public const int TipoBancaCodigo = 60;
 
     /// <summary>
-    /// <c>BancaRequerida.Nome</c> e <c>BancaDaEtapa.Nome</c> — snapshot-copy do nome do
+    /// <c>BancaRequerida.Nome</c> e <c>BancaDaEtapa.Nome</c> — cópia do nome do
     /// <c>TipoBanca</c>, na mesma coluna de 200.
     /// </summary>
     public const int TipoBancaNome = 200;
@@ -122,29 +122,29 @@ public static class LimitesDoEnvelope
     /// <summary><c>NivelDeAtendimento.Rotulo</c> — vive em coluna jsonb, então o teto é o do domínio.</summary>
     public const int NivelDeAtendimentoRotulo = Domain.ValueObjects.NivelDeAtendimento.RotuloMaxLength;
 
-    /// <summary><c>CategoriaJulgada.Codigo</c> — snapshot-copy do código classificatório de <c>CategoriaDocumento</c>.</summary>
+    /// <summary><c>CategoriaJulgada.Codigo</c> — cópia do código classificatório de <c>CategoriaDocumento</c>.</summary>
     public const int CategoriaDocumentoCodigo = 50;
 
     // Exigências.
-    /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — snapshot-copy do código classificatório de <c>TipoDocumento</c>.</summary>
+    /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — cópia do código classificatório de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoCodigo = 60;
 
-    /// <summary><c>DocumentoExigido.TipoDocumentoNome</c> — snapshot-copy do rótulo legível de <c>TipoDocumento</c>.</summary>
+    /// <summary><c>DocumentoExigido.TipoDocumentoNome</c> — cópia dos dados do rótulo legível de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoNome = 200;
 
-    /// <summary><c>DocumentoExigido.TipoDocumentoCategoria</c> — snapshot-copy da categoria classificatória de <c>TipoDocumento</c>.</summary>
+    /// <summary><c>DocumentoExigido.TipoDocumentoCategoria</c> — cópia da categoria classificatória de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoCategoria = 60;
 
-    /// <summary><c>DocumentoExigido.FinalidadeTratamento</c> — snapshot-copy da finalidade do tratamento de <c>TipoDocumento</c>.</summary>
+    /// <summary><c>DocumentoExigido.FinalidadeTratamento</c> — cópia da finalidade do tratamento de <c>TipoDocumento</c>.</summary>
     public const int FinalidadeTratamento = FormaDoItem.FinalidadeTratamentoMaxLength;
 
-    /// <summary><c>FatoColetado.Descricao</c> e a descrição do fato derivado — snapshot-copy da descrição do fato no catálogo.</summary>
+    /// <summary><c>FatoColetado.Descricao</c> e a descrição do fato derivado — cópia da descrição do fato no catálogo.</summary>
     public const int DescricaoDoFato = FormaDoItem.DescricaoDoFatoMaxLength;
 
     /// <summary><c>FatoColetado.ComponenteExibicao</c> — token do componente de exibição do fato no catálogo.</summary>
     public const int ComponenteExibicao = FormaDoItem.ComponenteExibicaoMaxLength;
 
-    /// <summary><c>DocumentoExigido.HipoteseLegal</c> — snapshot-copy do token da hipótese legal de <c>TipoDocumento</c>.</summary>
+    /// <summary><c>DocumentoExigido.HipoteseLegal</c> — cópia do código da hipótese legal de <c>TipoDocumento</c>.</summary>
     public const int HipoteseLegal = FormaDoItem.HipoteseLegalMaxLength;
 
     /// <summary><c>DocumentoExigidoBaseLegal.Observacao</c>.</summary>
@@ -164,13 +164,13 @@ public static class LimitesDoEnvelope
 
     /// <summary>
     /// Peso de uma área no quadro de pesos por área congelado — <c>numeric(6,4)</c>: cabe o
-    /// teto do cadastro de origem (99,99) na escala com que o envelope grava todo decimal.
+    /// teto do cadastro de origem (99,99) na escala com que o registro publicado grava todo decimal.
     /// </summary>
     public const int PrecisaoPesoAreaEnem = 6;
 
     /// <summary>
     /// Corte de uma área no quadro de pesos por área congelado — <c>numeric(8,4)</c>: cabe a
-    /// nota máxima de uma área do ENEM (1000) na escala com que o envelope grava todo decimal.
+    /// nota máxima de uma área do ENEM (1000) na escala com que o registro publicado grava todo decimal.
     /// </summary>
     public const int PrecisaoCorteAreaEnem = 8;
 
@@ -245,9 +245,6 @@ public static class LimitesDoEnvelope
     /// <summary>Base legal da versão do termo.</summary>
     public const int BaseLegalDoTermo = 500;
 
-    /// <summary>Token da forma de aceite da versão do termo.</summary>
-    public const int FormaAceiteDoTermo = 40;
-
     /// <summary>Hash SHA-256 em hexadecimal da versão do termo.</summary>
     public const int HashDaVersaoDoTermo = 64;
 
@@ -256,22 +253,22 @@ public static class LimitesDoEnvelope
     public const int Justificativa = 1000;
 
     // Bônus regional: referencia a base legal tipada.
-    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — snapshot-copy do código canônico de <c>TipoInstrumentoNormativo</c>.</summary>
+    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — cópia do código canônico de <c>TipoInstrumentoNormativo</c>.</summary>
     public const int TipoInstrumentoNormativo = 30;
 
     /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
     public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
 
-    /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — snapshot-copy do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
+    /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — cópia do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
     public const int CodigoBaseLegalBonusRegional = 100;
 
-    /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — snapshot-copy da identificação da Base Legal.</summary>
+    /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — cópia da identificação da Base Legal.</summary>
     public const int IdentificacaoBaseLegalBonusRegional = 500;
 
-    /// <summary><c>ConfiguracaoBonusRegional.Descricao</c> — snapshot-copy da descrição da Base Legal.</summary>
+    /// <summary><c>ConfiguracaoBonusRegional.Descricao</c> — cópia da descrição da Base Legal.</summary>
     public const int DescricaoBaseLegalBonusRegional = 2000;
 
-    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.CodigoIbge</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.CodigoIbgeLength"/>: snapshot-copy do município do cadastro de Base Legal de Bônus Regional.</summary>
+    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.CodigoIbge</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.CodigoIbgeLength"/>: cópia do município do cadastro de Base Legal de Bônus Regional.</summary>
     public const int MunicipioBonusRegionalCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
 
     /// <summary><c>ConfiguracaoBonusRegionalMunicipio.Nome</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.NomeMaxLength"/>.</summary>

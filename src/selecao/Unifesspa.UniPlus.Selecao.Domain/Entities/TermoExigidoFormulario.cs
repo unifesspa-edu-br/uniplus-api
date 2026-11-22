@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -17,9 +18,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 {
-    /// <summary>A forma de aceite que o catálogo ainda não definiu: a publicação a recusa.</summary>
-    public const string FormaAceiteADefinir = "A_DEFINIR";
-
     /// <summary>Tamanho máximo do código do termo no catálogo.</summary>
     public const int TermoCodigoMaxLength = 100;
 
@@ -50,8 +48,8 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
     public string BaseLegal { get; private set; } = string.Empty;
 
-    /// <summary>Forma de aceite da versão, em token canônico do catálogo.</summary>
-    public string FormaAceite { get; private set; } = string.Empty;
+    /// <summary>Forma de aceite da versão do catálogo.</summary>
+    public FormaAceite FormaAceite { get; private set; }
 
     public string HashVersao { get; private set; } = string.Empty;
 
@@ -70,14 +68,14 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         Obrigatoriedade obrigatoriedade,
         FinalidadeFormulario finalidade)
     {
-        // O envelope congela o código em NFC; normalizar aqui faz a unicidade do formulário e a
-        // do envelope compararem a mesma forma.
+        // O registro publicado guarda o código em NFC; normalizar aqui faz a unicidade do formulário e a
+        // do registro publicado compararem a mesma forma.
         Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC);
         Ordem = ordem;
         CongelarVersao(versao);
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
-        // O processo atribui a finalidade ao definir os termos; quem remonta o envelope a informa.
+        // O processo atribui a finalidade ao definir os termos; quem reconstrói o registro publicado a informa.
         Finalidade = finalidade;
     }
 
@@ -98,7 +96,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     public IReadOnlyCollection<string> FatosCitados =>
         [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
 
-    /// <summary>O termo no que o grafo do formulário confere.</summary>
+    /// <summary>O termo utilizado na conferência das dependências do formulário.</summary>
     public TermoDoGrafo ParaGrafo() => new(Codigo, FatosCitados);
 
     /// <summary>As condições do termo, para os vínculos e as referências a valor do processo.</summary>
@@ -130,7 +128,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     }
 
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>
-    public bool SemFormaDeAceite => string.Equals(FormaAceite, FormaAceiteADefinir, StringComparison.Ordinal);
+    public bool SemFormaDeAceite => FormaAceite == FormaAceite.ADefinir;
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 
@@ -139,7 +137,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
 /// <summary>A versão do catálogo escolhida para o termo, com o conteúdo que o processo congela.</summary>
 public sealed record VersaoTermoEscolhida(
-    Guid TermoId, Guid VersaoId, string TermoCodigo, int VersaoNumero, string Nome, string Texto, string BaseLegal, string FormaAceite, string Hash);
+    Guid TermoId, Guid VersaoId, string TermoCodigo, int VersaoNumero, string Nome, string Texto, string BaseLegal, FormaAceite FormaAceite, string Hash);
 
 public static class TermoExigidoFormularioErrorCodes
 {
