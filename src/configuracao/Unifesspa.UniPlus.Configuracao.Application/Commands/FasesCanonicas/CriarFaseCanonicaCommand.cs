@@ -1,12 +1,14 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cria uma fase canônica (UNI-REQ-0064): código (chave natural canônica imutável),
-/// nome, descrição opcional, origem da data como token canônico UPPER_SNAKE
+/// nome, descrição opcional, origem da data como código de contrato
 /// (<c>OrigemData</c>), unidade sugerida opcional (<c>UnidadeSugeridaId</c>, resolvida no cadastro
 /// de unidades pelo handler) e os sinalizadores <c>AgrupaEtapas</c> /
 /// <c>PermiteComplementacao</c> / <c>ColetaInscricao</c> /
@@ -28,7 +30,7 @@ public sealed record CriarFaseCanonicaCommand(
     string? BaseLegal = null,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
-    string? OrigemData = null,
+    [property: AceitaCodigosDe<OrigemDataFase>] string? OrigemData = null,
     Guid? UnidadeSugeridaId = null) : ICommand<Result<Guid>>
 {
     /// <summary>Os quatro sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -25,14 +26,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// marca de solicitação de isenção só na fase de isenção) e entre eles (coletar inscrição e
 /// solicitação de isenção são exclusivos) são conferidas pela factory <see cref="Criar"/> e por
 /// <see cref="Atualizar"/>, revalidadas contra o código imutável. A remoção é sempre soft-delete; nunca bloqueada — o único
-/// consumo é por snapshot-copy desacoplado no Módulo Seleção (ADR-0061), e não há
+/// consumo é por cópia dos dados no Módulo Seleção (ADR-0061), e não há
 /// FK intra-banco apontando para esta entidade.</para>
 /// <para>O que uma fase publica e o papel de cada publicação são declarados na fase
 /// do cronograma do processo, não aqui: quem monta o edital é quem sabe se aquela
 /// homologação sai preliminar, definitiva ou as duas. <see cref="SinalizadoresDaFase.ColetaInscricao"/>
 /// decide o piso mínimo do cronograma quando a origem dos candidatos é inscrição
 /// própria; <see cref="OrigemData"/>
-/// decide se a janela da fase é obrigatória (<c>NO_EDITAL</c>) ou opcional
+/// decide se o período da fase é obrigatório (<c>NO_EDITAL</c>) ou opcional
 /// (<c>NA_EXECUCAO</c>). O cadastro <b>nasce semeado</b> com as fases do vocabulário
 /// (ADR-0113, Emenda 1): elas existem porque o ciclo do certame as tem, e não há
 /// autor a registrar — daí <c>CreatedBy</c> nulo nas linhas do seed. O CRUD admin
@@ -56,12 +57,12 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     /// <remarks>
     /// Marcas booleanas, e não comparação com o código: a Seleção decide pelos atributos que copia
-    /// para o snapshot da fase, nunca pelo código (ADR-0113). O código é imutável e as marcas o
+    /// para a cópia da fase, nunca pelo código (ADR-0113). O código é imutável e as marcas o
     /// acompanham.
     /// </remarks>
     public SinalizadoresDaFase Sinalizadores { get; private set; } = null!;
 
-    /// <summary>Quando a data da fase é fixada: <see cref="OrigemDataFase.NoEdital"/> (janela obrigatória) ou <see cref="OrigemDataFase.NaExecucao"/> (janela opcional).</summary>
+    /// <summary>Quando a data da fase é fixada: <see cref="OrigemDataFase.NoEdital"/> (período obrigatório) ou <see cref="OrigemDataFase.NaExecucao"/> (período opcional).</summary>
     public OrigemDataFase OrigemData { get; private set; }
 
     /// <summary>Id da unidade que costuma responder pela fase, copiado sem FK (ADR-0061); nulo quando não há sugestão.</summary>
@@ -159,7 +160,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// Cria uma nova fase canônica. Valida o código (formato + pertença ao conjunto
     /// canônico), os quatro campos comuns e os <paramref name="sinalizadores"/> — a coerência
     /// deles com o código só é conferida quando o código é reconhecido —, acumulando toda
-    /// violação no mesmo lote. A unicidade do código entre vivos é responsabilidade do handler.
+    /// violação na mesma resposta. A unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
     public static Result<FaseCanonica> Criar(
         string? codigo,
@@ -189,8 +190,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// Atualiza os atributos editáveis da fase. O <c>Codigo</c> e o <c>Id</c> são
     /// <b>imutáveis</b> — este método não os recebe. Revalida os quatro campos comuns
     /// e os <paramref name="sinalizadores"/> contra o código gravado da fase, acumulando toda
-    /// violação no mesmo lote — é a rede de segurança que cobre as coerências que o pré-check do
-    /// handler não consegue avaliar sem o código persistido.
+    /// violação na mesma resposta. Assim, também confere a coerência com o código gravado
+    /// da fase, que não está disponível antes desta chamada.
     /// </summary>
     public Result Atualizar(
         string? nome,
@@ -263,13 +264,14 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     private static OrigemDataFase ValidarOrigemData(string? origemData, List<FieldError> erros)
     {
-        if (!OrigensDataFase.TryAnalisar(origemData, out OrigemDataFase origem))
+        if (!CatalogoDe<OrigemDataFase>.TentarObter(origemData, out OrigemDataFase origem))
         {
-            erros.Add(new("origemData", string.IsNullOrWhiteSpace(origemData)
+            string aceitos = string.Join(", ", CatalogoDe<OrigemDataFase>.Todos().Select(static declarado => declarado.Codigo));
+            erros.Add(new("origemData", origemData is null
                 ? new DomainError(FaseCanonicaErrorCodes.OrigemDataObrigatoria, "Origem da data da fase é obrigatória.")
                 : new DomainError(
                     FaseCanonicaErrorCodes.OrigemDataInvalida,
-                    $"Origem da data deve ser uma de: {string.Join(", ", OrigensDataFase.TokensCanonicos)}.")));
+                    $"Origem da data deve ser uma de: {aceitos}.")));
         }
 
         return origem;

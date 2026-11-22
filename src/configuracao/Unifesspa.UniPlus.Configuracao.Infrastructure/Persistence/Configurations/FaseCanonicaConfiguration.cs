@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -59,12 +60,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private static void ConfigurarOrigemDaData(EntityTypeBuilder<FaseCanonica> builder)
     {
         builder.Property(f => f.OrigemData)
-            .HasConversion<OrigemDataFaseValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 
-    // Snapshot-copy (ADR-0061) da unidade sugerida: o id sem FK e a cópia de sigla e nome,
+    // Cópia dos dados (ADR-0061) da unidade sugerida: o id sem FK e a cópia de sigla e nome,
     // que o domínio grava e lê juntos — nulos quando a fase não tem sugestão.
     private static void ConfigurarUnidadeSugerida(EntityTypeBuilder<FaseCanonica> builder)
     {
@@ -170,7 +170,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         table.HasCheckConstraint(
             "ck_fases_canonicas_origem_data",
-            $"origem_data IN ({CodigosSql(OrigensDataFase.TokensCanonicos)})");
+            $"origem_data IN ({SqlDosCodigosDeContrato.Lista<OrigemDataFase>()})");
     }
 
     // Coerência: agrupa_etapas verdadeiro apenas para a fase de avaliação, e

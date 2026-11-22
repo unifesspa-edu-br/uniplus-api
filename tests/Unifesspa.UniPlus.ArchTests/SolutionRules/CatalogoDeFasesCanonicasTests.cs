@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -53,7 +54,7 @@ public sealed class CatalogoDeFasesCanonicasTests
         item.Nome,
         item.Descricao,
         item.BaseLegal,
-        OrigensDataFase.ParaTokenCanonico(item.OrigemData),
+        item.OrigemData.Codigo(),
         new SinalizadoresDaFase(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao));
 
     [Fact(DisplayName = "Os identificadores do seed são únicos e do prefixo determinístico")]

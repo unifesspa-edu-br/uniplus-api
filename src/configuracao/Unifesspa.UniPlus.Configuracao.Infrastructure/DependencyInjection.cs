@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Registra a infraestrutura do módulo Configuracao: os repositórios e os leitores cross-módulo (ADR-0056). O contexto e
@@ -90,13 +91,13 @@ public static class ConfiguracaoInfrastructureRegistration
     // Leitores cross-módulo (ADR-0056) do desenho do processo seletivo e do catálogo de fatos do candidato.
     private static void AdicionarLeitoresDoProcesso(IServiceCollection services)
     {
-        services.AddScoped<IFaseCanonicaReader, FaseCanonicaReader>();
+        services.AddScoped<IFaseCanonicaReader>(sp => new FaseCanonicaReader(sp.GetRequiredService<UniPlusDbContext>()));
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
         services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<ITipoEtapaReader, TipoEtapaReader>();
         services.AddScoped<ITipoConceitoReader, TipoConceitoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
-        services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
+        services.AddScoped<ICalendarioVigenteReader>(sp => new CalendarioVigenteReader(sp.GetRequiredService<UniPlusDbContext>()));
         services.AddScoped<ITermoConsentimentoReader, TermoConsentimentoReader>();
         services.AddScoped<IModeloFormularioReader, ModeloFormularioReader>();
         services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();

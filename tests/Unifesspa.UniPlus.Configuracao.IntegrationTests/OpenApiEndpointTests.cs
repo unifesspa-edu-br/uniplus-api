@@ -148,6 +148,35 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         ReferenciasDe(propriedades.GetProperty("tipo")).Should().Contain("#/components/schemas/TipoLocalOfertaCodigo");
     }
 
+    [Fact(DisplayName = "O código da origem da data da fase é componente de texto com enum, sem o valor nenhuma")]
+    public Task OrigemDataFaseCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync("OrigemDataFaseCodigo", ["NO_EDITAL", "NA_EXECUCAO"]);
+
+    [Fact(DisplayName = "O código da forma de aceite é componente de texto com enum, sem o valor nenhuma")]
+    public Task FormaAceiteCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync(
+            "FormaAceiteCodigo", ["A_DEFINIR", "REGISTRO_DIGITAL_SEM_LOG_IP", "REGISTRO_DIGITAL_COM_LOG_IP"]);
+
+    [Theory(DisplayName = "O código da resposta de fase e de termo referencia o componente do enum")]
+    [InlineData("OrigemDataFase", "origemData", "OrigemDataFaseCodigo", "FaseCanonicaDto")]
+    [InlineData("FormaAceite", "formaAceiteRascunho", "FormaAceiteCodigo", "TermoConsentimentoDto")]
+    [InlineData("FormaAceite", "formaAceiteRascunho", "FormaAceiteCodigo", "TermoConsentimentoResumoDto")]
+    [InlineData("FormaAceite", "formaAceite", "FormaAceiteCodigo", "TermoConsentimentoVersaoDto")]
+    public Task RespostaDeFaseETermo_ReferenciaOComponenteDoEnum(string resposta, string campo, string componente, string dto) =>
+        ConferirReferenciaDaRespostaAsync(resposta, campo, componente, dto);
+
+    [Theory(DisplayName = "Os pedidos de fase e de termo documentam o código com o componente dos códigos")]
+    [InlineData("CriarFaseCanonicaCommand", "origemData", "OrigemDataFaseCodigo")]
+    [InlineData("AtualizarFaseCanonicaCommand", "origemData", "OrigemDataFaseCodigo")]
+    [InlineData("CriarTermoConsentimentoCommand", "formaAceiteRascunho", "FormaAceiteCodigo")]
+    [InlineData("EditarRascunhoTermoConsentimentoCommand", "formaAceiteRascunho", "FormaAceiteCodigo")]
+    public async Task PedidosDeFaseETermo_ReferenciamOComponenteDoCodigo(string pedido, string campo, string componente)
+    {
+        JsonElement propriedades = (await ObterSchemasAsync()).GetProperty(pedido).GetProperty("properties");
+
+        ReferenciasDe(propriedades.GetProperty(campo)).Should().Contain($"#/components/schemas/{componente}");
+    }
+
     [Fact(DisplayName = "O código da regra de remanejamento é componente de texto com enum, sem o valor nenhum")]
     public Task RegraRemanejamentoCodigo_EComponenteDeTextoComEnum() =>
         ConferirComponenteDeCodigosAsync("RegraRemanejamentoCodigo", ["SEGUE_CASCATA", "DESTINO_UNICO", "CRUZADO"]);

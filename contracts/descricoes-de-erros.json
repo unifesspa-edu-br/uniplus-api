@@ -1740,7 +1740,7 @@
       ],
       "oQueAconteceu": [
         "O tipo da providência é obrigatório: use retirada ou revisao.",
-        "A providência pede a retirada do acesso (`retirada`) ou a revisão do acesso (`revisao`), e o campo `tipo` chegou vazio ou com outro valor. A recusa vem no mesmo lote das demais violações do corpo, em `errors[]`. Nenhuma providência foi aberta.",
+        "A providência pede a retirada do acesso (`retirada`) ou a revisão do acesso (`revisao`), e o campo `tipo` chegou vazio ou com outro valor. A recusa aparece junto das demais violações do corpo, em `errors[]`. Nenhuma providência foi aberta.",
         "Regra da tramitação da providência sobre concessão de acesso, definida na ADR-0164 da uniplus-api."
       ],
       "comoResolver": [
@@ -2176,13 +2176,13 @@
         "UNI-REQ-0296"
       ],
       "oQueAconteceu": [
-        "A decisão pedida inclui uma concessão do perfil em que quem decide é a pessoa beneficiária. A concessão de quem envia o lote fica retida justamente para ser decidida por outra pessoa. Nada foi gravado."
+        "A decisão pedida inclui uma concessão do perfil em que quem decide é a pessoa beneficiária. A concessão de quem envia as decisões fica retida para ser decidida por outra pessoa. Nada foi gravado."
       ],
       "comoResolver": [
         "Retire a própria concessão da decisão e peça a outra pessoa da gestão de acessos que decida a concessão retida."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração"
       ]
@@ -2194,13 +2194,13 @@
         "UNI-REQ-0296"
       ],
       "oQueAconteceu": [
-        "O lote enviado deixou sem decisão alguma concessão da versão anterior. O lote vale por inteiro: ele decide todas as concessões ativas, menos as retidas, que são as de quem o envia. Nada foi gravado."
+        "A lista enviada deixou sem decisão alguma concessão da versão anterior. A lista deve decidir todas as concessões ativas, exceto as retidas, que são as de quem a envia. Nada foi gravado."
       ],
       "comoResolver": [
-        "Recarregue a revisão, decida cada concessão da lista, migrando ou recusando, e envie de novo o lote completo. As concessões da própria pessoa que envia ficam fora da lista e são decididas por outra pessoa da gestão de acessos."
+        "Recarregue a revisão, decida cada concessão da lista, migrando ou recusando, e envie de novo a lista completa de decisões. As concessões da própria pessoa que envia ficam fora da lista e são decididas por outra pessoa da gestão de acessos."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso"
+        "Envio das decisões no período de migração do perfil de acesso"
       ]
     },
     {
@@ -2216,7 +2216,7 @@
         "Recarregue a revisão e monte a lista de novo, com uma decisão por concessão, só de concessões do perfil que aguardam a etapa."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração"
       ]
@@ -2227,13 +2227,13 @@
         "UNI-REQ-0294"
       ],
       "oQueAconteceu": [
-        "Cada revisão das concessões aceita um só lote da gestão de acessos, e ele fica congelado no envio. Outro envio, de qualquer pessoa, é recusado."
+        "Cada revisão das concessões aceita uma única lista de decisões da gestão de acessos, que não pode ser alterada depois do envio. Outro envio, de qualquer pessoa, é recusado."
       ],
       "comoResolver": [
-        "Recarregue a revisão para ver as decisões do lote enviado. O que ficou retido para outra pessoa da gestão de acessos se decide pela concessão retida, e o que aguarda a proteção de dados, pela etapa dela."
+        "Recarregue a revisão para ver as decisões da lista enviada. O que ficou retido para outra pessoa da gestão de acessos se decide pela concessão retida, e o que aguarda a proteção de dados, pela etapa dela."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso"
+        "Envio das decisões no período de migração do perfil de acesso"
       ]
     },
     {
@@ -2242,10 +2242,10 @@
         "UNI-REQ-0296"
       ],
       "oQueAconteceu": [
-        "A concessão retida nasce no envio do lote da gestão de acessos. Antes disso nenhuma decisão sobre ela é aceita, e depois dele a concessão precisa constar do lote."
+        "A concessão fica retida quando a gestão de acessos envia a lista de decisões. Antes disso, nenhuma decisão sobre ela é aceita; após o envio, a concessão precisa constar da lista."
       ],
       "comoResolver": [
-        "Aguarde o envio do lote por outra pessoa da gestão de acessos e recarregue a revisão. Se a concessão não constar da lista, ela não depende de decisão."
+        "Aguarde o envio da lista de decisões por outra pessoa da gestão de acessos e recarregue a revisão. Se a concessão não constar da lista, ela não depende de decisão."
       ],
       "ondeAparece": [
         "Decisão da concessão retida no período de migração"
@@ -2264,7 +2264,7 @@
         "Repita a decisão confirmando que entende que as concessões recusadas, ou as que não foram migradas, serão revogadas."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração",
         "Encerramento do período de migração do perfil de acesso"
@@ -2313,7 +2313,7 @@
         "Recarregue a tela para ver a situação final de cada concessão. Quem perdeu o acesso volta a tê-lo por pedido novo, feito depois do fim da revisão."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração",
         "Encerramento do período de migração do perfil de acesso"
@@ -2347,7 +2347,7 @@
         "Recarregue a tela: as concessões já têm a situação final. Se alguém precisar do perfil, o caminho é o pedido de acesso, que volta a ser aceito com a revisão terminada."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração",
         "Encerramento do período de migração do perfil de acesso"
@@ -2366,7 +2366,7 @@
       ],
       "ondeAparece": [
         "Consulta do período de migração do perfil de acesso",
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração",
         "Encerramento do período de migração do perfil de acesso"
@@ -2385,7 +2385,7 @@
         "Peça a uma pessoa com a permissão da etapa que faça a decisão."
       ],
       "ondeAparece": [
-        "Envio do lote do período de migração do perfil de acesso",
+        "Envio das decisões no período de migração do perfil de acesso",
         "Decisão da concessão retida no período de migração",
         "Decisão da proteção de dados no período de migração",
         "Encerramento do período de migração do perfil de acesso"
@@ -2533,7 +2533,7 @@
       ],
       "oQueAconteceu": [
         "A operação foi recusada porque o **código IBGE** da cidade não foi informado.",
-        "O Uni+ referencia cidade por valor, não por chave estrangeira entre bancos: uma\nentidade que precisa saber em que município está guarda o código IBGE do\nmunicípio (sete dígitos) mais um cache de exibição — nome e UF — preenchido\npelo cliente a partir do cadastro de localidades do serviço Geo. O código IBGE\né o único campo normativo do trio; é dele que se derivam o município e a UF\ncujos feriados e demais regras territoriais se aplicam. Esse padrão é\ncompartilhado por qualquer entidade que registre cidade dessa forma — Campus e\nLocal de Oferta em Configuração, Instituição e Unidade em Organização\nInstitucional, o retrato de unidade administradora em Seleção — e por qualquer\nendereço estruturado por CEP, cujo trio de cidade passa pela mesma validação.",
+        "O Uni+ referencia cidade por valor, não por chave estrangeira entre bancos: uma\nentidade que precisa saber em que município está guarda o código IBGE do\nmunicípio (sete dígitos) mais um cache de exibição — nome e UF — preenchido\npelo cliente a partir do cadastro de localidades do serviço Geo. O código IBGE\né o único campo normativo do trio; é dele que se derivam o município e a UF\ncujos feriados e demais regras territoriais se aplicam. Esse padrão é\ncompartilhado por qualquer entidade que registre cidade dessa forma — Campus e\nLocal de Oferta em Configuração, Instituição e Unidade em Organização\nInstitucional, a cópia da unidade administradora em Seleção — e por qualquer\nendereço estruturado por CEP, cujo trio de cidade passa pela mesma validação.",
         "A validação é de formato: nenhum dos três campos do trio pode faltar quando\nalgum dos outros está presente. O código IBGE é conferido primeiro, antes do\nnome e da UF — se mais de um campo estiver ausente ao mesmo tempo, é esta a\ncausa relatada, e não as demais."
       ],
       "comoResolver": [
@@ -2697,7 +2697,7 @@
       "comoResolver": [
         "**Quem usa a tela:** atualize a página e confira o estado atual do processo. Se a alteração que você pretendia ainda não aparece, faça-a de novo em instantes. Nada do que você tinha enviado foi gravado.",
         "**Quem integra:**",
-        "1. Não tente de novo automaticamente nem com intervalo fixo.\n2. Releia o estado do processo (consulta) e verifique se a alteração ainda é necessária.\n3. Se for, reenvie a operação:\n   - nas rotas que exigem `Idempotency-Key`, use uma **nova** chave. A recusa fica guardada na chave original: reenviar com a mesma chave devolve o mesmo 503, e a resposta traz o cabeçalho `Idempotency-Replayed`;\n   - nas rotas que não usam `Idempotency-Key` (importação de lote de notas do ENEM, envio ao INEP e remoção de formulário), basta reler o estado e reenviar.",
+        "1. Não tente de novo automaticamente nem com intervalo fixo.\n2. Releia o estado do processo (consulta) e verifique se a alteração ainda é necessária.\n3. Se for, reenvie a operação:\n   - nas rotas que exigem `Idempotency-Key`, use uma **nova** chave. A recusa fica guardada na chave original: reenviar com a mesma chave devolve o mesmo 503, e a resposta traz o cabeçalho `Idempotency-Replayed`;\n   - nas rotas que não usam `Idempotency-Key` (importação de notas do ENEM, envio ao INEP e remoção de formulário), basta reler o estado e reenviar.",
         "A mensagem da resposta já traz a orientação que vale para a rota chamada: com nova chave de idempotência, nas rotas que a exigem, ou sem menção à chave, nas demais.",
         "Se a recusa se repetir em tentativas feitas com alguns minutos de intervalo, avise a equipe técnica do Uni+, informando o horário e o processo seletivo envolvido."
       ],
@@ -2708,7 +2708,7 @@
         "Publicação de ato do processo e publicação de produto previsto",
         "Inclusão e retirada de motivo de decisão do processo",
         "Definição, remoção e aplicação de modelo dos formulários do processo",
-        "Importação de lote de notas do ENEM e geração do envio ao INEP"
+        "Importação de notas do ENEM e geração do envio ao INEP"
       ]
     },
     {
@@ -3967,7 +3967,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A **origem da data** (campo `origemData`) informada não é um dos dois códigos aceitos: `NO_EDITAL` ou `NA_EXECUCAO`.",
-        "Espaços nas pontas do valor são removidos antes da comparação, que diferencia\nmaiúsculas de minúsculas e só aceita exatamente os dois códigos: qualquer outro\nvalor é recusado."
+        "A comparação é exata: espaços nas pontas e diferença entre maiúsculas e minúsculas\nnão são aceitos, e qualquer outro valor é recusado. A lista, com o rótulo de cada\ncódigo, está em `GET /api/configuracao/vocabularios/origens-data-fase`."
       ],
       "comoResolver": [
         "Informe um dos dois códigos válidos: `NO_EDITAL` (a data é fixada no edital e o\nperíodo da fase é obrigatório) ou `NA_EXECUCAO` (a unidade responsável pela\nfase define a data na execução e o período é opcional)."
@@ -4141,7 +4141,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O administrador enviou a nova definição de um fato do catálogo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), mas a regra de aplicabilidade de uma modalidade cita este fato, e a definição nova a deixaria inválida, por exemplo ao trocar o tipo de dado em que a condição se apoia. A recusa só conta o que a alteração causa: a regra que já era inválida antes da alteração não trava. A correção da definição de um fato é regra do UNI-REQ-0159, e a API recusa a alteração que deixaria inválido algo que já cita o fato, em vez de alterá-lo em silêncio. Nada é gravado: o fato continua com a definição anterior.",
+        "O administrador enviou a nova definição de um fato do catálogo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), mas a regra de aplicabilidade de uma modalidade cita este fato, e a definição nova a deixaria inválida, por exemplo ao trocar o tipo de dado em que a condição se apoia. A recusa considera apenas os problemas causados pela alteração: uma regra que já era inválida antes não impede a alteração. A correção da definição de um fato é regra do UNI-REQ-0159, e a API recusa a alteração que deixaria inválido algo que já cita o fato, em vez de alterá-lo em silêncio. Nada é gravado: o fato continua com a definição anterior.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `citacoes.modalidades.<código da modalidade>`, uma entrada por modalidade afetada. A mensagem cita o que deixaria de valer."
       ],
       "comoResolver": [
@@ -4158,7 +4158,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O administrador enviou a nova definição de um fato do catálogo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), mas a regra padrão de outro fato (um derivado por regra) cita este fato, e a definição nova a deixaria inválida, por exemplo ao trocar o tipo de dado de que a condição depende. A recusa só conta o que a alteração causa: a regra que já era inválida antes da alteração não trava. A correção da definição de um fato é regra do UNI-REQ-0159, e a API recusa a alteração que deixaria inválido algo que já cita o fato, em vez de alterá-lo em silêncio. Nada é gravado: o fato continua com a definição anterior.",
+        "O administrador enviou a nova definição de um fato do catálogo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), mas a regra padrão de outro fato (um derivado por regra) cita este fato, e a definição nova a deixaria inválida, por exemplo ao trocar o tipo de dado de que a condição depende. A recusa considera apenas os problemas causados pela alteração: uma regra que já era inválida antes não impede a alteração. A correção da definição de um fato é regra do UNI-REQ-0159, e a API recusa a alteração que deixaria inválido algo que já cita o fato, em vez de alterá-lo em silêncio. Nada é gravado: o fato continua com a definição anterior.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `citacoes.regrasPadrao.<código do fato derivado>`, uma entrada por fato afetado. A mensagem cita o que deixaria de valer."
       ],
       "comoResolver": [
@@ -4283,7 +4283,7 @@
       "oQueAconteceu": [
         "Um fato derivado revela o que se sabe dos fatos de que depende: a regra padrão cita esses fatos, e o resumo de grupo reúne as respostas ao fato de membro. Por isso ele não pode ter classificação de proteção de dados mais fraca que a de nenhum deles. A escala vai do mais fraco ao mais forte: `PUBLICO`, `INTERNO`, `PESSOAL`, `IDENTIFICADOR`, `SENSIVEL`. A recusa vale para:",
         "- o cadastro do resumo de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`), contra o fato de membro, com `field` igual a `classificacaoProtecao`;\n- a definição das regras padrão (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), contra cada fato citado, com `field` igual ao índice da regra, como `regras[0]`;\n- a alteração da definição do derivado ou do resumo de grupo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) e o aceite da recomendação de ajuste (`POST /api/configuracao/admin/fatos-candidato/{id}/aceite-da-recomendacao`), contra o que o fato já cita ou resume, com `field` igual a `classificacaoProtecao`.",
-        "A mensagem cita o código do fato de que o derivado depende. Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não a trava. Nada é gravado."
+        "A mensagem cita o código do fato de que o derivado depende. Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não impede a alteração. Nada é gravado."
       ],
       "comoResolver": [
         "Eleve a classificação do fato derivado até a do fato mais protegido que ele cita ou resume, ou tire a citação da regra. A proteção do fato de que ele depende também pode ser revista, mas isso muda o dado de origem e passa pela aprovação da proteção de dados (UNI-REQ-0205). Para elevar a classificação do derivado, altere a definição dele (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`)."
@@ -4925,7 +4925,7 @@
         "O ponto de resolução é a fase do processo em que o valor do fato fica conhecido. Um fato derivado só resolve quando todos os fatos de que depende resolveram (UNI-REQ-0075), então ele não pode ser conhecido numa fase anterior à de uma dependência: a regra padrão cita esses fatos, e o resumo de grupo reúne as respostas ao fato de membro. A ordem entre as fases vem do cadastro de precedência entre fases. Fases sem precedência entre si, e a mesma fase, não geram esta recusa. A mensagem cita o código do fato de que o derivado depende e as duas fases.",
         "A recusa vale para:",
         "- o cadastro do resumo de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`), contra o fato de membro, com `field` igual a `pontoResolucao`;\n- a definição das regras padrão (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), contra cada fato citado, com `field` igual ao índice da regra, como `regras[0]`;\n- a alteração da definição de um derivado ou de um resumo de grupo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), contra o que o fato já cita ou resume, com `field` igual a `pontoResolucao`.",
-        "Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não a trava. Nada é gravado."
+        "Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não impede a alteração. Nada é gravado."
       ],
       "comoResolver": [
         "Escolha para o derivado uma fase igual ou posterior à de todos os fatos de que ele depende, ou tire a citação da regra. Se é a dependência que precisa resolver mais cedo, altere a definição dela (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`); a alteração só é aceita se o que depende dela continuar valendo."
@@ -6502,7 +6502,7 @@
         "O `regimeDeFuncionamento` informado não é `EXTENSIVO`, `INTENSIVO` nem\n`ALTERNANCIA_PEDAGOGICA`. Não há outros além desses três, e o valor é aceito por\ncorrespondência textual exata com um desses três códigos.",
         "Três enganos previsíveis levam a este erro:",
         "- **Enviar um código do regime de turno.** `REGULAR` e `INTEGRAL` são o\n  vocabulário da outra dimensão, que responde em *quantos turnos* a oferta\n  funciona — não em que regime ela funciona.\n- **Enviar um código do formato pedagógico ou do programa de oferta.**\n  `PRESENCIAL`, `SEMIPRESENCIAL` e `EAD` dizem **como** a aula acontece;\n  `REGULAR`, `PARFOR`, `PRONERA`, `FORMA_PARA`, `PEPETI`, `CONVENIO_OUTRO` e\n  `OUTRO` dizem a que programa a oferta se vincula. São campos independentes,\n  cada um com o seu.\n- **Escrever a alternância com acento, espaço ou caixa diferente.** O código é\n  `ALTERNANCIA_PEDAGOGICA` — caixa alta, sem acento, com sublinhado.\n  `Alternância Pedagógica`, `Alternancia Pedagogica` e\n  `alternancia_pedagogica` são recusados.",
-        "O parsing é sensível a maiúsculas e minúsculas e não aceita valor numérico.\nEspaço em volta do código é tolerado; qualquer outra variação, não."
+        "A comparação é exata: espaços nas pontas e diferença entre maiúsculas e minúsculas\nnão são aceitos, nem valores numéricos."
       ],
       "comoResolver": [
         "Informe um dos três códigos válidos:",
@@ -7095,7 +7095,7 @@
       "codigo": "uniplus.configuracao.precedencia_fase.aresta_duplicada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) trouxe um par de fases, antecessora e sucessora, que já está cadastrado entre as precedências existentes. O par é a identidade da precedência: o mesmo par duas vezes não acrescenta nada ao grafo de precedências. O par inverso, com as fases trocadas, não é duplicata e tem outra recusa (ver `uniplus.configuracao.precedencia_fase.ciclo_detectado`).",
+        "O cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) trouxe um par de fases, antecessora e sucessora, que já está cadastrado entre as precedências existentes. O par é a identidade da precedência: o mesmo par duas vezes não acrescenta nada aas precedências cadastradas. O par inverso, com as fases trocadas, não é duplicata e tem outra recusa (ver `uniplus.configuracao.precedencia_fase.ciclo_detectado`).",
         "A conferência de duplicata vem depois das conferências dos códigos e antes da de ciclo. Duas requisições simultâneas com o mesmo par também terminam nesta recusa: a que confirma por último a recebe. A resposta traz o código de erro e a mensagem, sem a lista `errors`. Nada é gravado."
       ],
       "comoResolver": [
@@ -7470,7 +7470,7 @@
         "UNI-REQ-0373"
       ],
       "oQueAconteceu": [
-        "O campo `parecer` da manifestação trouxe um valor que não está entre os aceitos: `ADEQUADA`, `RECOMENDA_AJUSTE` e `INADEQUADA`. A recusa vem no mesmo lote das demais violações do corpo, em `errors[]`. Nada foi registrado.",
+        "O campo `parecer` da manifestação trouxe um valor que não está entre os aceitos: `ADEQUADA`, `RECOMENDA_AJUSTE` e `INADEQUADA`. A recusa aparece junto das demais violações do corpo, em `errors[]`. Nada foi registrado.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
@@ -7983,7 +7983,7 @@
         "UNI-REQ-0086"
       ],
       "oQueAconteceu": [
-        "Cada termo tem uma forma de aceite, que só pode ser uma destas três (UNI-REQ-0086): `A_DEFINIR`, `REGISTRO_DIGITAL_SEM_LOG_IP` ou `REGISTRO_DIGITAL_COM_LOG_IP`. O campo `formaAceiteRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), trouxe outro valor. A comparação desconsidera os espaços nas pontas, mas diferencia maiúsculas de minúsculas, e nomes por extenso ou números não valem.",
+        "Cada termo tem uma forma de aceite, que só pode ser uma destas três (UNI-REQ-0086): `A_DEFINIR`, `REGISTRO_DIGITAL_SEM_LOG_IP` ou `REGISTRO_DIGITAL_COM_LOG_IP`. O campo `formaAceiteRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), trouxe outro valor. A comparação é exata: espaços nas pontas e diferença entre maiúsculas e minúsculas não são aceitos, e nomes por extenso ou números não valem. A lista, com o rótulo de cada forma, está em `GET /api/configuracao/vocabularios/formas-aceite`.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `formaAceiteRascunho`, e a mensagem lista as formas aceitas. As demais recusas do corpo vêm na mesma resposta, e nada é gravado. Na edição, o `id` do corpo diferente do da rota é recusado com 400 antes das demais conferências, e em seguida o corpo é conferido, antes da busca do termo: um `{id}` que não existe só responde como não encontrado quando o corpo é válido."
       ],
       "comoResolver": [
@@ -10275,7 +10275,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `codigo` de uma etapa do formulário está vazio, só com espaços, ou tem mais de 60 caracteres depois de aparado. A mensagem é \"O código da etapa é obrigatório e tem no máximo 60 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].codigo`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, no mesmo lote das demais recusas da forma da etapa (título, ordem, descrição, aviso e exibição).",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].codigo`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, junto das demais recusas da forma da etapa (título, ordem, descrição, aviso e exibição).",
         "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Há ainda um caso só da gravação do formulário do processo: uma etapa nula dentro da lista de `etapas` é recusada com este mesmo código, com `field` igual a `etapas[i]` e a mensagem \"A etapa veio nula.\"; nos modelos, a etapa nula é recusada como [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada).",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -10311,7 +10311,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A `ordem` de uma etapa do formulário é um número negativo. Zero e os positivos são aceitos. A mensagem é \"A ordem da etapa não pode ser negativa.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].ordem`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, no mesmo lote das demais recusas da forma da etapa.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].ordem`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, junto das demais recusas da forma da etapa.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10328,7 +10328,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A `descricao` ou o `aviso` de uma etapa do formulário tem mais de 2000 caracteres depois de aparado. Os dois textos são opcionais: a descrição apresenta a etapa ao candidato, e o aviso destaca o que ele precisa saber antes de responder. A mensagem diz qual dos dois excedeu: \"A descrição da etapa tem no máximo 2000 caracteres.\" ou \"O aviso da etapa tem no máximo 2000 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].descricao` ou `etapas[i].aviso`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada texto recusado tem a própria entrada, no mesmo lote das demais recusas da forma da etapa.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].descricao` ou `etapas[i].aviso`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada texto recusado tem a própria entrada, junto das demais recusas da forma da etapa.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10345,7 +10345,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `titulo` de uma etapa do formulário está vazio, só com espaços, ou tem mais de 300 caracteres depois de aparado. O título é o nome com que a etapa aparece para o candidato. A mensagem é \"O título da etapa é obrigatório e tem no máximo 300 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].titulo`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, no mesmo lote das demais recusas da forma da etapa.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].titulo`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. Cada etapa recusada tem a própria entrada, junto das demais recusas da forma da etapa.",
         "A recusa vale para o texto presente. A propriedade `titulo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10362,7 +10362,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma etapa que não é seção traz `exibicao`. A exibição condicional, que decide por respostas anteriores se a etapa aparece, é própria da seção; o bloco de sistema (comprovação documental, modalidades calculadas, revisão e aceite) aparece sempre. A mensagem é \"Só a seção tem exibição condicional; o bloco de sistema aparece sempre.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].exibicao`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A recusa é dada no mesmo lote das demais recusas da forma da etapa.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i].exibicao`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A recusa é dada junto das demais recusas da forma da etapa.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10487,7 +10487,7 @@
       ],
       "oQueAconteceu": [
         "O formulário de inscrição tem a seção reservada `DADOS_BASICOS` (UNI-REQ-0151), e o sistema a acrescenta quando as etapas enviadas não a trazem. Se as etapas a trazem, ela precisa ser igual à de referência: mesma `ordem`, `tipo` `SECAO`, sem `bloco`, com o mesmo título, descrição e aviso, e sem `exibicao`. Qualquer diferença é recusada. A mensagem é \"A seção DADOS_BASICOS é a dos dados básicos do candidato e não pode ser alterada.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i]`, em que `i` é a posição da seção na lista enviada (nos modelos de formulário o `field` começa por `conteudo.`). Nada é gravado. A conferência vale só para o formulário e o modelo de inscrição. Nas gravações do formulário do processo, ela sai no mesmo lote das demais recusas das etapas.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `etapas[i]`, em que `i` é a posição da seção na lista enviada (nos modelos de formulário o `field` começa por `conteudo.`). Nada é gravado. A conferência vale só para o formulário e o modelo de inscrição. Nas gravações do formulário do processo, ela sai junto das demais recusas das etapas.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10644,7 +10644,7 @@
       "codigo": "uniplus.grafo_formulario.cita_atributo_do_candidato",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma regra do formulário cita um fato que o sistema calcula a partir de atributos do candidato e que não declara as dependências dele, como a renda per capita. O formulário não tem como saber em que ponto da coleta esse fato fica conhecido, e por isso nenhuma regra o cita. Os fatos calculados que declaram as dependências, como a faixa etária, passam, e a conferência do grafo os trata como o derivado por regra. A mensagem é \"O fato '`{código\\}`' é calculado pelo sistema a partir de atributos do candidato sem dependências declaradas e não pode ser citado em regra do formulário.\"",
+        "Uma regra do formulário cita um fato que o sistema calcula a partir de atributos do candidato e que não declara as dependências dele, como a renda per capita. O formulário não tem como saber em que ponto da coleta esse fato fica conhecido, e por isso nenhuma regra o cita. Os fatos calculados que declaram as dependências, como a faixa etária, passam, e a conferência das dependências os trata como o derivado por regra. A mensagem é \"O fato '`{código\\}`' é calculado pelo sistema a partir de atributos do candidato sem dependências declaradas e não pode ser citado em regra do formulário.\"",
         "A conferência vale para as regras de item e de grupo (pré-condição, obrigatoriedade, restrições e impedimento), para a exibição das seções e para a exibição e a obrigatoriedade dos termos; nos modelos, também para a condição dos documentos exigidos. Nos modelos, a recusa vem na lista `errors`, com `field` igual ao da regra que cita, como `conteudo.etapas[i].exibicao`. Nas gravações do processo, o `field` é `etapas[i].exibicao` na seção, `termos[i].exibicao` ou `termos[i].predicadoObrigatoriedade` no termo, e `itens[i]` ou `grupos[i]` no item ou no grupo. Nada é gravado.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -10667,7 +10667,7 @@
       "oQueAconteceu": [
         "Uma regra de item, de grupo, de campo de outro grupo ou de exibição de seção cita um campo que pertence a um grupo repetível, como a composição familiar. Fora do grupo, esse campo existe uma vez por ocorrência e não tem um valor único: só as regras do próprio grupo, e dos campos dele, podem citá-lo (UNI-REQ-0146). A mensagem é \"Uma regra `{de quem cita\\}` cita '`{campo\\}`', campo do grupo '`{grupo\\}`' — fora do grupo ele existe uma vez por ocorrência e não tem valor único.\"",
         "Nos modelos de formulário a recusa vem na lista `errors` da resposta, com `field` igual a `conteudo`. Na gravação dos itens do processo, a resposta traz o código e o `detail` com a mensagem, sem lista `errors`. Nada é gravado.",
-        "Esta recusa vem antes das citações a fato desconhecido, porque o campo do grupo existe, só não vale fora dele. O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Esta recusa vem antes das citações a fato desconhecido, porque o campo do grupo existe, só não vale fora dele. As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Retire a citação ao campo do grupo da regra que a faz. Para decidir com base na lista, a regra usa um fato derivado sobre o grupo (UNI-REQ-0146), e não o campo do membro."
@@ -10688,7 +10688,7 @@
         "Uma regra do formulário cita um fato que ele não coleta, não deriva e não conhece antes dele (UNI-REQ-0145). Os fatos que uma regra pode citar são os campos anteriores na ordem do formulário, os coletados pela inscrição quando o formulário é de outra finalidade, nos modelos os pressupostos que o modelo declara, e os derivados cujas dependências estão entre esses. A mensagem varia com quem cita: \"Uma regra do fato '`{X\\}`' cita '`{Y\\}`', que o formulário não coleta nem deriva, nem é conhecido antes dele.\"; para a exibição de uma seção, \"A exibição da seção '`{S\\}`' cita '`{Y\\}`', que o formulário não coleta nem deriva antes dela.\"; para o termo, \"A condição do termo '`{T\\}`' cita '`{Y\\}`', que o formulário não coleta nem deriva, nem é conhecido antes dele.\"; e, nos modelos, a condição de um documento exigido tem mensagem própria, com o `documentosExigidos[i]` que a cita.",
         "A recusa também sai quando uma mudança deixaria sem o fato uma regra que já existia. Ao trocar os itens do formulário de inscrição, ou removê-lo, ou aplicar nele um modelo, a recusa é a da citação que a mudança invalidaria em outro formulário do processo: \"O fato '`{Y\\}`', citado por `{quem cita\\}` do formulário de `{finalidade\\}`, deixaria de ser conhecido por ele.\" Na publicação inicial e na retificação em ato único, as regras dos itens, as exibições das seções e as condições dos termos são conferidas de novo, porque os itens e as derivações podem ter mudado depois que a regra foi gravada.",
         "Nos modelos de formulário, a recusa vem na lista `errors`, com `field` igual a `conteudo`. Na gravação dos itens do processo, na remoção do formulário, na aplicação do modelo e na publicação, a resposta traz o código e a mensagem da recusa. Na gravação do formulário do processo, a recusa é da exibição de uma seção, com `field` igual a `etapas[i].exibicao`; na gravação dos termos, o `field` é `termos[i]`. Nada é gravado.",
-        "O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Essa precedência vale para os modelos e para a gravação dos itens. Na gravação do formulário do processo, a conferência da exibição das seções não espera a estrutura das etapas: ela roda mesmo quando a estrutura foi recusada, e a lista `errors` pode trazer a recusa da exibição junto com as da estrutura. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Essa precedência vale para os modelos e para a gravação dos itens. Na gravação do formulário do processo, a conferência da exibição das seções não espera a estrutura das etapas: ela roda mesmo quando a estrutura foi recusada, e a lista `errors` pode trazer a recusa da exibição junto com as da estrutura. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Retire a citação, ou acrescente ao formulário o item que coleta o fato citado, antes do campo que o cita. Se o fato é de outra finalidade, só a inscrição é lida pelos demais formulários, e o fato precisa estar nela. Ao trocar os itens da inscrição, mantenha os fatos que as regras de outros formulários citam, ou ajuste antes essas regras."
@@ -10713,7 +10713,7 @@
       "oQueAconteceu": [
         "Uma regra cita um fato que o formulário coleta, mas só no próprio campo ou depois dele (UNI-REQ-0145). Vale para as regras de exibição, obrigatoriedade e restrição dos itens, para as dos grupos e dos campos de grupo e para a exibição das seções; no campo de um grupo, os campos anteriores do mesmo grupo podem ser citados. A mensagem varia com quem cita, e termina em \"... que só fica conhecido nesse campo ou depois dele — o campo dependeria de uma resposta ainda não dada.\" para o item; para a seção, em \"... que só fica conhecido na própria seção ou depois dela.\"; para o grupo, em \"... que só fica conhecido na posição do grupo ou depois dela.\"; e para o campo de um grupo que cita campo posterior do mesmo grupo, em \"... campo do grupo '`{grupo\\}`' que vem nele ou depois dele — o campo dependeria de uma resposta ainda não dada na ocorrência.\"",
         "Nos modelos de formulário e na gravação dos itens, a recusa vem como descrito para os demais códigos do grafo: nos modelos, na lista `errors`, com `field` igual a `conteudo`; na gravação dos itens do processo, com o código e o `detail`, sem lista `errors`. Na gravação do formulário do processo, a recusa é da exibição de uma seção e vem na lista `errors`, com `field` igual a `etapas[i].exibicao`. Nada é gravado.",
-        "A condição de um termo não tem esta recusa: o termo vem depois de todos os campos, e a citação a fato que o formulário não conhece é a de [fato não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido). O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Essa precedência vale para os modelos e para a gravação dos itens. Na gravação do formulário do processo, a conferência da exibição das seções não espera a estrutura das etapas: ela roda mesmo quando a estrutura foi recusada, e a lista `errors` pode trazer a recusa da exibição junto com as da estrutura. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A condição de um termo não tem esta recusa: o termo vem depois de todos os campos, e a citação a fato que o formulário não conhece é a de [fato não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido). As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Essa precedência vale para os modelos e para a gravação dos itens. Na gravação do formulário do processo, a conferência da exibição das seções não espera a estrutura das etapas: ela roda mesmo quando a estrutura foi recusada, e a lista `errors` pode trazer a recusa da exibição junto com as da estrutura. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Reordene os campos para que a resposta citada venha antes do campo que a cita, ou retire a citação. Na exibição de uma seção, o fato citado precisa ser coletado em seção anterior a ela."
@@ -10733,7 +10733,7 @@
       "oQueAconteceu": [
         "Um código aparece mais de uma vez entre os itens, os grupos e os campos dos grupos do mesmo formulário. Valem como repetição: dois itens com o mesmo fato; um campo de grupo que repete um item, outro campo ou um grupo; e um grupo com o código de um item, de outro grupo, de um fato derivado ou de um fato já conhecido antes do formulário. O código de cada nó é único no formulário (UNI-REQ-0078). A mensagem é \"O código '`{código\\}`' aparece mais de uma vez no formulário, entre fatos e grupos.\"",
         "Nos modelos de formulário a recusa vem na lista `errors` da resposta, com `field` igual a `conteudo`. Na gravação dos itens do processo, a resposta traz o código e o `detail` com a mensagem, sem lista `errors`. Nada é gravado.",
-        "O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
         "Um fato que outro formulário do mesmo processo já coleta tem recusa própria, a de [fato já coletado por outro formulário](/erros/uniplus.selecao.fato_coletado.fato_duplicado)."
       ],
       "comoResolver": [
@@ -10753,7 +10753,7 @@
       "oQueAconteceu": [
         "As regras dos campos citam respostas de outros campos, e essas citações formam um círculo: o campo A depende de B, e B, direta ou por outros campos, depende de A. O grafo de dependência do formulário é acíclico (UNI-REQ-0077), porque num círculo nenhum dos campos poderia ser avaliado primeiro. A mensagem traz o caminho inteiro, como \"As regras dos campos formam um ciclo: A → B → A.\", com os códigos dos fatos.",
         "Nos modelos de formulário a recusa vem na lista `errors` da resposta, com `field` igual a `conteudo`. Na gravação dos itens do processo, a resposta traz o código e o `detail` com a mensagem, sem lista `errors`. Nada é gravado.",
-        "O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Retire de uma das regras do caminho indicado a citação que fecha o círculo. Cada campo só pode depender de campos que o candidato responde antes dele."
@@ -10772,7 +10772,7 @@
       "oQueAconteceu": [
         "Dois itens, ou um item e um grupo, têm o mesmo valor de `ordem`; ou dois campos do mesmo grupo têm a mesma `ordem` dentro dele. A ordem de coleta define o que o candidato já respondeu quando chega a cada campo, e por isso é total (UNI-REQ-0077). A mensagem diz qual dos dois casos ocorreu: \"A ordem `{n\\}` é usada por mais de um item ou grupo — a ordem de coleta precisa ser total.\" ou \"A ordem `{n\\}` é usada por mais de um campo do grupo '`{grupo\\}`' — a ordem dentro do grupo precisa ser total.\"",
         "Nos modelos de formulário a recusa vem na lista `errors` da resposta, com `field` igual a `conteudo`. Na gravação dos itens do processo, a resposta traz o código e o `detail` com a mensagem, sem lista `errors`. Nada é gravado.",
-        "O grafo de coleta é conferido só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "As dependências do formulário são conferidas só depois de a forma e a estrutura do formulário passarem, e responde com uma única recusa, a primeira que encontrar. Primeiro percorre os itens e os grupos, um a um, e em cada um confere o [código de fato repetido](/erros/uniplus.grafo_formulario.fato_duplicado) antes da [ordem repetida](/erros/uniplus.grafo_formulario.ordem_duplicada), e a primeira repetição encerra a conferência. Depois vêm, nesta ordem, o [ciclo entre as regras](/erros/uniplus.grafo_formulario.grafo_com_ciclo), [campo de grupo citado fora do grupo](/erros/uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo) e, por fim, as citações a fato [não conhecido](/erros/uniplus.grafo_formulario.cita_fato_nao_conhecido) ou [posterior](/erros/uniplus.grafo_formulario.cita_fato_posterior). Corrigida a primeira, a seguinte pode aparecer. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Dê a cada item e a cada grupo uma `ordem` distinta, em sequência, e o mesmo a cada campo dentro de um grupo."
@@ -10790,7 +10790,7 @@
       ],
       "oQueAconteceu": [
         "Um campo de um grupo repetível (um item de `subitens` de um grupo em `grupos`) traz `impedimento`. O impedimento é a resposta que impede a inscrição do candidato; o campo de um grupo, como os da composição familiar, responde por um membro de cada ocorrência (UNI-REQ-0146), e o impedimento de um membro não é o da inscrição do candidato.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].impedimento`, e a mensagem traz o código do fato do campo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo de grupo com impedimento, no mesmo lote das demais recusas da forma do grupo. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].impedimento`, e a mensagem traz o código do fato do campo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo de grupo com impedimento, junto das demais recusas da forma do grupo. Nada é gravado.",
         "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10809,7 +10809,7 @@
       ],
       "oQueAconteceu": [
         "Um campo de um grupo repetível (um item de `subitens` de um grupo em `grupos`) traz `etapaCodigo`. O campo aparece onde o grupo aparece, na seção do próprio grupo, e por isso não declara seção própria (UNI-REQ-0146).",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].etapaCodigo`, e a mensagem diz que o campo, pelo código do fato, segue a seção do grupo e não declara seção própria. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo com `etapaCodigo`, no mesmo lote das demais recusas da forma do grupo. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].etapaCodigo`, e a mensagem diz que o campo, pelo código do fato, segue a seção do grupo e não declara seção própria. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo com `etapaCodigo`, junto das demais recusas da forma do grupo. Nada é gravado.",
         "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10829,7 +10829,7 @@
       "oQueAconteceu": [
         "Um grupo repetível com `incluiCandidato` verdadeiro, como a composição familiar, tem o próprio candidato como um dos membros (UNI-REQ-0146). A ocorrência dele é a que responde `PROPRIO_CANDIDATO` no campo de parentesco, e sem esse campo nenhuma resposta identificaria a ocorrência do candidato. O grupo enviado não cumpre uma destas condições, e a mensagem diz qual:",
         "- o `minimo` de ocorrências é menor que 1 (`field` igual a `grupos[i].minimo`): o grupo tem ao menos uma ocorrência, a do próprio candidato;\n- nenhum campo é o fato `PARENTESCO` (`field` igual a `grupos[i].subitens`): o grupo pede o parentesco em cada ocorrência;\n- o campo `PARENTESCO` tem exibição condicional ou obrigatoriedade diferente de `SEMPRE` (`field` igual a `grupos[i].subitens[j]`): o parentesco é sempre exibido e obrigatório;\n- o campo `PARENTESCO` tem uma restrição de opções formadas pelas respostas anteriores, ou de opções permitidas sem uma entrada incondicional que contenha `PROPRIO_CANDIDATO` (`field` igual a `grupos[i].subitens[j].restricoes`): as opções de parentesco admitem sempre o próprio candidato.",
-        "Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. As recusas saem no mesmo lote das demais recusas do grupo, e o campo cuja forma já foi recusada conta como conforme aqui, para que só a falta do parentesco seja apontada. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. As recusas saem junto das demais recusas do grupo, e o campo cuja forma já foi recusada conta como conforme aqui, para que só a falta do parentesco seja apontada. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Ajuste o grupo conforme a mensagem: declare `minimo` de ao menos 1, inclua o campo `PARENTESCO` com obrigatoriedade `SEMPRE` e sem exibição condicional, e, se ele restringe as opções, inclua `PROPRIO_CANDIDATO` numa entrada de opções permitidas sem condição. Se o grupo não deve ter o candidato como membro, envie `incluiCandidato` falso."
@@ -10847,7 +10847,7 @@
       ],
       "oQueAconteceu": [
         "O `codigo` de um grupo repetível, em `grupos`, está vazio, só com espaços, ou tem mais de 60 caracteres depois de aparado. A mensagem é \"O código do grupo é obrigatório e tem no máximo 60 caracteres.\" O tamanho exato do limite é da API; o UNI-REQ-0146 define o grupo, não o tamanho do código.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].codigo`, uma entrada por grupo recusado, no mesmo lote das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].codigo`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência da forma do grupo só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10866,7 +10866,7 @@
       ],
       "oQueAconteceu": [
         "O grupo repetível respeita um número mínimo e, opcionalmente, um máximo de ocorrências, e sem máximo aceita qualquer quantidade a partir do mínimo (UNI-REQ-0146). Os valores enviados em `minimo` e `maximo` contrariam isso, e a mensagem é \"O mínimo de ocorrências não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do mínimo.\"",
-        "Há duas formas de recusa, que não se acumulam no mesmo grupo: com `minimo` negativo, o `field` é `grupos[i].minimo`; com `minimo` não negativo e `maximo` declarado menor que 1 ou menor que `minimo`, o `field` é `grupos[i].maximo`. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. A recusa vem na lista `errors`, no mesmo lote das demais recusas da forma do grupo, e nada é gravado.",
+        "Há duas formas de recusa, que não se acumulam no mesmo grupo: com `minimo` negativo, o `field` é `grupos[i].minimo`; com `minimo` não negativo e `maximo` declarado menor que 1 ou menor que `minimo`, o `field` é `grupos[i].maximo`. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. A recusa vem na lista `errors`, junto das demais recusas da forma do grupo, e nada é gravado.",
         "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10905,7 +10905,7 @@
       ],
       "oQueAconteceu": [
         "A `ordem` de um grupo repetível, em `grupos`, é negativa. O grupo ocupa a posição dele na ordem de coleta do formulário, junto com os itens, e a posição não pode ser negativa. A mensagem é \"A ordem do grupo não pode ser negativa.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].ordem`, no mesmo lote das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].ordem`, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "No formulário de inscrição, e no modelo de finalidade inscrição, a ordem dos grupos e dos itens que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um grupo desse formulário não chega a ser recusada aqui. Nos formulários de isenção de taxa e de habilitação, e nos modelos dessas finalidades, a ordem negativa do grupo é recusada.",
         "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -10925,7 +10925,7 @@
       ],
       "oQueAconteceu": [
         "A `exibicao` ou o `predicadoObrigatoriedade` de um grupo repetível cita o código do próprio grupo ou o fato de um dos campos dele. Fora de uma ocorrência, o campo do grupo não tem valor único (UNI-REQ-0146), e a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências existirem. A mensagem é \"Uma regra do grupo cita '`{código\\}`', do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências.\", com o código citado.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].exibicao` ou `grupos[i].predicadoObrigatoriedade`, uma entrada por regra, no mesmo lote das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].exibicao` ou `grupos[i].predicadoObrigatoriedade`, uma entrada por regra, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "A regra que cita um campo de grupo a partir de fora do grupo, como a exibição de um item, é outra recusa, a de código `uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo`. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10944,7 +10944,7 @@
       ],
       "oQueAconteceu": [
         "O `rotulo` de um grupo repetível, em `grupos`, está vazio, só com espaços, ou tem mais de 300 caracteres depois de aparado. É o texto com que o grupo aparece no formulário. A mensagem é \"O rótulo do grupo é obrigatório e tem no máximo 300 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].rotulo`, uma entrada por grupo recusado, no mesmo lote das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].rotulo`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "A recusa vale para o texto presente. A propriedade `rotulo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10963,7 +10963,7 @@
       ],
       "oQueAconteceu": [
         "A lista `subitens` de um grupo repetível, em `grupos`, está vazia ou tem mais de 30 campos. Cada ocorrência do grupo, como um membro da composição familiar (UNI-REQ-0146), coleta de um a 30 campos; o teto de 30 é da API, e o requisito não o declara. A mensagem é \"O grupo tem de um a 30 campos por ocorrência.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens`, uma entrada por grupo recusado, no mesmo lote das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "A recusa vale para a lista presente. A propriedade `subitens` ausente ou nula é recusada antes, com 400 e sem código deste catálogo. Os campos do grupo também contam para o teto de itens do formulário, que é [recusado antes](/erros/uniplus.item_formulario.itens_em_excesso), sem a conferência de cada grupo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11094,7 +11094,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `fatoCodigo` de um item do formulário, ou de um campo de grupo, está vazio ou só com espaços. Cada item coleta um fato do catálogo de fatos do candidato, e sem o código não há fato a coletar. A mensagem é \"O código do fato do item é obrigatório.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].fatoCodigo` ou, no campo de um grupo, `grupos[g].subitens[j].fatoCodigo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item (rótulo, ordem e tipo de campo). O item de forma recusada não segue para a conferência contra o catálogo de fatos, e por isso não recebe também a recusa de fato desconhecido. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].fatoCodigo` ou, no campo de um grupo, `grupos[g].subitens[j].fatoCodigo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item (rótulo, ordem e tipo de campo). O item de forma recusada não segue para a conferência contra o catálogo de fatos, e por isso não recebe também a recusa de fato desconhecido. Nada é gravado.",
         "A recusa vale para o texto presente. A propriedade `fatoCodigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11111,7 +11111,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `fatoCodigo` de um item do formulário, ou de um campo de grupo, tem mais de 60 caracteres depois de aparado. A mensagem é \"O código do fato do item deve ter no máximo 60 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].fatoCodigo` ou, no campo de um grupo, `grupos[g].subitens[j].fatoCodigo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item. O item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].fatoCodigo` ou, no campo de um grupo, `grupos[g].subitens[j].fatoCodigo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item. O item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Informe em `fatoCodigo` o código de um fato do catálogo de fatos do candidato, que tem até 60 caracteres."
@@ -11295,7 +11295,7 @@
       ],
       "oQueAconteceu": [
         "As opções do campo de município são filtradas pela UF respondida antes (UNI-REQ-0145), e a restrição `MUNICIPIOS_DA_UF`, que cita o fato da UF, é obrigatória no campo de tipo `MUNICIPIO`. O item enviado é de tipo `MUNICIPIO` e não traz essa restrição. A mensagem é \"O campo de município cita a UF respondida antes, pelos municípios da UF.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].restricoes` ou `grupos[g].subitens[j].restricoes`; nos modelos de formulário começa por `conteudo.`. É uma entrada por item, no mesmo lote das demais recusas da forma do item, e nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].restricoes` ou `grupos[g].subitens[j].restricoes`; nos modelos de formulário começa por `conteudo.`. É uma entrada por item, junto das demais recusas da forma do item, e nada é gravado.",
         "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11357,7 +11357,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A `ordem` de um item do formulário, ou de um campo de grupo, é negativa. A ordem é a posição do item na coleta, e não pode ser negativa. A mensagem é \"A ordem do item não pode ser negativa.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].ordem` ou, no campo de um grupo, `grupos[g].subitens[j].ordem`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item, e nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].ordem` ou, no campo de um grupo, `grupos[g].subitens[j].ordem`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e nada é gravado.",
         "No formulário de inscrição, e no modelo de finalidade inscrição, a ordem dos itens e dos grupos que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um item desse formulário não chega a ser recusada aqui; o campo de um grupo, que tem ordem própria dentro do grupo, não é deslocado. Nos formulários de isenção de taxa e de habilitação, e nos modelos dessas finalidades, a ordem negativa do item é recusada. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11377,7 +11377,7 @@
       "oQueAconteceu": [
         "As regras de um campo dependem das respostas a campos anteriores do formulário (UNI-REQ-0145), e uma regra que cita o fato do próprio campo seria um ciclo de tamanho um. Uma regra do item enviado cita o fato que o item coleta. A mensagem diz qual regra:",
         "- \"A exibição cita o próprio fato.\", com `field` igual a `precondicao`;\n- \"A obrigatoriedade cita o próprio fato.\", com `field` igual a `predicadoObrigatoriedade`;\n- \"A restrição cita o próprio fato.\", com `field` igual a `restricoes[k]`, para a restrição de opções formadas pelas respostas ou de municípios da UF que cita o próprio fato.",
-        "O `field` completo é `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade` ou `itens[i].restricoes[k]` e, no campo de um grupo, `grupos[g].subitens[j]` com o mesmo final; nos modelos de formulário começa por `conteudo.`. A recusa vem na lista `errors`, uma entrada por regra, no mesmo lote das demais recusas da forma do item, e nada é gravado. O impedimento é a exceção: ele cita a resposta do próprio campo por definição.",
+        "O `field` completo é `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade` ou `itens[i].restricoes[k]` e, no campo de um grupo, `grupos[g].subitens[j]` com o mesmo final; nos modelos de formulário começa por `conteudo.`. A recusa vem na lista `errors`, uma entrada por regra, junto das demais recusas da forma do item, e nada é gravado. O impedimento é a exceção: ele cita a resposta do próprio campo por definição.",
         "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Nos modelos, a forma do item é conferida sem consultar o catálogo, desde que o conteúdo tenha sido lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada))."
       ],
       "comoResolver": [
@@ -11397,7 +11397,7 @@
       "oQueAconteceu": [
         "Cada campo declara as restrições de valor e as opções que oferece (UNI-REQ-0145), e cada restrição só cabe em um tipo de campo. Uma restrição de `restricoes` do item não cabe no `tipoRenderizacao` dele:",
         "| Restrição | Tipo de campo |\n| --- | --- |\n| `FAIXA_NUMERICA` | `NUMERO` |\n| `TAMANHO_TEXTO` | `TEXTO` |\n| `OPCOES_PERMITIDAS` e `OPCOES_DAS_RESPOSTAS` | `SELECAO_UNICA` e `SELECAO_MULTIPLA` |\n| `MUNICIPIOS_DA_UF` | `MUNICIPIO` |\n| `FAIXA_DE_DATA` | `DATA` |",
-        "A mensagem é \"A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção, os municípios da UF só ao de município e a faixa de data só ao de data.\" A recusa vem na lista `errors`, com `field` igual a `itens[i].restricoes[k]` ou `grupos[g].subitens[j].restricoes[k]`; nos modelos de formulário começa por `conteudo.`. Há uma entrada por restrição que não cabe, no mesmo lote das demais recusas da forma do item, e nada é gravado. A semântica de cada restrição contra o catálogo só é conferida para a que cabe no tipo do campo.",
+        "A mensagem é \"A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção, os municípios da UF só ao de município e a faixa de data só ao de data.\" A recusa vem na lista `errors`, com `field` igual a `itens[i].restricoes[k]` ou `grupos[g].subitens[j].restricoes[k]`; nos modelos de formulário começa por `conteudo.`. Há uma entrada por restrição que não cabe, junto das demais recusas da forma do item, e nada é gravado. A semântica de cada restrição contra o catálogo só é conferida para a que cabe no tipo do campo.",
         "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11414,7 +11414,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `rotulo` de um item do formulário, ou de um campo de grupo, está vazio ou só com espaços. O rótulo é o texto com que o campo aparece para o candidato. A mensagem é \"O rótulo do item é obrigatório.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].rotulo` ou, no campo de um grupo, `grupos[g].subitens[j].rotulo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].rotulo` ou, no campo de um grupo, `grupos[g].subitens[j].rotulo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
         "No formulário de inscrição, o item dos dados básicos do candidato vale pelo rótulo do conjunto básico, e o rótulo enviado para ele não é conferido aqui.",
         "A recusa vale para o texto presente. A propriedade `rotulo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -11432,7 +11432,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `rotulo` de um item do formulário, ou de um campo de grupo, tem mais de 300 caracteres depois de aparado. A mensagem é \"O rótulo do item deve ter no máximo 300 caracteres.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].rotulo` ou, no campo de um grupo, `grupos[g].subitens[j].rotulo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].rotulo` ou, no campo de um grupo, `grupos[g].subitens[j].rotulo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Encurte o `rotulo` para até 300 caracteres. O texto longo que explica o campo cabe na ajuda do campo, e não no rótulo."
@@ -11492,7 +11492,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `tipoRenderizacao` de um item do formulário, ou de um campo de grupo, está vazio, só com espaços ou não é um dos códigos aceitos: `NUMERO`, `BOOLEANO`, `SELECAO_UNICA`, `SELECAO_MULTIPLA`, `TEXTO`, `DATA`, `ENDERECO` e `MUNICIPIO`. O código é conferido letra a letra, e `texto` em minúsculas não é `TEXTO`. A mensagem é \"O tipo de campo do item é obrigatório.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].tipoRenderizacao` ou, no campo de um grupo, `grupos[g].subitens[j].tipoRenderizacao`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, no mesmo lote das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].tipoRenderizacao` ou, no campo de um grupo, `grupos[g].subitens[j].tipoRenderizacao`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
         "A propriedade `tipoRenderizacao` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. O tipo que existe mas não combina com o fato é outra recusa, a de [tipo de campo incoerente com o domínio do fato](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio). Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -15855,14 +15855,14 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Este código dispara em duas situações distintas, ambas sobre a mesma\nfronteira entre o que é calculado e o que é declarado:",
-        "- **Distribuição institucional.** Numa distribuição de vagas com\n  `regraDistribuicaoCodigo` institucional (não Lei 12.711), uma das\n  modalidades selecionadas não tem quantidade fixada em `quadro`. No ramo\n  institucional não há cálculo — o quadro é inteiramente declarado pelo\n  edital, então toda modalidade selecionada precisa ter sua quantidade\n  explícita; não há valor padrão nem fórmula que preencha a lacuna.\n- **Ramo federal, modalidade com código fora do vocabulário legal.** Numa\n  distribuição pela Lei 12.711, uma modalidade selecionada tem composição\n  `DENTRO_DA_RESERVA_LEGAL` ou `RESTANTE_DAS_VAGAS_OFERTADAS` (as composições que a fórmula do art.\n  10 calcula), mas o código dela não é um dos 9 códigos federais fixos (as\n  8 sub-reservas mais `AC` — ver\n  [`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)).\n  O cadastro de modalidades de Configuração não impede essa combinação —\n  nada impede cadastrar, por exemplo, uma modalidade de código próprio com\n  composição `DENTRO_DA_RESERVA_LEGAL` —, mas a fórmula legal só calcula quantidade\n  para os 9 códigos que ela conhece; uma modalidade calculada com outro\n  código nunca aparece no quadro que a fórmula produz.",
+        "- **Distribuição institucional.** Numa distribuição de vagas com\n  `regraDistribuicaoCodigo` institucional (não Lei 12.711), uma das\n  modalidades selecionadas não tem quantidade fixada em `quadro`. Na distribuição\n  institucional não há cálculo — o quadro é inteiramente declarado pelo\n  edital, então toda modalidade selecionada precisa ter sua quantidade\n  explícita; não há valor padrão nem fórmula que preencha a lacuna.\n- **Distribuição pela Lei 12.711, modalidade com código fora do vocabulário legal.** Numa\n  distribuição pela Lei 12.711, uma modalidade selecionada tem composição\n  `DENTRO_DA_RESERVA_LEGAL` ou `RESTANTE_DAS_VAGAS_OFERTADAS` (as composições que a fórmula do art.\n  10 calcula), mas o código dela não é um dos 9 códigos federais fixos (as\n  8 sub-reservas mais `AC` — ver\n  [`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)).\n  O cadastro de modalidades de Configuração não impede essa combinação —\n  nada impede cadastrar, por exemplo, uma modalidade de código próprio com\n  composição `DENTRO_DA_RESERVA_LEGAL` —, mas a fórmula legal só calcula quantidade\n  para os 9 códigos que ela conhece; uma modalidade calculada com outro\n  código nunca aparece no quadro que a fórmula produz.",
         "Nos dois casos, as operações emissoras são as mesmas, mas a remediação é\ndiferente — leia com atenção qual dos dois cenários corresponde ao seu caso\nantes de agir. Não acumula com nenhuma outra violação — é a primeira\nmodalidade com o problema, na ordem em que foram selecionadas, que interrompe\na montagem da distribuição.",
         "A **simulação** da distribuição de vagas devolve a mesma recusa que a\ndefinição, sem gravar nada.",
         "Este código também aparece quando o sistema relê a configuração congelada da\nversão publicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página). Em todas\nelas o quadro de cada oferta é recalculado a partir dos insumos congelados (e\nnão lido do que foi congelado), e a mesma montagem do quadro roda de novo.\nAntes disso, o sistema confere a integridade dos bytes congelados: bytes\nalterados depois do congelamento são recusados por\n[`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada)\ne não chegam a esta causa. Nessas operações a recusa sai como uma violação\núnica (sem a lista `errors[]`) e se refere à versão congelada, não ao pedido\nenviado."
       ],
       "comoResolver": [
         "**Se a distribuição é institucional:** informe a quantidade de vagas\n(`quantidade`, em cada item do bloco `quadro` do corpo do pedido) para toda\nmodalidade selecionada.",
-        "**Se a distribuição é pela Lei 12.711:** o problema não é falta de\nquantidade no corpo do pedido — informar uma produziria\n[`quantidade_calculada_nao_informavel`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quantidade_calculada_nao_informavel),\nnão este código. A modalidade ofensora nunca é uma das 9 federais mal\ncodificada — a conferência de\n[`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)\njá garante que as 9 estão presentes com seus códigos corretos antes de\nchegar aqui; é sempre uma modalidade **extra**, selecionada além delas.\nRemova essa modalidade da seleção da oferta, ou corrija sua composição no\ncadastro de Configuração para `RETIRADA_DE_OUTRA_MODALIDADE`/`SUPLEMENTAR_AO_TOTAL` (que\nexigem quantidade declarada, não calculada) se ela deveria mesmo compor\nesta oferta federal — no ramo federal, `RETIRADA_DE_OUTRA_MODALIDADE` só é aceita com origem\n`AC` (ver\n[`retirada_federal_deve_ser_de_ampla_concorrencia`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.retirada_federal_deve_ser_de_ampla_concorrencia)).\nO código da modalidade, em si, não pode ser alterado — é imutável no\ncadastro.",
+        "**Se a distribuição é pela Lei 12.711:** o problema não é falta de\nquantidade no corpo do pedido — informar uma produziria\n[`quantidade_calculada_nao_informavel`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quantidade_calculada_nao_informavel),\nnão este código. A modalidade ofensora nunca é uma das 9 federais mal\ncodificada — a conferência de\n[`modalidades_federais_incompletas`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas)\njá garante que as 9 estão presentes com seus códigos corretos antes de\nchegar aqui; é sempre uma modalidade **extra**, selecionada além delas.\nRemova essa modalidade da seleção da oferta, ou corrija sua composição no\ncadastro de Configuração para `RETIRADA_DE_OUTRA_MODALIDADE`/`SUPLEMENTAR_AO_TOTAL` (que\nexigem quantidade declarada, não calculada) se ela deveria mesmo compor\nesta oferta federal — na distribuição pela Lei 12.711, `RETIRADA_DE_OUTRA_MODALIDADE` só é aceita com origem\n`AC` (ver\n[`retirada_federal_deve_ser_de_ampla_concorrencia`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.retirada_federal_deve_ser_de_ampla_concorrencia)).\nO código da modalidade, em si, não pode ser alterado — é imutável no\ncadastro.",
         "Na simulação, os mesmos caminhos de correção valem, e nada foi gravado.",
         "Se o erro apareceu em uma operação que lê a configuração congelada (qualquer uma das listadas no cabeçalho, exceto a definição da própria configuração e a simulação), o pedido enviado\nagora não é a causa: o sistema recusou a configuração congelada da versão\npublicada, e regravar a distribuição de vagas do processo não a corrige. A\ncausa é investigada pela equipe técnica do Uni+."
       ],

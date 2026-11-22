@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -15,7 +16,7 @@ public static class FaseCanonicaMapping
             fase.Sinalizadores.AgrupaEtapas, fase.Sinalizadores.PermiteComplementacao,
             FaseCanonicaCatalogo.AdmiteAgruparEtapas(fase.Codigo.Valor), FaseCanonicaCatalogo.AdmiteComplementacao(fase.Codigo.Valor),
             fase.BaseLegal, fase.Sinalizadores.ColetaInscricao, fase.Sinalizadores.ColetaSolicitacaoIsencao,
-            OrigensDataFase.ParaTokenCanonico(fase.OrigemData),
+            CodigoComRotulo<OrigemDataFase>.De(fase.OrigemData),
             ParaDto(fase.UnidadeSugerida), fase.CreatedAt);
     }
 

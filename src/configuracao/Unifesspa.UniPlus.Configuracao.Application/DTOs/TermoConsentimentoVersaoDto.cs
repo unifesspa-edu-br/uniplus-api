@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>
 /// DTO de uma versão promovida e imutável de <c>TermoConsentimento</c>.
 /// </summary>
@@ -13,6 +16,6 @@ public sealed record TermoConsentimentoVersaoDto(
     int Numero,
     string Texto,
     string BaseLegal,
-    string FormaAceite,
+    CodigoComRotulo<FormaAceite> FormaAceite,
     string Hash,
     DateTimeOffset PromovidaEm);

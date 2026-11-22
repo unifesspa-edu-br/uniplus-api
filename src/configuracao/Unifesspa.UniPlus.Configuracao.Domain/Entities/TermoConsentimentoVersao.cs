@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using System.Text;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
@@ -129,7 +130,7 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
 
             string textoNfc = texto.Normalize(NormalizationForm.FormC);
             string baseLegalNfc = baseLegal.Normalize(NormalizationForm.FormC);
-            string hash = CalcularHash(textoNfc, baseLegalNfc, FormasAceite.ParaTokenCanonico(formaAceite));
+            string hash = CalcularHash(textoNfc, baseLegalNfc, formaAceite.Codigo());
             return new(textoNfc, baseLegalNfc, formaAceite, hash);
         }
     }

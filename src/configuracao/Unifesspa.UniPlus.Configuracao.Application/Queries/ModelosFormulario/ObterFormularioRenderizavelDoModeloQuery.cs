@@ -105,7 +105,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             throw new InvalidOperationException($"A versão {termo.VersaoId} do termo '{termo.Codigo}' do modelo {modeloId} não está no catálogo.");
         }
 
-        ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash);
+        ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, versao.FormaAceite.Codigo(), versao.Hash);
         return new TermoRenderizavel(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
     }
 
