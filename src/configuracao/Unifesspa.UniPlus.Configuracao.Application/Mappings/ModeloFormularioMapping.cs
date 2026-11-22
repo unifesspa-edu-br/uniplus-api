@@ -62,7 +62,7 @@ public static class ModeloFormularioMapping
         documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaLeitura)], PorOpcaoParaLeitura(documento.PorOpcao));
 
     private static BaseLegalDoModeloDto BaseLegalParaLeitura(BaseLegalDoDocumentoDoModelo baseLegal) =>
-        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
+        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);
 
     private static ExigenciaPorOpcaoDto? PorOpcaoParaLeitura(ExigenciaPorOpcao? porOpcao) =>
         porOpcao is null ? null : new ExigenciaPorOpcaoDto(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);
@@ -115,7 +115,7 @@ public static class ModeloFormularioMapping
         documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaEntrada)], PorOpcaoParaEntrada(documento.PorOpcao));
 
     private static BaseLegalDoModeloInput BaseLegalParaEntrada(BaseLegalDoDocumentoDoModelo baseLegal) =>
-        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
+        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);
 
     private static ExigenciaPorOpcaoInput? PorOpcaoParaEntrada(ExigenciaPorOpcao? porOpcao) =>
         porOpcao is null ? null : new ExigenciaPorOpcaoInput(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);

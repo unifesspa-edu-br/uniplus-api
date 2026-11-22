@@ -88,6 +88,22 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         LaudoCopiadoDeveValerNaFaseDaInscricao(fase);
     }
 
+    [Fact(DisplayName = "A situação pendente da base legal é copiada para o processo")]
+    public async Task Handle_BaseLegalPendente_CopiaSituacao()
+    {
+        _cenario.FaseDoCronograma("INSCRICAO");
+        _cenario.DeclararAtendimentoEspecializado();
+        DocumentoExigidoDoModeloInput documento = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with
+        {
+            BasesLegais = [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)],
+        };
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(documento));
+
+        resultado.IsSuccess.Should().BeTrue(MotivosDaRecusa(resultado));
+        _cenario.Processo.DocumentosExigidos.Single().BasesLegais.Single().Situacao.Should().Be(StatusBaseLegal.Pendente);
+    }
+
     [Fact(DisplayName = "O derivado que só a condição de um documento do modelo cita recebe a regra padrão do catálogo")]
     public async Task Handle_DerivadoCitadoSoPeloDocumento_CopiaARegraPadrao()
     {

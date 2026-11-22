@@ -72,8 +72,8 @@ public sealed record DocumentoExigidoDoModeloDto(
     IReadOnlyList<BaseLegalDoModeloDto> BasesLegais,
     ExigenciaPorOpcaoDto? PorOpcao);
 
-/// <summary>Uma base legal do documento exigido do modelo, com abrangência e status em token canônico.</summary>
-public sealed record BaseLegalDoModeloDto(string Referencia, string Abrangencia, string Status, string? Observacao);
+/// <summary>Uma base legal do documento exigido do modelo, com abrangência e situação em token canônico.</summary>
+public sealed record BaseLegalDoModeloDto(string Referencia, string Abrangencia, string Situacao, string? Observacao);
 
 /// <summary>O documento exigido uma vez por opção que o processo oferece ao fato, salvo as listadas em <see cref="Exceto"/>.</summary>
 public sealed record ExigenciaPorOpcaoDto(string FatoCodigo, IReadOnlyList<string> Exceto);

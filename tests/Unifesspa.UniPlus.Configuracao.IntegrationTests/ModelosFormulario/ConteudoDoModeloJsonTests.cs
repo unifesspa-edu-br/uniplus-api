@@ -180,7 +180,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
 
     private const string DocumentoCertidaoJson =
-        """{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","status":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","status":"VIGENTE","observacao":null}],"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
+        """{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
         """{"fatoCodigo":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
@@ -210,10 +210,10 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[]}""";
 
     private const string JsonDocumentoLegado =
-        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","status":"VIGENTE"}],"porOpcao":null}]}""";
+        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
 
     private const string JsonDocumentoLegadoRegravado =
-        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","status":"VIGENTE","observacao":null}],"porOpcao":null}]}""";
+        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"porOpcao":null}]}""";
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição \"Medicina\" <2027>",

@@ -16,8 +16,8 @@ public sealed record ConteudoDoModeloInput(
     IReadOnlyList<GrupoColetadoInput>? Grupos = null,
     IReadOnlyList<DocumentoExigidoDoModeloInput>? DocumentosExigidos = null);
 
-/// <summary>Uma base legal do documento exigido do modelo; tokens de abrangência e status como os da exigência do processo.</summary>
-public sealed record BaseLegalDoModeloInput(string Referencia, string Abrangencia, string Status, string? Observacao);
+/// <summary>Uma base legal do documento exigido do modelo; tokens de abrangência e situação como os da exigência do processo.</summary>
+public sealed record BaseLegalDoModeloInput(string Referencia, string Abrangencia, string Situacao, string? Observacao);
 
 /// <summary>
 /// O documento exigido uma vez por opção que o processo oferece para o fato, salvo as listadas em

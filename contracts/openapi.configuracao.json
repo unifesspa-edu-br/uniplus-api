@@ -16853,7 +16853,7 @@
         "required": [
           "referencia",
           "abrangencia",
-          "status",
+          "situacao",
           "observacao"
         ],
         "type": "object",
@@ -16864,7 +16864,7 @@
           "abrangencia": {
             "type": "string"
           },
-          "status": {
+          "situacao": {
             "type": "string"
           },
           "observacao": {
@@ -16879,7 +16879,7 @@
         "required": [
           "referencia",
           "abrangencia",
-          "status",
+          "situacao",
           "observacao"
         ],
         "type": "object",
@@ -16890,7 +16890,7 @@
           "abrangencia": {
             "type": "string"
           },
-          "status": {
+          "situacao": {
             "type": "string"
           },
           "observacao": {
