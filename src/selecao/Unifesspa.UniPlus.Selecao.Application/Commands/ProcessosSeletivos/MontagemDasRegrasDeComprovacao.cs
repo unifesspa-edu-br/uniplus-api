@@ -13,7 +13,7 @@ using Kernel.Results;
 /// descendo. A árvore falha no primeiro nó com defeito; entre nós, acumular exigiria um caminho posicional
 /// sem convenção estabelecida.
 /// </summary>
-internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido documentos)
+internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido documentos)
 {
     public async Task<Result<List<NoExigencia>>> MontarRaizesAsync(
         IReadOnlyList<NoDeEntradaConferido> entradas, int ordemInicial, CancellationToken cancellationToken)

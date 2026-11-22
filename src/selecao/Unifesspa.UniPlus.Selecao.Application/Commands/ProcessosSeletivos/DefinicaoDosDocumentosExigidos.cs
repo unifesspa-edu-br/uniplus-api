@@ -20,10 +20,10 @@ internal static class DefinicaoDosDocumentosExigidos
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
-        List<NoDeEntradaConferido> conferidos = EscritaDaArvoreDeExigencias.Conferir(entradas, processo.GruposColetados);
-        List<RegraDeComprovacaoInformada> folhas = EscritaDaArvoreDeExigencias.FolhasConferidas(conferidos);
+        List<NoDeEntradaConferido> conferidos = EscritaDasRegrasDeComprovacao.Conferir(entradas, processo.GruposColetados);
+        List<RegraDeComprovacaoInformada> folhas = EscritaDasRegrasDeComprovacao.FolhasConferidas(conferidos);
         ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, folhas, cadastros, cancellationToken).ConfigureAwait(false);
-        Result<List<NoExigencia>> raizes = await new MontagemDaArvoreDeExigencias(new MontagemDoDocumentoExigido(contexto))
+        Result<List<NoExigencia>> raizes = await new MontagemDasRegrasDeComprovacao(new MontagemDoDocumentoExigido(contexto))
             .MontarRaizesAsync(conferidos, ProximaOrdemDaRaiz(mantidas), cancellationToken).ConfigureAwait(false);
         return raizes.IsFailure
             ? Result.ValidationFailure(raizes.Errors)

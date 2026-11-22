@@ -12,7 +12,7 @@ using Kernel.Results;
 /// resolver qualquer cadastro externo (ADR-0125). Confere a declaração de cada nó, o documento da folha
 /// e as bases legais; acumula as recusas com os caminhos das posições enviadas.
 /// </summary>
-internal static class EscritaDaArvoreDeExigencias
+internal static class EscritaDasRegrasDeComprovacao
 {
     public static List<NoDeEntradaConferido> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> nos, IEnumerable<GrupoColetado> grupos) =>
         Conferir(nos, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "nos");
