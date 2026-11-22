@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
+namespace Unifesspa.UniPlus.Selecao.ArchTests.Conferencias;
 
 /// <summary>
 /// As entradas do manifesto do envelope: a declaração, por tipo do grafo, das propriedades que entram

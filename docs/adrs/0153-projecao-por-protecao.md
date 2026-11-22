@@ -153,7 +153,7 @@ O acesso ao dado protegido segue a regra do arquivo: fica registrado, sem o cont
 
 ### Serialização como defesa secundária
 
-Um modificador do serializador lê a classificação declarada no DTO e as decisões já tomadas na requisição, e **omite** o campo classificado sem decisão permitida, sem pedir a decisão de novo. O alcance é global e por tipo: o modificador está instalado em toda serialização, e só age em tipo que declara classificação, por `[ProtegidoComo]` ou por derivar de `ItemClassificado`. Esses tipos ficam no namespace convencionado `*.DTOs.Administrativos` de cada módulo, e um teste de contrato confere a convenção. As respostas, que hoje trafegam como dicionário, viram itens que carregam natureza e classificação, porque o modificador não filtra entradas de dicionário. A defesa na serialização não alcança exportação nem *streaming*; esses caminhos passam pelo projetor.
+Um modificador do serializador lê a classificação declarada no DTO e as decisões já tomadas na requisição, e **omite** o campo classificado sem decisão permitida, sem pedir a decisão de novo. O alcance é global e por tipo: o modificador está instalado em toda serialização, e só age em tipo que declara classificação, por `[ProtegidoComo]` ou por derivar de `ItemClassificado`. Esses tipos ficam no namespace convencionado `*.DTOs.Administrativos` de cada módulo, e a convenção é conferida na revisão. As respostas, que hoje trafegam como dicionário, viram itens que carregam natureza e classificação, porque o modificador não filtra entradas de dicionário. A defesa na serialização não alcança exportação nem *streaming*; esses caminhos passam pelo projetor.
 
 ### Lugar do mecanismo
 
@@ -270,4 +270,4 @@ O valor da mensagem do registro de acesso deixa de ser JSON com JSON Schema e pa
 
 ## Emenda (2026-11-22) — projeto de testes
 
-A classificação das colunas e a convenção de namespace dos DTOs são conferidas em `Unifesspa.UniPlus.Contratos.UnitTests`.
+A classificação das colunas é conferida em `Unifesspa.UniPlus.Contratos.UnitTests`; a convenção de namespace dos DTOs é conferida na revisão.

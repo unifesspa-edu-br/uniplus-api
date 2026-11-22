@@ -113,13 +113,12 @@ mesmo marcador.
 
 ### Fitness test
 
-Em `tests/Unifesspa.UniPlus.ArchTests/Persistence/ForensicEntityConventionsTests.cs`:
+Em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/ForensicEntityConventionsTests.cs`:
 
 ```text
 - Toda classe IForensicEntity NÃO herda EntityBase (regra de exclusão mútua)
 - Toda classe IForensicEntity é sealed
-- Toda classe IForensicEntity tem ao menos um construtor privado (sem instanciação direta fora da classe)
-- A classe expõe Id, factory method estático, e propriedades com setter privado/init
+- Toda classe IForensicEntity não tem construtor público e expõe factory estática pública
 ```
 
 ### Auditoria de mutação anômala (operacional)
@@ -160,7 +159,7 @@ apenas a interface marcadora + ausência de operações que invoquem
 
 - Fitness test `ForensicEntityConventionsTests` em
   `tests/Unifesspa.UniPlus.ArchTests/` valida exclusão mútua com
-  `EntityBase`, sealed, factory privada.
+  `EntityBase`, classe selada, construtor não público e factory pública.
 - Code review obrigatório: qualquer PR que adicione `: EntityBase` em
   classe `IForensicEntity` (ou vice-versa) precisa justificativa
   explícita e amendment desta ADR.
