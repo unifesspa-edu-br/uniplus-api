@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Item de entrada de um dia não útil no payload de criação. <c>Abrangencia</c> é o
-/// token canônico UPPER_SNAKE (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>) — a análise
+/// código de contrato (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>) — a análise
 /// e a validação de campo ocorrem no agregado (<c>CalendarioDiasUteis.Criar</c>).
 /// A tripla <c>MunicipioIbge</c>/<c>MunicipioNome</c>/<c>MunicipioUf</c> é obrigatória
 /// para MUNICIPAL; <c>Uf</c> continua exclusiva da abrangência ESTADUAL.
@@ -14,7 +17,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUte
 /// ausente/nulo com um 400 genérico do ASP.NET, antes de o domínio rodar.
 /// </remarks>
 public sealed record DiaNaoUtilCommandItem(
-    string? Abrangencia,
+    [property: AceitaCodigosDe<Abrangencia>] string? Abrangencia,
     string? MunicipioIbge,
     string? MunicipioNome,
     string? MunicipioUf,

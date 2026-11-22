@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -23,14 +24,13 @@ internal sealed class ConferenciaDoDiaNaoUtil
     private readonly string? _municipioUf;
     private readonly string? _uf;
     private readonly string _descricao;
-    private readonly bool _abrangenciaReconhecida;
-    private readonly Abrangencia _abrangencia;
+    private readonly Abrangencia? _abrangencia;
 
     private ConferenciaDoDiaNaoUtil(DiaNaoUtilCriacao dia, string campo)
     {
         _dia = dia;
         _campo = campo;
-        _abrangenciaReconhecida = Abrangencias.TryAnalisar(dia.Abrangencia, out _abrangencia);
+        _abrangencia = CatalogoDe<Abrangencia>.TentarObter(dia.Abrangencia, out Abrangencia abrangencia) ? abrangencia : null;
         _municipioIbge = AparadoOuAusente(dia.MunicipioIbge);
         _municipioNome = AparadoOuAusente(dia.MunicipioNome);
         _municipioUf = AparadoOuAusente(dia.MunicipioUf)?.ToUpperInvariant();
@@ -63,7 +63,7 @@ internal sealed class ConferenciaDoDiaNaoUtil
         return _erros.Count > 0
             ? Result<DiaNaoUtilResolvido>.ValidationFailure(_erros)
             : Result<DiaNaoUtilResolvido>.Success(new DiaNaoUtilResolvido(
-                _abrangencia, _municipioIbge, _municipioNome, _municipioUf, _uf, _dia.Data, _descricao));
+                _abrangencia!.Value, _municipioIbge, _municipioNome, _municipioUf, _uf, _dia.Data, _descricao));
     }
 
     private void ConferirData()
@@ -84,16 +84,17 @@ internal sealed class ConferenciaDoDiaNaoUtil
 
     private void ConferirAbrangencia()
     {
-        if (!_abrangenciaReconhecida)
+        if (_abrangencia is null)
         {
             Recusar("abrangencia", CalendarioDiasUteisErrorCodes.AbrangenciaInvalida,
-                "Abrangência inválida. Deve ser uma de: " + string.Join(", ", Abrangencias.TokensCanonicos) + ".");
+                "Abrangência inválida. Deve ser uma de: "
+                + string.Join(", ", CatalogoDe<Abrangencia>.Todos().Select(static declarado => declarado.Codigo)) + ".");
         }
     }
 
     private void ConferirReferenciasDaAbrangencia()
     {
-        if (_abrangenciaReconhecida)
+        if (_abrangencia is not null)
         {
             ConferirMunicipio();
             ConferirUf();

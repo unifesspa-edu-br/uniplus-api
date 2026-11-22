@@ -15439,10 +15439,67 @@
           }
         }
       }
+    },
+    "/api/configuracao/vocabularios/abrangencias-dia-nao-util": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-abrangencia-dia-nao-util.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Abrangencia"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Abrangencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/AbrangenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "AbrangenciaCodigo": {
+        "enum": [
+          "NACIONAL",
+          "ESTADUAL",
+          "MUNICIPAL",
+          "INSTITUCIONAL"
+        ],
+        "type": "string",
+        "description": "- \u0060NACIONAL\u0060: Nacional\n- \u0060ESTADUAL\u0060: Estadual\n- \u0060MUNICIPAL\u0060: Municipal\n- \u0060INSTITUCIONAL\u0060: Institucional"
+      },
       "AgregadoPortavel": {
         "required": [
           "codigo",
@@ -19447,9 +19504,13 @@
         "type": "object",
         "properties": {
           "abrangencia": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AbrangenciaCodigo"
+              }
             ]
           },
           "municipioIbge": {
@@ -19506,7 +19567,7 @@
             "format": "uuid"
           },
           "abrangencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/Abrangencia"
           },
           "municipioIbge": {
             "type": [

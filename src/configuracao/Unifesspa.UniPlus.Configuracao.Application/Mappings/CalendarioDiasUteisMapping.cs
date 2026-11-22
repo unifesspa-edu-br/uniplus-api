@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -30,7 +31,7 @@ public static class CalendarioDiasUteisMapping
     private static DiaNaoUtilDto ToDto(DiaNaoUtil dia) =>
         new(
             dia.Id,
-            Abrangencias.ParaTokenCanonico(dia.Abrangencia),
+            CodigoComRotulo<Abrangencia>.De(dia.Abrangencia),
             dia.MunicipioIbge,
             dia.MunicipioNome,
             dia.MunicipioUf,
