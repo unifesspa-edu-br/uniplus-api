@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Errors;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -13,107 +12,113 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
     public async Task<Result<List<RegraDeComprovacao>>> MontarRegrasSemGrupoAsync(
         IReadOnlyList<RegraInformadaConferida> entradas, int ordemInicial, CancellationToken cancellationToken)
     {
-        RegrasMontadas montados = await MontarRegrasAsync(entradas, ordemInicial, null, false, cancellationToken).ConfigureAwait(false);
-        return montados.Recusas.Count > 0
-            ? Result<List<RegraDeComprovacao>>.ValidationFailure(montados.Recusas) : Result<List<RegraDeComprovacao>>.Success(montados.Regras);
+        RegrasMontadas montados = await MontarRegrasAsync(entradas, ordemInicial, cancellationToken).ConfigureAwait(false);
+        List<FieldError> recusas = [.. montados.Declaracao, .. montados.Cadastros, .. montados.Composicao];
+        return recusas.Count > 0 ? Result<List<RegraDeComprovacao>>.ValidationFailure(recusas)
+            : Result<List<RegraDeComprovacao>>.Success(montados.Regras);
     }
 
     private async Task<RegrasMontadas> MontarRegrasAsync(
-        IReadOnlyList<RegraInformadaConferida> entradas, int ordemInicial, string? grupoAncestral, bool repeticaoRecusada, CancellationToken cancellationToken)
+        IReadOnlyList<RegraInformadaConferida> entradas, int ordemInicial, CancellationToken cancellationToken)
     {
         RegrasMontadas montados = new();
         for (int indice = 0; indice < entradas.Count; indice++)
         {
-            RegraMontada regra = await MontarRegraAsync(entradas[indice], ordemInicial + indice, grupoAncestral, repeticaoRecusada, cancellationToken)
-                .ConfigureAwait(false);
-            montados.Adicionar(regra);
+            await MontarRegraAsync(entradas[indice], ordemInicial + indice, montados, cancellationToken).ConfigureAwait(false);
         }
         return montados;
     }
 
-    private async Task<RegraMontada> MontarRegraAsync(
-        RegraInformadaConferida regra, int ordem, string? grupoAncestral, bool repeticaoRecusada, CancellationToken cancellationToken)
+    private async Task MontarRegraAsync(RegraInformadaConferida regra, int ordem, RegrasMontadas destino, CancellationToken cancellationToken)
     {
-        bool recusada = repeticaoRecusada || RegraInformadaConferida.RepeticaoRecusada(regra);
-        string? grupo = grupoAncestral ?? (recusada ? null : regra.Entrada.GrupoDoFormularioParaRepeticao);
-        RegrasMontadas itens = await MontarRegrasAsync(regra.Itens, 0, grupo, recusada, cancellationToken).ConfigureAwait(false);
-        List<FieldError> erros = [.. regra.Recusas, .. itens.Recusas];
-        erros.AddRange(RecusasDaComposicao(regra, itens));
-        if (erros.Count > 0 || !itens.TodosMontados)
+        destino.Declaracao.AddRange(regra.Recusas);
+        Result<MontagemDoDocumentoExigido.Partes>? partes = await ConferirDocumentoAsync(regra, destino, cancellationToken).ConfigureAwait(false);
+        RegrasMontadas itens = await MontarRegrasAsync(regra.Itens, 0, cancellationToken).ConfigureAwait(false);
+        destino.IncorporarErros(itens);
+        bool composicaoRecusada = ConferirComposicao(regra, itens, destino);
+        if (regra.Recusas.Count > 0 || partes?.IsFailure == true || !itens.TodosMontados || itens.TemErros || regra.Repeticao.Recusada || composicaoRecusada)
         {
-            return new(null, erros);
+            destino.TodosMontados = false;
+            return;
         }
-        return await MontarRegraConferidaAsync(regra, ordem, grupo, recusada, itens.Regras, cancellationToken).ConfigureAwait(false);
+        ConstruirRegra(regra, ordem, partes, itens.Regras, destino);
     }
 
-    private static IEnumerable<FieldError> RecusasDaComposicao(RegraInformadaConferida regra, RegrasMontadas itens)
+    private async Task<Result<MontagemDoDocumentoExigido.Partes>?> ConferirDocumentoAsync(
+        RegraInformadaConferida regra, RegrasMontadas destino, CancellationToken cancellationToken)
+    {
+        if (regra.Declaracao.Forma != FormaDeComprovacao.Documento || regra.Entrada.Documento is not { } documento)
+        {
+            return null;
+        }
+        Result<MontagemDoDocumentoExigido.Partes> partes = await documentos.ConferirReferenciasAsync(documento, regra.Repeticao, cancellationToken).ConfigureAwait(false);
+        if (partes.IsFailure)
+        {
+            destino.Cadastros.AddRange(ErrosDoDocumento(partes.Errors, regra));
+        }
+        return partes;
+    }
+
+    private static bool ConferirComposicao(RegraInformadaConferida regra, RegrasMontadas itens, RegrasMontadas destino)
     {
         if (!itens.TodosMontados || itens.Regras.Count == 0 || regra.Declaracao.Forma is not (FormaDeComprovacao.TodosOsItens or FormaDeComprovacao.QuantidadeMinimaDeItens))
         {
-            return [];
+            return false;
         }
-        string? repeticao = RegraInformadaConferida.RepeticaoRecusada(regra) ? null : regra.Entrada.GrupoDoFormularioParaRepeticao;
-        return RegraDeComprovacao.ConferirComposicao(itens.Regras, repeticao).Select(erro => NoItem(erro, regra.Caminho, regra.Indice));
+        List<FieldError> erros = [.. RegraDeComprovacao.ConferirComposicao(itens.Regras,
+            regra.Repeticao.Recusada ? null : regra.Entrada.GrupoDoFormularioParaRepeticao).Select(erro => NoItem(erro, regra.Caminho, regra.Indice))];
+        destino.Composicao.InsertRange(destino.Composicao.Count - itens.Composicao.Count, erros);
+        return erros.Count > 0;
     }
 
-    private async Task<RegraMontada> MontarRegraConferidaAsync(
-        RegraInformadaConferida regra, int ordem, string? grupo, bool repeticaoRecusada, List<RegraDeComprovacao> itens, CancellationToken cancellationToken)
+    private static void ConstruirRegra(RegraInformadaConferida regra, int ordem, Result<MontagemDoDocumentoExigido.Partes>? partes,
+        List<RegraDeComprovacao> itens, RegrasMontadas destino)
     {
-        if (regra.Declaracao.Forma == FormaDeComprovacao.Documento && repeticaoRecusada && regra.Entrada.Documento?.Condicoes().Count > 0)
+        Result<RegraDeComprovacao> resultado = partes is null ? CriarGrupo(regra.Entrada, ordem, regra.Declaracao, itens)
+            : CriarRegraDocumento(regra, ordem, partes.Value!);
+        if (resultado.IsFailure)
         {
-            return new(null, []);
+            destino.Composicao.AddRange(resultado.Errors.Select(erro => NoItem(erro with { Field = erro.Field ?? "" }, regra.Caminho, regra.Indice)));
+            destino.TodosMontados = false;
         }
-        Result<RegraDeComprovacao> resultado = regra.Declaracao.Forma == FormaDeComprovacao.Documento
-            ? await MontarDocumentoAsync(regra.Entrada, ordem, grupo, cancellationToken).ConfigureAwait(false)
-            : CriarGrupo(regra.Entrada, ordem, regra.Declaracao, itens);
-        return resultado.IsFailure ? new(null, resultado.Errors) : new(resultado.Value, []);
+        else
+        {
+            destino.Regras.Add(resultado.Value!);
+        }
     }
+
+    private static Result<RegraDeComprovacao> CriarRegraDocumento(RegraInformadaConferida regra, int ordem, MontagemDoDocumentoExigido.Partes partes)
+    {
+        Result<DocumentoExigido> documento = MontagemDoDocumentoExigido.Criar(regra.Entrada.Documento!, partes);
+        if (documento.IsFailure)
+        {
+            return Result<RegraDeComprovacao>.ValidationFailure([.. documento.Errors.Select(e => (e with { Field = e.Field ?? "" }).NoCaminhoDe("documento"))]);
+        }
+        DistincaoDeclarada? distincao = regra.Declaracao.Distincao;
+        return RegraDeComprovacao.CriarRegraDeDocumento(documento.Value!, ordem, regra.Declaracao.QuantidadeMinima,
+            distincao?.Criterio, distincao?.DataReferencia, distincao?.OcorrenciasEsperadas, regra.Entrada.GrupoDoFormularioParaRepeticao);
+    }
+
+    private static IEnumerable<FieldError> ErrosDoDocumento(IEnumerable<FieldError> erros, RegraInformadaConferida regra) =>
+        erros.Select(erro => NoItem((erro with { Field = erro.Field ?? "" }).NoCaminhoDe("documento"), regra.Caminho, regra.Indice));
 
     private static FieldError NoItem(FieldError erro, string caminho, int indice) =>
         erro.NoCaminhoDe(caminho) with { Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" } };
 
-    private sealed record RegraMontada(RegraDeComprovacao? Regra, IReadOnlyList<FieldError> Recusas);
-
     private sealed class RegrasMontadas
     {
         internal List<RegraDeComprovacao> Regras { get; } = [];
-        internal List<FieldError> Recusas { get; } = [];
-        internal bool TodosMontados { get; private set; } = true;
-
-        internal void Adicionar(RegraMontada regra)
+        internal List<FieldError> Declaracao { get; } = [];
+        internal List<FieldError> Cadastros { get; } = [];
+        internal List<FieldError> Composicao { get; } = [];
+        internal bool TodosMontados { get; set; } = true;
+        internal bool TemErros => Declaracao.Count + Cadastros.Count + Composicao.Count > 0;
+        internal void IncorporarErros(RegrasMontadas itens)
         {
-            Recusas.AddRange(regra.Recusas);
-            if (regra.Regra is { } montado)
-            {
-                Regras.Add(montado);
-            }
-            else
-            {
-                TodosMontados = false;
-            }
+            Declaracao.AddRange(itens.Declaracao);
+            Cadastros.AddRange(itens.Cadastros);
+            Composicao.AddRange(itens.Composicao);
         }
-    }
-
-    private async Task<Result<RegraDeComprovacao>> MontarDocumentoAsync(
-        RegraDeComprovacaoInformada regra, int ordem, string? grupoDaRepeticao, CancellationToken cancellationToken)
-    {
-        if (regra.Documento is not { } regraDeDocumento)
-        {
-            return Result<RegraDeComprovacao>.ValidationFailure(DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, temDocumento: false, regra.Itens?.Count ?? 0, regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra)).Recusas);
-        }
-
-        Result<DocumentoExigido> documento = await documentos.MontarAsync(regraDeDocumento, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
-        return documento.IsFailure
-            ? Result<RegraDeComprovacao>.ValidationFailure(documento.Errors)
-            : CriarRegraDeDocumento(regra, documento.Value!, ordem);
-    }
-
-    private static Result<RegraDeComprovacao> CriarRegraDeDocumento(RegraDeComprovacaoInformada regra, DocumentoExigido documento, int ordem)
-    {
-        DeclaracaoDaRegraDeComprovacao declaracao = Declarar(regra);
-        return RegraDeComprovacao.CriarRegraDeDocumento(documento, ordem, declaracao.QuantidadeMinima,
-            regra.Distincao()?.CriterioDeDistincao is { } chave ? CriterioDeDistincaoDasApresentacoesCodigo.FromCodigo(chave) : null,
-            regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas, regra.GrupoDoFormularioParaRepeticao);
     }
 
     private static Result<RegraDeComprovacao> CriarGrupo(RegraDeComprovacaoInformada regra, int ordem, DeclaracaoDaRegraDeComprovacao declaracao, IReadOnlyList<RegraDeComprovacao> itens)
@@ -125,16 +130,9 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
                 declaracao.Forma!.Value, ordem, declaracao.QuantidadeMinima, declaracao.Consequencia, basesLegais.Value!, itens, regra.GrupoDoFormularioParaRepeticao);
     }
 
-    private static DeclaracaoDaRegraDeComprovacao Declarar(RegraDeComprovacaoInformada regra) =>
-        DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, regra.Documento is not null, regra.Itens?.Count ?? 0,
-            regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
-
     private static Result<IReadOnlyList<BaseLegalDaComprovacao>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>
         EscritaDasBasesLegais.Resolver(
             declaradas,
             static b => BaseLegalDaComprovacao.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b)),
             static b => BaseLegalDaComprovacao.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b), b.Observacao).Value!);
-    private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada regra) =>
-        DistincaoDeclarada.Interpretar(regra.Distincao()?.CriterioDeDistincao, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
-
 }

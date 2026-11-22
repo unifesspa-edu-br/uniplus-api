@@ -78,7 +78,7 @@ public sealed record DeclaracaoDaRegraDeComprovacao(
     {
         FormaDeComprovacao.Documento => RegraDeComprovacao.RecusaDaQuantidadeDeApresentacoes(quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao),
         FormaDeComprovacao.TodosOsItens => CombinacaoDoGrupo.RecusaDaQuantidade(FormaDeComprovacao.TodosOsItens, quantidadeMinima, quantidadeDeItens),
-        FormaDeComprovacao.QuantidadeMinimaDeItens when quantidadeDeItens > 0 => CombinacaoDoGrupo.RecusaDaQuantidade(
+        FormaDeComprovacao.QuantidadeMinimaDeItens => CombinacaoDoGrupo.RecusaDaQuantidade(
             FormaDeComprovacao.QuantidadeMinimaDeItens, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, quantidadeDeItens),
         _ => null,
     };

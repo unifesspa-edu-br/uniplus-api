@@ -132,8 +132,8 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         (await HandleComCatalogoAsync(cenario, command, [fato])).IsSuccess.Should().BeTrue("o fato que o processo já comprova não é vínculo novo");
     }
 
-    [Fact(DisplayName = "Handle com fatos comprovados repetidos recusa na forma, antes de ler o tipo de documento")]
-    public async Task Handle_FatosComprovadosRepetidos_RecusaAntesDeLerOTipo()
+    [Fact(DisplayName = "Handle com fatos comprovados repetidos recusa na forma e consulta o tipo de documento")]
+    public async Task Handle_FatosComprovadosRepetidos_RecusaEConsultaOTipo()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
@@ -145,8 +145,8 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
 
         Result resultado = await HandleAsync(mocks, command);
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(DocumentoExigido.FatosComprovadosInvalidos);
-        await mocks.TipoDocumentoReader.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        resultado.Errors.Select(e => e.Error.Code).Should().Equal(DocumentoExigido.FatosComprovadosInvalidos, "DocumentoExigido.TipoDocumentoNaoEncontrado");
+        await mocks.TipoDocumentoReader.Received().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "CA-07 (Story #554, PR #898): mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]

@@ -16,7 +16,7 @@ public sealed record DistincaoDasApresentacoes
         CriterioDeDistincaoDasApresentacoes? criterio, DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas, int quantidadeMinima)
     {
         List<FieldError> recusas = ConferenciaDaDistincao.Conferir(new(criterio, dataReferencia, ocorrenciasEsperadas), quantidadeMinima);
-        return recusas.Count > 0 ? Result<DistincaoDasApresentacoes?>.Failure(recusas[0].Error)
+        return recusas.Count > 0 ? Result<DistincaoDasApresentacoes?>.ValidationFailure(recusas)
             : Result<DistincaoDasApresentacoes?>.Success(Reidratar(criterio, dataReferencia, ocorrenciasEsperadas));
     }
 

@@ -75,8 +75,8 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("aplicabilidade.condicoes[0].fato", FatoNaoInformado),
-            ("aplicabilidade.condicoes[0].operador", OperadorDesconhecido),
+            ("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].fato", FatoNaoInformado),
+            ("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].operador", OperadorDesconhecido),
         ]);
     }
 
@@ -90,8 +90,8 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("aplicabilidade.condicoes[0].fato", FatoNaoInformado),
-            ("aplicabilidade.condicoes[1].operador", OperadorDesconhecido),
+            ("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].fato", FatoNaoInformado),
+            ("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[1].operador", OperadorDesconhecido),
         ]);
     }
 }

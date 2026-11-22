@@ -13,16 +13,17 @@ using Kernel.Results;
 /// </summary>
 internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade, FormatosPermitidos Formatos, ModeloDaExigencia? Modelo)
 {
-    /// <summary>Resolve as três restrições nessa ordem; a primeira recusa encerra.</summary>
+    /// <summary>Resolve as restrições na ordem de idade, formatos e modelo.</summary>
     public static Result<EscritaDasRestricoesDoDocumento> Resolver(
         ItemDocumentoExigidoInput documento, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
     {
         Result<IdadeMaximaEmissao?> idade = IdadeMaximaEmissaoDaRegra(documento.IdadeMaximaEmissao());
         Result<FormatosPermitidos> formatos = EscritaDosFormatosPermitidos.Resolver(documento.FormatosPermitidos());
         Result<ModeloDaExigencia?> modelo = ModeloDaRegra(documento.ModeloId(), modelosDoProcesso);
-        IReadOnlyList<FieldError>? recusa = new[] { idade.Errors, formatos.Errors, modelo.Errors }
-            .FirstOrDefault(static erros => erros.Count > 0);
-        return recusa is not null
+        List<FieldError> recusa = [.. idade.Errors.Select(erro => (erro with { Field = erro.Field ?? "" }).NoCaminhoDe("requisitos.idadeMaximaEmissao")),
+            .. formatos.Errors.Select(erro => (erro with { Field = erro.Field ?? "" }).NoCaminhoDe("requisitos.formatosPermitidos")),
+            .. modelo.Errors.Select(erro => (erro with { Field = erro.Field ?? "" }).NoCaminhoDe("requisitos.modelo.modeloId"))];
+        return recusa.Count > 0
             ? Result<EscritaDasRestricoesDoDocumento>.ValidationFailure(recusa)
             : Result<EscritaDasRestricoesDoDocumento>.Success(new EscritaDasRestricoesDoDocumento(idade.Value, formatos.Value!, modelo.Value));
     }

@@ -61,7 +61,7 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
     {
         FormaDeComprovacao.TodosOsItens when quantidade is not null => new("RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos",
             "Este grupo exige todos os itens, mas informa uma quantidade mínima. Retire a quantidade mínima."),
-        FormaDeComprovacao.QuantidadeMinimaDeItens when quantidade is { } valor && (valor < 1 || valor > quantidadeDeItens) => new(
+        FormaDeComprovacao.QuantidadeMinimaDeItens when quantidade is { } valor && (valor < 1 || quantidadeDeItens > 0 && valor > quantidadeDeItens) => new(
             "RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites", "A quantidade mínima deste grupo está fora dos limites. Informe um valor entre 1 e o número de itens do grupo."),
         _ => null,
     };

@@ -11,8 +11,5 @@ internal sealed record RegraInformadaConferida(
     string Caminho,
     int Indice,
     IReadOnlyList<FieldError> Recusas,
-    IReadOnlyList<RegraInformadaConferida> Itens)
-{
-    internal static bool RepeticaoRecusada(RegraInformadaConferida regra) =>
-        regra.Recusas.Any(static recusa => recusa.Error.Code == "RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
-}
+    RepeticaoDaRegra Repeticao,
+    IReadOnlyList<RegraInformadaConferida> Itens);

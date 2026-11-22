@@ -11,8 +11,11 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 [Collection(CascadingCollection.Name)]
@@ -59,6 +62,48 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
         erro.GetProperty("field").GetString().Should().Be("regrasDeComprovacao[0].itens[0].documento");
         erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.regra_de_comprovacao.documento_obrigatorio");
     }
+
+    [Fact]
+    public async Task DefinirDocumentosExigidos_DoisDocumentosSemFormatos_ApontaCadaCaminho()
+    {
+        (Guid processo, Guid tipo, Guid fase) = await PrepararDocumentoAsync();
+        using HttpClient client = fixture.Factory.CreateClient();
+        object regra = RegraSemFormatos(tipo, fase);
+        using HttpResponseMessage resposta = await EnviarAsync(client, processo, [regra, regra]);
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Select(static erro => erro.GetProperty("field").GetString())
+            .Should().Equal("regrasDeComprovacao[0].documento.requisitos.formatosPermitidos", "regrasDeComprovacao[1].documento.requisitos.formatosPermitidos");
+    }
+
+    private async Task<(Guid Processo, Guid Tipo, Guid Fase)> PrepararDocumentoAsync()
+    {
+        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        TipoDocumento tipo = TipoDocumento.Criar($"COMPROVANTE_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}", "Comprovante", null, "IDENTIFICACAO",
+            null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental.",
+            hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        db.Add(tipo);
+        await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
+        (ProcessoSeletivo processo, DocumentoAPublicar _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"Documentos exigidos {Guid.CreateVersion7()}",
+        });
+        return (processo.Id, tipo.Id, processo.CronogramaFases.Single().Id);
+    }
+
+    private static object RegraSemFormatos(Guid tipo, Guid fase) => new
+    {
+        forma = "DOCUMENTO",
+        documento = new
+        {
+            tipoDocumento = new { id = tipo },
+            momento = new { faseId = fase },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() }
+        },
+    };
 
     private static void ConferirRecusa(JsonDocument problema, CasoDeRecusaDaRegra caso)
     {

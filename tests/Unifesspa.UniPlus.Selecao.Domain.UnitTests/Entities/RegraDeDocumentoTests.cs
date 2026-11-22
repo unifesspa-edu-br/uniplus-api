@@ -50,10 +50,30 @@ public sealed class RegraDeDocumentoTests
     [Fact(DisplayName = "CriarRegraDeDocumento recusa ordem negativa")]
     public void CriarRegraDeDocumento_OrdemNegativa_Recusa()
     {
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: -1);
+        Action criar = () => RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: -1);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OrdemInvalida");
+        criar.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void CriarRegraDeDocumento_DistincaoComDuasFalhas_AcumulaRecusas()
+    {
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
+            Documento(), 0, criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.CompetenciaMensal,
+            ocorrenciasEsperadas: ["OUTRA"]);
+
+        resultado.Errors.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void CriarRegraDeDocumento_QuantidadeEDistincaoInvalidas_AcumulaRecusas()
+    {
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
+            Documento(), 0, 0, CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, ocorrenciasEsperadas: ["OUTRA"]);
+
+        resultado.Errors.Select(static erro => erro.Error.Code).Should().Contain(
+            ["RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida", "RegraDeComprovacao.DataReferenciaObrigatoriaParaCalendario",
+                "RegraDeComprovacao.OcorrenciasEsperadasIndevidasParaCriterio"]);
     }
 
     [Fact(DisplayName = "CriarRegraDeDocumento recusa quantidadeMinima menor que 1")]

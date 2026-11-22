@@ -131,6 +131,10 @@ internal static class ConferenciaDasCondicoesDaExigencia
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
         FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade());
+        if (finalidade == FinalidadeFormulario.Nenhuma)
+        {
+            finalidade = null;
+        }
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
                 configuracao, c.Fato, documento.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
