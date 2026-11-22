@@ -516,7 +516,7 @@ Centralização das invariantes compartilhadas elimina drift entre módulos ([AD
 
 ### Existem handlers MediatR legados no projeto?
 
-Não. O scaffolding inicial do projeto removeu MediatR antes do primeiro merge produtivo. O fitness test solution-wide `SolutionNaoTemMediatRTests.NenhumTipoDoProdutoDependeDeMediatR` falha o build se qualquer assembly do produto importar `MediatR.*` — zero tolerância.
+Não. O scaffolding inicial do projeto removeu MediatR antes do primeiro merge produtivo. A proibição está registrada na [ADR-0003](adrs/0003-wolverine-como-backbone-cqrs.md).
 
 ### Como funcionam as categorias de teste `OutboxCapability` e `OutboxCascading`?
 

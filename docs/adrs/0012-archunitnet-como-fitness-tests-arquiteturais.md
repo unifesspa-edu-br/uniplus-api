@@ -62,7 +62,8 @@ Conjunto inicial mínimo de regras (todas verdes em `main` antes de qualquer out
 | R1 | `Modulos_NaoSeReferenciam` | `Selecao.*` não depende de `Ingresso.*` e vice-versa |
 | R2 | `ApplicationEDomain_NaoDependemDeWolverine` | `*.Application.*` e `*.Domain.*` não referenciam `Wolverine.*` |
 | R3 | `Camadas_RespeitamDirecaoDeDependencia` | Domain → Application → Infrastructure → API (uma só direção) |
-| R4 | `SolutionNaoTemMediatR` | nenhum tipo no monorepo referencia `MediatR.*` |
+
+> **Emenda (2026-11-22):** a regra que proibia referências a `MediatR.*` saiu do conjunto. Biblioteca banida fica registrada na ADR que a proíbe (ADR-0003), sem teste de arquitetura dedicado.
 
 Política de upgrade:
 
