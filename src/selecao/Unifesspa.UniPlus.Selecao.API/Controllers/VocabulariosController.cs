@@ -139,4 +139,79 @@ public sealed class VocabulariosController : ControllerBase
 
         return Ok(guardas);
     }
+
+    /// <summary>Lista os modos de deliberação com código e rótulo.</summary>
+    [HttpGet("vocabularios/modos-deliberacao")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "modo-deliberacao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ModoDeDeliberacao>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarModosDeDeliberacao(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<ModoDeDeliberacao>> opcoes = await _queryBus
+            .Send(new ListarModosDeDeliberacaoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(opcoes);
+    }
+
+    /// <summary>Lista os critérios de votação com código e rótulo.</summary>
+    [HttpGet("vocabularios/criterios-votacao")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "criterio-votacao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<CriterioDeVotacao>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarCriteriosDeVotacao(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<CriterioDeVotacao>> opcoes = await _queryBus
+            .Send(new ListarCriteriosDeVotacaoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(opcoes);
+    }
+
+    /// <summary>Lista os desempates da votação com código e rótulo.</summary>
+    [HttpGet("vocabularios/desempates-votacao")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "desempate-votacao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<DesempateDaVotacao>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarDesempatesDaVotacao(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<DesempateDaVotacao>> opcoes = await _queryBus
+            .Send(new ListarDesempatesDaVotacaoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(opcoes);
+    }
+
+    /// <summary>Lista os encerramentos da votação com código e rótulo.</summary>
+    [HttpGet("vocabularios/encerramentos-votacao")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "encerramento-votacao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<EncerramentoDaVotacao>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarEncerramentosDaVotacao(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<EncerramentoDaVotacao>> opcoes = await _queryBus
+            .Send(new ListarEncerramentosDaVotacaoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(opcoes);
+    }
+
+    /// <summary>Lista os resultados sem unanimidade com código e rótulo.</summary>
+    [HttpGet("vocabularios/resultados-sem-unanimidade")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "resultado-sem-unanimidade", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ResultadoSemUnanimidade>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarResultadosSemUnanimidade(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<ResultadoSemUnanimidade>> opcoes = await _queryBus
+            .Send(new ListarResultadosSemUnanimidadeQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(opcoes);
+    }
 }

@@ -1,0 +1,10 @@
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.Vocabularios;
+
+using System.Collections.Generic;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
+/// <summary>Consulta os critérios de votação com código e rótulo.</summary>
+public sealed record ListarCriteriosDeVotacaoQuery : IQuery<IReadOnlyList<CodigoComRotulo<CriterioDeVotacao>>>;
