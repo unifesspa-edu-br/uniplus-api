@@ -10,12 +10,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using ComposicaoVagasDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.ComposicaoVagas;
 using NaturezaLegalDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.NaturezaLegal;
 using OrigemDataDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.OrigemDataFase;
-using OrigensDataFase = Unifesspa.UniPlus.Configuracao.Domain.Enums.OrigensDataFase;
 using RegraRemanejamentoDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.RegraRemanejamento;
 
 /// <summary>
 /// Amarra os códigos que a leitura de Seleção emite aos que o catálogo de Configuração
-/// publica para a MESMA entidade. Os quatro atributos abaixo são snapshot-copy (ADR-0061):
+/// publica para a MESMA entidade. Os quatro atributos abaixo são cópia dos dados (ADR-0061):
 /// Seleção os congela do cadastro vivo, e depois os devolve na sua própria leitura.
 /// </summary>
 /// <remarks>
@@ -23,10 +22,8 @@ using RegraRemanejamentoDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums
 /// O mesmo consumidor recebe as duas rotas — <c>GET /api/configuracao/modalidades</c>
 /// descreve a modalidade que <c>GET /api/selecao/processos-seletivos/{id}</c> referencia
 /// dentro de <c>distribuicaoVagas[].modalidades[]</c>, e cruzar as duas é necessário para
-/// distinguir a quantidade que o edital declara da que a Lei 12.711 calcula. Duas grafias
-/// para o mesmo atributo fazem esse cruzamento comparar códigos que nunca casam (issue
-/// #1294): a projeção de Seleção emitia <c>CotaReservada</c> onde o catálogo publica
-/// <c>COTA_RESERVADA</c>, e a quantidade declarada de uma modalidade sumia da tela.
+/// distinguir a quantidade que o edital declara da que a Lei 12.711 calcula. Os códigos
+/// precisam coincidir para que o consumidor identifique a mesma modalidade nas duas rotas.
 /// </para>
 /// <para>
 /// O pareamento é pelo NOME do membro, não pelo valor numérico: os dois enums são tipos
@@ -56,7 +53,7 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
         CadaMembroExceto<OrigemDataFase, OrigemDataDoCatalogo>(
             OrigemDataFase.Nenhuma,
             static local => local.ToCodigo(),
-            OrigensDataFase.ParaTokenCanonico);
+            CodigoDeContratoExtensions.Codigo);
 
     /// <summary>
     /// Remanejamento tem um caso a mais: <c>Nenhuma</c> não indica corrupção, e sim

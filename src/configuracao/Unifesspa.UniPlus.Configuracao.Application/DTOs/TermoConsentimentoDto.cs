@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>
 /// DTO de resposta HTTP para <c>TermoConsentimento</c>, com a lista completa de
 /// versões promovidas — usado pelo <c>ObterPorId</c>. Suporta HATEOAS Level 1 via
@@ -22,7 +25,7 @@ public sealed record TermoConsentimentoDto(
     string Nome,
     string? TextoRascunho,
     string? BaseLegalRascunho,
-    string FormaAceiteRascunho,
+    CodigoComRotulo<FormaAceite> FormaAceiteRascunho,
     bool Revisado,
     DateTimeOffset? RevisadoEm,
     IReadOnlyList<TermoConsentimentoVersaoDto> Versoes,

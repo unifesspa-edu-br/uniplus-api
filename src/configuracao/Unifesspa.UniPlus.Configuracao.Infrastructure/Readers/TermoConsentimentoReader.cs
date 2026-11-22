@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -75,7 +76,7 @@ internal sealed class TermoConsentimentoReader : ITermoConsentimentoReader
         l.Nome,
         l.Texto,
         l.BaseLegal,
-        FormasAceite.ParaTokenCanonico(l.FormaAceite),
+        l.FormaAceite.Codigo(),
         l.Hash);
 
     private sealed record LinhaDaVersao(

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -15,7 +16,7 @@ public static class TermoConsentimentoMapping
             termo.Nome,
             termo.TextoRascunho,
             termo.BaseLegalRascunho,
-            FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho),
+            CodigoComRotulo<FormaAceite>.De(termo.FormaAceiteRascunho),
             termo.Revisado,
             termo.RevisadoEm,
             [.. termo.Versoes.Select(ToDto)],
@@ -29,7 +30,7 @@ public static class TermoConsentimentoMapping
             termo.Id,
             termo.Codigo.Valor,
             termo.Nome,
-            FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho),
+            CodigoComRotulo<FormaAceite>.De(termo.FormaAceiteRascunho),
             termo.Revisado,
             termo.CreatedAt);
     }
@@ -40,7 +41,7 @@ public static class TermoConsentimentoMapping
             versao.Numero,
             versao.Texto,
             versao.BaseLegal,
-            FormasAceite.ParaTokenCanonico(versao.FormaAceite),
+            CodigoComRotulo<FormaAceite>.De(versao.FormaAceite),
             versao.Hash,
             versao.PromovidaEm);
 }

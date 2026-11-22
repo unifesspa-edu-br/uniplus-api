@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -92,7 +93,7 @@ internal static class SqlDaSemente
     {
         TermoConsentimento termo = declaracao.Exigir(
             TermoConsentimento.Criar(
-                semente.Nome, semente.Texto, semente.BaseLegal, FormasAceite.ParaTokenCanonico(FormaAceite.RegistroDigitalComLogIp)),
+                semente.Nome, semente.Texto, semente.BaseLegal, FormaAceite.RegistroDigitalComLogIp.Codigo()),
             $"termo {semente.Nome}");
         declaracao.Exigir(termo.MarcarRevisado(declaracao.Autor, declaracao.Instante), $"revisão do termo {semente.Nome}");
         return termo;
@@ -102,7 +103,7 @@ internal static class SqlDaSemente
         InserirQuando("termos_de_consentimento", "id", CondicaoDoTermo(termoId, termo),
             ("id", Uuid(termoId)), ("codigo", Texto(termo.Codigo.Valor)), ("nome", Texto(termo.Nome)), ("texto_rascunho", Texto(termo.TextoRascunho)),
             ("base_legal_rascunho", Texto(termo.BaseLegalRascunho)),
-            ("forma_aceite_rascunho", Texto(FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho))),
+            ("forma_aceite_rascunho", Texto(termo.FormaAceiteRascunho.Codigo())),
             ("revisado", Logico(termo.Revisado)), ("is_deleted", Logico(false)), ("created_at", Momento(instante)));
 
     // O termo não entra quando algum termo, vivo ou removido, tem o mesmo identificador ou o mesmo código: o que a
@@ -128,7 +129,7 @@ internal static class SqlDaSemente
         InserirQuando("versoes_do_termo_consentimento", "id", CondicaoDaVersao(semente, versao),
             ("id", Uuid(semente.VersaoId)), ("termo_consentimento_id", Uuid(semente.TermoId)),
             ("numero", versao.Numero.ToString(CultureInfo.InvariantCulture)), ("texto", Texto(versao.Texto)), ("base_legal", Texto(versao.BaseLegal)),
-            ("forma_aceite", Texto(FormasAceite.ParaTokenCanonico(versao.FormaAceite))), ("hash", Texto(versao.Hash)),
+            ("forma_aceite", Texto(versao.FormaAceite.Codigo())), ("hash", Texto(versao.Hash)),
             ("promovida_em", Momento(versao.PromovidaEm)), ("promovida_por", Texto(versao.PromovidaPor)));
 
     // A versão só entra quando o termo dela está gravado e não removido, para não apontar para linha inexistente nem gravar

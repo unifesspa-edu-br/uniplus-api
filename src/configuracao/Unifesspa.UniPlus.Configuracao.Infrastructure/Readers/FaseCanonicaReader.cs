@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Implementação de <see cref="IFaseCanonicaReader"/> (ADR-0056): leitura direta do
@@ -16,10 +17,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// no consumidor (ADR-0061) dispensa releitura quente. Ordena por <c>Codigo</c>
 /// ascendente.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class FaseCanonicaReader : IFaseCanonicaReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -82,5 +79,5 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             f.BaseLegal,
             f.Sinalizadores.ColetaInscricao,
             f.Sinalizadores.ColetaSolicitacaoIsencao,
-            OrigensDataFase.ParaTokenCanonico(f.OrigemData));
+            f.OrigemData.Codigo());
 }

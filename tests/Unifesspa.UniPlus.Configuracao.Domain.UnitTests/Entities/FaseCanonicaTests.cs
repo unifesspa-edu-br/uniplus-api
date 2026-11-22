@@ -107,9 +107,8 @@ public sealed class FaseCanonicaTests
     }
 
     [Theory(DisplayName = "Origem da data ausente é rejeitada (obrigatória)")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Criar_SemOrigemData_Falha(string origemData)
+    [InlineData(null)]
+    public void Criar_SemOrigemData_Falha(string? origemData)
     {
         Result<FaseCanonica> r = Criar(origemData: origemData);
 
@@ -117,10 +116,14 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.OrigemDataObrigatoria);
     }
 
-    [Theory(DisplayName = "Origem da data fora do domínio (incl. numérico, minúsculo e o vocabulário anterior) é rejeitada")]
+    [Theory(DisplayName = "Origem da data fora do domínio (inclusive numérico, minúsculo e com espaço) é rejeitada")]
+    [InlineData("")]
+    [InlineData("   ")]
     [InlineData("EXTERNA")]
     [InlineData("1")]
     [InlineData("no_edital")]
+    [InlineData(" NO_EDITAL")]
+    [InlineData("NA_EXECUCAO ")]
     [InlineData("PROPRIA")]
     [InlineData("DELEGADA")]
     public void Criar_OrigemDataInvalida_Falha(string origemData)
@@ -188,7 +191,7 @@ public sealed class FaseCanonicaTests
 
     // ── Acumulação das recusas de campo ────────────────────────────────────────
 
-    [Fact(DisplayName = "As quatro recusas de campo acumulam no mesmo lote, na ordem nome, descrição, base legal e origem da data")]
+    [Fact(DisplayName = "As quatro recusas de campo acumulam na mesma resposta, na ordem nome, descrição, base legal e origem da data")]
     public void Criar_QuatroCamposInvalidos_AcumulaAsQuatroRecusasNaOrdem()
     {
         Result<FaseCanonica> resultado = Criar(
@@ -205,7 +208,7 @@ public sealed class FaseCanonicaTests
             ("origemData", FaseCanonicaErrorCodes.OrigemDataInvalida));
     }
 
-    [Fact(DisplayName = "Atualizar acumula as recusas de campo com a dos sinalizadores no mesmo lote")]
+    [Fact(DisplayName = "Atualizar acumula as recusas de campo com a dos sinalizadores na mesma resposta")]
     public void Atualizar_CamposESinalizadorInvalidos_AcumulaTudoNoMesmoLote()
     {
         FaseCanonica fase = Criar(codigo: "INSCRICAO").Value!;

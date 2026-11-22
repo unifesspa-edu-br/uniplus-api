@@ -8,11 +8,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration<TermoConsentimento>
 {
+    private const int CodigoDeContratoMaxLength = 30;
     private const int NomeMaxLength = 200;
     private const int TextoMaxLength = 20_000;
     private const int BaseLegalMaxLength = 500;
@@ -38,7 +40,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
     {
         table.HasCheckConstraint(
             "ck_termos_de_consentimento_forma_aceite_rascunho",
-            $"forma_aceite_rascunho IN ({CodigosSql(FormasAceite.TokensCanonicos)})");
+            $"forma_aceite_rascunho IN ({SqlDosCodigosDeContrato.Lista<FormaAceite>()})");
         table.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
     }
 
@@ -57,8 +59,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         builder.Property(t => t.BaseLegalRascunho).HasMaxLength(BaseLegalMaxLength);
 
         builder.Property(t => t.FormaAceiteRascunho)
-            .HasConversion<FormaAceiteValueConverter>()
-            .HasMaxLength(30)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 
@@ -118,7 +119,4 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_termos_de_consentimento_nome");
     }
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -62,34 +63,13 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     public static Result<TermoConsentimento> Criar(
         string? nome, string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
     {
-        List<FieldError> erros = [];
-
         Result<IdentificacaoDoTermo> identificacao = Identificar(nome);
-        if (identificacao.IsFailure)
-        {
-            erros.Add(new("nome", identificacao.Error!));
-        }
+        Result<FormaAceite> campos = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
+        List<FieldError> erros = [.. ErrosDoNome(identificacao), .. campos.Errors];
 
-        Result<FormaAceite> camposEditaveis = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
-        if (camposEditaveis.IsFailure)
-        {
-            erros.AddRange(camposEditaveis.Errors);
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<TermoConsentimento>.ValidationFailure(erros);
-        }
-
-        return Result<TermoConsentimento>.Success(new TermoConsentimento
-        {
-            Nome = identificacao.Value!.Nome,
-            Codigo = identificacao.Value.Codigo,
-            TextoRascunho = NormalizarOpcional(textoRascunho),
-            BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho),
-            FormaAceiteRascunho = camposEditaveis.Value,
-            Revisado = false,
-        });
+        return erros.Count > 0
+            ? Result<TermoConsentimento>.ValidationFailure(erros)
+            : Result<TermoConsentimento>.Success(Novo(identificacao.Value!, textoRascunho, baseLegalRascunho, campos.Value));
     }
 
     /// <summary>
@@ -112,12 +92,7 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho);
         FormaAceiteRascunho = validacao.Value;
 
-        if (Revisado)
-        {
-            Revisado = false;
-            RevisadoPor = null;
-            RevisadoEm = null;
-        }
+        DescartarRevisao();
 
         return Result.Success();
     }
@@ -144,18 +119,9 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(revisadoPor);
 
-        if (string.IsNullOrWhiteSpace(TextoRascunho))
+        if (RecusaDoRascunho("marcado como revisado") is { } recusa)
         {
-            return Result.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.RevisaoSemTexto,
-                "Rascunho sem texto não pode ser marcado como revisado."));
-        }
-
-        if (string.IsNullOrWhiteSpace(BaseLegalRascunho))
-        {
-            return Result.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.RevisaoSemBaseLegal,
-                "Rascunho sem base legal não pode ser marcado como revisado."));
+            return Result.Failure(recusa);
         }
 
         Revisado = true;
@@ -191,75 +157,97 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(promovidoPor);
 
-        if (!Revisado)
+        DomainError? recusa = Revisado ? RecusaDoRascunho("promovido") : SemRevisao();
+        if (recusa is not null)
         {
-            return Result<TermoConsentimentoVersao>.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.PromocaoSemRevisao,
-                "Só um rascunho marcado como revisado pode ser promovido a versão."));
-        }
-
-        if (string.IsNullOrWhiteSpace(TextoRascunho))
-        {
-            return Result<TermoConsentimentoVersao>.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.RevisaoSemTexto,
-                "Rascunho sem texto não pode ser promovido."));
-        }
-
-        if (string.IsNullOrWhiteSpace(BaseLegalRascunho))
-        {
-            return Result<TermoConsentimentoVersao>.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.RevisaoSemBaseLegal,
-                "Rascunho sem base legal não pode ser promovido."));
+            return Result<TermoConsentimentoVersao>.Failure(recusa);
         }
 
         TermoConsentimentoVersao versao = TermoConsentimentoVersao.Promover(
-            Id, ProximoNumeroDeVersao(), TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, agora, promovidoPor);
+            Id, ProximoNumeroDeVersao(), TextoRascunho!, BaseLegalRascunho!, FormaAceiteRascunho, agora, promovidoPor);
         _versoes.Add(versao);
-
-        // A revisão é CONSUMIDA pela promoção — cada versão exige seu próprio sinal
-        // de revisão, mesmo sem edição do rascunho entre uma promoção e outra. Sem
-        // isso, uma segunda chamada de promoção (retry acidental com outra
-        // Idempotency-Key, ou um segundo clique) anexaria mais uma versão idêntica
-        // ao histórico forense a partir do MESMO conteúdo já revisado — a segunda
-        // agora falha com PromocaoSemRevisao até o operador confirmar de novo.
-        Revisado = false;
-        RevisadoPor = null;
-        RevisadoEm = null;
+        DescartarRevisao();
 
         return Result<TermoConsentimentoVersao>.Success(versao);
     }
+
+    private static DomainError SemRevisao() => new(
+        TermoConsentimentoErrorCodes.PromocaoSemRevisao,
+        "Só um rascunho marcado como revisado pode ser promovido a versão.");
+
+    private DomainError? RecusaDoRascunho(string acao)
+    {
+        if (string.IsNullOrWhiteSpace(TextoRascunho))
+        {
+            return new DomainError(TermoConsentimentoErrorCodes.RevisaoSemTexto, $"Rascunho sem texto não pode ser {acao}.");
+        }
+
+        return string.IsNullOrWhiteSpace(BaseLegalRascunho)
+            ? new DomainError(TermoConsentimentoErrorCodes.RevisaoSemBaseLegal, $"Rascunho sem base legal não pode ser {acao}.")
+            : null;
+    }
+
+    // A promoção consome a revisão: cada versão exige seu próprio sinal, e uma segunda promoção (retry, segundo clique) falha
+    // com PromocaoSemRevisao em vez de anexar outra versão idêntica ao histórico forense.
+    private void DescartarRevisao()
+    {
+        Revisado = false;
+        RevisadoPor = null;
+        RevisadoEm = null;
+    }
+
+    private static IEnumerable<FieldError> ErrosDoNome(Result<IdentificacaoDoTermo> identificacao) =>
+        identificacao.IsFailure ? [new FieldError("nome", identificacao.Error!)] : [];
+
+    private static TermoConsentimento Novo(
+        IdentificacaoDoTermo identificacao, string? textoRascunho, string? baseLegalRascunho, FormaAceite formaAceite) =>
+        new()
+        {
+            Nome = identificacao.Nome,
+            Codigo = identificacao.Codigo,
+            TextoRascunho = NormalizarOpcional(textoRascunho),
+            BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho),
+            FormaAceiteRascunho = formaAceite,
+            Revisado = false,
+        };
 
     private static Result<FormaAceite> ValidarCamposEditaveis(
         string? textoRascunho, string? baseLegalRascunho, string? formaAceiteRascunhoToken)
     {
         List<FieldError> erros = [];
-
-        if (textoRascunho is not null && textoRascunho.Trim().Length > TextoMaxLength)
-        {
-            erros.Add(new("textoRascunho", new DomainError(
-                TermoConsentimentoErrorCodes.TextoTamanho,
-                $"Texto do rascunho deve ter no máximo {TextoMaxLength} caracteres.")));
-        }
-
-        if (baseLegalRascunho is not null && baseLegalRascunho.Trim().Length > BaseLegalMaxLength)
-        {
-            erros.Add(new("baseLegalRascunho", new DomainError(
-                TermoConsentimentoErrorCodes.BaseLegalTamanho,
-                $"Base legal do rascunho deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-        }
-
-        FormaAceite formaAceite = FormaAceite.ADefinir;
-        if (!string.IsNullOrWhiteSpace(formaAceiteRascunhoToken)
-            && !FormasAceite.TryAnalisar(formaAceiteRascunhoToken, out formaAceite))
-        {
-            erros.Add(new("formaAceiteRascunho", new DomainError(
-                TermoConsentimentoErrorCodes.FormaAceiteInvalida,
-                "Forma de aceite deve ser uma de: " + string.Join(", ", FormasAceite.TokensCanonicos) + ".")));
-        }
+        ConferirLimite(erros, "textoRascunho", textoRascunho, TextoMaxLength, TermoConsentimentoErrorCodes.TextoTamanho, "Texto do rascunho");
+        ConferirLimite(erros, "baseLegalRascunho", baseLegalRascunho, BaseLegalMaxLength, TermoConsentimentoErrorCodes.BaseLegalTamanho, "Base legal do rascunho");
+        FormaAceite formaAceite = ResolverFormaDeAceite(formaAceiteRascunhoToken, erros);
 
         return erros.Count == 0
             ? Result<FormaAceite>.Success(formaAceite)
             : Result<FormaAceite>.ValidationFailure(erros);
+    }
+
+    private static void ConferirLimite(
+        List<FieldError> erros, string campo, string? valor, int maximo, string codigoDoErro, string rotulo)
+    {
+        if (valor is not null && valor.Trim().Length > maximo)
+        {
+            erros.Add(new(campo, new DomainError(codigoDoErro, $"{rotulo} deve ter no máximo {maximo} caracteres.")));
+        }
+    }
+
+    private static FormaAceite ResolverFormaDeAceite(string? token, List<FieldError> erros)
+    {
+        if (token is null)
+        {
+            return FormaAceite.ADefinir;
+        }
+
+        if (!CatalogoDe<FormaAceite>.TentarObter(token, out FormaAceite formaAceite))
+        {
+            string aceitos = string.Join(", ", CatalogoDe<FormaAceite>.Todos().Select(static declarado => declarado.Codigo));
+            erros.Add(new("formaAceiteRascunho", new DomainError(
+                TermoConsentimentoErrorCodes.FormaAceiteInvalida, $"Forma de aceite deve ser uma de: {aceitos}.")));
+        }
+
+        return formaAceite;
     }
 
     // As versões do termo são carregadas com ele; duas promoções concorrentes leem o mesmo número e a segunda falha no

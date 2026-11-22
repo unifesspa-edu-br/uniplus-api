@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfiguration<TermoConsentimentoVersao>
 {
+    private const int CodigoDeContratoMaxLength = 30;
     private const int HashLength = 64;
     private const int PromovidaPorMaxLength = 255;
 
@@ -36,7 +37,7 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
     {
         table.HasCheckConstraint(
             "ck_versoes_do_termo_consentimento_forma_aceite",
-            $"forma_aceite IN ({CodigosSql(FormasAceite.TokensCanonicos)})");
+            $"forma_aceite IN ({SqlDosCodigosDeContrato.Lista<FormaAceite>()})");
         table.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
     }
 
@@ -51,8 +52,7 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
     private static void ConfigurarFormaDeAceiteEIntegridade(EntityTypeBuilder<TermoConsentimentoVersao> builder)
     {
         builder.Property(v => v.FormaAceite)
-            .HasConversion<FormaAceiteValueConverter>()
-            .HasMaxLength(30)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(v => v.Hash)
@@ -79,7 +79,4 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
         builder.HasIndex(v => new { v.TermoConsentimentoId, v.PromovidaEm })
             .HasDatabaseName("ix_versoes_do_termo_consentimento_termo_promovida_em");
     }
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }

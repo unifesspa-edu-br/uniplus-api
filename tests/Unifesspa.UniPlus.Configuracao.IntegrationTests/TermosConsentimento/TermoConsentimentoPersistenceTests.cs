@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TermosConsentimento;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +19,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// <c>CalendarioDiasUteis.DiasNaoUteis</c>).
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TermoConsentimentoPersistenceTests
 {
     private const string AdminA = "admin-a";
@@ -43,18 +37,10 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Persistir com rascunho completo e reler devolve os campos corretos")]
     public async Task Insert_PersisteRascunhoComCamposCorretos()
     {
-        TermoConsentimento termo = TermoConsentimento.Criar(
-            NomeUnico(), "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
+        TermoConsentimento termo = NovoTermo("REGISTRO_DIGITAL_SEM_LOG_IP");
+        await GravarAsync(termo);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TermoConsentimento persistido = await readCtx.TermosConsentimento
-            .SingleAsync(t => t.Id == termo.Id);
+        TermoConsentimento persistido = await LerAsync(termo.Id);
 
         persistido.CreatedBy.Should().Be(AdminA);
         persistido.Nome.Should().Be(termo.Nome);
@@ -64,136 +50,48 @@ public sealed class TermoConsentimentoPersistenceTests
         persistido.Revisado.Should().BeFalse();
     }
 
+    // O termo é recarregado (já rastreado) e a versão precisa ser adicionada explicitamente ao DbSet: o EF Core não a
+    // detecta como nova só pela coleção em memória, porque o Id gerado no cliente parece "já existente".
     [Fact(DisplayName = "Promover após reload persiste a versão imutável via AdicionarVersaoAsync")]
     public async Task Promover_AposReload_PersisteVersaoImutavelViaRepositorio()
     {
-        // Reproduz o fluxo real: criar+revisar em uma requisição/contexto, promover
-        // numa SEGUNDA requisição/contexto — o termo é recarregado (já rastreado),
-        // não construído do zero. Sob esse fluxo, adicionar a versão só à coleção em
-        // memória do agregado NÃO basta (o EF Core não a detecta como Added — o Id
-        // gerado client-side parece "já existente" à heurística de DetectChanges);
-        // a versão precisa ser adicionada explicitamente ao DbSet
-        // (ITermoConsentimentoRepository.AdicionarVersaoAsync), como o handler faz.
-        TermoConsentimento termo = TermoConsentimento.Criar(
-            NomeUnico(), "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
-        termo.MarcarRevisado("usuario.revisor", Agora);
+        TermoConsentimento termo = TermoRevisado("REGISTRO_DIGITAL_SEM_LOG_IP");
+        await GravarAsync(termo);
+        await PromoverAsync(termo.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
+        TermoConsentimento persistido = await LerAsync(termo.Id, comVersoes: true);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            TermoConsentimentoRepository repository = new(ctx);
-            TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
-
-            TermoConsentimentoVersao versao = reloaded.Promover("usuario.revisor", Agora).Value!;
-            await repository.AdicionarVersaoAsync(reloaded, versao, CancellationToken.None);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TermoConsentimento persistido = await readCtx.TermosConsentimento
-            .Include(t => t.Versoes)
-            .SingleAsync(t => t.Id == termo.Id);
-
-        persistido.Versoes.Should().HaveCount(1);
-        TermoConsentimentoVersao versaoPersistida = persistido.Versoes[0];
-        versaoPersistida.Texto.Should().Be("Texto do termo");
-        versaoPersistida.BaseLegal.Should().Be("Lei 13.709/2018");
-        versaoPersistida.FormaAceite.Should().Be(FormaAceite.RegistroDigitalSemLogIp);
-        versaoPersistida.PromovidaPor.Should().Be("usuario.revisor");
-        versaoPersistida.Hash.Should().HaveLength(64, "hash é SHA-256 hex (64 caracteres)");
-
-        // O texto/base legal do rascunho permanecem intactos após a promoção; só a
-        // revisão é consumida (status volta a EM_ELABORACAO).
-        persistido.TextoRascunho.Should().Be("Texto do termo");
-        persistido.Revisado.Should().BeFalse();
+        persistido.Versoes.Should().ContainSingle();
+        TermoConsentimentoVersao versao = persistido.Versoes[0];
+        (versao.Texto, versao.BaseLegal, versao.FormaAceite, versao.PromovidaPor).Should().Be(
+            ("Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp, "usuario.revisor"));
+        versao.Hash.Should().HaveLength(64, "hash é SHA-256 hex (64 caracteres)");
+        persistido.Revisado.Should().BeFalse("a revisão é consumida pela promoção");
     }
 
     [Fact(DisplayName = "Promover concorrente com edição que reverte a revisão falha por concorrência (xmin)")]
     public async Task Promover_ConcorrenteComEdicaoQueReverteRevisao_FalhaPorConcorrencia()
     {
-        // Reproduz uma corrida de leitura-escrita: request A lê o termo revisado
-        // (fica com uma cópia rastreada nesse estado); antes de A promover, request B
-        // carrega o MESMO termo, edita o rascunho (o que reverte Revisado para false)
-        // e comita. Sem o xmin amarrado a um write real no commit de A, a promoção
-        // de A sairia gravada a partir de um rascunho já invalidado.
-        TermoConsentimento termo = TermoConsentimento.Criar(
-            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
-        termo.MarcarRevisado("usuario.revisor", Agora);
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
-
         await using UniPlusDbContext ctxA = _fixture.CreateDbContext(AdminA);
-        TermoConsentimentoRepository repositoryA = new(ctxA);
-        TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
-        TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
-
-        await using (UniPlusDbContext ctxB = _fixture.CreateDbContext(AdminA))
-        {
-            TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
-            termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
-            await ctxB.SaveChangesAsync();
-        }
-
-        await repositoryA.AdicionarVersaoAsync(termoA, versaoA, CancellationToken.None);
+        await PrepararPromocaoEmConflitoAsync(ctxA);
 
         Func<Task> act = async () => await ctxA.SaveChangesAsync();
 
         await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
 
+    // O Wolverine chama SaveChangesAsync no mesmo DbContext depois que o handler retorna: sem descartar o rastreamento da
+    // tentativa fracassada, a mesma exceção estoura fora do catch do handler (500 em vez de 409).
     [Fact(DisplayName = "Após o conflito capturado, descartar o rastreamento evita a segunda exceção do SaveChanges do outbox")]
     public async Task ConflitoDeConcorrencia_AposDescartarRastreamento_SegundoSaveChangesNaoLancaDeNovo()
     {
-        // Reproduz a interação com o outbox do Wolverine
-        // (AutoApplyTransactions, ADR-0004), que chama SaveChangesAsync no MESMO
-        // DbContext DEPOIS que o handler retorna. Se o handler capturar a
-        // DbUpdateConcurrencyException e devolver a falha sem descartar o
-        // rastreamento das entidades Added/Modified da tentativa fracassada, essa
-        // segunda chamada tenta gravar as MESMAS entidades de novo e a mesma
-        // exceção estoura fora do catch do handler — 500 em vez de 409.
-        TermoConsentimento termo = TermoConsentimento.Criar(
-            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
-        termo.MarcarRevisado("usuario.revisor", Agora);
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
-
         await using UniPlusDbContext ctxA = _fixture.CreateDbContext(AdminA);
-        TermoConsentimentoRepository repositoryA = new(ctxA);
-        TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
-        TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
+        await PrepararPromocaoEmConflitoAsync(ctxA);
 
-        await using (UniPlusDbContext ctxB = _fixture.CreateDbContext(AdminA))
-        {
-            TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
-            termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
-            await ctxB.SaveChangesAsync();
-        }
-
-        await repositoryA.AdicionarVersaoAsync(termoA, versaoA, CancellationToken.None);
-
-        // Simula exatamente o que o handler faz: tenta salvar, captura a
-        // concorrência, descarta o rastreamento (equivalente a
-        // IUnitOfWork.DescartarAlteracoesNaoSalvas).
         Func<Task> primeiroSave = async () => await ctxA.SaveChangesAsync();
         await primeiroSave.Should().ThrowAsync<DbUpdateConcurrencyException>();
         ctxA.ChangeTracker.Clear();
 
-        // O SaveChangesAsync automático do outbox do Wolverine, chamado DEPOIS que
-        // o handler já retornou a falha — sem entidades sujas rastreadas, é um
-        // no-op e não relança a exceção.
         Func<Task> segundoSave = async () => await ctxA.SaveChangesAsync();
         await segundoSave.Should().NotThrowAsync();
     }
@@ -202,68 +100,115 @@ public sealed class TermoConsentimentoPersistenceTests
     public async Task SoftDelete_SemVersoes_MarcaExcluido()
     {
         TermoConsentimento termo = TermoConsentimento.Criar(NomeUnico(), null, null, null).Value!;
+        await GravarAsync(termo);
+        await RemoverAsync(termo.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TermoConsentimento tracked = await ctx.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
-            ctx.TermosConsentimento.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TermoConsentimento excluido = await readCtx.TermosConsentimento
-            .IgnoreQueryFilters()
-            .SingleAsync(t => t.Id == termo.Id);
+        TermoConsentimento excluido = await LerExcluidoAsync(termo.Id);
 
         excluido.IsDeleted.Should().BeTrue();
         excluido.DeletedBy.Should().Be(AdminB);
     }
 
+    // O bloqueio de negócio (RemocaoBloqueadaComVersaoPromovida) vive no handler; aqui se prova que, se a linha chegar a
+    // ser removida, o mapeamento do EF Core não quebra a versão filha.
     [Fact(DisplayName = "Soft-delete de termo com versão promovida preserva a versão filha (ClientNoAction)")]
     public async Task SoftDelete_ComVersaoPromovida_PreservaVersaoFilha()
     {
-        TermoConsentimento termo = TermoConsentimento.Criar(
-            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
-        termo.MarcarRevisado("usuario.revisor", Agora);
+        TermoConsentimento termo = TermoRevisado(null);
+        await GravarAsync(termo);
+        await PromoverAsync(termo.Id);
+        await RemoverAsync(termo.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.Add(termo);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            TermoConsentimentoRepository repository = new(ctx);
-            TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
-            TermoConsentimentoVersao versao = reloaded.Promover("usuario.revisor", Agora).Value!;
-            await repository.AdicionarVersaoAsync(reloaded, versao, CancellationToken.None);
-            await ctx.SaveChangesAsync();
-        }
-
-        // Cenário direto de infraestrutura — o gate de negócio (RemocaoBloqueadaComVersaoPromovida)
-        // vive no handler da Application; aqui se prova que, SE a linha chegar a ser
-        // marcada como Removed, o mapeamento EF Core não quebra a versão filha.
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TermoConsentimento tracked = await ctx.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
-            ctx.TermosConsentimento.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TermoConsentimento excluido = await readCtx.TermosConsentimento
-            .IgnoreQueryFilters()
-            .Include(t => t.Versoes)
-            .SingleAsync(t => t.Id == termo.Id);
+        TermoConsentimento excluido = await LerExcluidoAsync(termo.Id, comVersoes: true);
 
         excluido.IsDeleted.Should().BeTrue();
         excluido.Versoes.Should().HaveCount(1, "a versão promovida (IForensicEntity) não tem soft-delete próprio e permanece sob a linha soft-deleted");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita forma de aceite fora do contrato via SQL cru")]
+    public async Task Check_RejeitaFormaDeAceiteForaDoContratoViaSqlCru()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.termos_de_consentimento (id, codigo, nome, forma_aceite_rascunho, revisado, is_deleted, created_at) VALUES ({Guid.CreateVersion7()}, {"TERMO_FORA_DO_CONTRATO"}, {"Termo"}, {"INEXISTENTE"}, {false}, {false}, {DateTimeOffset.UtcNow})");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK de domínio de forma_aceite_rascunho impede o INSERT direto");
+    }
+
+    private static TermoConsentimento NovoTermo(string? formaAceite) =>
+        TermoConsentimento.Criar(NomeUnico(), "Texto do termo", "Lei 13.709/2018", formaAceite).Value!;
+
+    private static TermoConsentimento TermoRevisado(string? formaAceite)
+    {
+        TermoConsentimento termo = NovoTermo(formaAceite);
+        termo.MarcarRevisado("usuario.revisor", Agora);
+
+        return termo;
+    }
+
+    private async Task GravarAsync(TermoConsentimento termo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.TermosConsentimento.Add(termo);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task PromoverAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        TermoConsentimentoRepository repository = new(ctx);
+        TermoConsentimento recarregado = (await repository.ObterPorIdAsync(id, CancellationToken.None))!;
+        TermoConsentimentoVersao versao = recarregado.Promover("usuario.revisor", Agora).Value!;
+        await repository.AdicionarVersaoAsync(recarregado, versao, CancellationToken.None);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task RemoverAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        TermoConsentimento rastreado = await ctx.TermosConsentimento.SingleAsync(t => t.Id == id);
+        ctx.TermosConsentimento.Remove(rastreado);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task<TermoConsentimento> LerAsync(Guid id, bool comVersoes = false)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        IQueryable<TermoConsentimento> termos = comVersoes ? ctx.TermosConsentimento.Include(t => t.Versoes) : ctx.TermosConsentimento;
+
+        return await termos.SingleAsync(t => t.Id == id);
+    }
+
+    private async Task<TermoConsentimento> LerExcluidoAsync(Guid id, bool comVersoes = false)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        IQueryable<TermoConsentimento> termos = ctx.TermosConsentimento.IgnoreQueryFilters();
+
+        return await (comVersoes ? termos.Include(t => t.Versoes) : termos).SingleAsync(t => t.Id == id);
+    }
+
+    // Uma requisição lê o termo revisado e promove; antes de ela gravar, outra edita o rascunho (o que reverte a revisão)
+    // e confirma. Sem o token de concorrência amarrado a uma gravação real, a promoção sairia de um rascunho já invalidado.
+    private async Task PrepararPromocaoEmConflitoAsync(UniPlusDbContext ctxA)
+    {
+        TermoConsentimento termo = TermoRevisado(null);
+        await GravarAsync(termo);
+
+        TermoConsentimentoRepository repositoryA = new(ctxA);
+        TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
+        TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
+
+        await EditarEmOutraRequisicaoAsync(termo.Id);
+        await repositoryA.AdicionarVersaoAsync(termoA, versaoA, CancellationToken.None);
+    }
+
+    private async Task EditarEmOutraRequisicaoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctxB = _fixture.CreateDbContext(AdminA);
+        TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == id);
+        termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
+        await ctxB.SaveChangesAsync();
     }
 }

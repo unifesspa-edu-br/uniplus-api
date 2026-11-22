@@ -112,13 +112,27 @@ public sealed class TermoConsentimentoTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Criar com forma de aceite fora do domínio fechado falha")]
-    public void Criar_FormaAceiteInvalida_Falha()
+    [Theory(DisplayName = "Criar com forma de aceite fora do contrato falha, sem tolerância a espaço nem a caixa")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("FORMA_INEXISTENTE")]
+    [InlineData(" A_DEFINIR")]
+    [InlineData("registro_digital_sem_log_ip")]
+    public void Criar_FormaAceiteInvalida_Falha(string forma)
     {
-        Result<TermoConsentimento> resultado = TermoConsentimento.Criar("Termo", null, null, "FORMA_INEXISTENTE");
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar("Termo", null, null, forma);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.FormaAceiteInvalida);
+    }
+
+    [Fact(DisplayName = "Forma de aceite recusada lista os códigos aceitos e não repete o valor recebido")]
+    public void Criar_FormaAceiteInvalida_ListaOsCodigosSemRepetirOValor()
+    {
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar("Termo", null, null, "FORMA_INEXISTENTE");
+
+        resultado.Error!.Message.Should().Be(
+            "Forma de aceite deve ser uma de: A_DEFINIR, REGISTRO_DIGITAL_SEM_LOG_IP, REGISTRO_DIGITAL_COM_LOG_IP.");
     }
 
     // ── EditarRascunho ─────────────────────────────────────────────────
@@ -214,6 +228,14 @@ public sealed class TermoConsentimentoTests
         Result<TermoConsentimentoVersao> resultado = termo.Promover("usuario.revisor", Agora);
 
         resultado.IsSuccess.Should().BeTrue();
+        ConferirVersaoPromovida(termo);
+        termo.TextoRascunho.Should().Be("Texto do termo", "o rascunho permanece intacto e pode gerar a próxima versão");
+        termo.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
+        ConferirRevisaoConsumida(termo);
+    }
+
+    private static void ConferirVersaoPromovida(TermoConsentimento termo)
+    {
         termo.Versoes.Should().HaveCount(1);
         TermoConsentimentoVersao versao = termo.Versoes[0];
         versao.TermoConsentimentoId.Should().Be(termo.Id);
@@ -223,13 +245,11 @@ public sealed class TermoConsentimentoTests
         versao.PromovidaPor.Should().Be("usuario.revisor");
         versao.PromovidaEm.Should().Be(Agora);
         versao.Hash.Should().NotBeNullOrWhiteSpace();
+    }
 
-        // Rascunho permanece intacto — pode gerar a PRÓXIMA versão no futuro.
-        termo.TextoRascunho.Should().Be("Texto do termo");
-        termo.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
-
-        // A revisão é consumida pela promoção — cada versão exige seu próprio sinal.
-        termo.Revisado.Should().BeFalse();
+    private static void ConferirRevisaoConsumida(TermoConsentimento termo)
+    {
+        termo.Revisado.Should().BeFalse("cada versão exige seu próprio sinal de revisão");
         termo.RevisadoPor.Should().BeNull();
         termo.RevisadoEm.Should().BeNull();
     }

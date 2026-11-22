@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
-/// Vocabulário fechado de <c>FaseCanonica</c> (UNI-REQ-0139): as fases do conjunto canônico.
+/// Vocabulários fechados de <c>FaseCanonica</c>: as fases do conjunto canônico (UNI-REQ-0139) e as origens da data da fase.
 /// Somente leitura: o conjunto é governado por código e muda por versão da API, não por cadastro
 /// administrativo. Sem paginação, sem <c>_links</c> e sem cache.
 /// </summary>
@@ -39,5 +41,20 @@ public sealed class VocabulariosDaFaseCanonicaController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(codigos);
+    }
+
+    /// <summary>Lista as origens da data de uma fase, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/origens-data-fase")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-origem-data-fase", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<OrigemDataFase>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarOrigensDataFase(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<OrigemDataFase>> origens = await _queryBus
+            .Send(new ListarOrigensDataFaseQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(origens);
     }
 }

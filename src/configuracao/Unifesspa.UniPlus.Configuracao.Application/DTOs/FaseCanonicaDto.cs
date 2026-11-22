@@ -2,10 +2,13 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>
 /// DTO de resposta HTTP para <c>FaseCanonica</c>. Suporta HATEOAS Level 1 via
-/// <c>_links</c> (ADR-0029). O <c>OrigemData</c> é exposto como token
-/// canônico UPPER_SNAKE e a <c>UnidadeSugerida</c> como a cópia congelada de id, sigla e nome.
+/// <c>_links</c> (ADR-0029). O <c>OrigemData</c> é exposto como código e rótulo
+/// e a <c>UnidadeSugerida</c> como a cópia congelada de id, sigla e nome.
 /// </summary>
 /// <param name="AgrupaEtapas">Sinalizador gravado na fase: se ela agrupa Etapas pontuadas.</param>
 /// <param name="PermiteComplementacao">Sinalizador gravado na fase: se ela aceita complementação documental.</param>
@@ -23,7 +26,7 @@ public sealed record FaseCanonicaDto(
     string? BaseLegal,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
-    string OrigemData,
+    CodigoComRotulo<OrigemDataFase> OrigemData,
     UnidadeSugeridaDto? UnidadeSugerida,
     DateTimeOffset CriadoEm)
 {

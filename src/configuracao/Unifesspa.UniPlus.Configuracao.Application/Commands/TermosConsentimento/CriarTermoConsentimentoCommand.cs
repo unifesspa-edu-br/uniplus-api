@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -18,4 +20,4 @@ public sealed record CriarTermoConsentimentoCommand(
     string? Nome,
     string? TextoRascunho,
     string? BaseLegalRascunho,
-    string? FormaAceiteRascunho) : ICommand<Result<Guid>>;
+    [property: AceitaCodigosDe<FormaAceite>] string? FormaAceiteRascunho) : ICommand<Result<Guid>>;

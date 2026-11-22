@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>
 /// DTO de resposta HTTP para <c>TermoConsentimento</c> na listagem — sem as
 /// versões promovidas (a listagem não carrega a coleção filha; use
@@ -12,7 +15,7 @@ public sealed record TermoConsentimentoResumoDto(
     Guid Id,
     string Codigo,
     string Nome,
-    string FormaAceiteRascunho,
+    CodigoComRotulo<FormaAceite> FormaAceiteRascunho,
     bool Revisado,
     DateTimeOffset CriadoEm)
 {
