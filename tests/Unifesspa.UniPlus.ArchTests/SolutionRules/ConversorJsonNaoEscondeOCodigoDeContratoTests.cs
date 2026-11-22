@@ -22,11 +22,11 @@ public sealed class ConversorJsonNaoEscondeOCodigoDeContratoTests
     public void Produto_ConversorNaoEscondeCodigoDeContrato()
     {
         Architecture arquitetura = ArquiteturaDasTravas.Produto;
-        IType[] enums = EnumsComCodigo(arquitetura);
+        IType[] enums = [.. EnumsComCodigo(arquitetura).Where(static tipo => !tipo.Namespace.FullName.Contains("Tests", StringComparison.Ordinal))];
         enums.Should().NotBeEmpty();
         RegraDosTipos(enums).Check(arquitetura);
-        RegraDasPropriedades(enums, @"^Unifesspa\.UniPlus\.").Check(arquitetura);
-        RegraDosCampos(enums, @"^Unifesspa\.UniPlus\.").WithoutRequiringPositiveResults().Check(arquitetura);
+        RegraDasPropriedades(enums, @"^Unifesspa\.UniPlus\.(?!ArchTests|Contratos\.UnitTests)").Check(arquitetura);
+        RegraDosCampos(enums, @"^Unifesspa\.UniPlus\.(?!ArchTests|Contratos\.UnitTests)").WithoutRequiringPositiveResults().Check(arquitetura);
     }
 
     [Theory]

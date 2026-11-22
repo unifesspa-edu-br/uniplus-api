@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
@@ -24,7 +23,7 @@ public sealed class CadastroDeReservaSeparadoDoQuadroDeVagasTests
     private static readonly string NamespaceDasVagas = typeof(QuadroDeVagas).Namespace!;
     private static readonly System.Type[] TiposDoQuadro = [typeof(ConfiguracaoDistribuicaoVagas), typeof(VagaOfertada), typeof(ModalidadeSelecionada)];
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "A varredura encontra os tipos do cadastro de reserva e os do quadro de vagas")]
     public void Varredura_EncontraOsTiposDasDuasPartes()

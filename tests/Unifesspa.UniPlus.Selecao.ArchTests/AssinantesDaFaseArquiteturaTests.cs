@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
@@ -22,14 +21,9 @@ public sealed class AssinantesDaFaseArquiteturaTests
     private const string MotorDeAutorizacao = @"^Unifesspa\.UniPlus\.(Authorization|Autorizacao)(\.|$)";
     private const string CamadasDeFora = @"^Unifesspa\.UniPlus\.(Selecao\.(Application|Infrastructure|API)|Infrastructure\.Core|Governance|OrganizacaoInstitucional|Autorizacao|Publicacoes|Ingresso|Portal|Configuracao|Discentes)(\.|$)";
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
-    private static readonly Architecture ArquiteturaDosModulos = new ArchLoader().LoadAssemblies(
-        typeof(ProcessoSeletivo).Assembly,
-        typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-        typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly,
-        typeof(API.Controllers.ProcessoSeletivoController).Assembly,
-        typeof(Modelos.OrigemDaDependenciaProibida).Assembly).Build();
+    private static readonly Architecture ArquiteturaDosModulos = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "Os tipos dos assinantes não dependem de Application, Infrastructure, API nem do cadastro de outro módulo")]
     public void Assinantes_NaoDependemDeCamadasDeFora()

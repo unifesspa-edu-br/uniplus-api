@@ -4,45 +4,64 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
-using Unifesspa.UniPlus.Monolito.Persistencia;
-
-using Wolverine;
-
-using ReflectionAssembly = System.Reflection.Assembly;
-
-/// <summary>
-/// As duas arquiteturas das travas de fronteira: o produto, onde a regra vale, e os módulos sintéticos do projeto de
-/// teste, onde a regra tem de reprovar. As duas carregam as bibliotecas cujos membros as regras nomeiam (EF Core,
-/// Wolverine, MVC), porque o ArchUnitNET só enxerga o membro de um assembly carregado.
-/// </summary>
 internal static class ArquiteturaDasTravas
 {
-    internal static readonly Architecture Produto = Carregar(AssembliesDoProduto.Todos);
-
-    internal static readonly Architecture Fixtures = Carregar(
-        [
+    internal static readonly Architecture Produto = new ArchLoader()
+        .LoadAssemblies(
+            typeof(Unifesspa.UniPlus.Application.Abstractions.Authentication.IRequiredUserContext).Assembly,
+            typeof(Unifesspa.UniPlus.Authorization.Abstractions.CatalogoDesatualizadoException).Assembly,
+            typeof(Unifesspa.UniPlus.Governance.Contracts.IInstituicaoReader).Assembly,
+            typeof(Unifesspa.UniPlus.Infrastructure.Core.Authentication.AuthenticationProblemDetailsWriter).Assembly,
+            typeof(Unifesspa.UniPlus.Kernel.Domain.Cidades.CidadeReferenciaErrorCodes).Assembly,
+            typeof(Unifesspa.UniPlus.Regras.Entradas.EntradaDeRegras).Assembly,
+            typeof(Unifesspa.UniPlus.Host.DesignTimeServices).Assembly,
+            typeof(Unifesspa.UniPlus.Monolito.Persistencia.MonolitoDbContext).Assembly,
+            typeof(Unifesspa.UniPlus.Verificador.Antivirus.ClamdClient).Assembly,
+            typeof(Unifesspa.UniPlus.Verificador.Contratos.DestinoDoResultado).Assembly,
+            typeof(Unifesspa.UniPlus.Autorizacao.API.AutorizacaoApiAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Autorizacao.Application.Abstractions.IArmazenamentoDosDocumentosDaAutorizacao).Assembly,
+            typeof(Unifesspa.UniPlus.Autorizacao.Domain.Entities.AceiteDoTermo).Assembly,
+            typeof(Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo.CatalogoDePermissoesDaAplicacao).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.Contracts.BaseLegalBonusRegionalView).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.Infrastructure.ConfiguracaoInfrastructureRegistration).Assembly,
+            typeof(Unifesspa.UniPlus.Discentes.API.DiscentesApiAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Discentes.Application.DiscentesApplicationAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Discentes.Domain.Entities.FalhaAoPrepararLoteException).Assembly,
+            typeof(Unifesspa.UniPlus.Discentes.Infrastructure.DiscentesInfrastructureRegistration).Assembly,
+            typeof(Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Ingresso.Domain.Entities.Chamada).Assembly,
+            typeof(Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.IngressoContribuicao).Assembly,
+            typeof(Unifesspa.UniPlus.OrganizacaoInstitucional.API.Controllers.InstituicaoController).Assembly,
+            typeof(Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions.IInstituicaoCacheInvalidator).Assembly,
+            typeof(Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao).Assembly,
+            typeof(Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Caching.InstituicaoCacheInvalidator).Assembly,
+            typeof(Unifesspa.UniPlus.Portal.API.Controllers.CertamePublicoController).Assembly,
+            typeof(Unifesspa.UniPlus.Portal.Application.Certames.ComposicaoDaPaginaDoCertame).Assembly,
+            typeof(Unifesspa.UniPlus.Portal.Domain.PortalDomainAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Portal.Infrastructure.PortalInfrastructureRegistration).Assembly,
+            typeof(Unifesspa.UniPlus.Publicacoes.API.Controllers.AtosNormativosController).Assembly,
+            typeof(Unifesspa.UniPlus.Publicacoes.Application.PublicacoesApplicationAssemblyMarker).Assembly,
+            typeof(Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoPublicado).Assembly,
+            typeof(Unifesspa.UniPlus.Publicacoes.Domain.Entities.AnexoDoAto).Assembly,
+            typeof(Unifesspa.UniPlus.Publicacoes.Infrastructure.PublicacoesInfrastructureRegistration).Assembly,
+            typeof(Unifesspa.UniPlus.Selecao.API.Authorization.ExigeLeituraDoProcessoAttribute).Assembly,
+            typeof(Unifesspa.UniPlus.Selecao.Application.Abstractions.AcervoPublicoIndisponivelException).Assembly,
+            typeof(Unifesspa.UniPlus.Selecao.Domain.Entities.AnexoDoAtoDoProcesso).Assembly,
+            typeof(Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization.ComparadorLexicograficoDeBytes).Assembly,
             typeof(ArquiteturaDasTravas).Assembly,
-            typeof(Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus).Assembly,
-            typeof(Unifesspa.UniPlus.Infrastructure.Core.Persistence.UniPlusDbContext).Assembly,
-        ]);
+            typeof(object).Assembly, typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly,
+            typeof(Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions).Assembly,
+            typeof(Microsoft.AspNetCore.Mvc.ControllerBase).Assembly, typeof(Microsoft.AspNetCore.Mvc.Filters.IAuthorizationFilter).Assembly, typeof(Wolverine.IMessageBus).Assembly,
+            typeof(Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions).Assembly,
+            typeof(Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder).Assembly,
+            typeof(System.Security.Claims.ClaimsPrincipal).Assembly)
+        .Build();
+
+    internal static readonly Architecture Fixtures = Produto;
 
     internal static List<string> Reprovacoes(IArchRule regra, Architecture arquitetura) =>
         [.. regra.Evaluate(arquitetura).Where(static r => !r.Passed).Select(static r => r.Description)];
-
-    private static Architecture Carregar(IEnumerable<ReflectionAssembly> proprios) =>
-        new ArchLoader()
-            .LoadAssemblies(
-                [
-                    .. proprios,
-                    typeof(MonolitoDbContext).Assembly,
-                    typeof(DbContext).Assembly,
-                    typeof(RelationalDatabaseFacadeExtensions).Assembly,
-                    typeof(IMessageBus).Assembly,
-                    typeof(ControllerBase).Assembly,
-                    typeof(Attribute).Assembly,
-                ])
-            .Build();
 }

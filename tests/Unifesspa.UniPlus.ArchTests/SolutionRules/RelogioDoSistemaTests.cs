@@ -4,7 +4,6 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
@@ -49,9 +48,7 @@ public sealed class RelogioDoSistemaTests
         nameof(FixturesDeRelogio.InicializadorDePropriedade), nameof(FixturesDeRelogio.PropriedadeComExpressao),
     ];
 
-    private static readonly Architecture Arquitetura = new ArchLoader()
-        .LoadAssemblies([typeof(object).Assembly, typeof(FixturesDeRelogio).Assembly, .. AssembliesDoProduto.Todos])
-        .Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     private static readonly IType[] TiposDoProdutoCarregados = [.. TiposDoProduto().GetObjects(Arquitetura)];
     private static readonly IType[] TiposDasFixturesCarregados = [.. TiposDasFixtures().GetObjects(Arquitetura)];
@@ -129,7 +126,7 @@ public sealed class RelogioDoSistemaTests
     [Fact(DisplayName = "Em produção, só o Program de cada processo pega o relógio do sistema")]
     public void Produto_SoOProgramPegaORelogioDoSistema()
     {
-        string[] programas = [.. Types().That().Are(TiposDoProdutoCarregados).And().HaveFullNameStartingWith(ProgramDoProcesso).GetObjects(Arquitetura).Select(static t => t.Assembly.Name)];
+        string[] programas = [.. Types().That().HaveFullNameStartingWith(ProgramDoProcesso).GetObjects(Arquitetura).Select(static t => t.Assembly.Name)];
         programas.Should().Contain(["Unifesspa.UniPlus.Host", "Unifesspa.UniPlus.Portal.API", "Unifesspa.UniPlus.Verificador"]);
 
         Reprovados(TiposDoProdutoCarregados, ProgramDoProcesso, AlvoDoSistemaDoRelogio).Should().BeEmpty(
@@ -143,7 +140,7 @@ public sealed class RelogioDoSistemaTests
     private static MethodMember[] Resolver(GivenMethodMembersConjunction alvo) => [.. alvo.GetObjects(Arquitetura)];
 
     private static GivenTypesConjunction TiposDoProduto() =>
-        Types().That().ResideInAssembly(AssembliesDoProduto.Todos[0], AssembliesDoProduto.Todos[1..]);
+        Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.(?!ArchTests)");
 
     private static GivenTypesConjunction TiposDasFixtures() =>
         Types().That().HaveFullNameStartingWith(FixturesFullName);

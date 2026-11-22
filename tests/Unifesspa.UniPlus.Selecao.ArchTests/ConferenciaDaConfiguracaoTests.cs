@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -20,12 +19,9 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 /// </summary>
 public sealed class ConferenciaDaConfiguracaoTests
 {
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
-    private static readonly Architecture ArquiteturaDosConsumidores = new ArchLoader().LoadAssemblies(
-        typeof(ProcessoSeletivo).Assembly,
-        typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-        typeof(API.Controllers.InscricoesController).Assembly).Build();
+    private static readonly Architecture ArquiteturaDosConsumidores = ArquiteturaDaSelecao.Produto;
 
     private static readonly System.Type[] TiposDosBlocos =
     [

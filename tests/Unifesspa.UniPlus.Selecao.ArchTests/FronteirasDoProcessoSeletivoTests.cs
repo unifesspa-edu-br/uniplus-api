@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types.Classes;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
@@ -21,10 +20,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
 {
     private const string NamespaceDasPoliticas = "Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos";
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(
-        typeof(ProcessoSeletivo).Assembly,
-        typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-        typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "A1: nenhuma política depende da raiz")]
     public void A1_PoliticasNaoDependemDaRaiz()
@@ -57,15 +53,5 @@ public sealed class FronteirasDoProcessoSeletivoTests
             .AndShould().NotDependOnAnyTypesThat().ResideInNamespaceMatching(@"^Microsoft\.EntityFrameworkCore(\.|$)");
 
         regra.Check(Arquitetura);
-    }
-
-    [Fact(DisplayName = "A6: toda parte do processo está em Domain.Entities")]
-    public void A6_PartesDoProcessoVivemNasEntidades()
-    {
-        Interface parte = Interfaces().That().HaveFullName("Unifesspa.UniPlus.Selecao.Domain.Entities.IParteDoProcesso")
-            .GetObjects(Arquitetura).Single();
-        Classes().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().ImplementInterface(parte)
-            .Should().ResideInNamespace(typeof(ProcessoSeletivo).Namespace!)
-            .Check(Arquitetura);
     }
 }

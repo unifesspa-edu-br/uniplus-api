@@ -108,6 +108,6 @@ A coabitação fixture↔MigrationHostedService é tática. Follow-up planejado 
 
 `CascadingFixture.InitializeAsync` parou de chamar `MigrateAsync` localmente — a fixture confia 100% no host. Comentário inline aponta para a invariante de ordem e para o fitness test.
 
-Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.ArchTests/Hosting/` materializa cada `WebApplicationFactory<TEntryPoint>` (Selecao/Ingresso/Portal), captura o `IServiceCollection` antes de qualquer ConfigureTestServices, e verifica que `IsMigrationHostedService` aparece antes de `IsWolverineRuntime` na lista de `IHostedService`. Segundo teórico explicitamente assert que `HostOptions.ServicesStartConcurrently=false`, garantindo que a ordem de registro continua sendo proxy válido da ordem de execução.
+Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.Contratos.UnitTests/Hosting/` materializa cada `WebApplicationFactory<TEntryPoint>` (Selecao/Ingresso/Portal), captura o `IServiceCollection` antes de qualquer ConfigureTestServices, e verifica que `IsMigrationHostedService` aparece antes de `IsWolverineRuntime` na lista de `IHostedService`. Segundo teórico explicitamente assert que `HostOptions.ServicesStartConcurrently=false`, garantindo que a ordem de registro continua sendo proxy válido da ordem de execução.
 
 Marker `SelecaoApiAssemblyMarker` criado para simetria com `PortalApiAssemblyMarker` e `IngressoApiAssemblyMarker` — usado como type-arg do fitness para evitar ambiguidade de `typeof(Program)` cross-module.

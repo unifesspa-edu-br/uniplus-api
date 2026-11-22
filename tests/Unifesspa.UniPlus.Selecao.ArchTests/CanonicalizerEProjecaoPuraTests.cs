@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
@@ -38,13 +37,7 @@ public sealed class CanonicalizerEProjecaoPuraTests
 {
     private static readonly Type Canonicalizer = typeof(SnapshotPublicacaoCanonicalizer);
 
-    private static readonly Architecture Arquitetura = new ArchLoader()
-        .LoadAssemblies(
-        [
-            typeof(SnapshotPublicacaoCanonicalizer).Assembly,
-            typeof(ISnapshotPublicacaoCanonicalizer).Assembly,
-        ])
-        .Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
     /// <summary>Os tipos da projeção do certame, que vivem na Application ao lado dos handlers.</summary>
     private static readonly string[] NomesDaProjecaoDoCertame =

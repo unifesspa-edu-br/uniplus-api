@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
-using System.Text.RegularExpressions;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
 
@@ -29,31 +27,31 @@ public sealed class HandlerNaoAbreOutraTransacaoTests
     [Fact(DisplayName = "Nenhum handler dos módulos despacha comando pelo ICommandBus nem invoca mensagem pelo IMessageBus")]
     public void Produto_HandlerNaoAbreOutraTransacao()
     {
-        Handlers(ModulosDoMonolito.Raizes).GetObjects(ArquiteturaDasTravas.Produto).Should()
+        Handlers(@"^Unifesspa\.UniPlus\.(?!ArchTests)").GetObjects(ArquiteturaDasTravas.Produto).Should()
             .NotBeEmpty("sem handler descoberto, a conferência passaria vazia");
         Types().That().DependOnAny(Barramentos()).GetObjects(ArquiteturaDasTravas.Produto).Should()
             .NotBeEmpty("sem dependente do barramento descoberto, a regra não enxergaria nenhum");
 
-        Violacoes(ArquiteturaDasTravas.Produto, ModulosDoMonolito.Raizes).Should().BeEmpty(
+        Violacoes(ArquiteturaDasTravas.Produto, @"^Unifesspa\.UniPlus\.(?!ArchTests)").Should().BeEmpty(
             "o handler não abre outra transação: o efeito em outra operação é evento, e a gravação em outro módulo é a porta de escrita");
     }
 
     [Fact(DisplayName = "Fitness_HandlerQueAbreOutraTransacao_Falha")]
     public void Fitness_HandlerQueAbreOutraTransacao_Falha()
     {
-        List<string> reprovados = Violacoes(ArquiteturaDasTravas.Fixtures, ModulosDoMonolito.RaizesDosFixtures);
+        List<string> reprovados = Violacoes(ArquiteturaDasTravas.Fixtures, @"^Unifesspa\.UniPlus\.ArchTests\.Fixtures\.Modulos");
 
         reprovados.Should().Contain(static v => v.Contains("DespachaOutroComandoHandler", StringComparison.Ordinal));
         reprovados.Should().Contain(static v => v.Contains("InvocaOutraMensagemHandler", StringComparison.Ordinal));
         reprovados.Should().NotContain(static v => v.Contains("PublicaEventoNoOutboxHandler", StringComparison.Ordinal));
     }
 
-    private static GivenTypesConjunction Handlers(string[] raizes) =>
-        Types().That().HaveFullNameMatching($@"^({string.Join('|', raizes.Select(Regex.Escape))})\..*Handler(\+|$)");
+    private static GivenTypesConjunction Handlers(string escopo) =>
+        Types().That().ResideInNamespaceMatching(escopo).And().HaveFullNameMatching(@"Handler(\+|$)");
 
     private static GivenTypesConjunction Barramentos() =>
         Types().That().HaveFullName(typeof(BarramentoDeComandos).FullName!).Or().HaveFullName(typeof(BarramentoDoWolverine).FullName!);
 
-    private static List<string> Violacoes(Architecture arquitetura, string[] raizes) =>
-        ArquiteturaDasTravas.Reprovacoes(Handlers(raizes).Should().NotDependOnAnyTypesThat().Are(Barramentos()), arquitetura);
+    private static List<string> Violacoes(Architecture arquitetura, string escopo) =>
+        ArquiteturaDasTravas.Reprovacoes(Handlers(escopo).Should().NotDependOnAnyTypesThat().Are(Barramentos()), arquitetura);
 }

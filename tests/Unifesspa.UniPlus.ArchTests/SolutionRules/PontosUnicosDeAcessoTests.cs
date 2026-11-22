@@ -4,18 +4,17 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Builder;
 
+using Unifesspa.UniPlus.ArchTests.TestSupport;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
-
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
 /// Cada decisão tem um ponto único de entrada (ADR-0012): só o verificador decide pelo serviço de decisão, só o acesso
@@ -25,12 +24,12 @@ using ReflectionAssembly = System.Reflection.Assembly;
 /// </summary>
 public sealed class PontosUnicosDeAcessoTests
 {
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(AssembliesDoProduto()).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     [Fact(DisplayName = "Só o verificador e a composição de DI dependem da interface do serviço de decisão")]
     public void ServicoDeDecisao_SoOVerificadorEAComposicaoDependem()
     {
-        IEnumerable<IType> dependentes = Types().That().DependOnAny(typeof(IAuthorizationDecisionService)).GetObjects(Arquitetura);
+        IEnumerable<IType> dependentes = Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.(?!ArchTests)").And().DependOnAny(typeof(IAuthorizationDecisionService)).GetObjects(Arquitetura);
         dependentes.Should().NotBeEmpty("sem dependente descoberto, a conferência passaria vazia");
 
         string[] fora =
@@ -64,7 +63,7 @@ public sealed class PontosUnicosDeAcessoTests
         MethodMember[] mapeamentos = [.. MapDeRota().GetObjects(Arquitetura)];
         mapeamentos.Should().NotBeEmpty("sem método Map* carregado, a conferência passaria vazia");
 
-        Types().That().CallAny(mapeamentos).GetObjects(Arquitetura).Select(static t => t.FullName)
+        Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.(?!ArchTests)").And().CallAny(mapeamentos).GetObjects(Arquitetura).Select(static t => t.FullName)
             .Should().Contain(static n => n.EndsWith("Profile.ProfileEndpointsExtensions", StringComparison.Ordinal), "os endpoints técnicos chamam Map*");
 
         // Um endpoint técnico novo que atenda à ADR-0036 entra nesta lista, no mesmo PR, com a justificativa.
@@ -94,12 +93,4 @@ public sealed class PontosUnicosDeAcessoTests
     private static List<string> Violacoes(TypesShouldConjunction regra) =>
         [.. regra.Evaluate(Arquitetura).Where(static r => !r.Passed).Select(static r => r.Description)];
 
-    private static ReflectionAssembly[] AssembliesDoProduto() =>
-        [
-            typeof(EndpointRouteBuilderExtensions).Assembly,
-            ReflectionAssembly.Load("Microsoft.AspNetCore.Http.Extensions"),
-            .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
-                .Where(static c => !Path.GetFileName(c).Contains("Tests", StringComparison.Ordinal))
-                .Select(static c => ReflectionAssembly.LoadFrom(c)),
-        ];
 }

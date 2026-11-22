@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests.Conferencias;
 
 using ArchUnitNET.Domain;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.ArchTests;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -16,7 +16,7 @@ using Type = System.Type;
 
 public sealed class ManifestoDoEnvelopeTests
 {
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ConfiguracaoPublicada).Assembly, typeof(ParametrosCriterioDesempate).Assembly, typeof(CondicaoDnf).Assembly).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
     private static readonly HashSet<string> DaEntidadeBase = ["Id", "CreatedAt", "UpdatedAt", "DomainEvents", "IsDeleted", "DeletedAt", "DeletedBy"];
     private static readonly Type[] Unioes = [typeof(ParametrosCriterioDesempate), typeof(ParametrosRegraEliminacao), typeof(PredicadoObrigatoriedade), typeof(ParametrosRegraAjusteDistribuicao)];
 

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -10,37 +9,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
-/// A avaliação da inscrição (ADR-0143): as regras de comprovação são avaliadas sobre a avaliação do
-/// formulário num lugar só, a <see cref="AvaliacaoDaInscricao"/> — outra composição do avaliador com
-/// o resolvedor seria uma segunda conta do que se exige do candidato —; e quem avalia as respostas
-/// não registra log, porque elas e as modalidades em que o candidato concorre são dado sensível.
+/// As respostas e as modalidades em que o candidato concorre são dados sensíveis (ADR-0143).
 /// </summary>
 public sealed class AvaliacaoDaInscricaoArquiteturaTests
 {
-    private static readonly Architecture Arquitetura = new ArchLoader()
-        .LoadAssemblies(
-        [
-            typeof(AvaliacaoDaInscricao).Assembly,
-            typeof(Application.Services.PreparacaoDaAvaliacaoDaInscricao).Assembly,
-            typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly,
-            typeof(API.Controllers.InscricoesController).Assembly,
-        ])
-        .Build();
-
-    [Fact(DisplayName = "Só a avaliação da inscrição avalia as regras de comprovação")]
-    public void SoAAvaliacaoDaInscricaoAvaliaAComprovacao()
-    {
-        IArchRule regra = Types()
-            .That()
-            .AreNot(typeof(AvaliacaoDaInscricao))
-            .And()
-            .AreNot(typeof(AvaliadorDaComprovacao))
-            .Should()
-            .NotDependOnAny(typeof(AvaliadorDaComprovacao))
-            .Because("a avaliação da inscrição é a única composição da avaliação do formulário com a avaliação da comprovação (ADR-0143)");
-
-        regra.Check(Arquitetura);
-    }
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "Quem avalia as respostas da inscrição não registra log")]
     public void QuemAvaliaAsRespostasNaoRegistraLog()

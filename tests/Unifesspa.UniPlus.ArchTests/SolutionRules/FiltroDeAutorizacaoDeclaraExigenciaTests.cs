@@ -15,39 +15,42 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 public sealed class FiltroDeAutorizacaoDeclaraExigenciaTests
 {
+    private const string Produto = @"^Unifesspa\.UniPlus\.(?!ArchTests)";
+    private const string Exemplos = @"^Unifesspa\.UniPlus\.ArchTests\.Fixtures";
+
     [Fact]
     public void FiltrosDeAutorizacao_DeclaramExigencia()
     {
-        if (FiltrosSincronos().GetObjects(ArquiteturaDasTravas.Produto).Any())
+        if (FiltrosSincronos(Produto).GetObjects(ArquiteturaDasTravas.Produto).Any())
         {
-            ArquiteturaDasTravas.Reprovacoes(RegraSincrona(), ArquiteturaDasTravas.Produto).Should().BeEmpty();
+            ArquiteturaDasTravas.Reprovacoes(RegraSincrona(Produto), ArquiteturaDasTravas.Produto).Should().BeEmpty();
         }
-        ArquiteturaDasTravas.Reprovacoes(RegraAssincrona(), ArquiteturaDasTravas.Produto).Should().BeEmpty();
-        ArquiteturaDasTravas.Reprovacoes(RegraSincrona(), ArquiteturaDasTravas.Fixtures)
+        ArquiteturaDasTravas.Reprovacoes(RegraAssincrona(Produto), ArquiteturaDasTravas.Produto).Should().BeEmpty();
+        ArquiteturaDasTravas.Reprovacoes(RegraSincrona(Exemplos), ArquiteturaDasTravas.Fixtures)
             .Should().Contain(static v => v.Contains(nameof(FixturesDeAutorizacao.FiltroSemMarca), StringComparison.Ordinal));
     }
 
     [Fact]
     public void ExigenciasDeAutorizacao_DependemDoVerificador()
     {
-        ArquiteturaDasTravas.Reprovacoes(RegraDoVerificador(), ArquiteturaDasTravas.Produto).Should().BeEmpty();
-        ArquiteturaDasTravas.Reprovacoes(RegraDoVerificador(), ArquiteturaDasTravas.Fixtures)
+        ArquiteturaDasTravas.Reprovacoes(RegraDoVerificador(Produto), ArquiteturaDasTravas.Produto).Should().BeEmpty();
+        ArquiteturaDasTravas.Reprovacoes(RegraDoVerificador(Exemplos), ArquiteturaDasTravas.Fixtures)
             .Should().Contain(static v => v.Contains(nameof(FixturesDeAutorizacao.ExigenciaSemVerificador), StringComparison.Ordinal));
     }
 
-    private static ClassesShouldConjunction RegraDoVerificador() =>
-        Classes().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.")
-            .And().AreAssignableTo(typeof(Attribute)).And().ImplementInterface(typeof(IExigeAutorizacaoAlemDoLogin))
+    private static ClassesShouldConjunction RegraDoVerificador(string escopo) =>
+        Classes().That().ResideInNamespaceMatching(escopo)
+            .And().ImplementInterface(typeof(IExigeAutorizacaoAlemDoLogin))
             .Should().DependOnAny(Types().That().Are(typeof(IVerificadorDeAcesso)));
 
-    private static GivenClassesConjunction FiltrosSincronos() =>
-        Classes().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().AreAssignableTo(typeof(Attribute))
+    private static GivenClassesConjunction FiltrosSincronos(string escopo) =>
+        Classes().That().ResideInNamespaceMatching(escopo)
             .And().ImplementInterface(typeof(IAuthorizationFilter));
 
-    private static ClassesShouldConjunction RegraSincrona() =>
-        FiltrosSincronos().Should().ImplementInterface(typeof(IExigeAutorizacaoAlemDoLogin));
+    private static ClassesShouldConjunction RegraSincrona(string escopo) =>
+        FiltrosSincronos(escopo).Should().ImplementInterface(typeof(IExigeAutorizacaoAlemDoLogin));
 
-    private static ClassesShouldConjunction RegraAssincrona() =>
-        Classes().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().AreAssignableTo(typeof(Attribute)).And().ImplementInterface(typeof(IAsyncAuthorizationFilter))
+    private static ClassesShouldConjunction RegraAssincrona(string escopo) =>
+        Classes().That().ResideInNamespaceMatching(escopo).And().ImplementInterface(typeof(IAsyncAuthorizationFilter))
             .Should().ImplementInterface(typeof(IExigeAutorizacaoAlemDoLogin));
 }

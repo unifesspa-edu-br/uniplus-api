@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
@@ -13,7 +12,7 @@ public sealed class RegraDeNomeAbreviadoUnicaTests
     [Fact]
     public void RegrasDeNomeAbreviado_ConheceExatamenteUmaRegra()
     {
-        ArchUnitNET.Domain.Architecture arquitetura = new ArchLoader().LoadAssemblies(typeof(RegrasDeNomeAbreviado).Assembly).Build();
+        ArchUnitNET.Domain.Architecture arquitetura = ArquiteturaDaSelecao.Produto;
 
         FieldMembers().That().AreDeclaredIn(typeof(RegrasDeNomeAbreviado)).And().ArePublic()
             .GetObjects(arquitetura).Should().ContainSingle(

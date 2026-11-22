@@ -2,16 +2,14 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.ArchTests.Fixtures;
+using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
-
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
 /// A composição de um perfil comum vive na versão, e o acesso se decide pela versão a que a concessão está presa. Só
@@ -52,7 +50,7 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
         $@"^({Dominio}(Perfil|ProposicaoDaVersao|Concessao|PedidoDeConcessao)"
         + @"|Unifesspa\.UniPlus\.Autorizacao\.Application\.Mappings\.(PerfilMapping|VersaoMapping))(\+|$)";
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(Assemblies()).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     [Fact(DisplayName = "Fitness_LeituraDaComposicaoPorFora_Falha")]
     public void Fitness_LeituraDaComposicaoPorFora_Falha()
@@ -80,12 +78,14 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
     public void Fitness_AutorizacaoCompartilhadaNaoDependeDoModuloDeAutorizacao()
     {
         string[] compartilhados = ["Unifesspa.UniPlus.Authorization", "Unifesspa.UniPlus.Infrastructure.Core"];
+        ArchUnitNET.Domain.Assembly[] assemblies = [.. Arquitetura.Assemblies
+            .Where(a => compartilhados.Contains(a.Name, StringComparer.Ordinal))];
+        assemblies.Select(static a => a.Name).Should().BeEquivalentTo(compartilhados);
 
         string[] dependentes =
         [
-            .. compartilhados
-                .SelectMany(static n => ReflectionAssembly.Load(n).GetReferencedAssemblies())
-                .Select(static a => a.Name ?? string.Empty)
+            .. assemblies
+                .SelectMany(static a => a.ReferencedAssemblyNames)
                 .Where(static n => n.StartsWith("Unifesspa.UniPlus.Autorizacao", StringComparison.Ordinal)),
         ];
 
@@ -122,11 +122,4 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
     private static void Avaliar(TypesShouldConjunction regra, List<string> violacoes) =>
         violacoes.AddRange(regra.Evaluate(Arquitetura).Where(static r => !r.Passed).Select(static r => r.Description));
 
-    private static ReflectionAssembly[] Assemblies() =>
-        [
-            .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
-                .Where(static c => !Path.GetFileName(c).Contains("Tests", StringComparison.Ordinal)
-                    || Path.GetFileName(c) == "Unifesspa.UniPlus.ArchTests.dll")
-                .Select(static c => ReflectionAssembly.LoadFrom(c)),
-        ];
 }
