@@ -8,9 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DistincaoDasApresentacoesTests
 {
     [Theory]
-    [InlineData(ChaveDistincao.CompetenciaMensal, "2026-02", "2026-01")]
-    [InlineData(ChaveDistincao.ExercicioAnual, "2026", "2025")]
-    public void AtendidaPor_CalendarioExigeCadaPeriodo_RecusaPeriodoRepetido(ChaveDistincao chave, string recente, string anterior)
+    [InlineData(CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, "2026-02", "2026-01")]
+    [InlineData(CriterioDeDistincaoDasApresentacoes.ExercicioAnual, "2026", "2025")]
+    public void AtendidaPor_CalendarioExigeCadaPeriodo_RecusaPeriodoRepetido(CriterioDeDistincaoDasApresentacoes chave, string recente, string anterior)
     {
         DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Declarar(chave, new DateOnly(2026, 2, 1), null, 2).Value!;
         ApresentacaoDocumento primeira = new(Guid.CreateVersion7(), recente);
@@ -24,7 +24,7 @@ public sealed class DistincaoDasApresentacoesTests
     [Fact]
     public void AtendidaPor_OcorrenciaSemLista_IgnoraChavesVaziasEIdentidadesRepetidas()
     {
-        DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Declarar(ChaveDistincao.Ocorrencia, null, null, 2).Value!;
+        DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Declarar(CriterioDeDistincaoDasApresentacoes.Ocorrencia, null, null, 2).Value!;
         Guid id = Guid.CreateVersion7();
 
         distincao.AtendidaPor([new(id, "a"), new(id, "b"), new(Guid.CreateVersion7(), " ")], 2).Should().BeFalse();
@@ -36,7 +36,7 @@ public sealed class DistincaoDasApresentacoesTests
     public void Reidratar_ListaOriginalMutada_ConservaOcorrencias()
     {
         List<string> ocorrencias = ["a", "b"];
-        DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Reidratar(ChaveDistincao.Ocorrencia, null, ocorrencias)!;
+        DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Reidratar(CriterioDeDistincaoDasApresentacoes.Ocorrencia, null, ocorrencias)!;
         ocorrencias.Clear();
 
         distincao.OcorrenciasEsperadas.Should().Equal("a", "b");
@@ -44,12 +44,12 @@ public sealed class DistincaoDasApresentacoesTests
     }
 
     [Fact]
-    public void Reidratar_FolhaSemChaveComMetadados_ConservaValoresSemRevalidar()
+    public void Reidratar_RegraDeDocumentoSemCriterioComMetadados_ConservaValoresSemRevalidar()
     {
         DateOnly referencia = new(2026, 2, 1);
         DistincaoDasApresentacoes distincao = DistincaoDasApresentacoes.Reidratar(null, referencia, ["a"])!;
 
-        distincao.Chave.Should().BeNull();
+        distincao.Criterio.Should().BeNull();
         distincao.DataReferencia.Should().Be(referencia);
         distincao.OcorrenciasEsperadas.Should().Equal("a");
         distincao.IdentificacoesDasApresentacoesExigidas(1).Should().BeNull();

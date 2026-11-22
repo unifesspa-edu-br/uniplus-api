@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Projeta no envelope os documentos exigidos: exigências, obrigatoriedades, bases legais e a árvore de satisfação.
+/// Projeta no envelope os documentos exigidos: exigências, obrigatoriedades, bases legais e regras de comprovação.
 /// </summary>
 internal static class SerializacaoDasExigencias
 {
@@ -57,7 +57,7 @@ internal static class SerializacaoDasExigencias
         ["quantidadeMinima"] = regra.QuantidadeMinima,
         ["consequencia"] = regra.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
         ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
-        ["criterioDeDistincao"] = regra.Distincao?.Chave?.ToCodigo(),
+        ["criterioDeDistincao"] = regra.Distincao?.Criterio?.ToCodigo(),
         ["dataReferencia"] = regra.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         ["ocorrenciasEsperadas"] = SerializarOcorrencias(regra.Distincao),
         ["grupoDoFormularioParaRepeticao"] = regra.GrupoDoFormularioParaRepeticao,

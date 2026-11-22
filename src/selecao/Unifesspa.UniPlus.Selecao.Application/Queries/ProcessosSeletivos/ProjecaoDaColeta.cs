@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// Projeta para o contrato REST o que o processo coleta e exige do candidato: os formulários com seus
-/// fatos, grupos e termos, as regras de derivação, as opções declaradas e os documentos exigidos com a
-/// árvore de satisfação.
+/// fatos, grupos e termos, as regras de derivação, as opções declaradas e os documentos exigidos com as
+/// regras de comprovação.
 /// </summary>
 internal static class ProjecaoDaColeta
 {
@@ -40,7 +40,7 @@ internal static class ProjecaoDaColeta
         [.. processo.DocumentosExigidos.OrderBy(static d => d.Id).Select(ProjetarDocumento)];
 
     internal static IReadOnlyList<RegraDeComprovacaoDto> ProjetarRegrasDeComprovacaoSemGrupo(ProcessoSeletivo processo) =>
-        [.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static n => n.Ordem).ThenBy(static n => n.Id).Select(ProjetarNo)];
+        [.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static n => n.Ordem).ThenBy(static n => n.Id).Select(ProjetarRegra)];
 
     private static FormularioDto ProjetarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
         EstruturaFormulario.ParaToken(formulario.Finalidade),
@@ -168,20 +168,19 @@ internal static class ProjecaoDaColeta
     private static ModeloDaExigenciaDto? ProjetarModelo(ModeloDaExigencia? modelo) => modelo is null ? null
         : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256);
 
-    // Um nó da árvore de satisfação, recursivamente, no mesmo formato de RegraDeComprovacaoInformada (comando de escrita).
-    private static RegraDeComprovacaoDto ProjetarNo(RegraDeComprovacao no) => new(
-        no.Id,
-        CodigoComRotulo<FormaDeComprovacao>.De(no.Forma),
-        no.Forma == FormaDeComprovacao.Documento ? ProjetarDocumento(no.DocumentoExigido!) : null,
-        new CardinalidadeQualificadaDto(no.QuantidadeMinima, ProjetarDistincao(no.Distincao)),
-        new IndeferimentoDoGrupoDto(no.Consequencia, [.. no.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDoNo)]),
-        [.. no.Itens.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarNo)],
-        no.GrupoDoFormularioParaRepeticao);
+    private static RegraDeComprovacaoDto ProjetarRegra(RegraDeComprovacao regra) => new(
+        regra.Id,
+        CodigoComRotulo<FormaDeComprovacao>.De(regra.Forma),
+        regra.Forma == FormaDeComprovacao.Documento ? ProjetarDocumento(regra.DocumentoExigido!) : null,
+        new CardinalidadeQualificadaDto(regra.QuantidadeMinima, ProjetarDistincao(regra.Distincao)),
+        new IndeferimentoDoGrupoDto(regra.Consequencia, [.. regra.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDaRegra)]),
+        [.. regra.Itens.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarRegra)],
+        regra.GrupoDoFormularioParaRepeticao);
 
     private static DistincaoDasApresentacoesDto? ProjetarDistincao(DistincaoDasApresentacoes? distincao) =>
-        distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Chave?.ToCodigo(), distincao.DataReferencia, distincao.OcorrenciasEsperadas);
+        distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Criterio?.ToCodigo(), distincao.DataReferencia, distincao.OcorrenciasEsperadas);
 
-    private static BaseLegalDto ProjetarBaseLegalDoNo(BaseLegalDaComprovacao baseLegal) => new(
+    private static BaseLegalDto ProjetarBaseLegalDaRegra(BaseLegalDaComprovacao baseLegal) => new(
         baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Situacao.ToCodigo(), baseLegal.Observacao);
 
     private static BaseLegalDto ProjetarBaseLegal(DocumentoExigidoBaseLegal baseLegal) => new(

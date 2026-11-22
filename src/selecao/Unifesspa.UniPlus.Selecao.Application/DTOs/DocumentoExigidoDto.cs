@@ -105,11 +105,11 @@ public sealed record RegraDeComprovacaoDto(
     IReadOnlyList<RegraDeComprovacaoDto> Itens,
     string? GrupoDoFormularioParaRepeticao);
 
-/// <summary>Quantas apresentações o nó pede e como elas se distinguem; a distinção é nula sem qualificação.</summary>
+/// <summary>Quantas apresentações a regra pede e como elas se distinguem.</summary>
 public sealed record CardinalidadeQualificadaDto(int? QuantidadeMinima, DistincaoDasApresentacoesDto? Distincao);
 
 /// <summary>Como as apresentações se distinguem: a chave, a data de referência e as ocorrências esperadas.</summary>
-public sealed record DistincaoDasApresentacoesDto(string? Chave, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
+public sealed record DistincaoDasApresentacoesDto(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
 
 /// <summary>A consequência do indeferimento do grupo e as bases legais dela.</summary>
 public sealed record IndeferimentoDoGrupoDto(string? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);

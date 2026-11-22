@@ -22,7 +22,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
     public void RoundTrip_SeisConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Seis Conjuntos");
-        DefinirFolhaComOcorrenciasEFormatos(processo, fase);
+        DefinirRegraComOcorrenciasEFormatos(processo, fase);
         EntradaCanonicalizacao entrada = EntradaDosSeisConjuntos(processo);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
@@ -48,12 +48,12 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
         IReadOnlyList<string> Codigos,
         IReadOnlyList<string> Necessidades);
 
-    private static void DefinirFolhaComOcorrenciasEFormatos(ProcessoSeletivo processo, FaseCronograma fase)
+    private static void DefinirRegraComOcorrenciasEFormatos(ProcessoSeletivo processo, FaseCronograma fase)
     {
-        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(
-            DocumentoDeIdentidadeComFormatosEnumerados(fase), 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(
+            DocumentoDeIdentidadeComFormatosEnumerados(fase), 0, quantidadeMinima: 2, criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.Ocorrencia,
             ocorrenciasEsperadas: ["ocorrencia_zeta", "ocorrencia_alfa"]).Value!;
-        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
     }
 
     private static DocumentoExigido DocumentoDeIdentidadeComFormatosEnumerados(FaseCronograma fase) =>

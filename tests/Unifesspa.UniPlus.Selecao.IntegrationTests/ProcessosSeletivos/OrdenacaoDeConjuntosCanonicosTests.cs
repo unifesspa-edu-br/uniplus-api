@@ -158,27 +158,27 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     {
         if (ocorrenciasEsperadas is not null || formatosPermitidos is not null)
         {
-            FormatosPermitidos fp = formatosPermitidos is not null
+            FormatosPermitidos formatosAceitos = formatosPermitidos is not null
                 ? FormatosPermitidos.Criar(qualquer: false, entradas: [.. formatosPermitidos]).Value!
                 : FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!;
 
-            RegraDeComprovacao folha = Folha(fase, fp, ocorrenciasEsperadas);
+            RegraDeComprovacao regraDeDocumento = RegraDeDocumento(fase, formatosAceitos, ocorrenciasEsperadas);
 
-            processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+            processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
         }
     }
 
-    private static RegraDeComprovacao Folha(FaseCronograma fase, FormatosPermitidos fp, IReadOnlyList<string>? ocorrenciasEsperadas)
+    private static RegraDeComprovacao RegraDeDocumento(FaseCronograma fase, FormatosPermitidos formatosAceitos, IReadOnlyList<string>? ocorrenciasEsperadas)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            [], [], null, fp, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            [], [], null, formatosAceitos, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         return ocorrenciasEsperadas is not null
             ? RegraDeComprovacao.CriarRegraDeDocumento(
                 documento, 0, quantidadeMinima: ocorrenciasEsperadas.Count,
-                chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ocorrenciasEsperadas).Value!
+                criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.Ocorrencia, ocorrenciasEsperadas: ocorrenciasEsperadas).Value!
             : RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
     }
 

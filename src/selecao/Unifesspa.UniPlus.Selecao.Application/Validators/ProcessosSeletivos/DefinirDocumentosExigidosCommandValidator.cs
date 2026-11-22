@@ -15,7 +15,7 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
-        RuleFor(x => x.Raizes)
+        RuleFor(x => x.RegrasDeComprovacao)
             .NotNull()
             .WithMessage("A lista de regras de comprovação não pode ser nula.");
         RegrasDeComprovacao();
@@ -23,14 +23,14 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
 
     private void RegrasDeComprovacao()
     {
-        RuleForEach(x => x.Raizes)
+        RuleForEach(x => x.RegrasDeComprovacao)
             .NotNull()
             .WithMessage("Uma regra de comprovação não pode ser nula.")
             .SetValidator(new RegraDeComprovacaoInformadaValidator());
 
-        RuleFor(x => x.Raizes)
+        RuleFor(x => x.RegrasDeComprovacao)
             .Must(static regras => ProfundidadeMaxima(regras, 1) <= MaxProfundidadeDasRegras)
-            .When(static x => x.Raizes is { Count: > 0 })
+            .When(static x => x.RegrasDeComprovacao is { Count: > 0 })
             .WithMessage($"As regras de comprovação excedem a profundidade operacional máxima ({MaxProfundidadeDasRegras}).");
     }
 

@@ -38,28 +38,28 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
     [Fact(DisplayName = "As regras de quantidade mínima, cardinalidade e repetição preservam o envelope")]
-    public void Reidratar_ArvoreComGrupoCardinalidadeERepeticao_ReproduzOsBytes()
+    public void Reidratar_RegrasComGrupoCardinalidadeERepeticao_ReproduzOsBytes()
     {
-        (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Árvore 1.4");
+        (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Regras de Comprovação");
         DocumentoExigido comprovanteRenda = ComprovanteDeRendaComModelo(fase);
         DefinirRegrasDeComprovacao(processo, fase, comprovanteRenda);
-        EntradaCanonicalizacao entrada = EntradaDaArvore(processo);
+        EntradaCanonicalizacao entrada = EntradaDasRegras(processo);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
-        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-arvore");
+        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-regras");
         EnvelopeReidratado reidratado = FidelidadeDoEnvelopeDeTeste.Conferir(processo, v1, congelado);
         ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(reidratado, comprovanteRenda);
-        ConferirArvoreRecarregada(ProcessoDoGrafoLidoDeTeste.Criar(processo, reidratado.Configuracao));
+        ConferirRegrasRecarregadas(ProcessoDoGrafoLidoDeTeste.Criar(processo, reidratado.Configuracao));
     }
 
     private static void DefinirRegrasDeComprovacao(ProcessoSeletivo processo, FaseCronograma fase, DocumentoExigido comprovanteRenda)
     {
         DefinirGrupoDeComposicaoFamiliar(processo);
-        processo.DefinirDocumentosExigidos([RaizGrupoOuDeRgERenda(fase, comprovanteRenda)])
+        processo.DefinirDocumentosExigidos([GrupoDeQuantidadeMinimaDeRgERenda(fase, comprovanteRenda)])
             .IsSuccess.Should().BeTrue();
     }
 
-    private static EntradaCanonicalizacao EntradaDaArvore(ProcessoSeletivo processo) =>
+    private static EntradaCanonicalizacao EntradaDasRegras(ProcessoSeletivo processo) =>
         new(
             processo, DadosDeEditalDoEnvelope(), "2222222222222222222222222222222222222222222222222222222222222222", FusoInstitucional.ZoneId,
             null, null, new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
@@ -87,47 +87,47 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
                 .Construir(),
         ]).IsSuccess.Should().BeTrue();
 
-    private static RegraDeComprovacao RaizGrupoOuDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)
+    private static RegraDeComprovacao GrupoDeQuantidadeMinimaDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)
     {
-        RegraDeComprovacao folhaRg = RegraDeComprovacao.CriarRegraDeDocumento(
-            DocumentoDeRgSemObrigatoriedade(fase), 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
+        RegraDeComprovacao regraDeRg = RegraDeComprovacao.CriarRegraDeDocumento(
+            DocumentoDeRgSemObrigatoriedade(fase), 0, quantidadeMinima: 3, criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.CompetenciaMensal,
             dataReferencia: new DateOnly(2026, 3, 31)).Value!;
-        RegraDeComprovacao folhaRenda = RegraDeComprovacao.CriarRegraDeDocumento(
+        RegraDeComprovacao regraDeRenda = RegraDeComprovacao.CriarRegraDeDocumento(
             comprovanteRenda, 1, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
         BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
         return RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [folhaRg, folhaRenda]).Value!;
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [regraDeRg, regraDeRenda]).Value!;
     }
     private static void ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(
         EnvelopeReidratado reidratado, DocumentoExigido comprovanteRenda) =>
         reidratado.Configuracao.Exigencias.DocumentosExigidos.Single(static d => d.TipoDocumentoCodigo == "COMPROVANTE_RENDA").Modelo
             .Should().Be(comprovanteRenda.Modelo);
 
-    private static void ConferirArvoreRecarregada(ProcessoSeletivo processo)
+    private static void ConferirRegrasRecarregadas(ProcessoSeletivo processo)
     {
-        RegraDeComprovacao raiz = processo.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
-        raiz.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
-        raiz.Consequencia.Should().Be("ELIMINA");
-        raiz.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
-        raiz.Itens.Should().HaveCount(2);
-        ConferirFolhaDeRgRecarregada(raiz.Itens.Should().ContainSingle(static f => f.Distincao != null).Which);
-        ConferirFolhaDeRendaRecarregada(raiz.Itens.Should().ContainSingle(static f => f.GrupoDoFormularioParaRepeticao != null).Which);
+        RegraDeComprovacao regraSemGrupo = processo.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
+        regraSemGrupo.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
+        regraSemGrupo.Consequencia.Should().Be("ELIMINA");
+        regraSemGrupo.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
+        regraSemGrupo.Itens.Should().HaveCount(2);
+        ConferirRegraDeRgRecarregada(regraSemGrupo.Itens.Should().ContainSingle(static f => f.Distincao != null).Which);
+        ConferirRegraDeRendaRecarregada(regraSemGrupo.Itens.Should().ContainSingle(static f => f.GrupoDoFormularioParaRepeticao != null).Which);
     }
 
-    private static void ConferirFolhaDeRgRecarregada(RegraDeComprovacao folha)
+    private static void ConferirRegraDeRgRecarregada(RegraDeComprovacao regraDeDocumento)
     {
-        folha.QuantidadeMinima.Should().Be(3);
-        folha.Distincao!.Chave.Should().Be(ChaveDistincao.CompetenciaMensal);
-        folha.Distincao!.DataReferencia.Should().Be(new DateOnly(2026, 3, 31));
-        folha.DocumentoExigido.Should().NotBeNull();
-        folha.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
+        regraDeDocumento.QuantidadeMinima.Should().Be(3);
+        regraDeDocumento.Distincao!.Criterio.Should().Be(CriterioDeDistincaoDasApresentacoes.CompetenciaMensal);
+        regraDeDocumento.Distincao!.DataReferencia.Should().Be(new DateOnly(2026, 3, 31));
+        regraDeDocumento.DocumentoExigido.Should().NotBeNull();
+        regraDeDocumento.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
     }
 
-    private static void ConferirFolhaDeRendaRecarregada(RegraDeComprovacao folha)
+    private static void ConferirRegraDeRendaRecarregada(RegraDeComprovacao regraDeDocumento)
     {
-        folha.GrupoDoFormularioParaRepeticao.Should().Be("COMPOSICAO_FAMILIAR");
-        folha.DocumentoExigido.Should().NotBeNull();
-        folha.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
+        regraDeDocumento.GrupoDoFormularioParaRepeticao.Should().Be("COMPOSICAO_FAMILIAR");
+        regraDeDocumento.DocumentoExigido.Should().NotBeNull();
+        regraDeDocumento.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
     }
 }

@@ -33,7 +33,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     [
         (RegrasDeComprovacao, "/properties/forma", () => Codigos<FormaDeComprovacao>(static v => v.Codigo())),
         (RegrasDeComprovacao, "/properties/consequencia", () => ConsequenciaIndeferimentoCodigo.Validas),
-        (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<ChaveDistincao>(static v => v.ToCodigo())),
+        (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<CriterioDeDistincaoDasApresentacoes>(static v => v.ToCodigo())),
         (Bancas, $"{Deliberacao}/modo", Nomes<ModoDeDeliberacao>),
         (Bancas, $"{Deliberacao}/criterio", Nomes<CriterioDeVotacao>),
         (Bancas, $"{Deliberacao}/desempate", Nomes<DesempateDaVotacao>),

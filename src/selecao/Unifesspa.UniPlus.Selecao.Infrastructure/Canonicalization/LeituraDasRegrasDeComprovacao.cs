@@ -38,7 +38,7 @@ internal static class LeituraDasRegrasDeComprovacao
     {
         DeclaracaoDaRegraLida declaracao = LerDeclaracao(leitor, item, caminho);
         if (leitor.Falhou || !LerColecoesDaRegra(leitor, item, caminho, declaracao)
-            || !ResolverReferencias(leitor, declaracao, exigenciasPorId, out FormaDeComprovacao forma, out ChaveDistincao? chave, out DocumentoExigido? documento))
+            || !ResolverReferencias(leitor, declaracao, exigenciasPorId, out FormaDeComprovacao forma, out CriterioDeDistincaoDasApresentacoes? criterio, out DocumentoExigido? documento))
         {
             return null;
         }
@@ -46,14 +46,14 @@ internal static class LeituraDasRegrasDeComprovacao
         List<RegraDeComprovacao>? itens = LerItens(leitor, item, caminho, exigenciasPorId);
         return itens is null || !ConferirFormaDaRegra(leitor, declaracao, itens, forma)
             ? null
-            : ReidratarRegra(declaracao, forma, chave, documento, itens);
+            : ReidratarRegra(declaracao, forma, criterio, documento, itens);
     }
 
     private static RegraDeComprovacao ReidratarRegra(
-        DeclaracaoDaRegraLida declaracao, FormaDeComprovacao forma, ChaveDistincao? chave, DocumentoExigido? documento, IReadOnlyList<RegraDeComprovacao> itens) =>
+        DeclaracaoDaRegraLida declaracao, FormaDeComprovacao forma, CriterioDeDistincaoDasApresentacoes? criterio, DocumentoExigido? documento, IReadOnlyList<RegraDeComprovacao> itens) =>
         forma == FormaDeComprovacao.Documento
             ? RegraDeComprovacao.ReidratarRegraDeDocumento(declaracao.Id, declaracao.Ordem, documento!, declaracao.QuantidadeMinima,
-                DistincaoDasApresentacoes.Reidratar(chave, declaracao.DataReferencia, declaracao.OcorrenciasEsperadas), declaracao.GrupoDoFormularioParaRepeticaoCodigo)
+                DistincaoDasApresentacoes.Reidratar(criterio, declaracao.DataReferencia, declaracao.OcorrenciasEsperadas), declaracao.GrupoDoFormularioParaRepeticaoCodigo)
             : RegraDeComprovacao.ReidratarGrupo(declaracao.Id, declaracao.Ordem, new CombinacaoDoGrupo(forma, declaracao.QuantidadeMinima, declaracao.Consequencia),
                 declaracao.BasesLegais, itens, declaracao.GrupoDoFormularioParaRepeticaoCodigo);
 
@@ -86,7 +86,7 @@ internal static class LeituraDasRegrasDeComprovacao
 
     private static string? CampoIncompativelDoGrupo(DeclaracaoDaRegraLida declaracao)
     {
-        if (declaracao.ChaveDistincaoCodigo is not null)
+        if (declaracao.CodigoDoCriterioDeDistincao is not null)
         {
             return "A forma de distinguir apresentações só pode ser informada em uma regra de documento. Remova-a deste item.";
         }
@@ -105,7 +105,7 @@ internal static class LeituraDasRegrasDeComprovacao
         ExigenciaId = leitor.IdentificadorOpcional(item, "exigenciaId", caminho),
         QuantidadeMinima = leitor.InteiroOpcional(item, "quantidadeMinima", caminho),
         Consequencia = leitor.TextoOpcional(item, "consequencia", caminho, LimitesDoEnvelope.Token),
-        ChaveDistincaoCodigo = leitor.TextoOpcional(item, "criterioDeDistincao", caminho),
+        CodigoDoCriterioDeDistincao = leitor.TextoOpcional(item, "criterioDeDistincao", caminho),
         DataReferencia = leitor.DataOpcional(item, "dataReferencia", caminho),
         GrupoDoFormularioParaRepeticaoCodigo = leitor.TextoOpcional(item, "grupoDoFormularioParaRepeticao", caminho),
     };
@@ -115,31 +115,31 @@ internal static class LeituraDasRegrasDeComprovacao
         DeclaracaoDaRegraLida declaracao,
         IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId,
         out FormaDeComprovacao forma,
-        out ChaveDistincao? chave,
+        out CriterioDeDistincaoDasApresentacoes? criterio,
         out DocumentoExigido? documento)
     {
         documento = null;
-        chave = null;
+        criterio = null;
         if (!CatalogoDe<FormaDeComprovacao>.TentarObter(declaracao.FormaCodigo, out forma))
         {
-            leitor.Recusar<object>("O tipo de regra informado não é reconhecido. Corrija o tipo informado.");
+            leitor.Recusar<object>("A forma de comprovação informada não é reconhecida. Corrija a forma informada.");
             return false;
         }
 
-        return ResolverChaveDeDistincao(leitor, declaracao.ChaveDistincaoCodigo, out chave)
+        return ResolverCriterioDeDistincao(leitor, declaracao.CodigoDoCriterioDeDistincao, out criterio)
             && ResolverDocumento(leitor, forma, declaracao, exigenciasPorId, out documento);
     }
 
-    private static bool ResolverChaveDeDistincao(LeitorEnvelope leitor, string? codigo, out ChaveDistincao? chave)
+    private static bool ResolverCriterioDeDistincao(LeitorEnvelope leitor, string? codigo, out CriterioDeDistincaoDasApresentacoes? criterio)
     {
-        chave = null;
+        criterio = null;
         if (codigo is null)
         {
             return true;
         }
 
-        chave = ChaveDistincaoCodigo.FromCodigo(codigo);
-        if (chave != Domain.Enums.ChaveDistincao.Nenhuma)
+        criterio = CriterioDeDistincaoDasApresentacoesCodigo.FromCodigo(codigo);
+        if (criterio != Domain.Enums.CriterioDeDistincaoDasApresentacoes.Nenhuma)
         {
             return true;
         }
@@ -225,7 +225,7 @@ internal static class LeituraDasRegrasDeComprovacao
 
         public string? Consequencia { get; init; }
 
-        public string? ChaveDistincaoCodigo { get; init; }
+        public string? CodigoDoCriterioDeDistincao { get; init; }
 
         public DateOnly? DataReferencia { get; init; }
 

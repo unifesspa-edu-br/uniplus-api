@@ -4,18 +4,13 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
-/// <summary>
-/// Validação recursiva de UM nó da árvore — auto-referenciada via
-/// <c>RuleForEach(x =&gt; x.Itens).SetValidator(this)</c> (padrão documentado do
-/// FluentValidation para estruturas em árvore): coerência de campos por
-/// <see cref="RegraDeComprovacaoInformada.Tipo"/> e delegação ao validador de folha.
-/// </summary>
+/// <summary>Confere os dados informados para cada regra de comprovação.</summary>
 public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<RegraDeComprovacaoInformada>
 {
     public RegraDeComprovacaoInformadaValidator()
     {
         RegrasDoDocumento();
-        RegrasDosFilhos();
+        RegrasDosItens();
         RegrasDaDistincao();
         RegrasDaConsequencia();
         RegrasDasBasesLegaisDoGrupo();
@@ -28,20 +23,17 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
             .When(static x => x.Forma == "DOCUMENTO" && x.Documento is not null);
     }
 
-    private void RegrasDosFilhos()
+    private void RegrasDosItens()
     {
         RuleForEach(x => x.Itens)
             .SetValidator(this)
             .When(static x => x.Itens is { Count: > 0 });
     }
 
-    // A coerência chave x dataReferencia x ocorrenciasEsperadas é do domínio (RegraDeComprovacao.CriarRegraDeDocumento); aqui só a
-    // forma: catálogo fechado e campo restrito a FOLHA. A chave em branco também é recusada, em vez de o domínio
-    // a tratar como "sem qualificação" e aceitar um pedido malformado.
     private void RegrasDaDistincao()
     {
         RuleFor(x => x.Cardinalidade!.Distincao!)
-            .SetValidator(new DistincaoForaDeFolhaInputValidator())
+            .SetValidator(new DistincaoForaDaRegraDeDocumentoValidator())
             .When(static x => x.Forma is "TODOS_OS_ITENS" or "QUANTIDADE_MINIMA_DE_ITENS" && x.Cardinalidade?.Distincao is not null);
 
     }
@@ -50,29 +42,29 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
         RuleFor(x => x.Indeferimento!.Consequencia)
             .Null()
             .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
-            .WithMessage("indeferimento.consequencia de nó só é permitida em grupo OU/N-de.");
+            .WithMessage("A consequência própria só é permitida no grupo que exige uma quantidade mínima de itens.");
 
     private void RegrasDasBasesLegaisDoGrupo() =>
         RuleFor(x => x.Indeferimento!.BasesLegais)
             .Must(static basesLegais => basesLegais is null or { Count: 0 })
             .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
-            .WithMessage("indeferimento.basesLegais de nó só é permitida em grupo OU/N-de com consequência declarada.");
+            .WithMessage("A base legal própria só é permitida no grupo que exige uma quantidade mínima de itens e declara consequência.");
 
 }
 
-/// <summary>A distinção das apresentações é exclusiva de FOLHA: num grupo E/OU nenhum dos campos pode vir preenchido.</summary>
-public sealed class DistincaoForaDeFolhaInputValidator : AbstractValidator<DistincaoDasApresentacoesInput>
+/// <summary>Confere que grupos não declaram distinção de apresentações.</summary>
+public sealed class DistincaoForaDaRegraDeDocumentoValidator : AbstractValidator<DistincaoDasApresentacoesInput>
 {
-    public DistincaoForaDeFolhaInputValidator()
+    public DistincaoForaDaRegraDeDocumentoValidator()
     {
-        RuleFor(x => x.Chave)
+        RuleFor(x => x.CriterioDeDistincao)
             .Null()
-            .WithMessage("cardinalidade.distincao.chave só é permitida em nó FOLHA.");
+            .WithMessage("O critério de distinção só é permitido em regra de documento.");
         RuleFor(x => x.DataReferencia)
             .Null()
-            .WithMessage("cardinalidade.distincao.dataReferencia só é permitida em nó FOLHA.");
+            .WithMessage("A data de referência só é permitida em regra de documento.");
         RuleFor(x => x.OcorrenciasEsperadas)
             .Must(static ocorrencias => ocorrencias is null or { Count: 0 })
-            .WithMessage("cardinalidade.distincao.ocorrenciasEsperadas só é permitida em nó FOLHA.");
+            .WithMessage("As ocorrências esperadas só são permitidas em regra de documento.");
     }
 }

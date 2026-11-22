@@ -112,7 +112,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
     {
         DeclaracaoDaRegraDeComprovacao declaracao = Declarar(regra);
         return RegraDeComprovacao.CriarRegraDeDocumento(documento, ordem, declaracao.QuantidadeMinima,
-            regra.Distincao()?.Chave is { } chave ? ChaveDistincaoCodigo.FromCodigo(chave) : null,
+            regra.Distincao()?.CriterioDeDistincao is { } chave ? CriterioDeDistincaoDasApresentacoesCodigo.FromCodigo(chave) : null,
             regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas, regra.GrupoDoFormularioParaRepeticao);
     }
 
@@ -135,6 +135,6 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             static b => BaseLegalDaComprovacao.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b)),
             static b => BaseLegalDaComprovacao.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b), b.Observacao).Value!);
     private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada regra) =>
-        DistincaoDeclarada.Interpretar(regra.Distincao()?.Chave, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
+        DistincaoDeclarada.Interpretar(regra.Distincao()?.CriterioDeDistincao, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
 
 }

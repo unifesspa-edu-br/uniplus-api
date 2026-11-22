@@ -13,18 +13,18 @@ using static AdulteracaoDeEnvelopeDeTeste;
 public sealed class EnvelopeCodecMetadadosDasRegrasTests
 {
     [Theory]
-    [InlineData(true, "O tipo de regra informado não é reconhecido. Corrija o tipo informado.")]
+    [InlineData(true, "A forma de comprovação informada não é reconhecida. Corrija a forma informada.")]
     [InlineData(false, "A forma de distinguir apresentações não é reconhecida. Corrija a forma de distinção na regra de documento.")]
-    public void Reidratar_TipoOuDistincaoDesconhecidos_RecusaEmPortuguesClaro(bool tipoInvalido, string mensagem)
+    public void Reidratar_FormaOuCriterioDesconhecidos_RecusaEmPortuguesClaro(bool formaInvalida, string mensagem)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject folha = PrimeiraRegra(envelope, "DOCUMENTO");
-            if (tipoInvalido)
+            JsonObject regraDeDocumento = PrimeiraRegra(envelope, "DOCUMENTO");
+            if (formaInvalida)
             {
-                folha["forma"] = "INVALIDO";
+                regraDeDocumento["forma"] = "INVALIDO";
             }
-            folha["criterioDeDistincao"] = "INVALIDA";
+            regraDeDocumento["criterioDeDistincao"] = "INVALIDA";
         }, comRegrasDeComprovacao: true);
 
         resultado.IsFailure.Should().BeTrue();
@@ -47,7 +47,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject grupo = PrimeiraRegra(envelope, "QUANTIDADE_MINIMA_DE_ITENS");
-            grupo["criterioDeDistincao"] = ChaveDistincaoCodigo.CompetenciaMensal;
+            grupo["criterioDeDistincao"] = CriterioDeDistincaoDasApresentacoesCodigo.CompetenciaMensal;
             grupo["dataReferencia"] = "2026-10-10";
         }, comRegrasDeComprovacao: true);
 
@@ -63,11 +63,11 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject folha = PrimeiraRegra(envelope, "DOCUMENTO");
-            AdulterarRegraDeDocumento(folha, primeiro);
+            JsonObject regraDeDocumento = PrimeiraRegra(envelope, "DOCUMENTO");
+            AdulterarRegraDeDocumento(regraDeDocumento, primeiro);
             if (segundo is not null)
             {
-                AdulterarRegraDeDocumento(folha, segundo);
+                AdulterarRegraDeDocumento(regraDeDocumento, segundo);
             }
         }, comRegrasDeComprovacao: true);
 
@@ -80,12 +80,12 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     [InlineData("TODOS_OS_ITENS", "dataReferencia", "ocorrenciasEsperadas")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", "ocorrenciasEsperadas", null)]
     [InlineData("TODOS_OS_ITENS", "ocorrenciasEsperadas", null)]
-    public void Reidratar_GrupoComAtributosIncompativeis_RecusaPrimeiroCampo(string tipo, string primeiro, string? segundo)
+    public void Reidratar_GrupoComAtributosIncompativeis_RecusaPrimeiroCampo(string forma, string primeiro, string? segundo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject grupo = PrimeiraRegra(envelope, "QUANTIDADE_MINIMA_DE_ITENS");
-            grupo["forma"] = tipo;
+            grupo["forma"] = forma;
             AdulterarGrupo(grupo, primeiro);
             if (segundo is not null)
             {
@@ -114,9 +114,9 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject folha = PrimeiraRegra(envelope, "DOCUMENTO");
-            folha["exigenciaId"] = Guid.CreateVersion7().ToString();
-            folha["consequencia"] = "ELIMINA";
+            JsonObject regraDeDocumento = PrimeiraRegra(envelope, "DOCUMENTO");
+            regraDeDocumento["exigenciaId"] = Guid.CreateVersion7().ToString();
+            regraDeDocumento["consequencia"] = "ELIMINA";
         }, comRegrasDeComprovacao: true);
 
         ConferirRecusa(resultado, "exigenciaId");
@@ -142,20 +142,20 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         resultado.Error!.Message.Should().Contain("A regra de documento precisa indicar um documento. Informe o documento exigido.");
     }
 
-    private static void AdulterarRegraDeDocumento(JsonObject folha, string campo)
+    private static void AdulterarRegraDeDocumento(JsonObject regraDeDocumento, string campo)
     {
-        folha[campo] = campo switch
+        regraDeDocumento[campo] = campo switch
         {
             "consequencia" => JsonValue.Create("ELIMINA"),
             "basesLegais" => JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO","observacao":null}]"""),
-            "itens" => new JsonArray(RegraDeDocumentoSemAtributosIncompativeis(folha)),
+            "itens" => new JsonArray(RegraDeDocumentoSemAtributosIncompativeis(regraDeDocumento)),
             _ => throw new ArgumentOutOfRangeException(nameof(campo)),
         };
     }
 
-    private static JsonObject RegraDeDocumentoSemAtributosIncompativeis(JsonObject folha)
+    private static JsonObject RegraDeDocumentoSemAtributosIncompativeis(JsonObject regraDeDocumento)
     {
-        JsonObject copia = folha.DeepClone().AsObject();
+        JsonObject copia = regraDeDocumento.DeepClone().AsObject();
         copia["consequencia"] = null;
         copia["basesLegais"] = new JsonArray();
         copia["itens"] = new JsonArray();
@@ -166,7 +166,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         grupo[campo] = campo switch
         {
-            "criterioDeDistincao" => JsonValue.Create(ChaveDistincaoCodigo.CompetenciaMensal),
+            "criterioDeDistincao" => JsonValue.Create(CriterioDeDistincaoDasApresentacoesCodigo.CompetenciaMensal),
             "dataReferencia" => JsonValue.Create("2026-10-10"),
             "ocorrenciasEsperadas" => new JsonArray(),
             _ => throw new ArgumentOutOfRangeException(nameof(campo)),
@@ -191,8 +191,8 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         resultado.Error.Message.Should().Contain(mensagem);
     }
 
-    private static JsonObject PrimeiraRegra(JsonObject envelope, string tipo) =>
-        Regras(envelope["regrasDeComprovacao"]!.AsArray()).First(regra => regra["forma"]!.GetValue<string>() == tipo);
+    private static JsonObject PrimeiraRegra(JsonObject envelope, string forma) =>
+        Regras(envelope["regrasDeComprovacao"]!.AsArray()).First(regra => regra["forma"]!.GetValue<string>() == forma);
 
     private static IEnumerable<JsonObject> Regras(JsonArray regras) =>
         regras.OfType<JsonObject>().SelectMany(static regra => new[] { regra }.Concat(Regras(regra["itens"]!.AsArray())));

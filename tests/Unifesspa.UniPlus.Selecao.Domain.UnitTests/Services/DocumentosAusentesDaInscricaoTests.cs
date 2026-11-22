@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os documentos obrigatórios que faltam no envio da inscrição (UNI-REQ-0028): a decisão parte do
-/// estado do nó da árvore, e não da folha.
+/// situação da regra de comprovação.
 /// </summary>
 public sealed class DocumentosAusentesDaInscricaoTests
 {
@@ -38,7 +38,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
 
     [Fact(DisplayName = "A exigência cujos espaços o envio não registra (competência mensal) não recusa, e não torna a inscrição impossível de enviar")]
     public void ComChaveDeCompetencia_NaoRecusa() =>
-        Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Contracheque"), 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: new DateOnly(2026, 10, 1)).Value!])
+        Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Contracheque"), 0, quantidadeMinima: 3, criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, dataReferencia: new DateOnly(2026, 10, 1)).Value!])
             .Should().BeEmpty();
 
     [Fact(DisplayName = "O documento que não é da inscrição não falta no envio dela")]
@@ -66,7 +66,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
     public void QuantidadeMinimaDeItens_SemObrigatoria_NaoFalta() =>
         Ausentes([QuantidadeMinimaDeItens(0, Documento("Laudo", obrigatorio: false), Documento("Atestado", obrigatorio: false))]).Should().BeEmpty();
 
-    [Fact(DisplayName = "Num grupo E, falta cada documento que falta")]
+    [Fact(DisplayName = "Em um grupo de todos os itens, cada documento ausente é exigido")]
     public void TodosOsItens_FaltaCadaUm()
     {
         DocumentoExigido rg = Documento("RG"), cpf = Documento("CPF");
@@ -76,11 +76,11 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Ausentes([conjunto], Apresentadas(rg)).Should().ContainSingle().Which.Alternativas.Should().Equal(cpf);
     }
 
-    [Fact(DisplayName = "O grupo E impossível por um OU irmão não esconde o documento obrigatório que falta nos outros filhos")]
+    [Fact(DisplayName = "Um grupo impossível não esconde o documento obrigatório dos outros itens")]
     public void TodosOsItensImpossivel_NaoEscondeIrmao()
     {
         DocumentoExigido laudo = Documento("Laudo"), rg = Documento("RG");
-        // Só o RG se aplica: o OU "2 de 2" é impossível, e o laudo continua faltando.
+        // Só o RG se aplica; o grupo exige dois itens e o laudo continua faltando.
         DocumentoExigido cnhNaoAplica = Documento("CNH condicional", gatilhoFalso: true);
         RegraDeComprovacao ouImpossivel = RegraDeComprovacao.CriarGrupo(
             FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 2, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cnhNaoAplica, 1).Value!]).Value!;
