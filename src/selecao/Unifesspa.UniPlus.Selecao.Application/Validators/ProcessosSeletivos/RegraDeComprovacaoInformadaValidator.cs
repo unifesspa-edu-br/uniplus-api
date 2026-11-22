@@ -2,7 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
 using Commands.ProcessosSeletivos;
 
+using Domain.Enums;
+
 using FluentValidation;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Confere os dados informados para cada regra de comprovação.</summary>
 public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<RegraDeComprovacaoInformada>
@@ -16,11 +20,14 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
         RegrasDasBasesLegaisDoGrupo();
     }
 
+    private static FormaDeComprovacao? FormaDe(RegraDeComprovacaoInformada regra) =>
+        CatalogoDe<FormaDeComprovacao>.TentarObter(regra.Forma, out FormaDeComprovacao forma) ? forma : null;
+
     private void RegrasDoDocumento()
     {
         RuleFor(x => x.Documento!)
             .SetValidator(new ItemDocumentoExigidoInputValidator())
-            .When(static x => x.Forma == "DOCUMENTO" && x.Documento is not null);
+            .When(static x => FormaDe(x) == FormaDeComprovacao.Documento && x.Documento is not null);
     }
 
     private void RegrasDosItens()
@@ -34,20 +41,20 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
     {
         RuleFor(x => x.Cardinalidade!.Distincao!)
             .SetValidator(new DistincaoForaDaRegraDeDocumentoValidator())
-            .When(static x => x.Forma is "TODOS_OS_ITENS" or "QUANTIDADE_MINIMA_DE_ITENS" && x.Cardinalidade?.Distincao is not null);
+            .When(static x => FormaDe(x) is FormaDeComprovacao.TodosOsItens or FormaDeComprovacao.QuantidadeMinimaDeItens && x.Cardinalidade?.Distincao is not null);
 
     }
 
     private void RegrasDaConsequencia() =>
         RuleFor(x => x.Indeferimento!.Consequencia)
             .Null()
-            .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
+            .When(static x => FormaDe(x) == FormaDeComprovacao.Documento && x.Indeferimento is not null)
             .WithMessage("A consequência própria só é permitida no grupo que exige uma quantidade mínima de itens.");
 
     private void RegrasDasBasesLegaisDoGrupo() =>
         RuleFor(x => x.Indeferimento!.BasesLegais)
             .Must(static basesLegais => basesLegais is null or { Count: 0 })
-            .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
+            .When(static x => FormaDe(x) == FormaDeComprovacao.Documento && x.Indeferimento is not null)
             .WithMessage("A base legal própria só é permitida no grupo que exige uma quantidade mínima de itens e declara consequência.");
 
 }

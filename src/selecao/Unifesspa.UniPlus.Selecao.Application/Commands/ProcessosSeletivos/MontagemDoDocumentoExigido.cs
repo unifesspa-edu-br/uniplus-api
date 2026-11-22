@@ -11,27 +11,31 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>Monta a exigência documental a partir dos dados informados.</summary>
 internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias contexto)
 {
-    public async Task<Result<DocumentoExigido>> MontarAsync(
-        ItemDocumentoExigidoInput documentoInformado, string? grupoDaRepeticao, CancellationToken cancellationToken)
+    internal sealed record Partes(TipoDocumentoView Tipo, IReadOnlyList<CondicaoGatilho> Condicoes, EscritaDasRestricoesDoDocumento Restricoes);
+
+    public async Task<Result<Partes>> ConferirReferenciasAsync(
+        ItemDocumentoExigidoInput documento, RepeticaoDaRegra repeticao, CancellationToken cancellationToken)
     {
-        Result<TipoDocumentoView> tipo = await TipoDeDocumentoAsync(documentoInformado, cancellationToken).ConfigureAwait(false);
-        return tipo.IsFailure
-            ? Result<DocumentoExigido>.ValidationFailure(tipo.Errors)
-            : MontarDoTipo(documentoInformado, tipo.Value!, grupoDaRepeticao);
+        Result<TipoDocumentoView> tipo = await TipoDeDocumentoAsync(documento, cancellationToken).ConfigureAwait(false);
+        Result<IReadOnlyList<CondicaoGatilho>> condicoes = repeticao.Recusada
+            ? Result<IReadOnlyList<CondicaoGatilho>>.Success([]) : Condicoes(documento, repeticao.Grupo);
+        Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(documento, contexto.Modelos);
+        return Reunir(tipo, condicoes, restricoes);
     }
 
-    private Result<DocumentoExigido> MontarDoTipo(ItemDocumentoExigidoInput documentoInformado, TipoDocumentoView tipo, string? grupoDaRepeticao)
+    private static Result<Partes> Reunir(Result<TipoDocumentoView> tipo, Result<IReadOnlyList<CondicaoGatilho>> condicoes,
+        Result<EscritaDasRestricoesDoDocumento> restricoes)
     {
-        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Condicoes(documentoInformado, grupoDaRepeticao);
-        if (condicoes.IsFailure)
-        {
-            return Result<DocumentoExigido>.ValidationFailure(condicoes.Errors);
-        }
+        List<FieldError> erros = [.. tipo.Errors, .. condicoes.Errors, .. restricoes.Errors];
+        return erros.Count > 0 ? Result<Partes>.ValidationFailure(erros)
+            : Result<Partes>.Success(new(tipo.Value!, condicoes.Value!, restricoes.Value!));
+    }
 
-        Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegais = BasesLegais(documentoInformado);
-        return basesLegais.IsFailure
-            ? Result<DocumentoExigido>.ValidationFailure(basesLegais.Errors)
-            : Criar(documentoInformado, tipo, condicoes.Value!, basesLegais.Value!);
+    public static Result<DocumentoExigido> Criar(ItemDocumentoExigidoInput documento, Partes partes)
+    {
+        Result<IReadOnlyList<DocumentoExigidoBaseLegal>> bases = BasesLegais(documento);
+        return bases.IsFailure ? Result<DocumentoExigido>.ValidationFailure(bases.Errors)
+            : CriarDocumento(documento, partes, bases.Value!);
     }
 
     private async Task<Result<TipoDocumentoView>> TipoDeDocumentoAsync(ItemDocumentoExigidoInput documentoInformado, CancellationToken cancellationToken)
@@ -65,17 +69,16 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
             static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b)),
             static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b), b.Observacao).Value!);
 
-    private Result<DocumentoExigido> Criar(
-        ItemDocumentoExigidoInput documentoInformado, TipoDocumentoView tipo, IReadOnlyList<CondicaoGatilho> condicoes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
+    private static Result<DocumentoExigido> CriarDocumento(
+        ItemDocumentoExigidoInput documentoInformado, Partes partes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
-        Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(documentoInformado, contexto.Modelos);
-        return restricoes.IsFailure
-            ? Result<DocumentoExigido>.ValidationFailure(restricoes.Errors)
-            : DocumentoExigido.Criar(
-                documentoInformado.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
-                new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
-                EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), documentoInformado.Obrigatorio(), documentoInformado.Consequencia(),
-                condicoes, basesLegais, restricoes.Value!.Idade, restricoes.Value.Formatos, documentoInformado.TamanhoMaximoBytes(),
-                documentoInformado.EtapaId(), restricoes.Value.Modelo, EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade()), documentoInformado.FatosComprovados);
+        TipoDocumentoView tipo = partes.Tipo;
+        EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
+        return DocumentoExigido.Criar(
+            documentoInformado.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
+            new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
+            EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), documentoInformado.Obrigatorio(), documentoInformado.Consequencia(),
+            partes.Condicoes, basesLegais, restricoes.Idade, restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(),
+            documentoInformado.EtapaId(), restricoes.Modelo, EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade()), documentoInformado.FatosComprovados);
     }
 }

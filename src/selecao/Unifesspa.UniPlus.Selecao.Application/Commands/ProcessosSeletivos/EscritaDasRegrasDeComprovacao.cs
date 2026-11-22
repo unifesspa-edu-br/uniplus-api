@@ -11,40 +11,42 @@ using Kernel.Results;
 internal static class EscritaDasRegrasDeComprovacao
 {
     public static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IEnumerable<GrupoColetado> grupos) =>
-        Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "regrasDeComprovacao");
+        Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "regrasDeComprovacao", RepeticaoDaRegra.SemRepeticao);
 
-    private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho) =>
-        [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice))];
+    private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho, RepeticaoDaRegra ancestral) =>
+        [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice, ancestral))];
 
-    private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice)
+    private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice, RepeticaoDaRegra ancestral)
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, regra.Documento is not null, regra.Itens?.Count ?? 0,
             regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
         List<FieldError> recusas = [.. declaracao.Recusas.Select(erro => Contextualizar(erro, caminho, indice))];
-        recusas.AddRange(FormaDaRegra(regra).Select(erro => erro.NoCaminhoDe(caminho)));
-        if (ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, grupos) is { } repeticao)
+        recusas.AddRange(FormaDaRegra(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
+        DomainError? repeticao = ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, grupos);
+        if (repeticao is not null)
         {
             recusas.Add(Contextualizar(new FieldError("grupoDoFormularioParaRepeticao", repeticao), caminho, indice));
         }
-        return new(regra, declaracao, caminho, indice, recusas, Conferir(regra.Itens ?? [], grupos, $"{caminho}.itens"));
+        RepeticaoDaRegra estado = ancestral.Avancar(regra.GrupoDoFormularioParaRepeticao, repeticao is not null);
+        return new(regra, declaracao, caminho, indice, recusas, estado, Conferir(regra.Itens ?? [], grupos, $"{caminho}.itens", estado));
     }
 
     public static List<RegraDeComprovacaoInformada> RegrasDeDocumentoConferidas(IEnumerable<RegraInformadaConferida> regras) =>
-        [.. regras.SelectMany(regra => RegrasDeDocumentoDaRegra(regra, repeticaoRecusada: false))];
+        [.. Percorrer(regras).Where(static r => r.Declaracao.Forma == FormaDeComprovacao.Documento && r.Entrada.Documento is not null)
+            .Select(static r => r.Entrada with { Itens = null })];
 
-    private static IEnumerable<RegraDeComprovacaoInformada> RegrasDeDocumentoDaRegra(RegraInformadaConferida regra, bool repeticaoRecusada)
+    public static List<RegraDeComprovacaoInformada> RegrasParaLeituraDeFatos(IEnumerable<RegraInformadaConferida> regras) =>
+        [.. Percorrer(regras).Where(static r => r.Declaracao.Forma == FormaDeComprovacao.Documento && r.Entrada.Documento is not null && !r.Repeticao.Recusada)
+            .Select(static r => r.Entrada with { Itens = null })];
+
+    private static IEnumerable<RegraInformadaConferida> Percorrer(IEnumerable<RegraInformadaConferida> regras)
     {
-        bool bloqueada = repeticaoRecusada || RegraInformadaConferida.RepeticaoRecusada(regra);
-        if (regra.Declaracao.Forma == FormaDeComprovacao.Documento && regra.Recusas.Count == 0
-            && (!bloqueada || regra.Entrada.Documento?.Condicoes().Count == 0))
+        foreach (RegraInformadaConferida regra in regras)
         {
-            yield return regra.Entrada with { Itens = null };
-        }
-        foreach (RegraInformadaConferida item in regra.Itens)
-        {
-            foreach (RegraDeComprovacaoInformada regraDeDocumento in RegrasDeDocumentoDaRegra(item, bloqueada))
+            yield return regra;
+            foreach (RegraInformadaConferida item in Percorrer(regra.Itens))
             {
-                yield return regraDeDocumento;
+                yield return item;
             }
         }
     }
@@ -66,9 +68,9 @@ internal static class EscritaDasRegrasDeComprovacao
         _ => campo,
     };
 
-    private static List<FieldError> FormaDaRegra(RegraDeComprovacaoInformada regra)
+    private static List<FieldError> FormaDaRegra(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma)
     {
-        bool ehRegraDeDocumento = RegrasDeComprovacaoInformadas.EhRegraDeDocumento(regra);
+        bool ehRegraDeDocumento = forma == FormaDeComprovacao.Documento;
         List<FieldError> erros = ehRegraDeDocumento && regra.Documento is { } documento
             ? FormaDoDocumento(documento).Select(erro => erro.NoCaminhoDe("documento")).ToList() : [];
         IReadOnlyList<BaseLegalInput> basesLegais = ehRegraDeDocumento ? regra.Documento?.BasesLegais() ?? [] : regra.BasesLegaisDoGrupo();

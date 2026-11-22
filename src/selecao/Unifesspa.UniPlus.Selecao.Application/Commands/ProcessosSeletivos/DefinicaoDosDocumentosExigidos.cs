@@ -18,7 +18,7 @@ internal static class DefinicaoDosDocumentosExigidos
     {
         List<RegraInformadaConferida> conferidos = EscritaDasRegrasDeComprovacao.Conferir(entradas, processo.GruposColetados);
         List<RegraDeComprovacaoInformada> regrasDeDocumento = EscritaDasRegrasDeComprovacao.RegrasDeDocumentoConferidas(conferidos);
-        ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, regrasDeDocumento, cadastros, cancellationToken).ConfigureAwait(false);
+        ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, regrasDeDocumento, EscritaDasRegrasDeComprovacao.RegrasParaLeituraDeFatos(conferidos), cadastros, cancellationToken).ConfigureAwait(false);
         Result<List<RegraDeComprovacao>> regrasMontadas = await new MontagemDasRegrasDeComprovacao(new MontagemDoDocumentoExigido(contexto))
             .MontarRegrasSemGrupoAsync(conferidos, ProximaOrdemDasRegras(mantidas), cancellationToken).ConfigureAwait(false);
         return regrasMontadas.IsFailure
@@ -49,6 +49,7 @@ internal static class DefinicaoDosDocumentosExigidos
     private static async Task<ContextoDaMontagemDasExigencias> LerContextoAsync(
         ProcessoSeletivo processo,
         IReadOnlyList<RegraDeComprovacaoInformada> entradas,
+        IReadOnlyList<RegraDeComprovacaoInformada> regrasParaFatos,
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
@@ -57,7 +58,7 @@ internal static class DefinicaoDosDocumentosExigidos
             ? new Dictionary<Guid, ModeloDeDocumento>()
             : (await cadastros.Modelos.ListarDoProcessoAsync(processo.Id, idsDosModelos, cancellationToken).ConfigureAwait(false))
                 .ToDictionary(static m => m.Id);
-        bool existeGatilho = RegrasDeComprovacaoInformadas.ExisteGatilho(entradas) || RegrasDeComprovacaoInformadas.ExisteFatoComprovado(entradas);
+        bool existeGatilho = RegrasDeComprovacaoInformadas.ExisteGatilho(regrasParaFatos) || RegrasDeComprovacaoInformadas.ExisteFatoComprovado(entradas);
         FatosDoGatilho? fatos = existeGatilho
             ? await FatosDoGatilho.LerAsync(processo, cadastros.Fatos, cancellationToken).ConfigureAwait(false)
             : null;

@@ -47,23 +47,13 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(documentoExigido);
         int quantidade = quantidadeMinima ?? QuantidadeMinimaPadrao;
-        DomainError? recusa = RecusaDaRegraDeDocumento(ordem, quantidade);
-        if (recusa is not null)
-        {
-            return Result<RegraDeComprovacao>.Failure(recusa);
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(ordem);
+        DomainError? recusa = RecusaDaQuantidadeDeApresentacoes(quantidade);
         Result<DistincaoDasApresentacoes?> distincao = DistincaoDasApresentacoes.Declarar(criterioDeDistincao, dataReferencia, ocorrenciasEsperadas, quantidade);
-        return distincao.IsFailure ? Result<RegraDeComprovacao>.Failure(distincao.Error!)
+        List<FieldError> recusas = recusa is null ? [] : [new("quantidadeMinima", recusa)];
+        recusas.AddRange(distincao.Errors);
+        return recusas.Count > 0 ? Result<RegraDeComprovacao>.ValidationFailure(recusas)
             : Result<RegraDeComprovacao>.Success(NovaRegraDeDocumento(documentoExigido, ordem, quantidade, distincao.Value, grupoDoFormularioParaRepeticao?.Trim()));
-    }
-
-    private static DomainError? RecusaDaRegraDeDocumento(int ordem, int quantidade)
-    {
-        if (ordem < 0)
-        {
-            return OrdemInvalida();
-        }
-        return RecusaDaQuantidadeDeApresentacoes(quantidade);
     }
 
     internal static DomainError? RecusaDaQuantidadeDeApresentacoes(int quantidade) =>
@@ -90,7 +80,8 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(basesLegais);
         ArgumentNullException.ThrowIfNull(itens);
         ConferirFormaDoGrupo(forma);
-        DomainError? recusa = ordem < 0 ? OrdemInvalida() : ComposicaoDoGrupo.Recusa(itens, grupoDoFormularioParaRepeticao);
+        ArgumentOutOfRangeException.ThrowIfNegative(ordem);
+        DomainError? recusa = ComposicaoDoGrupo.Recusa(itens, grupoDoFormularioParaRepeticao);
         if (recusa is not null)
         {
             return Result<RegraDeComprovacao>.Failure(recusa);
@@ -114,8 +105,6 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
             throw new ArgumentOutOfRangeException(nameof(forma), "A forma do grupo deve exigir todos os itens ou uma quantidade mínima.");
         }
     }
-
-    private static DomainError OrdemInvalida() => new("RegraDeComprovacao.OrdemInvalida", "A posição da regra de comprovação não pode ser negativa.");
 
     private static RegraDeComprovacao NovoGrupo(
         int ordem, CombinacaoDoGrupo combinacao, IReadOnlyList<BaseLegalDaComprovacao> basesLegais,

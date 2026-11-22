@@ -8,6 +8,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DeclaracaoDaRegraDeComprovacaoTests
 {
     [Fact]
+    public void Interpretar_GrupoVazioEQuantidadeZero_AcumulaRecusas()
+    {
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("QUANTIDADE_MINIMA_DE_ITENS", false, 0, 0);
+
+        declaracao.Recusas.Select(static erro => erro.Field).Should().Equal("itens", "quantidadeMinima");
+    }
+
+    [Fact]
     public void Interpretar_TipoDesconhecido_RecusaSemRepetirValor()
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("XOR", false, 0, null);
