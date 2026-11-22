@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
@@ -47,6 +48,43 @@ public sealed class RespostaDoCronogramaGravadoEndpointTests(CascadingFixture fi
             corpo[0]!["cronograma"]!["inicio"]!.GetValue<DateTimeOffset>()
                 .Should().Be(new DateTimeOffset(2027, 1, 25, 11, 0, 0, TimeSpan.Zero).AddTicks(1_234_560));
             JsonNode.DeepEquals(corpo, await LerCronogramaAsync(cliente, processoId)).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task Definir_PrazosComQuatroCasas_DevolveOMesmoCorpoDaLeitura()
+    {
+        (HttpClient cliente, Guid processoId, JsonArray fases, _) = await PrepararAsync();
+        using (cliente)
+        {
+            fases[1]!["regraRecurso"] = JsonSerializer.SerializeToNode(new
+            {
+                regraCodigo = RegraPrazoRecursoCodigo.AncoradoEmAto,
+                regraVersao = "v1",
+                prazoValor = 1.1m,
+                prazoUnidade = "horas",
+                atoAncoraCodigo = CheckpointsDoEnvelopeFechado.CodigoAtoResultado,
+                admiteInstanciaSuperior = true,
+                prazoSegundaInstanciaValor = 2.1234m,
+                prazoSegundaInstanciaUnidade = "horas",
+                efeitoSuspensivo = "semEfeitoSuspensivo",
+            });
+            fases[1]!["regraRecurso"]!["prazoSegundaInstanciaValor"] = 2.12345m;
+            using (HttpResponseMessage invalida = await EnviarAsync(cliente, processoId, fases))
+            {
+                invalida.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+                (await invalida.Content.ReadAsStringAsync()).Should().Contain("uniplus.validacao.formato");
+            }
+            fases[1]!["regraRecurso"]!["prazoSegundaInstanciaValor"] = 2.1234m;
+            using HttpResponseMessage resposta = await EnviarAsync(cliente, processoId, fases);
+            JsonNode corpo = await CorpoDeSucessoAsync(resposta);
+            JsonNode parametros = corpo[1]!["publicacoes"]!["regraRecurso"]!["parametros"]!;
+            parametros["prazoValor"]!.GetValue<decimal>().Should().Be(1.1m);
+            parametros["prazoSegundaInstanciaValor"]!.GetValue<decimal>().Should().Be(2.1234m);
+            JsonNode leitura = (await LerCronogramaAsync(cliente, processoId))!;
+            JsonNode parametrosLidos = leitura[1]!["publicacoes"]!["regraRecurso"]!["parametros"]!;
+            parametrosLidos["prazoValor"]!.GetValue<decimal>().Should().Be(parametros["prazoValor"]!.GetValue<decimal>());
+            parametrosLidos["prazoSegundaInstanciaValor"]!.GetValue<decimal>().Should().Be(parametros["prazoSegundaInstanciaValor"]!.GetValue<decimal>());
         }
     }
 

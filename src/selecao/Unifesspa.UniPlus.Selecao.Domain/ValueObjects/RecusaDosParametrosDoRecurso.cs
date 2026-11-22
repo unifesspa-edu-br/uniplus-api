@@ -7,6 +7,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public enum MotivoDaRecusaDosParametros
 {
     PrazoNaoPositivo,
+    PrazoPrecisaoInvalida,
     PrazoEmDiasCorridos,
     PrazoSemUnidadeDeclaravel,
     PrazoEmFracaoDeDiaUtil,

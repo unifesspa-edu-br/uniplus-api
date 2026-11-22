@@ -25,6 +25,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     private static readonly ParametrosDeclaradosDoRecurso[] DeclaracoesDeUmaCausa =
     [
         Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "horas") },
+        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas") },
         Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "dias") },
         Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, null) },
         Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.5m, "diasUteis") },
@@ -55,6 +56,19 @@ public sealed class ParametrosDeclaradosDoRecursoTests
 
         conferidos!.AdmiteInstanciaSuperior.Should().BeTrue();
         conferidos.PrazoDaSegundaInstancia.Should().Be(new PrazoDoRecurso(3m, UnidadePrazo.DiasUteis));
+    }
+
+    [Fact]
+    public void Conferir_PrazosComCincoCasas_RecusaOsDois()
+    {
+        ParametrosDeclaradosDoRecurso declarados = ComInstanciaSuperior with
+        {
+            PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas"),
+            PrazoDaSegundaInstancia = new PrazoDeclarado(2.12345m, "horas"),
+        };
+        Recusas(declarados).Should().Equal(
+            (MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida, "prazoValor"),
+            (MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida, "prazoSegundaInstanciaValor"));
     }
 
     [Theory(DisplayName = "A guarda declarada é conferida pelo código, e as duas opções valem sem instância superior")]

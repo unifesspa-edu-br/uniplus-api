@@ -123,7 +123,6 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>
     /// Cria a etapa acumulando toda violação independente (ADR-0125), com as mesmas recusas e a mesma
     /// ordem de <see cref="AtualizarDados"/>. A identidade é do sistema e os itens entram todos como novos.
-    /// A precisão decimal de peso e notas (<c>numeric(18,4)</c>) fica só no validator.
     /// </summary>
     public static Result<EtapaProcesso> Criar(
         IdentificacaoDaEtapa identificacao,

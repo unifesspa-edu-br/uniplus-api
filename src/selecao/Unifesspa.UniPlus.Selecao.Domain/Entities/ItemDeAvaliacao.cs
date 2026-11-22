@@ -76,6 +76,11 @@ public sealed class ItemDeAvaliacao : EntityBase
                     "O mesmo id de item de avaliação não pode ser informado mais de uma vez na etapa.")));
             }
 
+            if (PrecisaoDecimal.Recusa(item.PontuacaoMaxima, $"{campo}.pontuacaoMaxima", PrecisaoDecimal.Pontuacao) is { } recusa)
+            {
+                erros.Add(recusa);
+            }
+
             if (item.PontuacaoMaxima <= 0)
             {
                 erros.Add(new($"{campo}.pontuacaoMaxima", new DomainError(

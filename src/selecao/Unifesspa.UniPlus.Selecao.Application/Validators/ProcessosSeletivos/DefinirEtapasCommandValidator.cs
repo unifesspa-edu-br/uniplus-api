@@ -9,11 +9,8 @@ using FluentValidation;
 /// enum válido), Peso (positividade), NotaMinima (não negatividade), Ordem (positividade) e a
 /// coerência da escala (nota máxima, passo) saíram daqui — <see cref="Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas.ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica"/>
 /// os cobre, acumulando, na primeira passada do <c>DefinirEtapasCommandHandler</c>. O que
-/// permanece é checagem de forma/rota sem equivalente de domínio: <c>PrecisionScale</c> de Peso,
-/// NotaMinima, NotaMaxima e PassoDoLancamento (limite de escala do wire/coluna
-/// <c>numeric(18,4)</c>, que o domínio não conhece) e <see cref="EtapaProcessoInput.TipoEtapaOrigemId"/> (Guid de rota,
-/// nunca chega bruto em <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso.Criar"/> —
-/// só o <c>TipoEtapaSnapshot</c> já resolvido é passado).
+/// permanece a validação de <see cref="EtapaProcessoInput.TipoEtapaOrigemId"/> e da estrutura
+/// necessária para o handler processar o pedido.
 /// </summary>
 public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEtapasCommand>
 {
@@ -49,72 +46,22 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
             .NotEmpty()
             .WithMessage("TipoEtapaOrigemId é obrigatório.");
 
-        PesoENotaMinima(etapa);
-        NotaMaximaEPasso(etapa);
         ItensDeAvaliacao(etapa);
         EscalaDeAtendimento(etapa);
         ColecoesNaoNulasDaEtapa(etapa);
         ItensNaoNulosDaEtapa(etapa);
-        PrazosDosRecursos(etapa);
         ProdutosDaEtapa(etapa);
     }
 
-    // Peso, nota mínima, nota máxima e passo do lançamento são persistidos como numeric(18,4). Sem o limite de escala, um valor
-    // positivo com mais de 4 casas (ex.: 0.00001) passa aqui e na positividade do domínio, mas o banco o arredonda para 0.0000:
-    // o peso deixaria a etapa "compondo nota" com divisor zero, a nota mínima mudaria o corte de eliminação, e o passo
-    // do lançamento deixaria de ser positivo.
-    private static void PesoENotaMinima(InlineValidator<EtapaProcessoInput> etapa)
-    {
-        etapa.RuleFor(e => e.Peso)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(e => e.Peso.HasValue)
-            .WithMessage("Peso da etapa deve ter no máximo 4 casas decimais.");
-
-        etapa.RuleFor(e => e.NotaMinima)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(e => e.NotaMinima.HasValue)
-            .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
-    }
-
-    private static void NotaMaximaEPasso(InlineValidator<EtapaProcessoInput> etapa)
-    {
-        etapa.RuleFor(e => e.NotaMaxima)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(e => e.NotaMaxima.HasValue)
-            .WithMessage("Nota máxima deve ter no máximo 4 casas decimais.");
-
-        etapa.RuleFor(e => e.PassoDoLancamento)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(e => e.PassoDoLancamento.HasValue)
-            .WithMessage("Passo do lançamento deve ter no máximo 4 casas decimais.");
-    }
-
-    // A pontuação do item é numeric(18,4) como a nota máxima que ela compõe, e a fração do nível vive em json: sem o limite, o
-    // que passa de 4 casas seria arredondado ou truncado em silêncio, e a soma dos itens deixaria de bater com o que o edital
-    // declarou. Item e nível nulos no array passam incólumes pelo ChildRules e o handler os desreferenciaria.
-    private static void ItensDeAvaliacao(InlineValidator<EtapaProcessoInput> etapa)
-    {
+    private static void ItensDeAvaliacao(InlineValidator<EtapaProcessoInput> etapa) =>
         etapa.RuleForEach(e => e.ItensDeAvaliacao)
             .NotNull()
             .WithMessage("Item de avaliação da etapa não pode ser nulo.");
 
-        etapa.RuleForEach(e => e.ItensDeAvaliacao).ChildRules(item =>
-            item.RuleFor(i => i.PontuacaoMaxima)
-                .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-                .WithMessage("A pontuação máxima do item deve ter no máximo 4 casas decimais."));
-    }
-
-    private static void EscalaDeAtendimento(InlineValidator<EtapaProcessoInput> etapa)
-    {
+    private static void EscalaDeAtendimento(InlineValidator<EtapaProcessoInput> etapa) =>
         etapa.RuleForEach(e => e.EscalaDeAtendimento)
             .NotNull()
             .WithMessage("Nível da escala de atendimento não pode ser nulo.");
-
-        etapa.RuleForEach(e => e.EscalaDeAtendimento).ChildRules(nivel =>
-            nivel.RuleFor(n => n.Fracao)
-                .PrecisionScale(5, 4, ignoreTrailingZeros: false)
-                .WithMessage("A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1."));
-    }
 
     // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a chave, mas `"produtos": null` atravessa a
     // desserialização e chega até aqui — o tipo não-anulável não a barra, e a exigência implícita do `[ApiController]` não
@@ -151,24 +98,6 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
             .NotNull()
             .WithMessage("Item da configuração do recurso da etapa não pode ser nulo.");
     }
-
-    // Os dois prazos do recurso são persistidos como numeric(18,4), e o que sobra de escala o banco ARREDONDA em silêncio: um
-    // prazo de 0,00001 hora é estritamente positivo para o domínio, vira 0,0000 na coluna, e o prazo do recurso passa a fechar
-    // no mesmo instante em que abre. Acima de catorze dígitos inteiros o banco nem arredonda: estoura 22003 como 500 no meio do
-    // PUT. Mesma proteção que Peso e NotaMinima já recebem.
-    private static void PrazosDosRecursos(InlineValidator<EtapaProcessoInput> etapa) =>
-        etapa.RuleForEach(e => e.Recursos).ChildRules(recurso =>
-        {
-            recurso.RuleFor(r => r.PrazoValor)
-                .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-                .When(r => r.PrazoValor.HasValue)
-                .WithMessage("O prazo de interposição deve caber em numeric(18,4) — no máximo 4 casas decimais.");
-
-            recurso.RuleFor(r => r.PrazoSegundaInstanciaValor)
-                .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-                .When(r => r.PrazoSegundaInstanciaValor.HasValue)
-                .WithMessage("O prazo da 2ª instância deve caber em numeric(18,4) — no máximo 4 casas decimais.");
-        });
 
     // Forma do item, e só ela — mesma regra que os produtos da fase já tinham. Sem ela, o código vazio chega a
     // ProdutoDaEtapa.Criar, cuja guarda de argumento LANÇA: um corpo malformado viraria 500 em vez da recusa de validação que

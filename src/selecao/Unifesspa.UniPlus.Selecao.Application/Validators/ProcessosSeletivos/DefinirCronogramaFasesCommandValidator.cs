@@ -118,7 +118,6 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
         fase.When(f => f.RegraRecurso is not null, () =>
         {
             IdentificacaoDaRegraDeRecurso(fase);
-            PrazosDaRegraDeRecurso(fase);
         });
 
     private static void IdentificacaoDaRegraDeRecurso(InlineValidator<FaseCronogramaInput> fase)
@@ -136,20 +135,4 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
             .WithMessage("O código do ato cuja publicação inicia o prazo é obrigatório.");
     }
 
-    // Os dois prazos são persistidos como numeric(18,4): o que sobra de escala o banco arredonda em silêncio, e o excesso de
-    // dígitos inteiros estoura como 500 no meio do PUT. Magnitude, unidade, efeito, guarda e prazo da 2ª instância não
-    // aparecem aqui: são recusas do domínio, que é a fonte única de validação (ADR-0125); repeti-las devolveria a resposta
-    // genérica do validator no lugar do erro nomeado.
-    private static void PrazosDaRegraDeRecurso(InlineValidator<FaseCronogramaInput> fase)
-    {
-        fase.RuleFor(f => f.RegraRecurso!.PrazoValor)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(f => f.RegraRecurso!.PrazoValor.HasValue)
-            .WithMessage("O prazo de interposição deve caber em numeric(18,4) — no máximo 4 casas decimais.");
-
-        fase.RuleFor(f => f.RegraRecurso!.PrazoSegundaInstanciaValor)
-            .PrecisionScale(18, 4, ignoreTrailingZeros: false)
-            .When(f => f.RegraRecurso!.PrazoSegundaInstanciaValor.HasValue)
-            .WithMessage("O prazo da 2ª instância deve caber em numeric(18,4) — no máximo 4 casas decimais.");
-    }
 }

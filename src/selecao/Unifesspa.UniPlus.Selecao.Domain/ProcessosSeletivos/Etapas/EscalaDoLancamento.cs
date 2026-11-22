@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A escala em que a nota da etapa é lançada: a nota máxima e o passo do lançamento, e a contradição entre
@@ -26,6 +27,12 @@ internal static class EscalaDoLancamento
             erros.AddRange(RecusasDaComparacao(notaMinimaAceita, notaMaxima, passoDoLancamento).OfType<FieldError>());
         }
 
+        FieldError?[] precisao =
+        [
+            PrecisaoDecimal.Recusa(notaMaxima, "notaMaxima", PrecisaoDecimal.NotaMaxima),
+            PrecisaoDecimal.Recusa(passoDoLancamento, "passoDoLancamento", PrecisaoDecimal.Passo),
+        ];
+        erros.AddRange(precisao.OfType<FieldError>());
         return erros;
     }
 

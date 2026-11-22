@@ -104,27 +104,6 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Aceita a regra de recurso com os prazos dentro da precisão da coluna")]
-    public void Aceita_PrazosDentroDaPrecisao()
-    {
-        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso(prazoValor: 48.1234m, prazoSegundaInstanciaValor: 3m)));
-
-        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
-    }
-
-    [Theory(DisplayName = "Recusa o prazo com mais de quatro casas decimais, que a coluna arredondaria em silêncio")]
-    [InlineData(48.12345, null)]
-    [InlineData(48, 3.00001)]
-    public void Recusa_PrazoComMaisDeQuatroCasas(double prazo, double? segundaInstancia)
-    {
-        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso((decimal)prazo, (decimal?)segundaInstancia)));
-
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().ContainSingle().Which.ErrorMessage.Should().Contain("4 casas decimais");
-    }
-
     [Theory(DisplayName = "Validator passa com prazo ausente, zero ou negativo: a recusa é do domínio, fonte única de validação (ADR-0125)")]
     [InlineData(null)]
     [InlineData(0)]

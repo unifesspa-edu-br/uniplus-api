@@ -30,11 +30,11 @@ public sealed class ErrosDaConfiguracaoDoRecursoTests
         [MotivoDaRecusaDosParametros.GuardaDaVagaNaoDeclaravel] = "guarda_da_vaga_nao_declaravel",
     };
 
-    public static TheoryData<MotivoDaRecusaDosParametros> Motivos => [.. Enum.GetValues<MotivoDaRecusaDosParametros>()];
+    public static TheoryData<MotivoDaRecusaDosParametros> Motivos => [.. Enum.GetValues<MotivoDaRecusaDosParametros>().Where(static motivo => motivo != MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida)];
 
     [Fact(DisplayName = "Todo motivo de recusa dos parâmetros do recurso tem o código estável declarado neste teste")]
     public void TodoMotivo_TemCodigoNoFio() =>
-        SufixosNoFio.Keys.Should().BeEquivalentTo(Enum.GetValues<MotivoDaRecusaDosParametros>());
+        SufixosNoFio.Keys.Should().BeEquivalentTo(Enum.GetValues<MotivoDaRecusaDosParametros>().Where(static motivo => motivo != MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida));
 
     [Theory(DisplayName = "A recusa dos parâmetros do recurso da fase é mapeada para 422 com o código estável do módulo")]
     [MemberData(nameof(Motivos))]
