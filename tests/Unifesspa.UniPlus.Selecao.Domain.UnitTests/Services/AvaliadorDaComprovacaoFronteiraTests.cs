@@ -16,9 +16,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static ArvoreDeTeste;
 
 /// <summary>
-/// Consequência por nó e fronteira ativa de emissão do <see cref="ResolvedorArvoreSatisfacao"/>.
+/// Consequência por nó e fronteira ativa de emissão do <see cref="AvaliadorDaComprovacao"/>.
 /// </summary>
-public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
+public sealed class AvaliadorDaComprovacaoFronteiraTests
 {
     // ── Consequência por nó + fronteira ativa ────────────────────────────────────────────
 

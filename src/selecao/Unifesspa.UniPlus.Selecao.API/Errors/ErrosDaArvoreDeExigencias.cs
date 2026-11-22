@@ -118,7 +118,7 @@ internal static class ErrosDaArvoreDeExigencias
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ResolucaoDaArvore() =>
     [
-        new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida", "A árvore de exigências congelada tem identidade repetida entre folhas")),
-        new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida", "Uma instância de entidade declarada tem EntidadeId vazio ou duplicado")),
+        new("AvaliadorDaComprovacao.ArvoreEstruturalmenteInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida", "A árvore de exigências congelada tem identidade repetida entre folhas")),
+        new("AvaliadorDaComprovacao.InstanciaEntidadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida", "Uma instância de entidade declarada tem EntidadeId vazio ou duplicado")),
     ];
 }

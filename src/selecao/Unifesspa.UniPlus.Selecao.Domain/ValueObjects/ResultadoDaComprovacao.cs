@@ -55,7 +55,7 @@ public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeI
 public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, SituacaoDaComprovacao Estado);
 
 /// <summary>
-/// O resultado agregado de <see cref="Services.ResolvedorArvoreSatisfacao.Resolver"/> (Story #920)
+/// O resultado agregado de <see cref="Services.AvaliadorDaComprovacao.Resolver"/> (Story #920)
 /// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
 /// </summary>
 /// <param name="SituacoesPorRegra">

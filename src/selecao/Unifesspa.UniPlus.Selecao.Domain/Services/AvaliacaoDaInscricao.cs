@@ -55,7 +55,7 @@ public static class AvaliacaoDaInscricao
         IReadOnlySet<Guid> deFasePosterior = entrada.NaFaseDaInscricao
             ? ExigenciasDeFasePosterior.Na(configuracao, entrada.FatosConhecidos)
             : new HashSet<Guid>();
-        Result<ResultadoDaComprovacao> arvore = ResolvedorArvoreSatisfacao.Resolver(
+        Result<ResultadoDaComprovacao> arvore = AvaliadorDaComprovacao.Resolver(
             configuracao.Arvore, formulario.Fatos, entrada.Apresentacoes, OcorrenciasVisiveis(formulario), deFasePosterior);
         return ComporSeResolvida(configuracao, formulario, arvore, deFasePosterior);
     }

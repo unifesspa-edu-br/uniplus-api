@@ -16,18 +16,18 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static ArvoreDeTeste;
 
 /// <summary>
-/// Cobertura da álgebra de <see cref="ResolvedorArvoreSatisfacao"/> (Story #920) — álgebra ternária de 5
+/// Cobertura da álgebra de <see cref="AvaliadorDaComprovacao"/> (Story #920) — álgebra ternária de 5
 /// estados e emissão de consequência por fronteira ativa, todos os cenários BDD da issue #920
 /// e da spec <c>documentos-exigidos-composicao</c> (requirements "Álgebra ternária de
 /// satisfação" e "Consequência por nó e fronteira ativa de emissão"). Substitui
 /// <c>ResolvedorExigenciasDocumentaisTests</c> (grupo plano, removido).
 /// </summary>
-public sealed class ResolvedorArvoreSatisfacaoTests
+public sealed class AvaliadorDaComprovacaoTests
 {
     [Fact(DisplayName = "Árvore nula é erro de programação: a configuração congelada sempre traz a árvore")]
     public void Resolver_ArvoreNula_Lanca()
     {
-        Action resolver = () => ResolvedorArvoreSatisfacao.Resolver(null!, SemFatos, SemApresentacoes);
+        Action resolver = () => AvaliadorDaComprovacao.Resolver(null!, SemFatos, SemApresentacoes);
 
         resolver.Should().Throw<ArgumentNullException>().WithParameterName("arvore");
     }

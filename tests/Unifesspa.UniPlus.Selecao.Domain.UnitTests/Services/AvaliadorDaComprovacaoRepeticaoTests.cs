@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static ApoioDaArvoreDeSatisfacao;
 
-public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
+public sealed class AvaliadorDaComprovacaoRepeticaoTests
 {
     [Fact(DisplayName = "RG e CPF são pedidos de cada membro, e a certidão de guarda só do membro sob guarda")]
     public void RepeticaoPorGrupo_DocumentosPorMembroECertidaoDoMenorSobGuarda()
@@ -183,7 +183,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(grupoExterno));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida");
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.ArvoreEstruturalmenteInvalida");
     }
 
     [Fact(DisplayName = "Instâncias de entidade com EntidadeId duplicado são recusadas")]
@@ -197,7 +197,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.InstanciaEntidadeInvalida");
     }
 
     [Fact(DisplayName = "Instância de entidade com EntidadeId vazio é recusada")]
@@ -211,7 +211,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.InstanciaEntidadeInvalida");
     }
 
     private static void ConferirDocumentosPendentesDosMembros(

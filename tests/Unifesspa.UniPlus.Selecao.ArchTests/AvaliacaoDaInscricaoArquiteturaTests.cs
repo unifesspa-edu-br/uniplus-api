@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
-/// A avaliação da inscrição (ADR-0143): a árvore de exigências é resolvida sobre a avaliação do
+/// A avaliação da inscrição (ADR-0143): as regras de comprovação são avaliadas sobre a avaliação do
 /// formulário num lugar só, a <see cref="AvaliacaoDaInscricao"/> — outra composição do avaliador com
 /// o resolvedor seria uma segunda conta do que se exige do candidato —; e quem avalia as respostas
 /// não registra log, porque elas e as modalidades em que o candidato concorre são dado sensível.
@@ -27,17 +27,17 @@ public sealed class AvaliacaoDaInscricaoArquiteturaTests
         ])
         .Build();
 
-    [Fact(DisplayName = "Só a avaliação da inscrição resolve a árvore de exigências")]
-    public void SoAAvaliacaoDaInscricaoResolveAArvore()
+    [Fact(DisplayName = "Só a avaliação da inscrição avalia as regras de comprovação")]
+    public void SoAAvaliacaoDaInscricaoAvaliaAComprovacao()
     {
         IArchRule regra = Types()
             .That()
             .AreNot(typeof(AvaliacaoDaInscricao))
             .And()
-            .AreNot(typeof(ResolvedorArvoreSatisfacao))
+            .AreNot(typeof(AvaliadorDaComprovacao))
             .Should()
-            .NotDependOnAny(typeof(ResolvedorArvoreSatisfacao))
-            .Because("a avaliação da inscrição é a única composição do avaliador do formulário com o resolvedor da árvore (ADR-0143)");
+            .NotDependOnAny(typeof(AvaliadorDaComprovacao))
+            .Because("a avaliação da inscrição é a única composição da avaliação do formulário com a avaliação da comprovação (ADR-0143)");
 
         regra.Check(Arquitetura);
     }
