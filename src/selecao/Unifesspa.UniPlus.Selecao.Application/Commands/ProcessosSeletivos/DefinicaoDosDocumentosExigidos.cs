@@ -58,12 +58,12 @@ internal static class DefinicaoDosDocumentosExigidos
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
-        HashSet<Guid> idsDosModelos = ArvoreDeEntradaDasExigencias.ModelosCitados(entradas);
+        HashSet<Guid> idsDosModelos = RegrasDeComprovacaoInformadas.ModelosCitados(entradas);
         IReadOnlyDictionary<Guid, ModeloDeDocumento> modelos = idsDosModelos.Count == 0
             ? new Dictionary<Guid, ModeloDeDocumento>()
             : (await cadastros.Modelos.ListarDoProcessoAsync(processo.Id, idsDosModelos, cancellationToken).ConfigureAwait(false))
                 .ToDictionary(static m => m.Id);
-        bool existeGatilho = ArvoreDeEntradaDasExigencias.ExisteGatilho(entradas) || ArvoreDeEntradaDasExigencias.ExisteFatoComprovado(entradas);
+        bool existeGatilho = RegrasDeComprovacaoInformadas.ExisteGatilho(entradas) || RegrasDeComprovacaoInformadas.ExisteFatoComprovado(entradas);
         FatosDoGatilho? fatos = existeGatilho
             ? await FatosDoGatilho.LerAsync(processo, cadastros.Fatos, cancellationToken).ConfigureAwait(false)
             : null;
