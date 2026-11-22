@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -57,7 +57,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // lê e escreve em dois `switch` sobre o código da regra — duas listas manuais, num
         // ponto em que o envelope nem sequer carrega discriminador (MAIOR-IDADE e
         // ZERO-EM-AREA serializam como `{}`). Uma propriedade nova aqui, esquecida nos dois
-        // switches, é invisível: o envelope não muda, a fixture não muda, o round-trip fica
+        // switches, é invisível: o envelope não muda, a fixture não muda, o serialização e leitura fica
         // verde — e o campo some no primeiro descarte.
         [typeof(ParametrosDesempateMaiorNotaEtapa)] = (["EtapaRef"], []),
         [typeof(ParametrosDesempateMaiorIdade)] = ([], []),

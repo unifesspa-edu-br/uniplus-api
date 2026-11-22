@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;

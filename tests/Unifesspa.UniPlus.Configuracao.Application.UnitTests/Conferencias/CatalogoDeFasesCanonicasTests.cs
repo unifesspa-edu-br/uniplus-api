@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
@@ -74,8 +74,8 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Select(item => item.Codigo)
             .Should().Equal(FaseCanonicaCatalogo.CodigoAvaliacao);
 
-        // A âncora da janela de solicitação de isenção deriva da fase que coleta
-        // inscrição (UNI-REQ-0106). Duas fases coletando tornariam a âncora ambígua;
+        // O evento que inicia o prazo de solicitação de isenção deriva da fase que coleta
+        // inscrição (UNI-REQ-0106). Duas fases coletando tornariam esse evento ambíguo;
         // nenhuma a tornaria inexistente.
         FaseCanonicaSeed.Itens.Where(item => item.ColetaInscricao)
             .Select(item => item.Codigo)

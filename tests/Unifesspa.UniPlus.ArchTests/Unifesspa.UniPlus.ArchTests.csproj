@@ -57,6 +57,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
     <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
     <Using Include="Xunit" />
   </ItemGroup>

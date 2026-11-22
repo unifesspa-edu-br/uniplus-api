@@ -5,6 +5,7 @@ using System.IO;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.ArchTests.TestSupport;
+using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// O inventário dos assemblies do produto (<see cref="AssembliesDoProduto"/>) cobre todo projeto de <c>src</c>, e os
@@ -39,6 +40,6 @@ public sealed class InventarioDosProjetosDoProdutoTests
 
     // O nome do assembly de um projeto é o do arquivo de projeto.
     private static string[] NomesDosProjetosDeSrc() =>
-        [.. Directory.EnumerateFiles(Path.Join(SolutionRootLocator.Locate(), "src"), "*.csproj", SearchOption.AllDirectories)
+        [.. Directory.EnumerateFiles(Path.Join(LocalizadorDaSolucao.Locate(), "src"), "*.csproj", SearchOption.AllDirectories)
             .Select(static caminho => Path.GetFileNameWithoutExtension(caminho.AsSpan()).ToString())];
 }

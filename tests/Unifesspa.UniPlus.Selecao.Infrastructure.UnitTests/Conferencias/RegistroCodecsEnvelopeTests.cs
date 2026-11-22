@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
@@ -6,13 +6,13 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
-/// Fitness do registro de codecs (Story #859 CA-08; ADR-0110 D1).
+/// Conferência do registro de codecs (Story #859 CA-08; ADR-0110 D1).
 /// </summary>
 /// <remarks>
-/// O que estes testes protegem é o <b>dia do bump</b>. Quando a <c>1.2</c> chegar, quem a
+/// O que estes testes protegem é o <b>dia da mudança de versão</b>. Quando a <c>1.2</c> chegar, quem a
 /// implementar vai mexer numa constante e seguir em frente — e, sem estas guardas, todas
 /// as versões <c>1.1</c> já congeladas se tornariam <b>não reidratáveis em silêncio</b>:
-/// o descarte de um certame retificado antes do bump falharia em produção, não no build.
+/// o descarte de um certame retificado antes da mudança de versão falharia em produção, não no build.
 /// É o build que tem de quebrar.
 /// </remarks>
 public sealed class RegistroCodecsEnvelopeTests
@@ -56,14 +56,6 @@ public sealed class RegistroCodecsEnvelopeTests
     [Fact(DisplayName = "CA-08 — todo codec com encoder emite a SUA versão, não a corrente")]
     public void CodecComEncoder_EmiteAPropriaVersao()
     {
-        // A armadilha do bump: o codec 1.1 delega ao canonicalizador de hoje. Se alguém
-        // bumpar SchemaVersionAtual para 1.2 sem congelar o encoder 1.1 aqui, o "encoder
-        // 1.1" passaria a emitir bytes de 1.2 — e o round-trip de toda versão 1.1 já
-        // publicada compararia formas diferentes.
-        //
-        // A iteração é sobre o PRÓPRIO registro, via Recodificar — não sobre uma lista de
-        // codecs mantida aqui. Uma segunda lista tornaria este teste cego justamente ao
-        // caso que ele existe para pegar: a 1.2 acrescentada só ao registro passaria verde.
         IReadOnlyList<CapacidadeCodec> comEncoder = [.. Registro.Capacidades.Where(static c => c.TemEncoder)];
 
         comEncoder.Should().NotBeEmpty();
@@ -71,7 +63,7 @@ public sealed class RegistroCodecsEnvelopeTests
         foreach (CapacidadeCodec capacidade in comEncoder)
         {
             SnapshotCanonico snapshot = Registro
-                .Recodificar(capacidade.SchemaVersion, CorpusFitness.Entrada())
+                .Recodificar(capacidade.SchemaVersion, ExemploDeConfiguracao.Entrada())
                 .Value!;
 
             snapshot.SchemaVersion.Should().Be(capacidade.SchemaVersion,
@@ -95,12 +87,9 @@ public sealed class RegistroCodecsEnvelopeTests
     [Fact(DisplayName = "CA-08 — todo codec do assembly está registrado e declara o perfil sob o qual emite")]
     public void TodoCodec_EstaRegistrado_EDeclaraPerfil()
     {
-        IReadOnlyList<IEnvelopeCodec> codecs =
-        [
-            .. typeof(RegistroCodecsEnvelope).Assembly.GetTypes()
-                .Where(static t => typeof(IEnvelopeCodec).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false })
-                .Select(static t => (IEnvelopeCodec)Activator.CreateInstance(t)!),
-        ];
+        IEnvelopeCodec[] codecs = [.. typeof(RegistroCodecsEnvelope).Assembly.GetTypes()
+            .Where(static tipo => typeof(IEnvelopeCodec).IsAssignableFrom(tipo) && tipo is { IsAbstract: false, IsInterface: false })
+            .Select(static tipo => (IEnvelopeCodec)Activator.CreateInstance(tipo)!)];
 
         codecs.Should().NotBeEmpty();
 
@@ -109,30 +98,27 @@ public sealed class RegistroCodecsEnvelopeTests
             "um codec escrito e não registrado é uma versão que o sistema sabe produzir e não sabe ler de volta");
 
         foreach (IEnvelopeCodec codec in codecs)
-        {
-            codec.Perfil.Should().NotBeNull($"o codec '{codec.SchemaVersion}' tem de dizer sob que regras de bytes ele emite");
-            codec.AlgoritmoHash.Should().Be(codec.Perfil.Algoritmo,
-                $"o algoritmo declarado pelo codec '{codec.SchemaVersion}' é o do seu perfil, não um literal paralelo");
-        }
+            ConferirPerfil(codec);
+    }
+
+    private static void ConferirPerfil(IEnvelopeCodec codec)
+    {
+        codec.Perfil.Should().NotBeNull($"o codec '{codec.SchemaVersion}' precisa declarar seu perfil");
+        codec.AlgoritmoHash.Should().Be(codec.Perfil.Algoritmo);
     }
 
     /// <summary>
     /// O registro pode estar perfeitamente coerente consigo mesmo e ainda assim divergir do
     /// que a <b>produção grava</b>: <c>Publicar</c> e <c>Retificar</c> injetam o
     /// <see cref="ISnapshotPublicacaoCanonicalizer"/>, não o registro. Este teste amarra os
-    /// dois — sem ele, um bump no canonicalizador passaria a congelar versões que o registro
+    /// dois — sem ele, uma mudança de versão no canonicalizador passaria a congelar versões que o registro
     /// declara não emitir, e ninguém veria até o primeiro descarte.
     /// </summary>
     [Fact(DisplayName = "CA-08 — o que a PRODUÇÃO emite é a versão de emissão corrente do registro")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Performance",
-        "CA1859:Use concrete types when possible for improved performance",
-        Justification = "A interface É o objeto do teste: o que Publicar/Retificar recebem por injeção é ISnapshotPublicacaoCanonicalizer, e é essa emissão — a de produção — que tem de bater com o registro. Trocar pelo tipo concreto testaria outra coisa.")]
     public void EmissaoDeProducao_BateComORegistro()
     {
-        ISnapshotPublicacaoCanonicalizer canonicalizerDeProducao = new SnapshotPublicacaoCanonicalizer();
-
-        SnapshotCanonico emitido = canonicalizerDeProducao.Canonicalizar(CorpusFitness.Entrada());
+        SnapshotCanonico emitido = ((ISnapshotPublicacaoCanonicalizer)new SnapshotPublicacaoCanonicalizer())
+            .Canonicalizar(ExemploDeConfiguracao.Entrada());
 
         emitido.SchemaVersion.Should().Be(Registro.SchemaVersionDeEmissaoCorrente,
             "o canonicalizador que Publicar/Retificar injetam é o que de fato congela as versões. Se ele emite uma " +
@@ -141,7 +127,7 @@ public sealed class RegistroCodecsEnvelopeTests
         CapacidadeCodec corrente = Registro.Capacidades.Single(c => c.SchemaVersion == emitido.SchemaVersion);
         corrente.Reidratavel.Should().BeTrue();
 
-        Registro.Recodificar(emitido.SchemaVersion, CorpusFitness.Entrada()).Value!.AlgoritmoHash
+        Registro.Recodificar(emitido.SchemaVersion, ExemploDeConfiguracao.Entrada()).Value!.AlgoritmoHash
             .Should().Be(emitido.AlgoritmoHash, "o algoritmo de hash também é parte da evidência, não detalhe");
     }
 }

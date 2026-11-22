@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Conferencias;
 
 using System.Globalization;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using TestSupport;
+using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// Guarda o arquivo de seed do calendário de dias úteis
@@ -63,33 +63,27 @@ public sealed class SeedCalendarioDiasUteisTests
     public void Seed_ReferenciaMunicipalSoParaMunicipal()
     {
         foreach (DiaSeed dia in Carregar().DiasNaoUteis)
+            ConferirReferenciaMunicipal(dia);
+    }
+
+    private static void ConferirReferenciaMunicipal(DiaSeed dia)
+    {
+        if (dia.Abrangencia == "MUNICIPAL")
         {
-            if (dia.Abrangencia == "MUNICIPAL")
-            {
-                dia.MunicipioIbge.Should().Be(IbgeDeMaraba, $"{dia.Data}: só Marabá está no escopo desta issue");
-                dia.MunicipioNome.Should().NotBeNullOrWhiteSpace($"{dia.Data} precisa do nome do município");
-                dia.MunicipioUf.Should().Be("PA", $"{dia.Data} é município do Pará");
-            }
-            else
-            {
-                dia.MunicipioIbge.Should().BeNull($"{dia.Data} não é municipal — referência de município não se aplica");
-                dia.MunicipioNome.Should().BeNull($"{dia.Data} não é municipal — referência de município não se aplica");
-                dia.MunicipioUf.Should().BeNull($"{dia.Data} não é municipal — referência de município não se aplica");
-            }
+            dia.MunicipioIbge.Should().Be(IbgeDeMaraba);
+            dia.MunicipioNome.Should().NotBeNullOrWhiteSpace();
+            dia.MunicipioUf.Should().Be("PA");
+            return;
         }
+
+        dia.MunicipioIbge.Should().BeNull();
+        dia.MunicipioNome.Should().BeNull();
+        dia.MunicipioUf.Should().BeNull();
     }
 
     [Fact(DisplayName = "Só o aniversário de Marabá e o padroeiro São Félix de Valois são feriado municipal")]
     public void Seed_ApenasAsDatasDecididasSaoMunicipais()
     {
-        // Trava o conjunto exato, não só a forma: 19/out (Pós-Círio) é a mesma cor de
-        // ponto facultativo que 28/out e o Carnaval no Anexo Único da Portaria
-        // Unifesspa nº 058/2026 — feriado municipal de verdade é verde, como 05/abr e
-        // 20/nov. Esta última data acumula duas linhas por fundamentos legais
-        // independentes: NACIONAL (Consciência Negra) e MUNICIPAL (padroeiro de
-        // Marabá) — decisão do PO, não colidem porque a chave de duplicata inclui a
-        // abrangência. Uma reclassificação futura só passa aqui se for deliberada o
-        // bastante para editar também esta lista.
         DatasetSeed dataset = Carregar();
 
         IReadOnlyList<string> municipais =
@@ -136,9 +130,9 @@ public sealed class SeedCalendarioDiasUteisTests
         // Path.Combine descarta os segmentos anteriores quando um deles é enraizado.
         // O precedente é OpenApiEndpointTests.ResolveRepoPath, que valida o mesmo.
         Path.IsPathRooted(CaminhoRelativo).Should().BeFalse(
-            "o caminho do seed é relativo à raiz do repositório");
+            "o caminho do seed é relativo à diretório do repositório");
 
-        string caminho = Path.Combine(SolutionRootLocator.Locate(), CaminhoRelativo);
+        string caminho = Path.Combine(LocalizadorDaSolucao.Locate(), CaminhoRelativo);
 
         File.Exists(caminho).Should().BeTrue($"o seed do calendário de dias úteis precisa existir em {CaminhoRelativo}");
 
@@ -149,17 +143,9 @@ public sealed class SeedCalendarioDiasUteisTests
         return datasets[0];
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Performance",
-        "CA1812:Avoid uninstantiated internal classes",
-        Justification = "Instanciada por System.Text.Json ao desserializar o arquivo de seed.")]
-    private sealed record DatasetSeed(string VersaoDataset, DiaSeed[] DiasNaoUteis);
+    public sealed record DatasetSeed(string VersaoDataset, DiaSeed[] DiasNaoUteis);
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Performance",
-        "CA1812:Avoid uninstantiated internal classes",
-        Justification = "Instanciada por System.Text.Json ao desserializar o arquivo de seed.")]
-    private sealed record DiaSeed(
+    public sealed record DiaSeed(
         string Abrangencia,
         string? MunicipioIbge,
         string? MunicipioNome,

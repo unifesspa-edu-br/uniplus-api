@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using System.Reflection;
 
@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 /// <summary>
-/// Trava a premissa de <see cref="RegrasDeNomeAbreviado"/> que sustenta a decisão de
+/// Confere a premissa de <see cref="RegrasDeNomeAbreviado"/> que sustenta a decisão de
 /// congelamento (issue #563, D3): <b>derivar</b> a regra vigente no instante da
 /// canonicalização só é indistinguível de <b>reinjetar</b> a regra congelada enquanto existir
 /// <b>exatamente uma</b> regra conhecida — com uma só, os dois mecanismos produzem sempre o
@@ -39,15 +39,6 @@ public sealed class RegraDeNomeAbreviadoUnicaTests
             .ToArray();
 
         identificadoresConhecidos.Should().ContainSingle(
-            "SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao deriva a regra vigente " +
-            "(RegrasDeNomeAbreviado.Vigente) em vez de reinjetar a regra que a versão congelou — " +
-            "e essa derivação só é indistinguível da reinjeção enquanto existir UMA ÚNICA regra " +
-            "conhecida (issue #563, D3). Se este teste falhou, uma segunda regra acabou de nascer: " +
-            "a partir de agora, recanonicalizar uma versão antiga usando a regra VIGENTE pode produzir um " +
-            "identificador diferente do que aquela versão congelou. A correção é reintroduzir o " +
-            "transporte explícito da regra congelada (um campo em EntradaCanonicalizacao/EnvelopeReidratado) — " +
-            "ou, se o primeiro certame publicado em qualquer " +
-            "ambiente, inclusive homologação, já tiver ocorrido, resolver pelo regime de codec " +
-            "por versão (um decoder por schema_version, cada um com a semântica da sua época).");
+            "a regra vigente só reproduz a versão congelada enquanto houver uma única regra conhecida");
     }
 }

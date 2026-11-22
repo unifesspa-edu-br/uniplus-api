@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
@@ -16,11 +16,38 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <remarks>
 /// O recorte é deliberado — só o que produz falha concreta, não conferência de
 /// estilo. Código fora do formato derruba toda leitura da tabela na reidratação;
-/// código repetido trava a migração no índice único; categoria inexistente tira o
+/// código repetido impede a migração no índice único; categoria inexistente tira o
 /// tipo de todo filtro por categoria.
 /// </remarks>
 public sealed class CatalogoDeTiposDocumentoTests
 {
+    private static readonly (string Codigo, string Categoria, ClassificacaoDeProtecao Protecao)[] DocumentosDoEdital =
+    [
+            ("CIN", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("CNH", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("PASSAPORTE", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("RNM", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("BOLETIM_OCORRENCIA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+            ("DOCUMENTO_JUDICIAL_GUARDA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+            ("DECLARACAO_CONCLUSAO_ENSINO_MEDIO", "ESCOLARIDADE", ClassificacaoDeProtecao.Pessoal),
+            ("CNIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_IRPJ", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("ECF", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECORE", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DEFIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DASN_SIMEI", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_INATIVIDADE_EMPRESA", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_RENDIMENTOS_AUFERIDOS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_AUSENCIA_RENDIMENTOS_ALUGUEL", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("EXTRATO_PREVIDENCIA_PRIVADA", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("TRCT", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("LAUDO_PSICOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("EXAME_AUDIOMETRIA", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("EXAME_OFTALMOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("TERMO_RESPONSABILIDADE_CERTIFICADO", "DOCUMENTO_PROCESSUAL", ClassificacaoDeProtecao.Pessoal),
+    ];
+
+
     [Fact(DisplayName = "Cada item do seed passa nas invariantes do agregado")]
     public void Seed_ItensRespeitamOAgregado()
     {
@@ -46,33 +73,7 @@ public sealed class CatalogoDeTiposDocumentoTests
     [Fact(DisplayName = "O seed traz os tipos que o edital de Medicina 2027 pede, cada um na categoria e na proteção que o documento exige")]
     public void Seed_TiposDoEditalDeMedicina_TemCategoriaEProtecao()
     {
-        (string Codigo, string Categoria, ClassificacaoDeProtecao Protecao)[] esperados =
-        [
-            ("CIN", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
-            ("CNH", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
-            ("PASSAPORTE", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
-            ("RNM", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
-            ("BOLETIM_OCORRENCIA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
-            ("DOCUMENTO_JUDICIAL_GUARDA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
-            ("DECLARACAO_CONCLUSAO_ENSINO_MEDIO", "ESCOLARIDADE", ClassificacaoDeProtecao.Pessoal),
-            ("CNIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DECLARACAO_IRPJ", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("ECF", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DECORE", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DEFIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DASN_SIMEI", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DECLARACAO_INATIVIDADE_EMPRESA", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DECLARACAO_RENDIMENTOS_AUFERIDOS", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("DECLARACAO_AUSENCIA_RENDIMENTOS_ALUGUEL", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("EXTRATO_PREVIDENCIA_PRIVADA", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("TRCT", "RENDA", ClassificacaoDeProtecao.Pessoal),
-            ("LAUDO_PSICOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
-            ("EXAME_AUDIOMETRIA", "SAUDE", ClassificacaoDeProtecao.Sensivel),
-            ("EXAME_OFTALMOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
-            ("TERMO_RESPONSABILIDADE_CERTIFICADO", "DOCUMENTO_PROCESSUAL", ClassificacaoDeProtecao.Pessoal),
-        ];
-
-        foreach ((string codigo, string categoria, ClassificacaoDeProtecao protecao) in esperados)
+        foreach ((string codigo, string categoria, ClassificacaoDeProtecao protecao) in DocumentosDoEdital)
         {
             TipoDocumentoSeedItem item = TipoDocumentoSeed.Itens.Should().ContainSingle(i => i.Codigo == codigo).Which;
             item.Categoria.Should().Be(categoria, codigo);

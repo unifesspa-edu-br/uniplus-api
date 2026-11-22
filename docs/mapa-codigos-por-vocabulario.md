@@ -306,8 +306,8 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Configuracao.Application.UnitTests/Commands/AtualizarPrecedenciaFaseCommandHandlerTests.cs` | fase-HOMOLOGACAO | 53,62 | renomear |
 | `Configuracao.Application.UnitTests/Commands/AlterarDefinicaoDoFatoCandidatoCommandHandlerTests.cs` | fase-HABILITACAO | 58,134,135,136,139,200 | manter (ponto em aberto) |
 | `Configuracao.Application.UnitTests/Commands/AlterarDefinicaoDoFatoCandidatoCommandHandlerTests.cs` | modelo-codigo | 71,114,226,310,323 | manter |
-| `ArchTests/SolutionRules/SeedTiposAtoTests.cs` | ato (cadastro) | 128,129,131,136,174,175 | manter |
-| `ArchTests/SolutionRules/SeedTiposAtoTests.cs` | ato-HOMOLOGACAO_INSCRICOES | 130,175,176,183 | manter |
+| `Publicacoes.Application.UnitTests/Conferencias/SeedTiposAtoTests.cs` | ato (cadastro) | catálogo de resultados e unicidade | manter |
+| `Publicacoes.Application.UnitTests/Conferencias/SeedTiposAtoTests.cs` | ato-HOMOLOGACAO_INSCRICOES | catálogo de resultados e unicidade | manter |
 
 Observações sobre os testes:
 
@@ -545,7 +545,7 @@ O que um modelo de formulário cita por código **de fase** é o `faseCodigo` de
 
 ## 6. Vocabulário 4: tipo de ato
 
-Origem: **cadastro versionado de Publicações** (`TipoAtoPublicado`), referência em `seeds/seed-tipos-ato.json`, que o ArchTest `SeedTiposAtoTests` e o health check `CatalogoDeTiposAtoDeclarado` conferem. A ADR-0103 proíbe literal de tipo de ato no domínio; por isso, ao contrário do tipo de decisão, o tipo de ato **não é vocabulário fechado em código**. A issue descreve os dois como fechados em código; o código diz outra coisa, e isso consta como PA-4.
+Origem: **cadastro versionado de Publicações** (`TipoAtoPublicado`), referência em `seeds/seed-tipos-ato.json`, que o teste `SeedTiposAtoTests` e o health check `CatalogoDeTiposAtoDeclarado` conferem. A ADR-0103 proíbe literal de tipo de ato no domínio; por isso, ao contrário do tipo de decisão, o tipo de ato **não é vocabulário fechado em código**. A issue descreve os dois como fechados em código; o código diz outra coisa, e isso consta como PA-4.
 
 | Código atual no seed | Código novo ou mantido | Ação |
 |---|---|---|
@@ -561,7 +561,7 @@ Usos:
 | Arquivo | Uso | Ação |
 |---|---|---|
 | `seeds/seed-tipos-ato.json` (linhas 68, 81, 94, 211 e 237) | definição dos cinco tipos de homologação | manter |
-| `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/SeedTiposAtoTests.cs` (linhas 128 a 136 e 174 a 183) | lista esperada de resultados e de únicos por objeto | manter |
+| `tests/Unifesspa.UniPlus.Publicacoes.Application.UnitTests/Conferencias/SeedTiposAtoTests.cs` | lista esperada de resultados e de únicos por objeto | manter |
 | `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/PublicacoesSemRamificacaoPorTipoAtoTests.cs` (linha 13) | comentário de exemplo | manter |
 | `tests/.../Selecao.IntegrationTests/ProcessosSeletivos/SemLiteralDeTipoDeAtoTests.cs` (linha 157) | mensagem de teste que cita `HOMOLOGACAO_ANALISE` | manter; PA-6 |
 | `tests/.../Selecao.IntegrationTests/Outbox/Cascading/DadosDoAtoDeTeste.cs` (linha 15) | tipo de ato do dado de teste | manter |

@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.ArchTests;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using System.Reflection;
 
@@ -17,17 +17,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>O ponto cego que este teste fecha.</b> Encoder, decoder e round-trip são três listas
+/// <b>Por que este teste é necessário.</b> Encoder e decoder usam duas listas
 /// escritas à mão. Se alguém acrescentar uma propriedade de negócio a
 /// <c>ModalidadeSelecionada</c> — digamos, um novo critério de elegibilidade — e esquecer
-/// dela <b>nos dois</b>, o envelope continua idêntico, a golden fixture continua batendo,
-/// o round-trip continua verde e a guarda de produção aprova. O campo simplesmente
+/// dela <b>nos dois</b>, o envelope continua idêntico, o arquivo de referência continua batendo,
+/// o teste de serialização e leitura continua passando e a verificação de produção aprova. O campo simplesmente
 /// <b>não existe</b> para o congelamento: ele é configurado, publicado, e some no primeiro
 /// descarte. <b>Nada acusa</b> — a simetria do esquecimento o torna invisível.
 /// </para>
 /// <para>
 /// A única defesa é uma lista que o compilador force a manter. Aqui, acrescentar uma
-/// propriedade a qualquer entidade do grafo <b>quebra o build</b> até que alguém declare,
+/// propriedade a qualquer entidade do grafo <b>impede a compilação</b> até que alguém declare,
 /// por escrito, se ela entra no documento que tem peso jurídico — ou por que não entra.
 /// </para>
 /// </remarks>
@@ -48,7 +48,7 @@ public sealed class ManifestoDoEnvelopeTests
     private const string OrientacaoDePropriedadeNaoDeclarada =
         "uma propriedade de negócio que não está no manifesto é uma que ninguém decidiu se entra no documento " +
         "com peso jurídico. Se ela for esquecida no encoder E no decoder — o que é fácil, são duas listas " +
-        "manuais —, o envelope não muda, a golden fixture não muda, o round-trip fica verde e a guarda de " +
+        "manuais —, o envelope não muda, o arquivo de referência não muda, o teste de serialização e leitura passa e a verificação de " +
         "produção aprova: o campo é configurado, publicado, e some no primeiro descarte, sem que nada acuse. " +
         "Declare-a em ManifestoDoEnvelope: congelada, ou excluída com o motivo. ";
 
@@ -56,7 +56,7 @@ public sealed class ManifestoDoEnvelopeTests
         "todo tipo que o envelope congela tem de estar no manifesto — inclusive cada VARIANTE de " +
         "ParametrosCriterioDesempate e ParametrosRegraEliminacao, que são persistidas inteiras como JSON e lidas por dois " +
         "`switch` sobre o código da regra. Uma variante nova, ou uma propriedade nova numa existente, esquecida " +
-        "nos dois switches, não muda o envelope, não muda a fixture, e o round-trip fica verde: o campo some no " +
+        "nos dois switches, não muda o envelope, não muda o arquivo de referência, e o teste de serialização e leitura passa: o campo some no " +
         "primeiro descarte. ";
 
     [Fact(DisplayName = "Toda propriedade de negócio do grafo está declarada no manifesto — dentro ou fora do envelope")]
@@ -76,12 +76,12 @@ public sealed class ManifestoDoEnvelopeTests
 
     /// <summary>
     /// O manifesto não pode declarar o que não existe: uma propriedade renomeada ou removida
-    /// deixaria uma entrada morta, e o teste acima continuaria verde protegendo um fantasma.
+    /// deixaria uma entrada inválida sem que o teste acima a identificasse.
     /// </summary>
     [Fact(DisplayName = "O manifesto não declara propriedade que não existe mais")]
-    public void Manifesto_NaoTemEntradaMorta()
+    public void Manifesto_NaoTemPropriedadeInexistente()
     {
-        IEnumerable<string> fantasmas = ManifestoDoEnvelope.Entradas.SelectMany(static entrada =>
+        IEnumerable<string> inexistentes = ManifestoDoEnvelope.Entradas.SelectMany(static entrada =>
         {
             HashSet<string> reais = [.. PropriedadesPublicas(entrada.Key)];
 
@@ -91,8 +91,8 @@ public sealed class ManifestoDoEnvelopeTests
                 .Select(declarada => $"{entrada.Key.Name}.{declarada}");
         });
 
-        fantasmas.Should().BeEmpty(
-            $"o manifesto declara propriedades que não existem mais no domínio: {string.Join(", ", fantasmas)}");
+        inexistentes.Should().BeEmpty(
+            $"o manifesto declara propriedades que não existem mais no domínio: {string.Join(", ", inexistentes)}");
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public sealed class ManifestoDoEnvelopeTests
     /// <see cref="ConfiguracaoPublicada"/>, e cada um que aparecer tem de estar declarado.
     /// </summary>
     /// <remarks>
-    /// Sem isto, o manifesto teria o mesmo ponto cego que ele existe para fechar — uma
+    /// Sem isto, o manifesto teria a mesma omissão que ele deve identificar — uma
     /// entidade nova no grafo (ou uma <b>variante nova</b> de <c>Parametros</c>) simplesmente não
     /// seria percorrida, e a propriedade dela nunca precisaria ser declarada. A prova de
     /// completude tem de vir do compilador, não da memória de quem editou o teste.
@@ -179,7 +179,7 @@ public sealed class ManifestoDoEnvelopeTests
     }
 
     // A união abstrata não tem propriedades próprias; o que o envelope congela são as
-    // VARIANTES dela. Abri-las aqui é o que faz uma variante nova quebrar o build.
+    // VARIANTES dela. Abri-las aqui é o que faz uma variante nova impedir a compilação.
     private static void AlcancarAsVariantesDe(Type uniao, HashSet<Type> acumulador)
     {
         foreach (Type variante in uniao.Assembly.GetTypes().Where(t => t.IsSubclassOf(uniao) && !t.IsAbstract))
