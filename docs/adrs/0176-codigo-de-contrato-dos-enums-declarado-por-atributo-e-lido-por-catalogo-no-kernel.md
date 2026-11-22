@@ -90,4 +90,4 @@ O campo de texto de um contrato que carrega o código de um desses enums é marc
 
 ## Emenda (2026-11-22) — projeto de testes
 
-As conferências dos enums alcançados pelos executáveis e da montagem dos modelos são executadas em `Unifesspa.UniPlus.Contratos.UnitTests`.
+A conferência das declarações dos enums alcançados ocorre na subida de cada executável. Não há teste que exija o alcance de todo enum: um tipo não referenciado por um executável não integra seu contrato. A conferência da montagem dos modelos é executada em `Unifesspa.UniPlus.Contratos.UnitTests`.

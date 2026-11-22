@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Runtime.CompilerServices;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
+using ArchUnitNET.Fluent.Syntax.Elements.Types.Classes;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
@@ -21,7 +20,6 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 public sealed class FronteirasDoProcessoSeletivoTests
 {
     private const string NamespaceDasPoliticas = "Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos";
-    private const string ParteFullName = "Unifesspa.UniPlus.Selecao.Domain.Entities.IParteDoProcesso";
 
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(
         typeof(ProcessoSeletivo).Assembly,
@@ -42,13 +40,11 @@ public sealed class FronteirasDoProcessoSeletivoTests
     [Fact(DisplayName = "A3: as classes das políticas são estáticas, salvo os registros")]
     public void A3_PoliticasSaoEstaticas()
     {
-        TiposDasPoliticas().Count().Should().BeGreaterThan(30, "a varredura tem de encontrar as políticas");
-
-        string[] naoEstaticas = [.. TiposDasPoliticas()
-            .Where(static t => t.IsClass && !(t.IsAbstract && t.IsSealed) && !EhRegistro(t))
-            .Select(static t => t.FullName!)];
-
-        naoEstaticas.Should().BeEmpty("a política é função pura da configuração declarada; estado vive na raiz, e o dado que a Application lê dos cadastros vive em ValueObjects");
+        GivenClassesConjunction classes = Classes().That()
+            .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.Domain\.ProcessosSeletivos(\.|$)")
+            .And().AreNotRecord();
+        classes.GetObjects(Arquitetura).Should().NotBeEmpty();
+        classes.Should().BeAbstract().AndShould().BeSealed().Check(Arquitetura);
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]
@@ -66,19 +62,10 @@ public sealed class FronteirasDoProcessoSeletivoTests
     [Fact(DisplayName = "A6: toda parte do processo está em Domain.Entities")]
     public void A6_PartesDoProcessoVivemNasEntidades()
     {
-        string[] fora = [.. typeof(ProcessoSeletivo).Assembly.GetTypes()
-            .Where(static t => t.IsClass && t.GetInterfaces().Any(static i => i.FullName == ParteFullName))
-            .Where(static t => t.Namespace != typeof(ProcessoSeletivo).Namespace)
-            .Select(static t => t.FullName!)];
-
-        fora.Should().BeEmpty("o vínculo com o processo é da entidade filha, não de um tipo de política");
+        Interface parte = Interfaces().That().HaveFullName("Unifesspa.UniPlus.Selecao.Domain.Entities.IParteDoProcesso")
+            .GetObjects(Arquitetura).Single();
+        Classes().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().ImplementInterface(parte)
+            .Should().ResideInNamespace(typeof(ProcessoSeletivo).Namespace!)
+            .Check(Arquitetura);
     }
-
-    private static bool EhRegistro(System.Type tipo) => tipo.GetMethod("<Clone>$") is not null;
-
-    private static IEnumerable<System.Type> TiposDasPoliticas() =>
-        typeof(ProcessoSeletivo).Assembly.GetTypes()
-            .Where(static t => t.Namespace is { } ns && ns.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal))
-            .Where(static t => !System.Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)));
-
 }

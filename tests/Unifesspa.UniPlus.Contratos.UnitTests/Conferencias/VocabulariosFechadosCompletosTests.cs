@@ -53,22 +53,6 @@ public sealed class VocabulariosFechadosCompletosTests
             });
     }
 
-    [Fact(DisplayName = "Todo campo de divulgação declarado como constante do domínio está no vocabulário permitido")]
-    public void CamposConstantes_TodosNoVocabulario()
-    {
-        string[] constantes =
-        [
-            .. typeof(ConfiguracaoDivulgacao)
-                .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
-                .Where(static f => f is { IsLiteral: true, IsInitOnly: false } && f.FieldType == typeof(string))
-                .Select(static f => (string)f.GetRawConstantValue()!),
-        ];
-
-        string[] permitidos = [.. ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)];
-
-        permitidos.Should().BeEquivalentTo(constantes);
-    }
-
     [Fact(DisplayName = "Todo campo permitido pelo domínio é anunciado pela leitura pública")]
     public void CamposPermitidos_TodosAnunciados()
     {

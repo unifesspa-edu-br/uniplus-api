@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Reflection;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
@@ -95,7 +93,8 @@ public sealed class CanonicalizerEProjecaoPuraTests
     [Fact(DisplayName = "A projeção do certame publicado é pura — não depende de repositório, DbContext, relógio, service provider nem HttpClient")]
     public void ProjecaoDoCertame_NaoDependeDeEstadoExterno()
     {
-        IEnumerable<IType> tipos = Arquitetura.Types.Where(static t => NomesDaProjecaoDoCertame.Contains(t.Name));
+        IEnumerable<IType> tipos = Arquitetura.Types.Where(static t => t.Namespace.FullName.StartsWith("Unifesspa.UniPlus.", StringComparison.Ordinal)
+            && NomesDaProjecaoDoCertame.Contains(t.Name));
 
         tipos.Select(static t => t.Name).Should().Contain(NomesDaProjecaoDoCertame,
             "a varredura tem de encontrar todos os tipos da projeção do certame; sem isso a regra passaria vazia");
@@ -160,23 +159,17 @@ public sealed class CanonicalizerEProjecaoPuraTests
     [Fact(DisplayName = "Canonicalizar_NaoEAssincrono — a projeção é síncrona: não há I/O a esperar")]
     public void Canonicalizar_NaoEAssincrono()
     {
-        MethodInfo canonicalizar = Canonicalizer.GetMethod(nameof(ISnapshotPublicacaoCanonicalizer.Canonicalizar))!;
-
-        canonicalizar.ReturnType.Should().Be<SnapshotCanonico>(
-            "um retorno Task/ValueTask significaria que a projeção espera por I/O — e uma projeção pura não tem I/O a esperar");
+        MethodMembers().That().AreDeclaredIn(Canonicalizer)
+            .And().HaveNameContaining(nameof(ISnapshotPublicacaoCanonicalizer.Canonicalizar))
+            .Should().HaveReturnType(typeof(SnapshotCanonico)).Check(Arquitetura);
     }
 
     [Fact(DisplayName = "Canonicalizar_RecebeEntradaUnica — a porta tem um único parâmetro, extensível sem quebrar a assinatura")]
     public void Canonicalizar_RecebeEntradaUnica()
     {
-        MethodInfo canonicalizar = typeof(ISnapshotPublicacaoCanonicalizer)
-            .GetMethod(nameof(ISnapshotPublicacaoCanonicalizer.Canonicalizar))!;
-
-        ParameterInfo[] parametros = canonicalizar.GetParameters();
-
-        parametros.Should().ContainSingle(
-            "acrescentar dado ao envelope não pode significar mudar a assinatura da porta a cada story (ADR-0109 D6)");
-
-        parametros[0].ParameterType.Should().Be<EntradaCanonicalizacao>();
+        MethodMember metodo = MethodMembers().That().AreDeclaredIn(typeof(ISnapshotPublicacaoCanonicalizer))
+            .And().HaveNameContaining(nameof(ISnapshotPublicacaoCanonicalizer.Canonicalizar)).GetObjects(Arquitetura).Single();
+        metodo.Parameters.Select(static parametro => parametro.FullName)
+            .Should().ContainSingle().Which.Should().Be(typeof(EntradaCanonicalizacao).FullName);
     }
 }
