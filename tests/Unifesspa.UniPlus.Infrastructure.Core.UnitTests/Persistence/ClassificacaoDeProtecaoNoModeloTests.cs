@@ -256,7 +256,7 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
         where TContext : DbContext
     {
         using TContext contexto = criar(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<TContext>());
-        return ConferenciaDaClassificacaoDoModelo.Conferir(contexto.GetService<IDesignTimeModel>().Model).Retrato
+        return ConferenciaDaClassificacaoDoModelo.Conferir(contexto.GetService<IDesignTimeModel>().Model).ConteudoDoArquivo
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(linha => linha.Split(": "))
             .ToDictionary(p => p[0], p => Enum.TryParse(p[1], out ClassificacaoDeProtecao c) ? (ClassificacaoDeProtecao?)c : null);
@@ -354,18 +354,18 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
             .Should().Contain(v => v.Contains("tabela e a view", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "O retrato muda quando uma classificação é rebaixada")]
-    public void RetratoRegistraRebaixamento()
+    [Fact(DisplayName = "O conteúdo do arquivo muda quando uma classificação é rebaixada")]
+    public void ConteudoDoArquivoRegistraRebaixamento()
     {
         using ContextoComPadraoEExcecao original = new(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ContextoComPadraoEExcecao>());
         using ContextoRebaixado rebaixado = new(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ContextoRebaixado>());
 
-        string retratoOriginal = ConferenciaDaClassificacaoDoModelo.Conferir(original.GetService<IDesignTimeModel>().Model).Retrato;
-        string retratoRebaixado = ConferenciaDaClassificacaoDoModelo.Conferir(rebaixado.GetService<IDesignTimeModel>().Model).Retrato;
+        string conteudoOriginal = ConferenciaDaClassificacaoDoModelo.Conferir(original.GetService<IDesignTimeModel>().Model).ConteudoDoArquivo;
+        string conteudoRebaixado = ConferenciaDaClassificacaoDoModelo.Conferir(rebaixado.GetService<IDesignTimeModel>().Model).ConteudoDoArquivo;
 
-        retratoRebaixado.Should().NotBe(retratoOriginal);
-        retratoOriginal.Should().Contain("pedidos.motivo: Pessoal\n");
-        retratoRebaixado.Should().Contain("pedidos.motivo: Interno\n");
+        conteudoRebaixado.Should().NotBe(conteudoOriginal);
+        conteudoOriginal.Should().Contain("pedidos.motivo: Pessoal\n");
+        conteudoRebaixado.Should().Contain("pedidos.motivo: Interno\n");
     }
 
     [Fact(DisplayName = "Complex property reprova a conferência em vez de ser ignorada")]

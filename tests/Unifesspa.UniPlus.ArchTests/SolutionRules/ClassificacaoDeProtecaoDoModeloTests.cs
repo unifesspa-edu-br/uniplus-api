@@ -16,11 +16,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 /// </summary>
 public sealed class ClassificacaoDeProtecaoDoModeloTests
 {
-    private const string AtualizarRetratoEnvVar = "UPDATE_RETRATO_CLASSIFICACAO";
-    private const string ArquivoDoRetrato = "tests/Unifesspa.UniPlus.ArchTests/SolutionRules/ClassificacaoDeProtecaoDoModelo.retrato.txt";
+    private const string AtualizarArquivoEnvVar = "UPDATE_ARQUIVO_CLASSIFICACAO_PROTECAO";
 
     // Os modelos são construídos uma vez por execução: cada DbContext custa um OnModelCreating completo.
-    private static readonly Lazy<IReadOnlyList<(string Contexto, IReadOnlyList<string> Violacoes, string Retrato)>> Modelos = new(Analisar);
+    private static readonly Lazy<IReadOnlyList<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)>> Modelos = new(Analisar);
 
     [Fact(DisplayName = "A descoberta encontra os DbContexts da solução")]
     public void DescobertaEncontraOsDbContexts() =>
@@ -41,23 +40,22 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             + "Violações:\n" + string.Join("\n", violacoes));
     }
 
-    [Fact(DisplayName = "O retrato versionado bate com a classificação do modelo; rebaixar exige atualizá-lo")]
-    public void RetratoVersionadoBateComOModelo()
+    [Fact(DisplayName = "O arquivo versionado bate com a classificação do modelo; rebaixar exige atualizá-lo")]
+    public void ArquivoVersionadoBateComOModelo()
     {
-        string atual = string.Concat(Modelos.Value.Select(c => $"# {c.Contexto}\n{c.Retrato}\n"));
-        string caminho = Path.Join(SolutionRootLocator.Locate(), ArquivoDoRetrato);
+        string atual = string.Concat(Modelos.Value.Select(c => $"# {c.Contexto}\n{c.Conteudo}\n"));
 
-        if (Environment.GetEnvironmentVariable(AtualizarRetratoEnvVar) == "1")
+        if (Environment.GetEnvironmentVariable(AtualizarArquivoEnvVar) == "1")
         {
-            File.WriteAllText(caminho, atual);
+            ArquivoDaClassificacaoDeProtecao.Regravar(atual);
         }
 
-        string versionado = File.ReadAllText(caminho).ReplaceLineEndings("\n");
+        string versionado = ArquivoDaClassificacaoDeProtecao.LerTexto();
 
         atual.Should().Be(
             versionado,
             $"a classificação de uma coluna mudou: confira a diferença, obtenha a aprovação da proteção de dados se for rebaixamento "
-            + $"e regenere o arquivo com {AtualizarRetratoEnvVar}=1.");
+            + $"e regenere o arquivo com {AtualizarArquivoEnvVar}=1.");
     }
 
     [Fact(DisplayName = "Todo projeto de infraestrutura da solução está referenciado pelo ArchTests")]
@@ -94,11 +92,11 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             "o DbContext sem IDesignTimeDbContextFactory ficaria fora da conferência de classificação: " + string.Join(", ", semFactory));
     }
 
-    // Uma única análise por modelo: a conferência e o retrato partem do mesmo resultado.
-    private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Retrato)> Analisar() =>
+    // Uma única análise por modelo: a conferência e o arquivo versionado partem do mesmo resultado.
+    private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)> Analisar() =>
     [
         .. ModelosDaSolucao.Modelos()
             .Select(m => (m.Contexto, Conferencia: ConferenciaDaClassificacaoDoModelo.Conferir(m.Modelo)))
-            .Select(m => (m.Contexto, m.Conferencia.Violacoes, m.Conferencia.Retrato)),
+            .Select(m => (m.Contexto, m.Conferencia.Violacoes, m.Conferencia.ConteudoDoArquivo)),
     ];
 }
