@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -13,6 +15,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalOferta>
 {
     private const string NomeDaTabela = "locais_de_oferta";
+    private const int CodigoDeContratoMaxLength = 30;
 
     public void Configure(EntityTypeBuilder<LocalOferta> builder)
     {
@@ -29,9 +32,12 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
         ConfigurarIndices(builder);
     }
 
-    // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe.
+    // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe. O tipo é conferido contra os códigos de contrato.
     private static void ConfigurarChecks(TableBuilder<LocalOferta> tabela)
     {
+        tabela.HasCheckConstraint(
+            "ck_locais_de_oferta_tipo",
+            $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoLocalOferta>()})");
         tabela.HasCheckConstraint(
             EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName(NomeDaTabela),
             EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
@@ -42,7 +48,7 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<LocalOferta> builder)
     {
-        builder.Property(l => l.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(l => l.Tipo).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
         builder.Property(l => l.CodigoEmec).HasMaxLength(20);
     }
 

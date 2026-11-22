@@ -124,7 +124,7 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
     private static string CodigoDe(JsonElement oferta, string campo) =>
         oferta.GetProperty(campo).GetProperty("codigo").GetString() ?? string.Empty;
 
-    // Dentro de um empate o motor desempata pelo Id, que não segue a ordem de criação: só os campos ordenados são comparados.
+    // Dentro de um empate a paginação por chave desempata pelo Id, que não segue a ordem de criação: só os campos ordenados são comparados.
     private static string Projetar(ClassificacaoDaOferta oferta, string[] camposOrdenados) =>
         string.Join('|', camposOrdenados.Select(campo => ValorPorCampo[campo](oferta)));
 
@@ -150,7 +150,7 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
     {
         Curso curso = Curso.Criar($"CUR_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}", "Engenharia Florestal", "Bacharelado", "Graduação", null).ValorEsperado();
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             DateTimeOffset.UtcNow).ValorEsperado();
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

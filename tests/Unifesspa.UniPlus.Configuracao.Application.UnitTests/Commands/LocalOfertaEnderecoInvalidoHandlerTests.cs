@@ -25,7 +25,7 @@ public sealed class LocalOfertaEnderecoInvalidoHandlerTests
     public async Task Criar_EnderecoMalformadoETipoInvalido_AcumulaTipoDepoisEndereco()
     {
         var comando = new CriarLocalOfertaCommand(
-            TipoLocalOferta.Nenhum, null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
+            "INEXISTENTE", null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
 
         Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -38,7 +38,7 @@ public sealed class LocalOfertaEnderecoInvalidoHandlerTests
     public async Task Criar_SoEnderecoMalformado_RecusaSoOEndereco()
     {
         var comando = new CriarLocalOfertaCommand(
-            TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
+            "POLO_DE_EDUCACAO_A_DISTANCIA", null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
 
         Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -51,7 +51,7 @@ public sealed class LocalOfertaEnderecoInvalidoHandlerTests
     public async Task Atualizar_EnderecoMalformadoETipoInvalido_AcumulaSemBuscarOLocal()
     {
         var comando = new AtualizarLocalOfertaCommand(
-            Guid.CreateVersion7(), TipoLocalOferta.Nenhum, null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
+            Guid.CreateVersion7(), "INEXISTENTE", null, "1504208", "Marabá", "PA", EnderecoMalformado, null);
 
         Result resultado = await AtualizarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);

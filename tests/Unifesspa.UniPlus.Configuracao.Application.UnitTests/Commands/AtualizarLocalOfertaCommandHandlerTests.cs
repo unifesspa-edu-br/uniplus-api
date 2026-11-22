@@ -22,11 +22,11 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
 
     private static LocalOferta Existente() =>
         LocalOferta.Criar(
-            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
+            new("POLO_DE_EDUCACAO_A_DISTANCIA", null, "1504208", "Marabá", "PA", null, null),
             TimeProvider.System.GetUtcNow()).ValorEsperado();
 
     private static AtualizarLocalOfertaCommand Comando(Guid id, Guid? campusId = null) =>
-        new(id, TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null);
+        new(id, "POLO_DE_EDUCACAO_A_DISTANCIA", campusId, "1504208", "Marabá", "PA", null, null);
 
     [Fact(DisplayName = "Local inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()
@@ -59,7 +59,7 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
     public async Task Handle_TipoInvalido_RetornaErroSemBuscarPorIdNemPersistir()
     {
         var comando = new AtualizarLocalOfertaCommand(
-            Guid.CreateVersion7(), TipoLocalOferta.Nenhum, null, "1504208", "Marabá", "PA", null, null);
+            Guid.CreateVersion7(), "INEXISTENTE", null, "1504208", "Marabá", "PA", null, null);
 
         Result resultado = await AtualizarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -74,7 +74,7 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
     public async Task Handle_TipoInvalidoECidadeAusente_AcumulaAsViolacoes()
     {
         var comando = new AtualizarLocalOfertaCommand(
-            Guid.CreateVersion7(), TipoLocalOferta.Nenhum, null, null, null, null, null, null);
+            Guid.CreateVersion7(), "INEXISTENTE", null, null, null, null, null, null);
 
         Result resultado = await AtualizarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -106,7 +106,7 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
     {
         Guid campusId = Guid.CreateVersion7();
         LocalOferta existente = LocalOferta.Criar(
-            new(TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null),
+            new("POLO_DE_EDUCACAO_A_DISTANCIA", campusId, "1504208", "Marabá", "PA", null, null),
             TimeProvider.System.GetUtcNow()).ValorEsperado();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 

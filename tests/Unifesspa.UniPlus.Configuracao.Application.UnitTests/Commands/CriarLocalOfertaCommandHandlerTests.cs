@@ -19,7 +19,7 @@ public sealed class CriarLocalOfertaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarLocalOfertaCommand ComandoValido(Guid? campusId = null) =>
-        new(TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null);
+        new("POLO_DE_EDUCACAO_A_DISTANCIA", campusId, "1504208", "Marabá", "PA", null, null);
 
     [Fact(DisplayName = "Cria sem campus responsável e persiste")]
     public async Task Handle_SemCampusResponsavel_Cria()
@@ -62,7 +62,7 @@ public sealed class CriarLocalOfertaCommandHandlerTests
     public async Task Handle_TipoInvalido_RetornaErroSemConsultarCampusNemPersistir()
     {
         Guid campusId = Guid.CreateVersion7();
-        CriarLocalOfertaCommand comando = ComandoValido(campusId) with { Tipo = TipoLocalOferta.Nenhum };
+        CriarLocalOfertaCommand comando = ComandoValido(campusId) with { Tipo = "INEXISTENTE" };
 
         Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -76,7 +76,7 @@ public sealed class CriarLocalOfertaCommandHandlerTests
     [Fact(DisplayName = "Tipo inválido e cidade ausente no mesmo payload acumulam as violações")]
     public async Task Handle_TipoInvalidoECidadeAusente_AcumulaAsViolacoes()
     {
-        var comando = new CriarLocalOfertaCommand(TipoLocalOferta.Nenhum, null, null, null, null, null, null);
+        var comando = new CriarLocalOfertaCommand("INEXISTENTE", null, null, null, null, null, null);
 
         Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
             comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);

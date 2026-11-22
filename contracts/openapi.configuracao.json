@@ -15728,6 +15728,38 @@
         }
       }
     },
+    "/api/configuracao/vocabularios/tipos-local-oferta": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-tipo-local-oferta.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoLocalOferta"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/configuracao/vocabularios/naturezas-conceito": {
       "get": {
         "tags": [
@@ -16398,7 +16430,14 @@
             "format": "uuid"
           },
           "tipo": {
-            "$ref": "#/components/schemas/TipoLocalOferta"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoLocalOfertaCodigo"
+              }
+            ]
           },
           "campusResponsavelId": {
             "type": [
@@ -18471,7 +18510,14 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "$ref": "#/components/schemas/TipoLocalOferta"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoLocalOfertaCodigo"
+              }
+            ]
           },
           "campusResponsavelId": {
             "type": [
@@ -24326,16 +24372,31 @@
         }
       },
       "TipoLocalOferta": {
-        "enum": [
-          "nenhum",
-          "campusSede",
-          "campusForaDeSede",
-          "cursoForaDeSede",
-          "poloEad",
-          "convenioInteriorizacao",
-          "outro"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoLocalOfertaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoLocalOfertaCodigo": {
+        "enum": [
+          "CAMPUS_SEDE",
+          "CAMPUS_FORA_DE_SEDE",
+          "CURSO_FORA_DE_SEDE",
+          "POLO_DE_EDUCACAO_A_DISTANCIA",
+          "CONVENIO_DE_INTERIORIZACAO",
+          "OUTRO"
+        ],
+        "type": "string",
+        "description": "- \u0060CAMPUS_SEDE\u0060: Campus sede\n- \u0060CAMPUS_FORA_DE_SEDE\u0060: Campus fora de sede\n- \u0060CURSO_FORA_DE_SEDE\u0060: Curso fora de sede\n- \u0060POLO_DE_EDUCACAO_A_DISTANCIA\u0060: Polo de educa\u00E7\u00E3o a dist\u00E2ncia\n- \u0060CONVENIO_DE_INTERIORIZACAO\u0060: Conv\u00EAnio de interioriza\u00E7\u00E3o\n- \u0060OUTRO\u0060: Outro"
       },
       "TipoMotivoDeDecisao": {
         "required": [

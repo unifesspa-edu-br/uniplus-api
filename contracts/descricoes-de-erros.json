@@ -5365,11 +5365,11 @@
       "codigo": "uniplus.configuracao.local_oferta.tipo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O **tipo** do local de oferta não foi informado, ou foi informado como o\nvalor sentinela `nenhum` — nos dois casos, o cadastro recusa.",
-        "O tipo classifica a modalidade do local: campus sede, campus fora de sede,\ncurso fora de sede, polo EaD, convênio de interiorização ou outro. É um\nroster fechado — um valor de texto desconhecido, que não corresponda a\nnenhum dos seis tipos válidos nem ao sentinela `nenhum`, é recusado antes\nde chegar aqui, na desserialização da requisição, com um erro genérico que\nnão carrega este código."
+        "O **tipo** do local de oferta não foi informado ou não é um dos códigos aceitos. O cadastro recusa a criação ou a atualização, junto com os demais campos inválidos da mesma requisição.",
+        "O tipo classifica a modalidade do local e é um conjunto fechado, informado pelo código: `CAMPUS_SEDE`, `CAMPUS_FORA_DE_SEDE`, `CURSO_FORA_DE_SEDE`, `POLO_DE_EDUCACAO_A_DISTANCIA`, `CONVENIO_DE_INTERIORIZACAO` ou `OUTRO`. O código é comparado exatamente: letras minúsculas e espaços nas pontas não são aceitos."
       ],
       "comoResolver": [
-        "Informe um dos seis tipos válidos de local de oferta."
+        "Informe um dos seis códigos de tipo de local de oferta. A lista, com o rótulo de cada um, está em `GET /api/configuracao/vocabularios/tipos-local-oferta`."
       ],
       "ondeAparece": [
         "Criação de um local de oferta",

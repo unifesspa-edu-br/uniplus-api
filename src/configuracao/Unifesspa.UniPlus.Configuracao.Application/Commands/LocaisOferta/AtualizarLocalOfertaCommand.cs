@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -14,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record AtualizarLocalOfertaCommand(
     Guid Id,
-    TipoLocalOferta Tipo,
+    [property: AceitaCodigosDe<TipoLocalOferta>] string? Tipo,
     Guid? CampusResponsavelId,
     string? CidadeCodigoIbge,
     string? CidadeNome,

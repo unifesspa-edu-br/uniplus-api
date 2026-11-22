@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -37,12 +38,12 @@ public sealed class LocalOfertaPersistenceTests
     public async Task Insert_PersisteFlatComReferenciaCidade()
     {
         Campus campus = await PersistirCampusAsync();
-        LocalOferta local = NovoLocal(TipoLocalOferta.PoloEad, campus.Id, null, "55555");
+        LocalOferta local = NovoLocal(TipoLocalOferta.PoloDeEducacaoADistancia, campus.Id, null, "55555");
         await PersistirAsync(local);
 
         LocalOferta persistido = await LerAsync(local.Id);
 
-        persistido.Tipo.Should().Be(TipoLocalOferta.PoloEad);
+        persistido.Tipo.Should().Be(TipoLocalOferta.PoloDeEducacaoADistancia);
         persistido.CampusResponsavelId.Should().Be(campus.Id);
         persistido.CidadeCodigoIbge.Should().Be("1504208");
         persistido.CidadeUf.Should().Be("PA");
@@ -53,7 +54,7 @@ public sealed class LocalOfertaPersistenceTests
     [Fact(DisplayName = "LocalOferta sem campus responsável persiste (FK intra-banco opcional, ADR-0065)")]
     public async Task Insert_SemCampusResponsavel_Persiste()
     {
-        LocalOferta local = NovoLocal(TipoLocalOferta.ConvenioInteriorizacao, null, null, null);
+        LocalOferta local = NovoLocal(TipoLocalOferta.ConvenioDeInteriorizacao, null, null, null);
         await PersistirAsync(local);
 
         LocalOferta persistido = await LerAsync(local.Id);
@@ -61,10 +62,10 @@ public sealed class LocalOfertaPersistenceTests
         persistido.CampusResponsavelId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "CA-01/CA-07: criar LocalOferta com endereço estruturado faz round-trip das colunas owned")]
+    [Fact(DisplayName = "CA-01/CA-07: criar LocalOferta com endereço estruturado preserva o endereço ao gravar e consultar")]
     public async Task Insert_ComEndereco_RoundTrip()
     {
-        LocalOferta local = NovoLocal(TipoLocalOferta.PoloEad, null, EnderecoDeMaraba(), null);
+        LocalOferta local = NovoLocal(TipoLocalOferta.PoloDeEducacaoADistancia, null, EnderecoDeMaraba(), null);
         await PersistirAsync(local);
 
         LocalOferta persistido = await LerAsync(local.Id);
@@ -78,7 +79,7 @@ public sealed class LocalOfertaPersistenceTests
     public async Task Insert_CampusResponsavelInexistente_RejeitadoPelaFk()
     {
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.CursoForaDeSede, Guid.CreateVersion7(), "1504208", "Marabá", "PA", null, null),
+            new("CURSO_FORA_DE_SEDE", Guid.CreateVersion7(), "1504208", "Marabá", "PA", null, null),
             Agora).ValorEsperado();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
@@ -90,7 +91,7 @@ public sealed class LocalOfertaPersistenceTests
             .WithInnerException(typeof(Npgsql.PostgresException));
     }
 
-    [Fact(DisplayName = "CA-05: remover LocalOferta referenciado por oferta de curso viva é bloqueado; oferta removida libera (#731)")]
+    [Fact(DisplayName = "CA-05: remover LocalOferta referenciado por oferta de curso viva é bloqueado; oferta removida permite a remoção")]
     public async Task RemoverLocalOferta_ComOfertaCursoViva_Bloqueia()
     {
         LocalOferta local = NovoLocal(TipoLocalOferta.CampusSede, null, null, null);
@@ -105,10 +106,36 @@ public sealed class LocalOfertaPersistenceTests
         liberada.IsSuccess.Should().BeTrue("oferta morta não bloqueia — o local fica livre para remoção");
     }
 
+    [Fact(DisplayName = "O tipo é gravado como o código de contrato")]
+    public async Task Insert_GravaOCodigoDeContratoDoTipo()
+    {
+        LocalOferta local = NovoLocal(TipoLocalOferta.PoloDeEducacaoADistancia, null, null, null);
+        await PersistirAsync(local);
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        List<string> gravados = await leitura.Database
+            .SqlQuery<string>($"SELECT tipo AS \"Value\" FROM configuracao.locais_de_oferta WHERE id = {local.Id}")
+            .ToListAsync();
+
+        gravados.Should().Equal("POLO_DE_EDUCACAO_A_DISTANCIA");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita tipo fora do contrato via SQL cru")]
+    public async Task Check_RejeitaTipoForaDoContratoViaSqlCru()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO configuracao.locais_de_oferta (id, tipo, cidade_codigo_ibge, cidade_nome, cidade_uf, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INEXISTENTE"}, {"1504208"}, {"Marabá"}, {"PA"}, {DateTimeOffset.UtcNow}, {false})");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK de domínio de tipo impede o INSERT direto");
+    }
+
     private static LocalOferta NovoLocal(
         TipoLocalOferta tipo, Guid? campusResponsavelId, ReferenciaEnderecoGeo? endereco, string? codigoExterno) =>
         LocalOferta.Criar(
-            new(tipo, campusResponsavelId, "1504208", "Marabá", "PA", endereco, codigoExterno),
+            new(tipo.Codigo(), campusResponsavelId, "1504208", "Marabá", "PA", endereco, codigoExterno),
             Agora).ValorEsperado();
 
     private static ReferenciaEnderecoGeo EnderecoDeMaraba() =>

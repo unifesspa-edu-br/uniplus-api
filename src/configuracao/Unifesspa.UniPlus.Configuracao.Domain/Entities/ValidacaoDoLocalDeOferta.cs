@@ -4,13 +4,14 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Confere, sem I/O, a declaração de um local de oferta e devolve os campos já normalizados, ou todas as recusas de uma
 /// vez (ADR-0125), cada uma rotulada pelo campo declarado. A coerência entre a cidade e o endereço só é conferida quando a
-/// referência de cidade é válida: do contrário a causa raiz (formato) ficaria mascarada por "incoerente".
+/// referência de cidade é válida: do contrário a causa inicial (formato) ficaria mascarada por "incoerente".
 /// </summary>
 internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declaracao)
 {
@@ -18,20 +19,22 @@ internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declara
 
     private readonly List<FieldError> _erros = [];
 
+    private TipoLocalOferta? _tipo;
+
     public Result<CamposDoLocalDeOferta> Resolver()
     {
         ConferirTipo();
         ConferirCidadeEEndereco();
         ConferirCodigoEmec();
 
-        return _erros.Count > 0
-            ? Result<CamposDoLocalDeOferta>.ValidationFailure(_erros)
-            : Result<CamposDoLocalDeOferta>.Success(Montar());
+        return _tipo is { } tipo && _erros.Count == 0
+            ? Result<CamposDoLocalDeOferta>.Success(Montar(tipo))
+            : Result<CamposDoLocalDeOferta>.ValidationFailure(_erros);
     }
 
-    private CamposDoLocalDeOferta Montar() =>
+    private CamposDoLocalDeOferta Montar(TipoLocalOferta tipo) =>
         new(
-            declaracao.Tipo,
+            tipo,
             declaracao.CampusResponsavelId,
             (declaracao.CidadeCodigoIbge ?? string.Empty).Trim(),
             (declaracao.CidadeNome ?? string.Empty).Trim(),
@@ -41,12 +44,16 @@ internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declara
 
     private void ConferirTipo()
     {
-        if (!Enum.IsDefined(declaracao.Tipo) || declaracao.Tipo == TipoLocalOferta.Nenhum)
+        if (CatalogoDe<TipoLocalOferta>.TentarObter(declaracao.Tipo, out TipoLocalOferta tipo))
         {
-            _erros.Add(new("tipo", new DomainError(
-                LocalOfertaErrorCodes.TipoInvalido,
-                "Tipo de Local de Oferta inválido — use um valor definido em TipoLocalOferta, diferente de Nenhum.")));
+            _tipo = tipo;
+            return;
         }
+
+        string aceitos = string.Join(", ", CatalogoDe<TipoLocalOferta>.Todos().Select(static declarado => declarado.Codigo));
+        _erros.Add(new("tipo", new DomainError(
+            LocalOfertaErrorCodes.TipoInvalido,
+            $"Tipo do local de oferta deve ser um de: {aceitos}.")));
     }
 
     private void ConferirCidadeEEndereco()

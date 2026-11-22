@@ -118,7 +118,7 @@ internal static class CatalogosDoEnvelopeFechado
     {
         Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             DateTimeOffset.UtcNow).ValorEsperado();
         config.Cursos.Add(curso);
         config.LocaisOferta.Add(local);
