@@ -23,7 +23,7 @@ public sealed class LocalOfertaTests
 
         resultado.IsSuccess.Should().BeTrue();
         LocalOferta local = resultado.Value!;
-        local.Tipo.Should().Be(TipoLocalOferta.PoloEad);
+        local.Tipo.Should().Be(TipoLocalOferta.PoloDeEducacaoADistancia);
         local.CampusResponsavelId.Should().Be(campusId);
         local.CidadeCodigoIbge.Should().Be("1504208");
         local.CidadeUf.Should().Be("PA");
@@ -32,7 +32,7 @@ public sealed class LocalOfertaTests
         local.Endereco.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Criar normaliza a cidade: sem espaço nas pontas, UF em maiúsculas, código e-MEC vazio vira ausente")]
+    [Fact(DisplayName = "Criar normaliza a cidade: sem espaço nas pontas, UF em maiúsculas, código e-MEC vazio é tratado como ausente")]
     public void Criar_ValoresComEspacoECaixa_Normaliza()
     {
         LocalOferta local = Existente(d => d with
@@ -76,10 +76,10 @@ public sealed class LocalOfertaTests
         resultado.Value!.CampusResponsavelId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Criar com tipo Nenhum falha")]
-    public void Criar_TipoNenhum_Falha()
+    [Fact(DisplayName = "Criar com tipo fora do contrato falha")]
+    public void Criar_TipoForaDoContrato_Falha()
     {
-        Result<LocalOferta> resultado = Criar(d => d with { Tipo = TipoLocalOferta.Nenhum });
+        Result<LocalOferta> resultado = Criar(d => d with { Tipo = "INEXISTENTE" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.TipoInvalido);
@@ -95,10 +95,10 @@ public sealed class LocalOfertaTests
     }
 
     private static DeclaracaoDoLocalDeOferta SemTipoENemCidade(DeclaracaoDoLocalDeOferta declaracao) =>
-        declaracao with { Tipo = TipoLocalOferta.Nenhum, CidadeCodigoIbge = null, CidadeNome = null, CidadeUf = null };
+        declaracao with { Tipo = "INEXISTENTE", CidadeCodigoIbge = null, CidadeNome = null, CidadeUf = null };
 
-    [Fact(DisplayName = "Tipo Nenhum e cidade ausente não lançam — devolvem as violações acumuladas")]
-    public void Criar_TipoNenhumECidadeAusente_NaoLancaEAcumulaAsViolacoes()
+    [Fact(DisplayName = "Tipo fora do contrato e cidade ausente não lançam — devolvem as violações acumuladas")]
+    public void Criar_TipoForaDoContratoECidadeAusente_NaoLancaEAcumulaAsViolacoes()
     {
         Result<LocalOferta> resultado = Criar(SemTipoENemCidade);
 
@@ -118,7 +118,7 @@ public sealed class LocalOfertaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(4);
-        local.Tipo.Should().Be(TipoLocalOferta.PoloEad, "falha de validação não pode mutar o agregado");
+        local.Tipo.Should().Be(TipoLocalOferta.PoloDeEducacaoADistancia, "falha de validação não pode mutar o agregado");
         local.CidadeCodigoIbge.Should().Be("1504208");
     }
 
@@ -129,7 +129,7 @@ public sealed class LocalOfertaTests
         Guid campusId = Guid.CreateVersion7();
 
         Result resultado = local.Atualizar(
-            Declaracao(d => d with { Tipo = TipoLocalOferta.CampusSede, CampusResponsavelId = campusId, CodigoEmec = " 123 " }),
+            Declaracao(d => d with { Tipo = "CAMPUS_SEDE", CampusResponsavelId = campusId, CodigoEmec = " 123 " }),
             Agora.AddDays(1));
 
         resultado.IsSuccess.Should().BeTrue();
@@ -141,7 +141,7 @@ public sealed class LocalOfertaTests
     [Fact(DisplayName = "ValidarDeclaracao aceita declaração válida sem instanciar o agregado")]
     public void ValidarDeclaracao_DeclaracaoValida_Aceita()
     {
-        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = TipoLocalOferta.CampusSede }));
+        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = "CAMPUS_SEDE" }));
 
         resultado.IsSuccess.Should().BeTrue();
     }

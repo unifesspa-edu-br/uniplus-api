@@ -115,7 +115,7 @@ public sealed class CampusPersistenceTests
             "a FK campus_responsavel_id com RESTRICT impede o DELETE físico do campus referenciado");
     }
 
-    [Fact(DisplayName = "CA-01/CA-07: criar Campus com endereço estruturado faz round-trip das colunas owned")]
+    [Fact(DisplayName = "CA-01/CA-07: criar Campus com endereço estruturado preserva o endereço ao gravar e consultar")]
     public async Task Insert_ComEndereco_RoundTrip()
     {
         Campus campus = NovoCampus("ENDCAM", "Campus Endereço", "1504208", "Marabá", "PA", EnderecoCoerente());
@@ -156,7 +156,7 @@ public sealed class CampusPersistenceTests
             "o CHECK ck_campus_endereco_cidade_coerente impede divergência cidade↔CEP");
     }
 
-    // Código IBGE do endereço ainda bate, mas a UF vira nula — sem o ramo
+    // Código IBGE do endereço ainda bate, mas a UF fica nula — sem o caso
     // IS NOT NULL no CHECK, a comparação viraria UNKNOWN e passaria.
     [Fact(DisplayName = "CA-04: CHECK NULL-safe rejeita UF do endereço nula com código IBGE batendo")]
     public async Task CheckCoerencia_RejeitaUfNulaComCodigoBatendo()
@@ -189,7 +189,7 @@ public sealed class CampusPersistenceTests
 
     // Preenche só um campo opcional (logradouro), sem CEP nem os obrigatórios —
     // fragmento que ficaria oculto (endereco_cep nulo ⇒ owned ausente). O CHECK
-    // all-or-nothing (que inclui as colunas opcionais no ramo "ausente") rejeita.
+    // all-or-nothing (que inclui as colunas opcionais no caso "ausente") rejeita.
     [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que preenche só um campo opcional do endereço")]
     public async Task CheckCompletude_RejeitaOpcionalSemObrigatorios()
     {
@@ -216,7 +216,7 @@ public sealed class CampusPersistenceTests
         await PersistirAsync(campus, AdminA);
 
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA", null, null),
+            new("CURSO_FORA_DE_SEDE", campus.Id, "1504208", "Marabá", "PA", null, null),
             Agora).ValorEsperado();
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.LocaisOferta.Add(local);

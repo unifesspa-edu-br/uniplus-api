@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -12,11 +11,11 @@ internal static class MontagemDoLocalDeOferta
     internal static readonly DateTimeOffset Agora = new(2026, 6, 17, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// A declaração válida de um polo EaD em Marabá; o teste informa só o que difere dela, com <c>ajuste</c>.
+    /// A declaração válida de um polo de educação a distância em Marabá; o teste informa só o que difere dela, com <c>ajuste</c>.
     /// </summary>
     internal static DeclaracaoDoLocalDeOferta Declaracao(Func<DeclaracaoDoLocalDeOferta, DeclaracaoDoLocalDeOferta>? ajuste = null)
     {
-        DeclaracaoDoLocalDeOferta declaracao = new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null);
+        DeclaracaoDoLocalDeOferta declaracao = new("POLO_DE_EDUCACAO_A_DISTANCIA", null, "1504208", "Marabá", "PA", null, null);
 
         return ajuste?.Invoke(declaracao) ?? declaracao;
     }

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -17,13 +18,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>string?</c>, não <c>string</c> (ADR-0125): sem validator FluentValidation
 /// garantindo não-nulo a montante, o model binding automático do
 /// <c>[ApiController]</c> interceptaria um campo ausente/nulo com um 400
-/// genérico do ASP.NET, antes de o domínio rodar. <c>Tipo</c> não precisa do
-/// mesmo tratamento: é um <see langword="enum"/> (tipo valor), e um campo
-/// ausente no JSON já desserializa para
-/// <see cref="TipoLocalOferta.Nenhum"/> (0), que o domínio já recusa.
+/// genérico do ASP.NET, antes de o domínio rodar. <c>Tipo</c> chega como código
+/// de contrato (<see cref="TipoLocalOferta"/>): o domínio recusa o ausente e o
+/// desconhecido, com os demais erros.
 /// </remarks>
 public sealed record CriarLocalOfertaCommand(
-    TipoLocalOferta Tipo,
+    [property: AceitaCodigosDe<TipoLocalOferta>] string? Tipo,
     Guid? CampusResponsavelId,
     string? CidadeCodigoIbge,
     string? CidadeNome,

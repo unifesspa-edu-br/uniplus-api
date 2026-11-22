@@ -26,7 +26,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
     private LocalOferta Existente()
     {
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null), Criacao).ValorEsperado();
+            new("POLO_DE_EDUCACAO_A_DISTANCIA", null, "1504208", "Marabá", "PA", null, null), Criacao).ValorEsperado();
         _repository.ObterPorIdAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
 
         return local;
@@ -41,7 +41,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
     {
         LocalOferta local = Existente();
 
-        Result resultado = await AtualizarAsync(new(local.Id, TipoLocalOferta.PoloEad, null, "1501402", "Belém", "PA", null, null));
+        Result resultado = await AtualizarAsync(new(local.Id, "POLO_DE_EDUCACAO_A_DISTANCIA", null, "1501402", "Belém", "PA", null, null));
 
         resultado.IsSuccess.Should().BeTrue();
         local.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
@@ -53,7 +53,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
     {
         LocalOferta local = Existente();
 
-        Result resultado = await AtualizarAsync(new(local.Id, TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null));
+        Result resultado = await AtualizarAsync(new(local.Id, "CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null));
 
         resultado.IsSuccess.Should().BeTrue();
         local.Tipo.Should().Be(TipoLocalOferta.CampusSede);
@@ -67,7 +67,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeHandlerTests
         await _repository.AdicionarAsync(Arg.Do<LocalOferta>(local => criado = local), Arg.Any<CancellationToken>());
 
         Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
-            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
+            new("POLO_DE_EDUCACAO_A_DISTANCIA", null, "1504208", "Marabá", "PA", null, null),
             _repository, _campusRepository, _unitOfWork, new RelogioFixo(Edicao), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();

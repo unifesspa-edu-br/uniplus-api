@@ -35,7 +35,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
 
     private static LocalOferta LocalVivo() =>
         LocalOferta.Criar(
-            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             Agora).ValorEsperado();
 
     private static UnidadeView UnidadeViva(Guid id) =>
@@ -75,7 +75,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
-        // Snapshot-copy (ADR-0061): sigla/nome/tipo congelados exatamente como a view devolveu.
+        // Cópia dos dados (ADR-0061): sigla/nome/tipo congelados exatamente como a view devolveu.
         await _repository.Received(1).AdicionarAsync(
             Arg.Is<OfertaCurso>(o => CongelaAUnidadeViva(o, unidadeId, cursoId, localId)),
             Arg.Any<CancellationToken>());
@@ -194,7 +194,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Corrida no índice único do código: a violação vira CodigoJaEmUso e o rastreamento é descartado")]
+    [Fact(DisplayName = "Corrida no índice único do código: a violação é informada como CodigoJaEmUso e o rastreamento é descartado")]
     public async Task Handle_ViolacaoDoIndiceDoCodigo_RetornaConflitoEDescarta()
     {
         PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId);

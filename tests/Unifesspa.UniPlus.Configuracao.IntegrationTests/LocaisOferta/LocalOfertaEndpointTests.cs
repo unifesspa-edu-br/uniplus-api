@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.LocaisOferta;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -8,7 +7,6 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -16,12 +14,10 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// Smoke + caminho de escrita dos endpoints de <c>LocalOferta</c> (UNI-REQ #587).
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class LocalOfertaEndpointTests
 {
+    private const string RotaAdmin = "/api/configuracao/admin/locais-oferta";
+
     private readonly ConfiguracaoEndpointFixture _fixture;
 
     public LocalOfertaEndpointTests(ConfiguracaoEndpointFixture fixture)
@@ -54,83 +50,39 @@ public sealed class LocalOfertaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta cria (201) sem campus responsável e o GET retorna a cidade")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta cria (201) sem campus responsável e o GET retorna o tipo com código e rótulo e a cidade")]
     public async Task Criar_SemCampus_Retorna201()
     {
-        var body = new
-        {
-            tipo = CamelCase(TipoLocalOferta.PoloEad),
-            campusResponsavelId = (Guid?)null,
-            cidadeCodigoIbge = "1504208",
-            cidadeNome = "Marabá",
-            cidadeUf = "PA",
-        };
-
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, RotaAdmin, CorpoDoLocal("POLO_DE_EDUCACAO_A_DISTANCIA", null));
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        using JsonDocument doc = await LerLocalAsync(client, await criar.Content.ReadFromJsonAsync<Guid>());
 
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/locais-oferta/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("tipo").GetString().Should().Be(CamelCase(TipoLocalOferta.PoloEad));
+        JsonElement tipo = doc.RootElement.GetProperty("tipo");
+        tipo.GetProperty("codigo").GetString().Should().Be("POLO_DE_EDUCACAO_A_DISTANCIA");
+        tipo.GetProperty("rotulo").GetString().Should().Be("Polo de educação a distância");
         doc.RootElement.GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta com campus responsável existente cria (201) — FK satisfeita")]
     public async Task Criar_ComCampusExistente_Retorna201()
     {
-        // Cria primeiro o campus, depois um local apontando para ele (FK intra-banco).
-        var campusBody = new
-        {
-            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
-            nome = "Campus Responsável",
-            cidadeCodigoIbge = "1504208",
-            cidadeNome = "Marabá",
-            cidadeUf = "PA",
-        };
-
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criarCampus = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", campusBody);
-        criarCampus.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid campusId = await criarCampus.Content.ReadFromJsonAsync<Guid>();
+        Guid campusId = await CriarCampusAsync(client);
 
-        var localBody = new
-        {
-            tipo = CamelCase(TipoLocalOferta.CursoForaDeSede),
-            campusResponsavelId = campusId,
-            cidadeCodigoIbge = "1504208",
-            cidadeNome = "Marabá",
-            cidadeUf = "PA",
-        };
+        HttpResponseMessage criarLocal = await EnviarPostAdmin(client, RotaAdmin, CorpoDoLocal("CURSO_FORA_DE_SEDE", campusId));
 
-        HttpResponseMessage criarLocal = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", localBody);
         criarLocal.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid localId = await criarLocal.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/locais-oferta/{localId}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        using JsonDocument doc = await LerLocalAsync(client, await criarLocal.Content.ReadFromJsonAsync<Guid>());
         doc.RootElement.GetProperty("campusResponsavelId").GetGuid().Should().Be(campusId);
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta com campus responsável inexistente retorna 422")]
     public async Task Criar_CampusInexistente_Retorna422()
     {
-        var body = new
-        {
-            tipo = CamelCase(TipoLocalOferta.CursoForaDeSede),
-            campusResponsavelId = Guid.NewGuid(),
-            cidadeCodigoIbge = "1504208",
-            cidadeNome = "Marabá",
-            cidadeUf = "PA",
-        };
-
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
+        HttpResponseMessage response = await EnviarPostAdmin(client, RotaAdmin, CorpoDoLocal("CURSO_FORA_DE_SEDE", Guid.NewGuid()));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -144,8 +96,7 @@ public sealed class LocalOfertaEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
-            "tipo ausente já desserializa para o sentinela Nenhum (enum, tipo valor) e cidade ausente " +
-            "precisa chegar ao domínio (ADR-0125), nenhum dos dois deve virar 400 de model binding");
+            "tipo e cidade ausentes precisam chegar ao domínio (ADR-0125), nenhum dos dois deve virar 400 de model binding");
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement erros = doc.RootElement.GetProperty("errors");
         erros.GetArrayLength().Should().Be(4);
@@ -153,8 +104,54 @@ public sealed class LocalOfertaEndpointTests
             .Should().BeEquivalentTo(["tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf"]);
     }
 
-    private static string CamelCase(TipoLocalOferta tipo) =>
-        System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(tipo.ToString());
+    [Fact(DisplayName = "POST com tipo fora do contrato retorna 422 no campo tipo, sem repetir o valor recebido")]
+    public async Task Criar_TipoForaDoContrato_Retorna422NoCampoTipo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, RotaAdmin, CorpoDoLocal("INEXISTENTE", null));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string conteudo = await response.Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(conteudo);
+        JsonElement erro = doc.RootElement.GetProperty("errors")[0];
+        erro.GetProperty("field").GetString().Should().Be("tipo");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.configuracao.local_oferta.tipo_invalido");
+        conteudo.Should().NotContain("INEXISTENTE");
+    }
+
+    private static object CorpoDoLocal(string tipo, Guid? campusResponsavelId) =>
+        new
+        {
+            tipo,
+            campusResponsavelId,
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+    private static async Task<Guid> CriarCampusAsync(HttpClient client)
+    {
+        var campusBody = new
+        {
+            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
+            nome = "Campus Responsável",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+        HttpResponseMessage criarCampus = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", campusBody);
+        criarCampus.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        return await criarCampus.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<JsonDocument> LerLocalAsync(HttpClient client, Guid id)
+    {
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/locais-oferta/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+    }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, string path, object body)
     {

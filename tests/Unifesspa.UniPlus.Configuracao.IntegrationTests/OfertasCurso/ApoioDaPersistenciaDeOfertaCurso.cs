@@ -89,7 +89,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
         Curso curso = Curso.Criar(
             CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).ValorEsperado();
         LocalOferta local = LocalOferta.Criar(
-            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             Agora).ValorEsperado();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);

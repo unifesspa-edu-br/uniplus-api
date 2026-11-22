@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
@@ -13,25 +12,41 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.MontagemDo
 
 public sealed class ValidacaoDoLocalDeOfertaTests
 {
-    [Fact(DisplayName = "Tipo fora do enum é recusado no campo tipo")]
-    public void ValidarDeclaracao_TipoForaDoEnum_RecusaNoCampoTipo()
+    [Theory(DisplayName = "Tipo ausente, em branco ou fora do contrato é recusado no campo tipo")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("INEXISTENTE")]
+    [InlineData("campus_sede")]
+    [InlineData(" CAMPUS_SEDE")]
+    public void ValidarDeclaracao_TipoForaDoContrato_RecusaNoCampoTipo(string? tipo)
     {
-        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = (TipoLocalOferta)999 }));
+        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = tipo }));
 
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("tipo");
         resultado.Errors[0].Error.Code.Should().Be(LocalOfertaErrorCodes.TipoInvalido);
     }
 
-    [Fact(DisplayName = "Tipo Nenhum é recusado com a mensagem do tipo")]
-    public void ValidarDeclaracao_TipoNenhum_RecusaComMensagemDoTipo()
+    [Fact(DisplayName = "Tipo recusado lista os códigos aceitos e não repete o valor recebido")]
+    public void ValidarDeclaracao_TipoForaDoContrato_ListaOsCodigosAceitosSemRepetirOValor()
     {
-        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = TipoLocalOferta.Nenhum }));
+        Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = "INEXISTENTE" }));
 
-        resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Error.Message.Should().Be(
-            "Tipo de Local de Oferta inválido — use um valor definido em TipoLocalOferta, diferente de Nenhum.");
+            "Tipo do local de oferta deve ser um de: CAMPUS_SEDE, CAMPUS_FORA_DE_SEDE, CURSO_FORA_DE_SEDE, " +
+            "POLO_DE_EDUCACAO_A_DISTANCIA, CONVENIO_DE_INTERIORIZACAO, OUTRO.");
     }
+
+    [Theory(DisplayName = "Cada código do contrato é aceito como tipo")]
+    [InlineData("CAMPUS_SEDE")]
+    [InlineData("CAMPUS_FORA_DE_SEDE")]
+    [InlineData("CURSO_FORA_DE_SEDE")]
+    [InlineData("POLO_DE_EDUCACAO_A_DISTANCIA")]
+    [InlineData("CONVENIO_DE_INTERIORIZACAO")]
+    [InlineData("OUTRO")]
+    public void ValidarDeclaracao_CodigoDoContrato_Aceita(string tipo) =>
+        LocalOferta.ValidarDeclaracao(Declaracao(d => d with { Tipo = tipo })).IsSuccess.Should().BeTrue();
 
     [Theory(DisplayName = "Cada campo da cidade ausente é recusado no próprio campo")]
     [InlineData("cidadeCodigoIbge", CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio)]
@@ -114,7 +129,7 @@ public sealed class ValidacaoDoLocalDeOfertaTests
     {
         Result resultado = LocalOferta.ValidarDeclaracao(Declaracao(d => d with
         {
-            Tipo = TipoLocalOferta.Nenhum,
+            Tipo = "INEXISTENTE",
             CidadeNome = null,
             CodigoEmec = new string('E', 21),
         }));

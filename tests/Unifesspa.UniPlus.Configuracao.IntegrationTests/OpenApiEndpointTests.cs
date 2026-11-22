@@ -128,6 +128,26 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
             "ComposicaoVagasCodigo",
             ["RESTANTE_DAS_VAGAS_OFERTADAS", "DENTRO_DA_RESERVA_LEGAL", "RETIRADA_DE_OUTRA_MODALIDADE", "SUPLEMENTAR_AO_TOTAL"]);
 
+    [Fact(DisplayName = "O código do tipo de local de oferta é componente de texto com enum, sem o valor nenhum")]
+    public Task TipoLocalOfertaCodigo_EComponenteDeTextoComEnum() =>
+        ConferirComponenteDeCodigosAsync(
+            "TipoLocalOfertaCodigo",
+            ["CAMPUS_SEDE", "CAMPUS_FORA_DE_SEDE", "CURSO_FORA_DE_SEDE", "POLO_DE_EDUCACAO_A_DISTANCIA", "CONVENIO_DE_INTERIORIZACAO", "OUTRO"]);
+
+    [Fact(DisplayName = "O código da resposta do local de oferta referencia o componente do enum")]
+    public Task RespostaDoLocalOferta_ReferenciaOComponenteDoEnum() =>
+        ConferirReferenciaDaRespostaAsync("TipoLocalOferta", "tipo", "TipoLocalOfertaCodigo", "LocalOfertaDto");
+
+    [Theory(DisplayName = "Os pedidos de criação e de atualização do local de oferta documentam o tipo com o componente dos códigos")]
+    [InlineData("CriarLocalOfertaCommand")]
+    [InlineData("AtualizarLocalOfertaCommand")]
+    public async Task PedidosDoLocalOferta_ReferenciamOComponenteDoTipo(string pedido)
+    {
+        JsonElement propriedades = (await ObterSchemasAsync()).GetProperty(pedido).GetProperty("properties");
+
+        ReferenciasDe(propriedades.GetProperty("tipo")).Should().Contain("#/components/schemas/TipoLocalOfertaCodigo");
+    }
+
     [Fact(DisplayName = "O código da regra de remanejamento é componente de texto com enum, sem o valor nenhum")]
     public Task RegraRemanejamentoCodigo_EComponenteDeTextoComEnum() =>
         ConferirComponenteDeCodigosAsync("RegraRemanejamentoCodigo", ["SEGUE_CASCATA", "DESTINO_UNICO", "CRUZADO"]);

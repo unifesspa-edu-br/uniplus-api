@@ -22,7 +22,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeTests
 
     public static TheoryData<string, Func<DeclaracaoDoLocalDeOferta, DeclaracaoDoLocalDeOferta>> MudancasForaDaReferenciaDaCidade => new()
     {
-        { "tipo", d => d with { Tipo = TipoLocalOferta.CampusSede } },
+        { "tipo", d => d with { Tipo = "CAMPUS_SEDE" } },
         { "campus responsável", d => d with { CampusResponsavelId = Guid.CreateVersion7() } },
         { "código e-MEC", d => d with { CodigoEmec = "98765" } },
         { "endereço", d => d with { Endereco = Endereco() } },
@@ -60,7 +60,7 @@ public sealed class LocalOfertaProcedenciaDaCidadeTests
     {
         LocalOferta local = Existente();
 
-        local.Atualizar(Declaracao(d => d with { CidadeNome = "Marabá do Pará", Tipo = TipoLocalOferta.Nenhum }), DepoisDaCriacao)
+        local.Atualizar(Declaracao(d => d with { CidadeNome = "Marabá do Pará", Tipo = "INEXISTENTE" }), DepoisDaCriacao)
             .IsFailure.Should().BeTrue();
 
         local.CidadeDisplayAtualizadoEm.Should().Be(Agora);
