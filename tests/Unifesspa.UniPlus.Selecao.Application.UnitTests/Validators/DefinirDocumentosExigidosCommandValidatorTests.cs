@@ -199,7 +199,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     [Theory(DisplayName = "Critério de distinção desconhecido segue para a conferência do domínio")]
     [InlineData("")]
     [InlineData("   ")]
-    public void AceitaForma_ChaveDistincaoVaziaOuEmBranco(string chaveInvalida)
+    public void AceitaForma_CriterioDeDistincaoDasApresentacoesVaziaOuEmBranco(string chaveInvalida)
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComDistincao(chaveInvalida).Construir();
 
@@ -209,7 +209,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     }
 
     [Fact(DisplayName = "A chave de distinção do catálogo fechado é aceita")]
-    public void Aceita_ChaveDistincaoValida()
+    public void Aceita_CriterioDeDistincaoDasApresentacoesValida()
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom())
             .ComQuantidadeMinima(1)
@@ -220,27 +220,27 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     }
 
     [Fact(DisplayName = "Quantidade mínima do grupo é conferida pelo domínio")]
-    public void Rejeita_QuantidadeMinimaEmGrupoE()
+    public void Aceita_QuantidadeMinimaEmGrupoDeTodosOsItens_ParaConferenciaPeloDominio()
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("TODOS_OS_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComQuantidadeMinima(2).Construir();
 
         ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Grupo OU com distinção das apresentações é rejeitado: a distinção é exclusiva da folha")]
-    public void Rejeita_DistincaoEmGrupoOu()
+    [Fact(DisplayName = "Grupo com quantidade mínima de itens não admite distinção de apresentações")]
+    public void Rejeita_DistincaoEmGrupoDeQuantidadeMinima()
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir()).ComDistincao("OCORRENCIA").Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("distincao.chave", StringComparison.Ordinal));
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("critério de distinção", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Folha com consequência de indeferimento de grupo é rejeitada")]
-    public void Rejeita_IndeferimentoDeGrupoEmFolha()
+    [Fact(DisplayName = "Regra de documento não admite consequência própria de grupo")]
+    public void Rejeita_IndeferimentoDeGrupoEmRegraDeDocumento()
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComIndeferimento("ELIMINA").Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("indeferimento.consequencia", StringComparison.Ordinal));
+        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("consequência própria", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Base legal sem consequência é conferida pelo domínio")]
@@ -253,8 +253,8 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Grupo OU com consequência do catálogo e bases legais é aceito")]
-    public void Aceita_GrupoOuComConsequenciaEBasesLegais()
+    [Fact(DisplayName = "Grupo com quantidade mínima de itens aceita consequência e bases legais")]
+    public void Aceita_GrupoDeQuantidadeMinimaComConsequenciaEBasesLegais()
     {
         RegraDeComprovacaoInformada raiz = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
             .ComQuantidadeMinima(1)

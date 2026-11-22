@@ -4,11 +4,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>Os dados informados para distinguir as apresentações de um documento.</summary>
 public sealed record DistincaoDeclarada(
-    ChaveDistincao? Chave, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas, bool ChaveReconhecida = true)
+    CriterioDeDistincaoDasApresentacoes? Criterio, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas, bool CriterioReconhecido = true)
 {
     public static DistincaoDeclarada Interpretar(string? codigo, DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas)
     {
-        ChaveDistincao? chave = codigo is null ? null : ChaveDistincaoCodigo.FromCodigo(codigo);
-        return new(chave, dataReferencia, ocorrenciasEsperadas, codigo is null || chave != ChaveDistincao.Nenhuma);
+        CriterioDeDistincaoDasApresentacoes? criterio = codigo is null ? null : CriterioDeDistincaoDasApresentacoesCodigo.FromCodigo(codigo);
+        return new(criterio, dataReferencia, ocorrenciasEsperadas, codigo is null || criterio != CriterioDeDistincaoDasApresentacoes.Nenhuma);
     }
 }

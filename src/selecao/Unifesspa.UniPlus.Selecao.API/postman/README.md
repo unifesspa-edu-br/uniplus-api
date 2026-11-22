@@ -109,7 +109,7 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **Rascunho do processo seletivo** | `POST` do documento da configuração (guarda `rascunho_id` e o ETag) → `GET` da exportação → `PUT` com `If-Match` (revisão 2) → `DELETE` com `If-Match` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
 | **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (ato único) |
-| **ProcessoSeletivo — Árvore de Satisfação (padrões estruturais, Story #923 §5)** | Matriz dos padrões estruturais reais do corpus (PS Principal 2027 §41-42, PSIQ 2027 §2) que o folder "Configuração" não cobre — aquele usa só folhas soltas na raiz. 5 padrões, cada um com `ProcessoSeletivo` DEDICADO (setup completo + `PUT documentos-exigidos` + `GET` de verificação da árvore persistida; nos que repetem por entidade, o setup define o formulário de inscrição com o grupo repetível pelo qual a exigência se repete): `Certificado E Histórico` (grupo `E` com 2 folhas); `E[OU[RG,CPF], Certidão]` por membro da composição familiar (`repetePorEntidade` = código do grupo `COMPOSICAO_FAMILIAR`, na raiz, sem aninhar); guarda condicional (folha com gatilho pelo campo `SOB_GUARDA` do grupo); IRPF/isento por adulto sem renda (grupo `OU` com consequência e base legal própria, gatilho AND por 2 campos do grupo); PF + PJ vinculada (grupo `PESSOAS_JURIDICAS`, com o fato de membro `CNPJ_PJ_VINCULADA` criado pelo administrador) |
+| **ProcessoSeletivo — Regras de Comprovação (padrões estruturais)** | Cinco padrões com grupos de todos os itens, quantidade mínima e repetição por grupo do formulário. |
 
 A coleção **não** é auto-limpante (diferente de `organizacao`): cria um
 `ProcessoSeletivo` novo a cada execução e reaproveita catálogos existentes via
@@ -126,37 +126,6 @@ exclusão, `formatosPermitidos[]` e o congelamento dos parâmetros na publicaç�
 toda a Leitura e o ciclo completo de Publicação/Retificação.
 Reprodutível: rodada duas vezes seguidas contra o mesmo banco compartilhado,
 sem falhas em nenhuma.
-
-### Task #942 (2026-07-20, pós-merge da Story #923, PR #939) — matriz estrutural + achados
-
-Reexecução completa contra o stack local, com a imagem `uniplus-api` rebuildada
-a partir da `main` pós-PR #939 (o container ativo estava com build de antes do
-merge — sem rebuild, os dois achados abaixo teriam passado despercebidos por
-estarem escondidos atrás de um binário desatualizado). **104/104 requests,
-106/106 assertions**, reproduzido em 2 execuções consecutivas.
-
-- **Achado real corrigido — 4 requests `[Borda]` com o contrato FLAT
-  pré-Story #920.** As 4 requests de borda de `ProcessoSeletivo — Configuração`
-  (`MODALIDADE EM` fora do domínio, `FAIXA_ETARIA` decimal, `EM` incompatível
-  com domínio numérico, `GERAL` com condição) ainda enviavam o corpo achatado
-  antigo (`exigidoNaFaseId`/`grupoSatisfacaoId` direto na raiz), nunca
-  atualizado quando a Story #920 substituiu esse formato pela árvore
-  (`{tipo, documento, ...}`). Passavam a falhar com 400 de model-binding em vez
-  do 422 de negócio esperado — corrigidas para o formato atual.
-- **Achado real corrigido — contagem estática da "Obter Snapshot Vigente"
-  desatualizada.** O teste esperava 6 exigências (1 GERAL + 5 CONDICIONAL) no
-  bloco congelado, mas a request "Definir Documentos Exigidos" já tinha 8
-  folhas há algum tempo (as 2 exigências de cardinalidade qualificada/repetição
-  por entidade das Stories #921/#922 foram adicionadas sem atualizar esta
-  asserção). Corrigido para 8.
-- **Achado real, não corrigido nesta task — [#943](https://github.com/unifesspa-edu-br/uniplus-api/issues/943):**
-  `PUT documentos-exigidos` falha com **500** (`ux_nos_da_arvore_de_exigencias_raiz_ordem`
-  duplicate key) ao substituir uma árvore que já contém um grupo `E`/`OU` por
-  qualquer outra — reproduzido de forma consistente contra o stack local, em
-  múltiplas combinações de árvore. Bloqueador de produção (quebra a edição de
-  qualquer árvore não-trivial via retificação), mas fora do escopo desta task
-  corrigir — a matriz de padrões estruturais abaixo usa um `ProcessoSeletivo`
-  dedicado por padrão exatamente para não depender da correção.
 
 ### Achado real corrigido — gate de fase exige a fase INSCRICAO no cronograma (issue #934)
 

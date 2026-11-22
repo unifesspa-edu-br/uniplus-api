@@ -18,7 +18,7 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     }
 
     [Fact]
-    public void Interpretar_FolhaSemDocumento_RecusaNoCampo()
+    public void Interpretar_RegraSemDocumento_RecusaNoCampo()
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("DOCUMENTO", false, 0, null);
 
@@ -28,16 +28,16 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     [Theory]
     [InlineData("TODOS_OS_ITENS")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS")]
-    public void Interpretar_GrupoComDocumento_Recusa(string tipo)
+    public void Interpretar_GrupoComDocumento_Recusa(string forma)
     {
-        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(tipo, true, 1, null);
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(forma, true, 1, null);
 
         declaracao.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be("RegraDeComprovacao.DocumentoProibidoEmGrupo");
         declaracao.Recusas[0].Field.Should().Be("documento");
     }
 
     [Fact]
-    public void Interpretar_FolhaComFilhos_Recusa()
+    public void Interpretar_RegraDeDocumentoComItens_Recusa()
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("DOCUMENTO", true, 1, null);
 
@@ -49,9 +49,9 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     [InlineData("TODOS_OS_ITENS", 1, 1, "quantidadeMinima", "RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", 1, 0, "quantidadeMinima", "RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites")]
     [InlineData("DOCUMENTO", 0, 0, "quantidadeMinima", "RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida")]
-    public void Interpretar_QuantidadeOuGrupoInvalido_Recusa(string tipo, int filhos, int? quantidade, string campo, string codigo)
+    public void Interpretar_QuantidadeOuGrupoInvalido_Recusa(string forma, int quantidadeDeItens, int? quantidade, string campo, string codigo)
     {
-        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(tipo, tipo == "DOCUMENTO", filhos, quantidade);
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(forma, forma == "DOCUMENTO", quantidadeDeItens, quantidade);
 
         declaracao.Recusas.Should().ContainSingle().Which.Should().Match<Unifesspa.UniPlus.Kernel.Results.FieldError>(
             recusa => recusa.Field == campo && recusa.Error.Code == codigo);
@@ -62,9 +62,9 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     [InlineData("TODOS_OS_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", "INVALIDA", false, "consequencia", "RegraDeComprovacao.ConsequenciaInvalida")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalSemConsequencia")]
-    public void Interpretar_ConsequenciaOuBaseInvalida_Recusa(string tipo, string? consequencia, bool temBase, string campo, string codigo)
+    public void Interpretar_ConsequenciaOuBaseInvalida_Recusa(string forma, string? consequencia, bool temBaseLegal, string campo, string codigo)
     {
-        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(tipo, false, 1, null, consequencia, temBase);
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(forma, false, 1, null, consequencia, temBaseLegal);
 
         declaracao.Recusas.Should().ContainSingle().Which.Should().Match<Unifesspa.UniPlus.Kernel.Results.FieldError>(
             recusa => recusa.Field == campo && recusa.Error.Code == codigo);
@@ -85,7 +85,7 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     [Fact]
     public void Interpretar_DistincaoComProblemasIndependentes_Acumula()
     {
-        DistincaoDeclarada distincao = new(ChaveDistincao.CompetenciaMensal, null, ["OUTRA"]);
+        DistincaoDeclarada distincao = new(CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, null, ["OUTRA"]);
 
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("DOCUMENTO", true, 0, 1, distincao: distincao);
 

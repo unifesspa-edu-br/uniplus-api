@@ -49,7 +49,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ]),
 
         [typeof(DistincaoDasApresentacoes)] = (
-            ["Chave", "DataReferencia", "OcorrenciasEsperadas"],
+            ["Criterio", "DataReferencia", "OcorrenciasEsperadas"],
             [("ConferivelPelaContagem", "Derivada da chave e da ausência de ocorrências esperadas; não acrescenta conteúdo ao envelope.")]),
 
         [typeof(BaseLegalDaComprovacao)] = (

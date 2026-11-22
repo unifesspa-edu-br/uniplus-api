@@ -813,13 +813,13 @@ definir_documentos_exigidos() {
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_habilitacao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id' <<< "$processo")
     [ -n "$fase_habilitacao_processo_id" ] || fail "fase HABILITACAO não encontrada no cronograma do processo $PROCESSO_ID"
-    base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "status": "RESOLVIDO", "observacao": null}]'
+    base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "situacao": "RESOLVIDO", "observacao": null}]'
 
-    # O PUT troca a árvore inteira: os documentos que o modelo de inscrição trouxer voltam na
+    # O PUT substitui todas as regras: os documentos que o modelo de inscrição trouxer voltam na
     # entrada, com a base legal resolvida — o modelo a deixa pendente até o CEPS indicar a norma, e
     # a publicação a exige resolvida. O modelo sem prova não traz nenhum.
-    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[(.raizesExigencia // [])[] | {
-        tipo: "FOLHA",
+    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[(.regrasDeComprovacao // [])[] | {
+        forma: "DOCUMENTO",
         documento: (.documento | {
             tipoDocumento: {id: .tipoDocumento.id}, momento, aplicabilidade,
             indeferimento: (.indeferimento | .basesLegais = $bases), requisitos, fatosComprovados
@@ -834,8 +834,8 @@ definir_documentos_exigidos() {
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-exigidos" "$(jq -nc \
         --argjson doModelo "$documentos_do_modelo" --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
         --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson basesLegais "$base_legal" '
-        def folha($tipo; $condicoes): {
-            tipo: "FOLHA",
+        def regra_de_documento($tipo; $condicoes): {
+            forma: "DOCUMENTO",
             documento: {
                 tipoDocumento: {id: $tipo},
                 momento: {faseId: $fase, finalidade: "HABILITACAO"},
@@ -847,11 +847,11 @@ definir_documentos_exigidos() {
         };
         def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
         $doModelo + [
-            folha($historico; [
+            regra_de_documento($historico; [
                 pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "EM", valor: "[\"REGULAR\",\"EJA\"]"},
                 pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}
             ]),
-            folha($residencia; [
+            regra_de_documento($residencia; [
                 pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}
             ])
         ]')" >/dev/null
@@ -869,8 +869,10 @@ documento_do_edital() {
 
     log "Documento do Edital — PUT direto no MinIO"
     local upload_http_code
+    local -a redirecionamento=()
+    [ -z "${ARMAZENAMENTO_CONNECT_TO:-}" ] || redirecionamento=(--connect-to "$ARMAZENAMENTO_CONNECT_TO")
     [ -f "$EDITAL_PDF" ] || fail "PDF do edital não encontrado: $EDITAL_PDF"
-    upload_http_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" --data-binary "@$EDITAL_PDF")
+    upload_http_code=$(curl "${redirecionamento[@]}" -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" --data-binary "@$EDITAL_PDF")
     [ "$upload_http_code" = "200" ] || fail "PUT no MinIO falhou (http=$upload_http_code) — url presumivelmente expirada ou host interno (minio:9000) não resolvido pelo cliente"
 
     log "Documento do Edital — confirmar upload"

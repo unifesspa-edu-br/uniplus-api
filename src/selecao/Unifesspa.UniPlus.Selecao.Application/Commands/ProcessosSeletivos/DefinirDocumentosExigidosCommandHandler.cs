@@ -40,7 +40,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        Result definido = await DefinicaoDosDocumentosExigidos.DefinirAsync(processo, command.Raizes, [], cadastros, cancellationToken)
+        Result definido = await DefinicaoDosDocumentosExigidos.DefinirAsync(processo, command.RegrasDeComprovacao, [], cadastros, cancellationToken)
             .ConfigureAwait(false);
         if (definido.IsFailure)
         {

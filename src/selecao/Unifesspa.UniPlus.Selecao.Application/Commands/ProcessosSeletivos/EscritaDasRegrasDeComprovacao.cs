@@ -58,7 +58,7 @@ internal static class EscritaDasRegrasDeComprovacao
     private static string? CampoDaDeclaracao(string? campo) => campo switch
     {
         "quantidadeMinima" => "cardinalidade.quantidadeMinima",
-        "criterioDeDistincao" => "cardinalidade.distincao.chave",
+        "criterioDeDistincao" => "cardinalidade.distincao.criterioDeDistincao",
         "dataReferencia" => "cardinalidade.distincao.dataReferencia",
         "ocorrenciasEsperadas" => "cardinalidade.distincao.ocorrenciasEsperadas",
         "consequencia" => "indeferimento.consequencia",
@@ -97,6 +97,6 @@ internal static class EscritaDasRegrasDeComprovacao
             : BaseLegalDaComprovacao.ValidarFormaBasica(
                 baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Situacao(baseLegal));
     private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada regra) =>
-        DistincaoDeclarada.Interpretar(regra.Distincao()?.Chave, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
+        DistincaoDeclarada.Interpretar(regra.Distincao()?.CriterioDeDistincao, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
 
 }

@@ -42,7 +42,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
 
     public static Result<RegraDeComprovacao> CriarRegraDeDocumento(
         DocumentoExigido documentoExigido, int ordem, int? quantidadeMinima = null,
-        ChaveDistincao? chaveDistincao = null, DateOnly? dataReferencia = null,
+        CriterioDeDistincaoDasApresentacoes? criterioDeDistincao = null, DateOnly? dataReferencia = null,
         IReadOnlyList<string>? ocorrenciasEsperadas = null, string? grupoDoFormularioParaRepeticao = null)
     {
         ArgumentNullException.ThrowIfNull(documentoExigido);
@@ -52,7 +52,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         {
             return Result<RegraDeComprovacao>.Failure(recusa);
         }
-        Result<DistincaoDasApresentacoes?> distincao = DistincaoDasApresentacoes.Declarar(chaveDistincao, dataReferencia, ocorrenciasEsperadas, quantidade);
+        Result<DistincaoDasApresentacoes?> distincao = DistincaoDasApresentacoes.Declarar(criterioDeDistincao, dataReferencia, ocorrenciasEsperadas, quantidade);
         return distincao.IsFailure ? Result<RegraDeComprovacao>.Failure(distincao.Error!)
             : Result<RegraDeComprovacao>.Success(NovaRegraDeDocumento(documentoExigido, ordem, quantidade, distincao.Value, grupoDoFormularioParaRepeticao?.Trim()));
     }

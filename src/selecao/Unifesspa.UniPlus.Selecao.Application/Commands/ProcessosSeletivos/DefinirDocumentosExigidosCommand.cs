@@ -144,10 +144,10 @@ public sealed record ItemDocumentoExigidoInput(
 /// do domínio: <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
 /// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/> opcional).
 /// </summary>
-/// <param name="Chave">Token canônico da chave de distinção (<see cref="Domain.Enums.ChaveDistincaoCodigo"/>).</param>
+/// <param name="CriterioDeDistincao">Código do critério de distinção (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoesCodigo"/>).</param>
 /// <param name="DataReferencia">Data a partir da qual o calendário é derivado.</param>
 /// <param name="OcorrenciasEsperadas">Identificadores das ocorrências esperadas.</param>
-public sealed record DistincaoDasApresentacoesInput(string? Chave, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
+public sealed record DistincaoDasApresentacoesInput(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
 {
     /// <summary>O caminho da distinção no pedido.</summary>
     public const string Caminho = "cardinalidade.distincao";
@@ -155,14 +155,14 @@ public sealed record DistincaoDasApresentacoesInput(string? Chave, DateOnly? Dat
 
 /// <summary>
 /// Quantas apresentações a exigência pede. A quantidade conta APRESENTAÇÕES, não arquivos; a distinção é
-/// exclusiva de <c>FOLHA</c>. Ausente, a contagem é bruta, sem qualificação.
+/// exclusiva da regra de documento. Ausente, a contagem não exige identificação específica.
 /// </summary>
 /// <param name="QuantidadeMinima">Quantidade mínima de apresentações; ausente vale 1 no domínio.</param>
 /// <param name="Distincao">Como as apresentações se distinguem entre si.</param>
 public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null, DistincaoDasApresentacoesInput? Distincao = null);
 
-/// <summary>A consequência do indeferimento de um grupo <c>OU</c> e as bases legais dela.</summary>
-/// <param name="Consequencia">Token da consequência; só o grupo <c>OU</c> a declara.</param>
+/// <summary>A consequência do indeferimento de um grupo com quantidade mínima de itens e as bases legais dela.</summary>
+/// <param name="Consequencia">Token da consequência; só o grupo com quantidade mínima de itens a declara.</param>
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
 public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
 
@@ -176,10 +176,8 @@ public sealed record RegraDeComprovacaoInformada(
     string? GrupoDoFormularioParaRepeticao = null);
 
 /// <summary>
-/// Substitui integralmente a árvore de satisfação de documentos exigidos do processo: fase, cópia do tipo de
-/// documento, aplicabilidade, obrigatoriedade e consequência de indeferimento, gatilho DNF, bases legais,
-/// requisitos do arquivo e árvore E/OU.
+/// Substitui integralmente as regras de comprovação documental do processo.
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<RegraDeComprovacaoInformada> Raizes) : ICommand<Result>;
+    IReadOnlyList<RegraDeComprovacaoInformada> RegrasDeComprovacao) : ICommand<Result>;

@@ -13,23 +13,23 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
 {
     [Theory]
     [InlineData(null)]
-    [InlineData(ChaveDistincao.CompetenciaMensal)]
-    [InlineData(ChaveDistincao.ExercicioAnual)]
-    [InlineData(ChaveDistincao.Ocorrencia)]
-    public async Task ObterParaMutacao_DistincaoDaFolha_ConservaValoresEmOutroContexto(ChaveDistincao? chave)
+    [InlineData(CriterioDeDistincaoDasApresentacoes.CompetenciaMensal)]
+    [InlineData(CriterioDeDistincaoDasApresentacoes.ExercicioAnual)]
+    [InlineData(CriterioDeDistincaoDasApresentacoes.Ocorrencia)]
+    public async Task ObterParaMutacao_DistincaoDaRegraDeDocumento_ConservaValoresEmOutroContexto(CriterioDeDistincaoDasApresentacoes? criterio)
     {
-        ProcessoSeletivo processo = ProcessoComDistincao(chave);
+        ProcessoSeletivo processo = ProcessoComDistincao(criterio);
         await PersistirAsync(processo);
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
         ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(contexto)
             .ObterParaMutacaoAsync(processo.Id, CancellationToken.None))!;
 
         RegraDeComprovacao original = processo.RegrasDeComprovacao.Single();
-        RegraDeComprovacao folha = recarregado.RegrasDeComprovacao.Should().ContainSingle().Which;
-        folha.Id.Should().Be(original.Id);
-        folha.Distincao.Should().BeEquivalentTo(original.Distincao);
-        folha.QuantidadeMinima.Should().Be(2);
-        folha.DocumentoExigido!.Id.Should().Be(original.DocumentoExigidoId!.Value);
+        RegraDeComprovacao regraDeDocumento = recarregado.RegrasDeComprovacao.Should().ContainSingle().Which;
+        regraDeDocumento.Id.Should().Be(original.Id);
+        regraDeDocumento.Distincao.Should().BeEquivalentTo(original.Distincao);
+        regraDeDocumento.QuantidadeMinima.Should().Be(2);
+        regraDeDocumento.DocumentoExigido!.Id.Should().Be(original.DocumentoExigidoId!.Value);
     }
 
     private async Task PersistirAsync(ProcessoSeletivo processo)
@@ -39,7 +39,7 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
         await contexto.SaveChangesAsync(CancellationToken.None);
     }
 
-    private static ProcessoSeletivo ProcessoComDistincao(ChaveDistincao? chave)
+    private static ProcessoSeletivo ProcessoComDistincao(CriterioDeDistincaoDasApresentacoes? criterio)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com distinção", TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.ImportacaoExterna, Guid.CreateVersion7(),
@@ -47,10 +47,10 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = Fase();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
-        DateOnly? referencia = chave is ChaveDistincao.CompetenciaMensal or ChaveDistincao.ExercicioAnual ? new(2026, 2, 1) : null;
-        string[]? ocorrencias = chave == ChaveDistincao.Ocorrencia ? ["a", "b"] : null;
-        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase.Id), 0, 2, chave, referencia, ocorrencias).Value!;
-        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+        DateOnly? referencia = criterio is CriterioDeDistincaoDasApresentacoes.CompetenciaMensal or CriterioDeDistincaoDasApresentacoes.ExercicioAnual ? new(2026, 2, 1) : null;
+        string[]? ocorrencias = criterio == CriterioDeDistincaoDasApresentacoes.Ocorrencia ? ["a", "b"] : null;
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase.Id), 0, 2, criterio, referencia, ocorrencias).Value!;
+        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
         return processo;
     }
 

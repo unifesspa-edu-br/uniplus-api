@@ -100,6 +100,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         builder.HasMany(n => n.BasesLegais)
             .WithOne()
             .HasForeignKey(b => b.RegraDeComprovacaoId)
+            .HasConstraintName("fk_bases_legais_comprovacao_regra")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(n => n.BasesLegais)
@@ -109,7 +110,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
     private static void ConfigurarDistincao(OwnedNavigationBuilder<RegraDeComprovacao, DistincaoDasApresentacoes> builder)
     {
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.Property(d => d.Chave).HasColumnName("criterio_de_distincao").HasConversion<int?>();
+        builder.Property(d => d.Criterio).HasColumnName("criterio_de_distincao").HasConversion<int?>();
         builder.Property(d => d.DataReferencia).HasColumnName("data_referencia");
         builder.Property(d => d.OcorrenciasEsperadas).HasColumnName("ocorrencias_esperadas")
             .HasConversion(OcorrenciasEsperadasConverter, OcorrenciasEsperadasComparer).HasColumnType("jsonb");
