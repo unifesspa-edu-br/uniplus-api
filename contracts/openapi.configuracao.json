@@ -15376,6 +15376,38 @@
         }
       }
     },
+    "/api/configuracao/vocabularios/origens-data-fase": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-origem-data-fase.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrigemDataFase"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/configuracao/vocabularios/naturezas-legais": {
       "get": {
         "tags": [
@@ -15504,7 +15536,7 @@
         }
       }
     },
-    "/api/configuracao/vocabularios/programas-de-oferta": {
+    "/api/configuracao/vocabularios/programas-oferta": {
       "get": {
         "tags": [
           "Vocabularios"
@@ -15568,7 +15600,7 @@
         }
       }
     },
-    "/api/configuracao/vocabularios/regimes-de-funcionamento": {
+    "/api/configuracao/vocabularios/regimes-funcionamento": {
       "get": {
         "tags": [
           "Vocabularios"
@@ -15600,7 +15632,7 @@
         }
       }
     },
-    "/api/configuracao/vocabularios/regimes-de-turno": {
+    "/api/configuracao/vocabularios/regimes-turno": {
       "get": {
         "tags": [
           "Vocabularios"
@@ -15632,7 +15664,7 @@
         }
       }
     },
-    "/api/configuracao/vocabularios/turnos-da-oferta": {
+    "/api/configuracao/vocabularios/turnos-oferta": {
       "get": {
         "tags": [
           "Vocabularios"
@@ -15742,6 +15774,38 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/TipoLocalOferta"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracao/vocabularios/formas-aceite": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-forma-aceite.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormaAceite"
                   }
                 }
               }
@@ -16398,9 +16462,13 @@
             "default": false
           },
           "origemData": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrigemDataFaseCodigo"
+              }
             ]
           },
           "unidadeSugeridaId": {
@@ -16530,7 +16598,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/RemanejamentoDasVagasInput"
+                "$ref": "#/components/schemas/RemanejamentoDasVagasInformado"
               }
             ]
           },
@@ -17982,7 +18050,7 @@
             "type": "string"
           },
           "formaAceite": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaAceite"
           },
           "hashVersao": {
             "type": "string"
@@ -18313,9 +18381,13 @@
             "default": false
           },
           "origemData": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrigemDataFaseCodigo"
+              }
             ]
           },
           "unidadeSugeridaId": {
@@ -18612,7 +18684,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/RemanejamentoDasVagasInput"
+                "$ref": "#/components/schemas/RemanejamentoDasVagasInformado"
               }
             ]
           },
@@ -18950,9 +19022,13 @@
             ]
           },
           "formaAceiteRascunho": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaAceiteCodigo"
+              }
             ]
           }
         }
@@ -20177,9 +20253,13 @@
             ]
           },
           "formaAceiteRascunho": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaAceiteCodigo"
+              }
             ]
           }
         }
@@ -20766,7 +20846,7 @@
             "type": "boolean"
           },
           "origemData": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemDataFase"
           },
           "unidadeSugerida": {
             "oneOf": [
@@ -21100,6 +21180,30 @@
             ]
           }
         }
+      },
+      "FormaAceite": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaAceiteCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaAceiteCodigo": {
+        "enum": [
+          "A_DEFINIR",
+          "REGISTRO_DIGITAL_SEM_LOG_IP",
+          "REGISTRO_DIGITAL_COM_LOG_IP"
+        ],
+        "type": "string",
+        "description": "- \u0060A_DEFINIR\u0060: A definir\n- \u0060REGISTRO_DIGITAL_SEM_LOG_IP\u0060: Registro digital sem log do endere\u00E7o IP\n- \u0060REGISTRO_DIGITAL_COM_LOG_IP\u0060: Registro digital com log do endere\u00E7o IP"
       },
       "FormatoPedagogico": {
         "required": [
@@ -22447,6 +22551,29 @@
           }
         }
       },
+      "OrigemDataFase": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/OrigemDataFaseCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OrigemDataFaseCodigo": {
+        "enum": [
+          "NO_EDITAL",
+          "NA_EXECUCAO"
+        ],
+        "type": "string",
+        "description": "- \u0060NO_EDITAL\u0060: No edital\n- \u0060NA_EXECUCAO\u0060: Na execu\u00E7\u00E3o do processo"
+      },
       "PapelDaBanca": {
         "required": [
           "codigo",
@@ -23418,7 +23545,7 @@
           }
         }
       },
-      "RemanejamentoDasVagasInput": {
+      "RemanejamentoDasVagasInformado": {
         "required": [
           "regra"
         ],
@@ -23749,7 +23876,7 @@
             ]
           },
           "formaAceiteRascunho": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaAceite"
           },
           "revisado": {
             "type": "boolean"
@@ -23804,7 +23931,7 @@
             "type": "string"
           },
           "formaAceiteRascunho": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaAceite"
           },
           "revisado": {
             "type": "boolean"
@@ -23851,7 +23978,7 @@
             "type": "string"
           },
           "formaAceite": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaAceite"
           },
           "hash": {
             "type": "string"

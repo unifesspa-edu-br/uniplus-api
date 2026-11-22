@@ -1572,6 +1572,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_locais_de_oferta", x => x.id);
                     table.CheckConstraint("ck_locais_de_oferta_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
                     table.CheckConstraint("ck_locais_de_oferta_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
+                    table.CheckConstraint("ck_locais_de_oferta_tipo", "tipo IN ('CAMPUS_SEDE', 'CAMPUS_FORA_DE_SEDE', 'CURSO_FORA_DE_SEDE', 'POLO_DE_EDUCACAO_A_DISTANCIA', 'CONVENIO_DE_INTERIORIZACAO', 'OUTRO')");
                     table.ForeignKey(
                         name: "fk_locais_de_oferta_campus_campus_responsavel_id",
                         column: x => x.campus_responsavel_id,
@@ -2690,7 +2691,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     texto = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    forma_aceite = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
+                    forma_aceite = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     hash_versao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     exibicao = table.Column<string>(type: "jsonb", nullable: true),
                     obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
