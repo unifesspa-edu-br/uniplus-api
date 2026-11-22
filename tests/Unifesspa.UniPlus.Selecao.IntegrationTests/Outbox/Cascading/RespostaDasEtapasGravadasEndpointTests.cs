@@ -46,6 +46,23 @@ public sealed class RespostaDasEtapasGravadasEndpointTests(CascadingFixture fixt
         JsonNode.DeepEquals(corpo, await LerEtapasAsync(cliente, processoId)).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Definir_DataComSeteCasas_DevolveOMesmoCorpoDaLeitura()
+    {
+        (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(fixture.Factory, nameof(Definir_DataComSeteCasas_DevolveOMesmoCorpoDaLeitura));
+        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(fixture.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
+        using HttpClient cliente = fixture.Factory.CreateClient();
+        JsonArray etapas = EtapasComBanca(catalogos.TipoBancaId);
+        etapas[0]!["inicio"] = "2026-01-25T11:00:00.1234567Z";
+        etapas[0]!["fim"] = "2026-01-27T11:00:00.7654321Z";
+        using HttpResponseMessage resposta = await EnviarEtapasAsync(cliente, processoId, etapas);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        JsonNode corpo = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!;
+        corpo[0]!["janela"]!["inicio"]!.GetValue<DateTimeOffset>()
+            .Should().Be(new DateTimeOffset(2026, 1, 25, 11, 0, 0, TimeSpan.Zero).AddTicks(1_234_560));
+        JsonNode.DeepEquals(corpo, await LerEtapasAsync(cliente, processoId)).Should().BeTrue();
+    }
+
     private static JsonArray EtapasComBanca(Guid tipoBancaId)
     {
         JsonArray etapas = JsonSerializer.SerializeToNode(PayloadsDoEnvelopeFechado.EtapasIniciais(tipoBancaId))!.AsArray();

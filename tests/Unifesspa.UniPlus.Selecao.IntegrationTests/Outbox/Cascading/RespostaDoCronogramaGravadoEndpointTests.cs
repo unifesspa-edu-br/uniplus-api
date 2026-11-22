@@ -35,6 +35,22 @@ public sealed class RespostaDoCronogramaGravadoEndpointTests(CascadingFixture fi
     }
 
     [Fact]
+    public async Task Definir_DataComSeteCasas_DevolveOMesmoCorpoDaLeitura()
+    {
+        (HttpClient cliente, Guid processoId, JsonArray fases, _) = await PrepararAsync();
+        using (cliente)
+        {
+            fases[0]!["inicio"] = "2027-01-25T11:00:00.1234567Z";
+            fases[0]!["fim"] = "2027-01-27T11:00:00.7654321Z";
+            using HttpResponseMessage resposta = await EnviarAsync(cliente, processoId, fases);
+            JsonNode corpo = await CorpoDeSucessoAsync(resposta);
+            corpo[0]!["cronograma"]!["inicio"]!.GetValue<DateTimeOffset>()
+                .Should().Be(new DateTimeOffset(2027, 1, 25, 11, 0, 0, TimeSpan.Zero).AddTicks(1_234_560));
+            JsonNode.DeepEquals(corpo, await LerCronogramaAsync(cliente, processoId)).Should().BeTrue();
+        }
+    }
+
+    [Fact]
     public async Task Definir_BancaExistente_MantemIdentificadorECopiaDoTipo()
     {
         (HttpClient cliente, Guid processoId, JsonArray fases, Guid tipoId) = await PrepararAsync();

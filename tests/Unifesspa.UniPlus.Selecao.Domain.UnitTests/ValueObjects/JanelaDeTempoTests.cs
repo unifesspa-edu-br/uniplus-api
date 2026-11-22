@@ -26,6 +26,17 @@ public sealed class JanelaDeTempoTests
         janela.Fim.Should().Be(Encerramento);
     }
 
+    [Fact(DisplayName = "O instante em UTC descarta a sétima casa decimal")]
+    public void EmUtc_SetimaCasaDecimal_DescartaFracaoDeMicrossegundo()
+    {
+        DateTimeOffset instante = new DateTimeOffset(2027, 1, 25, 8, 0, 0, TimeSpan.FromHours(-3)).AddTicks(1_234_567);
+        DateTimeOffset esperado = new DateTimeOffset(2027, 1, 25, 11, 0, 0, TimeSpan.Zero).AddTicks(1_234_560);
+
+        JanelaDeTempo.EmUtc(instante).Should().Be(esperado);
+        JanelaDeTempo.EmUtc(instante)!.Value.Offset.Should().Be(TimeSpan.Zero);
+        JanelaDeTempo.EmUtc(null).Should().BeNull();
+    }
+
     [Fact(DisplayName = "Janelas com os mesmos instantes em offsets diferentes são iguais")]
     public void Igualdade_MesmosInstantesEmOffsetsDiferentes_SaoIguais()
     {
