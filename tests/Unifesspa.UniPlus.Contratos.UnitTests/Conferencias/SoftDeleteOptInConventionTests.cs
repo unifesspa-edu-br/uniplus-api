@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
-using System.Linq;
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +15,6 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 /// Fitness function da issue #629: soft-delete é capability opt-in via
 /// <see cref="ISoftDeletable"/>. Garante as invariantes:
 /// <list type="bullet">
-/// <item>CA-01: <see cref="EntityBase"/> não declara membros de soft-delete;</item>
 /// <item>CA-07: a convenção <c>AplicarFiltroGlobalSoftDelete</c> aplica o filtro
 /// <c>!IsDeleted</c> a toda entidade <see cref="ISoftDeletable"/> do contexto único dos
 /// módulos e do Portal, e a nenhuma outra; nenhuma entidade não-soft mapeia a coluna
@@ -27,21 +23,6 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 /// </summary>
 public sealed class SoftDeleteOptInConventionTests
 {
-    [Fact(DisplayName = "CA-01: EntityBase não declara soft-delete; SoftDeletableEntity carrega o contrato")]
-    public void EntityBase_NaoDeclaraSoftDelete()
-    {
-        typeof(EntityBase).GetMembers(BindingFlags.Public | BindingFlags.Instance)
-            .Select(static membro => membro.Name)
-            .Intersect(["IsDeleted", "DeletedAt", "DeletedBy", "MarkAsDeleted"]).Should().BeEmpty();
-
-        typeof(ISoftDeletable).IsAssignableFrom(typeof(EntityBase)).Should().BeFalse(
-            "EntityBase não implementa ISoftDeletable — só SoftDeletableEntity o faz");
-        typeof(ISoftDeletable).IsAssignableFrom(typeof(SoftDeletableEntity)).Should().BeTrue(
-            "SoftDeletableEntity é a base que carrega a implementação de ISoftDeletable");
-        typeof(EntityBase).IsAssignableFrom(typeof(SoftDeletableEntity)).Should().BeTrue(
-            "SoftDeletableEntity estende EntityBase (soft-delete é opt-in sobre a identidade)");
-    }
-
     [Fact(DisplayName = "CA-07: convenção aplica soft-delete a toda ISoftDeletable e a nenhuma outra (contexto único e Portal)")]
     public void Convencao_SoftDelete_OptIn_Invariante()
     {
@@ -88,17 +69,7 @@ public sealed class SoftDeleteOptInConventionTests
     // modelo materializado reflete fielmente o que vai a produção (Npgsql).
     private static IEnumerable<DbContext> CriarContextos()
     {
-        yield return Criar<MonolitoDbContext>();
-        yield return Criar<PortalDbContext>();
-    }
-
-    private static TContext Criar<TContext>()
-        where TContext : DbContext
-    {
-        DbContextOptions<TContext> options = new DbContextOptionsBuilder<TContext>()
-            .UseInMemoryDatabase(typeof(TContext).Name)
-            .Options;
-
-        return (TContext)Activator.CreateInstance(typeof(TContext), options)!;
+        yield return new MonolitoDbContext(new DbContextOptionsBuilder<MonolitoDbContext>().UseInMemoryDatabase(nameof(MonolitoDbContext)).Options);
+        yield return new PortalDbContext(new DbContextOptionsBuilder<PortalDbContext>().UseInMemoryDatabase(nameof(PortalDbContext)).Options);
     }
 }

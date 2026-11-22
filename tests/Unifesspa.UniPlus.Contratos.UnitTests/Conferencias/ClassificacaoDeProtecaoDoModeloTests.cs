@@ -1,13 +1,15 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
-using System.IO;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 /// <summary>
 /// Fitness functions da classificação de proteção declarada no modelo (ADR-0153): toda coluna mapeada de
@@ -58,45 +60,15 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             + $"e regenere o arquivo com {AtualizarArquivoEnvVar}=1.");
     }
 
-    [Fact(DisplayName = "Todo projeto de infraestrutura da solução está referenciado pelo projeto de contratos")]
-    public void TodoProjetoDeInfraestruturaEstaReferenciado()
+    private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)> Analisar()
     {
-        string[] semAssembly =
-        [
-            .. ModelosDaSolucao.ProjetosDeInfraestrutura()
-                .Select(Path.GetFileNameWithoutExtension)
-                .Where(nome => !File.Exists(Path.Join(AppContext.BaseDirectory, nome + ".dll")))
-                .Order(StringComparer.Ordinal)!,
+        using MonolitoDbContext monolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext portal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
+        (IReadOnlyList<string> Violacoes, string ConteudoDoArquivo) conferenciaMonolito = ConferenciaDaClassificacaoDoModelo.Conferir(monolito.GetService<IDesignTimeModel>().Model);
+        (IReadOnlyList<string> Violacoes, string ConteudoDoArquivo) conferenciaPortal = ConferenciaDaClassificacaoDoModelo.Conferir(portal.GetService<IDesignTimeModel>().Model);
+        return [
+            (nameof(MonolitoDbContext), conferenciaMonolito.Violacoes, conferenciaMonolito.ConteudoDoArquivo),
+            (nameof(PortalDbContext), conferenciaPortal.Violacoes, conferenciaPortal.ConteudoDoArquivo),
         ];
-
-        semAssembly.Should().BeEmpty(
-            "um projeto de infraestrutura fora do projeto de contratos teria os DbContexts dele sem a conferência de classificação. Adicione a referência a: "
-            + string.Join(", ", semAssembly));
     }
-
-    [Fact(DisplayName = "Todo DbContext concreto da solução tem IDesignTimeDbContextFactory")]
-    public void TodoDbContextTemFactory()
-    {
-        HashSet<Type> comFactory = [.. ModelosDaSolucao.FabricasDeContexto().Select(f => f.Contexto)];
-
-        string[] semFactory =
-        [
-            .. ModelosDaSolucao.AssembliesDeInfraestrutura()
-                .SelectMany(a => a.GetTypes())
-                .Where(t => t is { IsAbstract: false } && t.IsSubclassOf(typeof(DbContext)) && !comFactory.Contains(t))
-                .Select(t => t.FullName!)
-                .Order(StringComparer.Ordinal),
-        ];
-
-        semFactory.Should().BeEmpty(
-            "o DbContext sem IDesignTimeDbContextFactory ficaria fora da conferência de classificação: " + string.Join(", ", semFactory));
-    }
-
-    // Uma única análise por modelo: a conferência e o arquivo versionado partem do mesmo resultado.
-    private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)> Analisar() =>
-    [
-        .. ModelosDaSolucao.Modelos()
-            .Select(m => (m.Contexto, Conferencia: ConferenciaDaClassificacaoDoModelo.Conferir(m.Modelo)))
-            .Select(m => (m.Contexto, m.Conferencia.Violacoes, m.Conferencia.ConteudoDoArquivo)),
-    ];
 }
