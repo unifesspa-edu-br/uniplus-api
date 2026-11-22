@@ -263,7 +263,7 @@ setup_configuracao() {
     LOCAL_OFERTA_ID=$(api_get "/api/configuracao/locais-oferta?limit=100" | jq -r --arg c "$CAMPUS_ID" '.[] | select(.campusResponsavelId==$c) | .id' | head -1)
     if [ -z "$LOCAL_OFERTA_ID" ]; then
         LOCAL_OFERTA_ID=$(post_tolerante "/api/configuracao/admin/locais-oferta" "{
-            \"tipo\": \"campusSede\", \"campusResponsavelId\": \"$CAMPUS_ID\",
+            \"tipo\": \"CAMPUS_SEDE\", \"campusResponsavelId\": \"$CAMPUS_ID\",
             \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
             \"endereco\": null, \"codigoEmec\": null
         }")
