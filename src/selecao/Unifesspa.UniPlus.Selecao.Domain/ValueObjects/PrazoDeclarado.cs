@@ -23,6 +23,12 @@ public sealed record PrazoDeclarado(decimal? Valor, string? Unidade)
     /// <param name="nomeDoPrazo">Como a mensagem chama o prazo: "prazo de interposição" ou "prazo da 2ª instância".</param>
     internal RecusaDosParametrosDoRecurso? Recusa(string campoDoValor, string campoDaUnidade, string nomeDoPrazo)
     {
+        if (!PrecisaoDecimal.Cabe(Valor))
+        {
+            return new(MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida, campoDoValor,
+                campoDoValor == "prazoValor" ? PrecisaoDecimal.Prazo : PrecisaoDecimal.PrazoSegunda);
+        }
+
         if (Valor is not > 0m)
         {
             return new(MotivoDaRecusaDosParametros.PrazoNaoPositivo, campoDoValor, $"Informe o {nomeDoPrazo} com valor maior que zero.");

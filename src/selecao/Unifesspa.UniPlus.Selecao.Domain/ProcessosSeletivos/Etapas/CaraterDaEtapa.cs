@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O caráter da etapa: se ela pontua, se ela elimina, o que o edital pode declarar de peso e de nota
@@ -25,7 +26,12 @@ public static class CaraterDaEtapa
     /// </summary>
     public static List<FieldError> ValidarDeclarado(CaraterEtapa carater, decimal? peso, decimal? notaMinima)
     {
-        FieldError?[] recusas = [RecusaDoCarater(carater), RecusaDoPeso(carater, peso), RecusaDaNotaMinima(carater, notaMinima)];
+        FieldError?[] recusas =
+        [
+            RecusaDoCarater(carater), RecusaDoPeso(carater, peso), RecusaDaNotaMinima(carater, notaMinima),
+            PrecisaoDecimal.Recusa(peso, "peso", PrecisaoDecimal.Peso),
+            PrecisaoDecimal.Recusa(notaMinima, "notaMinima", PrecisaoDecimal.NotaMinima),
+        ];
 
         return [.. recusas.OfType<FieldError>()];
     }

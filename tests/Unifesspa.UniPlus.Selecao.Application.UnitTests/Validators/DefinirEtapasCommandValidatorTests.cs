@@ -191,58 +191,6 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando o peso tem mais de 4 casas decimais (arredondaria para zero)")]
-    public void Rejeita_PesoComEscalaExcessiva()
-    {
-        // 0.00001 > 0 mas numeric(18,4) arredondaria para 0.0000 — divisor da média viraria zero.
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0.00001m, null, 1,
-            Produtos: [], Bancas: [], Recursos: []);
-
-        ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Peso");
-    }
-
-    [Fact(DisplayName = "Validator falha quando a nota mínima tem mais de 4 casas decimais")]
-    public void Rejeita_NotaMinimaComEscalaExcessiva()
-    {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, TipoEtapaOrigemIdValido, 3m, 5.00001m, 1,
-            Produtos: [], Bancas: [], Recursos: []);
-
-        ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].NotaMinima");
-    }
-
-    [Theory(DisplayName = "Validator falha quando a nota máxima ou o passo têm mais de 4 casas, e aceita 4")]
-    [InlineData(10.00001, null, "Etapas[0].NotaMaxima")]
-    [InlineData(null, 0.00001, "Etapas[0].PassoDoLancamento")]
-    public void Rejeita_EscalaComCasasExcessivas(double? notaMaxima, double? passo, string propriedade)
-    {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 1m, null, 1,
-            Produtos: [], Bancas: [], Recursos: [], NotaMaxima: (decimal?)notaMaxima, PassoDoLancamento: (decimal?)passo);
-
-        ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
-
-        result.Errors.Should().ContainSingle().Which.PropertyName.Should().Be(propriedade);
-    }
-
-    [Fact(DisplayName = "Validator aceita a nota máxima e o passo com 4 casas")]
-    public void Aceita_EscalaComQuatroCasas()
-    {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 1m, null, 1,
-            Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10.0001m, PassoDoLancamento: 0.0001m);
-
-        new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]))
-            .IsValid.Should().BeTrue();
-    }
-
     [Fact(DisplayName = "Validator falha (sem estourar) quando o array de etapas tem item nulo")]
     public void Rejeita_ItemNulo()
     {
@@ -250,21 +198,6 @@ public sealed class DefinirEtapasCommandValidatorTests
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [null!]));
 
         result.IsValid.Should().BeFalse();
-    }
-
-    [Theory(DisplayName = "Validator recusa pontuação do item e fração do nível com mais de 4 casas decimais")]
-    [InlineData("item", "Etapas[0].ItensDeAvaliacao[0].PontuacaoMaxima")]
-    [InlineData("nivel", "Etapas[0].EscalaDeAtendimento[0].Fracao")]
-    public void Rejeita_DecimalComCasasAMais(string alvo, string propriedadeEsperada)
-    {
-        EtapaProcessoInput etapa = alvo == "item"
-            ? EtapaValida() with { ItensDeAvaliacao = [new(null, "Clareza", 1.00001m)] }
-            : EtapaValida() with { EscalaDeAtendimento = [new("Atendeu", 0.99999m)] };
-
-        ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
-
-        result.Errors.Should().ContainSingle().Which.PropertyName.Should().Be(propriedadeEsperada);
     }
 
     [Fact(DisplayName = "Validator recusa item e nível nulos nas listas, em vez de deixar o handler estourar")]

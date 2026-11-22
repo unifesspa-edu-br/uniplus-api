@@ -116,7 +116,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Result<EtapaProcesso> resultado = Criar([Item("A", 10m)], [new("Atendeu", 1m), new("Excedeu", (decimal)fracao)]);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("escalaDeAtendimento[1].fracao");
-        Codigos(resultado).Should().Equal(NiveisDeAtendimento.FracaoInvalida);
+        Codigos(resultado).Should().Equal("uniplus.validacao.formato");
     }
 
     [Fact(DisplayName = "O rótulo do nível é obrigatório e não se repete na escala")]

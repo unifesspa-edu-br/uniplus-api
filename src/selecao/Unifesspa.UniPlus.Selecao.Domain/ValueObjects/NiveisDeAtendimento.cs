@@ -57,11 +57,11 @@ public static class NiveisDeAtendimento
 
     private static IEnumerable<FieldError> ValidarFracao(string campo, decimal fracao)
     {
-        if (fracao is < 0m or > 1m)
+        if (fracao is < 0m or > 1m || !PrecisaoDecimal.Cabe(fracao))
         {
             yield return new($"{campo}.fracao", new DomainError(
-                FracaoInvalida,
-                "A fração do nível de atendimento deve estar entre 0 e 1."));
+                CodigosDeValidacao.Formato,
+                PrecisaoDecimal.Fracao));
         }
     }
 

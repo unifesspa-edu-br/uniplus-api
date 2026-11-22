@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using FluentValidation;
 using FluentValidation.Validators;
 
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
 /// Taxonomia fechada dos códigos que o validator FluentValidation publica em
 /// <c>errors[].code</c> do 422 (ADR-0023). Sem ela, o código de uma regra sem
@@ -37,7 +39,7 @@ public static class ValidationErrorCodes
     public const string Tamanho = "uniplus.validacao.tamanho";
 
     /// <summary><c>Matches</c>, <c>EmailAddress</c> e <c>PrecisionScale</c> (quantidade de dígitos e casas decimais).</summary>
-    public const string Formato = "uniplus.validacao.formato";
+    public const string Formato = CodigosDeValidacao.Formato;
 
     /// <summary>Comparadores de ordem (<c>GreaterThan</c>, <c>LessThanOrEqualTo</c>…) e os <c>Between</c>.</summary>
     public const string Faixa = "uniplus.validacao.faixa";

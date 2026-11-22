@@ -31,6 +31,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
 
     private static readonly Dictionary<MotivoDaRecusaDosParametros, ParametrosDeclaradosDoRecurso> UmaCausaPorMotivo = new()
     {
+        [MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas") },
         [MotivoDaRecusaDosParametros.PrazoNaoPositivo] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "horas") },
         [MotivoDaRecusaDosParametros.PrazoEmDiasCorridos] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "dias") },
         [MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, null) },
@@ -76,8 +77,8 @@ public sealed class RecusasDosParametrosDoRecursoTests
             string doFase = RegraRecursoFase.Criar(Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
             string daEtapa = RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
 
-            doFase.Should().Be($"RegraRecursoFase.{motivo}");
-            daEtapa.Should().Be($"RecursoDaEtapa.{motivo}");
+            doFase.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RegraRecursoFase.{motivo}");
+            daEtapa.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RecursoDaEtapa.{motivo}");
         }
     }
 

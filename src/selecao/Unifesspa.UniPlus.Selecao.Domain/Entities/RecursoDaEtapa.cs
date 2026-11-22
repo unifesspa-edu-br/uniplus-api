@@ -128,7 +128,7 @@ public sealed class RecursoDaEtapa : EntityBase
         }.ToFrozenDictionary();
 
     private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) =>
-        new(CodigosDosParametros[recusa.Motivo], recusa.Mensagem);
+        new(recusa.Motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? CodigosDeValidacao.Formato : CodigosDosParametros[recusa.Motivo], recusa.Mensagem);
 
     /// <summary>
     /// Reidrata a janela preservando o <see cref="EntityBase.Id"/> congelado, sob as mesmas

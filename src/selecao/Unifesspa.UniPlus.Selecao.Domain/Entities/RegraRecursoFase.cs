@@ -132,7 +132,7 @@ public sealed class RegraRecursoFase : EntityBase
         }.ToFrozenDictionary();
 
     private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) =>
-        new(CodigosDosParametros[recusa.Motivo], recusa.Mensagem);
+        new(recusa.Motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? CodigosDeValidacao.Formato : CodigosDosParametros[recusa.Motivo], recusa.Mensagem);
 
     /// <summary>
     /// Reconstrói a regra a partir do registro da versão publicada, preservando a publicação de referência que estava vigente quando a versão foi
