@@ -27,6 +27,22 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         _fixture = fixture;
     }
 
+    [Fact(DisplayName = "A situação da base legal é gravada e devolvida no modelo")]
+    public async Task Criar_BaseLegalComSituacao_GravaEDevolveSituacao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
+        JsonObject documento = Documento();
+        documento["basesLegais"] = JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO"}]""");
+        modelo["conteudo"]!["documentosExigidos"] = new JsonArray(documento);
+
+        Guid id = await CriarAsync(client, modelo);
+        JsonObject baseLegal = (await ObterAsync(client, id))["conteudo"]!["documentosExigidos"]![0]!["basesLegais"]![0]!.AsObject();
+
+        baseLegal["situacao"]!.GetValue<string>().Should().Be("RESOLVIDO");
+        baseLegal.ContainsKey("status").Should().BeFalse();
+    }
+
     [Fact(DisplayName = "A recusa do catálogo aponta a posição do documento na entrada, com um documento sem fase antes dele")]
     public async Task Criar_DocumentoSemFaseAntes_RecusaDoCatalogoApontaAPosicaoDaEntrada()
     {

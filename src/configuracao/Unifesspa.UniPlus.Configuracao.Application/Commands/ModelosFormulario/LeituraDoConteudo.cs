@@ -171,7 +171,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
             RecusarEntradaMalformada($"{campo}.basesLegais", MensagemDaEntradaNula);
         }
 
-        return [.. bases.OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoDocumentoDoModelo(b.Referencia, b.Abrangencia, b.Status, b.Observacao))];
+        return [.. bases.OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoDocumentoDoModelo(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))];
     }
 
     private void RecusarCodigosAusentes(DocumentoExigidoDoModeloInput entrada, string campo)

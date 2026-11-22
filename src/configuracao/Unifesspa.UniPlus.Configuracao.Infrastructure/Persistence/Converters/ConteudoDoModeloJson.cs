@@ -107,7 +107,7 @@ internal static class ConteudoDoModeloJson
     {
         ["referencia"] = baseLegal.Referencia,
         ["abrangencia"] = baseLegal.Abrangencia,
-        ["status"] = baseLegal.Status,
+        ["situacao"] = baseLegal.Situacao,
         ["observacao"] = baseLegal.Observacao,
     };
 
@@ -207,7 +207,7 @@ internal static class ConteudoDoModeloJson
     private static BaseLegalDoDocumentoDoModelo BaseLegalDeJson(JsonElement baseLegal) => new(
         baseLegal.GetProperty("referencia").GetString()!,
         baseLegal.GetProperty("abrangencia").GetString()!,
-        baseLegal.GetProperty("status").GetString()!,
+        baseLegal.GetProperty("situacao").GetString()!,
         Texto(baseLegal, "observacao"));
 
     private static ExigenciaPorOpcao? PorOpcaoDeJson(JsonElement documento) =>

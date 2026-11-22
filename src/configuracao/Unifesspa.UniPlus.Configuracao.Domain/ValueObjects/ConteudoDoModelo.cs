@@ -216,7 +216,7 @@ public sealed record ConteudoDoModelo(
         new (string, string?)[]
         {
             ($"{caminho}.referencia", baseLegal.Referencia), ($"{caminho}.abrangencia", baseLegal.Abrangencia),
-            ($"{caminho}.status", baseLegal.Status), ($"{caminho}.observacao", baseLegal.Observacao),
+            ($"{caminho}.situacao", baseLegal.Situacao), ($"{caminho}.observacao", baseLegal.Observacao),
         };
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoCampo(string caminho, ItemDoModelo campo) =>

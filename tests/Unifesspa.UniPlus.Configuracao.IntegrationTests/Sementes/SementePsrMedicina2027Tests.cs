@@ -200,7 +200,7 @@ public sealed class SementePsrMedicina2027Tests
     {
         inscricao.Conteudo.Documentos.Should().HaveCount(2);
         inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && d.Obrigatorio);
-        inscricao.Conteudo.Documentos.SelectMany(static d => d.BasesLegais).Should().OnlyContain(static b => b.Status == "RESOLVIDO" && b.Abrangencia == "FEDERAL");
+        inscricao.Conteudo.Documentos.SelectMany(static d => d.BasesLegais).Should().OnlyContain(static b => b.Situacao == "RESOLVIDO" && b.Abrangencia == "FEDERAL");
     }
 
     // O laudo não enumera as condições: vale para cada uma que o processo ofertar, menos a lactante e

@@ -193,7 +193,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
 
     private static List<BaseLegalInput> BasesLegaisDoModelo(DocumentoExigidoDoModeloInput documento) =>
         [.. (documento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>()
-            .Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))];
+            .Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))];
 
     // As cláusulas do predicado do modelo como linhas do gatilho: uma cláusula por índice, o valor como JSON.
     private static List<CondicaoGatilhoInput> CondicoesDoGatilho(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? quando) =>
