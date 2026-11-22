@@ -35,20 +35,20 @@ public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeI
 /// <summary>
 /// Story #922 — o <see cref="StatusResolucaoExigencia"/> de UMA folha PARA UMA instância
 /// específica, dentro de uma subárvore <c>repetePorEntidade</c>. Complementa
-/// <see cref="ResultadoResolucaoArvore.StatusPorExigencia"/> (que só cobre folhas fora de
+/// <see cref="ResultadoDaComprovacao.StatusPorExigencia"/> (que só cobre folhas fora de
 /// repetição): sem isto, uma folha <c>Obrigatorio</c> sem <c>ConsequenciaIndeferimento</c>
 /// configurada (não emite <see cref="ConsequenciaEmitida"/>) ficaria com pendência visível
 /// só no AGREGADO da raiz repetida — nenhum sinal de QUAL <c>entidade_id</c> ainda deve o
 /// documento.
 /// </summary>
-/// <param name="DocumentoExigidoId">A exigência — mesma chave de <see cref="ResultadoResolucaoArvore.StatusPorExigencia"/>.</param>
+/// <param name="DocumentoExigidoId">A exigência — mesma chave de <see cref="ResultadoDaComprovacao.StatusPorExigencia"/>.</param>
 /// <param name="EntidadeId">A instância a que este status se refere.</param>
 /// <param name="Status">O status desta folha PARA esta instância.</param>
 public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeId, StatusResolucaoExigencia Status);
 
 /// <summary>
 /// O <see cref="SituacaoDaComprovacao"/> de UM nó (folha ou grupo) PARA uma instância de uma subárvore
-/// <c>repetePorEntidade</c>. Complementa <see cref="ResultadoResolucaoArvore.EstadosPorNo"/>, que não
+/// <c>repetePorEntidade</c>. Complementa <see cref="ResultadoDaComprovacao.SituacoesPorRegra"/>, que não
 /// cobre os nós de dentro da repetição: quem decide pelo estado do nó, e não da folha, lê o grupo
 /// "um ou outro" de cada ocorrência aqui.
 /// </summary>
@@ -58,7 +58,7 @@ public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, Si
 /// O resultado agregado de <see cref="Services.ResolvedorArvoreSatisfacao.Resolver"/> (Story #920)
 /// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
 /// </summary>
-/// <param name="EstadosPorNo">
+/// <param name="SituacoesPorRegra">
 /// O <see cref="SituacaoDaComprovacao"/> de todo nó FORA de uma subárvore <c>repetePorEntidade</c>
 /// (Story #922), chave = <c>NoExigencia.Id</c> — inclui o AGREGADO da própria raiz de uma
 /// subárvore repetida (satisfeita só quando TODAS as instâncias declaradas satisfazem, mesma
@@ -70,7 +70,7 @@ public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, Si
 /// <param name="StatusPorExigencia">
 /// Projeção por FOLHA (chave = <c>DocumentoExigido.Id</c>) — paridade com o formato anterior;
 /// folha nunca resolve <see cref="SituacaoDaComprovacao.Impossivel"/> (só emerge em nó de grupo pela
-/// cardinalidade). MESMA ressalva de <see cref="EstadosPorNo"/>: folhas dentro de uma subárvore
+/// cardinalidade). MESMA ressalva de <see cref="SituacoesPorRegra"/>: folhas dentro de uma subárvore
 /// <c>repetePorEntidade</c> não entram aqui (múltiplas instâncias, uma chave só) — o mapeamento é
 /// total apenas para folhas fora de repetição.
 /// </param>
@@ -94,8 +94,8 @@ public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, Si
 /// Cobre os nós fora de repetição: dentro de uma subárvore repetida, a máscara é de cada ocorrência e
 /// já se reflete nas consequências emitidas por ela.
 /// </param>
-public sealed record ResultadoResolucaoArvore(
-    IReadOnlyDictionary<Guid, SituacaoDaComprovacao> EstadosPorNo,
+public sealed record ResultadoDaComprovacao(
+    IReadOnlyDictionary<Guid, SituacaoDaComprovacao> SituacoesPorRegra,
     IReadOnlyDictionary<Guid, StatusResolucaoExigencia> StatusPorExigencia,
     IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
     IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,

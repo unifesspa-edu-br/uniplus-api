@@ -19,7 +19,7 @@ using ValueObjects;
 /// </summary>
 public static class DocumentosAusentesDaInscricao
 {
-    public static IReadOnlyList<DocumentoAusente> Apurar(ArvoreExigenciasCongelada arvore, ResultadoResolucaoArvore resultado)
+    public static IReadOnlyList<DocumentoAusente> Apurar(ArvoreExigenciasCongelada arvore, ResultadoDaComprovacao resultado)
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(resultado);
@@ -33,7 +33,7 @@ public static class DocumentosAusentesDaInscricao
         return ausentes;
     }
 
-    private static void Percorrer(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+    private static void Percorrer(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         if (no.RepetePorEntidade is not null && entidadeId is null)
@@ -47,7 +47,7 @@ public static class DocumentosAusentesDaInscricao
         PercorrerNoEscopo(no, entidadeId, resultado, porEntidade, ausentes);
     }
 
-    private static void PercorrerNoEscopo(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+    private static void PercorrerNoEscopo(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         if (no.Tipo == TipoNo.GrupoE)
@@ -61,7 +61,7 @@ public static class DocumentosAusentesDaInscricao
         }
     }
 
-    private static void PercorrerGrupoE(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+    private static void PercorrerGrupoE(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         if (EstadoDe(no, entidadeId, resultado, porEntidade) is not (SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Impossivel))
@@ -74,7 +74,7 @@ public static class DocumentosAusentesDaInscricao
         }
     }
 
-    private static void RegistrarAusentes(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+    private static void RegistrarAusentes(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
     {
         DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
@@ -88,8 +88,8 @@ public static class DocumentosAusentesDaInscricao
         }
     }
 
-    private static SituacaoDaComprovacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+    private static SituacaoDaComprovacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade) => entidadeId is null
-        ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, SituacaoDaComprovacao.Indeterminado)
+        ? resultado.SituacoesPorRegra.GetValueOrDefault(no.Id, SituacaoDaComprovacao.Indeterminado)
         : porEntidade.GetValueOrDefault((no.Id, entidadeId), SituacaoDaComprovacao.Indeterminado);
 }

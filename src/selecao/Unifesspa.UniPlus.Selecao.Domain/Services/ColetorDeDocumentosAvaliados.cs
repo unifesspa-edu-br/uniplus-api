@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using ValueObjects;
 
 internal sealed class ColetorDeDocumentosAvaliados(
-    ResultadoResolucaoArvore resultado, IReadOnlyDictionary<string, AvaliacaoGrupo> grupos, IReadOnlySet<Guid> deFasePosterior)
+    ResultadoDaComprovacao resultado, IReadOnlyDictionary<string, AvaliacaoGrupo> grupos, IReadOnlySet<Guid> deFasePosterior)
 {
     private readonly List<DocumentoAvaliado> _documentos = [];
 
@@ -29,7 +29,7 @@ internal sealed class ColetorDeDocumentosAvaliados(
         (ocorrenciaId is not null
             && resultado.EstadosPorEntidade.FirstOrDefault(e => e.NoExigenciaId == grupoId && e.EntidadeId == ocorrenciaId) is { } daOcorrencia
                 ? daOcorrencia.Estado
-                : resultado.EstadosPorNo.GetValueOrDefault(grupoId, SituacaoDaComprovacao.Indeterminado)) == SituacaoDaComprovacao.Satisfeito;
+                : resultado.SituacoesPorRegra.GetValueOrDefault(grupoId, SituacaoDaComprovacao.Indeterminado)) == SituacaoDaComprovacao.Satisfeito;
 
     private void ColetarNo(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? grupoRepetido)
     {

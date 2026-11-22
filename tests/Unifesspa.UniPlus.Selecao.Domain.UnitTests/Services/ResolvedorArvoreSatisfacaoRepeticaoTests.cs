@@ -25,7 +25,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         DocumentoExigido certidaoDeGuarda = DocumentoCondicional("SOB_GUARDA", "ELIMINA");
         NoExigencia raiz = GrupoFamiliar(rg, cpf, certidaoDeGuarda);
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz),
             instancias: InstanciasDe(
                 "COMPOSICAO_FAMILIAR", Instancia("membro_1", ("SOB_GUARDA", false)), Instancia("membro_2", ("SOB_GUARDA", true))));
@@ -44,7 +44,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, FatoResolvido> fatosDoCandidato = Fatos("SEM_RENDA", true);
         OcorrenciaDoGrupo membro = new("membro_1", new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["SEM_RENDA"] = FatoResolvido.NaoAplicavel() });
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), fatosDoCandidato, instancias: InstanciasDe("COMPOSICAO_FAMILIAR", membro));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), fatosDoCandidato, instancias: InstanciasDe("COMPOSICAO_FAMILIAR", membro));
 
         resultado.Value!.StatusPorEntidade.Should().Contain(
             s => s.DocumentoExigidoId == condicional.Id && s.EntidadeId == "membro_1" && s.Status == StatusResolucaoExigencia.NaoAplicavel);
@@ -59,10 +59,10 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_2"), Instancia("membro_3"));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaDeEntidade(rg, "membro_2"), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.Consequencia))
             .Should().BeEquivalentTo([("membro_1", "ELIMINA"), ("membro_3", "ELIMINA")]);
         ConferirStatusDosMembros(resultado.Value, rg.Id, "membro_2", ["membro_1", "membro_3"]);
@@ -77,7 +77,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_2"));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaDeEntidade(comprovante, "membro_1"), instancias: instancias);
 
         // Sem consequência configurada, nada é emitido em ConsequenciasVigentes — o único
@@ -98,9 +98,9 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
             Instancia("membro_adulto_com_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", false)),
             Instancia("membro_menor", ("MAIOR_IDADE", false), ("SEM_RENDA", true)));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.EntidadeId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
     }
@@ -117,10 +117,10 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "PESSOAS_JURIDICAS", Instancia("pj_1"), Instancia("pj_2"));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(grupo), apresentacoes: ApresentaDeEntidade(extrato, "pj_1"), instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[grupo.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[grupo.Id].Should().Be(SituacaoDaComprovacao.Pendente);
         resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.NoExigenciaId)).Should().BeEquivalentTo([("pj_1", folhaIrpj.Id), ("pj_2", folhaExtrato.Id), ("pj_2", folhaIrpj.Id)]);
     }
 
@@ -130,9 +130,9 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         DocumentoExigido documento = DocumentoGeral("ELIMINA");
         NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 
@@ -147,9 +147,9 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
 
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = ApresentacoesDosMembros(rg, "membro_1", "membro_2");
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes, instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes, instancias: instancias);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 
@@ -165,7 +165,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "PESSOAS_JURIDICAS", Instancia("pj_1"), Instancia("pj_2"));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(grupo), apresentacoes: ApresentaDeEntidade(docA, "pj_1"), instancias: instancias);
 
         ConferirOrientacoesDoGrupo(resultado.Value!, grupo, folhaA, folhaB);
@@ -180,7 +180,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         NoExigencia grupoExterno = NoExigencia.ReidratarGrupo(
             Guid.CreateVersion7(), 0, new CombinacaoDoGrupo(TipoNo.GrupoE, null, null), [], [folhaInterna], "COMPOSICAO_FAMILIAR");
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(grupoExterno));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(grupoExterno));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida");
@@ -194,7 +194,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_1"));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
@@ -208,20 +208,20 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
             "COMPOSICAO_FAMILIAR", Instancia(""));
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
     }
 
     private static void ConferirDocumentosPendentesDosMembros(
-        ResultadoResolucaoArvore resultado, DocumentoExigido rg, DocumentoExigido cpf, DocumentoExigido certidao)
+        ResultadoDaComprovacao resultado, DocumentoExigido rg, DocumentoExigido cpf, DocumentoExigido certidao)
     {
         resultado.StatusPorEntidade.Where(static s => s.Status == StatusResolucaoExigencia.Pendente)
             .Select(static s => (s.DocumentoExigidoId, s.EntidadeId)).Should().BeEquivalentTo(
                 [(rg.Id, "membro_1"), (rg.Id, "membro_2"), (cpf.Id, "membro_1"), (cpf.Id, "membro_2"), (certidao.Id, "membro_2")]);
     }
-    private static void ConferirStatusDosMembros(ResultadoResolucaoArvore resultado, Guid documentoId, string satisfeito, string[] pendentes)
+    private static void ConferirStatusDosMembros(ResultadoDaComprovacao resultado, Guid documentoId, string satisfeito, string[] pendentes)
     {
         resultado.StatusPorEntidade.Select(static s => (s.DocumentoExigidoId, s.EntidadeId, s.Status)).Should().BeEquivalentTo(
             pendentes.Select(id => (documentoId, id, StatusResolucaoExigencia.Pendente))
@@ -247,7 +247,7 @@ public sealed class ResolvedorArvoreSatisfacaoRepeticaoTests
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacoesDosMembros(DocumentoExigido documento, params string[] membros) =>
         new() { [documento.Id] = [.. membros.Select(static membro => new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: membro))] };
 
-    private static void ConferirOrientacoesDoGrupo(ResultadoResolucaoArvore resultado, NoExigencia grupo, NoExigencia folhaA, NoExigencia folhaB)
+    private static void ConferirOrientacoesDoGrupo(ResultadoDaComprovacao resultado, NoExigencia grupo, NoExigencia folhaA, NoExigencia folhaB)
     {
         resultado.PendenciasDeOrientacao.Select(static p => (p.NoExigenciaId, p.EntidadeId)).Should()
             .BeEquivalentTo([(folhaB.Id, "pj_1"), (folhaA.Id, "pj_2"), (folhaB.Id, "pj_2")]);
