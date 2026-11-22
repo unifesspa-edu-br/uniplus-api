@@ -169,7 +169,10 @@ decidir_item_da_protecao() {
     como "a aprovação da proteção de $(jq -r '.codigo' <<< "$item")" "$token" POST "/api/configuracao/admin/protecao-do-catalogo" \
         "$(jq -c '{cadastro: (if .tipo == "FATO" then "FATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVAR",
                    classificacaoProtecao, hipoteseLegal, finalidadeTratamento,
-                   ciclo: .aprovacao.ciclo, manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo}' <<< "$item")" >/dev/null
+                   ciclo: .aprovacao.ciclo, manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo}
+                  + (if .aprovacao.manifestacaoDesfavoravel
+                     then {justificativa: "Aprovação com ciência da manifestação técnica desfavorável, para o ambiente local de desenvolvimento."}
+                     else {} end)' <<< "$item")" >/dev/null
 }
 
 garantir_protecao_do_catalogo() {
