@@ -58,7 +58,7 @@ internal static class ArvoreDeTeste
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instancias = null) =>
-        ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
+        AvaliadorDaComprovacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
 
     internal static OcorrenciaDoGrupo Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
         new(entidadeId, atributos.ToDictionary(

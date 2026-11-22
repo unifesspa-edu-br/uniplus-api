@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static ApoioDaArvoreDeSatisfacao;
 
-public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
+public sealed class AvaliadorDaComprovacaoCardinalidadeTests
 {
     [Fact(DisplayName = "Folha sem chaveDistincao: contagem bruta — 2 apresentações satisfazem N=2")]
     public void Cardinalidade_SemChave_ContagemBrutaSatisfaz()

@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Cobre os cenários do delta "Consequência por nó e fronteira ativa de emissão" e da requirement
 /// "Grafo de dependência executável e ordem de coleta".
 /// </summary>
-public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
+public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
 {
     private static readonly Guid FaseId = Guid.CreateVersion7();
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
@@ -53,7 +53,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlySet<Guid>? bloqueadas = null) =>
-        ResolvedorArvoreSatisfacao.Resolver(
+        AvaliadorDaComprovacao.Resolver(
             arvore, fatos ?? new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             apresentacoes ?? SemApresentacoes, null, bloqueadas);
 
@@ -187,7 +187,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
             repetePorEntidade: "FAMILIA").Value!;
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> membros = MembrosDaFamilia();
 
-        ResultadoDaComprovacao r = ResolvedorArvoreSatisfacao.Resolver(
+        ResultadoDaComprovacao r = AvaliadorDaComprovacao.Resolver(
             Arvore(raiz), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), SemApresentacoes, membros,
             new HashSet<Guid> { bloqueado.Id }).Value!;
 

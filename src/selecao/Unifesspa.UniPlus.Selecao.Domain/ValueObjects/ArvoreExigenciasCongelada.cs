@@ -4,7 +4,7 @@ using Entities;
 
 /// <summary>
 /// A projeção de <c>documentosExigidos.arvore</c> de UMA <see cref="Entities.VersaoConfiguracao"/>
-/// já reidratada (Story #920) — o insumo de <see cref="Services.ResolvedorArvoreSatisfacao"/>.
+/// já reidratada (Story #920) — o insumo de <see cref="Services.AvaliadorDaComprovacao"/>.
 /// Substitui <c>BlocoExigenciasCongelado</c> (grupo plano) pela floresta de raízes da árvore de
 /// satisfação. Tipo próprio (não <c>IReadOnlyList&lt;NoExigencia&gt;</c> cru) pela mesma razão do
 /// antecessor: marca no sistema de tipos a fronteira entre evidência CONGELADA de uma versão

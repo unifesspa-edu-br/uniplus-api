@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Veredicto de <see cref="Services.ResolvedorArvoreSatisfacao"/> sobre UM nó da árvore de
+/// Veredicto de <see cref="Services.AvaliadorDaComprovacao"/> sobre UM nó da árvore de
 /// satisfação (folha ou grupo), para um candidato (Story #920). Compõe a aplicabilidade
 /// ternária do gatilho (<see cref="Ternario"/>, change irmã #914) com apresentação/cardinalidade.
 /// </summary>

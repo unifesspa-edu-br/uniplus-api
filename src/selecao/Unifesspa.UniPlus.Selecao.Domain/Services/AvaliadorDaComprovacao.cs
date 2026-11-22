@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Resolve a satisfação e as consequências da árvore congelada para um candidato.</summary>
-public sealed class ResolvedorArvoreSatisfacao
+public sealed class AvaliadorDaComprovacao
 {
     private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
     private readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> _apresentacoes;
@@ -21,7 +21,7 @@ public sealed class ResolvedorArvoreSatisfacao
     private readonly List<ConsequenciaEmitida> _consequencias = [];
     private readonly List<PendenciaDeOrientacao> _pendencias = [];
 
-    private ResolvedorArvoreSatisfacao(
+    private AvaliadorDaComprovacao(
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias, IReadOnlySet<Guid> bloqueadas)
@@ -44,7 +44,7 @@ public sealed class ResolvedorArvoreSatisfacao
             ?? new Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>(StringComparer.Ordinal);
         DomainError? recusa = RecusaDaArvore(arvore) ?? RecusaDasInstancias(instancias);
         return recusa is not null ? Result<ResultadoDaComprovacao>.Failure(recusa)
-            : Result<ResultadoDaComprovacao>.Success(new ResolvedorArvoreSatisfacao(
+            : Result<ResultadoDaComprovacao>.Success(new AvaliadorDaComprovacao(
                 fatosResolvidos, apresentacoesPorExigenciaId, instancias, exigenciasBloqueadas ?? new HashSet<Guid>()).Avaliar(arvore!));
     }
 
@@ -65,7 +65,7 @@ public sealed class ResolvedorArvoreSatisfacao
             ? EstruturaInvalida("A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única.") : null;
     }
 
-    private static DomainError EstruturaInvalida(string mensagem) => new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", mensagem);
+    private static DomainError EstruturaInvalida(string mensagem) => new("AvaliadorDaComprovacao.ArvoreEstruturalmenteInvalida", mensagem);
 
     private static DomainError? RecusaDasInstancias(IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias)
     {
@@ -73,11 +73,11 @@ public sealed class ResolvedorArvoreSatisfacao
         {
             if (ocorrencias.Any(static i => string.IsNullOrWhiteSpace(i.EntidadeId)))
             {
-                return new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", "Uma ocorrência do grupo tem EntidadeId vazio ou em branco.");
+                return new("AvaliadorDaComprovacao.InstanciaEntidadeInvalida", "Uma ocorrência do grupo tem EntidadeId vazio ou em branco.");
             }
             if (ocorrencias.Select(static i => i.EntidadeId).Distinct(StringComparer.Ordinal).Count() != ocorrencias.Count)
             {
-                return new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", "Duas ou mais ocorrências do grupo declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única.");
+                return new("AvaliadorDaComprovacao.InstanciaEntidadeInvalida", "Duas ou mais ocorrências do grupo declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única.");
             }
         }
         return null;
@@ -118,7 +118,7 @@ public sealed class ResolvedorArvoreSatisfacao
 
     private InstanciaResolvida ResolverInstancia(NoExigencia no, OcorrenciaDoGrupo instancia)
     {
-        ResolvedorArvoreSatisfacao resolvedor = new(MesclarFatosDeEntidade(_fatos, instancia.Atributos),
+        AvaliadorDaComprovacao resolvedor = new(MesclarFatosDeEntidade(_fatos, instancia.Atributos),
             FiltrarApresentacoesPorEntidade(_apresentacoes, instancia.EntidadeId), _instancias, _bloqueadas);
         SituacaoDaComprovacao estado = resolvedor.ResolverNoSemRepeticao(no);
         resolvedor._estados[no.Id] = estado;
