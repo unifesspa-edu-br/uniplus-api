@@ -43,7 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
   </ItemGroup>
 
