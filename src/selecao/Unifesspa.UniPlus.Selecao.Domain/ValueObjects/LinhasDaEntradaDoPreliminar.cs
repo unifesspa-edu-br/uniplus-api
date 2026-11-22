@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
 /// jeito: o par campo e valor, a referência de regra, os parâmetros do prazo de recurso, a regra de
-/// deliberação da banca, os tipos de decisão declarados e o produto em que o recurso ancora.
+/// deliberação da banca, os tipos de decisão declarados e a publicação de referência do recurso.
 /// </summary>
 internal static class LinhasDaEntradaDoPreliminar
 {
@@ -47,7 +47,7 @@ internal static class LinhasDaEntradaDoPreliminar
         Linha($"{campo}.guardaDaVaga", parametros.GuardaDaVaga.Codigo()),
     ];
 
-    /// <summary>Os procedimentos declarados da janela: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>
+    /// <summary>Os procedimentos declarados do período: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>
     internal static IEnumerable<string> DosProcedimentos(string campo, ProcedimentosDeRecurso procedimentos) =>
         procedimentos.Itens.SelectMany(procedimento => DaReferencia(
             $"{campo}.procedimentos[{Valor(procedimento.TipoDeDecisao.Codigo())}|{ChaveDoAlvo(procedimento.Alvo)}].regra", procedimento.Regra));
@@ -85,14 +85,14 @@ internal static class LinhasDaEntradaDoPreliminar
         .. tipo.TiposDeDecisaoJulgados.Select(julgado => Linha($"{campo}.tiposDeDecisaoJulgados[{Valor(julgado.Codigo())}]", true)),
     ];
 
-    /// <summary>O produto em que o prazo ancora, pelo tipo de ato e pelo papel e nunca pelo <c>Id</c>.</summary>
-    internal static IEnumerable<string> DaAncora(string campo, IEnumerable<IProdutoPublicado> produtos, Guid produtoAncoraId)
+    /// <summary>A publicação de referência do prazo, identificada pelo tipo de ato e pelo papel, sem usar o <c>Id</c>.</summary>
+    internal static IEnumerable<string> DaPublicacaoDeReferencia(string campo, IEnumerable<IProdutoPublicado> produtos, Guid publicacaoDeReferenciaId)
     {
-        IProdutoPublicado? ancora = ProdutoAncora(produtos, produtoAncoraId);
+        IProdutoPublicado? publicacaoDeReferencia = PublicacaoDeReferencia(produtos, publicacaoDeReferenciaId);
 
-        return [Linha($"{campo}.atoCodigo", ancora?.AtoCodigo), Linha($"{campo}.papel", ancora?.Papel)];
+        return [Linha($"{campo}.atoCodigo", publicacaoDeReferencia?.AtoCodigo), Linha($"{campo}.papel", publicacaoDeReferencia?.Papel)];
     }
 
-    internal static IProdutoPublicado? ProdutoAncora(IEnumerable<IProdutoPublicado> produtos, Guid produtoAncoraId) =>
-        produtos.FirstOrDefault(p => p.Id == produtoAncoraId);
+    internal static IProdutoPublicado? PublicacaoDeReferencia(IEnumerable<IProdutoPublicado> produtos, Guid publicacaoDeReferenciaId) =>
+        produtos.FirstOrDefault(p => p.Id == publicacaoDeReferenciaId);
 }

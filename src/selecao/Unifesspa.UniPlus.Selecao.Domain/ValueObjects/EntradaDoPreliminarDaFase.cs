@@ -50,7 +50,7 @@ internal static class EntradaDoPreliminarDaFase
             Linha("regraRecurso", true),
             .. DaReferencia("regraRecurso.regra", recurso.Regra),
             .. DosParametrosDoRecurso("regraRecurso.parametros", recurso.Parametros),
-            .. DaAncora("regraRecurso.ancora", fase.Produtos, recurso.ProdutoAncoraId),
+            .. DaPublicacaoDeReferencia("regraRecurso.ancora", fase.Produtos, recurso.ProdutoAncoraId),
             .. DosProcedimentos("regraRecurso", recurso.Procedimentos),
         ];
     }

@@ -110,8 +110,8 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         fases.Select(static fase => fase.Referencias.UnidadeResponsavelCodigo).Should().Equal(new string?[] { null, "CEPS", null });
     }
 
-    [Fact(DisplayName = "A janela da fase vai em UTC e o extremo ausente fica ausente")]
-    public void Janela_VaiEmUtcEOExtremoAusenteFicaAusente()
+    [Fact(DisplayName = "O período da fase usa UTC e mantém ausente o limite não informado")]
+    public void Periodo_UsaUtcEMantemAusenteOLimiteNaoInformado()
     {
         FaseNoDocumento completa = UnicaFase(FaseCompleta);
         FaseNoDocumento semDatas = Lidas(FasesForaDeOrdem).Fases[0];
@@ -183,7 +183,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     }
 
     [Fact(DisplayName = "A regra de recurso copia a regra, o ato cuja publicação inicia o prazo e os parâmetros, cada código como texto")]
-    public void RegraDeRecurso_CopiaARegraOAtoAncoraEOPrazo()
+    public void RegraDeRecurso_CopiaARegraOAtoDeReferenciaEOPrazo()
     {
         RegraDeRecursoNoDocumento regra = UnicaFase(RegraDeRecurso).RegraDeRecurso!;
 
