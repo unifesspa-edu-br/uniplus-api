@@ -16,10 +16,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using ValueObjects;
 
 /// <summary>
-/// Avalia o que depende dos fatos do candidato (ADR-0143): o formulário inteiro, a árvore de
-/// exigências sobre essa mesma avaliação e as modalidades em que ele concorre (UNI-REQ-0076,
-/// UNI-REQ-0064, UNI-REQ-0069). É a única composição do avaliador do formulário com o resolvedor da
-/// árvore: a consulta do candidato, o rascunho e a pré-visualização do processo leem a mesma conta.
+/// Avalia o formulário, as regras de comprovação e as modalidades de concorrência do candidato (ADR-0143).
+/// A mesma avaliação atende à consulta, ao rascunho e à pré-visualização do processo.
 /// </summary>
 /// <remarks>Função pura: não lê nem grava nada, e a mesma entrada dá sempre o mesmo resultado.</remarks>
 public static class AvaliacaoDaInscricao
@@ -34,7 +32,7 @@ public static class AvaliacaoDaInscricao
     public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false);
 
     /// <summary>
-    /// Só as modalidades em que o candidato concorre, sem a árvore de exigências nem os documentos: para
+    /// Só as modalidades em que o candidato concorre, sem avaliar as regras de comprovação nem os documentos: para
     /// quem avalia a mesma entrada diante da distribuição de vagas de cada oferta e precisa só delas.
     /// </summary>
     public static ModalidadesDeConcorrencia AvaliarModalidades(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada)
@@ -55,17 +53,17 @@ public static class AvaliacaoDaInscricao
         IReadOnlySet<Guid> deFasePosterior = entrada.NaFaseDaInscricao
             ? ExigenciasDeFasePosterior.Na(configuracao, entrada.FatosConhecidos)
             : new HashSet<Guid>();
-        Result<ResultadoDaComprovacao> arvore = AvaliadorDaComprovacao.Resolver(
-            configuracao.Arvore, formulario.Fatos, entrada.Apresentacoes, OcorrenciasVisiveis(formulario), deFasePosterior);
-        return ComporSeResolvida(configuracao, formulario, arvore, deFasePosterior);
+        Result<ResultadoDaComprovacao> resultadoDaComprovacao = AvaliadorDaComprovacao.Resolver(
+            configuracao.RegrasDeComprovacao, formulario.Fatos, entrada.Apresentacoes, OcorrenciasVisiveis(formulario), deFasePosterior);
+        return ComporSeResolvida(configuracao, formulario, resultadoDaComprovacao, deFasePosterior);
     }
 
     private static Result<ResultadoDaAvaliacaoDaInscricao> ComporSeResolvida(
         ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario,
-        Result<ResultadoDaComprovacao> arvore, IReadOnlySet<Guid> deFasePosterior) =>
-        arvore.IsFailure
-            ? Result<ResultadoDaAvaliacaoDaInscricao>.Failure(arvore.Error!)
-            : Result<ResultadoDaAvaliacaoDaInscricao>.Success(ComporResultado(configuracao, formulario, arvore.Value!, deFasePosterior));
+        Result<ResultadoDaComprovacao> resultadoDaComprovacao, IReadOnlySet<Guid> deFasePosterior) =>
+        resultadoDaComprovacao.IsFailure
+            ? Result<ResultadoDaAvaliacaoDaInscricao>.Failure(resultadoDaComprovacao.Error!)
+            : Result<ResultadoDaAvaliacaoDaInscricao>.Success(ComporResultado(configuracao, formulario, resultadoDaComprovacao.Value!, deFasePosterior));
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> OcorrenciasVisiveis(AvaliacaoFormulario formulario) =>
         formulario.Grupos.Where(static g => g.Visivel == Ternario.Verdadeiro).ToDictionary(
@@ -74,17 +72,17 @@ public static class AvaliacaoDaInscricao
             StringComparer.Ordinal);
 
     private static ResultadoDaAvaliacaoDaInscricao ComporResultado(
-        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, ResultadoDaComprovacao arvore, IReadOnlySet<Guid> deFasePosterior)
+        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, ResultadoDaComprovacao resultadoDaComprovacao, IReadOnlySet<Guid> deFasePosterior)
     {
         List<DocumentoAvaliado> documentos = new ColetorDeDocumentosAvaliados(
-            arvore, formulario.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal), deFasePosterior).Coletar(configuracao.Arvore);
+            resultadoDaComprovacao, formulario.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal), deFasePosterior).Coletar(configuracao.RegrasDeComprovacao);
         return new ResultadoDaAvaliacaoDaInscricao(
             formulario,
             Modalidades(configuracao, formulario),
             new DocumentosDaInscricao(
                 documentos,
                 DocumentosAvaliadosDaInscricao.PendenciasDosDocumentos(configuracao, formulario, documentos),
-                DocumentosAusentesDaInscricao.Apurar(configuracao.Arvore, arvore)));
+                DocumentosAusentesDaInscricao.Apurar(configuracao.RegrasDeComprovacao, resultadoDaComprovacao)));
     }
 
     private static AvaliacaoFormulario AvaliarFormulario(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada) =>
@@ -104,7 +102,7 @@ public static class AvaliacaoDaInscricao
     /// O que o formulário da inscrição pergunta e de que a avaliação depende, para quem consulta saber
     /// quando a resposta muda a avaliação: os campos alcançados pelas derivações e pelos gatilhos das
     /// exigências — o derivado do sistema, pelos campos de que ele é calculado —, os grupos que os
-    /// agregados alcançados somam, os grupos pelos quais a árvore de exigências se repete, porque incluir
+    /// agregados alcançados somam, os grupos pelos quais as regras de comprovação se repetem, porque incluir
     /// ou tirar um membro muda o que se exige, e o que decide se esses grupos aparecem.
     /// </summary>
     public static DependenciasDaAvaliacao Dependencias(ConfiguracaoAvaliavel configuracao)
@@ -112,7 +110,7 @@ public static class AvaliacaoDaInscricao
         ArgumentNullException.ThrowIfNull(configuracao);
 
         DependenciasDaAvaliacao daModalidade = DependenciasDaModalidade(configuracao.Definicao);
-        DependenciasDaAvaliacao dosDocumentos = DependenciasDaInscricao.DependenciasDe(configuracao.Definicao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.Arvore.Raizes));
+        DependenciasDaAvaliacao dosDocumentos = DependenciasDaInscricao.DependenciasDe(configuracao.Definicao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo));
         return new DependenciasDaAvaliacao(
             [.. daModalidade.Fatos.Union(dosDocumentos.Fatos, StringComparer.Ordinal).Order(StringComparer.Ordinal)],
             [.. daModalidade.Grupos.Union(dosDocumentos.Grupos, StringComparer.Ordinal).Order(StringComparer.Ordinal)]);
@@ -162,7 +160,7 @@ public static class AvaliacaoDaInscricao
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        IEnumerable<string> alvos = DependenciasDaInscricao.AlvosDoFechamento(configuracao.Definicao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.Arvore.Raizes));
+        IEnumerable<string> alvos = DependenciasDaInscricao.AlvosDoFechamento(configuracao.Definicao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo));
         if (DerivaAModalidade(configuracao.Definicao))
         {
             alvos = alvos.Append(FatoDaModalidade);

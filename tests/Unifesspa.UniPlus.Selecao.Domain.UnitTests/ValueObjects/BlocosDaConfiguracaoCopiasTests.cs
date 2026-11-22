@@ -40,11 +40,11 @@ public sealed class BlocosDaConfiguracaoCopiasTests
     public void ExigenciasDeclaradas_ListasOriginaisMutadas_ConservaDocumentosENos()
     {
         List<DocumentoExigido> documentos = [];
-        List<NoExigencia> nos = [];
+        List<RegraDeComprovacao> nos = [];
         ExigenciasDeclaradas bloco = new(documentos, nos);
 
         ConferirCopia(documentos, bloco.DocumentosExigidos);
-        ConferirCopia(nos, bloco.NosExigencia);
+        ConferirCopia(nos, bloco.RegrasDeComprovacao);
     }
 
     [Fact]

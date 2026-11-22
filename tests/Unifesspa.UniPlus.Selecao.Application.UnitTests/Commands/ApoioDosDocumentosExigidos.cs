@@ -144,7 +144,7 @@ internal static class ApoioDosDocumentosExigidos
         }
 
         internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoInput item) =>
-            new(Processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
+            new(Processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
 
         internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoDeTeste item) => Comando(item.Construir());
 

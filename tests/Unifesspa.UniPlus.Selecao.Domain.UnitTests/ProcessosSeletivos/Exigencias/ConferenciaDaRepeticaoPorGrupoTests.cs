@@ -53,7 +53,7 @@ public sealed class ConferenciaDaRepeticaoPorGrupoTests
         ConferenciaDaRepeticaoPorGrupo.Conferir(
             Conhecimento(ColetaDeTeste.Coleta(inscricao, "origem_escolar")),
             [Repeticao(inscricao, _inscricao, "dependentes")])
-            .Should().ContainSingle().Which.Error.Code.Should().Be("NoExigencia.RepeticaoPorGrupoInexistente");
+            .Should().ContainSingle().Which.Error.Code.Should().Be("RegraDeComprovacao.RepeticaoPorGrupoInexistente");
     }
 
     [Fact(DisplayName = "O grupo de formulário que o ponto não alcança é recusado")]
@@ -65,7 +65,7 @@ public sealed class ConferenciaDaRepeticaoPorGrupoTests
         ConferenciaDaRepeticaoPorGrupo.Conferir(
             Conhecimento(ColetaDeTeste.ColetaComGrupo(habilitacao, "dependentes", "nome_do_dependente"), ColetaDeTeste.Coleta(inscricao, "origem_escolar")),
             [Repeticao(inscricao, _inscricao, "dependentes")])
-            .Should().ContainSingle().Which.Error.Code.Should().Be("NoExigencia.RepeticaoPorGrupoNaoAlcancado");
+            .Should().ContainSingle().Which.Error.Code.Should().Be("RegraDeComprovacao.RepeticaoPorGrupoNaoAlcancado");
     }
 
     [Fact(DisplayName = "A recusa aponta a exigência e o grupo pelo caminho")]

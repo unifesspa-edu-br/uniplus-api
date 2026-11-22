@@ -10,11 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>
-/// Configuração EF Core de <see cref="BaseLegalDaComprovacao"/> (Story #920) — mesmo padrão de
-/// <see cref="DocumentoExigidoBaseLegalConfiguration"/> (duas classes concretas separadas, sem
-/// herança EF/TPH — decisão deliberada, ver <see cref="NoExigencia"/>).
-/// </summary>
+/// <summary>Configura a persistência da base legal da regra de comprovação.</summary>
 public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfiguration<BaseLegalDaComprovacao>
 {
     private const int ReferenciaMaxLength = 500;
@@ -28,7 +24,7 @@ public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfigurati
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("bases_legais_dos_nos");
+        builder.ToTable("bases_legais_da_comprovacao");
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 
@@ -39,7 +35,7 @@ public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfigurati
             .HasMaxLength(AbrangenciaCodigoMaxLength)
             .IsRequired();
 
-        builder.Property(b => b.Status)
+        builder.Property(b => b.Situacao)
             .HasConversion(StatusConverter)
             .HasMaxLength(StatusCodigoMaxLength)
             .IsRequired();

@@ -45,7 +45,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
-            client, processo.Id, [FolhaDaInscricaoCondicionadaA(bolsista, tipoDocumentoId, processo.CronogramaFases.Single().Id)]);
+            client, processo.Id, [RegraDaInscricaoCondicionadaA(bolsista, tipoDocumentoId, processo.CronogramaFases.Single().Id)]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -63,9 +63,9 @@ public sealed class FinalidadeDaExigenciaEndpointTests
         return await client.SendAsync(request);
     }
 
-    private static object FolhaDaInscricaoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId) => new
+    private static object RegraDaInscricaoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId) => new
     {
-        tipo = "FOLHA",
+        forma = "DOCUMENTO",
         documento = new
         {
             tipoDocumento = new { id = tipoDocumentoId },

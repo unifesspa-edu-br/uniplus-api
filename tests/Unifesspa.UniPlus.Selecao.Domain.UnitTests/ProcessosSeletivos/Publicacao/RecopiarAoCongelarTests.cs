@@ -58,7 +58,7 @@ public sealed class RecopiarAoCongelarTests
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel),
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null,
             FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         return processo.DocumentosExigidos.Single();
     }

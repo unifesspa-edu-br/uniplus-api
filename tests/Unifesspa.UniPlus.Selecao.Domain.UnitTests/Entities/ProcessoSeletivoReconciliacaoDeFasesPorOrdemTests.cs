@@ -22,7 +22,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        ExigirFolhas(processo, exigencia);
+        ExigirDocumentos(processo, exigencia);
 
         // Mesma Ordem E mesma FaseCanonicaOrigemId: é a edição da mesma fase (uma edição que
         // só ajusta datas), não a troca de qual fase ocupa o slot. A reconciliação reusa a instância viva.
@@ -45,7 +45,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
     {
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        ExigirFolhas(processo, Exigencia(fase.Id));
+        ExigirDocumentos(processo, Exigencia(fase.Id));
 
         // Mesma Ordem, mas FaseCanonicaOrigemId DIFERENTE (não informado — gera um novo): é uma
         // fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
@@ -54,7 +54,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().BeEmpty(
             "a exigência era da fase que saiu; sobreviver seria ficar pendurada numa fase que nunca a declarou");
-        processo.NosExigencia.Should().BeEmpty();
+        processo.RegrasDeComprovacao.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]

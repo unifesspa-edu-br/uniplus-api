@@ -8,43 +8,40 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
-/// <summary>
-/// Monta o documento de UMA folha da árvore: tipo de documento, aplicabilidade, gatilho, bases legais,
-/// idade, formato, tamanho e modelo. A posição na árvore substitui o antigo agrupamento de satisfação.
-/// </summary>
+/// <summary>Monta a exigência documental a partir dos dados informados.</summary>
 internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias contexto)
 {
     public async Task<Result<DocumentoExigido>> MontarAsync(
-        ItemDocumentoExigidoInput folha, string? grupoDaRepeticao, CancellationToken cancellationToken)
+        ItemDocumentoExigidoInput documentoInformado, string? grupoDaRepeticao, CancellationToken cancellationToken)
     {
-        Result<TipoDocumentoView> tipo = await TipoDeDocumentoAsync(folha, cancellationToken).ConfigureAwait(false);
+        Result<TipoDocumentoView> tipo = await TipoDeDocumentoAsync(documentoInformado, cancellationToken).ConfigureAwait(false);
         return tipo.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(tipo.Errors)
-            : MontarDoTipo(folha, tipo.Value!, grupoDaRepeticao);
+            : MontarDoTipo(documentoInformado, tipo.Value!, grupoDaRepeticao);
     }
 
-    private Result<DocumentoExigido> MontarDoTipo(ItemDocumentoExigidoInput folha, TipoDocumentoView tipo, string? grupoDaRepeticao)
+    private Result<DocumentoExigido> MontarDoTipo(ItemDocumentoExigidoInput documentoInformado, TipoDocumentoView tipo, string? grupoDaRepeticao)
     {
-        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Condicoes(folha, grupoDaRepeticao);
+        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Condicoes(documentoInformado, grupoDaRepeticao);
         if (condicoes.IsFailure)
         {
             return Result<DocumentoExigido>.ValidationFailure(condicoes.Errors);
         }
 
-        Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegais = BasesLegais(folha);
+        Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegais = BasesLegais(documentoInformado);
         return basesLegais.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(basesLegais.Errors)
-            : Criar(folha, tipo, condicoes.Value!, basesLegais.Value!);
+            : Criar(documentoInformado, tipo, condicoes.Value!, basesLegais.Value!);
     }
 
-    private async Task<Result<TipoDocumentoView>> TipoDeDocumentoAsync(ItemDocumentoExigidoInput folha, CancellationToken cancellationToken)
+    private async Task<Result<TipoDocumentoView>> TipoDeDocumentoAsync(ItemDocumentoExigidoInput documentoInformado, CancellationToken cancellationToken)
     {
         TipoDocumentoView? tipo = await contexto.TiposDeDocumento
-            .ObterPorIdAsync(folha.TipoDocumentoId(), cancellationToken).ConfigureAwait(false);
+            .ObterPorIdAsync(documentoInformado.TipoDocumentoId(), cancellationToken).ConfigureAwait(false);
         return tipo is null
             ? Result<TipoDocumentoView>.Failure(new DomainError(
                 "DocumentoExigido.TipoDocumentoNaoEncontrado",
-                $"Tipo de documento {folha.TipoDocumentoId()} não encontrado ou não está mais vivo."))
+                "O tipo de documento não foi encontrado ou não está mais disponível."))
             : VinculoPermitido(tipo);
     }
 
@@ -57,28 +54,28 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
                 $"O tipo de documento '{tipo.Codigo}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."))
             : Result<TipoDocumentoView>.Success(tipo);
 
-    private Result<IReadOnlyList<CondicaoGatilho>> Condicoes(ItemDocumentoExigidoInput folha, string? grupoDaRepeticao) =>
+    private Result<IReadOnlyList<CondicaoGatilho>> Condicoes(ItemDocumentoExigidoInput documentoInformado, string? grupoDaRepeticao) =>
         contexto.Fatos is { } fatos
-            ? ConferenciaDasCondicoesDaExigencia.Resolver(folha, contexto.Processo, fatos, grupoDaRepeticao)
+            ? ConferenciaDasCondicoesDaExigencia.Resolver(documentoInformado, contexto.Processo, fatos, grupoDaRepeticao)
             : Result<IReadOnlyList<CondicaoGatilho>>.Success([]);
 
-    private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> BasesLegais(ItemDocumentoExigidoInput folha) =>
+    private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> BasesLegais(ItemDocumentoExigidoInput documentoInformado) =>
         EscritaDasBasesLegais.Resolver(
-            folha.BasesLegais(),
-            static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
-            static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
+            documentoInformado.BasesLegais(),
+            static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b)),
+            static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b), b.Observacao).Value!);
 
     private Result<DocumentoExigido> Criar(
-        ItemDocumentoExigidoInput folha, TipoDocumentoView tipo, IReadOnlyList<CondicaoGatilho> condicoes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
+        ItemDocumentoExigidoInput documentoInformado, TipoDocumentoView tipo, IReadOnlyList<CondicaoGatilho> condicoes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
-        Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(folha, contexto.Modelos);
+        Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(documentoInformado, contexto.Modelos);
         return restricoes.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(restricoes.Errors)
             : DocumentoExigido.Criar(
-                folha.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
+                documentoInformado.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
                 new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
-                EscritaDaExigencia.AplicabilidadeDoToken(folha.Aplicabilidade()), folha.Obrigatorio(), folha.Consequencia(),
-                condicoes, basesLegais, restricoes.Value!.Idade, restricoes.Value.Formatos, folha.TamanhoMaximoBytes(),
-                folha.EtapaId(), restricoes.Value.Modelo, EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade()), folha.FatosComprovados);
+                EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), documentoInformado.Obrigatorio(), documentoInformado.Consequencia(),
+                condicoes, basesLegais, restricoes.Value!.Idade, restricoes.Value.Formatos, documentoInformado.TamanhoMaximoBytes(),
+                documentoInformado.EtapaId(), restricoes.Value.Modelo, EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade()), documentoInformado.FatosComprovados);
     }
 }

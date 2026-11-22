@@ -190,7 +190,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
-    [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]
+    [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis")]
     public async Task PersisteEReidrata_RegraDerivacao()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -220,7 +220,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregadaConfig.Regras.Should().HaveCount(2, "os três níveis reidratam — a configuração, as regras e as condições");
         recarregadaConfig.Regras.Single(r => r.Contribui == "AC_PCD").Condicoes.Should().ContainSingle(c => c.Fato == "CONCORRER_PCD");
 
-        // Round-trip completo: a reconstrução do value object que o motor consome bate com o cadastro.
+        // A avaliação usa a regra reconstruída com os dados cadastrados.
         DerivacaoDoFato vo = recarregadaConfig.ParaDerivacaoDoFato(["AC", "AC_PCD"]).Value!;
         vo.Regras.Should().HaveCount(2);
         vo.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Resolve as condições de gatilho de uma folha. Monta uma <see cref="CondicaoDnf"/> por linha, agrupa em
+/// Resolve as condições de gatilho de uma regra de documento. Monta uma <see cref="CondicaoDnf"/> por linha, agrupa em
 /// <see cref="PredicadoDnf"/> para validar fato no vocabulário fechado, operador contra domínio e valor
 /// contra domínio — estático ou dinâmico, contra o atendimento especializado do processo — e só então converte para as
 /// entidades <see cref="CondicaoGatilho"/> que o domínio persiste.
@@ -23,27 +23,27 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 internal static class ConferenciaDasCondicoesDaExigencia
 {
     /// <summary>
-    /// Resolve e confere as condições da folha, inclusive o gate de fase: a condição não pode citar fato
+    /// Resolve e confere as condições da regra de documento, inclusive a fase dos fatos: a condição não pode citar fato
     /// cuja fase de resolução é posterior à fase em que o documento é exigido, porque o gatilho não teria
     /// como já estar resolvido para o candidato (UNI-REQ-0077, UNI-REQ-0144).
     /// </summary>
     public static Result<IReadOnlyList<CondicaoGatilho>> Resolver(
-        ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao)
+        ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao)
     {
-        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(folha.Condicoes(), fatos, UniversoDaFolha(processo, fatos, grupoDaRepeticao));
+        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(documento.Condicoes(), fatos, UniversoDaRegraDeDocumento(processo, fatos, grupoDaRepeticao));
         if (condicoes.IsFailure || condicoes.Value!.Count == 0)
         {
             return condicoes;
         }
 
-        Result gate = ConferirGateDeFase(condicoes.Value, folha, processo, fatos);
-        return gate.IsFailure ? Result<IReadOnlyList<CondicaoGatilho>>.Failure(gate.Error!) : condicoes;
+        Result conferenciaDaFase = ConferirFaseDoGatilho(condicoes.Value, documento, processo, fatos);
+        return conferenciaDaFase.IsFailure ? Result<IReadOnlyList<CondicaoGatilho>>.Failure(conferenciaDaFase.Error!) : condicoes;
     }
 
-    // A folha dentro de uma subárvore repetida cita, além dos fatos do candidato, os campos do grupo pelo
+    // A regra de documento repetida cita, além dos fatos do candidato, os campos do grupo pelo
     // qual se repete, avaliados em cada ocorrência (ADR-0138). Fora dela, o campo de membro não está no
     // universo e é recusado.
-    private static HashSet<string> UniversoDaFolha(ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao) =>
+    private static HashSet<string> UniversoDaRegraDeDocumento(ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao) =>
         new(fatos.Resolviveis.Concat(RegrasDasExigencias.CamposDoGrupo(processo.Declaracao(), grupoDaRepeticao)), StringComparer.Ordinal);
 
     private static Result<IReadOnlyList<CondicaoGatilho>> Montar(
@@ -126,14 +126,14 @@ internal static class ConferenciaDasCondicoesDaExigencia
     // A fase efetiva do fato é conferida por ProcessoSeletivo.RecusaDeFaseDoGatilho, e o fato só da isenção
     // citado por documento de outro formulário também. A fase da própria exigência fora do cronograma, e a
     // finalidade que falta ou que a fase não responde, são decididas por DefinirDocumentosExigidos.
-    private static Result ConferirGateDeFase(
-        IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos)
+    private static Result ConferirFaseDoGatilho(
+        IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade());
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                configuracao, c.Fato, folha.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
+                configuracao, c.Fato, documento.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
             .FirstOrDefault(static r => r is not null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }

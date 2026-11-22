@@ -19,7 +19,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
           "faseChave": "inscricao", "etapaChave": "prova-objetiva", "finalidade": "ISENCAO_TAXA",
           "aplicabilidade": "Condicional", "obrigatorio": true, "consequenciaIndeferimento": "PENDENCIA_REENVIO",
           "condicaoGatilho": [ [ { "fato": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
-          "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "status": "RESOLVIDO" } ],
+          "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
           "idadeMaximaEmissao": { "valor": 90, "unidade": "DIAS", "referenciaTipo": "FIM_INSCRICAO" },
           "formatosPermitidos": { "qualquer": false, "lista": [ { "formato": "PDF", "tamanhoMaximoBytesMax": 5242880 } ] },
           "tamanhoMaximoBytes": 5242880 }
@@ -66,20 +66,20 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
             .Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A árvore aceita grupo com folhas aninhadas e recusa tipo de nó desconhecido")]
-    public void Arvore_GrupoComFolhas()
+    [Fact(DisplayName = "A regra aceita grupos com itens e recusa forma desconhecida")]
+    public void Regra_GrupoComItens()
     {
-        const string definicao = "arvore-de-satisfacao.schema.json";
+        const string definicao = "regras-de-comprovacao.schema.json";
         JsonNode grupo = Documento("""
-            { "tipo": "OU", "ordem": 1, "quantidadeMinima": 1, "filhos": [
-              { "tipo": "FOLHA", "ordem": 1, "exigenciaChave": "comprovante-de-renda", "chaveDistincao": "COMPETENCIA_MENSAL", "dataReferencia": "2027-01-10" },
-              { "tipo": "E", "ordem": 2, "filhos": [ { "tipo": "FOLHA", "ordem": 1, "exigenciaChave": "declaracao" } ] } ] }
+            { "forma": "QUANTIDADE_MINIMA_DE_ITENS", "quantidadeMinima": 1, "itens": [
+              { "forma": "DOCUMENTO", "exigenciaChave": "comprovante-de-renda", "criterioDeDistincao": "COMPETENCIA_MENSAL", "dataReferencia": "2027-01-10" },
+              { "forma": "TODOS_OS_ITENS", "itens": [ { "forma": "DOCUMENTO", "exigenciaChave": "declaracao" } ] } ] }
             """);
 
         CaminhosComErro(grupo, definicao).Should().BeEmpty();
-        CaminhosComErro(Documento("""{ "tipo": "XOR" }"""), definicao).Should().Contain("/tipo");
-        CaminhosComErro(Documento("""{ "tipo": "OU", "filhos": [ { "tipo": "FOLHA", "exigenciaChave": "Comprovante Renda" } ] }"""), definicao)
-            .Should().Contain("/filhos/0/exigenciaChave");
+        CaminhosComErro(Documento("""{ "forma": "XOR" }"""), definicao).Should().Contain("/forma");
+        CaminhosComErro(Documento("""{ "forma": "QUANTIDADE_MINIMA_DE_ITENS", "itens": [ { "forma": "DOCUMENTO", "exigenciaChave": "Comprovante Renda" } ] }"""), definicao)
+            .Should().Contain("/itens/0/exigenciaChave");
     }
 
     [Fact(DisplayName = "A seção de documentos exigidos fica no documento e recusa propriedade desconhecida")]
@@ -87,7 +87,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Documento($$"""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-              "documentosExigidos": { "exigencias": [ {{ExigenciaCompleta}} ], "arvoreDeSatisfacao": [ { "tipo": "FOLHA", "exigenciaChave": "comprovante-de-renda" } ] } }
+              "documentosExigidos": { "exigencias": [ {{ExigenciaCompleta}} ], "regrasDeComprovacao": [ { "forma": "DOCUMENTO", "exigenciaChave": "comprovante-de-renda" } ] } }
             """);
         CaminhosComErro(documento).Should().BeEmpty();
 
@@ -95,16 +95,16 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
         CaminhosComErro(documento).Should().Contain("/documentosExigidos/exigencias/0/campoInexistente");
     }
 
-    [Fact(DisplayName = "A árvore aceita a ordem zero, a repetição por código de grupo e a folha até 366; recusa a folha acima")]
-    public void Arvore_OrdemRepeticaoECardinalidade()
+    [Fact(DisplayName = "A regra aceita repetição por grupo e até 366 apresentações")]
+    public void Regra_RepeticaoEQuantidadeDeApresentacoes()
     {
-        const string definicao = "arvore-de-satisfacao.schema.json";
+        const string definicao = "regras-de-comprovacao.schema.json";
 
-        CaminhosComErro(Documento("""{ "tipo": "FOLHA", "ordem": 0, "exigenciaChave": "x", "quantidadeMinima": 366, "repetePorEntidade": "INTEGRANTE_FAMILIA" }"""), definicao)
+        CaminhosComErro(Documento("""{ "forma": "DOCUMENTO", "exigenciaChave": "x", "quantidadeMinima": 366, "grupoDoFormularioParaRepeticao": "INTEGRANTE_FAMILIA" }"""), definicao)
             .Should().BeEmpty();
-        CaminhosComErro(Documento("""{ "tipo": "FOLHA", "quantidadeMinima": 367 }"""), definicao).Should().Contain("/quantidadeMinima");
-        CaminhosComErro(Documento("""{ "tipo": "OU", "quantidadeMinima": 400, "filhos": [] }"""), definicao).Should().BeEmpty();
-        CaminhosComErro(Documento("""{ "tipo": "FOLHA", "repetePorEntidade": true }"""), definicao).Should().Contain("/repetePorEntidade");
+        CaminhosComErro(Documento("""{ "forma": "DOCUMENTO", "quantidadeMinima": 367 }"""), definicao).Should().Contain("/quantidadeMinima");
+        CaminhosComErro(Documento("""{ "forma": "QUANTIDADE_MINIMA_DE_ITENS", "quantidadeMinima": 400, "itens": [] }"""), definicao).Should().BeEmpty();
+        CaminhosComErro(Documento("""{ "forma": "DOCUMENTO", "grupoDoFormularioParaRepeticao": true }"""), definicao).Should().Contain("/grupoDoFormularioParaRepeticao");
     }
 
     [Fact(DisplayName = "O modelo da exigência é aceito como descritivo e o código e a hipótese acima do limite do armazenamento são recusados")]

@@ -30,7 +30,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     private static Result DefinirNaFase(FaseCronograma fase, FinalidadeFormulario? finalidade)
     {
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        return DefinirFolhas(processo, Exigencia(fase.Id, finalidade: finalidade));
+        return DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, finalidade: finalidade));
     }
 
     [Fact(DisplayName = "O documento de um formulário que a fase não responde é recusado")]
@@ -70,7 +70,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = DefinirFolhas(processo, Exigencia(Guid.CreateVersion7()));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(Guid.CreateVersion7()));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
@@ -83,7 +83,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        Result resultado = DefinirFolhas(processo, exigencia);
+        Result resultado = DefinirRegrasDeDocumento(processo, exigencia);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == exigencia.Id);
@@ -106,10 +106,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     {
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        ExigirFolhas(processo, Exigencia(fase.Id));
+        ExigirDocumentos(processo, Exigencia(fase.Id));
 
         DocumentoExigido segundaChamada = Exigencia(fase.Id);
-        Result resultado = DefinirFolhas(processo, segundaChamada);
+        Result resultado = DefinirRegrasDeDocumento(processo, segundaChamada);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().HaveCount(1);

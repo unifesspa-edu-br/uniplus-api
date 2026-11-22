@@ -13,7 +13,7 @@ using ValueObjects;
 /// <summary>
 /// As exigências que, na fase da inscrição, ainda não se decidem porque dependem de um fato que só se
 /// conhece depois dela (UNI-REQ-0077, UNI-REQ-0147). Um exemplo é a modalidade da convocação, que só
-/// existe depois do resultado. O resolvedor da árvore as recebe como bloqueadas: não são exigidas nem
+/// existe depois do resultado. A avaliação da comprovação as recebe como bloqueadas: não são exigidas nem
 /// dispensadas.
 /// </summary>
 /// <remarks>
@@ -36,19 +36,19 @@ public static class ExigenciasDeFasePosterior
 
         ConhecimentoAteAInscricao conhecimento = ConhecimentoAteAInscricao.De(configuracao, finalidades, fatosConhecidos);
 
-        return configuracao.Arvore.Raizes.SelectMany(raiz => Bloqueadas(raiz, grupoRepetido: null, conhecimento)).ToHashSet();
+        return configuracao.RegrasDeComprovacao.RegrasSemGrupo.SelectMany(regra => Bloqueadas(regra, grupoRepetido: null, conhecimento)).ToHashSet();
     }
 
-    // A folha é bloqueada quando o grupo que a repete ou algum fato das condições dela só se conhece depois da inscrição.
-    private static IEnumerable<Guid> Bloqueadas(NoExigencia no, string? grupoRepetido, ConhecimentoAteAInscricao conhecimento)
+    // Uma exigência depende da fase posterior se seu grupo ou condição ainda não são conhecidos.
+    private static IEnumerable<Guid> Bloqueadas(RegraDeComprovacao regra, string? grupoRepetido, ConhecimentoAteAInscricao conhecimento)
     {
-        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
-        if (no.Tipo != TipoNo.Folha)
+        string? repetido = regra.GrupoDoFormularioParaRepeticao ?? grupoRepetido;
+        if (regra.Forma != FormaDeComprovacao.Documento)
         {
-            return no.Filhos.SelectMany(filho => Bloqueadas(filho, repetido, conhecimento));
+            return regra.Itens.SelectMany(item => Bloqueadas(item, repetido, conhecimento));
         }
 
-        DocumentoExigido documento = no.DocumentoExigido!;
+        DocumentoExigido documento = regra.DocumentoExigido!;
         bool bloqueada = !conhecimento.ConheceOGrupo(repetido) || documento.Condicoes.Any(c => !conhecimento.ConheceOFato(c.Fato));
 
         return bloqueada ? [documento.Id] : [];

@@ -41,8 +41,8 @@ internal static class CorpusEnvelopeProcessoRico
     /// </remarks>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
-    /// <param name="comArvoreSatisfacao">
-    /// Acrescenta a árvore de satisfação dos documentos exigidos. É opcional porque os arquivos de
+    /// <param name="comRegrasDeComprovacao">
+    /// Acrescenta as regras de comprovação dos documentos exigidos. É opcional porque os arquivos de
     /// referência do envelope rico (<c>envelope-rico.json</c>) e os testes de ida e volta esperam o
     /// corpus sem ela: incluí-la sempre alteraria o envelope de todos os testes que usam <see cref="ProcessoRico"/>.
     /// </param>
@@ -53,7 +53,7 @@ internal static class CorpusEnvelopeProcessoRico
     /// porque a golden fixture (<c>envelope-rico.json</c>) congela as bancas de hoje do corpus; só os testes que publicam o processo a pedem.
     /// </param>
     internal static ProcessoSeletivo ProcessoRico(
-        int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
+        int variante = 0, bool permutar = false, bool comRegrasDeComprovacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
         int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null,
         bool comBancasExigidasNaPublicacao = false)
     {
@@ -61,7 +61,7 @@ internal static class CorpusEnvelopeProcessoRico
         DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal, regraDeHomologacao, comBancasExigidasNaPublicacao);
         DefinirOfertaEClassificacao(processo, variante, permutar, vagasOfertadasBaseDaLeiDeCotas);
         DefinirFormularioDeInscricao(processo, permutar);
-        DefinirCascataEDocumentos(processo, variante, permutar, comArvoreSatisfacao);
+        DefinirCascataEDocumentos(processo, variante, permutar, comRegrasDeComprovacao);
         DefinirTaxaEOpcoesDeCurso(processo, permutar);
         return processo;
     }
@@ -319,16 +319,14 @@ internal static class CorpusEnvelopeProcessoRico
     // DistribuicaoLei12711 já são SegueCascata — sem uma cascata que as cubra,
     // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
     // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
-    internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comArvoreSatisfacao)
+    internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comRegrasDeComprovacao)
     {
         processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar)).IsSuccess.Should().BeTrue();
 
-        // Árvore de satisfação de documentos exigidos (Story #920) — opt-in (ver o parâmetro
-        // comArvoreSatisfacao acima): incluí-la incondicionalmente mudaria o envelope de
-        // referência que as golden fixtures e os testes de round-trip congelam.
-        if (comArvoreSatisfacao)
+        // As referências do envelope rico incluem as regras somente quando solicitadas.
+        if (comRegrasDeComprovacao)
         {
-            processo.DefinirDocumentosExigidos(ArvoreSatisfacaoRica(variante, permutar))
+            processo.DefinirDocumentosExigidos(RegrasDeComprovacaoRicas(variante, permutar))
                 .IsSuccess.Should().BeTrue();
         }
     }

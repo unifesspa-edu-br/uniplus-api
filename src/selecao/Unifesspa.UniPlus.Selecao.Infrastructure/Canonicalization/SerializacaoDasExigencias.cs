@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -44,34 +45,34 @@ internal static class SerializacaoDasExigencias
             ["metadadosFatos"] = SerializacaoDosFatos.SerializarMetadadosFatos(metadadosFatosCongelados),
         };
 
-    internal static JsonArray SerializarArvoreSatisfacao(ProcessoSeletivo processo) =>
-        new([.. processo.RaizesDeExigencia.OrderBy(static r => r.Ordem).Select(static r => (JsonNode)SerializarNo(r))]);
+    internal static JsonArray SerializarRegrasDeComprovacao(ProcessoSeletivo processo) =>
+        new([.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static r => r.Ordem).Select(static r => (JsonNode)SerializarRegra(r))]);
 
-    private static JsonObject SerializarNo(NoExigencia no) => new()
+    private static JsonObject SerializarRegra(RegraDeComprovacao regra) => new()
     {
-        ["id"] = no.Id,
-        ["ordem"] = no.Ordem,
-        ["tipo"] = no.Tipo.ToCodigo(),
-        ["exigenciaId"] = no.Tipo == TipoNo.Folha ? no.DocumentoExigidoId : null,
-        ["quantidadeMinima"] = no.QuantidadeMinima,
-        ["consequencia"] = no.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
-        ["basesLegais"] = SerializarBasesLegaisDeNo(no.BasesLegaisResolvidas()),
-        ["chaveDistincao"] = no.Distincao?.Chave?.ToCodigo(),
-        ["dataReferencia"] = no.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["ocorrenciasEsperadas"] = SerializarOcorrencias(no.Distincao),
-        ["repetePorEntidade"] = no.RepetePorEntidade,
-        ["filhos"] = new JsonArray([.. no.Filhos.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarNo(f))]),
+        ["id"] = regra.Id,
+        ["ordem"] = regra.Ordem,
+        ["forma"] = regra.Forma.Codigo(),
+        ["exigenciaId"] = regra.Forma == FormaDeComprovacao.Documento ? regra.DocumentoExigidoId : null,
+        ["quantidadeMinima"] = regra.QuantidadeMinima,
+        ["consequencia"] = regra.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
+        ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
+        ["criterioDeDistincao"] = regra.Distincao?.Chave?.ToCodigo(),
+        ["dataReferencia"] = regra.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["ocorrenciasEsperadas"] = SerializarOcorrencias(regra.Distincao),
+        ["grupoDoFormularioParaRepeticao"] = regra.GrupoDoFormularioParaRepeticao,
+        ["itens"] = new JsonArray([.. regra.Itens.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarRegra(f))]),
     };
 
     private static JsonArray? SerializarOcorrencias(DistincaoDasApresentacoes? distincao) =>
         distincao?.OcorrenciasEsperadas is { } ocorrencias ? EscritaCanonica.TextosEmOrdemCanonica(ocorrencias) : null;
 
-    private static JsonArray SerializarBasesLegaisDeNo(IEnumerable<BaseLegalDaComprovacao> basesLegais) =>
+    private static JsonArray SerializarBasesLegaisDaRegra(IEnumerable<BaseLegalDaComprovacao> basesLegais) =>
         EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
             ["abrangencia"] = b.Abrangencia.ToCodigo(),
-            ["status"] = b.Status.ToCodigo(),
+            ["situacao"] = b.Situacao.ToCodigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
         }));
 
@@ -159,7 +160,7 @@ internal static class SerializacaoDasExigencias
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
             ["abrangencia"] = b.Abrangencia.ToCodigo(),
-            ["status"] = b.Status.ToCodigo(),
+            ["situacao"] = b.Situacao.ToCodigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
         }));
 

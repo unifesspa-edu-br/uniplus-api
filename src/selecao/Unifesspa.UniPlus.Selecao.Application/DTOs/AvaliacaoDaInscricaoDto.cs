@@ -6,6 +6,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -84,8 +86,8 @@ public sealed record AvaliacaoDaInscricaoDto(
             documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
             documento.ExigidoNaEtapaId, Formatos(documento), Modelo(documento, enderecoDoModelo),
             avaliado.Situacao.ToCodigo(), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
-            [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, g.Tipo.ToCodigo(), g.Minimo, g.RepetePorEntidade))],
-            avaliado.RepetePorEntidade,
+            [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, CodigoComRotulo<FormaDeComprovacao>.De(g.Forma), g.Minimo, g.GrupoDoFormularioParaRepeticao))],
+            avaliado.GrupoDoFormularioParaRepeticao,
             [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.ToCodigo())],
             ArquivoDaApresentacao.LimiteAnunciadoDe(documento), avaliado.QuantidadeMinima,
             [.. arquivos.Where(a => a.ExigenciaId == documento.Id && a.OcorrenciaId == avaliado.OcorrenciaId)]);
@@ -136,11 +138,10 @@ public sealed record FaseDosDocumentosDto(
 /// <param name="QuantidadeMinima">Quantas apresentações a exigência pede; uma apresentação com frente e verso conta uma.</param>
 /// <param name="Arquivos">Os arquivos confirmados desta exigência e ocorrência.</param>
 /// <param name="Grupos">
-/// Os grupos da árvore de exigências que contêm a exigência, do mais externo ao mais interno. Os
-/// documentos que dividem um grupo dividem o <c>grupoId</c>, e assim se reconstrói a escolha: o OU, o
-/// N-de e o E dentro deles. A repetição por membro vale do grupo que a declara para baixo.
+/// Os grupos de comprovação que contêm a exigência, do mais externo ao mais interno. A repetição
+/// por membro vale para cada item do grupo que a declara.
 /// </param>
-/// <param name="RepetePorEntidade">
+/// <param name="GrupoDoFormularioParaRepeticao">
 /// O grupo de membros pelo qual a própria exigência se repete, quando a repetição começa nela; nulo
 /// quando ela não se repete ou quando a repetição vem de um grupo que a contém.
 /// </param>
@@ -157,19 +158,16 @@ public sealed record DocumentoDaInscricaoDto(
     string? GrupoCodigo,
     string? OcorrenciaId,
     IReadOnlyList<GrupoDeComprovacaoDto> Grupos,
-    string? RepetePorEntidade,
+    string? GrupoDoFormularioParaRepeticao,
     IReadOnlyList<string> FormatosAceitos,
     long TamanhoMaximoBytes,
     int QuantidadeMinima,
     IReadOnlyList<ArquivoDaApresentacaoDto> Arquivos);
 
 /// <summary>
-/// Um grupo da árvore de exigências: o nó, o tipo — <c>E</c>, em que todos os filhos são exigidos, ou
-/// <c>OU</c>, em que bastam <see cref="Minimo"/> deles, o N-de quando o mínimo passa de um —, o mínimo,
-/// nulo no E, e o grupo de membros pelo qual o nó se repete, quando a repetição começa nele: a escolha
-/// vale então para cada membro.
+/// Um grupo que exige todos os itens ou uma quantidade mínima deles, com repetição por membro quando declarada.
 /// </summary>
-public sealed record GrupoDeComprovacaoDto(Guid GrupoId, string Tipo, int? Minimo, string? RepetePorEntidade);
+public sealed record GrupoDeComprovacaoDto(Guid GrupoId, CodigoComRotulo<FormaDeComprovacao> Forma, int? Minimo, string? GrupoDoFormularioParaRepeticao);
 
 /// <summary>
 /// As modalidades em que o candidato concorre (UNI-REQ-0076). Sem derivação da modalidade na versão,

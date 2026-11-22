@@ -13,11 +13,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
 /// <summary>
-/// Cobertura da idade máxima de emissão ancorada no fim da inscrição (<c>FIM_INSCRICAO</c>): ela não
-/// usa <c>ReferenciaFaseId</c>, a âncora é implícita (a fase com <c>ColetaInscricao</c>) e exige
+/// Cobertura da idade máxima de emissão referenciada no fim da inscrição (<c>FIM_INSCRICAO</c>): ela não
+/// usa <c>ReferenciaFaseId</c>, a referência é implícita (a fase com <c>ColetaInscricao</c>) e exige
 /// que alguma fase de coleta tenha o Fim definido.
 /// </summary>
-public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
+public sealed class ProcessoSeletivoIdadeMaximaComReferenciaNoFimDaInscricaoTests
 {
     private static readonly DateTimeOffset FimDeJaneiro = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
 
@@ -39,7 +39,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
     private static ProcessoSeletivo ProcessoComExigenciaDeIdadeNoFimDaInscricao(FaseCronograma fase)
     {
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        ExigirFolhas(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
+        ExigirDocumentos(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
         return processo;
     }
 
@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
         FaseCronograma fase = Fase(1, "ANALISE"); // ColetaInscricao = false
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaComIdadeFimInscricao(fase.Id));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComIdadeFimInscricao(fase.Id));
 
         resultado.IsFailure.Should().BeTrue("FIM_INSCRICAO não pode ser resolvido sem uma fase de coleta — não há fallback silencioso");
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
@@ -61,7 +61,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim: null);
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", FimDeJaneiro);
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComIdadeFimInscricao(fase.Id, FinalidadeFormulario.Inscricao));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -86,7 +86,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
         FaseCronograma segundaColeta = FaseColetaInscricao(2, "INSCRICAO_SEGUNDA_FASE", fim);
         ProcessoSeletivo processo = ProcessoComFases(primeiraColeta, segundaColeta);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaComIdadeFimInscricao(primeiraColeta.Id, FinalidadeFormulario.Inscricao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComIdadeFimInscricao(primeiraColeta.Id, FinalidadeFormulario.Inscricao));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "a segunda fase de coleta resolve FIM_INSCRICAO — escolher a primeira encontrada (sem Fim) seria um 422 falso");
     }

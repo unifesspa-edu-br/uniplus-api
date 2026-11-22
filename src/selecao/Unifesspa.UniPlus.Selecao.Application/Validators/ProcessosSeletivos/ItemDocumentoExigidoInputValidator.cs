@@ -4,7 +4,7 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
-/// <summary>Validação de forma de UMA folha (<see cref="ItemDocumentoExigidoInput"/>).</summary>
+/// <summary>Validação de forma de uma regra de documento (<see cref="ItemDocumentoExigidoInput"/>).</summary>
 /// <remarks>
 /// A aplicabilidade, a consequência do indeferimento, o tamanho máximo e a coerência entre geral e condição têm
 /// equivalente incondicional em <c>DocumentoExigido.ValidarFormaBasica</c> (ADR-0125), que acumula; mantê-las aqui

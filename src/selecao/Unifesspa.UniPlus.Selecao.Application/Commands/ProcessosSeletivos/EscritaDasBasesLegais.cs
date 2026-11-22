@@ -4,16 +4,7 @@ using Domain.Enums;
 
 using Kernel.Results;
 
-/// <summary>
-/// Resolve as bases legais declaradas em um nó da árvore de exigências — da folha ou do grupo, que são
-/// entidades diferentes com a mesma forma de wire. Só a forma de cada base é conferida aqui (referência não
-/// vazia, abrangência e status no domínio fechado): o gate de pelo menos uma base resolvida por exigência
-/// que determina resultado é da publicação, nunca da escrita.
-/// </summary>
-/// <remarks>
-/// Acumula a forma de TODAS as bases do nó numa primeira passada (ADR-0125), indexando o campo, e só se ela
-/// vier limpa constrói as instâncias. A conferência da árvore também acumula as recusas entre nós.
-/// </remarks>
+/// <summary>Confere e constrói as bases legais informadas, acumulando as recusas por posição.</summary>
 internal static class EscritaDasBasesLegais
 {
     public static Result<IReadOnlyList<TBase>> Resolver<TBase>(
@@ -34,7 +25,7 @@ internal static class EscritaDasBasesLegais
 
     public static TipoAbrangencia Abrangencia(BaseLegalInput declarada) => TipoAbrangenciaCodigo.FromCodigo(declarada.Abrangencia);
 
-    public static StatusBaseLegal Status(BaseLegalInput declarada) => StatusBaseLegalCodigo.FromCodigo(declarada.Status);
+    public static StatusBaseLegal Situacao(BaseLegalInput declarada) => StatusBaseLegalCodigo.FromCodigo(declarada.Situacao);
 
     public static IEnumerable<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
         erros.Select(erro => erro with { Field = $"{BaseLegalInput.CaminhoDaLista}[{indice}].{erro.Field}" });

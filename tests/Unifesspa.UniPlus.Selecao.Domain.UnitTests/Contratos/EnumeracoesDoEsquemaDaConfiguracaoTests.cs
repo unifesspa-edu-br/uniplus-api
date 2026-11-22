@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
 {
-    private const string Arvore = "arvore-de-satisfacao.schema.json";
+    private const string RegrasDeComprovacao = "regras-de-comprovacao.schema.json";
     private const string Bancas = "bancas.schema.json";
     private const string Comuns = "comuns.schema.json";
     private const string Deliberacao = "/$defs/regraDeDeliberacao/properties";
@@ -31,9 +31,9 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
 
     private static readonly (string Arquivo, string Caminho, Func<IEnumerable<string?>> Dominio)[] Paridades =
     [
-        (Arvore, "/properties/tipo", () => Codigos<TipoNo>(static v => v.ToCodigo())),
-        (Arvore, "/properties/consequencia", () => ConsequenciaIndeferimentoCodigo.Validas),
-        (Arvore, "/properties/chaveDistincao", () => Codigos<ChaveDistincao>(static v => v.ToCodigo())),
+        (RegrasDeComprovacao, "/properties/forma", () => Codigos<FormaDeComprovacao>(static v => v.Codigo())),
+        (RegrasDeComprovacao, "/properties/consequencia", () => ConsequenciaIndeferimentoCodigo.Validas),
+        (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<ChaveDistincao>(static v => v.ToCodigo())),
         (Bancas, $"{Deliberacao}/modo", Nomes<ModoDeDeliberacao>),
         (Bancas, $"{Deliberacao}/criterio", Nomes<CriterioDeVotacao>),
         (Bancas, $"{Deliberacao}/desempate", Nomes<DesempateDaVotacao>),
@@ -48,7 +48,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
         (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
-        (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
         (Comuns, "/$defs/tipoDeDecisao", () => CatalogoDe<TipoMotivoDeDecisao>.Todos().Select(static c => c.Codigo)),
         ("motivo.schema.json", "/properties/sentido", () => SentidoDoMotivoCodigo.Todos),

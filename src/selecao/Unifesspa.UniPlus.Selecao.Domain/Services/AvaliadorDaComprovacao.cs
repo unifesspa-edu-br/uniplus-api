@@ -7,126 +7,126 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>Resolve a satisfação e as consequências da árvore congelada para um candidato.</summary>
+/// <summary>Avalia as regras de comprovação e suas consequências para um candidato.</summary>
 public sealed class AvaliadorDaComprovacao
 {
     private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
     private readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> _apresentacoes;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> _instancias;
-    private readonly IReadOnlySet<Guid> _bloqueadas;
-    private readonly Dictionary<Guid, SituacaoDaComprovacao> _estados = [];
-    private readonly Dictionary<Guid, StatusResolucaoExigencia> _status = [];
-    private readonly Dictionary<Guid, List<InstanciaResolvida>> _resolvidas = [];
-    private readonly HashSet<Guid> _suprimidos = [];
-    private readonly List<ConsequenciaEmitida> _consequencias = [];
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> _ocorrenciasPorGrupo;
+    private readonly IReadOnlySet<Guid> _exigenciasQueAguardamDados;
+    private readonly Dictionary<Guid, SituacaoDaComprovacao> _situacoesPorRegra = [];
+    private readonly Dictionary<Guid, StatusResolucaoExigencia> _situacoesPorExigencia = [];
+    private readonly Dictionary<Guid, List<OcorrenciaAvaliada>> _resolvidas = [];
+    private readonly HashSet<Guid> _regrasComConsequenciaAdiada = [];
+    private readonly List<ConsequenciaAplicavel> _consequencias = [];
     private readonly List<PendenciaDeOrientacao> _pendencias = [];
 
     private AvaliadorDaComprovacao(
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias, IReadOnlySet<Guid> bloqueadas)
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias, IReadOnlySet<Guid> exigenciasQueAguardamDados)
     {
         _fatos = fatos;
         _apresentacoes = apresentacoes;
-        _instancias = instancias;
-        _bloqueadas = bloqueadas;
+        _ocorrenciasPorGrupo = ocorrencias;
+        _exigenciasQueAguardamDados = exigenciasQueAguardamDados;
     }
 
     public static Result<ResultadoDaComprovacao> Resolver(
-        RegrasDeComprovacaoDaVersao arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
+        RegrasDeComprovacaoDaVersao regras, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? ocorrenciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasQueAguardamDados = null)
     {
-        ArgumentNullException.ThrowIfNull(arvore);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = instanciasPorGrupo
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = ocorrenciasPorGrupo
             ?? new Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>(StringComparer.Ordinal);
-        DomainError? recusa = RecusaDaArvore(arvore) ?? RecusaDasInstancias(instancias);
+        DomainError? recusa = RecusaDasRegras(regras) ?? RecusaDasOcorrencias(ocorrencias);
         return recusa is not null ? Result<ResultadoDaComprovacao>.Failure(recusa)
             : Result<ResultadoDaComprovacao>.Success(new AvaliadorDaComprovacao(
-                fatosResolvidos, apresentacoesPorExigenciaId, instancias, exigenciasBloqueadas ?? new HashSet<Guid>()).Avaliar(arvore!));
+                fatosResolvidos, apresentacoesPorExigenciaId, ocorrencias, exigenciasQueAguardamDados ?? new HashSet<Guid>()).Avaliar(regras!));
     }
 
-    private static DomainError? RecusaDaArvore(RegrasDeComprovacaoDaVersao arvore)
+    private static DomainError? RecusaDasRegras(RegrasDeComprovacaoDaVersao regras)
     {
-        List<NoExigencia> folhas = [.. arvore.Raizes.SelectMany(static r => r.AchatarComDescendentes()).Where(static n => n.Tipo == TipoNo.Folha)];
-        return RecusaDasFolhas(folhas) ?? (arvore.Raizes.Any(ContemRepeticaoAninhada)
-            ? EstruturaInvalida("A árvore congelada tem repetição por entidade aninhada — uma subárvore repetePorEntidade não pode conter outra.") : null);
+        List<RegraDeComprovacao> regrasDeDocumento = [.. regras.RegrasSemGrupo.SelectMany(static r => r.AchatarComDescendentes()).Where(static n => n.Forma == FormaDeComprovacao.Documento)];
+        return RecusaDasRegrasDeDocumento(regrasDeDocumento) ?? (regras.RegrasSemGrupo.Any(ContemRepeticaoAninhada)
+            ? new DomainError("RegraDeComprovacao.RepeticaoDentroDeRepeticao", "Uma regra repetida não pode conter outra regra de repetição.") : null);
     }
 
-    private static DomainError? RecusaDasFolhas(List<NoExigencia> folhas)
+    private static DomainError? RecusaDasRegrasDeDocumento(List<RegraDeComprovacao> regrasDeDocumento)
     {
-        if (folhas.Any(static n => n.DocumentoExigidoId is null || n.DocumentoExigido is null))
+        if (regrasDeDocumento.Any(static n => n.DocumentoExigidoId is null || n.DocumentoExigido is null))
         {
-            return EstruturaInvalida("A árvore congelada tem folha sem DocumentoExigido — toda folha precisa envolver uma exigência.");
+            return new DomainError("AvaliadorDaComprovacao.RegraSemDocumento", "Uma regra de documento não indica a exigência documental.");
         }
-        return folhas.Select(static n => n.DocumentoExigidoId).Distinct().Count() != folhas.Count
-            ? EstruturaInvalida("A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única.") : null;
+        return regrasDeDocumento.Select(static n => n.DocumentoExigidoId).Distinct().Count() != regrasDeDocumento.Count
+            ? DocumentoReferenciadoMaisDeUmaVez("Uma exigência documental aparece em mais de uma regra de comprovação.") : null;
     }
 
-    private static DomainError EstruturaInvalida(string mensagem) => new("AvaliadorDaComprovacao.ArvoreEstruturalmenteInvalida", mensagem);
+    private static DomainError DocumentoReferenciadoMaisDeUmaVez(string mensagem) => new("AvaliadorDaComprovacao.DocumentoReferenciadoMaisDeUmaVez", mensagem);
 
-    private static DomainError? RecusaDasInstancias(IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias)
+    private static DomainError? RecusaDasOcorrencias(IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrenciasPorGrupo)
     {
-        foreach (IReadOnlyList<OcorrenciaDoGrupo> ocorrencias in instancias.Values)
+        foreach (IReadOnlyList<OcorrenciaDoGrupo> ocorrencias in ocorrenciasPorGrupo.Values)
         {
-            if (ocorrencias.Any(static i => string.IsNullOrWhiteSpace(i.EntidadeId)))
+            if (ocorrencias.Any(static i => string.IsNullOrWhiteSpace(i.OcorrenciaId)))
             {
-                return new("AvaliadorDaComprovacao.InstanciaEntidadeInvalida", "Uma ocorrência do grupo tem EntidadeId vazio ou em branco.");
+                return new("AvaliadorDaComprovacao.OcorrenciaDoGrupoInvalida", "Uma ocorrência do grupo não tem identificador.");
             }
-            if (ocorrencias.Select(static i => i.EntidadeId).Distinct(StringComparer.Ordinal).Count() != ocorrencias.Count)
+            if (ocorrencias.Select(static i => i.OcorrenciaId).Distinct(StringComparer.Ordinal).Count() != ocorrencias.Count)
             {
-                return new("AvaliadorDaComprovacao.InstanciaEntidadeInvalida", "Duas ou mais ocorrências do grupo declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única.");
+                return new("AvaliadorDaComprovacao.OcorrenciaDoGrupoInvalida", "Duas ou mais ocorrências do grupo têm o mesmo identificador.");
             }
         }
         return null;
     }
 
-    private ResultadoDaComprovacao Avaliar(RegrasDeComprovacaoDaVersao arvore)
+    private ResultadoDaComprovacao Avaliar(RegrasDeComprovacaoDaVersao regras)
     {
-        foreach (NoExigencia raiz in arvore.Raizes)
+        foreach (RegraDeComprovacao regraSemGrupo in regras.RegrasSemGrupo)
         {
-            SituacaoDaComprovacao estado = ResolverNo(raiz);
-            IdentificarConsequenciasQueAguardamDados(raiz, _estados, _bloqueadas, _suprimidos);
-            DeterminarConsequenciasAplicaveis(raiz, estado);
+            SituacaoDaComprovacao situacao = ResolverRegra(regraSemGrupo);
+            IdentificarConsequenciasQueAguardamDados(regraSemGrupo, _situacoesPorRegra, _exigenciasQueAguardamDados, _regrasComConsequenciaAdiada);
+            DeterminarConsequenciasAplicaveis(regraSemGrupo, situacao);
         }
-        return new(_estados, _status, _consequencias, _pendencias, StatusPorEntidade(), EstadosPorEntidade(), _suprimidos);
+        return new(_situacoesPorRegra, _situacoesPorExigencia, _consequencias, _pendencias, SituacoesDeExigenciaPorOcorrencia(), SituacoesDeRegraPorOcorrencia(), _regrasComConsequenciaAdiada);
     }
 
-    private List<StatusPorEntidade> StatusPorEntidade() => [.. _resolvidas.Values.SelectMany(static r => r)
-        .SelectMany(static i => i.StatusDescendentes.Select(par => new StatusPorEntidade(par.Key, i.EntidadeId, par.Value)))];
+    private List<SituacaoDaExigenciaPorOcorrencia> SituacoesDeExigenciaPorOcorrencia() => [.. _resolvidas.Values.SelectMany(static r => r)
+        .SelectMany(static i => i.SituacoesDasExigencias.Select(par => new SituacaoDaExigenciaPorOcorrencia(par.Key, i.OcorrenciaId, par.Value)))];
 
-    private List<EstadoPorEntidade> EstadosPorEntidade() => [.. _resolvidas.Values.SelectMany(static r => r)
-        .SelectMany(static i => i.EstadosDescendentes.Select(par => new EstadoPorEntidade(par.Key, i.EntidadeId, par.Value)))];
+    private List<SituacaoDaRegraPorOcorrencia> SituacoesDeRegraPorOcorrencia() => [.. _resolvidas.Values.SelectMany(static r => r)
+        .SelectMany(static i => i.SituacoesDasRegras.Select(par => new SituacaoDaRegraPorOcorrencia(par.Key, i.OcorrenciaId, par.Value)))];
 
-    private SituacaoDaComprovacao ResolverNo(NoExigencia no)
+    private SituacaoDaComprovacao ResolverRegra(RegraDeComprovacao regra)
     {
-        SituacaoDaComprovacao estado = no.RepetePorEntidade is { } grupo ? ResolverNoRepetido(no, grupo) : ResolverNoSemRepeticao(no);
-        _estados[no.Id] = estado;
-        return estado;
+        SituacaoDaComprovacao situacao = regra.GrupoDoFormularioParaRepeticao is { } grupo ? ResolverRegraRepetida(regra, grupo) : ResolverRegraSemRepeticao(regra);
+        _situacoesPorRegra[regra.Id] = situacao;
+        return situacao;
     }
 
-    private SituacaoDaComprovacao ResolverNoSemRepeticao(NoExigencia no) => no.Tipo == TipoNo.Folha ? ResolverFolha(no) : ResolverGrupo(no);
+    private SituacaoDaComprovacao ResolverRegraSemRepeticao(RegraDeComprovacao regra) => regra.Forma == FormaDeComprovacao.Documento ? ResolverRegraDeDocumento(regra) : ResolverGrupo(regra);
 
-    private SituacaoDaComprovacao ResolverNoRepetido(NoExigencia no, string grupo)
+    private SituacaoDaComprovacao ResolverRegraRepetida(RegraDeComprovacao regra, string grupo)
     {
-        List<InstanciaResolvida> resolvidas = [.. _instancias.GetValueOrDefault(grupo, []).Select(i => ResolverInstancia(no, i))];
-        _resolvidas[no.Id] = resolvidas;
-        return ResolverE([.. resolvidas.Select(static r => r.Estado)]);
+        List<OcorrenciaAvaliada> resolvidas = [.. _ocorrenciasPorGrupo.GetValueOrDefault(grupo, []).Select(i => AvaliarOcorrencia(regra, i))];
+        _resolvidas[regra.Id] = resolvidas;
+        return ResolverTodosOsItens([.. resolvidas.Select(static r => r.Situacao)]);
     }
 
-    private InstanciaResolvida ResolverInstancia(NoExigencia no, OcorrenciaDoGrupo instancia)
+    private OcorrenciaAvaliada AvaliarOcorrencia(RegraDeComprovacao regra, OcorrenciaDoGrupo ocorrencia)
     {
-        AvaliadorDaComprovacao resolvedor = new(MesclarFatosDeEntidade(_fatos, instancia.Atributos),
-            FiltrarApresentacoesPorEntidade(_apresentacoes, instancia.EntidadeId), _instancias, _bloqueadas);
-        SituacaoDaComprovacao estado = resolvedor.ResolverNoSemRepeticao(no);
-        resolvedor._estados[no.Id] = estado;
-        IdentificarConsequenciasQueAguardamDados(no, resolvedor._estados, _bloqueadas, resolvedor._suprimidos, naInstancia: true);
-        return new(instancia.EntidadeId, estado, resolvedor._estados, resolvedor._status, resolvedor._suprimidos);
+        AvaliadorDaComprovacao resolvedor = new(MesclarFatosDaOcorrencia(_fatos, ocorrencia.Atributos),
+            FiltrarApresentacoesDaOcorrencia(_apresentacoes, ocorrencia.OcorrenciaId), _ocorrenciasPorGrupo, _exigenciasQueAguardamDados);
+        SituacaoDaComprovacao situacao = resolvedor.ResolverRegraSemRepeticao(regra);
+        resolvedor._situacoesPorRegra[regra.Id] = situacao;
+        IdentificarConsequenciasQueAguardamDados(regra, resolvedor._situacoesPorRegra, _exigenciasQueAguardamDados, resolvedor._regrasComConsequenciaAdiada, naOcorrencia: true);
+        return new(ocorrencia.OcorrenciaId, situacao, resolvedor._situacoesPorRegra, resolvedor._situacoesPorExigencia, resolvedor._regrasComConsequenciaAdiada);
     }
 
-    private static Dictionary<string, FatoResolvido> MesclarFatosDeEntidade(
+    private static Dictionary<string, FatoResolvido> MesclarFatosDaOcorrencia(
         IReadOnlyDictionary<string, FatoResolvido> fatos, IReadOnlyDictionary<string, FatoResolvido> atributos)
     {
         Dictionary<string, FatoResolvido> mesclados = new(fatos, StringComparer.Ordinal);
@@ -137,204 +137,207 @@ public sealed class AvaliadorDaComprovacao
         return mesclados;
     }
 
-    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> FiltrarApresentacoesPorEntidade(
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes, string entidadeId) => apresentacoes
-        .Select(par => (par.Key, DaEntidade: (IReadOnlyList<ApresentacaoDocumento>)par.Value.Where(a => a.EntidadeId == entidadeId).ToList()))
-        .Where(static par => par.DaEntidade.Count > 0).ToDictionary(static par => par.Key, static par => par.DaEntidade);
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> FiltrarApresentacoesDaOcorrencia(
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes, string ocorrenciaId) => apresentacoes
+        .Select(par => (par.Key, DaOcorrencia: (IReadOnlyList<ApresentacaoDocumento>)par.Value.Where(a => a.OcorrenciaId == ocorrenciaId).ToList()))
+        .Where(static par => par.DaOcorrencia.Count > 0).ToDictionary(static par => par.Key, static par => par.DaOcorrencia);
 
-    private SituacaoDaComprovacao ResolverFolha(NoExigencia no)
+    private SituacaoDaComprovacao ResolverRegraDeDocumento(RegraDeComprovacao regra)
     {
-        DocumentoExigido documento = no.DocumentoExigido!;
-        Ternario aplicavel = _bloqueadas.Contains(documento.Id) ? Ternario.Indeterminado : documento.AplicavelPara(_fatos);
+        DocumentoExigido documento = regra.DocumentoExigido!;
+        Ternario aplicavel = _exigenciasQueAguardamDados.Contains(documento.Id) ? Ternario.Indeterminado : documento.AplicavelPara(_fatos);
         if (aplicavel != Ternario.Verdadeiro)
         {
             return RegistrarInaplicabilidade(documento.Id, aplicavel);
         }
-        int quantidade = no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao;
+        int quantidade = regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao;
         List<ApresentacaoDocumento> distintas = [.. _apresentacoes.GetValueOrDefault(documento.Id, []).DistinctBy(static a => a.Id)];
-        bool satisfeita = no.Distincao?.AtendidaPor(distintas, quantidade) ?? distintas.Count >= quantidade;
-        _status[documento.Id] = satisfeita ? StatusResolucaoExigencia.Satisfeita : StatusResolucaoExigencia.Pendente;
-        return satisfeita ? SituacaoDaComprovacao.Satisfeito : SituacaoDaComprovacao.Pendente;
+        bool cumprida = regra.Distincao?.AtendidaPor(distintas, quantidade) ?? distintas.Count >= quantidade;
+        _situacoesPorExigencia[documento.Id] = cumprida ? StatusResolucaoExigencia.Cumprida : StatusResolucaoExigencia.PendenteDeComprovacao;
+        return cumprida ? SituacaoDaComprovacao.Cumprida : SituacaoDaComprovacao.PendenteDeComprovacao;
     }
 
     private SituacaoDaComprovacao RegistrarInaplicabilidade(Guid documentoId, Ternario aplicavel)
     {
-        _status[documentoId] = aplicavel == Ternario.Indeterminado
-            ? StatusResolucaoExigencia.AplicabilidadeIndeterminada : StatusResolucaoExigencia.NaoAplicavel;
-        return aplicavel == Ternario.Indeterminado ? SituacaoDaComprovacao.Indeterminado : SituacaoDaComprovacao.NaoAplicavel;
+        _situacoesPorExigencia[documentoId] = aplicavel == Ternario.Indeterminado
+            ? StatusResolucaoExigencia.AguardandoDados : StatusResolucaoExigencia.NaoExigida;
+        return aplicavel == Ternario.Indeterminado ? SituacaoDaComprovacao.AguardandoDados : SituacaoDaComprovacao.NaoExigida;
     }
 
-    private SituacaoDaComprovacao ResolverGrupo(NoExigencia no)
+    private SituacaoDaComprovacao ResolverGrupo(RegraDeComprovacao regra)
     {
-        List<SituacaoDaComprovacao> filhos = [.. no.Filhos.Select(ResolverNo)];
-        return no.Tipo == TipoNo.GrupoE ? ResolverE(filhos) : ResolverOu(filhos, no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao);
+        List<SituacaoDaComprovacao> itens = [.. regra.Itens.Select(ResolverRegra)];
+        return regra.Forma == FormaDeComprovacao.TodosOsItens ? ResolverTodosOsItens(itens) : ResolverQuantidadeMinima(itens, regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao);
     }
 
-    private static SituacaoDaComprovacao ResolverE(IReadOnlyList<SituacaoDaComprovacao> filhos)
+    private static SituacaoDaComprovacao ResolverTodosOsItens(IReadOnlyList<SituacaoDaComprovacao> itens)
     {
-        List<SituacaoDaComprovacao> restantes = [.. filhos.Where(static e => e != SituacaoDaComprovacao.NaoAplicavel)];
+        List<SituacaoDaComprovacao> restantes = [.. itens.Where(static e => e != SituacaoDaComprovacao.NaoExigida)];
         if (restantes.Count == 0)
         {
-            return SituacaoDaComprovacao.NaoAplicavel;
+            return SituacaoDaComprovacao.NaoExigida;
         }
-        if (restantes.Contains(SituacaoDaComprovacao.Impossivel))
+        if (restantes.Contains(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento))
         {
-            return SituacaoDaComprovacao.Impossivel;
+            return SituacaoDaComprovacao.SemPossibilidadeDeCumprimento;
         }
-        if (restantes.All(static e => e == SituacaoDaComprovacao.Satisfeito))
+        if (restantes.All(static e => e == SituacaoDaComprovacao.Cumprida))
         {
-            return SituacaoDaComprovacao.Satisfeito;
+            return SituacaoDaComprovacao.Cumprida;
         }
-        return restantes.Contains(SituacaoDaComprovacao.Pendente) ? SituacaoDaComprovacao.Pendente : SituacaoDaComprovacao.Indeterminado;
+        return restantes.Contains(SituacaoDaComprovacao.PendenteDeComprovacao) ? SituacaoDaComprovacao.PendenteDeComprovacao : SituacaoDaComprovacao.AguardandoDados;
     }
 
-    private static SituacaoDaComprovacao ResolverOu(IReadOnlyList<SituacaoDaComprovacao> filhos, int quantidadeMinima)
+    private static SituacaoDaComprovacao ResolverQuantidadeMinima(IReadOnlyList<SituacaoDaComprovacao> itens, int quantidadeMinima)
     {
-        if (filhos.All(static e => e == SituacaoDaComprovacao.NaoAplicavel))
+        if (itens.All(static e => e == SituacaoDaComprovacao.NaoExigida))
         {
-            return SituacaoDaComprovacao.NaoAplicavel;
+            return SituacaoDaComprovacao.NaoExigida;
         }
-        int satisfeitos = filhos.Count(static e => e == SituacaoDaComprovacao.Satisfeito);
-        if (satisfeitos >= quantidadeMinima)
+        int cumpridos = itens.Count(static e => e == SituacaoDaComprovacao.Cumprida);
+        if (cumpridos >= quantidadeMinima)
         {
-            return SituacaoDaComprovacao.Satisfeito;
+            return SituacaoDaComprovacao.Cumprida;
         }
-        int pendentes = filhos.Count(static e => e == SituacaoDaComprovacao.Pendente);
-        int indeterminados = filhos.Count(static e => e == SituacaoDaComprovacao.Indeterminado);
-        return satisfeitos + pendentes + indeterminados < quantidadeMinima ? SituacaoDaComprovacao.Impossivel
-            : indeterminados > 0 ? SituacaoDaComprovacao.Indeterminado : SituacaoDaComprovacao.Pendente;
+        int pendentes = itens.Count(static e => e == SituacaoDaComprovacao.PendenteDeComprovacao);
+        int aguardandoDados = itens.Count(static e => e == SituacaoDaComprovacao.AguardandoDados);
+        return cumpridos + pendentes + aguardandoDados < quantidadeMinima ? SituacaoDaComprovacao.SemPossibilidadeDeCumprimento
+            : aguardandoDados > 0 ? SituacaoDaComprovacao.AguardandoDados : SituacaoDaComprovacao.PendenteDeComprovacao;
     }
 
-    private static bool IdentificarConsequenciasQueAguardamDados(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> bloqueadas, HashSet<Guid> suprimidos, bool naInstancia = false)
+    private static bool IdentificarConsequenciasQueAguardamDados(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> exigenciasQueAguardamDados, HashSet<Guid> regrasComConsequenciaAdiada, bool naOcorrencia = false)
     {
-        if (no.RepetePorEntidade is not null && !naInstancia)
+        if (regra.GrupoDoFormularioParaRepeticao is not null && !naOcorrencia)
         {
             return false;
         }
-        SituacaoDaComprovacao estado = estados[no.Id];
-        bool bloqueado = no.Tipo == TipoNo.Folha ? EhPendenteOuPior(estado) && bloqueadas.Contains(no.DocumentoExigido!.Id)
-            : GrupoComEmissaoBloqueada(no, estados, bloqueadas, suprimidos, naInstancia);
-        if (bloqueado)
+        SituacaoDaComprovacao situacao = situacoesPorRegra[regra.Id];
+        bool aguardaDados = regra.Forma == FormaDeComprovacao.Documento ? RequerAvaliacaoDeConsequencia(situacao) && exigenciasQueAguardamDados.Contains(regra.DocumentoExigido!.Id)
+            : GrupoAguardaDadosParaConsequencia(regra, situacoesPorRegra, exigenciasQueAguardamDados, regrasComConsequenciaAdiada, naOcorrencia);
+        if (aguardaDados)
         {
-            suprimidos.Add(no.Id);
+            regrasComConsequenciaAdiada.Add(regra.Id);
         }
-        return bloqueado;
+        return aguardaDados;
     }
 
-    private static bool GrupoComEmissaoBloqueada(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> bloqueadas, HashSet<Guid> suprimidos, bool naInstancia)
+    private static bool GrupoAguardaDadosParaConsequencia(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> exigenciasQueAguardamDados, HashSet<Guid> regrasComConsequenciaAdiada, bool naOcorrencia)
     {
         List<bool> decisivos = [];
-        foreach (NoExigencia filho in no.Filhos)
+        foreach (RegraDeComprovacao item in regra.Itens)
         {
-            bool bloqueado = IdentificarConsequenciasQueAguardamDados(filho, estados, bloqueadas, suprimidos, naInstancia);
-            if (EhPendenteOuPior(estados[filho.Id]))
+            bool aguardaDados = IdentificarConsequenciasQueAguardamDados(item, situacoesPorRegra, exigenciasQueAguardamDados, regrasComConsequenciaAdiada, naOcorrencia);
+            if (RequerAvaliacaoDeConsequencia(situacoesPorRegra[item.Id]))
             {
-                decisivos.Add(bloqueado);
+                decisivos.Add(aguardaDados);
             }
         }
-        return estados[no.Id] is SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Indeterminado && decisivos.Count > 0 && decisivos.All(static b => b);
+        return situacoesPorRegra[regra.Id] is SituacaoDaComprovacao.PendenteDeComprovacao or SituacaoDaComprovacao.AguardandoDados && decisivos.Count > 0 && decisivos.All(static b => b);
     }
 
-    private void DeterminarConsequenciasAplicaveis(NoExigencia no, SituacaoDaComprovacao estado)
+    private void DeterminarConsequenciasAplicaveis(RegraDeComprovacao regra, SituacaoDaComprovacao situacao)
     {
-        if (!EhPendenteOuPior(estado) || _suprimidos.Contains(no.Id))
+        if (!RequerAvaliacaoDeConsequencia(situacao) || _regrasComConsequenciaAdiada.Contains(regra.Id))
         {
             return;
         }
-        if (no.RepetePorEntidade is not null)
+        if (regra.GrupoDoFormularioParaRepeticao is not null)
         {
-            foreach (InstanciaResolvida instancia in _resolvidas.GetValueOrDefault(no.Id, []))
+            foreach (OcorrenciaAvaliada ocorrencia in _resolvidas.GetValueOrDefault(regra.Id, []))
             {
-                EmitirInstancia(no, instancia);
+                DeterminarConsequenciasDaOcorrencia(regra, ocorrencia);
             }
             return;
         }
-        DeterminarConsequenciasAplicaveisParaRegra(no, _estados, _suprimidos, _consequencias, _pendencias);
+        DeterminarConsequenciasAplicaveisParaRegra(regra, _situacoesPorRegra, _regrasComConsequenciaAdiada, _consequencias, _pendencias);
     }
 
-    private void EmitirInstancia(NoExigencia no, InstanciaResolvida instancia)
+    private void DeterminarConsequenciasDaOcorrencia(RegraDeComprovacao regra, OcorrenciaAvaliada ocorrencia)
     {
-        if (!EhPendenteOuPior(instancia.Estado) || instancia.RegrasComConsequenciaAdiada.Contains(no.Id))
+        if (!RequerAvaliacaoDeConsequencia(ocorrencia.Situacao) || ocorrencia.RegrasComConsequenciaAdiada.Contains(regra.Id))
         {
             return;
         }
-        List<ConsequenciaEmitida> consequencias = [];
+        List<ConsequenciaAplicavel> consequencias = [];
         List<PendenciaDeOrientacao> pendencias = [];
-        DeterminarConsequenciasAplicaveisParaRegra(no, instancia.EstadosDescendentes, instancia.RegrasComConsequenciaAdiada, consequencias, pendencias);
-        _consequencias.AddRange(consequencias.Select(c => c with { EntidadeId = instancia.EntidadeId }));
-        _pendencias.AddRange(pendencias.Select(p => p with { EntidadeId = instancia.EntidadeId }));
+        DeterminarConsequenciasAplicaveisParaRegra(regra, ocorrencia.SituacoesDasRegras, ocorrencia.RegrasComConsequenciaAdiada, consequencias, pendencias);
+        _consequencias.AddRange(consequencias.Select(c => c with { OcorrenciaId = ocorrencia.OcorrenciaId }));
+        _pendencias.AddRange(pendencias.Select(p => p with { OcorrenciaId = ocorrencia.OcorrenciaId }));
     }
 
-    private void DeterminarConsequenciasAplicaveisParaRegra(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    private void DeterminarConsequenciasAplicaveisParaRegra(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> regrasComConsequenciaAdiada, List<ConsequenciaAplicavel> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
-        switch (no.Tipo)
+        switch (regra.Forma)
         {
-            case TipoNo.Folha:
-                EmitirFolha(no, consequencias);
+            case FormaDeComprovacao.Documento:
+                DeterminarConsequenciaDoDocumento(regra, consequencias);
                 break;
-            case TipoNo.GrupoOu:
-                EmitirGrupoOu(no, estados, suprimidos, consequencias, pendencias);
+            case FormaDeComprovacao.QuantidadeMinimaDeItens:
+                DeterminarConsequenciaDoGrupo(regra, situacoesPorRegra, regrasComConsequenciaAdiada, consequencias, pendencias);
                 break;
-            case TipoNo.GrupoE:
-                EmitirGrupoE(no, estados, suprimidos, consequencias, pendencias);
+            case FormaDeComprovacao.TodosOsItens:
+                DeterminarConsequenciasDosItensObrigatorios(regra, situacoesPorRegra, regrasComConsequenciaAdiada, consequencias, pendencias);
                 break;
         }
     }
 
-    private static void EmitirFolha(NoExigencia no, List<ConsequenciaEmitida> consequencias)
+    private static void DeterminarConsequenciaDoDocumento(RegraDeComprovacao regra, List<ConsequenciaAplicavel> consequencias)
     {
-        if (no.DocumentoExigido!.ConsequenciaIndeferimento is { } consequencia)
+        if (regra.DocumentoExigido!.ConsequenciaIndeferimento is { } consequencia)
         {
-            consequencias.Add(new(no.Id, TipoNo.Folha, consequencia));
+            consequencias.Add(new(regra.Id, FormaDeComprovacao.Documento, consequencia));
         }
     }
 
-    private void EmitirGrupoE(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    private void DeterminarConsequenciasDosItensObrigatorios(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> regrasComConsequenciaAdiada, List<ConsequenciaAplicavel> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
-        foreach (NoExigencia filho in no.Filhos.Where(f => EhPendenteOuPior(estados[f.Id])))
+        foreach (RegraDeComprovacao item in regra.Itens.Where(f => RequerAvaliacaoDeConsequencia(situacoesPorRegra[f.Id])))
         {
-            EmitirDescendente(filho, estados, suprimidos, consequencias, pendencias);
+            DeterminarConsequenciasDoItem(item, situacoesPorRegra, regrasComConsequenciaAdiada, consequencias, pendencias);
         }
     }
 
-    private static void EmitirGrupoOu(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    private static void DeterminarConsequenciaDoGrupo(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> regrasComConsequenciaAdiada, List<ConsequenciaAplicavel> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
-        if (no.Consequencia is { } consequencia)
+        if (regra.Consequencia is { } consequencia)
         {
-            consequencias.Add(new(no.Id, TipoNo.GrupoOu, consequencia));
+            consequencias.Add(new(regra.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia));
         }
-        foreach (NoExigencia filho in no.Filhos.Where(f => EhPendenteOuPior(estados[f.Id]) && !suprimidos.Contains(f.Id)))
+        foreach (RegraDeComprovacao item in regra.Itens.Where(f => RequerAvaliacaoDeConsequencia(situacoesPorRegra[f.Id]) && !regrasComConsequenciaAdiada.Contains(f.Id)))
         {
-            pendencias.Add(new(filho.Id));
+            pendencias.Add(new(item.Id));
         }
     }
 
-    private void EmitirDescendente(NoExigencia filho, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
-        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    private void DeterminarConsequenciasDoItem(RegraDeComprovacao item, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
+        IReadOnlySet<Guid> regrasComConsequenciaAdiada, List<ConsequenciaAplicavel> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
-        if (suprimidos.Contains(filho.Id))
+        if (regrasComConsequenciaAdiada.Contains(item.Id))
         {
             return;
         }
-        if (filho.RepetePorEntidade is not null)
+        if (item.GrupoDoFormularioParaRepeticao is not null)
         {
-            DeterminarConsequenciasAplicaveis(filho, estados[filho.Id]);
+            DeterminarConsequenciasAplicaveis(item, situacoesPorRegra[item.Id]);
         }
-        else { DeterminarConsequenciasAplicaveisParaRegra(filho, estados, suprimidos, consequencias, pendencias); }
+        else
+        {
+            DeterminarConsequenciasAplicaveisParaRegra(item, situacoesPorRegra, regrasComConsequenciaAdiada, consequencias, pendencias);
+        }
     }
 
-    private static bool EhPendenteOuPior(SituacaoDaComprovacao estado) => estado is SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Indeterminado or SituacaoDaComprovacao.Impossivel;
+    private static bool RequerAvaliacaoDeConsequencia(SituacaoDaComprovacao situacao) => situacao is SituacaoDaComprovacao.PendenteDeComprovacao or SituacaoDaComprovacao.AguardandoDados or SituacaoDaComprovacao.SemPossibilidadeDeCumprimento;
 
-    private static bool ContemRepeticaoAninhada(NoExigencia no) =>
-        (no.RepetePorEntidade is not null && no.Filhos.Any(ContemRepeticaoOuDescendente)) || no.Filhos.Any(ContemRepeticaoAninhada);
+    private static bool ContemRepeticaoAninhada(RegraDeComprovacao regra) =>
+        (regra.GrupoDoFormularioParaRepeticao is not null && regra.Itens.Any(ContemRepeticaoOuDescendente)) || regra.Itens.Any(ContemRepeticaoAninhada);
 
-    private static bool ContemRepeticaoOuDescendente(NoExigencia no) => no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
+    private static bool ContemRepeticaoOuDescendente(RegraDeComprovacao regra) => regra.GrupoDoFormularioParaRepeticao is not null || regra.Itens.Any(ContemRepeticaoOuDescendente);
 
-    private sealed record InstanciaResolvida(string EntidadeId, SituacaoDaComprovacao Estado,
-        Dictionary<Guid, SituacaoDaComprovacao> EstadosDescendentes, Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes, IReadOnlySet<Guid> RegrasComConsequenciaAdiada);
+    private sealed record OcorrenciaAvaliada(string OcorrenciaId, SituacaoDaComprovacao Situacao,
+        Dictionary<Guid, SituacaoDaComprovacao> SituacoesDasRegras, Dictionary<Guid, StatusResolucaoExigencia> SituacoesDasExigencias, IReadOnlySet<Guid> RegrasComConsequenciaAdiada);
 }

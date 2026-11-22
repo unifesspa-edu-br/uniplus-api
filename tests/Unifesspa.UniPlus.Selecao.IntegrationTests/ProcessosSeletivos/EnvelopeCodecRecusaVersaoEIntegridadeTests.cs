@@ -115,9 +115,9 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     public void RepeticaoPorGrupoAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["arvoreSatisfacao"]![0]!["repetePorEntidade"] = "GRUPO_AUSENTE", comArvoreSatisfacao: true);
+            envelope["regrasDeComprovacao"]![0]!["grupoDoFormularioParaRepeticao"] = "GRUPO_AUSENTE", comRegrasDeComprovacao: true);
 
-        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
     }
 
     [Fact(DisplayName = "Escala da nota final que não é positiva é recusada na reidratação, como na gravação")]

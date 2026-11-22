@@ -31,7 +31,7 @@ internal sealed class ApresentacaoDeDocumentoConfiguration : IEntityTypeConfigur
         builder.Property(a => a.Id).ValueGeneratedNever();
 
         builder.Property(a => a.ExigenciaId)
-            .HasComment("O DocumentoExigido.Id da árvore congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070).");
+            .HasComment("O DocumentoExigido.Id da configuração congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070).");
         builder.Property(a => a.OcorrenciaId)
             .HasMaxLength(200)
             .HasComment("A ocorrência do grupo repetível a que o documento se refere; nulo quando a exigência não se repete.");

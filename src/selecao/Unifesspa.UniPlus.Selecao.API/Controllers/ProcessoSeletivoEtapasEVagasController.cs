@@ -218,8 +218,8 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 
     /// <summary>
     /// Pré-visualiza o processo diante de um perfil simulado de candidato (UNI-REQ-0144,
-    /// UNI-REQ-0145, UNI-REQ-0064): o que cada formulário mostra e exige e os documentos que a
-    /// árvore de exigências pediria. Avalia a configuração viva — o rascunho —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
+    /// UNI-REQ-0145, UNI-REQ-0064): o que cada formulário mostra e exige e os documentos que as
+    /// regras de comprovação exigiriam. Avalia a configuração viva — o rascunho —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
     /// sensíveis simulados, não é persistido nem registrado.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]

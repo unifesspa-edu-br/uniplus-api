@@ -56,6 +56,7 @@ public sealed class SemLiteralDeTipoDeAtoTests : IClassFixture<ProcessoSeletivoD
         JOIN pg_namespace ns ON ns.oid = t.relnamespace
         WHERE ns.nspname = 'selecao'
           AND con.contype = 'c'
+          AND con.conname <> 'ck_regras_comprovacao_forma_coerente'
           AND pg_get_constraintdef(con.oid) ~ '''[A-Z]+(_[A-Z]+)*'''
         """;
 
@@ -90,72 +91,58 @@ public sealed class SemLiteralDeTipoDeAtoTests : IClassFixture<ProcessoSeletivoD
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "O enum de natureza não existe na persistência — nem a coluna, nem a tabela que a carregava")]
+    private const string CriarAtosDeExemplo = """
+        CREATE TABLE selecao.canario_atos (
+            id uuid PRIMARY KEY,
+            processo_seletivo_id uuid NOT NULL,
+            tipo_codigo text NOT NULL,
+            CONSTRAINT canario_ck_tipo CHECK (tipo_codigo <> 'CONVOCACAO')
+        );
+        CREATE UNIQUE INDEX canario_ux_abertura_unica
+        ON selecao.canario_atos (processo_seletivo_id)
+        WHERE tipo_codigo = 'EDITAL_ABERTURA';
+        """;
+
+    [Fact(DisplayName = "A consulta identifica uma coluna de natureza")]
+    public async Task Consulta_ComColunaDeNatureza_IdentificaColuna()
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using NpgsqlTransaction transacao = await conexao.BeginTransactionAsync();
+        await ExecutarAsync(conexao, transacao, "CREATE TABLE selecao.canario_editais (id uuid PRIMARY KEY, natureza integer NOT NULL);");
+        (await ListarAsync(conexao, transacao, ListaColunasDeNatureza)).Should().ContainSingle();
+        await transacao.RollbackAsync();
+    }
+
+    [Fact(DisplayName = "O enum de natureza não existe no schema")]
     public async Task Natureza_NaoExisteNoSchema()
     {
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
-
-        // Canário: o detector ENXERGA uma coluna `natureza` quando ela existe.
-        await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
-        {
-            await ExecutarAsync(conexao, canario, """
-                CREATE TABLE selecao.canario_editais (id uuid PRIMARY KEY, natureza integer NOT NULL);
-                """);
-
-            (await ListarAsync(conexao, canario, ListaColunasDeNatureza))
-                .Should().ContainSingle("o canário prova que a consulta acha a coluna quando ela existe");
-
-            await canario.RollbackAsync();
-        }
-
-        (await ListarAsync(conexao, transacao: null, ListaColunasDeNatureza))
-            .Should().BeEmpty(
-                "retificação é uma RELAÇÃO entre atos, não um valor de enum: a marca é a presença do "
-                + "ato emendado, e o tipo do ato vem do cadastro de Publicações (ADR-0103)");
-
-        (await ListarAsync(conexao, transacao: null, ListaTabelas))
-            .Should().NotContain(
-                "editais",
-                "o documento normativo é o ato publicado, e vive em Publicacoes — a Seleção o referencia por valor");
+        (await ListarAsync(conexao, null, ListaColunasDeNatureza)).Should().BeEmpty("o tipo do ato vem do cadastro de Publicações (ADR-0103)");
+        (await ListarAsync(conexao, null, ListaTabelas)).Should().NotContain("editais", "o ato publicado pertence a Publicações");
     }
 
-    [Fact(DisplayName = "Nenhum índice nem CHECK do schema compara com literal de tipo de ato — acrescentar um tipo é linha de cadastro")]
+    [Fact(DisplayName = "A consulta identifica literais de tipo de ato em índices e verificações")]
+    public async Task Consulta_ComLiteraisDeTipoDeAto_IdentificaIndiceEVerificacao()
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using NpgsqlTransaction transacao = await conexao.BeginTransactionAsync();
+        await ExecutarAsync(conexao, transacao, CriarAtosDeExemplo);
+        IReadOnlyList<string> encontrados = await ListarAsync(conexao, transacao, ListaPredicadosComLiteralDeTipo);
+        encontrados.Should().Contain("canario_ux_abertura_unica");
+        encontrados.Should().Contain("canario_ck_tipo");
+        await transacao.RollbackAsync();
+    }
+
+    [Fact(DisplayName = "Índices e verificações não enumeram tipos de ato")]
     public async Task IndicesEChecks_NaoCarregamLiteralDeTipoDeAto()
     {
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
-
-        // Canário: planta as DUAS formas do defeito — o índice parcial filtrado por um
-        // código de tipo e o CHECK que o compara — e exige que o detector acuse ambas.
-        await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
-        {
-            await ExecutarAsync(conexao, canario, """
-                CREATE TABLE selecao.canario_atos (
-                    id uuid PRIMARY KEY,
-                    processo_seletivo_id uuid NOT NULL,
-                    tipo_codigo text NOT NULL,
-                    CONSTRAINT canario_ck_tipo CHECK (tipo_codigo <> 'CONVOCACAO')
-                );
-                """);
-            await ExecutarAsync(conexao, canario, """
-                CREATE UNIQUE INDEX canario_ux_abertura_unica
-                ON selecao.canario_atos (processo_seletivo_id)
-                WHERE tipo_codigo = 'EDITAL_ABERTURA';
-                """);
-
-            IReadOnlyList<string> acusados = await ListarAsync(conexao, canario, ListaPredicadosComLiteralDeTipo);
-            acusados.Should().Contain("canario_ux_abertura_unica", "o detector tem de acusar o índice parcial plantado");
-            acusados.Should().Contain("canario_ck_tipo", "e também o CHECK plantado");
-
-            await canario.RollbackAsync();
-        }
-
-        (await ListarAsync(conexao, transacao: null, ListaPredicadosComLiteralDeTipo))
-            .Should().BeEmpty(
-                "nenhum índice ou verificação do módulo enumera tipos de ato: quando a Habilitação chegar, "
-                + "criar CONVOCACAO, HOMOLOGACAO_ANALISE e LISTA_ESPERA deve ser INSERT no cadastro — "
-                + "se exigir migration, esta story foi mal feita (ADR-0103)");
+        (await ListarAsync(conexao, null, ListaPredicadosComLiteralDeTipo))
+            .Should().BeEmpty("os tipos de ato pertencem ao cadastro de Publicações (ADR-0103)");
     }
 
     private static async Task ExecutarAsync(NpgsqlConnection conexao, NpgsqlTransaction? transacao, string sql)

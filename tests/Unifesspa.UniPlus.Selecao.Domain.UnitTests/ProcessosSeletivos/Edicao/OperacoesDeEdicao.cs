@@ -64,7 +64,7 @@ internal sealed record OperacaoDeEdicao(
             p => p.DefinirCronogramaFases([.. p.CronogramaFases], []),
             p => p.DefinirCronogramaFases(null!, [])),
         new(nameof(ProcessoSeletivo.DefinirDocumentosExigidos),
-            p => p.DefinirDocumentosExigidos([.. p.RaizesDeExigencia]),
+            p => p.DefinirDocumentosExigidos([.. p.RegrasDeComprovacaoSemGrupo]),
             p => p.DefinirDocumentosExigidos(null!)),
         new(nameof(ProcessoSeletivo.DefinirFatosColetados),
             p => p.DefinirFatosColetados(Inscricao, [.. p.FatosColetados.Where(static f => f.Finalidade == Inscricao)]),

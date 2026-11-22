@@ -9,9 +9,9 @@ public sealed class EnvelopeLidoFidelidadeTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Reidratar_ConfiguracaoRica_ReproduzTodosOsBytes(bool comArvore)
+    public void Reidratar_ConfiguracaoRica_ReproduzTodosOsBytes(bool comRegras)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: comArvore);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegras);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 

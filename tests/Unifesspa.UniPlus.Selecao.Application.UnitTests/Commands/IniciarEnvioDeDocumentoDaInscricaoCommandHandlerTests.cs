@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O início do envio de documento da inscrição: a exigência na árvore congelada da versão da inscrição,
+/// O início do envio de documento da inscrição: a exigência na configuração congelada da versão da inscrição,
 /// a ocorrência, a apresentação reaproveitada só por id explícito e a disputa da revisão da inscrição.
 /// </summary>
 public sealed class IniciarEnvioDeDocumentoDaInscricaoCommandHandlerTests
@@ -64,7 +64,7 @@ public sealed class IniciarEnvioDeDocumentoDaInscricaoCommandHandlerTests
         await _cenario.Inscricoes.DidNotReceive().TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Exigência que não está na árvore congelada da versão da inscrição não recebe arquivo")]
+    [Fact(DisplayName = "Exigência ausente da configuração congelada da inscrição não recebe arquivo")]
     public async Task Iniciar_ExigenciaForaDaVersao_Recusa()
     {
         _cenario.Rascunho();

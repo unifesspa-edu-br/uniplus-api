@@ -162,13 +162,13 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
                 ? FormatosPermitidos.Criar(qualquer: false, entradas: [.. formatosPermitidos]).Value!
                 : FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!;
 
-            NoExigencia folha = Folha(fase, fp, ocorrenciasEsperadas);
+            RegraDeComprovacao folha = Folha(fase, fp, ocorrenciasEsperadas);
 
             processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
         }
     }
 
-    private static NoExigencia Folha(FaseCronograma fase, FormatosPermitidos fp, IReadOnlyList<string>? ocorrenciasEsperadas)
+    private static RegraDeComprovacao Folha(FaseCronograma fase, FormatosPermitidos fp, IReadOnlyList<string>? ocorrenciasEsperadas)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
@@ -176,10 +176,10 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             [], [], null, fp, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         return ocorrenciasEsperadas is not null
-            ? NoExigencia.CriarFolha(
+            ? RegraDeComprovacao.CriarRegraDeDocumento(
                 documento, 0, quantidadeMinima: ocorrenciasEsperadas.Count,
                 chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ocorrenciasEsperadas).Value!
-            : NoExigencia.CriarFolha(documento, 0).Value!;
+            : RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
     }
 
     // ── ocorrenciasEsperadas ──
@@ -358,7 +358,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
     private static JsonArray Ocorrencias(IReadOnlyList<string> ocorrencias) =>
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(MontarProcesso(ocorrenciasEsperadas: ocorrencias))))
-            ["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray();
+            ["regrasDeComprovacao"]![0]!["ocorrenciasEsperadas"]!.AsArray();
 
     private static JsonArray Formatos(IReadOnlyList<(string Formato, int? TamanhoMaximoBytesMax)> formatos) =>
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(MontarProcesso(formatosPermitidos: formatos))))

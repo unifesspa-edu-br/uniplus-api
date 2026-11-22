@@ -23,11 +23,11 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
             ReferenciaRegra.De(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", new string('a', 64)),
             new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 
-    private static NoExigencia GrupoAninhadoDaFase(FaseCronograma fase)
+    private static RegraDeComprovacao GrupoAninhadoDaFase(FaseCronograma fase)
     {
-        NoExigencia grupoInterno = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, null, null, [], [FolhaDaFase(fase.Id, 0), FolhaDaFase(fase.Id, 1)]).Value!;
-        return NoExigencia.CriarGrupo(TipoNo.GrupoE, 1, null, null, [], [grupoInterno, FolhaDaFase(fase.Id, 2)]).Value!;
+        RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeDocumentoDaFase(fase.Id, 0), RegraDeDocumentoDaFase(fase.Id, 1)]).Value!;
+        return RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 1, null, null, [], [grupoInterno, RegraDeDocumentoDaFase(fase.Id, 2)]).Value!;
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO");
         FaseCronograma habilitacao = Fase(2, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoComFases(isencao, habilitacao);
-        ExigirFolhas(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, finalidade: FinalidadeFormulario.Habilitacao));
+        ExigirDocumentos(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, finalidade: FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirCronogramaFases(
             [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
@@ -90,7 +90,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle()
             .Which.ExigidoNaFaseId.Should().Be(habilitacao.Id);
-        processo.NosExigencia.Should().ContainSingle();
+        processo.RegrasDeComprovacao.Should().ContainSingle();
     }
 
     /// <summary>
@@ -114,14 +114,14 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         resultado.Error!.Code.Should().Be("FaseCronograma.EtapaDaFaseReferenciada");
     }
 
-    [Fact(DisplayName = "Remover a fase poda em cascata os grupos da fase e preserva a árvore da fase que fica")]
+    [Fact(DisplayName = "Remover uma fase retira suas regras e preserva as regras das demais fases")]
     public void DefinirCronogramaFases_RemoveFase_PodaGruposEmCascataEPreservaOutraFase()
     {
         FaseCronograma faseQueFica = Fase(1, "INSCRICAO");
         FaseCronograma faseQueSai = Fase(2, "RECURSO");
         ProcessoSeletivo processo = ProcessoComFases(faseQueFica, faseQueSai);
-        NoExigencia folhaQueFica = FolhaDaFase(faseQueFica.Id, 0);
-        processo.DefinirDocumentosExigidos([folhaQueFica, GrupoAninhadoDaFase(faseQueSai)])
+        RegraDeComprovacao regraDeDocumentoQueFica = RegraDeDocumentoDaFase(faseQueFica.Id, 0);
+        processo.DefinirDocumentosExigidos([regraDeDocumentoQueFica, GrupoAninhadoDaFase(faseQueSai)])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
@@ -129,6 +129,6 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle().Which.ExigidoNaFaseId.Should().Be(faseQueFica.Id);
-        processo.NosExigencia.Should().ContainSingle().Which.Should().BeSameAs(folhaQueFica);
+        processo.RegrasDeComprovacao.Should().ContainSingle().Which.Should().BeSameAs(regraDeDocumentoQueFica);
     }
 }

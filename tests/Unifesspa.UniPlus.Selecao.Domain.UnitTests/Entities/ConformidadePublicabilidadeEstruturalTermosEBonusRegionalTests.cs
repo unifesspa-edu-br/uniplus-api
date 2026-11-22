@@ -148,7 +148,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
         processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
-        ExigirFolhas(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
+        ExigirDocumentos(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
         processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")))
             .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
@@ -163,7 +163,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
         processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
-        ExigirFolhas(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
+        ExigirDocumentos(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();

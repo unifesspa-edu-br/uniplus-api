@@ -7,13 +7,7 @@ using System.Collections.Immutable;
 /// fechado do wire de comando, em UPPER_SNAKE.
 /// </summary>
 /// <remarks>
-/// <para>
-/// É <see langword="string"/>, e não enum, porque a consequência não tem comportamento próprio
-/// no domínio: ela é comparada contra a ação declarada pela modalidade da vaga e projetada
-/// para o wire, nunca ramificada. O que faltava era uma fonte só — a lista estava escrita
-/// palavra por palavra na exigência, no nó da árvore e no validator, e as três precisavam ser
-/// lembradas juntas a cada valor novo.
-/// </para>
+/// <para>Vocabulário compartilhado entre exigências e regras de comprovação.</para>
 /// <para>
 /// Não confundir com <c>AcaoQuandoIndeferido</c>, do módulo Configuração: aquele é o
 /// vocabulário da VAGA, e a diferença de grafia entre os dois (<see cref="ReclassificaAc"/>

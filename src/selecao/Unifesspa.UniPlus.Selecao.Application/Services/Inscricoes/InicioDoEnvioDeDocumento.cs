@@ -62,7 +62,7 @@ public sealed class InicioDoEnvioDeDocumento(
     private static Result<ExigenciaDaInscricao.Localizada> ConferirExigencia(
         Inscricao inscricao, IniciarEnvioDeDocumentoDaInscricaoCommand command, ContextoDaVersaoFixada contexto)
     {
-        ExigenciaDaInscricao.Localizada? localizada = ExigenciaDaInscricao.Localizar(contexto.Configuracao.Arvore, command.ExigenciaId);
+        ExigenciaDaInscricao.Localizada? localizada = ExigenciaDaInscricao.Localizar(contexto.Configuracao.RegrasDeComprovacao, command.ExigenciaId);
         if (localizada is null)
         {
             return Result<ExigenciaDaInscricao.Localizada>.Failure(new DomainError(DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada, "A exigência não existe na versão desta inscrição."));

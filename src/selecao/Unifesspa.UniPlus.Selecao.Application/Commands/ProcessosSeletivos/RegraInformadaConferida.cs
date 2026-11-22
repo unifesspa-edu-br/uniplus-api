@@ -5,14 +5,14 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>Um item enviado, sua declaração e recusas, com seus descendentes e posição de origem.</summary>
-internal sealed record NoDeEntradaConferido(
+internal sealed record RegraInformadaConferida(
     RegraDeComprovacaoInformada Entrada,
-    DeclaracaoDoNoDeExigencia Declaracao,
+    DeclaracaoDaRegraDeComprovacao Declaracao,
     string Caminho,
     int Indice,
     IReadOnlyList<FieldError> Recusas,
-    IReadOnlyList<NoDeEntradaConferido> Filhos)
+    IReadOnlyList<RegraInformadaConferida> Itens)
 {
-    internal static bool RepeticaoRecusada(NoDeEntradaConferido no) =>
-        no.Recusas.Any(static recusa => recusa.Error.Code == "NoExigencia.TipoEntidadeInvalido");
+    internal static bool RepeticaoRecusada(RegraInformadaConferida regra) =>
+        regra.Recusas.Any(static recusa => recusa.Error.Code == "RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
 }

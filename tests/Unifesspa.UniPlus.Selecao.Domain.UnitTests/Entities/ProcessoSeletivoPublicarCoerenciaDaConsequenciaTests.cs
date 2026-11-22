@@ -33,7 +33,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(cota);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -65,7 +65,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(suplementar);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -80,7 +80,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
         // O processo declara que não aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015): sem configuração do bônus
         // não há "vantagem viva" para a consequência REMOVE_VANTAGEM remover.
 
@@ -98,7 +98,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
             aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -112,7 +112,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!)
             .IsSuccess.Should().BeTrue();
@@ -151,7 +151,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(semAcao);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -173,7 +173,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 

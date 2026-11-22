@@ -22,7 +22,7 @@ internal static class LeituraDosDocumentosExigidos
 {
     /// <summary>
     /// Orquestra o bloco inteiro: <c>exigencias</c>, <c>obrigatoriedades</c> (e o predicado que as condiciona),
-    /// <c>referenciaTemporalFatos</c> e <c>metadadosFatos</c>. O bloco de topo <c>arvoreSatisfacao</c> é irmão
+    /// <c>referenciaTemporalFatos</c> e <c>metadadosFatos</c>. O bloco de topo <c>regrasDeComprovacao</c> é irmão
     /// deste, e por isso não é lido aqui.
     /// </summary>
     internal static (

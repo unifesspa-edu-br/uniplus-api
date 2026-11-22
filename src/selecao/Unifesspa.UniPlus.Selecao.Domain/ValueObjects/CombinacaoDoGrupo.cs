@@ -5,64 +5,64 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>A cardinalidade e a consequência próprias de um grupo de exigências.</summary>
-public sealed record CombinacaoDoGrupo(TipoNo Tipo, int? QuantidadeMinima, string? Consequencia)
+public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? QuantidadeMinima, string? Consequencia)
 {
     public static Result<CombinacaoDoGrupo> Declarar(
-        TipoNo tipo, int? quantidadeMinima, string? consequencia, int quantidadeDeFilhos, bool temBaseLegal)
+        FormaDeComprovacao forma, int? quantidadeMinima, string? consequencia, int quantidadeDeItens, bool temBaseLegal)
     {
-        DomainError? recusa = tipo == TipoNo.GrupoE
-            ? RecusaDoGrupoE(quantidadeMinima, consequencia, temBaseLegal)
-            : RecusaDoGrupoOu(quantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao, consequencia, quantidadeDeFilhos, temBaseLegal);
+        DomainError? recusa = forma == FormaDeComprovacao.TodosOsItens
+            ? RecusaQuandoExigeTodosOsItens(quantidadeMinima, consequencia, temBaseLegal)
+            : RecusaQuandoExigeQuantidadeMinima(quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, consequencia, quantidadeDeItens, temBaseLegal);
         return recusa is not null ? Result<CombinacaoDoGrupo>.Failure(recusa)
-            : Result<CombinacaoDoGrupo>.Success(tipo == TipoNo.GrupoE
-                ? new(tipo, null, null)
-                : new(tipo, quantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao, NormalizarConsequencia(consequencia)));
+            : Result<CombinacaoDoGrupo>.Success(forma == FormaDeComprovacao.TodosOsItens
+                ? new(forma, null, null)
+                : new(forma, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, NormalizarConsequencia(consequencia)));
     }
 
-    private static DomainError? RecusaDoGrupoE(int? quantidadeMinima, string? consequencia, bool temBaseLegal)
+    private static DomainError? RecusaQuandoExigeTodosOsItens(int? quantidadeMinima, string? consequencia, bool temBaseLegal)
     {
-        if (RecusaDaQuantidade(TipoNo.GrupoE, quantidadeMinima, 0) is { } quantidade)
+        if (RecusaDaQuantidade(FormaDeComprovacao.TodosOsItens, quantidadeMinima, 0) is { } quantidade)
         {
             return quantidade;
         }
-        return RecusaDaConsequencia(TipoNo.GrupoE, consequencia) ?? RecusaDaBaseLegal(TipoNo.GrupoE, consequencia, temBaseLegal);
+        return RecusaDaConsequencia(FormaDeComprovacao.TodosOsItens, consequencia) ?? RecusaDaBaseLegal(FormaDeComprovacao.TodosOsItens, consequencia, temBaseLegal);
     }
 
-    private static DomainError? RecusaDoGrupoOu(int quantidadeMinima, string? consequencia, int quantidadeDeFilhos, bool temBaseLegal)
+    private static DomainError? RecusaQuandoExigeQuantidadeMinima(int quantidadeMinima, string? consequencia, int quantidadeDeItens, bool temBaseLegal)
     {
-        if (RecusaDaQuantidade(TipoNo.GrupoOu, quantidadeMinima, quantidadeDeFilhos) is { } quantidade)
+        if (RecusaDaQuantidade(FormaDeComprovacao.QuantidadeMinimaDeItens, quantidadeMinima, quantidadeDeItens) is { } quantidade)
         {
             return quantidade;
         }
-        return RecusaDaConsequencia(TipoNo.GrupoOu, consequencia) ?? RecusaDaBaseLegal(TipoNo.GrupoOu, consequencia, temBaseLegal);
+        return RecusaDaConsequencia(FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia) ?? RecusaDaBaseLegal(FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia, temBaseLegal);
     }
 
-    internal static DomainError? RecusaDaConsequencia(TipoNo tipo, string? consequencia)
+    internal static DomainError? RecusaDaConsequencia(FormaDeComprovacao forma, string? consequencia)
     {
         string? normalizada = NormalizarConsequencia(consequencia);
-        if (tipo == TipoNo.GrupoE && normalizada is not null)
+        if (forma == FormaDeComprovacao.TodosOsItens && normalizada is not null)
         {
-            return new("NoExigencia.ConsequenciaProibidaEmGrupoE", "Este grupo exige todos os itens (\"E\"), mas informa uma consequência própria. Retire a consequência do grupo.");
+            return new("RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos", "Este grupo exige todos os itens, mas informa uma consequência própria. Retire a consequência do grupo.");
         }
-        return tipo == TipoNo.GrupoOu && normalizada is not null && !ConsequenciaIndeferimentoCodigo.Validas.Contains(normalizada, StringComparer.Ordinal)
-            ? new("NoExigencia.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio.") : null;
+        return forma == FormaDeComprovacao.QuantidadeMinimaDeItens && normalizada is not null && !ConsequenciaIndeferimentoCodigo.Validas.Contains(normalizada, StringComparer.Ordinal)
+            ? new("RegraDeComprovacao.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio.") : null;
     }
 
-    internal static DomainError? RecusaDaBaseLegal(TipoNo tipo, string? consequencia, bool temBaseLegal) => tipo switch
+    internal static DomainError? RecusaDaBaseLegal(FormaDeComprovacao forma, string? consequencia, bool temBaseLegal) => forma switch
     {
-        TipoNo.GrupoE when temBaseLegal => new("NoExigencia.BaseLegalProibidaEmGrupoE",
-            "Este grupo exige todos os itens (\"E\"), mas informa base legal própria. Retire a base legal do grupo."),
-        TipoNo.GrupoOu when temBaseLegal && NormalizarConsequencia(consequencia) is null => new("NoExigencia.BaseLegalSemConsequencia",
+        FormaDeComprovacao.TodosOsItens when temBaseLegal => new("RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos",
+            "Este grupo exige todos os itens, mas informa base legal própria. Retire a base legal do grupo."),
+        FormaDeComprovacao.QuantidadeMinimaDeItens when temBaseLegal && NormalizarConsequencia(consequencia) is null => new("RegraDeComprovacao.BaseLegalSemConsequencia",
             "Este grupo tem base legal, mas não tem consequência. Informe a consequência ou retire a base legal."),
         _ => null,
     };
 
-    internal static DomainError? RecusaDaQuantidade(TipoNo tipo, int? quantidade, int quantidadeDeFilhos) => tipo switch
+    internal static DomainError? RecusaDaQuantidade(FormaDeComprovacao forma, int? quantidade, int quantidadeDeItens) => forma switch
     {
-        TipoNo.GrupoE when quantidade is not null => new("NoExigencia.QuantidadeMinimaProibidaEmGrupoE",
-            "Este grupo exige todos os itens (\"E\"), mas informa uma quantidade mínima. Retire a quantidade mínima."),
-        TipoNo.GrupoOu when quantidade is { } valor && (valor < 1 || valor > quantidadeDeFilhos) => new(
-            "NoExigencia.QuantidadeMinimaForaDosLimites", "A quantidade mínima deste grupo (\"OU\") está fora dos limites. Informe um valor entre 1 e o número de itens do grupo."),
+        FormaDeComprovacao.TodosOsItens when quantidade is not null => new("RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos",
+            "Este grupo exige todos os itens, mas informa uma quantidade mínima. Retire a quantidade mínima."),
+        FormaDeComprovacao.QuantidadeMinimaDeItens when quantidade is { } valor && (valor < 1 || valor > quantidadeDeItens) => new(
+            "RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites", "A quantidade mínima deste grupo está fora dos limites. Informe um valor entre 1 e o número de itens do grupo."),
         _ => null,
     };
 

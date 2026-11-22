@@ -6,10 +6,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Cobertura de <see cref="BaseLegalDaComprovacao"/> (Story #920) — mesmo shape/validação de
-/// <see cref="DocumentoExigidoBaseLegal"/>, ver <see cref="DocumentoExigidoBaseLegalTests"/>.
-/// </summary>
 public sealed class BaseLegalDaComprovacaoTests
 {
     [Fact(DisplayName = "Criar aceita referência, abrangência e status coerentes")]
@@ -49,7 +45,7 @@ public sealed class BaseLegalDaComprovacaoTests
             "Lei X", TipoAbrangencia.Federal, StatusBaseLegal.Nenhuma, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("BaseLegalDaComprovacao.StatusObrigatorio");
+        resultado.Error!.Code.Should().Be("BaseLegalDaComprovacao.SituacaoObrigatoria");
     }
 
     [Fact(DisplayName = "ADR-0125: referência vazia e status Nenhuma acumulam no mesmo lote")]
@@ -62,7 +58,7 @@ public sealed class BaseLegalDaComprovacaoTests
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             "BaseLegalDaComprovacao.ReferenciaObrigatoria",
-            "BaseLegalDaComprovacao.StatusObrigatorio",
+            "BaseLegalDaComprovacao.SituacaoObrigatoria",
         ]);
     }
 

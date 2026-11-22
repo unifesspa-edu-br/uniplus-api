@@ -50,7 +50,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
     }
 

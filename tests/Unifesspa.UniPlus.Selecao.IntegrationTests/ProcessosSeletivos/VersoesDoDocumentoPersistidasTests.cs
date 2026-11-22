@@ -41,7 +41,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
     [Fact]
     public async Task Persistir_ExigenciaAlterada_ConservaHashEBytesDaVersaoAnterior()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(2, comArvoreSatisfacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(2, comRegrasDeComprovacao: true);
         VersaoConfiguracao abertura = Abrir(processo);
         await PersistirAsync(processo, abertura);
         await AlterarExigenciaAsync(processo.Id);

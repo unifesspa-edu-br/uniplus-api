@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class NoExigenciaFolhaTests
+public sealed class RegraDeComprovacaoFolhaTests
 {
     private static DocumentoExigido Documento(
         Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
@@ -33,146 +33,146 @@ public sealed class NoExigenciaFolhaTests
     private static BaseLegalDaComprovacao BaseLegalResolvida() =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
 
-    [Fact(DisplayName = "CriarFolha aceita um DocumentoExigido válido")]
-    public void CriarFolha_DocumentoValido_Aceita()
+    [Fact(DisplayName = "CriarRegraDeDocumento aceita um DocumentoExigido válido")]
+    public void CriarRegraDeDocumento_DocumentoValido_Aceita()
     {
         DocumentoExigido documento = Documento();
 
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(documento, ordem: 0);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(documento, ordem: 0);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Tipo.Should().Be(TipoNo.Folha);
+        resultado.Value!.Forma.Should().Be(FormaDeComprovacao.Documento);
         resultado.Value!.DocumentoExigidoId.Should().Be(documento.Id);
         resultado.Value!.DocumentoExigido.Should().BeSameAs(documento);
-        resultado.Value!.Filhos.Should().BeEmpty();
+        resultado.Value!.Itens.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "CriarFolha recusa ordem negativa")]
-    public void CriarFolha_OrdemNegativa_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento recusa ordem negativa")]
+    public void CriarRegraDeDocumento_OrdemNegativa_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: -1);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: -1);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OrdemInvalida");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OrdemInvalida");
     }
 
-    [Fact(DisplayName = "CriarFolha recusa quantidadeMinima menor que 1")]
-    public void CriarFolha_QuantidadeMinimaMenorQueUm_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento recusa quantidadeMinima menor que 1")]
+    public void CriarRegraDeDocumento_QuantidadeMinimaMenorQueUm_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, quantidadeMinima: 0);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: 0, quantidadeMinima: 0);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida");
         resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deste documento está fora dos limites. Informe um valor entre 1 e 366.");
     }
 
-    [Fact(DisplayName = "CriarFolha sem chaveDistincao recusa dataReferencia")]
-    public void CriarFolha_SemChave_ComDataReferencia_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento sem chaveDistincao recusa dataReferencia")]
+    public void CriarRegraDeDocumento_SemChave_ComDataReferencia_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, dataReferencia: new DateOnly(2026, 1, 1));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaIndevidaParaChave");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.DataReferenciaIndevidaParaCriterio");
     }
 
-    [Fact(DisplayName = "CriarFolha sem chaveDistincao recusa ocorrenciasEsperadas")]
-    public void CriarFolha_SemChave_ComOcorrenciasEsperadas_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento sem chaveDistincao recusa ocorrenciasEsperadas")]
+    public void CriarRegraDeDocumento_SemChave_ComOcorrenciasEsperadas_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, ocorrenciasEsperadas: ["a"]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasIndevidasParaChave");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OcorrenciasEsperadasIndevidasParaCriterio");
     }
 
-    [Theory(DisplayName = "CriarFolha com chave de calendário exige dataReferencia")]
+    [Theory(DisplayName = "CriarRegraDeDocumento com chave de calendário exige dataReferencia")]
     [InlineData(ChaveDistincao.CompetenciaMensal)]
     [InlineData(ChaveDistincao.ExercicioAnual)]
-    public void CriarFolha_ChaveDeCalendario_SemDataReferencia_Recusa(ChaveDistincao chave)
+    public void CriarRegraDeDocumento_ChaveDeCalendario_SemDataReferencia_Recusa(ChaveDistincao chave)
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, chaveDistincao: chave);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: 0, chaveDistincao: chave);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaObrigatoriaParaChaveCalendario");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.DataReferenciaObrigatoriaParaCalendario");
         resultado.Error.Message.Should().Be("Este documento é distinguido por mês ou ano e precisa de uma data de referência. Informe a data.");
     }
 
-    [Fact(DisplayName = "CriarFolha com chave de calendário recusa ocorrenciasEsperadas")]
-    public void CriarFolha_ChaveDeCalendario_ComOcorrenciasEsperadas_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com chave de calendário recusa ocorrenciasEsperadas")]
+    public void CriarRegraDeDocumento_ChaveDeCalendario_ComOcorrenciasEsperadas_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0,
             chaveDistincao: ChaveDistincao.CompetenciaMensal,
             dataReferencia: new DateOnly(2026, 1, 1),
             ocorrenciasEsperadas: ["a"]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasIndevidasParaChave");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OcorrenciasEsperadasIndevidasParaCriterio");
     }
 
-    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa dataReferencia")]
-    public void CriarFolha_Ocorrencia_ComDataReferencia_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia recusa dataReferencia")]
+    public void CriarRegraDeDocumento_Ocorrencia_ComDataReferencia_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, chaveDistincao: ChaveDistincao.Ocorrencia, dataReferencia: new DateOnly(2026, 1, 1));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaIndevidaParaChave");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.DataReferenciaIndevidaParaCriterio");
     }
 
-    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa ocorrenciasEsperadas vazia")]
-    public void CriarFolha_Ocorrencia_ListaVazia_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia recusa ocorrenciasEsperadas vazia")]
+    public void CriarRegraDeDocumento_Ocorrencia_ListaVazia_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: []);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasVazia");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OcorrenciasEsperadasVazias");
         resultado.Error.Message.Should().Be("A lista de ocorrências esperadas está vazia. Informe ao menos uma ocorrência ou deixe a lista ausente.");
     }
 
-    [Theory(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa id vazio ou em branco")]
+    [Theory(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia recusa id vazio ou em branco")]
     [InlineData("")]
     [InlineData("   ")]
-    public void CriarFolha_Ocorrencia_IdVazioOuEmBranco_Recusa(string idInvalido)
+    public void CriarRegraDeDocumento_Ocorrencia_IdVazioOuEmBranco_Recusa(string idInvalido)
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2,
             chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", idInvalido]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdVazio");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OcorrenciaSemIdentificador");
         resultado.Error.Message.Should().Be("Uma ocorrência esperada não tem identificador. Informe um identificador para cada ocorrência.");
     }
 
-    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa ids duplicados")]
-    public void CriarFolha_Ocorrencia_IdsDuplicados_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia recusa ids duplicados")]
+    public void CriarRegraDeDocumento_Ocorrencia_IdsDuplicados_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2,
             chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", "a"]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdsDuplicados");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.OcorrenciaComIdentificadorRepetido");
         resultado.Error.Message.Should().Be("Há ocorrências esperadas com o mesmo identificador. Informe identificadores distintos.");
     }
 
-    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa quantidadeMinima divergente do tamanho da lista")]
-    public void CriarFolha_Ocorrencia_QuantidadeMinimaDivergente_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia recusa quantidadeMinima divergente do tamanho da lista")]
+    public void CriarRegraDeDocumento_Ocorrencia_QuantidadeMinimaDivergente_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 3,
             chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", "b"]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasQuantidadeMinimaDivergente");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaDiferenteDasOcorrencias");
     }
 
-    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia sem lista é modo distinção pura — aceita")]
-    public void CriarFolha_Ocorrencia_SemLista_Aceita()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ChaveDistincao.Ocorrencia sem lista é modo distinção pura — aceita")]
+    public void CriarRegraDeDocumento_Ocorrencia_SemLista_Aceita()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -182,7 +182,7 @@ public sealed class NoExigenciaFolhaTests
     [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para CompetenciaMensal deriva as N competências regulares mais recentes")]
     public void IdentificacoesDasApresentacoesExigidas_CompetenciaMensal_DerivaAsMaisRecentes()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 3,
             chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: new DateOnly(2026, 3, 15));
 
@@ -192,7 +192,7 @@ public sealed class NoExigenciaFolhaTests
     [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para ExercicioAnual deriva os N exercícios regulares mais recentes")]
     public void IdentificacoesDasApresentacoesExigidas_ExercicioAnual_DerivaOsMaisRecentes()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 3,
             chaveDistincao: ChaveDistincao.ExercicioAnual, dataReferencia: new DateOnly(2026, 3, 15));
 
@@ -202,7 +202,7 @@ public sealed class NoExigenciaFolhaTests
     [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas sem chaveDistincao é nulo — contagem bruta")]
     public void IdentificacoesDasApresentacoesExigidas_SemChave_Nulo()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: 0);
 
         (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().BeNull();
     }
@@ -210,7 +210,7 @@ public sealed class NoExigenciaFolhaTests
     [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para CompetenciaMensal na âncora mínima representável (ano 1) não lança e não excede o calendário")]
     public void IdentificacoesDasApresentacoesExigidas_CompetenciaMensal_AncoraMinima_NaoLanca()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 1,
             chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: DateOnly.MinValue);
 
@@ -218,45 +218,45 @@ public sealed class NoExigenciaFolhaTests
         (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("0001-01");
     }
 
-    [Fact(DisplayName = "CriarFolha com CompetenciaMensal recusa quantidadeMinima que excede o calendário representável")]
-    public void CriarFolha_CompetenciaMensal_QuantidadeExcedeCalendario_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com CompetenciaMensal recusa quantidadeMinima que excede o calendário representável")]
+    public void CriarRegraDeDocumento_CompetenciaMensal_QuantidadeExcedeCalendario_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2,
             chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: DateOnly.MinValue);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaExcedeJanelaRepresentavel");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaExcedeCalendario");
     }
 
-    [Fact(DisplayName = "CriarFolha com ExercicioAnual recusa quantidadeMinima que excede o calendário representável")]
-    public void CriarFolha_ExercicioAnual_QuantidadeExcedeCalendario_Recusa()
+    [Fact(DisplayName = "CriarRegraDeDocumento com ExercicioAnual recusa quantidadeMinima que excede o calendário representável")]
+    public void CriarRegraDeDocumento_ExercicioAnual_QuantidadeExcedeCalendario_Recusa()
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2,
             chaveDistincao: ChaveDistincao.ExercicioAnual, dataReferencia: new DateOnly(1, 6, 1));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaExcedeJanelaRepresentavel");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaExcedeCalendario");
     }
 
-    [Theory(DisplayName = "CriarFolha recusa quantidadeMinima fora do teto operacional")]
+    [Theory(DisplayName = "CriarRegraDeDocumento recusa quantidadeMinima fora do teto operacional")]
     [InlineData(0)]
     [InlineData(367)]
-    public void CriarFolha_QuantidadeMinimaForaDoTeto_Recusa(int quantidadeInvalida)
+    public void CriarRegraDeDocumento_QuantidadeMinimaForaDoTeto_Recusa(int quantidadeInvalida)
     {
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, quantidadeMinima: quantidadeInvalida);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), ordem: 0, quantidadeMinima: quantidadeInvalida);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida");
         resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deste documento está fora dos limites. Informe um valor entre 1 e 366.");
     }
 
-    [Fact(DisplayName = "CriarFolha copia ocorrenciasEsperadas defensivamente — mutação da lista original não afeta o nó")]
-    public void CriarFolha_Ocorrencia_ListaOriginalMutada_NaoAfetaNo()
+    [Fact(DisplayName = "CriarRegraDeDocumento copia ocorrenciasEsperadas defensivamente — mutação da lista original não afeta o nó")]
+    public void CriarRegraDeDocumento_Ocorrencia_ListaOriginalMutada_NaoAfetaNo()
     {
         List<string> listaOriginal = ["a", "b"];
-        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), ordem: 0, quantidadeMinima: 2,
             chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: listaOriginal);
 

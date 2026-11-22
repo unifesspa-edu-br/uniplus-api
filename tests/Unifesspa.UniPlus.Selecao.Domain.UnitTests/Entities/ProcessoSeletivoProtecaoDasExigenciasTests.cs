@@ -55,7 +55,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         processo.DefinirItens([Fato(FatoSensivel, 0, "SENSIVEL")]).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [.. exigencias.Select((e, i) => NoExigencia.CriarFolha(e(inscricao.Id), i).Value!)])
+            [.. exigencias.Select((e, i) => RegraDeComprovacao.CriarRegraDeDocumento(e(inscricao.Id), i).Value!)])
             .IsSuccess.Should().BeTrue();
         return processo;
     }

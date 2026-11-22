@@ -13876,6 +13876,51 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.documento_referenciado_mais_de_uma_vez",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Uma exigência documental foi indicada em mais de uma regra de comprovação."
+      ],
+      "comoResolver": [
+        "Confira as regras e associe cada exigência a uma única regra de documento."
+      ],
+      "ondeAparece": [
+        "Avaliação da inscrição",
+        "Salvamento do rascunho da inscrição",
+        "Envio da inscrição do candidato",
+        "Pré-visualização do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.ocorrencia_do_grupo_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Um registro do grupo do formulário não tem identificador válido ou repete outro identificador."
+      ],
+      "comoResolver": [
+        "Corrija os identificadores dos registros do grupo."
+      ],
+      "ondeAparece": [
+        "Salvamento do rascunho da inscrição"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.regra_sem_documento",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "Uma regra de documento não indica a exigência documental que deve ser comprovada."
+      ],
+      "comoResolver": [
+        "Confira a configuração e associe uma exigência à regra de documento."
+      ],
+      "ondeAparece": [
+        "Avaliação da comprovação da inscrição",
+        "Pré-visualização da configuração do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos",
       "requisitos": [
         "UNI-REQ-0274",
@@ -14370,6 +14415,52 @@
       ],
       "ondeAparece": [
         "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.abrangencia_obrigatoria",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "A base legal não informa uma abrangência reconhecida."
+      ],
+      "comoResolver": [
+        "Informe a abrangência da base legal."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.referencia_obrigatoria",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "A base legal não informa a referência da norma."
+      ],
+      "comoResolver": [
+        "Informe a referência da norma."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.situacao_obrigatoria",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "A base legal não informa uma situação reconhecida."
+      ],
+      "comoResolver": [
+        "Informe a situação da base legal."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo"
       ]
     },
     {
@@ -17709,7 +17800,7 @@
       "oQueAconteceu": [
         "Quando uma modalidade de vaga declara o que acontece com o candidato indeferido (a ação de\nindeferimento), a consequência de indeferimento do documento exigido tem de ser a mesma. O\ndocumento apontado declara uma consequência diferente da ação de uma modalidade que ele pode\nalcançar.",
         "A comparação considera as modalidades ofertadas que a exigência pode alcançar pelas condições\ndela, e só as que declaram ação de indeferimento. A grafia diferente entre os dois\nvocabulários (`RECLASSIFICA_AC` na exigência e `RECLASSIFICAR_AC` na modalidade) é tratada como\na mesma ação. A mensagem de detalhe indica o documento e a modalidade em conflito.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`no_exigencia.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga)).\nA primeira violação encontrada interrompe a conferência."
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga)).\nA primeira violação encontrada interrompe a conferência."
       ],
       "comoResolver": [
         "Alinhe a consequência do documento à ação de indeferimento da modalidade apontada, ou revise\na ação dessa modalidade, se for ela que está errada. Depois, repita a operação."
@@ -17727,7 +17818,7 @@
       "oQueAconteceu": [
         "A consequência de indeferimento de um documento exigido só aceita quatro valores: `ELIMINA`,\n`RECLASSIFICA_AC`, `REMOVE_VANTAGEM` ou `PENDENCIA_REENVIO`. A definição trouxe um documento\ncom uma consequência que não é nenhum deles.",
         "É uma conferência de forma, feita antes de o sistema consultar o tipo de documento, as fases ou\nas demais configurações do processo. Ela examina as exigências na ordem recebida e para na\nprimeira que tem defeito; dentro dessa exigência, os defeitos de forma aparecem juntos.",
-        "A consequência é opcional: o documento que não carrega consequência de indeferimento não a\ninforma. Para a consequência de um grupo de alternativas (OU), o erro correspondente é\n[`no_exigencia.consequencia_invalida`](/erros/uniplus.selecao.no_exigencia.consequencia_invalida)."
+        "A consequência é opcional: o documento que não carrega consequência de indeferimento não a\ninforma. Para a consequência de um grupo de alternativas (OU), o erro correspondente é\n[`uniplus.selecao.regra_de_comprovacao.consequencia_invalida`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_invalida)."
       ],
       "comoResolver": [
         "Informe uma das quatro consequências previstas ou omita o campo, se o documento não carrega\nconsequência de indeferimento. Depois, envie a definição de novo."
@@ -17970,7 +18061,7 @@
       ],
       "oQueAconteceu": [
         "A consequência `REMOVE_VANTAGEM` tira do candidato uma vantagem que ele teria. Um documento\nexigido declara essa consequência, mas o processo não tem vantagem para ser removida: a\nconferência reconhece como vantagem apenas o bônus regional, e o processo não o aplica.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`no_exigencia.remove_vantagem_sem_vantagem_viva`](/erros/uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva)).\nA primeira violação encontrada interrompe a conferência."
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada`](/erros/uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada)).\nA primeira violação encontrada interrompe a conferência."
       ],
       "comoResolver": [
         "Configure o bônus regional do processo, se a intenção é que o documento remova essa vantagem,\nou troque a consequência do documento por outra das previstas. Depois, repita a operação."
@@ -18035,7 +18126,7 @@
       "oQueAconteceu": [
         "Cada base legal de um documento exigido declara a abrangência da norma, que é uma de cinco:\n`FEDERAL`, `ESTADUAL`, `MUNICIPAL`, `INTERNA_NORMA` ou `INTERNA_EDITAL`. A base legal apontada\nveio sem abrangência, ou com um valor que não é nenhum desses.",
         "Na definição dos documentos exigidos e na aplicação de um modelo de formulário, é uma\nconferência de forma. Ela examina cada base legal do documento, e os três defeitos possíveis\nde uma mesma base (referência, abrangência e status) aparecem juntos; a conferência para na\nprimeira exigência que tem defeito. O campo apontado na resposta traz a posição da base legal\nna lista.",
-        "Para a base legal de um grupo de alternativas (OU), o erro correspondente é\n[`no_exigencia_base_legal.abrangencia_obrigatoria`](/erros/uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria)."
+        "Para a base legal de um grupo de alternativas (OU), o erro correspondente é\n[`uniplus.selecao.base_legal_da_comprovacao.abrangencia_obrigatoria`](/erros/uniplus.selecao.base_legal_da_comprovacao.abrangencia_obrigatoria)."
       ],
       "comoResolver": [
         "Informe uma das cinco abrangências na base legal apontada. Na aplicação de um modelo de\nformulário, a base legal vem do modelo: escolha outro modelo ou peça a revisão dele."
@@ -18053,7 +18144,7 @@
       "oQueAconteceu": [
         "Cada documento exigido pode ter várias bases legais, e cada uma traz a referência da norma, a\nabrangência e o status. Uma base legal de documento exigido veio sem referência, ou com a\nreferência em branco.",
         "É uma conferência de forma. Ela examina cada base legal do documento, e os três defeitos\npossíveis de uma mesma base (referência, abrangência e status) aparecem juntos; a conferência\npara na primeira exigência que tem defeito. O campo apontado na resposta traz a posição da\nbase legal na lista.",
-        "Para a base legal de um grupo de alternativas (OU), o erro correspondente é\n[`no_exigencia_base_legal.referencia_obrigatoria`](/erros/uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria)."
+        "Para a base legal de um grupo de alternativas (OU), o erro correspondente é\n[`uniplus.selecao.base_legal_da_comprovacao.referencia_obrigatoria`](/erros/uniplus.selecao.base_legal_da_comprovacao.referencia_obrigatoria)."
       ],
       "comoResolver": [
         "Informe a referência da norma na base legal apontada, ou retire a base legal que não é\nnecessária. Na aplicação de um modelo de formulário, a base legal vem do modelo: escolha outro\nmodelo ou peça a revisão dele."
@@ -18064,17 +18155,15 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido_base_legal.status_obrigatorio",
+      "codigo": "uniplus.selecao.documento_exigido_base_legal.situacao_obrigatoria",
       "requisitos": [
         "UNI-REQ-0059"
       ],
       "oQueAconteceu": [
-        "Cada base legal de um documento exigido declara o status: `PENDENTE` ou `RESOLVIDO`. A base\nlegal apontada veio sem status, ou com um valor que não é nenhum dos dois.",
-        "É uma conferência de forma. Ela examina cada base legal do documento, e os três defeitos\npossíveis de uma mesma base (referência, abrangência e status) aparecem juntos; a conferência\npara na primeira exigência que tem defeito. O campo apontado na resposta traz a posição da\nbase legal na lista.",
-        "Para a base legal de um grupo de alternativas (OU), o erro correspondente é\n[`no_exigencia_base_legal.status_obrigatorio`](/erros/uniplus.selecao.no_exigencia_base_legal.status_obrigatorio)."
+        "A base legal não informa uma situação reconhecida."
       ],
       "comoResolver": [
-        "Informe `PENDENTE` ou `RESOLVIDO` na base legal apontada. Lembre que a publicação exige ao\nmenos uma base legal `RESOLVIDO` para toda exigência que determina resultado. Na aplicação de\num modelo de formulário, a base legal vem do modelo: escolha outro modelo ou peça a revisão\ndele."
+        "Informe a situação da base legal."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
@@ -19055,7 +19144,7 @@
         "`formatosPermitidos` aceita duas formas: o texto `QUALQUER` ou uma lista de formatos. A exigência\nenviada trouxe outra coisa. São recusados:",
         "- um valor que não é texto nem lista (por exemplo, um número ou um objeto);\n- um texto diferente de `QUALQUER`, com a grafia exata em maiúsculas;\n- um item da lista que não é texto nem objeto com `formato` e `tamanhoMaximoBytesMax`;\n- um item em forma de objeto sem `formato` em texto;\n- um `tamanhoMaximoBytesMax` presente que não é um número inteiro.",
         "Cada item da lista é um texto (por exemplo, `PDF`, sem limite próprio) ou um objeto com `formato` e,\nopcionalmente, `tamanhoMaximoBytesMax`. A mensagem de detalhe diz qual dessas formas foi recusada.",
-        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A árvore de exigências para no primeiro nó com defeito. A ausência do campo\né outra causa\n([`obrigatorio`](/erros/uniplus.selecao.formatos_permitidos.obrigatorio)), e um item de texto que não\né um formato conhecido também\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido))."
+        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A conferência registra as recusas das regras informadas. A ausência do campo\né outra causa\n([`obrigatorio`](/erros/uniplus.selecao.formatos_permitidos.obrigatorio)), e um item de texto que não\né um formato conhecido também\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido))."
       ],
       "comoResolver": [
         "Declare `formatosPermitidos` como o texto `QUALQUER` ou como uma lista em que cada item é um texto\ncom o formato ou um objeto `{ \"formato\": \"PDF\", \"tamanhoMaximoBytesMax\": 1048576 }`. O limite\n`tamanhoMaximoBytesMax`, quando presente, é um número inteiro. Depois, envie a definição de novo."
@@ -19069,7 +19158,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Cada formato aceito por uma exigência aparece uma vez na lista, com o seu limite de tamanho\npróprio, se houver. A lista enviada repete um formato. A mensagem de detalhe identifica o formato\nrepetido.",
-        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A árvore de exigências para no primeiro nó com defeito, e a lista de\nformatos para na primeira entrada com defeito. Em cada entrada, o formato desconhecido\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido)) é conferido\nantes da repetição, e o limite por formato\n([`tamanho_maximo_bytes_max_invalido`](/erros/uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido))\ndepois dela.",
+        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A conferência registra as recusas das regras informadas, e a lista de\nformatos para na primeira entrada com defeito. Em cada entrada, o formato desconhecido\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido)) é conferido\nantes da repetição, e o limite por formato\n([`tamanho_maximo_bytes_max_invalido`](/erros/uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido))\ndepois dela.",
         "Esta mesma conferência é refeita quando o sistema relê a configuração congelada da versão\npublicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página).\nPelo caminho normal de gravação, a configuração congelada nunca traz formato repetido, porque a\ndefinição o recusa antes. Nessas leituras a recusa se refere à versão congelada, não ao pedido\nenviado."
       ],
       "comoResolver": [
@@ -19095,7 +19184,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Os formatos de arquivo que uma exigência pode aceitar são `PDF`, `JPEG` e `PNG`, com a grafia\nexata em maiúsculas. Um item da lista de formatos permitidos trouxe outro formato. A mensagem de\ndetalhe identifica o formato recusado.",
-        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A árvore de exigências para no primeiro nó com defeito, e a lista de\nformatos para na primeira entrada com defeito, que é conferida nesta ordem: formato reconhecido,\nformato sem repetição\n([`formato_duplicado`](/erros/uniplus.selecao.formatos_permitidos.formato_duplicado)) e limite por\nformato positivo\n([`tamanho_maximo_bytes_max_invalido`](/erros/uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido)).",
+        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A conferência registra as recusas das regras informadas, e a lista de\nformatos para na primeira entrada com defeito, que é conferida nesta ordem: formato reconhecido,\nformato sem repetição\n([`formato_duplicado`](/erros/uniplus.selecao.formatos_permitidos.formato_duplicado)) e limite por\nformato positivo\n([`tamanho_maximo_bytes_max_invalido`](/erros/uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido)).",
         "Esta mesma conferência é refeita quando o sistema relê a configuração congelada da versão\npublicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página).\nPelo caminho normal de gravação, a configuração congelada nunca traz formato desconhecido,\nporque a definição o recusa antes. Nessas leituras a recusa se refere à versão congelada, não ao\npedido enviado."
       ],
       "comoResolver": [
@@ -19123,7 +19212,7 @@
       ],
       "oQueAconteceu": [
         "Toda exigência documental declara os formatos de arquivo que aceita: ou o token `QUALQUER`, ou uma\nlista com ao menos um formato. A exigência enviada deixou `formatosPermitidos` ausente, nulo ou\ncomo uma lista vazia. Não declarar nada não vale como `QUALQUER`: a aceitação de qualquer formato\né uma declaração explícita.",
-        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A árvore de exigências para no primeiro nó com defeito.",
+        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A conferência registra as recusas das regras informadas.",
         "Esta mesma conferência é refeita quando o sistema relê a configuração congelada da versão\npublicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página).\nPelo caminho normal de gravação, a configuração congelada nunca traz exigência sem formatos,\nporque a definição a recusa antes. Nessas leituras a recusa se refere à versão congelada, não ao\npedido enviado."
       ],
       "comoResolver": [
@@ -19164,7 +19253,7 @@
       "oQueAconteceu": [
         "Cada formato da lista de formatos permitidos pode ter um limite de tamanho próprio,\n`tamanhoMaximoBytesMax`, em bytes. Quando o limite é informado, ele precisa ser maior que zero, e\na entrada trouxe zero ou um número negativo. Um valor que não seja número inteiro é outra recusa\n([`forma_invalida`](/erros/uniplus.selecao.formatos_permitidos.forma_invalida)).",
         "Este limite é independente do limite geral da exigência, `tamanhoMaximoBytes`, cuja recusa é outra\n([`tamanho_maximo_bytes_invalido`](/erros/uniplus.selecao.documento_exigido.tamanho_maximo_bytes_invalido)).",
-        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A árvore de exigências para no primeiro nó com defeito, e a lista de\nformatos para na primeira entrada com defeito. Em cada entrada, o limite é a última conferência,\ndepois do formato reconhecido\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido)) e da repetição\n([`formato_duplicado`](/erros/uniplus.selecao.formatos_permitidos.formato_duplicado)).",
+        "A conferência acontece na montagem de cada exigência, depois das conferências do tipo de\ndocumento, das condições e das bases legais, e depois da idade máxima de emissão; a do modelo\ncitado vem em seguida. A conferência registra as recusas das regras informadas, e a lista de\nformatos para na primeira entrada com defeito. Em cada entrada, o limite é a última conferência,\ndepois do formato reconhecido\n([`formato_invalido`](/erros/uniplus.selecao.formatos_permitidos.formato_invalido)) e da repetição\n([`formato_duplicado`](/erros/uniplus.selecao.formatos_permitidos.formato_duplicado)).",
         "Esta mesma conferência é refeita quando o sistema relê a configuração congelada da versão\npublicada: em toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários,\nas operações da inscrição, entre outras; a lista completa está no cabeçalho da página).\nPelo caminho normal de gravação, a configuração congelada nunca traz limite não positivo, porque a\ndefinição o recusa antes. Nessas leituras a recusa se refere à versão congelada, não ao pedido\nenviado."
       ],
       "comoResolver": [
@@ -21769,482 +21858,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.no_exigencia.arvore_com_ciclo",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "A estrutura declarada para um nó grupo da árvore de satisfação contém um\nciclo — um nó que, descendo pelos filhos, volta a se referenciar. A\nárvore de satisfação precisa ser uma árvore de verdade: um nó grupo\ncombina os resultados dos filhos, e um ciclo faria essa combinação nunca\nterminar.",
-        "O código de domínio existe (conferência por identidade de referência dentro\nde `CriarGrupo`) — mas **nenhum caminho real chega a executá-lo hoje**,\npor isso a entrada é rascunho, não publicada.",
-        "O formato recebido no pedido e o da configuração publicada não permitem uma referência de volta a uma parte anterior da árvore. Essa situação pode ocorrer em uma construção interna da árvore."
-      ],
-      "comoResolver": [
-        "Informe a equipe responsável para investigar a construção da árvore. Esse problema não pode ser expresso pelo corpo do pedido."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.base_legal_proibida_em_grupo_e",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "O grupo exige todos os itens (\"E\"), mas informa base legal própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire a base legal do grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.base_legal_sem_consequencia",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "O grupo tem base legal, mas não tem consequência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe a consequência ou retire a base legal."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.chave_distincao_invalida",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "O critério informado para distinguir as apresentações do documento não é reconhecido. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha \"COMPETENCIA_MENSAL\" para mês, \"EXERCICIO_ANUAL\" para ano ou \"OCORRENCIA\" para ocorrência."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um grupo de alternativas (OU) pode ter consequência própria de indeferimento. Quando uma\nmodalidade de vaga declara o que acontece com o candidato indeferido (a ação de indeferimento),\na consequência do grupo tem de ser a mesma. O grupo apontado declara uma consequência\ndiferente da ação de uma modalidade que ele pode alcançar.",
-        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A grafia\ndiferente entre os dois vocabulários (`RECLASSIFICA_AC` na exigência e `RECLASSIFICAR_AC` na\nmodalidade) é tratada como a mesma ação. A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga)),\ne a primeira violação encontrada interrompe a conferência."
-      ],
-      "comoResolver": [
-        "Alinhe a consequência do grupo à ação de indeferimento da modalidade apontada, ou revise a\nação dessa modalidade, se for ela que está errada. Depois, repita a operação."
-      ],
-      "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_invalida",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "A consequência informada para o grupo não é reconhecida. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_proibida_em_grupo_e",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "O grupo exige todos os itens (\"E\"), mas informa uma consequência própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire a consequência do grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.data_referencia_indevida_para_chave",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "Este documento informa uma data que não cabe no critério escolhido. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe a data de referência apenas para distinguir por mês ou ano; retire a data deste documento."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.data_referencia_obrigatoria_para_chave_calendario",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "Este documento é distinguido por mês ou ano e precisa de uma data de referência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe a data de referência."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O item é um documento (\"FOLHA\"), mas não informa qual documento é exigido. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha o documento no catálogo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.documento_proibido_em_grupo",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O item reúne exigências, mas informa um documento no próprio grupo. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire o documento do grupo e inclua-o como item separado."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.filhos_proibidos_em_folha",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O item é um documento (\"FOLHA\"), mas reúne outros itens. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire os itens reunidos ou escolha um grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "Os itens do grupo pertencem a fases diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha a mesma fase para todos os itens do grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_com_finalidades_diferentes",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Os documentos do grupo pertencem a formulários diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha o mesmo formulário para todos os documentos do grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_vazio",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O grupo de exigências não contém itens. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Acrescente ao menos um item ao grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_id_vazio",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "Uma ocorrência esperada do documento não tem identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe identificadores não vazios para as ocorrências esperadas."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_ids_duplicados",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "Há ocorrências esperadas com o mesmo identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe identificadores distintos para as ocorrências esperadas."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_indevidas_para_chave",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "O documento informa ocorrências esperadas para outro critério de distinção. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire a lista ou escolha a distinção por ocorrência."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_quantidade_minima_divergente",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "A quantidade mínima não coincide com o número de ocorrências esperadas. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Ajuste a quantidade ou a lista."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_vazia",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "A lista de ocorrências esperadas do documento está vazia. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe ao menos uma ocorrência esperada ou deixe a lista ausente."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_de_folha_invalida",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "A quantidade mínima de apresentações do documento está fora dos limites permitidos. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe uma quantidade entre 1 e 366."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_excede_janela_representavel",
-      "requisitos": [
-        "UNI-REQ-0068"
-      ],
-      "oQueAconteceu": [
-        "A quantidade mínima alcança datas anteriores ao início do calendário. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Reduza a quantidade ou escolha outra data de referência."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_fora_dos_limites",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "A quantidade mínima do grupo (\"OU\") está fora dos limites permitidos. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Informe uma quantidade entre 1 e o número de itens do grupo."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O grupo exige todos os itens (\"E\"), mas informa uma quantidade mínima. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire a quantidade mínima."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um grupo de alternativas (OU) pode ter consequência própria de indeferimento. O grupo apontado\ndeclara `REMOVE_VANTAGEM`, que tira do candidato uma vantagem que ele teria, mas o processo não\ntem vantagem para remover: a conferência reconhece como vantagem apenas o bônus regional, e o\nprocesso não o aplica.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.remove_vantagem_sem_vantagem_viva`](/erros/uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva)),\ne a primeira violação encontrada interrompe a conferência."
-      ],
-      "comoResolver": [
-        "Configure o bônus regional do processo, se a intenção é que o grupo remova essa vantagem, ou\ntroque a consequência do grupo por outra das previstas. Depois, repita a operação."
-      ],
-      "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada",
-      "requisitos": [
-        "UNI-REQ-0069"
-      ],
-      "oQueAconteceu": [
-        "O grupo repete itens que já se repetem por outro grupo. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Retire uma das repetições."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.tipo_entidade_invalido",
-      "requisitos": [
-        "UNI-REQ-0069",
-        "UNI-REQ-0146"
-      ],
-      "oQueAconteceu": [
-        "O grupo de repetição informado não existe nos formulários do processo. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha um grupo existente nos formulários do processo ou retire a repetição."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.tipo_invalido",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "O tipo do item da lista de documentos exigidos não é reconhecido. O campo da resposta indica a posição do item."
-      ],
-      "comoResolver": [
-        "Escolha \"FOLHA\" para um documento, \"E\" para exigir todos os itens ou \"OU\" para exigir uma quantidade deles."
-      ],
-      "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um item de `basesLegais` de um grupo `OU`/N-de não informa `abrangencia` ou informa um código fora da lista aceita. Esta recusa pode aparecer junto de [`referencia_obrigatoria`](/erros/uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria) e `status_obrigatorio` no mesmo item (ADR-0125).",
-        "Na definição, roda na mesma travessia pura da árvore que confirma a\nforma de todo nó antes de qualquer I/O — a validação de corpo do pedido do\ncomando não tem regra própria para `abrangencia` dos itens de\n`basesLegais` de um grupo (propositalmente, para não sombrear a\nacumulação do domínio), então um código fora do catálogo chega inteiro\naté aqui.",
-        "Esta causa também pode aparecer na leitura de uma versão já publicada, durante a retificação em ato único, quando o código de `abrangencia` não é reconhecido."
-      ],
-      "comoResolver": [
-        "Informe `abrangencia` para cada item de `basesLegais` do grupo, com um\ndos cinco valores do catálogo fechado: `FEDERAL`, `ESTADUAL`,\n`MUNICIPAL`, `INTERNA_NORMA` ou `INTERNA_EDITAL`."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um item de `basesLegais` de um grupo `OU`/N-de tem `referencia` vazia ou\nem branco. `NoExigenciaBaseLegal` é a base legal 1:N **própria** do\ngrupo — mesmo formato e mensagens de `DocumentoExigidoBaseLegal` (a base\nlegal de uma folha), mas para a exigência de primeira classe que um\ngrupo opaco com consequência representa.",
-        "Acumula (ADR-0125) com `abrangencia_obrigatoria` e `status_obrigatorio`\ndentro do mesmo item — as conferências de forma de uma base legal\n(referência, abrangência e status) rodam juntas, e todas as violações do mesmo item voltam de uma vez. Na\ndefinição, roda antes de qualquer I/O externo (vocabulário de fatos,\ntipo de documento): uma travessia pura da árvore confirma a forma de\ncada nó primeiro, então o primeiro item malformado responde sem nenhuma\nleitura externa ter acontecido.",
-        "Na leitura de uma versão já publicada, `referencia` vazia é recusada antes como `envelope_codec.envelope_malformado`."
-      ],
-      "comoResolver": [
-        "Informe uma referência textual não vazia para cada item de\n`basesLegais` do grupo — por exemplo, \"Lei 12.711/2012, art. 3º\"."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um item de `basesLegais` de um grupo `OU`/N-de não informa `status` ou informa um código fora da lista (`PENDENTE`, `RESOLVIDO`). Esta recusa pode aparecer junto de [`referencia_obrigatoria`](/erros/uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria) e [`abrangencia_obrigatoria`](/erros/uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria) no mesmo item (ADR-0125)."
-      ],
-      "comoResolver": [
-        "Informe `status` para cada item de `basesLegais` do grupo, com um dos\ndois valores do catálogo: `PENDENTE` ou `RESOLVIDO`."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute",
       "requisitos": [
         "UNI-REQ-0174"
@@ -23408,11 +23021,11 @@
         "Uma etapa com nota pode se dividir em itens de avaliação (critérios ou blocos), cada um\ncom a sua pontuação máxima, e pode declarar uma escala de atendimento: os níveis (por\nexemplo, \"Atendeu\", \"Atendeu parcialmente\" e \"Não atendeu\") com a fração da pontuação\ndo item que cada um vale. Os dois itens abaixo listam as etapas que reprovam, no mesmo\nformato dos demais.",
         "| Código | Como resolver |\n|---|---|\n| `etapa_sem_nota_com_itens_de_avaliacao` | Remova os itens de avaliação e a escala de atendimento da etapa listada, ou faça a etapa ter nota (peso, nota mínima ou regra). |\n| `etapa_com_itens_fora_da_nota_maxima` | Ajuste as pontuações dos itens da etapa listada para que a soma seja igual à nota máxima da etapa, ou ajuste a nota máxima. Só é conferido quando a etapa declara a nota máxima: a falta dela tem item próprio. |",
         "A contradição entre o que a etapa declara sobre os itens e a escala não chega aqui: é\nrecusada já na gravação, também em rascunho, por\n[`itens_na_etapa_do_enem`](/erros/uniplus.selecao.etapa_processo.itens_na_etapa_do_enem),\n[`escala_sem_itens`](/erros/uniplus.selecao.etapa_processo.escala_sem_itens),\n[`escala_na_forma_objetiva`](/erros/uniplus.selecao.etapa_processo.escala_na_forma_objetiva),\n[`passo_com_escala_de_atendimento`](/erros/uniplus.selecao.etapa_processo.passo_com_escala_de_atendimento),\n[`rotulo_invalido`](/erros/uniplus.selecao.item_de_avaliacao.rotulo_invalido),\n[`rotulo_duplicado`](/erros/uniplus.selecao.item_de_avaliacao.rotulo_duplicado),\n[`id_duplicado`](/erros/uniplus.selecao.item_de_avaliacao.id_duplicado),\n[`pontuacao_maxima_invalida`](/erros/uniplus.selecao.item_de_avaliacao.pontuacao_maxima_invalida),\n[`pontuacao_fora_do_passo`](/erros/uniplus.selecao.item_de_avaliacao.pontuacao_fora_do_passo), e,\nna escala, por\n[`rotulo_invalido`](/erros/uniplus.selecao.nivel_de_atendimento.rotulo_invalido),\n[`fracao_invalida`](/erros/uniplus.selecao.nivel_de_atendimento.fracao_invalida),\n[`duplicado`](/erros/uniplus.selecao.nivel_de_atendimento.duplicado) e\n[`sem_nivel_completo`](/erros/uniplus.selecao.nivel_de_atendimento.sem_nivel_completo).",
-        "A **cascata de remanejamento** e a coerência fina da árvore de exigências\ndocumentais (condicional vazia que determina resultado, consequência de\nindeferimento coerente com a ação da vaga) têm verificações de conformidade\npróprias, com causas nomeadas específicas — não entram nesta lista, para que\no erro específico de cada uma nunca fique mascarado pelo agregador genérico."
+        "A **cascata de remanejamento** e a coerência fina das regras de comprovação\ndocumental (condicional vazia que determina resultado, consequência de\nindeferimento coerente com a ação da vaga) têm verificações de conformidade\npróprias, com causas nomeadas específicas — não entram nesta lista, para que\no erro específico de cada uma nunca fique mascarado pelo agregador genérico."
       ],
       "comoResolver": [
         "Leia a lista de itens reprovados na mensagem — cada um nomeia a área da\nconfiguração que precisa de ajuste. Corrija cada item e tente a transição de\nnovo; a resposta reflete o estado da configuração no momento da tentativa,\nentão itens já corrigidos deixam de aparecer na próxima resposta.",
-        "Para um diagnóstico mais amplo, consulte\n`GET /api/selecao/processos-seletivos/{id}/conformidade` — além dos mesmos\nitens desta causa, ela também mostra os itens dos\noutras verificações estruturais (cascata de remanejamento, cronograma, coerência da\nárvore de exigências documentais, referência temporal de fatos e regras de\nderivação), que têm causas nomeadas próprias e não aparecem na mensagem desta\nentrada. É a mesma família de predicados, disponível como leitura sem tentar\na transição."
+        "Para um diagnóstico mais amplo, consulte\n`GET /api/selecao/processos-seletivos/{id}/conformidade` — além dos mesmos\nitens desta causa, ela também mostra os itens das\noutras verificações estruturais (cascata de remanejamento, cronograma, coerência das\nregras de comprovação documental, referência temporal de fatos e regras de\nderivação), que têm causas nomeadas próprias e não aparecem na mensagem desta\nentrada. É a mesma família de predicados, disponível como leitura sem tentar\na transição."
       ],
       "ondeAparece": [
         "Publicação do processo seletivo",
@@ -24819,22 +24432,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado",
-      "requisitos": [
-        "UNI-REQ-0071"
-      ],
-      "oQueAconteceu": [
-        "Duas folhas distintas da árvore congelada referenciam o mesmo\n`DocumentoExigidoId`. Aqui a referência resolve,\nmas para um documento que já pertence a outra folha — a relação entre\nfolha e documento exigido é exatamente 1:1, nunca \"a menos\" (referência\nque não existe) nem \"a mais\" (duas folhas para o mesmo documento).",
-        "Na escrita normal, este cenário não existe: cada folha do corpo do pedido de\ndefinição de documentos exigidos constrói o próprio `DocumentoExigido`\ndo zero, sempre uma instância nova — não há como duas folhas\ncompartilharem a mesma instância. Sem esta conferência na leitura da configuração congelada, a\nduplicidade só falharia depois, como violação do índice único\n`ux_nos_exigencia_documento_exigido_id`."
-      ],
-      "comoResolver": [
-        "O corpo do pedido que você enviou não é a causa — é a configuração congelada\nlida pelo sistema que já contém a inconsistência. Abra uma investigação em\nvez de tentar corrigir o pedido."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.nota_do_enem_sem_banca_de_importacao_das_notas",
       "requisitos": [
         "UNI-REQ-0339",
@@ -24962,38 +24559,6 @@
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.ordem_irmao_no_exigencia_duplicada",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "A configuração publicada contém dois nós com o mesmo `noPaiId` e a mesma `ordem`. Assim como em [`ordem_raiz_no_exigencia_duplicada`](/erros/uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada), as posições devem ser distintas; aqui a conferência é feita entre nós do mesmo grupo.",
-        "Na escrita normal, a ordem de cada filho também é sempre derivada da\nposição no array `filhos` do nó pai — nunca dois filhos do mesmo pai\nrecebem a mesma ordem. Sem esta conferência, a duplicidade só\nfalharia depois, como violação do índice único\n`ux_nos_exigencia_irmaos_ordem`."
-      ],
-      "comoResolver": [
-        "O corpo do pedido que você enviou não é a causa — é a configuração congelada\nque já contém a duplicidade. Abra uma investigação em vez de tentar\ncorrigir pelo pedido enviado."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada",
-      "requisitos": [
-        "UNI-REQ-0067"
-      ],
-      "oQueAconteceu": [
-        "A configuração publicada contém duas raízes da árvore de exigências (nós sem `noPaiId`) com a mesma `ordem`.",
-        "Na definição dos documentos exigidos, a ordem das raízes vem da posição no array `raizes` do corpo do pedido, de modo que não há duplicidade. Este erro indica inconsistência na configuração publicada."
-      ],
-      "comoResolver": [
-        "O corpo do pedido que você enviou não é a causa — é a configuração congelada\nque o sistema está relendo que já contém a duplicidade. Abra uma\ninvestigação em vez de tentar corrigir o que foi enviado."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
       ]
     },
     {
@@ -26120,6 +25685,430 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_proibida_quando_exige_todos",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "O grupo exige todos os itens, mas informa base legal própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire a base legal do grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_sem_consequencia",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "O grupo tem base legal, mas não tem consequência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe a consequência ou retire a base legal."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. Quando uma\nmodalidade de vaga declara o que acontece com o candidato indeferido (a ação de indeferimento),\na consequência do grupo tem de ser a mesma. O grupo apontado declara uma consequência\ndiferente da ação de uma modalidade que ele pode alcançar.",
+        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A grafia\ndiferente entre os dois vocabulários (`RECLASSIFICA_AC` na exigência e `RECLASSIFICAR_AC` na\nmodalidade) é tratada como a mesma ação. A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga)),\ne a primeira violação encontrada interrompe a conferência."
+      ],
+      "comoResolver": [
+        "Alinhe a consequência do grupo à ação de indeferimento da modalidade apontada, ou revise a\nação dessa modalidade, se for ela que está errada. Depois, repita a operação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_invalida",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "A consequência informada para o grupo não é reconhecida. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_proibida_quando_exige_todos",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "O grupo exige todos os itens, mas informa uma consequência própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire a consequência do grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.criterio_de_distincao_invalido",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "O critério informado para distinguir as apresentações do documento não é reconhecido. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha \"COMPETENCIA_MENSAL\" para mês, \"EXERCICIO_ANUAL\" para ano ou \"OCORRENCIA\" para ocorrência."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.data_referencia_indevida_para_criterio",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "Este documento informa uma data que não cabe no critério escolhido. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe a data de referência apenas para distinguir por mês ou ano; retire a data deste documento."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.data_referencia_obrigatoria_para_calendario",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "Este documento é distinguido por mês ou ano e precisa de uma data de referência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe a data de referência."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.documento_obrigatorio",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item é um documento, mas não informa qual documento é exigido. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha o documento no catálogo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.documento_proibido_em_grupo",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item reúne exigências, mas informa um documento no próprio grupo. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire o documento do grupo e inclua-o como item separado."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.forma_invalida",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O tipo do item da lista de documentos exigidos não é reconhecido. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha \"DOCUMENTO\" para uma regra de documento, \"TODOS_OS_ITENS\" para exigir todos os itens ou \"QUANTIDADE_MINIMA_DE_ITENS\" para exigir uma quantidade deles."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_com_fases_diferentes",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "Os itens do grupo pertencem a fases diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha a mesma fase para todos os itens do grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_com_formularios_diferentes",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Os documentos do grupo pertencem a formulários diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha o mesmo formulário para todos os documentos do grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_para_repeticao_nao_declarado",
+      "requisitos": [
+        "UNI-REQ-0069",
+        "UNI-REQ-0146"
+      ],
+      "oQueAconteceu": [
+        "O grupo de repetição informado não existe nos formulários do processo. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha um grupo existente nos formulários do processo ou retire a repetição."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_sem_itens",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O grupo de exigências não contém itens. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Acrescente ao menos um item ao grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.itens_proibidos_em_regra_de_documento",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item é um documento, mas reúne outros itens. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire os itens reunidos ou escolha um grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencia_com_identificador_repetido",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "Há ocorrências esperadas com o mesmo identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe identificadores distintos para as ocorrências esperadas."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencia_sem_identificador",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "Uma ocorrência esperada do documento não tem identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe identificadores não vazios para as ocorrências esperadas."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencias_esperadas_indevidas_para_criterio",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "O documento informa ocorrências esperadas para outro critério de distinção. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire a lista ou escolha a distinção por ocorrência."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencias_esperadas_vazias",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "A lista de ocorrências esperadas do documento está vazia. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe ao menos uma ocorrência esperada ou deixe a lista ausente."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_de_apresentacoes_invalida",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "A quantidade mínima de apresentações do documento está fora dos limites permitidos. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe uma quantidade entre 1 e 366."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_de_itens_fora_dos_limites",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "A quantidade mínima do grupo está fora dos limites permitidos. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Informe uma quantidade entre 1 e o número de itens do grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_diferente_das_ocorrencias",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "A quantidade mínima não coincide com o número de ocorrências esperadas. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Ajuste a quantidade ou a lista."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_excede_calendario",
+      "requisitos": [
+        "UNI-REQ-0068"
+      ],
+      "oQueAconteceu": [
+        "A quantidade mínima alcança datas anteriores ao início do calendário. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Reduza a quantidade ou escolha outra data de referência."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_proibida_quando_exige_todos",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O grupo exige todos os itens, mas informa uma quantidade mínima. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire a quantidade mínima."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.regra_contem_a_si_mesma",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "Uma regra de comprovação contém a si mesma, diretamente ou dentro de outro grupo. Essa situação pode ocorrer em uma construção interna da configuração."
+      ],
+      "comoResolver": [
+        "Informe a equipe responsável para investigar a composição das regras."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. O grupo apontado\ndeclara `REMOVE_VANTAGEM`, que tira do candidato uma vantagem que ele teria, mas o processo não\ntem vantagem para remover: a conferência reconhece como vantagem apenas o bônus regional, e o\nprocesso não o aplica.",
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.remove_vantagem_sem_vantagem_viva`](/erros/uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva)),\ne a primeira violação encontrada interrompe a conferência."
+      ],
+      "comoResolver": [
+        "Configure o bônus regional do processo, se a intenção é que o grupo remova essa vantagem, ou\ntroque a consequência do grupo por outra das previstas. Depois, repita a operação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.repeticao_dentro_de_repeticao",
+      "requisitos": [
+        "UNI-REQ-0069"
+      ],
+      "oQueAconteceu": [
+        "O grupo repete itens que já se repetem por outro grupo. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire uma das repetições."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.regra_derivacao_configurada.contribui_em_branco",
       "requisitos": [
         "UNI-REQ-0075"
@@ -26560,41 +26549,6 @@
       ],
       "comoResolver": [
         "Verifique o cadastro que fornece o nome para a publicação e peça a correção pelo fluxo de atendimento antes de gerar o documento."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Ao avaliar os documentos exigidos, o sistema percorre a árvore de exigências documentais do processo.\nAntes de decidir qualquer coisa, ele confere se a árvore tem a forma que a definição sempre produz, e a\nárvore avaliada não tem. A mensagem diz qual dos dois casos ocorreu:",
-        "- a mesma exigência aparece em mais de uma folha: cada exigência precisa de identidade única, para que\n  o documento apresentado seja correlacionado a uma folha só;\n- uma subárvore marcada como repetida por entidade (por exemplo, por membro do grupo familiar) contém\n  outra subárvore também repetida: a repetição não aninha, e avaliar assim apagaria em silêncio as\n  consequências da repetição interna.",
-        "A árvore avaliada depende da operação:",
-        "- Na avaliação, no salvamento do rascunho e no envio da inscrição, a recusa se refere à configuração publicada, não ao que a pessoa preencheu. Nada da inscrição enviada é gravado por este pedido, e repeti-lo não muda o resultado. A definição dos documentos exigidos recusa a repetição aninhada ([`repeticao_de_entidade_aninhada`](/erros/uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada)), e a integridade da configuração é conferida antes ([`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada)). Esta causa só aparece se a configuração foi publicada com esse defeito.\n- Na pré-visualização do processo seletivo, a recusa se refere à configuração em edição, em rascunho ou em retificação. Ela ainda pode ser alterada e nada é gravado.",
-        "Uma folha sem exigência é recusada antes, na leitura da configuração publicada, como [`envelope_malformado`](/erros/uniplus.selecao.envelope_codec.envelope_malformado)."
-      ],
-      "comoResolver": [
-        "Nas operações da inscrição, o pedido enviado agora não é a causa: o sistema recusou a configuração\ncongelada da versão publicada, e a pessoa que se inscreve não consegue corrigi-la. A causa é investigada\npela equipe técnica do Uni+.",
-        "Na pré-visualização, a causa está na configuração viva do processo. Confira os documentos exigidos\ndefinidos nele: cada folha precisa de uma exigência própria, e nenhuma subárvore repetida por entidade\npode conter outra. Se a árvore parecer correta, a causa é investigada pela equipe técnica do Uni+.\nDepois de corrigir, repita a pré-visualização."
-      ],
-      "ondeAparece": [
-        "Avaliação da inscrição",
-        "Salvamento do rascunho da inscrição",
-        "Envio da inscrição do candidato",
-        "Pré-visualização do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O formulário da inscrição tem grupos repetíveis, em que a pessoa declara várias ocorrências do mesmo\ntipo (por exemplo, vários membros do grupo familiar). Cada ocorrência é enviada com um identificador\npróprio, e é por ele que o sistema relaciona a ocorrência aos documentos exigidos dela. Uma ocorrência de\num grupo foi enviada com o identificador vazio ou em branco, e a mensagem diz o grupo. Sem identidade\nprópria, o documento ou o estado de uma ocorrência poderia ser atribuído a outra.",
-        "A recusa vem do avaliador dos documentos exigidos, ao salvar o rascunho, e nada do pedido é gravado.\nO rascunho que a pessoa já tinha continua como estava."
-      ],
-      "comoResolver": [
-        "Informe um identificador não vazio para cada ocorrência de cada grupo repetível, diferente do das\ndemais ocorrências do mesmo grupo, e salve o rascunho de novo."
-      ],
-      "ondeAparece": [
-        "Salvamento do rascunho da inscrição"
       ]
     },
     {

@@ -20,9 +20,9 @@ internal static class CorposDasRequisicoesDoProcesso
         grupos = new object[] { GrupoDeResponsaveis(fatoDoGrupo) },
     };
 
-    public static object Folha(Guid faseId, Guid tipoDocumentoId, string[] comprova) => new
+    public static object RegraDeDocumento(Guid faseId, Guid tipoDocumentoId, string[] comprova) => new
     {
-        tipo = "FOLHA",
+        forma = "DOCUMENTO",
         documento = new
         {
             tipoDocumento = new { id = tipoDocumentoId },

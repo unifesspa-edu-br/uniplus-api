@@ -425,7 +425,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// <see cref="StatusBaseLegal.Pendente"/> são rascunho e nunca aparecem aqui.
     /// </summary>
     public IEnumerable<DocumentoExigidoBaseLegal> BasesLegaisResolvidas() =>
-        _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
+        _basesLegais.Where(static b => b.Situacao == StatusBaseLegal.Resolvido);
 
     /// <summary>
     /// A exigência se aplica a um candidato com estes fatos? GERAL sempre é

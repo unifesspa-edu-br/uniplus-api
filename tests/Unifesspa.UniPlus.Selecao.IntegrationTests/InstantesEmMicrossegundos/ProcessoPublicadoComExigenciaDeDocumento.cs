@@ -66,7 +66,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
     private static Guid ExigirDocumento(ProcessoSeletivo processo)
     {
         DocumentoExigido exigencia = ExigenciaDoPdf(processo.CronogramaFases.Single().Id);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         return exigencia.Id;
     }

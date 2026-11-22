@@ -6,7 +6,7 @@ using FluentValidation;
 
 /// <summary>
 /// Validação recursiva de UM nó da árvore — auto-referenciada via
-/// <c>RuleForEach(x =&gt; x.Filhos).SetValidator(this)</c> (padrão documentado do
+/// <c>RuleForEach(x =&gt; x.Itens).SetValidator(this)</c> (padrão documentado do
 /// FluentValidation para estruturas em árvore): coerência de campos por
 /// <see cref="RegraDeComprovacaoInformada.Tipo"/> e delegação ao validador de folha.
 /// </summary>
@@ -25,37 +25,37 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
     {
         RuleFor(x => x.Documento!)
             .SetValidator(new ItemDocumentoExigidoInputValidator())
-            .When(static x => x.Tipo == "FOLHA" && x.Documento is not null);
+            .When(static x => x.Forma == "DOCUMENTO" && x.Documento is not null);
     }
 
     private void RegrasDosFilhos()
     {
-        RuleForEach(x => x.Filhos)
+        RuleForEach(x => x.Itens)
             .SetValidator(this)
-            .When(static x => x.Filhos is { Count: > 0 });
+            .When(static x => x.Itens is { Count: > 0 });
     }
 
-    // A coerência chave x dataReferencia x ocorrenciasEsperadas é do domínio (NoExigencia.CriarFolha); aqui só a
+    // A coerência chave x dataReferencia x ocorrenciasEsperadas é do domínio (RegraDeComprovacao.CriarRegraDeDocumento); aqui só a
     // forma: catálogo fechado e campo restrito a FOLHA. A chave em branco também é recusada, em vez de o domínio
     // a tratar como "sem qualificação" e aceitar um pedido malformado.
     private void RegrasDaDistincao()
     {
         RuleFor(x => x.Cardinalidade!.Distincao!)
             .SetValidator(new DistincaoForaDeFolhaInputValidator())
-            .When(static x => x.Tipo is "E" or "OU" && x.Cardinalidade?.Distincao is not null);
+            .When(static x => x.Forma is "TODOS_OS_ITENS" or "QUANTIDADE_MINIMA_DE_ITENS" && x.Cardinalidade?.Distincao is not null);
 
     }
 
     private void RegrasDaConsequencia() =>
         RuleFor(x => x.Indeferimento!.Consequencia)
             .Null()
-            .When(static x => x.Tipo == "FOLHA" && x.Indeferimento is not null)
+            .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
             .WithMessage("indeferimento.consequencia de nó só é permitida em grupo OU/N-de.");
 
     private void RegrasDasBasesLegaisDoGrupo() =>
         RuleFor(x => x.Indeferimento!.BasesLegais)
             .Must(static basesLegais => basesLegais is null or { Count: 0 })
-            .When(static x => x.Tipo == "FOLHA" && x.Indeferimento is not null)
+            .When(static x => x.Forma == "DOCUMENTO" && x.Indeferimento is not null)
             .WithMessage("indeferimento.basesLegais de nó só é permitida em grupo OU/N-de com consequência declarada.");
 
 }

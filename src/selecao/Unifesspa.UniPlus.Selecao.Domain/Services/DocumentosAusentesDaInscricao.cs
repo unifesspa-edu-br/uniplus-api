@@ -8,88 +8,80 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 using ValueObjects;
 
-/// <summary>
-/// Os documentos obrigatórios da inscrição que ainda faltam (UNI-REQ-0028). A decisão parte do estado
-/// do NÓ da árvore, nunca da folha: num grupo "um ou outro" basta uma alternativa atendida, e a folha
-/// que ficou pendente ao lado dela não falta. Dentro de um grupo repetível o estado é o de cada
-/// ocorrência, e a falta sai por ocorrência. O que não é da inscrição — outra finalidade ou fase
-/// posterior —, o documento não obrigatório e a exigência cujos espaços (competência, exercício ou ocorrências
-/// esperadas) o envio ainda não registra não recusam: o arquivo não diz a qual espaço pertence, e recusar
-/// tornaria a inscrição impossível de enviar.
-/// </summary>
+/// <summary>Apura os documentos obrigatórios da inscrição ainda não comprovados, inclusive por ocorrência (UNI-REQ-0028).</summary>
 public static class DocumentosAusentesDaInscricao
 {
-    public static IReadOnlyList<DocumentoAusente> Apurar(RegrasDeComprovacaoDaVersao arvore, ResultadoDaComprovacao resultado)
+    public static IReadOnlyList<DocumentoAusente> Apurar(RegrasDeComprovacaoDaVersao regras, ResultadoDaComprovacao resultado)
     {
-        ArgumentNullException.ThrowIfNull(arvore);
+        ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(resultado);
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade = resultado.EstadosPorEntidade
-            .ToDictionary(static e => (e.NoExigenciaId, e.EntidadeId), static e => e.Estado);
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia = resultado.SituacoesDeRegraPorOcorrencia
+            .ToDictionary(static e => (e.RegraDeComprovacaoId, e.OcorrenciaId), static e => e.Situacao);
         List<DocumentoAusente> ausentes = [];
-        foreach (NoExigencia raiz in arvore.Raizes.OrderBy(static r => r.Ordem))
+        foreach (RegraDeComprovacao regraSemGrupo in regras.RegrasSemGrupo.OrderBy(static r => r.Ordem))
         {
-            Percorrer(raiz, null, resultado, porEntidade, ausentes);
+            Percorrer(regraSemGrupo, null, resultado, porOcorrencia, ausentes);
         }
         return ausentes;
     }
 
-    private static void Percorrer(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
+    private static void Percorrer(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
     {
-        if (no.RepetePorEntidade is not null && entidadeId is null)
+        if (regra.GrupoDoFormularioParaRepeticao is not null && ocorrenciaId is null)
         {
-            foreach (string ocorrencia in porEntidade.Keys.Where(k => k.No == no.Id).Select(static k => k.Entidade).Order(StringComparer.Ordinal))
+            foreach (string ocorrencia in porOcorrencia.Keys.Where(k => k.RegraId == regra.Id).Select(static k => k.OcorrenciaId).Order(StringComparer.Ordinal))
             {
-                Percorrer(no, ocorrencia, resultado, porEntidade, ausentes);
+                Percorrer(regra, ocorrencia, resultado, porOcorrencia, ausentes);
             }
             return;
         }
-        PercorrerNoEscopo(no, entidadeId, resultado, porEntidade, ausentes);
+        PercorrerNoEscopo(regra, ocorrenciaId, resultado, porOcorrencia, ausentes);
     }
 
-    private static void PercorrerNoEscopo(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
+    private static void PercorrerNoEscopo(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
     {
-        if (no.Tipo == TipoNo.GrupoE)
+        if (regra.Forma == FormaDeComprovacao.TodosOsItens)
         {
-            PercorrerGrupoE(no, entidadeId, resultado, porEntidade, ausentes);
+            PercorrerItensObrigatorios(regra, ocorrenciaId, resultado, porOcorrencia, ausentes);
             return;
         }
-        if (EstadoDe(no, entidadeId, resultado, porEntidade) == SituacaoDaComprovacao.Pendente)
+        if (SituacaoDe(regra, ocorrenciaId, resultado, porOcorrencia) == SituacaoDaComprovacao.PendenteDeComprovacao)
         {
-            RegistrarAusentes(no, entidadeId, resultado, porEntidade, ausentes);
+            RegistrarAusentes(regra, ocorrenciaId, resultado, porOcorrencia, ausentes);
         }
     }
 
-    private static void PercorrerGrupoE(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
+    private static void PercorrerItensObrigatorios(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
     {
-        if (EstadoDe(no, entidadeId, resultado, porEntidade) is not (SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Impossivel))
+        if (SituacaoDe(regra, ocorrenciaId, resultado, porOcorrencia) is not (SituacaoDaComprovacao.PendenteDeComprovacao or SituacaoDaComprovacao.SemPossibilidadeDeCumprimento))
         {
             return;
         }
-        foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
+        foreach (RegraDeComprovacao item in regra.Itens.OrderBy(static f => f.Ordem))
         {
-            Percorrer(filho, entidadeId, resultado, porEntidade, ausentes);
+            Percorrer(item, ocorrenciaId, resultado, porOcorrencia, ausentes);
         }
     }
 
-    private static void RegistrarAusentes(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade, List<DocumentoAusente> ausentes)
+    private static void RegistrarAusentes(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
     {
-        DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
-            .Where(static n => n.Tipo == TipoNo.Folha && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
-            .Where(n => EstadoDe(n, entidadeId, resultado, porEntidade) == SituacaoDaComprovacao.Pendente)
+        DocumentoExigido[] faltantes = [.. regra.AchatarComDescendentes()
+            .Where(static n => n.Forma == FormaDeComprovacao.Documento && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
+            .Where(n => SituacaoDe(n, ocorrenciaId, resultado, porOcorrencia) == SituacaoDaComprovacao.PendenteDeComprovacao)
             .Select(static n => n.DocumentoExigido!)
             .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
         if (faltantes.Length > 0)
         {
-            ausentes.Add(new DocumentoAusente(faltantes, entidadeId));
+            ausentes.Add(new DocumentoAusente(faltantes, ocorrenciaId));
         }
     }
 
-    private static SituacaoDaComprovacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoDaComprovacao resultado,
-        Dictionary<(Guid No, string Entidade), SituacaoDaComprovacao> porEntidade) => entidadeId is null
-        ? resultado.SituacoesPorRegra.GetValueOrDefault(no.Id, SituacaoDaComprovacao.Indeterminado)
-        : porEntidade.GetValueOrDefault((no.Id, entidadeId), SituacaoDaComprovacao.Indeterminado);
+    private static SituacaoDaComprovacao SituacaoDe(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
+        Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia) => ocorrenciaId is null
+        ? resultado.SituacoesPorRegra.GetValueOrDefault(regra.Id, SituacaoDaComprovacao.AguardandoDados)
+        : porOcorrencia.GetValueOrDefault((regra.Id, ocorrenciaId), SituacaoDaComprovacao.AguardandoDados);
 }

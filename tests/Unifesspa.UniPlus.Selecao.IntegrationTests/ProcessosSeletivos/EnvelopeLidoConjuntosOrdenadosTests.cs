@@ -50,7 +50,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
 
     private static void DefinirFolhaComOcorrenciasEFormatos(ProcessoSeletivo processo, FaseCronograma fase)
     {
-        NoExigencia folha = NoExigencia.CriarFolha(
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(
             DocumentoDeIdentidadeComFormatosEnumerados(fase), 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["ocorrencia_zeta", "ocorrencia_alfa"]).Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
@@ -107,7 +107,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
     {
         JsonArray obrigatoriedades = envelope["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
         return new SequenciasNoJson(
-            Ocorrencias: Textos(envelope["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray(), static o => o),
+            Ocorrencias: Textos(envelope["regrasDeComprovacao"]![0]!["ocorrenciasEsperadas"]!.AsArray(), static o => o),
             Formatos: Textos(envelope["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray(), static f => f["formato"]),
             RegraCodigos: Textos(obrigatoriedades, static r => r["regraCodigo"]),
             ValoresDominio: Textos(envelope["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray(), static v => v),
@@ -124,7 +124,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             ["predicado"]!["parametros"]!;
     private static void ConferirSequenciasDecodificadas(EnvelopeReidratado envelope, SequenciasNoJson noJson)
     {
-        envelope.Configuracao.Exigencias.NosExigencia.Single().Distincao!.OcorrenciasEsperadas.Should().Equal(
+        envelope.Configuracao.Exigencias.RegrasDeComprovacao.Single().Distincao!.OcorrenciasEsperadas.Should().Equal(
             noJson.Ocorrencias, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
         envelope.Configuracao.Exigencias.DocumentosExigidos.Single().FormatosPermitidos.Lista!
             .Select(static f => f.Formato.ToCodigo()).Should().Equal(noJson.Formatos);

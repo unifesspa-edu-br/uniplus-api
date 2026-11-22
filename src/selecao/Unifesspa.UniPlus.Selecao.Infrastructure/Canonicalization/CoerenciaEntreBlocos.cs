@@ -28,8 +28,8 @@ internal static class CoerenciaEntreBlocos
     /// <returns>O envelope reidratado, ou a primeira incoerência.</returns>
     internal static Result<EnvelopeReidratado> Conferir(BlocosDoEnvelope blocos, VersaoConfiguracao versao, JsonObject payload)
     {
-        IReadOnlyList<NoExigencia> todosOsNos = [.. blocos.Raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
-        if (PrimeiraIncoerencia(blocos, versao, payload, todosOsNos) is { } incoerencia)
+        IReadOnlyList<RegraDeComprovacao> todasAsRegras = [.. blocos.RegrasSemGrupo.SelectMany(static regra => regra.AchatarComDescendentes())];
+        if (PrimeiraIncoerencia(blocos, versao, payload, todasAsRegras) is { } incoerencia)
         {
             return Result<EnvelopeReidratado>.Failure(incoerencia);
         }
@@ -39,15 +39,15 @@ internal static class CoerenciaEntreBlocos
             LeituraDosValoresDeDominio.ReconstruirOpcoesDeclaradas(itensEDeGrupos, blocos.Coleta.ValoresSelecionaveis);
         return opcoesDeclaradas.IsFailure
             ? Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!)
-            : Result<EnvelopeReidratado>.Success(Montar(blocos, todosOsNos, itensEDeGrupos, opcoesDeclaradas.Value!));
+            : Result<EnvelopeReidratado>.Success(Montar(blocos, todasAsRegras, itensEDeGrupos, opcoesDeclaradas.Value!));
     }
 
     private static DomainError? PrimeiraIncoerencia(
-        BlocosDoEnvelope blocos, VersaoConfiguracao versao, JsonObject payload, IReadOnlyList<NoExigencia> todosOsNos)
+        BlocosDoEnvelope blocos, VersaoConfiguracao versao, JsonObject payload, IReadOnlyList<RegraDeComprovacao> todasAsRegras)
     {
         return ItensForaDosFormularios(blocos.Documentos.Formularios, blocos.Coleta.FatosColetados, blocos.Coleta.GruposColetados)
             ?? LeituraDaRetificacao.VerificarCoerenciaComAVersao(versao, blocos.Configuracao.HashDocumento, blocos.Retificacao)
-            ?? VinculoOuRepeticaoInvalidos(blocos, todosOsNos)
+            ?? VinculoOuRepeticaoInvalidos(blocos, todasAsRegras)
             ?? LeituraDaDerivacao.ValidarBlocoDeFatosEDerivacao(
                 new BlocoDeFatosEDerivacao(blocos.Coleta.FatosColetados, blocos.Coleta.GruposColetados, blocos.Coleta.RegrasDerivacao, blocos.Coleta.VersaoInterpretador),
                 blocos.Documentos.DocumentosExigidos,
@@ -62,9 +62,9 @@ internal static class CoerenciaEntreBlocos
     // lado dele, e a repetição por entidade nomeia um grupo dos formulários repostos, pela mesma conferência
     // da escrita. Sem elas, uma exigência apontando para fase ou etapa que o envelope não repõe atravessa a
     // leitura e morre na chave estrangeira.
-    private static DomainError? VinculoOuRepeticaoInvalidos(BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos) =>
+    private static DomainError? VinculoOuRepeticaoInvalidos(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> todasAsRegras) =>
         ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(blocos.Documentos.DocumentosExigidos, blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas)
-        ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todosOsNos, blocos.Coleta.GruposColetados);
+        ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todasAsRegras, blocos.Coleta.GruposColetados);
 
     // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece, pela mesma
     // conferência da escrita e da publicação, que inclui os fatos que a oferta deriva.
@@ -87,9 +87,9 @@ internal static class CoerenciaEntreBlocos
     }
 
     private static EnvelopeReidratado Montar(
-        BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)
+        BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)
     {
-        ConfiguracaoPublicada configuracao = ConfiguracaoPublicadaDoEnvelope.Montar(blocos, todosOsNos, campos, opcoesDeclaradas);
+        ConfiguracaoPublicada configuracao = ConfiguracaoPublicadaDoEnvelope.Montar(blocos, todasAsRegras, campos, opcoesDeclaradas);
         return new EnvelopeReidratado(
             configuracao, blocos.Configuracao.Dados!, blocos.Configuracao.HashDocumento, blocos.Publicacao.FusoHorario!,
             blocos.Retificacao, blocos.Documentos.Conformidade,

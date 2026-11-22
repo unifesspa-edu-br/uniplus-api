@@ -282,7 +282,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)])
             .IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalPelaOpcao(faseId, "2024"), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPelaOpcao(faseId, "2024"), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])

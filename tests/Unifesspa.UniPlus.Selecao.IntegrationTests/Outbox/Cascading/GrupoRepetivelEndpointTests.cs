@@ -170,7 +170,7 @@ public sealed class GrupoRepetivelEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         await DefinirGrupoDeUmCampoAsync(client, processo.Id, FormularioDeInscricaoHttp.Item(sobGuarda, 0, "Sob guarda", "BOOLEANO"), "SEMPRE");
-        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (sobGuarda, "IGUAL", "true"), repetePorEntidade: "COMPOSICAO_FAMILIAR");
+        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (sobGuarda, "IGUAL", "true"), grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR");
 
         HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
         publicado.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicado.Content.ReadAsStringAsync());
@@ -195,16 +195,16 @@ public sealed class GrupoRepetivelEndpointTests
         });
 
     /// <summary>
-    /// A exigência da folha na fase do processo, para quem cumpre a <paramref name="condicao"/> — fato, operador e valor —,
-    /// repetida por membro quando o grupo é dado em <paramref name="repetePorEntidade"/>.
+    /// A regra de documento na fase do processo, para quem cumpre a <paramref name="condicao"/> — fato, operador e valor —,
+    /// repetida por membro quando o grupo é dado em <paramref name="grupoDoFormularioParaRepeticao"/>.
     /// </summary>
     private static Task<HttpResponseMessage> ExigirDocumentoAsync(
-        HttpClient client, ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao, string? repetePorEntidade = null) =>
+        HttpClient client, ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao, string? grupoDoFormularioParaRepeticao = null) =>
         EnviarAsync(
             client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processo.Id}/documentos-exigidos",
-            new[] { new { tipo = "FOLHA", repetePorEntidade, documento = DocumentoDaFolha(processo, tipoDocumentoId, condicao) } });
+            new[] { new { forma = "DOCUMENTO", grupoDoFormularioParaRepeticao, documento = DocumentoDaRegra(processo, tipoDocumentoId, condicao) } });
 
-    private static object DocumentoDaFolha(ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao) => new
+    private static object DocumentoDaRegra(ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao) => new
     {
         tipoDocumento = new { id = tipoDocumentoId },
         momento = new { faseId = processo.CronogramaFases.Single().Id, finalidade = "INSCRICAO" },
@@ -216,7 +216,7 @@ public sealed class GrupoRepetivelEndpointTests
         indeferimento = new
         {
             obrigatorio = true,
-            basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
+            basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", situacao = "RESOLVIDO" } },
         },
         requisitos = new { formatosPermitidos = "QUALQUER" },
     };

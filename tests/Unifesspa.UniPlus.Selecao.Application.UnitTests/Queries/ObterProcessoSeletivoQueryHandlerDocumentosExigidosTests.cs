@@ -80,12 +80,12 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
 
         projetado.Indeferimento.BasesLegais.Should().HaveCount(2);
 
-        BaseLegalDto resolvidaDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Status == "RESOLVIDO").Which;
+        BaseLegalDto resolvidaDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao == "RESOLVIDO").Which;
         resolvidaDto.Referencia.Should().Be("Lei 12.711/2012, art. 3º");
         resolvidaDto.Abrangencia.Should().Be("FEDERAL");
         resolvidaDto.Observacao.Should().Be("Observação");
 
-        BaseLegalDto pendenteDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Status == "PENDENTE").Which;
+        BaseLegalDto pendenteDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao == "PENDENTE").Which;
         pendenteDto.Abrangencia.Should().Be("INTERNA_EDITAL");
         pendenteDto.Observacao.Should().BeNull();
     }

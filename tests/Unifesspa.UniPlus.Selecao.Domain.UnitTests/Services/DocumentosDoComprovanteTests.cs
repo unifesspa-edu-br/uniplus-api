@@ -77,12 +77,7 @@ public sealed class DocumentosDoComprovanteTests
         DocumentoExigido laudo = Documento("Laudo médico");
         DocumentosDaInscricao avaliacao = Avaliacao(
             (rg, SituacaoDoDocumento.Satisfeita, "membro-1"), (rg, SituacaoDoDocumento.Pendente, "membro-2"), (laudo, SituacaoDoDocumento.Satisfeita, null));
-        IReadOnlyList<ArquivoConfirmado> arquivos =
-        [
-            Arquivo(rg, new string('b', 64), "membro-1", minuto: 2),
-            Arquivo(rg, new string('a', 64), "membro-1", minuto: 1),
-            Arquivo(laudo, new string('c', 64)),
-        ];
+        IReadOnlyList<ArquivoConfirmado> arquivos = ArquivosDasOcorrencias(rg, laudo);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(avaliacao, arquivos);
 
@@ -91,62 +86,69 @@ public sealed class DocumentosDoComprovanteTests
         itens[2].Arquivos.Should().ContainSingle().Which.HashSha256.Should().Be(new string('c', 64));
     }
 
-    private static DocumentosDaInscricao ComOu(
-        GrupoDaArvore ou, bool grupoAtendido, params (DocumentoExigido Documento, SituacaoDoDocumento Situacao)[] alternativas) =>
-        new([.. alternativas.Select(a => new DocumentoAvaliado(a.Documento, a.Situacao, null, null, [ou], null, DispensadoPeloGrupo: grupoAtendido && a.Situacao != SituacaoDoDocumento.Satisfeita))],
+    private static IReadOnlyList<ArquivoConfirmado> ArquivosDasOcorrencias(DocumentoExigido rg, DocumentoExigido laudo) =>
+    [
+        Arquivo(rg, new string('b', 64), "membro-1", minuto: 2),
+        Arquivo(rg, new string('a', 64), "membro-1", minuto: 1),
+        Arquivo(laudo, new string('c', 64)),
+    ];
+
+    private static DocumentosDaInscricao ComGrupo(
+        GrupoDeComprovacao grupo, bool grupoAtendido, params (DocumentoExigido Documento, SituacaoDoDocumento Situacao)[] alternativas) =>
+        new([.. alternativas.Select(a => new DocumentoAvaliado(a.Documento, a.Situacao, null, null, [grupo], null, DispensadoPeloGrupo: grupoAtendido && a.Situacao != SituacaoDoDocumento.Satisfeita))],
             new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []);
 
-    [Fact(DisplayName = "A alternativa não enviada de um grupo um-ou-outro já atendido sai dispensada e sem consequência")]
+    [Fact(DisplayName = "A alternativa não enviada de um grupo que exige um item e já foi cumprido sai dispensada e sem consequência")]
     public void Compor_OuAtendido_DispensaAAlternativaNaoEnviada()
     {
         DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.Elimina);
         DocumentoExigido cnh = Documento("CNH", ConsequenciaIndeferimentoCodigo.Elimina);
-        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
-            ComOu(ou, true, (rg, SituacaoDoDocumento.Satisfeita), (cnh, SituacaoDoDocumento.Pendente)), []);
+            ComGrupo(grupo, true, (rg, SituacaoDoDocumento.Satisfeita), (cnh, SituacaoDoDocumento.Pendente)), []);
 
         itens[0].Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
         itens[1].Situacao.Should().Be(DocumentosDoComprovante.SituacaoDispensada);
         itens[1].Consequencia.Should().BeNull("o grupo está atendido: a CNH não precisava ser enviada");
     }
 
-    [Fact(DisplayName = "No grupo um-ou-outro ainda não atendido, a alternativa segue pendente e a consequência do grupo vale para todas")]
+    [Fact(DisplayName = "No grupo que exige um item ainda não cumprido, a alternativa segue pendente e a consequência do grupo vale para todas")]
     public void Compor_OuNaoAtendido_UsaAConsequenciaDoGrupo()
     {
         DocumentoExigido rg = Documento("RG");
         DocumentoExigido cnh = Documento("CNH");
-        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
-            ComOu(ou, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
+            ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
         itens.Should().OnlyContain(static d => d.Situacao == SituacaoDoDocumentoCodigo.Pendente);
         itens.Should().OnlyContain(static d => d.Consequencia!.Contains("RG, CNH") && d.Consequencia.Contains("ampla concorrência"));
     }
 
-    [Fact(DisplayName = "No grupo um-ou-outro com consequência, a alternativa mostra a do grupo, e não a própria")]
+    [Fact(DisplayName = "No grupo que exige um item com consequência própria, a alternativa mostra a do grupo, e não a própria")]
     public void Compor_OuComConsequencia_PrevaleceSobreADaAlternativa()
     {
         DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.PendenciaReenvio);
         DocumentoExigido cnh = Documento("CNH");
-        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
-            ComOu(ou, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
+            ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
         itens.Should().OnlyContain(static d => d.Consequencia!.Contains("ampla concorrência"));
     }
 
-    [Fact(DisplayName = "No grupo um-ou-outro sem consequência, a alternativa não traz texto, mesmo declarando a própria")]
+    [Fact(DisplayName = "No grupo que exige um item sem consequência própria, a alternativa não traz texto, mesmo declarando a própria")]
     public void Compor_OuSemConsequencia_AlternativaSemTexto()
     {
         DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.Elimina);
         DocumentoExigido cnh = Documento("CNH");
-        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
-            ComOu(ou, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
+            ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
         itens.Should().OnlyContain(static d => d.Consequencia == null);
     }

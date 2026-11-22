@@ -6,9 +6,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>Monta os blocos da configuração a partir dos valores conferidos do envelope.</summary>
 internal static class ConfiguracaoPublicadaDoEnvelope
 {
-    internal static ConfiguracaoPublicada Montar(BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> nos,
+    internal static ConfiguracaoPublicada Montar(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> regras,
         IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoes) => new(
-        Cronograma(blocos), Avaliacao(blocos), Vagas(blocos), Exigencias(blocos, nos), Coleta(blocos, campos, opcoes),
+        Cronograma(blocos), Avaliacao(blocos), Vagas(blocos), Exigencias(blocos, regras), Coleta(blocos, campos, opcoes),
         DivulgacaoETaxa(blocos), blocos.Publicacao.IdentificadorLegivel);
 
     private static CronogramaDeclarado Cronograma(BlocosDoEnvelope blocos) => new(
@@ -22,8 +22,8 @@ internal static class ConfiguracaoPublicadaDoEnvelope
         // A presença do bônus é o que o envelope conserva; a declaração negativa não tem bloco próprio.
         blocos.Configuracao.Bonus is not null, blocos.Configuracao.Bonus, blocos.Configuracao.Cascata, blocos.Configuracao.Atendimento);
 
-    private static ExigenciasDeclaradas Exigencias(BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> nos) => new(
-        blocos.Documentos.DocumentosExigidos, nos);
+    private static ExigenciasDeclaradas Exigencias(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> regras) => new(
+        blocos.Documentos.DocumentosExigidos, regras);
 
     private static ColetaDeclarada Coleta(BlocosDoEnvelope blocos, IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoes) => new(
         campos, blocos.Coleta.GruposColetados, blocos.Documentos.Formularios, blocos.Documentos.TermosExigidos,

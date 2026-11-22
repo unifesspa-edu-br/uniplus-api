@@ -49,7 +49,7 @@ public sealed class ClassificacaoDaExigenciaDoArquivo
         Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(_processos, _registroCodecs).ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
 
         return contexto.IsSuccess
-            && ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.Arvore, exigenciaId) is { } localizada
+            && ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.RegrasDeComprovacao, exigenciaId) is { } localizada
                 ? localizada.Exigencia.ClassificacaoProtecao
                 : null;
     }

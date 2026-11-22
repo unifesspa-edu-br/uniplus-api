@@ -116,7 +116,7 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = ExigenciaDeMaioridade(faseId, condicao, baseLegal);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static DocumentoExigido ExigenciaDeMaioridade(Guid faseId, CondicaoGatilho condicao, DocumentoExigidoBaseLegal baseLegal) =>

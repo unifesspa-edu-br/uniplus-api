@@ -62,7 +62,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
         ConferirQueONomeOrdenaAoContrarioDaOrigem(static e => e.TipoDocumentoNome, exigenciaComOrigemMenor, exigenciaComOrigemMaior);
 
         IReadOnlyList<string> nomes = NomesDasExigenciasNoEnvelope(
-            fase, NoExigencia.CriarFolha(exigenciaComOrigemMaior, 1).Value!, NoExigencia.CriarFolha(exigenciaComOrigemMenor, 0).Value!);
+            fase, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaComOrigemMaior, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaComOrigemMenor, 0).Value!);
 
         nomes.Should().HaveCount(2, "pré-condição: duas exigências, mesma fase, TipoDocumentoOrigemId distintos");
         nomes.Should().Equal(
@@ -82,7 +82,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
             .Should().Equal(["Zeta Documento", "Alfa Documento"], "pré-condição: ordenar por Id dá o oposto do oráculo de conteúdo abaixo");
 
         IReadOnlyList<string> nomes = NomesDasExigenciasNoEnvelope(
-            fase, NoExigencia.CriarFolha(exigenciaComIdMaior, 0).Value!, NoExigencia.CriarFolha(exigenciaComIdMenor, 1).Value!);
+            fase, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaComIdMaior, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaComIdMenor, 1).Value!);
 
         nomes.Should().Equal(
             ["Alfa Documento", "Zeta Documento"],

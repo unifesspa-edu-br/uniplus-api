@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalVaziaObrigatoria(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalVaziaObrigatoria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -43,7 +43,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaGeral(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeral(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -83,7 +83,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
@@ -94,7 +94,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
@@ -105,7 +105,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
@@ -116,11 +116,11 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
             .IsSuccess.Should().BeTrue();
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
@@ -131,11 +131,11 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!])
             .IsSuccess.Should().BeTrue();
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
@@ -146,7 +146,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaObrigatoriaCom(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());

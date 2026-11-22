@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/exigencias.schema.json",
   "title": "Documentos exigidos",
-  "description": "As exigências de documentos do processo e a árvore que combina os documentos que satisfazem a exigência do candidato.",
+  "description": "As exigências de documentos do processo e as regras para comprová-las.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -14,12 +14,12 @@
         "$ref": "#/$defs/exigencia"
       }
     },
-    "arvoreDeSatisfacao": {
-      "title": "Árvore de satisfação",
-      "description": "Raízes da árvore de satisfação das exigências.",
+    "regrasDeComprovacao": {
+      "title": "Regras de comprovação",
+      "description": "Regras de comprovação que não estão contidas em um grupo.",
       "type": "array",
       "items": {
-        "$ref": "arvore-de-satisfacao.schema.json"
+        "$ref": "regras-de-comprovacao.schema.json"
       }
     }
   },

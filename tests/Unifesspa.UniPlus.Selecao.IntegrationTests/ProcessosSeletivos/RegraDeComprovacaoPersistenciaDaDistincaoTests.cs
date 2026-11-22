@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class NoExigenciaPersistenciaDaDistincaoTests(ProcessoSeletivoDbFixture fixture) : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSeletivoDbFixture fixture) : IClassFixture<ProcessoSeletivoDbFixture>
 {
     [Theory]
     [InlineData(null)]
@@ -24,8 +24,8 @@ public sealed class NoExigenciaPersistenciaDaDistincaoTests(ProcessoSeletivoDbFi
         ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(contexto)
             .ObterParaMutacaoAsync(processo.Id, CancellationToken.None))!;
 
-        NoExigencia original = processo.NosExigencia.Single();
-        NoExigencia folha = recarregado.NosExigencia.Should().ContainSingle().Which;
+        RegraDeComprovacao original = processo.RegrasDeComprovacao.Single();
+        RegraDeComprovacao folha = recarregado.RegrasDeComprovacao.Should().ContainSingle().Which;
         folha.Id.Should().Be(original.Id);
         folha.Distincao.Should().BeEquivalentTo(original.Distincao);
         folha.QuantidadeMinima.Should().Be(2);
@@ -49,7 +49,7 @@ public sealed class NoExigenciaPersistenciaDaDistincaoTests(ProcessoSeletivoDbFi
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DateOnly? referencia = chave is ChaveDistincao.CompetenciaMensal or ChaveDistincao.ExercicioAnual ? new(2026, 2, 1) : null;
         string[]? ocorrencias = chave == ChaveDistincao.Ocorrencia ? ["a", "b"] : null;
-        NoExigencia folha = NoExigencia.CriarFolha(Documento(fase.Id), 0, 2, chave, referencia, ocorrencias).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase.Id), 0, 2, chave, referencia, ocorrencias).Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
         return processo;
     }

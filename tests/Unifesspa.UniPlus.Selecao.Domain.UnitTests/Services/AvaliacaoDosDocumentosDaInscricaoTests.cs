@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Os documentos que o edital exige do candidato, pela árvore de exigências congelada sobre as
+/// Os documentos que o edital exige do candidato, pelas regras de comprovação aplicadas às
 /// respostas dele (UNI-REQ-0069, UNI-REQ-0077): o que se aplica, o que pode se aplicar e o que
 /// depende de um fato que só se conhece depois da inscrição.
 /// </summary>
@@ -112,62 +112,62 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         documentos.Single(static d => d.OcorrenciaId == "m2").Situacao.Should().Be(SituacaoDoDocumento.NaoExigido);
     }
 
-    [Fact(DisplayName = "Num OU entre o RG e um E com a CNH e o comprovante, a CNH e o comprovante dividem o E dentro do OU")]
+    [Fact(DisplayName = "CNH e comprovante compartilham o grupo que exige ambos dentro do grupo alternativo")]
     public void ESobOu_OsDoisDocumentosDividemOE()
     {
         DocumentoExigido rg = Geral(), cnh = Geral(), comprovante = Geral();
-        NoExigencia conjunto = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 1, null, null, [], [NoExigencia.CriarFolha(cnh, 0).Value!, NoExigencia.CriarFolha(comprovante, 1).Value!]).Value!;
-        NoExigencia identidade = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, conjunto]).Value!;
+        RegraDeComprovacao conjunto = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 1, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(comprovante, 1).Value!]).Value!;
+        RegraDeComprovacao identidade = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, conjunto]).Value!;
 
-        Dictionary<Guid, IReadOnlyList<GrupoDaArvore>> grupos = GruposPorDocumento(ComRaizes([identidade]));
+        Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> grupos = GruposPorDocumento(ComRegrasSemGrupo([identidade]));
 
-        grupos[rg.Id].Should().Equal(new GrupoDaArvore(identidade.Id, TipoNo.GrupoOu, 1, null));
-        grupos[cnh.Id].Should().Equal(new GrupoDaArvore(identidade.Id, TipoNo.GrupoOu, 1, null), new GrupoDaArvore(conjunto.Id, TipoNo.GrupoE, null, null));
+        grupos[rg.Id].Should().Equal(new GrupoDeComprovacao(identidade.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null));
+        grupos[cnh.Id].Should().Equal(new GrupoDeComprovacao(identidade.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), new GrupoDeComprovacao(conjunto.Id, FormaDeComprovacao.TodosOsItens, null, null));
         grupos[comprovante.Id].Should().Equal(grupos[cnh.Id], "os dois são uma alternativa só, e não duas");
     }
 
     [Fact(DisplayName = "Num N-de com um OU aninhado, cada documento traz os dois grupos, do mais externo ao mais interno")]
-    public void OuAninhado_TrazOsDoisGrupos()
+    public void GrupoAninhado_TrazOsDoisGrupos()
     {
         DocumentoExigido a = Geral(), b = Geral(), c = Geral();
-        NoExigencia interno = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 1, 1, null, [], [NoExigencia.CriarFolha(b, 0).Value!, NoExigencia.CriarFolha(c, 1).Value!]).Value!;
-        NoExigencia externo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 2, null, [], [NoExigencia.CriarFolha(a, 0).Value!, interno]).Value!;
+        RegraDeComprovacao interno = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(b, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 1).Value!]).Value!;
+        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, interno]).Value!;
 
-        Dictionary<Guid, IReadOnlyList<GrupoDaArvore>> grupos = GruposPorDocumento(ComRaizes([externo]));
+        Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> grupos = GruposPorDocumento(ComRegrasSemGrupo([externo]));
 
-        grupos[a.Id].Should().Equal(new GrupoDaArvore(externo.Id, TipoNo.GrupoOu, 2, null));
-        grupos[b.Id].Should().Equal(new GrupoDaArvore(externo.Id, TipoNo.GrupoOu, 2, null), new GrupoDaArvore(interno.Id, TipoNo.GrupoOu, 1, null));
+        grupos[a.Id].Should().Equal(new GrupoDeComprovacao(externo.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null));
+        grupos[b.Id].Should().Equal(new GrupoDeComprovacao(externo.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), new GrupoDeComprovacao(interno.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null));
         grupos[c.Id].Should().Equal(grupos[b.Id]);
     }
 
-    [Fact(DisplayName = "No OU repetido por membro, o OU traz a repetição; no OU entre exigências repetidas uma a uma, a repetição vem em cada folha")]
+    [Fact(DisplayName = "A repetição pode ser declarada no grupo ou em cada regra de documento")]
     public void Repeticao_DizOndeComeca()
     {
         DocumentoExigido rgX = Geral(), cnhX = Geral(), rgY = Geral(), cnhY = Geral();
-        NoExigencia porMembro = OuRepetidoPorMembro(rgX, cnhX);
-        NoExigencia deTodos = OuDeFolhasRepetidasPorMembro(rgY, cnhY);
+        RegraDeComprovacao porMembro = GrupoRepetidoPorMembro(rgX, cnhX);
+        RegraDeComprovacao deTodos = GrupoDeRegrasRepetidasPorMembro(rgY, cnhY);
 
-        List<DocumentoAvaliado> documentos = [.. Avaliar(ComRaizes([porMembro, deTodos]), Respostas(), Membros(("m1", true))).Documentos.Itens];
+        List<DocumentoAvaliado> documentos = [.. Avaliar(ComRegrasSemGrupo([porMembro, deTodos]), Respostas(), Membros(("m1", true))).Documentos.Itens];
 
         DocumentoAvaliado x = documentos.Single(d => d.Documento.Id == rgX.Id);
-        x.Grupos.Should().Equal(new GrupoDaArvore(porMembro.Id, TipoNo.GrupoOu, 1, Familia));
-        x.RepetePorEntidade.Should().BeNull("a repetição começa no OU: cada membro apresenta o RG ou a CNH");
+        x.Grupos.Should().Equal(new GrupoDeComprovacao(porMembro.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 1, Familia));
+        x.GrupoDoFormularioParaRepeticao.Should().BeNull("a repetição começa no grupo: cada membro apresenta o RG ou a CNH");
         DocumentoAvaliado y = documentos.Single(d => d.Documento.Id == rgY.Id);
-        y.Grupos.Should().Equal(new GrupoDaArvore(deTodos.Id, TipoNo.GrupoOu, 1, null));
-        y.RepetePorEntidade.Should().Be(Familia, "a repetição começa na folha: o RG de todos ou a CNH de todos");
+        y.Grupos.Should().Equal(new GrupoDeComprovacao(deTodos.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null));
+        y.GrupoDoFormularioParaRepeticao.Should().Be(Familia, "a repetição começa na regra de documento: RG de todos ou CNH de todos");
     }
 
     [Fact(DisplayName = "A exigência geral repetida por membro faz do grupo dependência da avaliação, com o que decide se ele aparece")]
-    public void FolhaRepetidaSemGatilho_OGrupoEDependencia()
+    public void RegraDeDocumentoRepetidaSemGatilho_OGrupoEDependencia()
     {
         DocumentoExigido doMembro = Geral();
         PredicadoDnf soComBaixaRenda = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(BaixaRenda, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
         DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.Dependencias(
-            ComRaizes([NoExigencia.CriarFolha(doMembro, 0, repetePorEntidade: Familia).Value!], exibicaoDaFamilia: soComBaixaRenda));
+            ComRegrasSemGrupo([RegraDeComprovacao.CriarRegraDeDocumento(doMembro, 0, grupoDoFormularioParaRepeticao: Familia).Value!], exibicaoDaFamilia: soComBaixaRenda));
 
         dependencias.Grupos.Should().Equal(Familia);
         dependencias.Fatos.Should().Contain(BaixaRenda, "a resposta que mostra o grupo muda a quem se exige");
@@ -180,22 +180,22 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             [(1, CondicaoDnf.Criar("FAIXA_ETARIA", Operador.Igual, JsonSerializer.SerializeToElement("MENOR_DE_IDADE")).Value!)]).Value!;
 
         IReadOnlySet<string> derivados = AvaliacaoDaInscricao.DerivadosDoSistemaCitados(
-            ComRaizes([NoExigencia.CriarFolha(Geral(), 0, repetePorEntidade: Familia).Value!], exibicaoDaFamilia: soParaMenor));
+            ComRegrasSemGrupo([RegraDeComprovacao.CriarRegraDeDocumento(Geral(), 0, grupoDoFormularioParaRepeticao: Familia).Value!], exibicaoDaFamilia: soParaMenor));
 
         derivados.Should().Contain("FAIXA_ETARIA", "sem ela a consulta não decide se o grupo aparece, e a exigência por membro fica sem resposta");
     }
 
-    private static NoExigencia OuRepetidoPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
-        NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(primeiro, 0).Value!, NoExigencia.CriarFolha(segundo, 1).Value!],
-            repetePorEntidade: Familia).Value!;
+    private static RegraDeComprovacao GrupoRepetidoPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
+        RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1).Value!],
+            grupoDoFormularioParaRepeticao: Familia).Value!;
 
-    private static NoExigencia OuDeFolhasRepetidasPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
-        NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 1, 1, null, [],
-            [NoExigencia.CriarFolha(primeiro, 0, repetePorEntidade: Familia).Value!, NoExigencia.CriarFolha(segundo, 1, repetePorEntidade: Familia).Value!]).Value!;
+    private static RegraDeComprovacao GrupoDeRegrasRepetidasPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
+        RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0, grupoDoFormularioParaRepeticao: Familia).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
 
-    private static Dictionary<Guid, IReadOnlyList<GrupoDaArvore>> GruposPorDocumento(ConfiguracaoAvaliavel configuracao) =>
+    private static Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> GruposPorDocumento(ConfiguracaoAvaliavel configuracao) =>
         Avaliar(configuracao, Respostas()).Documentos.Itens.ToDictionary(static d => d.Documento.Id, static d => d.Grupos);
 
     private static DocumentoExigido Geral() =>
@@ -207,15 +207,15 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         documentos.ToDictionary(static d => d.Id, static _ => (IReadOnlyList<ApresentacaoDocumento>)[new(Guid.CreateVersion7())]);
 
     [Fact(DisplayName = "A alternativa não enviada de um OU atendido, inclusive de um OU externo, é dispensada pelo grupo")]
-    public void OuAtendido_DispensaAsAlternativasNaoEnviadas()
+    public void GrupoCumprido_DispensaAsAlternativasNaoEnviadas()
     {
         DocumentoExigido rg = Geral(), cnh = Geral(), passaporte = Geral();
-        NoExigencia interno = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 1, 1, null, [], [NoExigencia.CriarFolha(cnh, 0).Value!, NoExigencia.CriarFolha(passaporte, 1).Value!]).Value!;
-        NoExigencia externo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, interno]).Value!;
+        RegraDeComprovacao interno = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(passaporte, 1).Value!]).Value!;
+        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, interno]).Value!;
 
-        List<DocumentoAvaliado> comRg = [.. Avaliar(ComRaizes([externo]), Respostas(), apresentacoes: Enviados(rg)).Documentos.Itens];
-        List<DocumentoAvaliado> semNada = [.. Avaliar(ComRaizes([externo]), Respostas()).Documentos.Itens];
+        List<DocumentoAvaliado> comRg = [.. Avaliar(ComRegrasSemGrupo([externo]), Respostas(), apresentacoes: Enviados(rg)).Documentos.Itens];
+        List<DocumentoAvaliado> semNada = [.. Avaliar(ComRegrasSemGrupo([externo]), Respostas()).Documentos.Itens];
 
         comRg.Single(d => d.Documento.Id == rg.Id).DispensadoPeloGrupo.Should().BeFalse("o enviado está atendido, não dispensado");
         comRg.Where(d => d.Documento.Id != rg.Id).Should().OnlyContain(static d => d.DispensadoPeloGrupo, "o RG atende o OU de fora, e a CNH e o passaporte não são necessários");
@@ -223,15 +223,15 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     }
 
     [Fact(DisplayName = "O OU atendido por uma alternativa sem repetição dispensa a alternativa repetida por membro, em cada ocorrência")]
-    public void OuAtendidoForaDaRepeticao_DispensaAAlternativaRepetida()
+    public void GrupoCumpridoForaDaRepeticao_DispensaAAlternativaRepetida()
     {
         DocumentoExigido cadUnico = Geral(), renda = Geral();
-        NoExigencia ou = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, null, [],
-            [NoExigencia.CriarFolha(cadUnico, 0).Value!, NoExigencia.CriarFolha(renda, 1, repetePorEntidade: Familia).Value!]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(cadUnico, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(renda, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
 
         List<DocumentoAvaliado> documentos = [.. Avaliar(
-            ComRaizes([ou]), Respostas(), Membros(("m1", true), ("m2", true)), apresentacoes: Enviados(cadUnico)).Documentos.Itens];
+            ComRegrasSemGrupo([grupo]), Respostas(), Membros(("m1", true), ("m2", true)), apresentacoes: Enviados(cadUnico)).Documentos.Itens];
 
         documentos.Where(d => d.Documento.Id == renda.Id).Should().HaveCount(2).And.OnlyContain(static d => d.DispensadoPeloGrupo);
     }
@@ -253,7 +253,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     public void QuantidadeMinima_ContaApresentacoes()
     {
         DocumentoExigido extrato = Geral();
-        ConfiguracaoAvaliavel configuracao = ComRaizes([NoExigencia.CriarFolha(extrato, 0, quantidadeMinima: 2).Value!]);
+        ConfiguracaoAvaliavel configuracao = ComRegrasSemGrupo([RegraDeComprovacao.CriarRegraDeDocumento(extrato, 0, quantidadeMinima: 2).Value!]);
 
         ResultadoDaAvaliacaoDaInscricao UmaApresentacao(int quantas) => Avaliar(
             configuracao,
@@ -267,7 +267,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         Situacao(UmaApresentacao(2), extrato).Should().Be(SituacaoDoDocumento.Satisfeita);
     }
 
-    [Fact(DisplayName = "As dependências da avaliação cobrem o campo e o subitem que os gatilhos citam, e o grupo pelo qual a árvore se repete")]
+    [Fact(DisplayName = "As dependências da avaliação cobrem o campo e o subitem que os gatilhos citam, e o grupo pelo qual as regras se repetem")]
     public void Dependencias_CobremOsGatilhos()
     {
         ConfiguracaoAvaliavel configuracao = Configuracao(
@@ -312,24 +312,24 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static OcorrenciaRespondida[] Membros(params (string Id, bool Renda)[] membros) =>
         [.. membros.Select(static m => new OcorrenciaRespondida(m.Id, Respostas((RendaDoMembro, m.Renda))))];
 
-    /// <param name="repetePorFamilia">Se a folha de <paramref name="documento"/> se repete por membro da família.</param>
+    /// <param name="repetePorFamilia">Se a regra de <paramref name="documento"/> se repete por membro da família.</param>
     /// <param name="extra">Outra exigência, repetida por membro da família.</param>
     /// <param name="soNaHabilitacao">Outra exigência, fora de repetição.</param>
     private static ConfiguracaoAvaliavel Configuracao(
         DocumentoExigido documento, bool repetePorFamilia = false, DocumentoExigido? extra = null, DocumentoExigido? soNaHabilitacao = null)
     {
-        List<NoExigencia> raizes = [NoExigencia.CriarFolha(documento, 0, repetePorEntidade: repetePorFamilia ? Familia : null).Value!];
+        List<RegraDeComprovacao> regrasSemGrupo = [RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, grupoDoFormularioParaRepeticao: repetePorFamilia ? Familia : null).Value!];
         if (extra is not null)
         {
-            raizes.Add(NoExigencia.CriarFolha(extra, 1, repetePorEntidade: Familia).Value!);
+            regrasSemGrupo.Add(RegraDeComprovacao.CriarRegraDeDocumento(extra, 1, grupoDoFormularioParaRepeticao: Familia).Value!);
         }
 
         if (soNaHabilitacao is not null)
         {
-            raizes.Add(NoExigencia.CriarFolha(soNaHabilitacao, 2).Value!);
+            regrasSemGrupo.Add(RegraDeComprovacao.CriarRegraDeDocumento(soNaHabilitacao, 2).Value!);
         }
 
-        return ComRaizes(raizes);
+        return ComRegrasSemGrupo(regrasSemGrupo);
     }
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
@@ -347,11 +347,11 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         Familia, exibicao, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false);
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
-    private static ConfiguracaoAvaliavel ComRaizes(IReadOnlyList<NoExigencia> raizes, PredicadoDnf? exibicaoDaFamilia = null) =>
+    private static ConfiguracaoAvaliavel ComRegrasSemGrupo(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, PredicadoDnf? exibicaoDaFamilia = null) =>
         new(
             DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes),
+            RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo),
             [Campo(BaixaRenda), Campo(PediuFator)],
             [GrupoDaFamilia()],
             [],

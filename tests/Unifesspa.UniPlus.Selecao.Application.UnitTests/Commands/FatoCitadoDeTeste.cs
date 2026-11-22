@@ -47,7 +47,7 @@ internal static class FatoCitadoDeTeste
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
         processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         return processo;

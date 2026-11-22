@@ -15,11 +15,11 @@ internal sealed class ColetorDeDocumentosAvaliados(
 {
     private readonly List<DocumentoAvaliado> _documentos = [];
 
-    internal List<DocumentoAvaliado> Coletar(RegrasDeComprovacaoDaVersao arvore)
+    internal List<DocumentoAvaliado> Coletar(RegrasDeComprovacaoDaVersao regras)
     {
-        foreach (NoExigencia raiz in arvore.Raizes.OrderBy(static r => r.Ordem))
+        foreach (RegraDeComprovacao regraSemGrupo in regras.RegrasSemGrupo.OrderBy(static r => r.Ordem))
         {
-            ColetarNo(raiz, [], null);
+            ColetarRegra(regraSemGrupo, [], null);
         }
 
         return _documentos;
@@ -27,67 +27,67 @@ internal sealed class ColetorDeDocumentosAvaliados(
 
     private bool GrupoAtendido(Guid grupoId, string? ocorrenciaId) =>
         (ocorrenciaId is not null
-            && resultado.EstadosPorEntidade.FirstOrDefault(e => e.NoExigenciaId == grupoId && e.EntidadeId == ocorrenciaId) is { } daOcorrencia
-                ? daOcorrencia.Estado
-                : resultado.SituacoesPorRegra.GetValueOrDefault(grupoId, SituacaoDaComprovacao.Indeterminado)) == SituacaoDaComprovacao.Satisfeito;
+            && resultado.SituacoesDeRegraPorOcorrencia.FirstOrDefault(e => e.RegraDeComprovacaoId == grupoId && e.OcorrenciaId == ocorrenciaId) is { } daOcorrencia
+                ? daOcorrencia.Situacao
+                : resultado.SituacoesPorRegra.GetValueOrDefault(grupoId, SituacaoDaComprovacao.AguardandoDados)) == SituacaoDaComprovacao.Cumprida;
 
-    private void ColetarNo(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? grupoRepetido)
+    private void ColetarRegra(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string? grupoRepetido)
     {
-        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
-        if (no.Tipo == TipoNo.Folha)
+        string? repetido = regra.GrupoDoFormularioParaRepeticao ?? grupoRepetido;
+        if (regra.Forma == FormaDeComprovacao.Documento)
         {
-            ColetarDocumento(no, ancestrais, repetido);
+            ColetarDocumento(regra, ancestrais, repetido);
             return;
         }
 
-        IReadOnlyList<GrupoDaArvore> dosFilhos = AncestraisDosFilhos(no, ancestrais);
-        foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
+        IReadOnlyList<GrupoDeComprovacao> dosItens = GruposDosItens(regra, ancestrais);
+        foreach (RegraDeComprovacao item in regra.Itens.OrderBy(static f => f.Ordem))
         {
-            ColetarNo(filho, dosFilhos, repetido);
+            ColetarRegra(item, dosItens, repetido);
         }
     }
 
-    private static IReadOnlyList<GrupoDaArvore> AncestraisDosFilhos(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais) =>
+    private static IReadOnlyList<GrupoDeComprovacao> GruposDosItens(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais) =>
     [
         .. ancestrais,
-        new GrupoDaArvore(no.Id, no.Tipo, no.Tipo == TipoNo.GrupoOu ? no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao : null,
-            no.RepetePorEntidade, no.Tipo == TipoNo.GrupoOu ? no.Consequencia : null),
+        new GrupoDeComprovacao(regra.Id, regra.Forma, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao : null,
+            regra.GrupoDoFormularioParaRepeticao, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.Consequencia : null),
     ];
 
-    private DocumentoAvaliado Avaliado(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? repetido,
+    private DocumentoAvaliado Avaliado(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string? repetido,
         StatusResolucaoExigencia status, string? ocorrenciaId)
     {
-        DocumentoExigido documento = no.DocumentoExigido!;
+        DocumentoExigido documento = regra.DocumentoExigido!;
         SituacaoDoDocumento situacao = DocumentosAvaliadosDaInscricao.Situacao(status, deFasePosterior.Contains(documento.Id));
-        return new(documento, situacao, repetido, ocorrenciaId, ancestrais, no.RepetePorEntidade,
-            no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao,
+        return new(documento, situacao, repetido, ocorrenciaId, ancestrais, regra.GrupoDoFormularioParaRepeticao,
+            regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao,
             DispensadoPeloGrupo: situacao != SituacaoDoDocumento.Satisfeita
-                && ancestrais.Any(g => g.Tipo == TipoNo.GrupoOu && GrupoAtendido(g.GrupoId, ocorrenciaId)));
+                && ancestrais.Any(g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && GrupoAtendido(g.GrupoId, ocorrenciaId)));
     }
 
-    private void ColetarDocumento(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? repetido)
+    private void ColetarDocumento(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string? repetido)
     {
         if (repetido is null)
         {
-            _documentos.Add(Avaliado(no, ancestrais, null, resultado.StatusPorExigencia.GetValueOrDefault(no.DocumentoExigido!.Id), null));
+            _documentos.Add(Avaliado(regra, ancestrais, null, resultado.SituacoesPorExigencia.GetValueOrDefault(regra.DocumentoExigido!.Id), null));
             return;
         }
 
         AvaliacaoGrupo? grupo = grupos.GetValueOrDefault(repetido);
         if (grupo?.Visivel == Ternario.Indeterminado)
         {
-            _documentos.Add(Avaliado(no, ancestrais, repetido, StatusResolucaoExigencia.AplicabilidadeIndeterminada, null));
+            _documentos.Add(Avaliado(regra, ancestrais, repetido, StatusResolucaoExigencia.AguardandoDados, null));
             return;
         }
 
-        ColetarOcorrencias(no, ancestrais, repetido, grupo);
+        ColetarOcorrencias(regra, ancestrais, repetido, grupo);
     }
 
-    private void ColetarOcorrencias(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string repetido, AvaliacaoGrupo? grupo)
+    private void ColetarOcorrencias(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string repetido, AvaliacaoGrupo? grupo)
     {
-        List<DocumentoAvaliado> porOcorrencia = [.. resultado.StatusPorEntidade
-            .Where(s => s.DocumentoExigidoId == no.DocumentoExigido!.Id)
-            .Select(s => Avaliado(no, ancestrais, repetido, s.Status, s.EntidadeId))];
+        List<DocumentoAvaliado> porOcorrencia = [.. resultado.SituacoesDeExigenciaPorOcorrencia
+            .Where(s => s.DocumentoExigidoId == regra.DocumentoExigido!.Id)
+            .Select(s => Avaliado(regra, ancestrais, repetido, s.Situacao, s.OcorrenciaId))];
         if (porOcorrencia.Count > 0)
         {
             _documentos.AddRange(porOcorrencia);
@@ -95,8 +95,8 @@ internal sealed class ColetorDeDocumentosAvaliados(
         }
 
         // Grupo pendente mantém a exigência indeterminada; só grupo oculto ou lista vazia válida a descartam.
-        _documentos.Add(Avaliado(no, ancestrais, repetido,
-            grupo?.Estado == EstadoFato.Indeterminado ? StatusResolucaoExigencia.AplicabilidadeIndeterminada : StatusResolucaoExigencia.NaoAplicavel,
+        _documentos.Add(Avaliado(regra, ancestrais, repetido,
+            grupo?.Estado == EstadoFato.Indeterminado ? StatusResolucaoExigencia.AguardandoDados : StatusResolucaoExigencia.NaoExigida,
             null));
     }
 }

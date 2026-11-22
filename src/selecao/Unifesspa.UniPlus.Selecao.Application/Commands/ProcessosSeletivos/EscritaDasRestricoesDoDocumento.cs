@@ -8,18 +8,18 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// O que restringe o arquivo que o candidato envia para uma folha: a idade máxima de emissão, os formatos
-/// permitidos e o modelo que a folha cita.
+/// O que restringe o arquivo que o candidato envia para uma regra de documento: a idade máxima de emissão, os formatos
+/// permitidos e o modelo citado pela regra.
 /// </summary>
 internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade, FormatosPermitidos Formatos, ModeloDaExigencia? Modelo)
 {
     /// <summary>Resolve as três restrições nessa ordem; a primeira recusa encerra.</summary>
     public static Result<EscritaDasRestricoesDoDocumento> Resolver(
-        ItemDocumentoExigidoInput folha, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
+        ItemDocumentoExigidoInput documento, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
     {
-        Result<IdadeMaximaEmissao?> idade = IdadeMaximaEmissaoDaFolha(folha.IdadeMaximaEmissao());
-        Result<FormatosPermitidos> formatos = EscritaDosFormatosPermitidos.Resolver(folha.FormatosPermitidos());
-        Result<ModeloDaExigencia?> modelo = ModeloDaFolha(folha.ModeloId(), modelosDoProcesso);
+        Result<IdadeMaximaEmissao?> idade = IdadeMaximaEmissaoDaRegra(documento.IdadeMaximaEmissao());
+        Result<FormatosPermitidos> formatos = EscritaDosFormatosPermitidos.Resolver(documento.FormatosPermitidos());
+        Result<ModeloDaExigencia?> modelo = ModeloDaRegra(documento.ModeloId(), modelosDoProcesso);
         IReadOnlyList<FieldError>? recusa = new[] { idade.Errors, formatos.Errors, modelo.Errors }
             .FirstOrDefault(static erros => erros.Count > 0);
         return recusa is not null
@@ -27,7 +27,7 @@ internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade
             : Result<EscritaDasRestricoesDoDocumento>.Success(new EscritaDasRestricoesDoDocumento(idade.Value, formatos.Value!, modelo.Value));
     }
 
-    private static Result<IdadeMaximaEmissao?> IdadeMaximaEmissaoDaFolha(IdadeMaximaEmissaoInput? idade) =>
+    private static Result<IdadeMaximaEmissao?> IdadeMaximaEmissaoDaRegra(IdadeMaximaEmissaoInput? idade) =>
         IdadeMaximaEmissao.Criar(
             idade?.Valor,
             UnidadeIdadeCodigo.FromCodigo(idade?.Unidade),
@@ -35,7 +35,7 @@ internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade
             idade?.Data,
             idade?.ReferenciaFaseId);
 
-    private static Result<ModeloDaExigencia?> ModeloDaFolha(Guid? modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
+    private static Result<ModeloDaExigencia?> ModeloDaRegra(Guid? modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
     {
         if (modeloId is not { } id)
         {
@@ -48,7 +48,7 @@ internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade
             : Result<ModeloDaExigencia?>.Success(citado.Value);
     }
 
-    // O modelo que a folha cita, copiado por valor. Recusa o modelo que não é deste processo — a mesma recusa
+    // O modelo citado pela regra, copiado por valor. Recusa o modelo que não é deste processo — a mesma recusa
     // do inexistente — e o que ainda não foi confirmado.
     private static Result<ModeloDaExigencia> ModeloCitado(Guid modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso) =>
         modelosDoProcesso.TryGetValue(modeloId, out ModeloDeDocumento? modelo)

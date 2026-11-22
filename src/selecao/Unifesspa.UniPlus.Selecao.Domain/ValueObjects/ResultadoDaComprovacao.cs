@@ -2,100 +2,24 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Enums;
 
-/// <summary>
-/// Uma consequência VIGENTE emitida pela fronteira ativa (Story #920) — <see cref="NoExigenciaId"/>
-/// é sempre o Id do <b>nó</b> (folha ou grupo <c>OU</c>/<c>N-de</c>) que a carrega, nunca o
-/// <c>DocumentoExigidoId</c> (a correlação exigência↔apresentação continua sendo
-/// <c>DocumentoExigido.Id</c>, dado independente do Id do nó folha que o envolve).
-/// </summary>
-/// <param name="NoExigenciaId">O Id do nó que emitiu — folha ou grupo <c>OU</c>/<c>N-de</c>.</param>
-/// <param name="TipoOrigem"><see cref="TipoNo.Folha"/> ou <see cref="TipoNo.GrupoOu"/> — nunca <see cref="TipoNo.GrupoE"/> (transparente, nunca emite consequência própria).</param>
-/// <param name="Consequencia">∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, PENDENCIA_REENVIO}.</param>
-/// <param name="EntidadeId">
-/// Story #922 — quando <see cref="NoExigenciaId"/> está dentro de (ou é) uma subárvore
-/// <c>repetePorEntidade</c>, o <c>entidade_id</c> da instância cuja pendência esta consequência
-/// descreve (ex.: "PJ 2 ainda deve os extratos"). <see langword="null"/> fora de subárvore
-/// repetida.
-/// </param>
-public sealed record ConsequenciaEmitida(Guid NoExigenciaId, TipoNo TipoOrigem, string Consequencia, string? EntidadeId = null);
+/// <summary>Consequência aplicável de uma regra de comprovação.</summary>
+public sealed record ConsequenciaAplicavel(Guid RegraDeComprovacaoId, FormaDeComprovacao FormaDaRegra, string Consequencia, string? OcorrenciaId = null);
 
-/// <summary>
-/// Um filho DIRETO de um grupo <c>OU</c>/<c>N-de</c> opaco pendente/indeterminado/impossível —
-/// listado apenas como orientação (não vigente, o grupo pai é quem emite a consequência).
-/// </summary>
-/// <param name="NoExigenciaId">O Id do nó filho.</param>
-/// <param name="EntidadeId">
-/// Story #922 — quando o grupo opaco está dentro de (ou é) uma subárvore
-/// <c>repetePorEntidade</c>, o <c>entidade_id</c> da instância a que esta orientação se refere
-/// (sem isto, orientações de instâncias diferentes de um mesmo nó ficariam indistinguíveis
-/// numa lista só). <see langword="null"/> fora de subárvore repetida.
-/// </param>
-public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeId = null);
+/// <summary>Item que orienta como cumprir um grupo cuja consequência está pendente.</summary>
+public sealed record PendenciaDeOrientacao(Guid RegraDeComprovacaoId, string? OcorrenciaId = null);
 
-/// <summary>
-/// Story #922 — o <see cref="StatusResolucaoExigencia"/> de UMA folha PARA UMA instância
-/// específica, dentro de uma subárvore <c>repetePorEntidade</c>. Complementa
-/// <see cref="ResultadoDaComprovacao.StatusPorExigencia"/> (que só cobre folhas fora de
-/// repetição): sem isto, uma folha <c>Obrigatorio</c> sem <c>ConsequenciaIndeferimento</c>
-/// configurada (não emite <see cref="ConsequenciaEmitida"/>) ficaria com pendência visível
-/// só no AGREGADO da raiz repetida — nenhum sinal de QUAL <c>entidade_id</c> ainda deve o
-/// documento.
-/// </summary>
-/// <param name="DocumentoExigidoId">A exigência — mesma chave de <see cref="ResultadoDaComprovacao.StatusPorExigencia"/>.</param>
-/// <param name="EntidadeId">A instância a que este status se refere.</param>
-/// <param name="Status">O status desta folha PARA esta instância.</param>
-public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeId, StatusResolucaoExigencia Status);
+/// <summary>Situação de uma exigência para um registro de grupo do formulário.</summary>
+public sealed record SituacaoDaExigenciaPorOcorrencia(Guid DocumentoExigidoId, string OcorrenciaId, StatusResolucaoExigencia Situacao);
 
-/// <summary>
-/// O <see cref="SituacaoDaComprovacao"/> de UM nó (folha ou grupo) PARA uma instância de uma subárvore
-/// <c>repetePorEntidade</c>. Complementa <see cref="ResultadoDaComprovacao.SituacoesPorRegra"/>, que não
-/// cobre os nós de dentro da repetição: quem decide pelo estado do nó, e não da folha, lê o grupo
-/// "um ou outro" de cada ocorrência aqui.
-/// </summary>
-public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, SituacaoDaComprovacao Estado);
+/// <summary>Situação de uma regra para um registro de grupo do formulário.</summary>
+public sealed record SituacaoDaRegraPorOcorrencia(Guid RegraDeComprovacaoId, string OcorrenciaId, SituacaoDaComprovacao Situacao);
 
-/// <summary>
-/// O resultado agregado de <see cref="Services.AvaliadorDaComprovacao.Resolver"/> (Story #920)
-/// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
-/// </summary>
-/// <param name="SituacoesPorRegra">
-/// O <see cref="SituacaoDaComprovacao"/> de todo nó FORA de uma subárvore <c>repetePorEntidade</c>
-/// (Story #922), chave = <c>NoExigencia.Id</c> — inclui o AGREGADO da própria raiz de uma
-/// subárvore repetida (satisfeita só quando TODAS as instâncias declaradas satisfazem, mesma
-/// álgebra do <c>E</c>), mas não os descendentes dela: o estado é inerentemente por-instância
-/// dentro de uma repetição, então não há um único valor global útil para eles — o detalhe
-/// por-instância vigora em <see cref="ConsequenciasVigentes"/>, cada uma tagueada com
-/// <see cref="ConsequenciaEmitida.EntidadeId"/>.
-/// </param>
-/// <param name="StatusPorExigencia">
-/// Projeção por FOLHA (chave = <c>DocumentoExigido.Id</c>) — paridade com o formato anterior;
-/// folha nunca resolve <see cref="SituacaoDaComprovacao.Impossivel"/> (só emerge em nó de grupo pela
-/// cardinalidade). MESMA ressalva de <see cref="SituacoesPorRegra"/>: folhas dentro de uma subárvore
-/// <c>repetePorEntidade</c> não entram aqui (múltiplas instâncias, uma chave só) — o mapeamento é
-/// total apenas para folhas fora de repetição.
-/// </param>
-/// <param name="ConsequenciasVigentes">As consequências emitidas pela fronteira ativa — as que REALMENTE vigoram (sem dupla emissão, sem ramo já satisfeito). Dentro de uma subárvore repetida, uma por INSTÂNCIA pendente (Story #922).</param>
-/// <param name="PendenciasDeOrientacao">Os filhos diretos de grupos <c>OU</c>/<c>N-de</c> opacos pendentes/indeterminados/impossíveis — ver <see cref="PendenciaDeOrientacao"/>.</param>
-/// <param name="StatusPorEntidade">
-/// Story #922 — o status de TODA folha dentro de QUALQUER subárvore <c>repetePorEntidade</c>,
-/// uma entrada por (folha, instância) — o complemento de <see cref="StatusPorExigencia"/> que
-/// este NÃO cobre. Vazio quando a árvore não usa repetição.
-/// </param>
-/// <param name="EstadosPorEntidade">
-/// O estado de todo nó dentro de QUALQUER subárvore <c>repetePorEntidade</c>, uma entrada por (nó,
-/// instância). Vazio quando a árvore não usa repetição.
-/// </param>
-/// <param name="RegrasComConsequenciaAdiada">
-/// Identificadores das regras cuja consequência aguarda dados necessários. A regra projeta
-/// <see cref="SituacaoDaComprovacao.Indeterminado"/> na agregação, sem aplicar consequência
-/// nem produzir orientação enquanto aguarda. Nas regras repetidas, o adiamento é apurado
-/// por ocorrência e já se reflete nas consequências correspondentes.
-/// </param>
+/// <summary>Resultado da avaliação das regras e suas consequências por ocorrência.</summary>
 public sealed record ResultadoDaComprovacao(
     IReadOnlyDictionary<Guid, SituacaoDaComprovacao> SituacoesPorRegra,
-    IReadOnlyDictionary<Guid, StatusResolucaoExigencia> StatusPorExigencia,
-    IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
+    IReadOnlyDictionary<Guid, StatusResolucaoExigencia> SituacoesPorExigencia,
+    IReadOnlyList<ConsequenciaAplicavel> ConsequenciasVigentes,
     IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,
-    IReadOnlyList<StatusPorEntidade> StatusPorEntidade,
-    IReadOnlyList<EstadoPorEntidade> EstadosPorEntidade,
+    IReadOnlyList<SituacaoDaExigenciaPorOcorrencia> SituacoesDeExigenciaPorOcorrencia,
+    IReadOnlyList<SituacaoDaRegraPorOcorrencia> SituacoesDeRegraPorOcorrencia,
     IReadOnlySet<Guid> RegrasComConsequenciaAdiada);

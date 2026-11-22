@@ -12,7 +12,7 @@ public sealed class RegraDeNomeDeTabelaTests
     [InlineData("processos_seletivos")]
     [InlineData("aceites_do_termo")]
     [InlineData("tipos_processo")]
-    [InlineData("nos_da_arvore_de_exigencias")]
+    [InlineData("regras_de_comprovacao")]
     [InlineData("acessos_ao_documento_da_versao")]
     public void Motivos_NomeConforme_NaoTemMotivo(string tabela) =>
         RegraDeNomeDeTabela.Motivos(tabela).Should().BeEmpty();

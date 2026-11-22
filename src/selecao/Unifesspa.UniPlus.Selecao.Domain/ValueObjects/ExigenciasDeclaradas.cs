@@ -2,18 +2,18 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-/// <summary>As exigências documentais do processo: os documentos exigidos e os nós da árvore de satisfação.</summary>
+/// <summary>As exigências documentais do processo: os documentos exigidos e as regras de comprovação.</summary>
 public sealed class ExigenciasDeclaradas
 {
-    public ExigenciasDeclaradas(IReadOnlyList<DocumentoExigido> documentosExigidos, IReadOnlyList<NoExigencia> nosExigencia)
+    public ExigenciasDeclaradas(IReadOnlyList<DocumentoExigido> documentosExigidos, IReadOnlyList<RegraDeComprovacao> regrasDeComprovacao)
     {
         ArgumentNullException.ThrowIfNull(documentosExigidos);
-        ArgumentNullException.ThrowIfNull(nosExigencia);
+        ArgumentNullException.ThrowIfNull(regrasDeComprovacao);
         DocumentosExigidos = [.. documentosExigidos];
-        NosExigencia = [.. nosExigencia];
+        RegrasDeComprovacao = [.. regrasDeComprovacao];
     }
 
     public IReadOnlyList<DocumentoExigido> DocumentosExigidos { get; }
 
-    public IReadOnlyList<NoExigencia> NosExigencia { get; }
+    public IReadOnlyList<RegraDeComprovacao> RegrasDeComprovacao { get; }
 }

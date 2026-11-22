@@ -185,7 +185,7 @@
             "INTERNA_EDITAL"
           ]
         },
-        "status": {
+        "situacao": {
           "title": "Situação",
           "description": "Se a referência foi resolvida ou ainda está pendente.",
           "enum": [

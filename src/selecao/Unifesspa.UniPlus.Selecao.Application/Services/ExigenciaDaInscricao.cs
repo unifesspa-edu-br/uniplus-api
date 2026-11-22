@@ -5,20 +5,19 @@ using Domain.Enums;
 using Domain.ValueObjects;
 
 /// <summary>
-/// Localiza uma exigência de documento na árvore congelada da versão da inscrição, com o grupo
-/// repetível que a faz valer por ocorrência — o próprio nó ou o de um ancestral.
+/// Localiza a exigência e o grupo que determina sua repetição na versão da inscrição.
 /// </summary>
 public static class ExigenciaDaInscricao
 {
     public sealed record Localizada(DocumentoExigido Exigencia, string? GrupoRepetido);
 
-    public static Localizada? Localizar(RegrasDeComprovacaoDaVersao arvore, Guid exigenciaId)
+    public static Localizada? Localizar(RegrasDeComprovacaoDaVersao regras, Guid exigenciaId)
     {
-        ArgumentNullException.ThrowIfNull(arvore);
+        ArgumentNullException.ThrowIfNull(regras);
 
-        foreach (NoExigencia raiz in arvore.Raizes)
+        foreach (RegraDeComprovacao regra in regras.RegrasSemGrupo)
         {
-            if (Localizar(raiz, exigenciaId, null) is { } encontrada)
+            if (Localizar(regra, exigenciaId, null) is { } encontrada)
             {
                 return encontrada;
             }
@@ -27,20 +26,20 @@ public static class ExigenciaDaInscricao
         return null;
     }
 
-    private static Localizada? Localizar(NoExigencia no, Guid exigenciaId, string? grupoRepetido)
+    private static Localizada? Localizar(RegraDeComprovacao regra, Guid exigenciaId, string? grupoRepetido)
     {
-        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
-        if (no.Tipo == TipoNo.Folha)
+        string? repetido = regra.GrupoDoFormularioParaRepeticao ?? grupoRepetido;
+        if (regra.Forma == FormaDeComprovacao.Documento)
         {
-            return no.DocumentoExigido is { } documento && documento.Id == exigenciaId ? new Localizada(documento, repetido) : null;
+            return regra.DocumentoExigido is { } documento && documento.Id == exigenciaId ? new Localizada(documento, repetido) : null;
         }
 
-        return LocalizarNosItens(no.Filhos, exigenciaId, repetido);
+        return LocalizarNosItens(regra.Itens, exigenciaId, repetido);
     }
 
-    private static Localizada? LocalizarNosItens(IEnumerable<NoExigencia> itens, Guid exigenciaId, string? repetido)
+    private static Localizada? LocalizarNosItens(IEnumerable<RegraDeComprovacao> itens, Guid exigenciaId, string? repetido)
     {
-        foreach (NoExigencia item in itens)
+        foreach (RegraDeComprovacao item in itens)
         {
             if (Localizar(item, exigenciaId, repetido) is { } encontrada)
             {

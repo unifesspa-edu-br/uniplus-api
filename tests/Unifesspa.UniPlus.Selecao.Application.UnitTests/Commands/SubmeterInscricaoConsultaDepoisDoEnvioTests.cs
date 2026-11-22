@@ -91,20 +91,20 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
             Aplicabilidade.Condicional, obrigatorio: false, null, [CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!], [], null,
             FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
-    private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<NoExigencia>) ExigenciaRegional(ProcessoSeletivo processo)
+    private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) ExigenciaRegional(ProcessoSeletivo processo)
     {
         DocumentoExigido regional = DocumentoCondicional(processo.CronogramaFases.First(static f => f.ColetaInscricao).Id,
             "REGIONAL", "MUNICIPIO_RESIDENCIA", JsonSerializer.SerializeToElement(Belem));
-        return ([regional], [NoExigencia.CriarFolha(regional, 0).Value!]);
+        return ([regional], [RegraDeComprovacao.CriarRegraDeDocumento(regional, 0).Value!]);
     }
 
-    private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<NoExigencia>) ExigenciasDeIdadeEResidencia(ProcessoSeletivo processo)
+    private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) ExigenciasDeIdadeEResidencia(ProcessoSeletivo processo)
     {
         Guid fase = processo.CronogramaFases.First(static f => f.ColetaInscricao).Id;
         DocumentoExigido aos26 = DocumentoCondicional(fase, "AOS26", "FAIXA_ETARIA", JsonSerializer.SerializeToElement(26));
         DocumentoExigido aos16 = DocumentoCondicional(fase, "AOS16", "FAIXA_ETARIA", JsonSerializer.SerializeToElement(16));
         DocumentoExigido deBelem = DocumentoCondicional(fase, "DEBELEM", "MUNICIPIO_RESIDENCIA", JsonSerializer.SerializeToElement(Belem));
-        return ([aos26, aos16, deBelem], [NoExigencia.CriarFolha(aos26, 0).Value!, NoExigencia.CriarFolha(aos16, 1).Value!, NoExigencia.CriarFolha(deBelem, 2).Value!]);
+        return ([aos26, aos16, deBelem], [RegraDeComprovacao.CriarRegraDeDocumento(aos26, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(aos16, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(deBelem, 2).Value!]);
     }
 
     private sealed class Cenario

@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
     private static ProcessoSeletivo ProcessoComExigencia(FaseCronograma fase, DocumentoExigido exigencia)
     {
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        ExigirFolhas(processo, exigencia);
+        ExigirDocumentos(processo, exigencia);
         return processo;
     }
 
@@ -51,6 +51,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
+        resultado.Error.Message.Should().Be($"A fase '{fase.Codigo}' (ordem {fase.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.");
     }
 
     [Fact(DisplayName = "Retirar PermiteComplementacao sem exigência PENDENCIA_REENVIO é aceito (contraprova)")]

@@ -75,7 +75,7 @@ internal static class ProcessoDoGrafoLidoDeTeste
     private static void DefinirExigenciasEIdentificacao(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
         Aceita(processo.DefinirReferenciaTemporalFatos(grafo.Coleta.ReferenciaTemporalFatos));
-        Aceita(processo.DefinirDocumentosExigidos([.. grafo.Exigencias.NosExigencia.Where(n => n.NoPaiId is null)]));
+        Aceita(processo.DefinirDocumentosExigidos([.. grafo.Exigencias.RegrasDeComprovacao.Where(n => n.RegraQueContemId is null)]));
         if (grafo.Cronograma.AlgoritmoContagemPrazo is { } algoritmo)
         {
             Aceita(processo.DefinirAlgoritmoContagemPrazo(algoritmo));

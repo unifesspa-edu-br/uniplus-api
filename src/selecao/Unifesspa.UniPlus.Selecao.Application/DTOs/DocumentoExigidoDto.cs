@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/>. Compõe <c>ProcessoSeletivoDto</c> — não há
@@ -91,21 +93,17 @@ public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, [pro
 /// RESOLVIDO" é interna ao domínio — <c>DocumentoExigido.BasesLegaisResolvidas</c> — e da
 /// materialização do envelope na PR #903, não deste DTO de edição).
 /// </summary>
-public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia, string Status, string? Observacao);
+public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia, string Situacao, string? Observacao);
 
-/// <summary>
-/// DTO de leitura de UM nó da árvore de satisfação (<see cref="Domain.Entities.NoExigencia"/>,
-/// Story #920) — mesmo formato recursivo de <c>RegraDeComprovacaoInformada</c> (comando de escrita),
-/// round-trip GET→PUT direto (<see cref="Filhos"/> já vem na ORDEM persistida).
-/// </summary>
-public sealed record NoExigenciaDto(
+/// <summary>Regra de comprovação com os documentos e itens que a compõem.</summary>
+public sealed record RegraDeComprovacaoDto(
     Guid Id,
-    string Tipo,
+    CodigoComRotulo<FormaDeComprovacao> Forma,
     DocumentoExigidoDto? Documento,
     CardinalidadeQualificadaDto Cardinalidade,
     IndeferimentoDoGrupoDto Indeferimento,
-    IReadOnlyList<NoExigenciaDto> Filhos,
-    string? RepetePorEntidade);
+    IReadOnlyList<RegraDeComprovacaoDto> Itens,
+    string? GrupoDoFormularioParaRepeticao);
 
 /// <summary>Quantas apresentações o nó pede e como elas se distinguem; a distinção é nula sem qualificação.</summary>
 public sealed record CardinalidadeQualificadaDto(int? QuantidadeMinima, DistincaoDasApresentacoesDto? Distincao);

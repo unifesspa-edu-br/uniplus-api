@@ -32,7 +32,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(
                 faseId, "CERTIFICADO_ENSINO_MEDIO", "Certificado de conclusão do ensino médio", "ESCOLAR",
                 ModalidadesFederaisLei12711.Ac, "ELIMINA", fatoDeModalidade: "MODALIDADE_CONVOCACAO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
@@ -58,7 +58,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
             "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         DocumentoExigido exigencia = ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(processo.CronogramaFases.Single().Id);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok

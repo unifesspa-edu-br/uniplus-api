@@ -85,7 +85,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
         AtendimentoEspecializado? atendimentoEspecializado = null,
         IReadOnlyList<CriterioDesempate>? criteriosDesempate = null,
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
-        IReadOnlyList<NoExigencia>? documentosExigidos = null,
+        IReadOnlyList<RegraDeComprovacao>? documentosExigidos = null,
         IReadOnlyList<FatoColetado>? fatosColetados = null,
         IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null)
     {
@@ -147,7 +147,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
     }
 
     private static void ConfigurarColeta(
-        ProcessoSeletivo processo, IReadOnlyList<NoExigencia>? documentosExigidos,
+        ProcessoSeletivo processo, IReadOnlyList<RegraDeComprovacao>? documentosExigidos,
         IReadOnlyList<FatoColetado>? fatosColetados, IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao)
     {
         if (documentosExigidos is not null)

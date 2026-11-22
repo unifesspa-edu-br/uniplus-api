@@ -11,96 +11,97 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDasExigencias
 {
-    internal static Result<MudancaDaConfiguracao> Planejar(ConfiguracaoDeclarada configuracao, IReadOnlyList<NoExigencia> raizes)
+    internal static Result<MudancaDaConfiguracao> Planejar(ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        List<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
-        List<DocumentoExigido> folhas = [.. todosOsNos
-            .Where(static no => no.Tipo == TipoNo.Folha)
-            .Select(static no => no.DocumentoExigido!)];
+        List<RegraDeComprovacao> todasAsRegras = [.. regrasSemGrupo.SelectMany(static regra => regra.AchatarComDescendentes())];
+        List<DocumentoExigido> documentos = [.. todasAsRegras
+            .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
+            .Select(static regra => regra.DocumentoExigido!)];
 
-        // Onde cada documento é coletado (fase do cronograma e, opcionalmente, a etapa dela) é
-        // conferido por um serviço, porque a configuração congelada volta por um caminho próprio que
-        // monta o mesmo grafo sem passar por aqui.
-        DomainError? recusa =
-            ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
-            ?? ConferirRepeticaoPorGrupo(configuracao, todosOsNos)
-            ?? folhas.Select(folha => RecusaDaIdadeMaximaDeEmissao(configuracao, folha)).FirstOrDefault(static r => r is not null)
-            ?? RecusaDaPendenciaDeReenvio(configuracao, todosOsNos);
+        DomainError? recusa = PrimeiraRecusa(configuracao, todasAsRegras, documentos);
         return recusa is null
-            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todosOsNos, folhas))
+            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, documentos))
             : Result<MudancaDaConfiguracao>.Failure(recusa);
     }
 
+    private static DomainError? PrimeiraRecusa(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos) =>
+        ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
+        ?? ConferirRepeticaoPorGrupo(configuracao, regras)
+        ?? documentos.Select(documento => RecusaDaIdadeMaximaDeEmissao(configuracao, documento)).FirstOrDefault(static recusa => recusa is not null)
+        ?? RecusaDaPendenciaDeReenvio(configuracao, regras);
+
     private static MudancaDaConfiguracao MudancaDaTroca(
-        ConfiguracaoDeclarada configuracao, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<DocumentoExigido> folhas) => new()
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<DocumentoExigido> documentos) => new()
         {
-            DocumentosExigidos = Troca.Substituindo(configuracao.Exigencias.DocumentosExigidos, folhas),
-            NosExigencia = Troca.Substituindo(configuracao.Exigencias.NosExigencia, todosOsNos),
+            DocumentosExigidos = Troca.Substituindo(configuracao.Exigencias.DocumentosExigidos, documentos),
+            RegrasDeComprovacao = Troca.Substituindo(configuracao.Exigencias.RegrasDeComprovacao, todasAsRegras),
         };
 
-    // A âncora de fase da idade máxima de emissão é conferida na escrita, e não na publicação: a regra
-    // vive na exigência, que está sendo escrita agora. Fase viva do mesmo processo com o extremo
-    // correspondente definido, sem fallback silencioso.
-    private static DomainError? RecusaDaIdadeMaximaDeEmissao(ConfiguracaoDeclarada configuracao, DocumentoExigido folha)
+    // A fase de referência precisa pertencer ao processo e ter o instante necessário definido.
+    private static DomainError? RecusaDaIdadeMaximaDeEmissao(ConfiguracaoDeclarada configuracao, DocumentoExigido documento)
     {
-        if (folha.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
+        if (documento.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
         {
-            return RecusaDaFaseAncora(configuracao, referenciaFaseId, idadeComFase);
+            return RecusaDaFaseDeReferencia(configuracao, referenciaFaseId, idadeComFase);
         }
 
-        // O fim da inscrição não usa ReferenciaFaseId (a âncora é a fase que coleta inscrição do
-        // próprio cronograma), então a conferência acima nunca o valida. A pergunta é existencial: o
-        // domínio admite mais de uma fase de coleta, e basta que alguma tenha fim.
-        if (folha.IdadeMaximaEmissao is not { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
+        // Basta uma fase de coleta de inscrição com término definido.
+        if (documento.IdadeMaximaEmissao is not { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
         {
             return null;
         }
 
+        return RecusaDoFimDaInscricao(configuracao);
+    }
+
+    private static DomainError? RecusaDoFimDaInscricao(ConfiguracaoDeclarada configuracao)
+    {
         if (!configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao))
         {
             return new DomainError(
                 "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                "FIM_INSCRICAO exige uma fase do cronograma com ColetaInscricao, e o processo não tem nenhuma.");
+                "É necessária uma fase do cronograma que colete inscrições.");
         }
 
         return configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null)
             ? null
             : new DomainError(
                 "IdadeMaximaEmissao.FaseExtremoAusente",
-                "Nenhuma fase que coleta inscrição tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso.");
+                "É necessário definir o término de uma fase que colete inscrições.");
     }
 
-    private static DomainError? RecusaDaFaseAncora(ConfiguracaoDeclarada configuracao, Guid referenciaFaseId, IdadeMaximaEmissao idade)
+    private static DomainError? RecusaDaFaseDeReferencia(ConfiguracaoDeclarada configuracao, Guid referenciaFaseId, IdadeMaximaEmissao idade)
     {
-        FaseCronograma? faseAncora = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
-        if (faseAncora is null)
+        FaseCronograma? faseDeReferencia = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
+        if (faseDeReferencia is null)
         {
             return new DomainError(
                 "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                $"A fase âncora {referenciaFaseId} da idade máxima de emissão não pertence ao cronograma deste processo.");
+                "A fase de referência da idade máxima de emissão não pertence ao cronograma deste processo.");
         }
 
-        DateTimeOffset? extremo = idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseAncora.Inicio : faseAncora.Fim;
+        DateTimeOffset? extremo = idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseDeReferencia.Inicio : faseDeReferencia.Fim;
         return extremo is null
             ? new DomainError(
                 "IdadeMaximaEmissao.FaseExtremoAusente",
-                $"A fase âncora da idade máxima de emissão não tem {(idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso.")
+                $"A fase de referência da idade máxima de emissão não tem {(idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido.")
             : null;
     }
 
-    // Consequência de reenvio exige que a fase permita complementação, para folha e para grupo; o
+    // Consequência de reenvio exige que a fase permita complementação, para regra de documento e para grupo; o
     // sentido inverso é conferido ao redefinir o cronograma.
-    private static DomainError? RecusaDaPendenciaDeReenvio(ConfiguracaoDeclarada configuracao, List<NoExigencia> todosOsNos)
+    private static DomainError? RecusaDaPendenciaDeReenvio(ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras)
     {
-        foreach (NoExigencia no in todosOsNos)
+        foreach (RegraDeComprovacao regra in todasAsRegras)
         {
-            string? consequenciaDoNo = no.Tipo == TipoNo.Folha
-                ? no.DocumentoExigido!.ConsequenciaIndeferimento
-                : no.Consequencia;
-            if (consequenciaDoNo == "PENDENCIA_REENVIO"
-                && no.FaseComum() is { } faseId
+            string? consequenciaDaRegra = regra.Forma == FormaDeComprovacao.Documento
+                ? regra.DocumentoExigido!.ConsequenciaIndeferimento
+                : regra.Consequencia;
+            if (consequenciaDaRegra == "PENDENCIA_REENVIO"
+                && regra.FaseComum() is { } faseId
                 && ConferirConsequenciaPendenciaReenvio(configuracao, faseId) is { } erro)
             {
                 return erro;
@@ -111,9 +112,7 @@ public static class RegrasDasExigencias
     }
 
     /// <summary>
-    /// Gate <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> — mesmo gate
-    /// para folha e grupo, forward (aqui, na escrita da exigência) e reverso (em
-    /// <see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, via <see cref="ExisteConsequenciaPendenciaReenvioNaFase"/>).
+    /// A consequência de reenvio exige uma fase que permita complementação.
     /// </summary>
     internal static DomainError? ConferirConsequenciaPendenciaReenvio(ConfiguracaoDeclarada configuracao, Guid faseId)
     {
@@ -132,37 +131,27 @@ public static class RegrasDasExigencias
                 $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — consequência PENDENCIA_REENVIO exige PermiteComplementacao.");
     }
 
-    /// <summary>Lado reverso do gate acima — usado por <see cref="ProcessoSeletivo.DefinirCronogramaFases"/> ao verificar se uma fase pode perder <c>PermiteComplementacao</c>, para folha OU grupo <c>OU</c>/<c>N-de</c>.</summary>
+    /// <summary>Verifica se uma fase possui consequência de reenvio declarada.</summary>
     internal static bool ExisteConsequenciaPendenciaReenvioNaFase(ConfiguracaoDeclarada configuracao, Guid faseId) =>
         configuracao.Exigencias.DocumentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO")
-        || configuracao.Exigencias.NosExigencia.Any(n => n.Tipo == TipoNo.GrupoOu && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
+        || configuracao.Exigencias.RegrasDeComprovacao.Any(n => n.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
 
     /// <summary>
-    /// A repetição por entidade nomeia um grupo do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
-    /// conhecido até a fase da subárvore que repete: a fase do formulário do grupo, pela mesma regra
+    /// A repetição nomeia um grupo do formulário do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
+    /// conhecido até a fase das regras repetidas: a fase do formulário do grupo, pela mesma regra
     /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
     /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
     /// </summary>
-    internal static DomainError? ConferirRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<NoExigencia> nos)
+    internal static DomainError? ConferirRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<RegraDeComprovacao> regras)
     {
-        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, configuracao.Coleta.GruposColetados) is { } semGrupo)
+        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(regras, configuracao.Coleta.GruposColetados) is { } semGrupo)
         {
             return semGrupo;
         }
 
-        foreach (NoExigencia no in nos)
+        foreach (RegraDeComprovacao regra in regras)
         {
-            if (no.RepetePorEntidade is null
-                || no.FaseComum() is not { } fase
-                || !no.TentarFinalidadeComum(out FinalidadeFormulario? finalidade))
-            {
-                continue;
-            }
-
-            GrupoColetado grupo = configuracao.Coleta.GruposColetados.Single(g => string.Equals(g.Codigo, no.RepetePorEntidade, StringComparison.Ordinal));
-            if (grupo.Subitens
-                    .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, finalidade, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
-                    .FirstOrDefault(static r => r is not null) is { } recusa)
+            if (RecusaDosFatosDaRepeticao(configuracao, regra) is { } recusa)
             {
                 return recusa;
             }
@@ -171,22 +160,36 @@ public static class RegrasDasExigencias
         return null;
     }
 
+    private static DomainError? RecusaDosFatosDaRepeticao(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra)
+    {
+        if (regra.GrupoDoFormularioParaRepeticao is null || regra.FaseComum() is not { } fase
+            || !regra.TentarFinalidadeComum(out FinalidadeFormulario? finalidade))
+        {
+            return null;
+        }
+
+        GrupoColetado grupo = configuracao.Coleta.GruposColetados.Single(g => string.Equals(g.Codigo, regra.GrupoDoFormularioParaRepeticao, StringComparison.Ordinal));
+        return grupo.Subitens
+            .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, finalidade, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
+            .FirstOrDefault(static recusa => recusa is not null);
+    }
+
     /// <summary>
-    /// Os campos do grupo pelo qual a folha do documento se repete, subindo pelos ancestrais; vazio
-    /// quando a folha não está numa subárvore repetida. São os fatos que o gatilho da folha cita além
+    /// Os campos do grupo pelo qual a regra de documento se repete; vazio
+    /// quando não há repetição. São os fatos que o gatilho da regra cita além
     /// dos do candidato.
     /// </summary>
     public static IReadOnlySet<string> CamposDaRepeticao(ConfiguracaoDeclarada configuracao, Guid documentoExigidoId)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        NoExigencia? no = configuracao.Exigencias.NosExigencia.FirstOrDefault(n => n.DocumentoExigidoId == documentoExigidoId);
-        while (no is { RepetePorEntidade: null, NoPaiId: { } paiId })
+        RegraDeComprovacao? regra = configuracao.Exigencias.RegrasDeComprovacao.FirstOrDefault(n => n.DocumentoExigidoId == documentoExigidoId);
+        while (regra is { GrupoDoFormularioParaRepeticao: null, RegraQueContemId: { } paiId })
         {
-            no = configuracao.Exigencias.NosExigencia.FirstOrDefault(n => n.Id == paiId);
+            regra = configuracao.Exigencias.RegrasDeComprovacao.FirstOrDefault(n => n.Id == paiId);
         }
 
-        return CamposDoGrupo(configuracao, no?.RepetePorEntidade);
+        return CamposDoGrupo(configuracao, regra?.GrupoDoFormularioParaRepeticao);
     }
 
     /// <summary>Os fatos dos campos do grupo repetível de código dado; vazio quando o processo não o tem.</summary>

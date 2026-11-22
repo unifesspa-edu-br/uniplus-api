@@ -116,7 +116,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     public void PreCanon_CondicionalVaziaDeterminaResultado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirFolhas(processo, DocumentoCondicional(FaseDoResultado(processo), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR"));
+        ExigirDocumentos(processo, DocumentoCondicional(FaseDoResultado(processo), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR"));
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_condicional_vazia_determina_resultado", "DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
@@ -128,55 +128,66 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
         processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [])
             .IsSuccess.Should().BeTrue();
-        ExigirFolhas(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        ExigirDocumentos(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
         processo.DefinirCronogramaFases([FaseBaseDaImportacao(origem)], []).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
         ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: exigência (folha) REMOVE_VANTAGEM sem vantagem viva — item vermelho e Publicar recusa com DocumentoExigido.RemoveVantagemSemVantagemViva")]
+    [Fact(DisplayName = "Pré-canonicalização: exigência não pode retirar vantagem que não está configurada")]
     public void PreCanon_ExigenciaRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirFolhas(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "REMOVE_VANTAGEM", [BaseLegalResolvida()]));
+        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "REMOVE_VANTAGEM", [BaseLegalResolvida()]));
         // Sem DefinirBonusRegional — nenhuma vantagem viva para remover.
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_remove_vantagem_sem_vantagem_viva", "DocumentoExigido.RemoveVantagemSemVantagemViva");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: exigência (folha) com consequência incoerente com a ação da vaga — item vermelho e Publicar recusa com DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga")]
+    [Fact(DisplayName = "Pré-canonicalização: consequência da exigência deve ser coerente com a ação da vaga")]
     public void PreCanon_ExigenciaConsequenciaIncoerenteComAcaoDaVaga()
     {
         ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
-        ExigirFolhas(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA", [BaseLegalResolvida()]));
+        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA", [BaseLegalResolvida()]));
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_consequencia_incoerente_com_acao_da_vaga", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: grupo OU/N-de REMOVE_VANTAGEM sem vantagem viva — item vermelho e Publicar recusa com NoExigencia.RemoveVantagemSemVantagemViva")]
+    [Fact(DisplayName = "Pré-canonicalização: grupo não pode retirar vantagem que não está configurada")]
     public void PreCanon_GrupoRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirGrupoOuDeUmDocumento(processo, "REMOVE_VANTAGEM");
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "REMOVE_VANTAGEM");
 
-        AfirmarPendenciaUnicaERecusa(processo, "grupo_remove_vantagem_sem_vantagem_viva", "NoExigencia.RemoveVantagemSemVantagemViva");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_remove_vantagem_sem_vantagem_viva", "RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: grupo OU/N-de com consequência incoerente com a ação da vaga — item vermelho e Publicar recusa com NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga")]
+    [Fact(DisplayName = "A recusa de vantagem ausente explica o grupo sem expor seu identificador")]
+    public void PreCanon_GrupoSemVantagem_MensagemExplicaRecusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "REMOVE_VANTAGEM");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+
+        resultado.Error!.Message.Should().Be("O grupo determina retirar vantagem, mas nenhuma está configurada.");
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: consequência do grupo deve ser coerente com a ação da vaga")]
     public void PreCanon_GrupoConsequenciaIncoerenteComAcaoDaVaga()
     {
         ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
-        ExigirGrupoOuDeUmDocumento(processo, "ELIMINA");
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "ELIMINA");
 
-        AfirmarPendenciaUnicaERecusa(processo, "grupo_consequencia_incoerente_com_acao_da_vaga", "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_consequencia_incoerente_com_acao_da_vaga", "RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: gatilho por FAIXA_ETARIA sem referência temporal configurada — item vermelho e Publicar recusa com ReferenciaTemporalFatosAusente")]
     public void PreCanon_ReferenciaTemporalFatosAusente()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirFolhas(processo, DocumentoCondicional(FaseDoResultado(processo), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", GatilhoFaixaEtaria()));
+        ExigirDocumentos(processo, DocumentoCondicional(FaseDoResultado(processo), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", GatilhoFaixaEtaria()));
         // Nenhuma ReferenciaTemporalFatos configurada.
 
         AfirmarPendenciaUnicaERecusa(processo, "referencia_temporal_ausente_com_gatilho_etario", "ProcessoSeletivo.ReferenciaTemporalFatosAusente");

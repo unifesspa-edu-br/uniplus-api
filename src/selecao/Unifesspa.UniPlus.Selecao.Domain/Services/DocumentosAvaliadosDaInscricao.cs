@@ -31,23 +31,23 @@ internal static class DocumentosAvaliadosDaInscricao
             .Select(fase =>
             {
                 HashSet<Guid> daFase = [.. fase.Select(static d => d.Documento.Id)];
-                DependenciasDaInscricao.CitacoesDosGatilhos citacoes = new ColetorDeCitacoes(configuracao.Definicao, daFase.Contains).Coletar(configuracao.Arvore.Raizes);
+                DependenciasDaInscricao.CitacoesDosGatilhos citacoes = new ColetorDeCitacoes(configuracao.Definicao, daFase.Contains).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo);
                 return (Fase: fase.Key, Pendencias: new PendenciasDaInscricao(configuracao, formulario, DependenciasDaInscricao.DependenciasDe(configuracao.Definicao, citacoes)).Apurar());
             })
             .Where(static f => f.Pendencias.Count > 0)
             .ToDictionary(static f => f.Fase, static f => (IReadOnlyList<PendenciaDaAvaliacao>)f.Pendencias);
 
     /// <summary>
-    /// A situação da folha pelo status que o resolvedor deu a ela: a que depende de fato de fase
+    /// A situação do documento conforme a avaliação da comprovação: o que depende de fato de fase
     /// posterior chega bloqueada, e por isso indeterminada, e não se confunde com a que espera uma
     /// resposta do candidato.
     /// </summary>
     internal static SituacaoDoDocumento Situacao(StatusResolucaoExigencia status, bool deFasePosterior) => status switch
     {
-        StatusResolucaoExigencia.NaoAplicavel => SituacaoDoDocumento.NaoExigido,
+        StatusResolucaoExigencia.NaoExigida => SituacaoDoDocumento.NaoExigido,
         _ when deFasePosterior => SituacaoDoDocumento.DependeDeFasePosterior,
-        StatusResolucaoExigencia.Pendente => SituacaoDoDocumento.Pendente,
-        StatusResolucaoExigencia.Satisfeita => SituacaoDoDocumento.Satisfeita,
+        StatusResolucaoExigencia.PendenteDeComprovacao => SituacaoDoDocumento.Pendente,
+        StatusResolucaoExigencia.Cumprida => SituacaoDoDocumento.Satisfeita,
         _ => SituacaoDoDocumento.PodeSerExigido,
     };
 }

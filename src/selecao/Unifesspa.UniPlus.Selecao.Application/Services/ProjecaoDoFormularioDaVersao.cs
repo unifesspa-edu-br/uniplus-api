@@ -237,7 +237,7 @@ public static class ProjecaoDoFormularioDaVersao
     /// <summary>
     /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e da finalidade do
     /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
-    /// de cada uma e a árvore de satisfação não atravessam este endereço anônimo
+    /// de cada uma e as regras de comprovação não atravessam este endereço anônimo
     /// (<see cref="ClassificacaoDosBlocosDoCertame"/>): quais documentos cabem a um candidato é
     /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
     /// </summary>

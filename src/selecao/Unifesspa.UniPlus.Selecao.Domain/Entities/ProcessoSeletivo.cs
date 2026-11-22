@@ -139,13 +139,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() =>
         Declaracao().DerivacoesEfetivas();
 
-    private readonly List<NoExigencia> _nosExigencia = [];
+    private readonly List<RegraDeComprovacao> _regrasDeComprovacao = [];
 
-    /// <summary>Todos os nós da árvore de satisfação dos documentos exigidos; as raízes saem em <see cref="RaizesDeExigencia"/>.</summary>
-    public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
+    /// <summary>Todas as regras de comprovação configuradas para o processo.</summary>
+    public IReadOnlyCollection<RegraDeComprovacao> RegrasDeComprovacao => _regrasDeComprovacao.AsReadOnly();
 
-    /// <summary>As raízes das árvores de satisfação (<c>NoPaiId == null</c>).</summary>
-    public IEnumerable<NoExigencia> RaizesDeExigencia => _nosExigencia.Where(static n => n.NoPaiId is null);
+    /// <summary>Regras de comprovação que não pertencem a um grupo.</summary>
+    public IEnumerable<RegraDeComprovacao> RegrasDeComprovacaoSemGrupo => _regrasDeComprovacao.Where(static n => n.RegraQueContemId is null);
 
     /// <summary>Âncora que resolve FAIXA_ETARIA; sem ela nenhum gatilho por idade pode existir.</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
@@ -192,7 +192,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemCanonicaDaConfiguracao.Fases(_cronogramaFases)]),
         new AvaliacaoDeclarada([.. OrdemCanonicaDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
         new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaBonusRegional, BonusRegional, Cascata, AtendimentoEspecializado),
-        new ExigenciasDeclaradas([.. _documentosExigidos], [.. _nosExigencia]),
+        new ExigenciasDeclaradas([.. _documentosExigidos], [.. _regrasDeComprovacao]),
         new ColetaDeclarada([.. _campos], [.. _gruposColetados], [.. _formularios], [.. _termosExigidos], [.. _opcoesDeclaradas], [.. _regrasDerivacao], ReferenciaTemporalFatos),
         new DivulgacaoETaxaDeclaradas(ConfiguracaoDivulgacao, ConfiguracaoTaxaInscricao));
 
@@ -350,13 +350,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             Aplicar);
     }
 
-    /// <summary>Substitui a árvore de satisfação dos documentos exigidos, conferindo a fase de cada documento no cronograma.</summary>
-    public Result DefinirDocumentosExigidos(IReadOnlyList<NoExigencia> raizes)
+    /// <summary>Substitui as regras de comprovação, conferindo a fase dos documentos no cronograma.</summary>
+    public Result DefinirDocumentosExigidos(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
-        ArgumentNullException.ThrowIfNull(raizes);
+        ArgumentNullException.ThrowIfNull(regrasSemGrupo);
 
         return Editar(
-            () => RegrasDasExigencias.Planejar(Declaracao(), raizes),
+            () => RegrasDasExigencias.Planejar(Declaracao(), regrasSemGrupo),
             AplicarMudanca);
     }
 
@@ -512,7 +512,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Trocar(_etapas, mudanca.Etapas);
         Trocar(_cronogramaFases, mudanca.CronogramaFases);
         Trocar(_documentosExigidos, mudanca.DocumentosExigidos);
-        Trocar(_nosExigencia, mudanca.NosExigencia);
+        Trocar(_regrasDeComprovacao, mudanca.RegrasDeComprovacao);
         Trocar(_campos, mudanca.Campos);
         Trocar(_gruposColetados, mudanca.GruposColetados);
         Trocar(_formularios, mudanca.Formularios);

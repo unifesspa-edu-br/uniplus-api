@@ -26,7 +26,7 @@ internal static class ConsequenciaDeIndeferimento
     /// vantagem modelada é <see cref="ProcessoSeletivo.BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
     /// <see cref="ProcessoSeletivo.AplicaBonusRegional"/> é verdadeiro).</item>
     /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
-    /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
+    /// valores são modalidades (os mesmos da avaliação de conformidade, <see cref="Services.AvaliadorConformidadeLegal"/>),
     /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
     /// ser idêntica — mesmo vocabulário fechado dos dois lados.</item>
     /// </list>
@@ -35,50 +35,55 @@ internal static class ConsequenciaDeIndeferimento
     {
         foreach (DocumentoExigido exigencia in configuracao.Exigencias.DocumentosExigidos)
         {
-            if (exigencia.ConsequenciaIndeferimento is not { } consequencia)
+            if (RecusaDaExigencia(configuracao, exigencia, fatosDeModalidade) is { } recusa)
             {
-                continue;
-            }
-
-            if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequencia))
-            {
-                return new DomainError(
-                    "DocumentoExigido.RemoveVantagemSemVantagemViva",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
-            }
-
-            if (ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, exigencia, fatosDeModalidade)) is { } modalidadeIncoerente)
-            {
-                return new DomainError(
-                    "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara consequência '{consequencia}', incoerente com a ação de indeferimento '{modalidadeIncoerente.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerente.Codigo}'.");
+                return recusa;
             }
         }
+        return RecusaDosGrupos(configuracao, fatosDeModalidade);
+    }
 
-        // os mesmos dois gates, estendidos ao grupo OU/N-de com consequência
-        // própria (exigência de 1ª classe) — o alcance de modalidade é a união (OR) das
-        // folhas descendentes (NoExigencia.PodeAlcancarModalidade).
-        foreach (NoExigencia grupo in configuracao.Exigencias.NosExigencia.Where(static no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is not null))
+    private static DomainError? RecusaDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade)
+    {
+        foreach (RegraDeComprovacao grupo in configuracao.Exigencias.RegrasDeComprovacao.Where(static regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.Consequencia is not null))
         {
-            string consequenciaDoGrupo = grupo.Consequencia!;
-
-            if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequenciaDoGrupo))
+            if (RecusaDoGrupo(configuracao, grupo, fatosDeModalidade) is { } recusa)
             {
-                return new DomainError(
-                    "NoExigencia.RemoveVantagemSemVantagemViva",
-                    $"O grupo '{grupo.Id}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
-            }
-
-            if (ModalidadeIncoerenteComConsequencia(consequenciaDoGrupo, ModalidadesAlcancadasPor(configuracao, grupo, fatosDeModalidade)) is { } modalidadeIncoerenteDoGrupo)
-            {
-                return new DomainError(
-                    "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga",
-                    $"O grupo '{grupo.Id}' declara consequência '{consequenciaDoGrupo}', incoerente com a ação de indeferimento '{modalidadeIncoerenteDoGrupo.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerenteDoGrupo.Codigo}'.");
+                return recusa;
             }
         }
-
         return null;
     }
+
+    private static DomainError? RecusaDaExigencia(ConfiguracaoDeclarada configuracao, DocumentoExigido exigencia, FatosDeModalidade fatosDeModalidade)
+    {
+        if (exigencia.ConsequenciaIndeferimento is not { } consequencia)
+        {
+            return null;
+        }
+        if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequencia))
+        {
+            return new DomainError("DocumentoExigido.RemoveVantagemSemVantagemViva", $"A exigência '{exigencia.TipoDocumentoNome}' determina retirar vantagem, mas nenhuma está configurada.");
+        }
+        ModalidadeSelecionada? modalidade = ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, exigencia, fatosDeModalidade));
+        return modalidade is null ? null : new DomainError("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
+            $"A consequência da exigência '{exigencia.TipoDocumentoNome}' não corresponde à ação de indeferimento da modalidade {DescricaoDaModalidade(modalidade)}.");
+    }
+
+    private static DomainError? RecusaDoGrupo(ConfiguracaoDeclarada configuracao, RegraDeComprovacao grupo, FatosDeModalidade fatosDeModalidade)
+    {
+        string consequencia = grupo.Consequencia!;
+        if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequencia))
+        {
+            return new DomainError("RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada", "O grupo determina retirar vantagem, mas nenhuma está configurada.");
+        }
+        ModalidadeSelecionada? modalidade = ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, grupo, fatosDeModalidade));
+        return modalidade is null ? null : new DomainError("RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga",
+            $"A consequência do grupo não corresponde à ação de indeferimento da modalidade {DescricaoDaModalidade(modalidade)}.");
+    }
+
+    private static string DescricaoDaModalidade(ModalidadeSelecionada modalidade) =>
+        string.IsNullOrWhiteSpace(modalidade.Descricao) ? "selecionada" : modalidade.Descricao;
 
     /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
     internal static bool ConsequenciaRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao, string? consequencia) =>
@@ -87,8 +92,7 @@ internal static class ConsequenciaDeIndeferimento
     /// <summary>
     /// A primeira modalidade alcançada cuja <c>AcaoQuandoIndeferido</c> declarada é incoerente com a
     /// consequência — ou <see langword="null"/> quando todas as que declaram ação concordam. Devolve a
-    /// ENTIDADE (não um bool) porque tanto o gate (mensagem nomeando oferta/modalidade) quanto o
-    /// checklist (presença) derivam do mesmo cálculo, sem recomputar a busca duas vezes.
+    /// modalidade para que a mensagem e a verificação de conformidade usem a mesma busca.
     /// </summary>
     internal static ModalidadeSelecionada? ModalidadeIncoerenteComConsequencia(
         string consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
@@ -98,23 +102,23 @@ internal static class ConsequenciaDeIndeferimento
             && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
     }
 
-    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com REMOVE_VANTAGEM sem vantagem viva.</summary>
+    /// <summary>Existe <see cref="DocumentoExigido"/> com REMOVE_VANTAGEM sem vantagem viva.</summary>
     internal static bool ExisteExigenciaRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao) =>
         configuracao.Exigencias.DocumentosExigidos.Any(e => ConsequenciaRemoveVantagemSemVantagemViva(configuracao, e.ConsequenciaIndeferimento));
 
-    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
+    /// <summary>Existe <see cref="DocumentoExigido"/> com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
     internal static bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade) =>
         configuracao.Exigencias.DocumentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
             && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(configuracao, e, fatosDeModalidade)) is not null);
 
-    /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva.</summary>
+    /// <summary>Existe grupo que exige uma quantidade mínima de itens com consequência própria REMOVE_VANTAGEM sem vantagem viva.</summary>
     internal static bool ExisteGrupoRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Exigencias.NosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && ConsequenciaRemoveVantagemSemVantagemViva(configuracao, no.Consequencia));
+        configuracao.Exigencias.RegrasDeComprovacao.Any(regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && ConsequenciaRemoveVantagemSemVantagemViva(configuracao, regra.Consequencia));
 
-    /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada.</summary>
+    /// <summary>Existe grupo que exige uma quantidade mínima de itens com consequência própria incoerente com a ação de alguma modalidade alcançada.</summary>
     internal static bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade) =>
-        configuracao.Exigencias.NosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is { } c
-            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(configuracao, no, fatosDeModalidade)) is not null);
+        configuracao.Exigencias.RegrasDeComprovacao.Any(regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.Consequencia is { } consequencia
+            && ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, regra, fatosDeModalidade)) is not null);
 
     /// <summary>
     /// Ponte entre os dois vocabulários fechados de "ação de indeferimento":
@@ -132,7 +136,7 @@ internal static class ConsequenciaDeIndeferimento
     /// <summary>
     /// Modalidades ofertadas que o gatilho da exigência PODE alcançar — verificação
     /// estrutural (<see cref="DocumentoExigido.PodeAlcancarModalidade"/>), não a avaliação
-    /// factual de <see cref="DocumentoExigido.AplicavelPara"/> que o gate de conformidade
+    /// factual de <see cref="DocumentoExigido.AplicavelPara"/> que a avaliação de conformidade
     /// legal usa (<see cref="Services.AvaliadorConformidadeLegal"/>) — aqui não há
     /// candidato real, só a pergunta "existe combinação de fatos em que este documento se
     /// torna exigido para alguém nesta modalidade?".
@@ -142,9 +146,9 @@ internal static class ConsequenciaDeIndeferimento
             .SelectMany(static d => d.Modalidades)
             .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
 
-    /// <summary>Mesma checagem estrutural acima, para um nó de grupo — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
-    internal static IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(ConfiguracaoDeclarada configuracao, NoExigencia no, FatosDeModalidade fatosDeModalidade) =>
+    /// <summary>Confere o alcance da modalidade pelas regras contidas no grupo.</summary>
+    internal static IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra, FatosDeModalidade fatosDeModalidade) =>
         configuracao.Vagas.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => no.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
+            .Where(modalidade => regra.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
 }
