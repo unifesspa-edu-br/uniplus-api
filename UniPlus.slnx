@@ -88,6 +88,7 @@
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Contratos.UnitTests/Unifesspa.UniPlus.Contratos.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Discentes.IntegrationTests/Unifesspa.UniPlus.Discentes.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.Domain.UnitTests/Unifesspa.UniPlus.Configuracao.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.Application.UnitTests/Unifesspa.UniPlus.Configuracao.Application.UnitTests.csproj" />

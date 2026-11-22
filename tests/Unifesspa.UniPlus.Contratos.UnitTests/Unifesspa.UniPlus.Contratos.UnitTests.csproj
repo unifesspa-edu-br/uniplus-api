@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Kernel/Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Regras/Unifesspa.UniPlus.Regras.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Application/Unifesspa.UniPlus.Selecao.Application.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
+    <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Application/Unifesspa.UniPlus.Portal.Application.csproj" />
+    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Domain/Unifesspa.UniPlus.Autorizacao.Domain.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Application/Unifesspa.UniPlus.Autorizacao.Application.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Infrastructure/Unifesspa.UniPlus.Autorizacao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Unifesspa.UniPlus.Configuracao.Domain.csproj" />
+    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Application/Unifesspa.UniPlus.Configuracao.Application.csproj" />
+    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
+    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/discentes/Unifesspa.UniPlus.Discentes.Infrastructure/Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
+    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
+    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/*/Unifesspa.UniPlus.*.API/Unifesspa.UniPlus.*.API.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
+    <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Unifesspa.UniPlus.ArchTests/Fixtures/FixturesDeConversorJson.cs" Link="Fixtures/FixturesDeConversorJson.cs" />
+    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
+    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
+    <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
+    <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

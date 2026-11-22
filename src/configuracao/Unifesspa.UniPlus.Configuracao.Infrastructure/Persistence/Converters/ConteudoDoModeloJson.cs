@@ -130,15 +130,15 @@ internal static class ConteudoDoModeloJson
     public static ConteudoDoModelo Desserializar(string json)
     {
         using JsonDocument documento = JsonDocument.Parse(json);
-        JsonElement raiz = documento.RootElement;
+        JsonElement elementoPrincipal = documento.RootElement;
         return new ConteudoDoModelo(
-            Texto(raiz, "titulo"),
-            [.. raiz.GetProperty("etapas").EnumerateArray().Select(EtapaDeJson)],
-            [.. raiz.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
-            [.. raiz.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
-            [.. raiz.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
-            [.. raiz.GetProperty("grupos").EnumerateArray().Select(GrupoDeJson)],
-            DocumentosDeJson(raiz));
+            Texto(elementoPrincipal, "titulo"),
+            [.. elementoPrincipal.GetProperty("etapas").EnumerateArray().Select(EtapaDeJson)],
+            [.. elementoPrincipal.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
+            [.. elementoPrincipal.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
+            [.. elementoPrincipal.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
+            [.. elementoPrincipal.GetProperty("grupos").EnumerateArray().Select(GrupoDeJson)],
+            DocumentosDeJson(elementoPrincipal));
     }
 
     private static EtapaDoModelo EtapaDeJson(JsonElement etapa) => new(
@@ -190,8 +190,8 @@ internal static class ConteudoDoModeloJson
             Predicado(grupo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade")))),
         [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]);
 
-    private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement raiz) =>
-        raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)
+    private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement elementoPrincipal) =>
+        elementoPrincipal.TryGetProperty("documentosExigidos", out JsonElement documentos)
             ? [.. documentos.EnumerateArray().Select(DocumentoDeJson)]
             : [];
 

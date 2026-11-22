@@ -87,7 +87,7 @@ Na Seleção:
 | Arquivo | Identificador | `selecao:documentos-identificadores:consultar` (#2151) |
 | Arquivo | Sensível | `selecao:documentos-sensiveis:consultar` |
 
-- `selecao:inscricoes:consultar` passa a liberar só o acesso ao resource, sem nenhum item. A situação e as ofertas escolhidas são dado `Publico` e saem com `dados-publicos`, como qualquer outro; não há regra fixa para classe baixa no código. **Exceção, o `id` da inscrição:** é o identificador técnico do resource, e não dado do candidato. Sai sempre que o acesso ao resource é concedido, na listagem e no detalhe, sem decisão de classe e sem registro próprio, porque é com ele que a pessoa abre o que já pode abrir. Nenhum dado de classe sai pelo acesso ao resource; a coluna `selecao.inscricoes.id` segue `Publico` no retrato da classificação. O processo (`id` e nome) é dado do processo, de leitura aberta depois da publicação, e também sai para quem tem o acesso ao resource. No detalhe também saem sempre, sem decisão de classe, `podeEmitirComprovante`, que é capacidade de quem consulta, e `numeroDoUltimoComprovante`, que é metadado da ordem de emissão sem dado do candidato.
+- `selecao:inscricoes:consultar` passa a liberar só o acesso ao resource, sem nenhum item. A situação e as ofertas escolhidas são dado `Publico` e saem com `dados-publicos`, como qualquer outro; não há regra fixa para classe baixa no código. **Exceção, o `id` da inscrição:** é o identificador técnico do resource, e não dado do candidato. Sai sempre que o acesso ao resource é concedido, na listagem e no detalhe, sem decisão de classe e sem registro próprio, porque é com ele que a pessoa abre o que já pode abrir. Nenhum dado de classe sai pelo acesso ao resource; a coluna `selecao.inscricoes.id` segue `Publico` no arquivo de classificação. O processo (`id` e nome) é dado do processo, de leitura aberta depois da publicação, e também sai para quem tem o acesso ao resource. No detalhe também saem sempre, sem decisão de classe, `podeEmitirComprovante`, que é capacidade de quem consulta, e `numeroDoUltimoComprovante`, que é metadado da ordem de emissão sem dado do candidato.
 - **Dado e arquivo são sempre permissões à parte:** a cópia de um documento real nunca sai por permissão de dado nem pela de acesso ao resource.
 - **Nome:** `selecao:<natureza>-<classificação>:<ação>`. `revelar` marca a entrega a pedido, um registro por vez.
 - **Por módulo, não por resource** (`dados-sensiveis`, não `inscricao-dados-sensiveis`): o alcance vem da permissão do resource, da unidade e, para a banca, da designação. Se surgir caso real de ver o sensível num resource e não em outro, a unicidade passa a aceitar o par por resource, declarado como exceção.
@@ -111,7 +111,7 @@ Um único resolvedor responde qual é a proteção de cada item:
 - **Valor derivado:** o identificador mascarado (o CPF no padrão `***.999.999-**`, os demais com máscara total) mantém a classe `Identificador` e é decidido pelo par (dado, `Identificador`), com `dados-identificadores:consultar`; já não sai por `dados-pessoais`. A fonte sem transformação nunca sai.
 - **Classificação no modelo:** declarada por extensão Fluent na configuração do EF, o único lugar que alcança de forma uniforme records da Infrastructure, owned types e shadow properties, no mesmo padrão da [ADR-0124](0124-comentarios-schema-postgresql-via-hascomment-ef-core.md). Toda entidade declara uma classificação padrão, e a propriedade só é anotada quando difere. Os membros de auditoria (`CreatedBy`, `UpdatedBy`, `DeletedBy`) são classificados `Pessoal` uma vez, pela interface ou pela base. O owned type com dado pessoal declara a própria classificação, sem herdar a do dono. Coluna sem classificação resolvida reprova a conferência.
 - **Inscrição:** padrão `Interno`; situação e ofertas `Publico` (o `id` sai pelo acesso ao resource); o índice cego do CPF `Identificador`; o dono da inscrição, quem a cancelou e o motivo do cancelamento `Pessoal`.
-- **Teste de retrato:** o mapa coluna → classificação de todo o modelo fica num arquivo versionado, e qualquer mudança reprova o teste até o arquivo ser atualizado, de modo que todo rebaixamento aparece no diff. Rebaixar a classificação de coluna fixa exige aprovação da proteção de dados, registrada no PR.
+- **Teste do arquivo de referência:** o mapa coluna → classificação de todo o modelo fica num arquivo versionado, e qualquer mudança reprova o teste até o arquivo ser atualizado, de modo que todo rebaixamento aparece no diff. Rebaixar a classificação de coluna fixa exige aprovação da proteção de dados, registrada no PR.
 - **O DTO administrativo declara a própria classificação**, por atributo na propriedade de coluna fixa e por item em cada resposta, documento e valor derivado. Uma conferência na subida garante que a propriedade lida direto da fonte não fica abaixo da classificação dela.
 - Classificar, expor e cifrar são decisões diferentes: a cifra em repouso continua sendo da [ADR-0121](0121-criptografia-de-dados-sensiveis-em-repouso.md).
 
@@ -153,11 +153,11 @@ O acesso ao dado protegido segue a regra do arquivo: fica registrado, sem o cont
 
 ### Serialização como defesa secundária
 
-Um modificador do serializador lê a classificação declarada no DTO e as decisões já tomadas na requisição, e **omite** o campo classificado sem decisão permitida, sem pedir a decisão de novo. O alcance é global e por tipo: o modificador está instalado em toda serialização, e só age em tipo que declara classificação, por `[ProtegidoComo]` ou por derivar de `ItemClassificado`. Esses tipos ficam no namespace convencionado `*.DTOs.Administrativos` de cada módulo, e um teste de arquitetura confere a convenção. As respostas, que hoje trafegam como dicionário, viram itens que carregam natureza e classificação, porque o modificador não filtra entradas de dicionário. A defesa na serialização não alcança exportação nem *streaming*; esses caminhos passam pelo projetor.
+Um modificador do serializador lê a classificação declarada no DTO e as decisões já tomadas na requisição, e **omite** o campo classificado sem decisão permitida, sem pedir a decisão de novo. O alcance é global e por tipo: o modificador está instalado em toda serialização, e só age em tipo que declara classificação, por `[ProtegidoComo]` ou por derivar de `ItemClassificado`. Esses tipos ficam no namespace convencionado `*.DTOs.Administrativos` de cada módulo, e um teste de contrato confere a convenção. As respostas, que hoje trafegam como dicionário, viram itens que carregam natureza e classificação, porque o modificador não filtra entradas de dicionário. A defesa na serialização não alcança exportação nem *streaming*; esses caminhos passam pelo projetor.
 
 ### Lugar do mecanismo
 
-- **`shared`:** o vocabulário de natureza e a conferência de unicidade; a classificação no modelo, a conferência do modelo e o teste de retrato, para todo `DbContext`; o contrato do item classificado (natureza, classificação, base legal); o núcleo do projetor (decide por par, omite, registra); a porta pela qual cada módulo responde qual é a sua permissão para cada par; a serialização defensiva.
+- **`shared`:** o vocabulário de natureza e a conferência de unicidade; a classificação no modelo, a conferência do modelo e o teste do arquivo de referência, para todo `DbContext`; o contrato do item classificado (natureza, classificação, base legal); o núcleo do projetor (decide por par, omite, registra); a porta pela qual cada módulo responde qual é a sua permissão para cada par; a serialização defensiva.
 - **Módulo:** o resolvedor dos próprios itens, a implementação da porta com o enum de permissões dele e a montagem do DTO. Um módulo novo escreve só esses dois.
 - **Item lido de outro módulo por reader ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)):** o reader entrega o item classificado, e o consumidor o projeta pela própria permissão. A base legal é a do uso pelo consumidor, registrada para a finalidade dele, e não a congelada na Seleção.
 
@@ -206,7 +206,7 @@ Sem produção nem integrador, as mudanças de contrato (respostas como itens ti
 ## Confirmação
 
 - Conferência na subida: unicidade do par (natureza, classificação) em cada módulo, em todas as classes.
-- Conferência do modelo: toda coluna mapeada resolve classificação; teste de retrato do mapa coluna → classificação.
+- Conferência do modelo: toda coluna mapeada resolve classificação; teste do arquivo de referência do mapa coluna → classificação.
 - Conferência do DTO: a propriedade lida direto não fica abaixo da fonte; o valor derivado vale pela classificação própria, com a transformação declarada.
 - Teste do acesso ao resource: inscrição de outro processo, inexistente ou em rascunho responde 404; sem a permissão da rota a negativa é registrada sem o id do resource, com ela nada é registrado; na recusa, nada do conteúdo é carregado.
 - Teste de exposição (BOPLA) do mecanismo: sem a permissão do par, o item não aparece; com ela, aparece.
@@ -267,3 +267,7 @@ A [ADR-0166](0166-registro-da-leitura-das-partes-do-pedido-por-titularidade.md) 
 ## Emenda: valor do registro de acesso em Avro
 
 O valor da mensagem do registro de acesso deixa de ser JSON com JSON Schema e passa a ser Avro, como os demais eventos do Kafka ([ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md)). A decisão está no item "O valor é Avro" da seção do registro; o JSON Schema versionado em `contracts/kafka/registro-de-acesso` foi retirado, e o esquema Avro embutido é a fonte única do contrato.
+
+## Emenda (2026-11-22) — projeto de testes
+
+A classificação das colunas e a convenção de namespace dos DTOs são conferidas em `Unifesspa.UniPlus.Contratos.UnitTests`.

@@ -160,7 +160,7 @@ jobs:
       #
       # Migrations NÃO são excluídas: o que o `dotnet ef` gera fora da política
       # (BOM e usings sem separação de grupo) está declarado na seção
-      # [src/**/Migrations/**.cs] do .editorconfig, então elas passam pelo gate
+      # [src/**/Migrations/**.cs] do .editorconfig, então elas passam pela conferência
       # como qualquer outro arquivo — indentação, trailing whitespace e demais
       # regras seguem valendo nelas.
       - name: Verificar formatação
@@ -302,7 +302,7 @@ jobs:
 
       - name: Run unit + arch tests with coverage
         # Filtra fora qualquer FullyQualifiedName contendo "IntegrationTests"
-        # — assemblies *.IntegrationTests.dll são carregados mas dotnet test
+        # — inclui Contratos.UnitTests e sua cobertura; assemblies *.IntegrationTests.dll são carregados mas dotnet test
         # não executa nenhum método, terminando rapidamente sem custo de Docker.
         run: |
           dotnet test ${{ env.SOLUTION_PATH }} \

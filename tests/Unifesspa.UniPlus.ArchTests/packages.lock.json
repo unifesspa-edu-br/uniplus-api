@@ -14,12 +14,6 @@
         "resolved": "8.0.1",
         "contentHash": "heVQl5tKYnnIDYlR1QMVGueYH6iriZTcZB6AjDczQNwZzxkjDIt9C84Pt4cCiZYrbo7jkZOYGWbs6Lo9wAtVLg=="
       },
-      "Markdig": {
-        "type": "Direct",
-        "requested": "[1.6.0, )",
-        "resolved": "1.6.0",
-        "contentHash": "rJEpDfPM8wrfXUgkNejjg2bJN9bciy44uVyRwKUI+92CnSmbaLeJTLPYcCdvgM4RFsKrhs8d2H2hO78yZpMl3g=="
-      },
       "Meziantou.Analyzer": {
         "type": "Direct",
         "requested": "[3.0.321, )",
@@ -35,17 +29,6 @@
           "Microsoft.AspNetCore.TestHost": "10.0.15",
           "Microsoft.Extensions.DependencyModel": "10.0.15",
           "Microsoft.Extensions.Hosting": "10.0.15"
-        }
-      },
-      "Microsoft.EntityFrameworkCore.InMemory": {
-        "type": "Direct",
-        "requested": "[10.0.15, )",
-        "resolved": "10.0.15",
-        "contentHash": "gUn1xV1AR+dum+f4unK4G48rkScxxt9TSkYsu6B2NWPCMJJjo0nMD64z9Xb5Cd7L+SVBtdrwaexao6PhS+704w==",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.15",
-          "Microsoft.Extensions.Caching.Memory": "10.0.15",
-          "Microsoft.Extensions.Logging": "10.0.15"
         }
       },
       "Microsoft.NET.Test.Sdk": {

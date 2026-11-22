@@ -87,3 +87,7 @@ O enum com código de contrato que um cliente precisa listar é publicado como v
 7. O dono é o módulo do enum; os enums do projeto de regras (`FormaAceite`, `Ternario`, `EstadoFato`) são servidos pela Configuração.
 
 O campo de texto de um contrato que carrega o código de um desses enums é marcado com `AceitaCodigosDe<T>`, para o contrato apontar o vocabulário.
+
+## Emenda (2026-11-22) — projeto de testes
+
+As conferências dos enums alcançados pelos executáveis e da montagem dos modelos são executadas em `Unifesspa.UniPlus.Contratos.UnitTests`.

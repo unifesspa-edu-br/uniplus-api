@@ -48,3 +48,7 @@ os arquivos.
 
 `DescricoesDeErrosPublicadasTests` confere os pares de códigos, o formato e o
 conteúdo de `contracts/descricoes-de-erros.json`.
+
+## Emenda (2026-11-22) — projeto de testes
+
+`DescricoesDeErrosPublicadasTests` é executado em `Unifesspa.UniPlus.Contratos.UnitTests`.

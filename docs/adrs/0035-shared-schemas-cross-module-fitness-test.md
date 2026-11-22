@@ -42,7 +42,7 @@ A opção A foi rejeitada porque deixa o risco descoberto. A opção B foi rejei
 
 ### Forma do contrato
 
-`OpenApiSharedSchemasInSyncTests` em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`:
+`OpenApiSharedSchemasInSyncTests` em `tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/`:
 
 ```csharp
 [Fact(DisplayName = "ADR-0035: schemas com mesmo nome em baselines diferentes são byte-equivalentes")]
@@ -129,3 +129,7 @@ Combinável com C numa iteração futura.
 - [GitHub rest-api-description (Redocly + multi-file → bundled)](https://github.com/github/rest-api-description)
 - [Stripe openapi (publica bundled flat)](https://github.com/stripe/openapi)
 - Origem: follow-up Frente 1.2 do plano `~/.claude/plans/uniplus-api-backend-followups-cleanup.md`; issue [#323](https://github.com/unifesspa-edu-br/uniplus-api/issues/323)
+
+## Emenda (2026-11-22) — projeto de testes
+
+A equivalência dos esquemas OpenAPI é conferida em `Unifesspa.UniPlus.Contratos.UnitTests`.

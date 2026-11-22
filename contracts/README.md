@@ -83,7 +83,7 @@ O mesmo código declarado em mais de um registro com o mesmo status e título en
 ### Como regerar
 
 ```bash
-UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTests --filter "FullyQualifiedName~CodigosDeErroPublicados"
+UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests --filter "FullyQualifiedName~CodigosDeErroPublicados"
 ```
 
 O teste falha, sem regerar, quando o arquivo diverge do código: código novo sem entrada, entrada sem código correspondente, ou status e título diferentes. A mensagem aponta o código e repete o comando acima. **Revise o diff** (`git diff contracts/codigos-de-erro.json`): todo código novo exige a descrição pública no mesmo PR.

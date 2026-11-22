@@ -58,7 +58,7 @@ A etapa de um processo seletivo é avaliada por nota numérica, mas há etapas c
 ## Confirmação
 
 - Testes de domínio das recusas por natureza e por valor categórico.
-- Teste de arquitetura de código de erro mapeado e de classificação de proteção das colunas novas.
+- Testes de contrato conferem o código de erro mapeado e a classificação de proteção das colunas novas.
 - Baseline OpenAPI regenerada com os endpoints do catálogo.
 
 ## Mais informações
@@ -72,3 +72,7 @@ A etapa de um processo seletivo é avaliada por nota numérica, mas há etapas c
 **Decisão.** A etapa declara um conceito, entre os que o tipo admite, e o copia por valor na declaração: código, nome, natureza e a escala ou os valores categóricos, na ordem do cadastro (ADR-0061). A admissão é conferida na declaração, e o snapshot do tipo de etapa não copia os conceitos admitidos. O conceito categórico não declara nota (UNI-REQ-0175): a etapa não declara nota máxima, nota mínima, peso, passo do lançamento, itens de avaliação nem escala de atendimento. No conceito numérico, a nota máxima da etapa não passa da escala máxima do conceito, e a gravação recusa o excesso. A etapa de nota do ENEM não declara conceito. Desativar o conceito no catálogo impede novas declarações e não invalida a etapa que já o copiou.
 
 **Consequências.** A consequência neutra da decisão original, de que a regra de consolidação segue como está, deixa de valer: a regra de consolidação passa a depender da natureza do conceito (emenda da ADR-0150). A etapa sem conceito é estado legítimo em rascunho, e as recusas que dependem do conceito ficam com quem cobra a publicação. Cada código de recusa novo tem página no portal de desenvolvedores.
+
+## Emenda (2026-11-22) — projeto de testes
+
+O mapeamento de erros e a classificação das colunas são conferidos em `Unifesspa.UniPlus.Contratos.UnitTests`.
