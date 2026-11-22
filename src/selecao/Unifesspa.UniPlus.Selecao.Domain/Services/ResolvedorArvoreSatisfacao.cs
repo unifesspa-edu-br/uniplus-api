@@ -32,7 +32,7 @@ public sealed class ResolvedorArvoreSatisfacao
         _bloqueadas = bloqueadas;
     }
 
-    public static Result<ResultadoResolucaoArvore> Resolver(
+    public static Result<ResultadoDaComprovacao> Resolver(
         ArvoreExigenciasCongelada arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
@@ -43,8 +43,8 @@ public sealed class ResolvedorArvoreSatisfacao
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = instanciasPorGrupo
             ?? new Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>(StringComparer.Ordinal);
         DomainError? recusa = RecusaDaArvore(arvore) ?? RecusaDasInstancias(instancias);
-        return recusa is not null ? Result<ResultadoResolucaoArvore>.Failure(recusa)
-            : Result<ResultadoResolucaoArvore>.Success(new ResolvedorArvoreSatisfacao(
+        return recusa is not null ? Result<ResultadoDaComprovacao>.Failure(recusa)
+            : Result<ResultadoDaComprovacao>.Success(new ResolvedorArvoreSatisfacao(
                 fatosResolvidos, apresentacoesPorExigenciaId, instancias, exigenciasBloqueadas ?? new HashSet<Guid>()).Avaliar(arvore!));
     }
 
@@ -83,7 +83,7 @@ public sealed class ResolvedorArvoreSatisfacao
         return null;
     }
 
-    private ResultadoResolucaoArvore Avaliar(ArvoreExigenciasCongelada arvore)
+    private ResultadoDaComprovacao Avaliar(ArvoreExigenciasCongelada arvore)
     {
         foreach (NoExigencia raiz in arvore.Raizes)
         {

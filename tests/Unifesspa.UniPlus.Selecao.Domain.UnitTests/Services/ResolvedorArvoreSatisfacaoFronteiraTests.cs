@@ -33,7 +33,7 @@ public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
         NoExigencia noCin = NoExigencia.CriarFolha(cin, 1).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [], [grupoE, noCin]).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(cin));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(cin));
 
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
         resultado.Value!.PendenciasDeOrientacao.Should().BeEmpty();
@@ -48,7 +48,7 @@ public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
             TipoNo.GrupoOu, 0, 1, "RECLASSIFICA_AC", [BaseLegalResolvida()],
             [NoExigencia.CriarFolha(a, 0).Value!, NoExigencia.CriarFolha(b, 1).Value!]).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz));
 
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.NoExigenciaId == raiz.Id && c.TipoOrigem == TipoNo.GrupoOu && c.Consequencia == "RECLASSIFICA_AC");
@@ -65,9 +65,9 @@ public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [noA, noB]).Value!;
 
         // docB satisfeito (apresentado); docA indeterminado (FATO_X não resolvido).
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(docB));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(docB));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.NoExigenciaId == noA.Id && c.TipoOrigem == TipoNo.Folha && c.Consequencia == "ELIMINA");
     }
@@ -78,7 +78,7 @@ public sealed class ResolvedorArvoreSatisfacaoFronteiraTests
         DocumentoExigido documento = DocumentoGeral("ELIMINA");
         NoExigencia raiz = NoExigencia.CriarFolha(documento, 0).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz));
 
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.NoExigenciaId == raiz.Id && c.TipoOrigem == TipoNo.Folha && c.Consequencia == "ELIMINA");

@@ -48,7 +48,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
     private static ArvoreExigenciasCongelada Arvore(params NoExigencia[] raizes) =>
         ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
 
-    private static Result<ResultadoResolucaoArvore> Resolver(
+    private static Result<ResultadoDaComprovacao> Resolver(
         ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
@@ -66,9 +66,9 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia folhaAberta = NoExigencia.CriarFolha(aberto, 1).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaBloqueada, folhaAberta]).Value!;
 
-        ResultadoResolucaoArvore r = Resolver(Arvore(raiz), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
+        ResultadoDaComprovacao r = Resolver(Arvore(raiz), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
-        r.EstadosPorNo[folhaBloqueada.Id].Should().Be(SituacaoDaComprovacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
+        r.SituacoesPorRegra[folhaBloqueada.Id].Should().Be(SituacaoDaComprovacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folhaAberta.Id && c.Consequencia == "REMOVE_VANTAGEM");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "o ramo bloqueado não emite");
@@ -82,7 +82,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         (NoExigencia raiz, NoExigencia grupoE) = CriarGrupoAlternativoComCondicionais(bloqueado);
 
         // GATE=false → as duas folhas condicionais são NAO_APLICAVEL; a bloqueada é a única decisiva.
-        ResultadoResolucaoArvore r = Resolver(
+        ResultadoDaComprovacao r = Resolver(
             Arvore(raiz), fatos: Fatos(("GATE", false)), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
         VerificarFronteiraBloqueada(r, raiz, grupoE);
@@ -101,7 +101,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "RECLASSIFICA_AC", [], [grupoE, folhaNaFora]).Value!;
 
         // Nada bloqueado: a folha alcançável fica pendente, a fronteira decisiva do OU não é bloqueada.
-        ResultadoResolucaoArvore r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false))).Value!;
+        ResultadoDaComprovacao r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false))).Value!;
 
         r.NosEmissaoSuprimida.Should().BeEmpty();
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "RECLASSIFICA_AC");
@@ -117,7 +117,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 2, "ELIMINA", [], [folhaSat, folhaNa]).Value!;
 
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresenta = ApresentacaoDe(satisfeito);
-        ResultadoResolucaoArvore r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false)), apresentacoes: apresenta).Value!;
+        ResultadoDaComprovacao r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false)), apresentacoes: apresenta).Value!;
 
         VerificarImpossivelComConsequencia(r, raiz);
     }
@@ -130,11 +130,11 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha]).Value!;
         ArvoreExigenciasCongelada arvore = Arvore(raiz);
 
-        ResultadoResolucaoArvore bloqueado = Resolver(arvore, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
+        ResultadoDaComprovacao bloqueado = Resolver(arvore, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
         bloqueado.NosEmissaoSuprimida.Should().Contain(folha.Id);
         bloqueado.ConsequenciasVigentes.Should().BeEmpty("bloqueada, não emite");
 
-        ResultadoResolucaoArvore desbloqueado = Resolver(arvore).Value!;
+        ResultadoDaComprovacao desbloqueado = Resolver(arvore).Value!;
         desbloqueado.NosEmissaoSuprimida.Should().BeEmpty("sem latch — o desbloqueio reavalia do zero");
         desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folha.Id && c.Consequencia == "ELIMINA");
     }
@@ -153,7 +153,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia ouInterno = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 1, 2, "RECLASSIFICA_AC", [], [folhaSat, folhaNa]).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaBloqueada, ouInterno]).Value!;
 
-        ResultadoResolucaoArvore r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
+        ResultadoDaComprovacao r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
 
         VerificarBloqueioSobGrupoImpossivel(r, raiz, folhaBloqueada, ouInterno);
     }
@@ -171,7 +171,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia folhaBloqueada = NoExigencia.CriarFolha(bloqueado, 2).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 3, "ELIMINA", [], [folhaSat, folhaNa, folhaBloqueada]).Value!;
 
-        ResultadoResolucaoArvore r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
+        ResultadoDaComprovacao r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
 
         VerificarOrientacaoBloqueada(r, raiz, folhaBloqueada);
     }
@@ -187,7 +187,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
             repetePorEntidade: "FAMILIA").Value!;
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> membros = MembrosDaFamilia();
 
-        ResultadoResolucaoArvore r = ResolvedorArvoreSatisfacao.Resolver(
+        ResultadoDaComprovacao r = ResolvedorArvoreSatisfacao.Resolver(
             Arvore(raiz), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), SemApresentacoes, membros,
             new HashSet<Guid> { bloqueado.Id }).Value!;
 
@@ -203,43 +203,43 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         NoExigencia folhaB = NoExigencia.CriarFolha(b, 1).Value!;
         NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaA, folhaB]).Value!;
 
-        ResultadoResolucaoArvore r = Resolver(Arvore(raiz)).Value!;
+        ResultadoDaComprovacao r = Resolver(Arvore(raiz)).Value!;
 
         r.NosEmissaoSuprimida.Should().BeEmpty();
         r.ConsequenciasVigentes.Should().HaveCount(2, "os dois ramos pendentes emitem, como antes da fronteira");
     }
-    private static void VerificarFronteiraBloqueada(ResultadoResolucaoArvore r, NoExigencia raiz, NoExigencia grupoE)
+    private static void VerificarFronteiraBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia grupoE)
     {
         r.NosEmissaoSuprimida.Should().Contain(raiz.Id, "toda a fronteira decisiva do OU está bloqueada");
         r.NosEmissaoSuprimida.Should().Contain(grupoE.Id);
         r.ConsequenciasVigentes.Should().BeEmpty("o OU opaco não emite a própria consequência sob fronteira bloqueada");
     }
 
-    private static void VerificarImpossivelComConsequencia(ResultadoResolucaoArvore r, NoExigencia raiz)
+    private static void VerificarImpossivelComConsequencia(ResultadoDaComprovacao r, NoExigencia raiz)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
+        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
         r.NosEmissaoSuprimida.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca é emissionBlocked");
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
 
     private static void VerificarBloqueioSobGrupoImpossivel(
-        ResultadoResolucaoArvore r, NoExigencia raiz, NoExigencia folhaBloqueada, NoExigencia ouInterno)
+        ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada, NoExigencia ouInterno)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
+        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id, "a folha bloqueada sob grupo terminal continua suprimida");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não emite o ELIMINA");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == ouInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o OU IMPOSSIVEL emite o inevitável");
     }
 
-    private static void VerificarOrientacaoBloqueada(ResultadoResolucaoArvore r, NoExigencia raiz, NoExigencia folhaBloqueada)
+    private static void VerificarOrientacaoBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada)
     {
-        r.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
+        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
         r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
         r.PendenciasDeOrientacao.Should().NotContain(p => p.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não vira orientação");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
 
-    private static void VerificarOcorrencias(ResultadoResolucaoArvore r, DocumentoExigido bloqueado)
+    private static void VerificarOcorrencias(ResultadoDaComprovacao r, DocumentoExigido bloqueado)
     {
         r.StatusPorEntidade.Where(s => s.DocumentoExigidoId == bloqueado.Id)
             .Should().OnlyContain(static s => s.Status == StatusResolucaoExigencia.AplicabilidadeIndeterminada);
@@ -271,7 +271,7 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
             ],
         };
 
-    private static ResultadoResolucaoArvore ResolverComDocumentoBloqueado(
+    private static ResultadoDaComprovacao ResolverComDocumentoBloqueado(
         NoExigencia raiz, DocumentoExigido satisfeito, DocumentoExigido bloqueado) =>
         Resolver(Arvore(raiz), fatos: Fatos(("GATE", false)), apresentacoes: ApresentacaoDe(satisfeito),
             bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;

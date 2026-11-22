@@ -52,7 +52,7 @@ internal static class ApoioDaArvoreDeSatisfacao
     internal static ArvoreExigenciasCongelada Arvore(params NoExigencia[] raizes) =>
         ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
 
-    internal static Result<ResultadoResolucaoArvore> Resolver(
+    internal static Result<ResultadoDaComprovacao> Resolver(
         ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,

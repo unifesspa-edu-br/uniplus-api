@@ -143,7 +143,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = ocorrencias is null
             ? []
             : new() { [Familia] = [.. ocorrencias.Select(static o => new OcorrenciaDoGrupo(o, new Dictionary<string, FatoResolvido>()))] };
-        Kernel.Results.Result<ResultadoResolucaoArvore> resultado = ResolvedorArvoreSatisfacao.Resolver(
+        Kernel.Results.Result<ResultadoDaComprovacao> resultado = ResolvedorArvoreSatisfacao.Resolver(
             arvore, new Dictionary<string, FatoResolvido> { ["NUNCA"] = FatoResolvido.Resolvido(System.Text.Json.JsonSerializer.SerializeToElement(false)) }, apresentacoes ?? [], instancias);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return DocumentosAusentesDaInscricao.Apurar(arvore, resultado.Value!);

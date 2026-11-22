@@ -23,10 +23,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         DocumentoExigido documento = DocumentoGeral();
         NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, quantidadeMinima: 2).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, null, null));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "Folha sem chaveDistincao: 3 arquivos da mesma competência sem tag não satisfazem N=2 se só 1 apresentação")]
@@ -35,10 +35,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         DocumentoExigido documento = DocumentoGeral();
         NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, quantidadeMinima: 2).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, (string?)null));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "CompetenciaMensal: 3 competências regulares corretas satisfaz")]
@@ -49,10 +49,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: ancora).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "2026-03", "2026-02", "2026-01"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "CompetenciaMensal: falta a competência mais recente fica pendente mesmo com N apresentações")]
@@ -63,10 +63,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: ancora).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "2026-02", "2026-01", "2025-12"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: cobre os slots concretos satisfaz")]
@@ -77,10 +77,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_2026_1", "eleicao_2026_2"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: falta um slot concreto fica pendente")]
@@ -91,10 +91,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_2026_1"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: a mesma apresentação (mesmo Id) não cobre dois slots ao mesmo tempo")]
@@ -107,9 +107,9 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         Guid idApresentacao = Guid.CreateVersion7();
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = MesmaApresentacao(documento, idApresentacao, "eleicao_2026_1", "eleicao_2026_2");
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: distinção pura por N tags diferentes satisfaz")]
@@ -119,10 +119,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", "eleicao_y"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: mesma tag repetida não conta duas vezes")]
@@ -132,10 +132,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", "eleicao_x"));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: tag nula/em branco não conta como distinção")]
@@ -145,10 +145,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(
+        Result<ResultadoDaComprovacao> resultado = Resolver(
             Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", null, "   "));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: a mesma apresentação relatada duas vezes com tags diferentes não conta como duas")]
@@ -160,9 +160,9 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         Guid idApresentacao = Guid.CreateVersion7();
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = MesmaApresentacao(documento, idApresentacao, "eleicao_x", "eleicao_y");
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     [Fact(DisplayName = "Sem chaveDistincao: a mesma apresentação relatada duas vezes (mesmo Id) não conta como duas")]
@@ -176,9 +176,9 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
             [documento.Id] = [apresentacao, apresentacao],
         };
 
-        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     // ── Repetição por entidade (Story #922) ──────────────────────────────────────────────

@@ -55,14 +55,14 @@ public static class AvaliacaoDaInscricao
         IReadOnlySet<Guid> deFasePosterior = entrada.NaFaseDaInscricao
             ? ExigenciasDeFasePosterior.Na(configuracao, entrada.FatosConhecidos)
             : new HashSet<Guid>();
-        Result<ResultadoResolucaoArvore> arvore = ResolvedorArvoreSatisfacao.Resolver(
+        Result<ResultadoDaComprovacao> arvore = ResolvedorArvoreSatisfacao.Resolver(
             configuracao.Arvore, formulario.Fatos, entrada.Apresentacoes, OcorrenciasVisiveis(formulario), deFasePosterior);
         return ComporSeResolvida(configuracao, formulario, arvore, deFasePosterior);
     }
 
     private static Result<ResultadoDaAvaliacaoDaInscricao> ComporSeResolvida(
         ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario,
-        Result<ResultadoResolucaoArvore> arvore, IReadOnlySet<Guid> deFasePosterior) =>
+        Result<ResultadoDaComprovacao> arvore, IReadOnlySet<Guid> deFasePosterior) =>
         arvore.IsFailure
             ? Result<ResultadoDaAvaliacaoDaInscricao>.Failure(arvore.Error!)
             : Result<ResultadoDaAvaliacaoDaInscricao>.Success(ComporResultado(configuracao, formulario, arvore.Value!, deFasePosterior));
@@ -74,7 +74,7 @@ public static class AvaliacaoDaInscricao
             StringComparer.Ordinal);
 
     private static ResultadoDaAvaliacaoDaInscricao ComporResultado(
-        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, ResultadoResolucaoArvore arvore, IReadOnlySet<Guid> deFasePosterior)
+        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, ResultadoDaComprovacao arvore, IReadOnlySet<Guid> deFasePosterior)
     {
         List<DocumentoAvaliado> documentos = new ColetorDeDocumentosAvaliados(
             arvore, formulario.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal), deFasePosterior).Coletar(configuracao.Arvore);
