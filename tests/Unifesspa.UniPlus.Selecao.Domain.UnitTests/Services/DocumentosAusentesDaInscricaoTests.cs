@@ -140,9 +140,9 @@ public sealed class DocumentosAusentesDaInscricaoTests
         string[]? ocorrencias = null)
     {
         ArvoreExigenciasCongelada arvore = ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
-        Dictionary<string, IReadOnlyList<InstanciaEntidade>> instancias = ocorrencias is null
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = ocorrencias is null
             ? []
-            : new() { [Familia] = [.. ocorrencias.Select(static o => new InstanciaEntidade(o, new Dictionary<string, FatoResolvido>()))] };
+            : new() { [Familia] = [.. ocorrencias.Select(static o => new OcorrenciaDoGrupo(o, new Dictionary<string, FatoResolvido>()))] };
         Kernel.Results.Result<ResultadoResolucaoArvore> resultado = ResolvedorArvoreSatisfacao.Resolver(
             arvore, new Dictionary<string, FatoResolvido> { ["NUNCA"] = FatoResolvido.Resolvido(System.Text.Json.JsonSerializer.SerializeToElement(false)) }, apresentacoes ?? [], instancias);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

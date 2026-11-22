@@ -12,7 +12,7 @@ public sealed class ResolvedorArvoreSatisfacao
 {
     private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
     private readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> _apresentacoes;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> _instancias;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> _instancias;
     private readonly IReadOnlySet<Guid> _bloqueadas;
     private readonly Dictionary<Guid, EstadoSatisfacao> _estados = [];
     private readonly Dictionary<Guid, StatusResolucaoExigencia> _status = [];
@@ -24,7 +24,7 @@ public sealed class ResolvedorArvoreSatisfacao
     private ResolvedorArvoreSatisfacao(
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias, IReadOnlySet<Guid> bloqueadas)
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias, IReadOnlySet<Guid> bloqueadas)
     {
         _fatos = fatos;
         _apresentacoes = apresentacoes;
@@ -35,13 +35,13 @@ public sealed class ResolvedorArvoreSatisfacao
     public static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias = instanciasPorGrupo
-            ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = instanciasPorGrupo
+            ?? new Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>(StringComparer.Ordinal);
         DomainError? recusa = RecusaDaArvore(arvore) ?? RecusaDasInstancias(instancias);
         return recusa is not null ? Result<ResultadoResolucaoArvore>.Failure(recusa)
             : Result<ResultadoResolucaoArvore>.Success(new ResolvedorArvoreSatisfacao(
@@ -67,9 +67,9 @@ public sealed class ResolvedorArvoreSatisfacao
 
     private static DomainError EstruturaInvalida(string mensagem) => new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", mensagem);
 
-    private static DomainError? RecusaDasInstancias(IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias)
+    private static DomainError? RecusaDasInstancias(IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias)
     {
-        foreach (IReadOnlyList<InstanciaEntidade> ocorrencias in instancias.Values)
+        foreach (IReadOnlyList<OcorrenciaDoGrupo> ocorrencias in instancias.Values)
         {
             if (ocorrencias.Any(static i => string.IsNullOrWhiteSpace(i.EntidadeId)))
             {
@@ -116,7 +116,7 @@ public sealed class ResolvedorArvoreSatisfacao
         return ResolverE([.. resolvidas.Select(static r => r.Estado)]);
     }
 
-    private InstanciaResolvida ResolverInstancia(NoExigencia no, InstanciaEntidade instancia)
+    private InstanciaResolvida ResolverInstancia(NoExigencia no, OcorrenciaDoGrupo instancia)
     {
         ResolvedorArvoreSatisfacao resolvedor = new(MesclarFatosDeEntidade(_fatos, instancia.Atributos),
             FiltrarApresentacoesPorEntidade(_apresentacoes, instancia.EntidadeId), _instancias, _bloqueadas);

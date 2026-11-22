@@ -16,4 +16,4 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// sobre os fatos do candidato ao resolver gatilhos dentro da subárvore repetida (sujeito trocado,
 /// mesmo motor da folha irmã).
 /// </param>
-public sealed record InstanciaEntidade(string EntidadeId, IReadOnlyDictionary<string, FatoResolvido> Atributos);
+public sealed record OcorrenciaDoGrupo(string EntidadeId, IReadOnlyDictionary<string, FatoResolvido> Atributos);
