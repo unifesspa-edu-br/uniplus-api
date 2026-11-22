@@ -95,7 +95,7 @@ internal static class CorpusEnvelopeEntrada
 
     /// <summary>Um termo exigido com versão fixa, para envelope determinístico.</summary>
     internal static TermoExigidoFormulario Termo(
-        string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null) =>
+        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroDigitalSemLogIp, PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null) =>
         TermoExigidoFormulario.Criar(
             codigo,
             ordem,

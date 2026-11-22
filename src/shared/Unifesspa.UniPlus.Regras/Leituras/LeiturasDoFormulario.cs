@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Leituras;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -103,4 +104,4 @@ public sealed record EtapaFormularioDto(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>O conteúdo congelado da versão do termo: o nome, o texto, a base legal, a forma de aceite e o hash.</summary>
-public sealed record ConteudoDoTermoDto(string Nome, string Texto, string BaseLegal, string FormaAceite, string HashVersao);
+public sealed record ConteudoDoTermoDto(string Nome, string Texto, string BaseLegal, CodigoComRotulo<FormaAceite> FormaAceite, string HashVersao);

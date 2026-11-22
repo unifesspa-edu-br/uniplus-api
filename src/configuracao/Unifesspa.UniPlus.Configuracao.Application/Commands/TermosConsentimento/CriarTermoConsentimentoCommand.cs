@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cria um termo de consentimento/declaração no catálogo (termos imunes após a publicação, UNI-REQ-0086).

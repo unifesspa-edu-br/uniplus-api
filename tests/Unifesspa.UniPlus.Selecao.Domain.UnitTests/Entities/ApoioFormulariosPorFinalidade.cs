@@ -34,7 +34,7 @@ internal static class ApoioFormulariosPorFinalidade
     internal static TermoExigidoFormulario Termo(string codigo) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             null, Obrigatoriedade.Sempre).Value!;
 
     internal static FatoColetado ItemQueCita(string codigo, int ordem, string citado) =>
@@ -89,7 +89,7 @@ internal static class ApoioFormulariosPorFinalidade
     internal static TermoExigidoFormulario TermoQueCita(string fato, int ordem = 0) =>
         TermoExigidoFormulario.Criar(
             $"TERMO_{ordem}", ordem,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
             Obrigatoriedade.Sempre).Value!;
 }

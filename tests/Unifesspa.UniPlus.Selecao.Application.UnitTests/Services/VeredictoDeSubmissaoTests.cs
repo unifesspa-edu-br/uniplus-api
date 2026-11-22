@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
-/// O veredito de submissão (issue #1859) é NOVO: a ausência de resposta a um item obrigatório, um
+/// O resultado da submissão considera: a ausência de resposta a um item obrigatório, um
 /// impedimento, um grupo fora do mínimo/máximo ou sem o candidato, e um termo obrigatório não
 /// aceito (ou aceito com versão/hash diferente) recusam a submissão — nada disso é tolerado no
 /// rascunho. Cada teste constrói a <see cref="AvaliacaoFormulario"/> diretamente, sem passar pelo
@@ -162,7 +162,7 @@ public sealed class VeredictoDeSubmissaoTests
     private static TermoExigidoFormulario NovoTermo(string codigo, Guid versaoId, string hash) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "TERMO_DE_TESTE", 1, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", "REGISTRO_DIGITAL_SEM_LOG_IP", hash),
+            new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "TERMO_DE_TESTE", 1, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", FormaAceite.RegistroDigitalSemLogIp, hash),
             exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
     /// <summary>

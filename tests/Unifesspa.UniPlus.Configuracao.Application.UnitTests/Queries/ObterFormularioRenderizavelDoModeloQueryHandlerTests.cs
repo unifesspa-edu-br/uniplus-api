@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -109,7 +110,17 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
             3,
             termo.Id,
             versao.Id,
-            new ConteudoDoTermoDto(termo.Nome, versao.Texto, versao.BaseLegal, "REGISTRO_DIGITAL_SEM_LOG_IP", versao.Hash)));
+            new ConteudoDoTermoDto(termo.Nome, versao.Texto, versao.BaseLegal, CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroDigitalSemLogIp), versao.Hash)));
+    }
+
+    [Fact(DisplayName = "O conteúdo do termo serializa a forma de aceite com código e rótulo")]
+    public void ConteudoDoTermo_Serializado_ExibeCodigoERotulo()
+    {
+        ConteudoDoTermoDto conteudo = new("Termo", "Texto", "Base", CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroDigitalSemLogIp), "hash");
+        using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(conteudo, JsonSerializerOptions.Web));
+        JsonElement forma = json.RootElement.GetProperty("formaAceite");
+        forma.GetProperty("codigo").GetString().Should().Be("REGISTRO_DIGITAL_SEM_LOG_IP");
+        forma.GetProperty("rotulo").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact(DisplayName = "A versão do termo que não está mais no catálogo é defeito do cadastro, não estado a esconder")]

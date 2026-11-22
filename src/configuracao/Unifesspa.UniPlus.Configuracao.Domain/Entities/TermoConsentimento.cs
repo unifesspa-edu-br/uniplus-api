@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Um termo de consentimento/declaração do catálogo administrável
@@ -23,9 +23,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// a <c>EM_ELABORACAO</c> — a revisão sempre se refere ao conteúdo exato promovido
 /// depois dela, nunca a uma edição posterior às suas costas, e cada versão exige seu
 /// próprio sinal de revisão, mesmo promovendo o mesmo conteúdo duas vezes.</para>
-/// <para>Escopo desta issue é só o cadastro: exigir o termo numa fase do Processo
-/// Seletivo, congelar no snapshot de publicação (segunda metade de UNI-REQ-0086) e
-/// o fluxo de aceite do candidato em runtime (UNI-REQ-0091) ficam fora.</para>
+/// <para>O cadastro do termo é independente da exigência em uma fase do Processo
+/// Seletivo, do registro da configuração publicada (UNI-REQ-0086) e do
+/// aceite do candidato (UNI-REQ-0091).</para>
 /// </remarks>
 public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
 {
@@ -110,7 +110,7 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Marca o rascunho corrente como revisado — portão distinto da edição comum,
+    /// Marca o rascunho corrente como revisado — etapa distinta da edição comum,
     /// grava o ator explícito da chamada. Recusa rascunho sem texto ou sem base
     /// legal (a forma de aceite pode continuar <c>A_DEFINIR</c>: é a promoção que
     /// bloqueia essa forma na publicação de um processo, não a revisão do cadastro).
@@ -144,7 +144,7 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     /// — o EF Core não detecta como <c>Added</c> uma entidade só inserida na coleção
     /// em memória de um agregado JÁ rastreado (recarregado do banco): o Id gerado
     /// client-side (Guid v7) parece "já existente" para a heurística de
-    /// <c>DetectChanges</c>, e a instrução vira um <c>UPDATE</c> que não afeta linha
+    /// <c>DetectChanges</c>, e a instrução se torna um <c>UPDATE</c> que não afeta linha
     /// nenhuma. Mesmo padrão de <c>ProcessoSeletivo.Publicar</c> devolvendo
     /// <c>VersaoConfiguracao</c> para <c>AdicionarVersaoConfiguracaoAsync</c>.</para>
     /// <para>A revisão é consumida (não só o rascunho preservado) para que um

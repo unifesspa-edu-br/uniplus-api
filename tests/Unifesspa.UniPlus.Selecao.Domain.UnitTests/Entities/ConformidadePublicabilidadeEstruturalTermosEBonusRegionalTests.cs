@@ -29,7 +29,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTests
 {
     private static TermoExigidoFormulario Termo(
-        string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null) =>
+        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroDigitalSemLogIp, PredicadoDnf? exibicao = null) =>
         TermoExigidoFormulario.Criar(
             codigo, ordem,
             new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
@@ -43,7 +43,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, "A_DEFINIR")]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0, FormaAceite.ADefinir)]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()

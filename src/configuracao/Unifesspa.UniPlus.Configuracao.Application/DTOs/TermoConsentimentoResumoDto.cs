@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// DTO de resposta HTTP para <c>TermoConsentimento</c> na listagem — sem as

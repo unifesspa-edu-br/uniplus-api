@@ -49,7 +49,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
 
     [Theory(DisplayName = "O congelamento recusa a inscrição que deixa de coletar, no mesmo papel, fato que a versão base coletava")]
     [InlineData("item retirado")]
-    [InlineData("item passa a campo de grupo")]
+    [InlineData("item se torna campo de grupo")]
     [InlineData("grupo retirado")]
     public void Inscricao_DeixaDeColetarFatoDaBase_Recusa(string caso)
     {
@@ -59,7 +59,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Result escrita = caso switch
         {
             "item retirado" => processo.DefinirItens([Item(Novo, 1)]),
-            "item passa a campo de grupo" => processo.DefinirItens([Item(Novo, 1)], grupos: [Familia(2, "MEMBRO_RENDA", "TEM_RENDA")]),
+            "item se torna campo de grupo" => processo.DefinirItens([Item(Novo, 1)], grupos: [Familia(2, "MEMBRO_RENDA", "TEM_RENDA")]),
             _ => processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)], grupos: []),
         };
 
@@ -251,7 +251,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         FaseEfetivaDoFato.RecusaDeFaseDoGatilho(cenario.Processo.Declaracao(), "RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo, cenario.Publicadas)!.Code.Should().Be(FatoAusente);
     }
 
-    [Fact(DisplayName = "O derivado usado só pela inscrição passa a depender de fato novo da inscrição sem recusa no congelamento")]
+    [Fact(DisplayName = "O derivado usado só pela inscrição depende de fato novo da inscrição sem recusa no congelamento")]
     public void Congelamento_DerivadoUsadoSoPelaInscricao_Aceita()
     {
         Cenario cenario = Publicado();
@@ -350,7 +350,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static TermoExigidoFormulario TermoQueCita(string fato) =>
         TermoExigidoFormulario.Criar(
             "TERMO_0", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             Cita(fato), Obrigatoriedade.Sempre).Value!;
 
     /// <summary>As etapas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>

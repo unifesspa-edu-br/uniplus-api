@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Vocabulário fechado que o termo de consentimento referencia por código: a forma de aceite.

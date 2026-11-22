@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -17,7 +18,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 /// versão divulgada ou a viva do rascunho —: a apresentação sai das entidades e dos valores
 /// selecionáveis, e as regras, do recorte da definição avaliável (ADR-0139). Uma projeção só, para o
 /// público e para o rascunho servirem o mesmo formulário. O dia do envio se conta no fuso
-/// institucional, o mesmo da janela de inscrição.
+/// institucional, o mesmo do período de inscrição.
 /// </summary>
 public static class ProjecaoDoFormularioRenderizavel
 {
@@ -101,7 +102,7 @@ public static class ProjecaoDoFormularioRenderizavel
         termo.Ordem,
         termo.TermoId,
         termo.VersaoId,
-        new ConteudoDoTermoDto(termo.Nome, termo.Texto, termo.BaseLegal, termo.FormaAceite, termo.HashVersao));
+        new ConteudoDoTermoDto(termo.Nome, termo.Texto, termo.BaseLegal, CodigoComRotulo<FormaAceite>.De(termo.FormaAceite), termo.HashVersao));
 
     private static GrupoRenderizavel Grupo(
         GrupoColetado grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(

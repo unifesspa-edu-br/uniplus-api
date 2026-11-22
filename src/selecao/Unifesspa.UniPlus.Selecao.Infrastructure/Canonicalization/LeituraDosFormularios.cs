@@ -100,7 +100,7 @@ internal static class LeituraDosFormularios
             }
 
             // O encoder emite os termos em ordem estritamente crescente e com código único; outra forma
-            // só vem de envelope adulterado.
+            // só vem de um registro publicado adulterado.
             if (!codigos.Add(termo.Codigo) || termo.Ordem <= ordemAnterior)
             {
                 leitor.Recusar<object>($"'{pathTermo}' repete código ou quebra a ordem crescente dos termos.");
@@ -232,6 +232,6 @@ internal static class LeituraDosFormularios
         leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDoTermo),
         leitor.TextoNaoVazio(item, "texto", path, LimitesDoEnvelope.TextoDoTermo),
         leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalDoTermo),
-        leitor.TextoNaoVazio(item, "formaAceite", path, LimitesDoEnvelope.FormaAceiteDoTermo),
+        leitor.CodigoDeContrato<FormaAceite>(item, "formaAceite", path),
         leitor.TextoNaoVazio(item, "hashVersao", path, LimitesDoEnvelope.HashDaVersaoDoTermo));
 }

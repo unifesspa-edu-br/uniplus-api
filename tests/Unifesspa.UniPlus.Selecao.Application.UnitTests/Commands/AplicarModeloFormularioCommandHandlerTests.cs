@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -63,7 +64,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
-            [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64))]);
+            [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", FormaAceite.RegistroDigitalComLogIp, new string('b', 64))]);
         TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("CONSULTA").DaVersao(termoId, versaoId)
             .ExibidoQuando([[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]]).Construir();
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
@@ -165,7 +166,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", "LEITURA_E_ACEITE", "hash")]);
+            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, "hash")]);
         TermoExigidoInput removido = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
         TermoExigidoInput citaIsencao = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(termoId, versaoId)
             .ExibidoQuando([[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]]).Construir();

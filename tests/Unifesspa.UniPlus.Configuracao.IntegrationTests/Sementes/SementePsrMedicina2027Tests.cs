@@ -76,14 +76,14 @@ public sealed class SementePsrMedicina2027Tests
     public async Task Reaplicar_NaoDuplicaNemAltera()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        string antes = await RetratoAsync(ctx);
+        string antes = await ConsultarDadosDaSementeAsync(ctx);
 
         foreach (ComandoDaSemente comando in SementePsrMedicina2027.ComandosDoTipoTermosEFatos())
         {
             await ctx.Database.ExecuteSqlRawAsync(comando.Texto);
         }
 
-        (await RetratoAsync(ctx)).Should().Be(antes);
+        (await ConsultarDadosDaSementeAsync(ctx)).Should().Be(antes);
     }
 
     [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município conforme a forma de conclusão do ensino médio")]
@@ -160,7 +160,7 @@ public sealed class SementePsrMedicina2027Tests
         Exibicao(itens["CONDICAO_ATENDIMENTO"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"]).Should().Be(Se("CONDICAO_ATENDIMENTO", SementePsrMedicina2027.CondicaoForaDaLista));
-        itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
+        itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a etapa do tipo de deficiência não muda nesta configuração");
         itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"].Regras.Restricoes.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new TamanhoTexto(null, 120));
     }
@@ -238,7 +238,7 @@ public sealed class SementePsrMedicina2027Tests
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await new TermoConsentimentoReader(ctx).ListarVersoesAsync(
             [.. SementePsrMedicina2027.Termos.Select(static t => t.VersaoId)], CancellationToken.None);
         versoes.Select(static v => v.TermoId).Should().BeEquivalentTo(SementePsrMedicina2027.Termos.Select(static t => t.TermoId));
-        versoes.Should().OnlyContain(static v => v.FormaAceite == "REGISTRO_DIGITAL_COM_LOG_IP" && v.Hash.Length == 64);
+        versoes.Should().OnlyContain(static v => v.FormaAceite == FormaAceite.RegistroDigitalComLogIp && v.Hash.Length == 64);
     }
 
     private static async Task ConferirFatosDoAdministradorAsync(UniPlusDbContext ctx)
@@ -283,7 +283,7 @@ public sealed class SementePsrMedicina2027Tests
     }
 
     /// <summary>A contagem e o conteúdo das linhas que a semente grava, para comparar antes e depois.</summary>
-    private static async Task<string> RetratoAsync(UniPlusDbContext ctx)
+    private static async Task<string> ConsultarDadosDaSementeAsync(UniPlusDbContext ctx)
     {
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """

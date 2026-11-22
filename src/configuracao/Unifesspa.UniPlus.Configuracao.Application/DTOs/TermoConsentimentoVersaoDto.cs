@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// DTO de uma versão promovida e imutável de <c>TermoConsentimento</c>.

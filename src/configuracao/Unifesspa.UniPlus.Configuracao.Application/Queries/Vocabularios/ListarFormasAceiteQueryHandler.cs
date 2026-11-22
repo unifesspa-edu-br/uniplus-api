@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Projeta o que os membros de <see cref="FormaAceite"/> declararam, sem tocar em repositório.</summary>
 public static class ListarFormasAceiteQueryHandler

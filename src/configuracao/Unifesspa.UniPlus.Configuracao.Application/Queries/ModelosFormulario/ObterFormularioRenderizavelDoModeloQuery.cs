@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -105,7 +106,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             throw new InvalidOperationException($"A versão {termo.VersaoId} do termo '{termo.Codigo}' do modelo {modeloId} não está no catálogo.");
         }
 
-        ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, versao.FormaAceite.Codigo(), versao.Hash);
+        ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, CodigoComRotulo<FormaAceite>.De(versao.FormaAceite), versao.Hash);
         return new TermoRenderizavel(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
     }
 

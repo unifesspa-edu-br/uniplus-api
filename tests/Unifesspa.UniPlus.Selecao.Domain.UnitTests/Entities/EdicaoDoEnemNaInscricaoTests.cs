@@ -212,7 +212,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
 
     private static TermoExigidoFormulario TermoSemFormaDeAceite() => TermoExigidoFormulario.Criar(
             "DECLARACAO", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.ADefinir, new string('a', 64)),
             null, Obrigatoriedade.Sempre).Value!;
 
     [Fact(DisplayName = "Sem ENEM, o campo da edição vem antes do termo sem forma de aceite no checklist, na ordem em que a publicação recusa")]

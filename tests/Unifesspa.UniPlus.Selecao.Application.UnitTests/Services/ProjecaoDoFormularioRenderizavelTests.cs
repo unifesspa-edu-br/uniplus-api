@@ -230,6 +230,6 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     private static TermoExigidoFormulario Termo(string codigo, FinalidadeFormulario finalidade) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Veracidade", "Declaro a veracidade.", "Lei 9.784/1999", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Veracidade", "Declaro a veracidade.", "Lei 9.784/1999", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
             null, Obrigatoriedade.Sempre, finalidade).Value!;
 }
