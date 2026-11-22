@@ -5,17 +5,15 @@ using System.Security.Claims;
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Authorization;
 
 using Unifesspa.UniPlus.ArchTests.Fixtures;
+using Unifesspa.UniPlus.ArchTests.TestSupport;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
-
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
 /// Toda decisão de acesso passa pelo ponto único (ADR-0078): o módulo pergunta a
@@ -35,7 +33,7 @@ public sealed class DecisaoPeloPontoUnicoTests
     private const string PontoDeDecisao =
         @"^Unifesspa\.UniPlus\.(Authorization|Infrastructure\.Core\.Authorization)(\.|$)";
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(Assemblies()).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     [Fact(DisplayName = "Fitness_DecisaoForaDoPontoUnicoOuSemSujeito_Falha")]
     public void Fitness_DecisaoForaDoPontoUnicoOuSemSujeito_Falha()
@@ -118,15 +116,4 @@ public sealed class DecisaoPeloPontoUnicoTests
     private static void Verificar(TypesShouldConjunction regra, List<string> violacoes)
         => violacoes.AddRange(regra.Evaluate(Arquitetura).Where(static r => !r.Passed).Select(static r => r.Description));
 
-    private static ReflectionAssembly[] Assemblies()
-        =>
-        [
-            // O ArchUnitNET só enxerga a chamada a um membro cujo assembly foi carregado.
-            typeof(ClaimsPrincipal).Assembly,
-            typeof(AuthorizationPolicyBuilder).Assembly,
-            .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
-                .Where(static c => !Path.GetFileName(c).Contains("Tests", StringComparison.Ordinal)
-                    || Path.GetFileName(c) == "Unifesspa.UniPlus.ArchTests.dll")
-                .Select(static c => ReflectionAssembly.LoadFrom(c)),
-        ];
 }

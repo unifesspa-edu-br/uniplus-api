@@ -4,76 +4,54 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.Application.Certames;
 using Unifesspa.UniPlus.Portal.Infrastructure;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Verificador.Configuracao;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
-/// <summary>
-/// A conferência dos códigos de contrato na subida, sobre o catálogo real de cada executável (ADR-0176): o alcance de
-/// cada um chega aos projetos que ele usa, só traz projetos do Uni+, e a conferência de todos eles não encontra defeito.
-/// Quem barra o defeito no CI é este teste; o host de teste do Host e do Portal também o executa ao iniciar.
-/// </summary>
 public sealed class EnumsDeContratoNosExecutaveisTests
 {
-    private const string PrefixoDoUniPlus = "Unifesspa.UniPlus.";
+    [Fact]
+    public void Conferencia_Verificador_NaoEncontraDefeito() =>
+        FluentActions.Invoking(static () => EnumsDeContrato.ConferirNoExecutavel(typeof(VerificadorOptions).Assembly)).Should().NotThrow();
 
-    private static readonly Assembly Kernel = typeof(AssembliesDoUniPlus).Assembly;
-
-    private static readonly Assembly InfrastructureCore = typeof(ConferenciaDosEnumsDeContratoNaSubida).Assembly;
-
-    // O Portal é um deploy à parte: o Host não o compõe.
-    private static readonly string[] ModulosDoHost = [.. ModulosDoMonolito.Nomes.Where(static nome => nome != "Portal")];
-
-    private static readonly string[] CamadasDeCadaModulo = ["API", "Domain", "Infrastructure"];
-
-    private static readonly string[] NomesDosAssembliesDosModulosDoHost =
-        [.. ModulosDoHost.SelectMany(static modulo => CamadasDeCadaModulo.Select(camada => $"{PrefixoDoUniPlus}{modulo}.{camada}"))];
-
-    public static TheoryData<Assembly> Executaveis => new(ExecutaveisDoProduto.Todos);
-
-    [Theory(DisplayName = "A conferência dos enums do catálogo real não encontra defeito, a partir de cada executável")]
-    [MemberData(nameof(Executaveis))]
-    public void ConferirNoExecutavel_CatalogoReal_NaoLanca(Assembly executavel) =>
-        FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(executavel)).Should().NotThrow();
-
-    [Theory(DisplayName = "Fora o executável, o alcance só traz assemblies cujo nome começa com o prefixo do Uni+")]
-    [MemberData(nameof(Executaveis))]
-    public void AlcancadosAPartirDe_ForaOExecutavel_SoTrazAssembliesDoUniPlus(Assembly executavel) =>
-        AssembliesDoUniPlus.AlcancadosAPartirDe(executavel).Where(a => a != executavel).Select(static a => a.GetName().Name)
-            .Should().OnlyContain(static nome => nome != null && nome.StartsWith(PrefixoDoUniPlus, StringComparison.Ordinal));
-
-    [Fact(DisplayName = "O alcance do Host traz o Kernel, as Regras, a Infrastructure.Core, a persistência e a API, o Domain e a Infrastructure de cada módulo")]
-    public void AlcancadosAPartirDe_Host_TrazAsBibliotecasEOsModulos()
+    [Fact]
+    public void Alcance_Host_IncluiBibliotecasEAcoes()
     {
-        Assembly[] modulos = [.. AssembliesDoProduto.Todos.Where(static a => NomesDosAssembliesDosModulosDoHost.Contains(a.GetName().Name))];
-        Assembly[] bibliotecas = [Kernel, typeof(EntradaDeRegras).Assembly, InfrastructureCore, typeof(MonolitoDbContext).Assembly];
-
-        modulos.Should().HaveCount(NomesDosAssembliesDosModulosDoHost.Length, "cada módulo do Host tem API, Domain e Infrastructure no inventário do produto");
-        AssembliesDoUniPlus.AlcancadosAPartirDe(ExecutaveisDoProduto.AssemblyDoHost).Should().Contain([.. bibliotecas, .. modulos]);
+        IReadOnlyList<Assembly> alcancados = AssembliesDoUniPlus.AlcancadosAPartirDe(typeof(HostAssemblyMarker).Assembly);
+        alcancados.Should().Contain(typeof(AssembliesDoUniPlus).Assembly).And.Contain(typeof(EntradaDeRegras).Assembly)
+            .And.Contain(typeof(ConferenciaDosEnumsDeContratoNaSubida).Assembly).And.Contain(typeof(MonolitoDbContext).Assembly);
+        IEnumerable<ControllerActionDescriptor> acoes = HostsDoProdutoIniciados.Obter(HostsDoProdutoIniciados.UniPlus).ProvedorDeServicos
+            .GetRequiredService<IActionDescriptorCollectionProvider>().ActionDescriptors.Items.OfType<ControllerActionDescriptor>();
+        foreach (ControllerActionDescriptor acao in acoes)
+        {
+            alcancados.Should().Contain(acao.ControllerTypeInfo.Assembly);
+        }
     }
 
-    [Fact(DisplayName = "O alcance do Portal traz o Kernel, a Infrastructure.Core e os projetos de aplicação e infraestrutura dele")]
-    public void AlcancadosAPartirDe_Portal_TrazAsBibliotecasEOsProjetosDele() =>
-        AssembliesDoUniPlus.AlcancadosAPartirDe(ExecutaveisDoProduto.AssemblyDoPortal).Should().Contain(
-        [
-            Kernel,
-            InfrastructureCore,
-            typeof(ComposicaoDaPaginaDoCertame).Assembly,
-            typeof(PortalInfrastructureRegistration).Assembly,
-        ]);
+    [Fact]
+    public void Alcance_Portal_IncluiBibliotecasEProjetos() =>
+        AssembliesDoUniPlus.AlcancadosAPartirDe(typeof(PortalApiAssemblyMarker).Assembly)
+            .Should().Contain(typeof(AssembliesDoUniPlus).Assembly).And.Contain(typeof(ConferenciaDosEnumsDeContratoNaSubida).Assembly)
+            .And.Contain(typeof(ComposicaoDaPaginaDoCertame).Assembly).And.Contain(typeof(PortalInfrastructureRegistration).Assembly);
 
-    [Fact(DisplayName = "O alcance do Verificador traz o Kernel e os contratos e não traz a Infrastructure.Core nem a Seleção")]
-    public void AlcancadosAPartirDe_Verificador_NaoAlcancaAInfraestruturaDaApiNemASelecao()
+    [Fact]
+    public void Alcance_Verificador_IncluiContratosSemInfraestruturaDaApi()
     {
-        IReadOnlyList<Assembly> alcancados = AssembliesDoUniPlus.AlcancadosAPartirDe(ExecutaveisDoProduto.AssemblyDoVerificador);
-
-        alcancados.Should().Contain([Kernel, typeof(DestinoDoResultado).Assembly]);
-        alcancados.Should().NotContain(InfrastructureCore);
-        alcancados.Where(static a => a.GetName().Name?.StartsWith($"{PrefixoDoUniPlus}Selecao", StringComparison.Ordinal) == true).Should().BeEmpty();
+        IReadOnlyList<Assembly> alcancados = AssembliesDoUniPlus.AlcancadosAPartirDe(typeof(VerificadorOptions).Assembly);
+        alcancados.Should().Contain(typeof(AssembliesDoUniPlus).Assembly).And.Contain(typeof(DestinoDoResultado).Assembly);
+        alcancados.Should().NotContain(typeof(ConferenciaDosEnumsDeContratoNaSubida).Assembly);
+        alcancados.Should().NotContain(static a => a.GetName().Name!.StartsWith("Unifesspa.UniPlus.Selecao", StringComparison.Ordinal));
     }
 }

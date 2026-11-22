@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
@@ -17,28 +16,28 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 /// </summary>
 public sealed class TiposDeProcessoSoComoConfiguracaoTests
 {
-    private static readonly Architecture ArquiteturaDoDominio = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
+    private static readonly Architecture ArquiteturaDoDominio = ArquiteturaDaSelecao.Produto;
 
-    private static readonly Architecture ArquiteturaDoSuporteDeTeste = new ArchLoader().LoadAssemblies(typeof(TiposDeProcessoDeTeste).Assembly).Build();
+    private static readonly Architecture ArquiteturaDoSuporteDeTeste = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "Nenhum tipo do domínio da Seleção expõe um tipo de processo fixo")]
     public void NenhumTipoDeProcessoFixoNoAssemblyDeProducao()
     {
-        PropriedadesEstaticasDeTipoDeProcesso(ArquiteturaDoDominio).Should().BeEmpty(
+        PropriedadesEstaticasDeTipoDeProcesso(ArquiteturaDoDominio, "Unifesspa.UniPlus.Selecao.Domain").Should().BeEmpty(
             "os tipos de processo reais vêm do catálogo de Configuração, nunca de uma lista em código de produção");
     }
 
     [Fact(DisplayName = "A mesma consulta encontra os tipos fixos do suporte de teste, então a regra acima não é vácua")]
     public void ConsultaEnxergaOsTiposFixosDoSuporteDeTeste()
     {
-        PropriedadesEstaticasDeTipoDeProcesso(ArquiteturaDoSuporteDeTeste).Select(nome => nome.Split('.')[^1].Split(' ')[0])
+        PropriedadesEstaticasDeTipoDeProcesso(ArquiteturaDoSuporteDeTeste, "Unifesspa.UniPlus.Testes.Compartilhado").Select(nome => nome.Split('.')[^1].Split(' ')[0])
             .Should().Contain(["SiSU", "PSIQ", "PSECampo", "PSVR", "TransferenciaInterna", "TransferenciaExterna", "PortadorDiploma", "Reopcao"]);
     }
 
-    private static IEnumerable<string> PropriedadesEstaticasDeTipoDeProcesso(Architecture arquitetura)
+    private static IEnumerable<string> PropriedadesEstaticasDeTipoDeProcesso(Architecture arquitetura, string escopo)
     {
         string tipoDoSnapshot = typeof(TipoProcessoSnapshot).FullName!;
-        return PropertyMembers().GetObjects(arquitetura)
+        return PropertyMembers().That().AreDeclaredIn(Types().That().ResideInNamespaceMatching("^" + escopo.Replace(".", @"\.", StringComparison.Ordinal))).GetObjects(arquitetura)
             .Where(propriedade => propriedade.IsStatic == true && propriedade.Type.FullName == tipoDoSnapshot)
             .Select(propriedade => propriedade.Name);
     }

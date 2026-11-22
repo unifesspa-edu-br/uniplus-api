@@ -3,17 +3,15 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
-using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.ArchTests.Fixtures;
+using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
-
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
 /// A titularidade só existe no registro de acesso (ADR-0166): o verificador de acesso monta a concessão efetiva de
@@ -34,7 +32,7 @@ public sealed class TitularidadeSoNoRegistroTests
 
     private const string ResolvedorDoSujeito = @"^Unifesspa\.UniPlus\.Infrastructure\.Core\.Authorization\.HttpAuthorizationSubjectResolver(\+|$)";
 
-    private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(Assemblies()).Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     [Fact(DisplayName = "Fitness_TitularidadeOuDecisaoPermitidaForaDoVerificador_Falha")]
     public void Fitness_TitularidadeOuDecisaoPermitidaForaDoVerificador_Falha() =>
@@ -83,11 +81,4 @@ public sealed class TitularidadeSoNoRegistroTests
     private static GivenMethodMembersConjunction PermitirDecisao() =>
         MethodMembers().That().HaveNameStartingWith("Permitir(").And().AreDeclaredIn(typeof(AuthorizationDecision));
 
-    private static ReflectionAssembly[] Assemblies() =>
-        [
-            .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
-                .Where(static caminho => !Path.GetFileName(caminho).Contains("Tests", StringComparison.Ordinal)
-                    || Path.GetFileName(caminho) == "Unifesspa.UniPlus.ArchTests.dll")
-                .Select(static caminho => ReflectionAssembly.LoadFrom(caminho)),
-        ];
 }

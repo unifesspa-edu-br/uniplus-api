@@ -2,19 +2,19 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.ArchTests.TestSupport;
+
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>O domínio gera identificadores UUID v7, conforme a ADR-0032.</summary>
 public sealed class DominioNaoUsaGuidNewGuidTests
 {
-    private static readonly Architecture Arquitetura = CarregarArquitetura();
+    private static readonly Architecture Arquitetura = ArquiteturaDasTravas.Produto;
 
     [Fact(DisplayName = "O domínio não chama Guid.NewGuid")]
     public void Dominio_NaoChama_GuidNewGuid()
@@ -33,20 +33,6 @@ public sealed class DominioNaoUsaGuidNewGuidTests
             .Should().NotCallAny(chamada)
             .Because("as entidades de domínio usam Guid.CreateVersion7()")
             .Check(Arquitetura);
-    }
-
-    private static Architecture CarregarArquitetura()
-    {
-        ReflectionAssembly[] assemblies =
-        [
-            typeof(Guid).Assembly,
-            typeof(ChamadaDeGuidParaTeste).Assembly,
-            .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.Domain.dll")
-                .Select(ReflectionAssembly.LoadFrom),
-            ReflectionAssembly.Load("Unifesspa.UniPlus.Kernel"),
-        ];
-
-        return new ArchLoader().LoadAssemblies(assemblies).Build();
     }
 
     private static class ChamadaDeGuidParaTeste

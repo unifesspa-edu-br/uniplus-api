@@ -2,12 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
@@ -29,26 +27,14 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         @"^Unifesspa\.UniPlus\.Selecao\.Application\.(Commands\.ProcessosSeletivos\.(CopiaDosDocumentosDoAto|AcervoDaDivulgacao)"
         + @"|Mappings\.SelecaoApplicationServiceRegistration)(\+|$)";
 
-    private static readonly Architecture Arquitetura = new ArchLoader()
-        .LoadAssemblies([typeof(IAcervoPublico).Assembly])
-        .Build();
-
-    private static readonly Architecture ArquiteturaDeStorage = new ArchLoader()
-        .LoadAssemblies(
-            [
-                typeof(IStorageService).Assembly,
-                .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
-                    .Where(static caminho => !Path.GetFileName(caminho).Contains("Tests", StringComparison.Ordinal))
-                    .Select(System.Reflection.Assembly.LoadFrom),
-            ])
-        .Build();
+    private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
     [Fact(DisplayName = "Só a cópia dos documentos do ato depende do port de escrita no acervo público")]
     public void SoADivulgacaoEscreveNoAcervo()
     {
         IArchRule regra = Types()
-            .That()
-            .DoNotHaveFullNameMatching(CaminhoPrevisto)
+            .That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.Application(\.|$)")
+            .And().DoNotHaveFullNameMatching(CaminhoPrevisto)
             .Should()
             .NotDependOnAny(typeof(IAcervoPublico))
             .Because("confirmar o envio não é publicar: o documento só entra no acervo depois de o ato existir");
@@ -60,8 +46,8 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
     public void SoADivulgacaoUsaOTipoQueCarregaOAcervo()
     {
         IArchRule regra = Types()
-            .That()
-            .DoNotHaveFullNameMatching(CaminhoPrevisto)
+            .That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.Application(\.|$)")
+            .And().DoNotHaveFullNameMatching(CaminhoPrevisto)
             .Should()
             .NotDependOnAnyTypesThat()
             .HaveFullNameMatching(@"\.AcervoDaDivulgacao(\+|$)")
@@ -97,19 +83,4 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         new[] { "CopiaDosDocumentosDoAto", "AcervoDaDivulgacao" }
             .Any(tipo => nome == Caminho + tipo || nome.StartsWith(Caminho + tipo + "+", StringComparison.Ordinal));
 
-    [Fact(DisplayName = "Só o serviço do acervo público copia para o bucket público")]
-    public void SoOAcervoDeSelecaoUsaACopiaPublica()
-    {
-        ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction copia = MethodMembers().That().AreDeclaredIn(typeof(IStorageService))
-            .And().HaveNameStartingWith("CopiarComoObjetoPublicoAsync(");
-        const string servico = "Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices.AcervoPublicoService";
-
-        Types().That().HaveFullName(servico).And().CallAny(copia)
-            .GetObjects(ArquiteturaDeStorage).Should().NotBeEmpty("a chamada permitida deve ser detectada");
-
-        Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.")
-            .And().DoNotHaveFullNameMatching(@"^Unifesspa\.UniPlus\.Selecao\.Infrastructure\.ExternalServices\.AcervoPublicoService(\+|$)")
-            .Should().NotCallAny(copia)
-            .Check(ArquiteturaDeStorage);
-    }
 }

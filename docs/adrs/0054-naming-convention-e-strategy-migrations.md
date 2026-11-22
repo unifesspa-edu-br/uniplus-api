@@ -89,7 +89,7 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 
 ### Aplicação no startup: já resolvido em ADRs anteriores
 
-`MigrationHostedService<TContext>` aplica migrations no `StartAsync` do host (#344), registrado **antes** de `UseWolverineOutboxCascading` em cada Program.cs (#419). Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.ArchTests/Hosting/` trava a ordem.
+`MigrationHostedService<TContext>` aplica migrations no `StartAsync` do host (#344), registrado **antes** de `UseWolverineOutboxCascading` em cada Program.cs (#419). Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.Contratos.UnitTests/Hosting/` trava a ordem.
 
 Aplicação no cluster standalone: o pod restart aciona o `MigrationHostedService` que aplica migrations pendentes. O repositório `uniplus-infra` documenta procedimento de operação (drop+recreate, troubleshooting) — fica fora do escopo deste repo.
 

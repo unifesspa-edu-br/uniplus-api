@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
-using System.Text.RegularExpressions;
-
 using ArchUnitNET.Domain;
 
 using AwesomeAssertions;
@@ -25,14 +23,14 @@ public sealed class ConfiguracaoDoEfNaPersistenciaDoModuloTests
     {
         ConfiguracoesDoEf(ArquiteturaDasTravas.Produto).Should().NotBeEmpty("sem configuração descoberta, a conferência passaria vazia");
 
-        ConfiguracoesFora(ArquiteturaDasTravas.Produto, ModulosDoMonolito.Raizes).Should().BeEmpty(
+        ConfiguracoesFora(ArquiteturaDasTravas.Produto, @"^Unifesspa\.UniPlus\.(?!ArchTests)").Should().BeEmpty(
             "o mapeamento do EF fica na persistência da infraestrutura do módulo");
     }
 
     [Fact(DisplayName = "Fitness_ConfiguracaoForaDaPersistencia_Falha")]
     public void Fitness_ConfiguracaoForaDaPersistencia_Falha()
     {
-        List<string> reprovados = ConfiguracoesFora(ArquiteturaDasTravas.Fixtures, ModulosDoMonolito.RaizesDosFixtures);
+        List<string> reprovados = ConfiguracoesFora(ArquiteturaDasTravas.Fixtures, @"^Unifesspa\.UniPlus\.ArchTests\.Fixtures");
 
         reprovados.Should().Contain(static v => v.Contains("MapeamentoNoDominio", StringComparison.Ordinal));
         reprovados.Should().NotContain(static v => v.Contains("MapeamentoNaPersistencia", StringComparison.Ordinal));
@@ -43,11 +41,9 @@ public sealed class ConfiguracaoDoEfNaPersistenciaDoModuloTests
             arquitetura,
             static i => i.FullName.StartsWith("Microsoft.EntityFrameworkCore.IEntityTypeConfiguration", StringComparison.Ordinal));
 
-    private static List<string> ConfiguracoesFora(Architecture arquitetura, string[] raizes) =>
+    private static List<string> ConfiguracoesFora(Architecture arquitetura, string escopo) =>
         ArquiteturaDasTravas.Reprovacoes(
-            Types().That().Are(ConfiguracoesDoEf(arquitetura)).Should().ResideInNamespaceMatching(Permitido(raizes)),
+            Types().That().Are(ConfiguracoesDoEf(arquitetura)).And().ResideInNamespaceMatching(escopo)
+                .Should().ResideInNamespaceMatching($@"^(Unifesspa\.UniPlus\.(?:[^.]+|ArchTests\.Fixtures\.Modulos\.[^.]+)\.Infrastructure\.Persistence|{PersistenciaDaPlataforma})(\.|$)"),
             arquitetura);
-
-    private static string Permitido(string[] raizes) =>
-        $@"^({string.Join('|', raizes.Select(static r => $@"{Regex.Escape(r)}\.Infrastructure\.Persistence"))}|{PersistenciaDaPlataforma})(\.|$)";
 }

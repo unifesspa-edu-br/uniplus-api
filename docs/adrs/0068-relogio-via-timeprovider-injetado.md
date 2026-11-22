@@ -73,7 +73,7 @@ A questão a decidir é: **como tornar o acesso a relógio uniforme, testável e
 
 ## Confirmação
 
-1. **Regra de relógio pendente de substituição** — o antigo `RelogioViaTimeProviderTests` lia C# como texto e foi removido conforme a orientação de revisão. A [issue #2423](https://github.com/unifesspa-edu-br/uniplus-api/issues/2423) acompanha a avaliação de uma regra declarativa do ArchUnitNET para as chamadas estáticas, com canário, e dos testes de comportamento necessários. Até sua conclusão, novas leituras de `DateTime`/`DateTimeOffset` `.UtcNow`/`.Now` são conferidas no diff.
+1. **`RelogioDoSistemaTests`** — ArchUnitNET confere chamadas de leitura estática de `DateTime` e `DateTimeOffset` nos tipos do produto, reserva `TimeProvider.System` ao relógio em microssegundos e o acesso a esse relógio à composição dos processos. Há contraprovas para as formas de chamada; instruções de nível superior de `Program` não são examinadas.
 2. **Compilador** — `TimeProvider` obrigatório (sem default) faz o build falhar em qualquer caller que omita o relógio; `ArgumentNullException.ThrowIfNull(clock)` cobre passagem de `null` em runtime.
 3. **Code review** — revisor confirma que código novo recebe `TimeProvider` por injeção e que `TimeProvider.System` aparece apenas em composition roots ou em teste.
 

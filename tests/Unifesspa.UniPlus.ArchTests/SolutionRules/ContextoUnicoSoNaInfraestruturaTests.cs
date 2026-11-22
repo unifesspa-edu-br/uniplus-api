@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
-using System.Text.RegularExpressions;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
 
@@ -33,14 +31,14 @@ public sealed class ContextoUnicoSoNaInfraestruturaTests
             .And.Contain(static n => n.StartsWith("Unifesspa.UniPlus.Monolito.Persistencia.", StringComparison.Ordinal),
                 "sem dependente descoberto, a conferência passaria vazia");
 
-        DependentesIndevidos(ArquiteturaDasTravas.Produto, ModulosDoMonolito.Raizes).Should().BeEmpty(
+        DependentesIndevidos(ArquiteturaDasTravas.Produto, @"^Unifesspa\.UniPlus\.(?!ArchTests)").Should().BeEmpty(
             "Domain, Application e API nunca dependem do contexto: a gravação passa pelo repositório e pela unidade de trabalho");
     }
 
     [Fact(DisplayName = "Fitness_ContextoForaDaInfraestrutura_Falha")]
     public void Fitness_ContextoForaDaInfraestrutura_Falha()
     {
-        List<string> reprovados = DependentesIndevidos(ArquiteturaDasTravas.Fixtures, ModulosDoMonolito.RaizesDosFixtures);
+        List<string> reprovados = DependentesIndevidos(ArquiteturaDasTravas.Fixtures, @"^Unifesspa\.UniPlus\.ArchTests\.Fixtures");
 
         reprovados.Should().Contain(static v => v.Contains("LeOContextoDiretoNaAplicacao", StringComparison.Ordinal));
         reprovados.Should().NotContain(static v => v.Contains("RepositorioDeAlfa", StringComparison.Ordinal));
@@ -49,15 +47,14 @@ public sealed class ContextoUnicoSoNaInfraestruturaTests
     private static IEnumerable<IType> DependentesDoContexto(Architecture arquitetura) =>
         Types().That().DependOnAny(Contextos()).GetObjects(arquitetura);
 
-    private static List<string> DependentesIndevidos(Architecture arquitetura, string[] raizes) =>
+    private static List<string> DependentesIndevidos(Architecture arquitetura, string escopo) =>
         ArquiteturaDasTravas.Reprovacoes(
-            Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().DoNotHaveFullNameMatching(Donos(raizes))
+            Types().That().ResideInNamespaceMatching(escopo).And().DoNotHaveFullNameMatching(Donos)
                 .Should().NotDependOnAnyTypesThat().Are(Contextos()),
             arquitetura);
 
-    private static string Donos(string[] raizes) =>
-        $@"^({string.Join('|', raizes.Select(static r => $@"{Regex.Escape(r)}\.Infrastructure"))}"
-        + $"|{ComposicaoDaPersistencia}|{BaseDoContexto})(\\.|\\+|$)";
+    private static string Donos =>
+        $@"^(Unifesspa\.UniPlus\.(?:[^.]+|ArchTests\.Fixtures\.Modulos\.[^.]+)\.Infrastructure|{ComposicaoDaPersistencia}|{BaseDoContexto})(\.|\+|$)";
 
     private static GivenTypesConjunction Contextos() =>
         Types().That().HaveFullName(typeof(UniPlusDbContext).FullName!).Or().HaveFullName(typeof(MonolitoDbContext).FullName!);

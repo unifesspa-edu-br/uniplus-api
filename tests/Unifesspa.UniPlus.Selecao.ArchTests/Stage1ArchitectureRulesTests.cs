@@ -2,16 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
-using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
-using ReflectionAssembly = System.Reflection.Assembly;
 
 public sealed class Stage1ArchitectureRulesTests
 {
-    private static readonly Architecture WolverineGuardArchitecture = LoadWolverineGuardArchitecture();
+    private static readonly Architecture WolverineGuardArchitecture = ArquiteturaDaSelecao.Produto;
 
     /// <summary>
     /// R2: exceção estreita para <c>Wolverine.Attributes</c> (ADR-0003, emenda 2026-08-04) —
@@ -28,6 +26,7 @@ public sealed class Stage1ArchitectureRulesTests
     public void ApplicationEDomain_NaoDependemDeWolverine()
     {
         IArchRule rule = Types()
+            .That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.(Application\.Abstractions|Selecao\.(Domain|Application))(\.|$)")
             .Should()
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Wolverine(?!\.Attributes(\.|$))(\.|$)")
@@ -46,15 +45,4 @@ public sealed class Stage1ArchitectureRulesTests
         regra.Check(WolverineGuardArchitecture);
     }
 
-    private static Architecture LoadWolverineGuardArchitecture()
-    {
-        ReflectionAssembly[] assemblies =
-        [
-            typeof(global::Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus).Assembly,
-            typeof(Domain.Entities.ProcessoSeletivo).Assembly,
-            typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-        ];
-
-        return new ArchLoader().LoadAssemblies(assemblies).Build();
-    }
 }

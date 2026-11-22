@@ -10,7 +10,6 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
   </ItemGroup>
@@ -42,22 +41,13 @@
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
-    <!--
-      O glob é intencional: todo assembly *.API entra automaticamente no output
-      do ArchTests e, portanto, no fitness test de metadados. Um módulo novo não
-      depende de alguém lembrar de atualizar um roster manual no código de teste.
-    -->
     <ProjectReference Include="../../src/*/Unifesspa.UniPlus.*.API/Unifesspa.UniPlus.*.API.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
-    <!-- Host composition root do monólito modular — referenciado pelo fato
-         positivo do R8 (host PODE compor todos os módulos). Fica FORA do roster. -->
     <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
-    <!-- O Verificador é um processo à parte, com Program próprio: entra no escopo da regra do relógio do sistema. -->
     <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
     <Compile Include="../Shared/ExcecoesDeAcessoDasAcoes.cs" Link="ExcecoesDeAcessoDasAcoes.cs" />
     <Using Include="Xunit" />
   </ItemGroup>

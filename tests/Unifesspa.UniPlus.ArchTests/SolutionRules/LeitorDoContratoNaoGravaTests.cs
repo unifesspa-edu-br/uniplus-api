@@ -34,17 +34,17 @@ public sealed class LeitorDoContratoNaoGravaTests
     [Fact(DisplayName = "Quem implementa interface do Contracts não grava nem rastreia")]
     public void Produto_ImplementacaoDoContratoNaoGrava()
     {
-        ImplementadoresDoContrato(ArquiteturaDasTravas.Produto, ModulosDoMonolito.Raizes).Should()
+        ImplementadoresDoContrato(ArquiteturaDasTravas.Produto, @"^Unifesspa\.UniPlus\.(?!ArchTests)[^.]+\.Contracts(\.|$)").Should()
             .NotBeEmpty("sem implementação descoberta, a conferência passaria vazia");
 
-        ImplementacoesQueGravam(ArquiteturaDasTravas.Produto, ModulosDoMonolito.Raizes).Should().BeEmpty(
+        ImplementacoesQueGravam(ArquiteturaDasTravas.Produto, @"^Unifesspa\.UniPlus\.(?!ArchTests)[^.]+\.Contracts(\.|$)").Should().BeEmpty(
             "o leitor não grava: a gravação é de quem o chama");
     }
 
     [Fact(DisplayName = "Fitness_LeitorQueGrava_Falha")]
     public void Fitness_LeitorQueGrava_Falha()
     {
-        List<string> reprovados = ImplementacoesQueGravam(ArquiteturaDasTravas.Fixtures, ModulosDoMonolito.RaizesDosFixtures);
+        List<string> reprovados = ImplementacoesQueGravam(ArquiteturaDasTravas.Fixtures, @"^Unifesspa\.UniPlus\.ArchTests\.Fixtures\.Modulos\.[^.]+\.Contracts(\.|$)");
 
         foreach (string leitor in new[]
         {
@@ -58,18 +58,18 @@ public sealed class LeitorDoContratoNaoGravaTests
         reprovados.Should().NotContain(static v => v.Contains("LeitorQueSoLe", StringComparison.Ordinal));
     }
 
-    private static List<Class> ImplementadoresDoContrato(Architecture arquitetura, string[] raizes) =>
-        ImplementadoresDeInterface.Em(arquitetura, i => EhDoContrato(i, raizes));
+    private static List<Class> ImplementadoresDoContrato(Architecture arquitetura, string escopo) =>
+        ImplementadoresDeInterface.Em(arquitetura, i => EhDoContrato(i, escopo));
 
-    private static bool EhDoContrato(Interface candidata, string[] raizes) =>
-        new[] { GovernancaCompartilhada }.Concat(raizes)
-            .Any(r => Regex.IsMatch(candidata.Namespace.FullName, $@"^{Regex.Escape(r)}\.Contracts(\.|$)"));
+    private static bool EhDoContrato(Interface candidata, string escopo) =>
+        candidata.Namespace.FullName.StartsWith(GovernancaCompartilhada + ".Contracts", StringComparison.Ordinal)
+        || Regex.IsMatch(candidata.Namespace.FullName, escopo);
 
     // O ArchUnitNET não casa a chamada de um método genérico (ExecuteDeleteAsync<T>) com o membro declarado, e a regra fluente
     // deixaria de ver a escrita em massa: por isso as chamadas de cada implementação são lidas do modelo da arquitetura.
-    private static List<string> ImplementacoesQueGravam(Architecture arquitetura, string[] raizes)
+    private static List<string> ImplementacoesQueGravam(Architecture arquitetura, string escopo)
     {
-        string alvo = ImplementadoresDeInterface.PadraoComAninhados(ImplementadoresDoContrato(arquitetura, raizes));
+        string alvo = ImplementadoresDeInterface.PadraoComAninhados(ImplementadoresDoContrato(arquitetura, escopo));
 
         return
         [
