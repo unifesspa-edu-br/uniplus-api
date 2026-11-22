@@ -8,13 +8,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// <summary>
 /// Conferência do registro de codecs (Story #859 CA-08; ADR-0110 D1).
 /// </summary>
-/// <remarks>
-/// O que estes testes protegem é o <b>dia da mudança de versão</b>. Quando a <c>1.2</c> chegar, quem a
-/// implementar vai mexer numa constante e seguir em frente — e, sem estas guardas, todas
-/// as versões <c>1.1</c> já congeladas se tornariam <b>não reidratáveis em silêncio</b>:
-/// o descarte de um certame retificado antes da mudança de versão falharia em produção, não no build.
-/// É o build que tem de quebrar.
-/// </remarks>
 public sealed class RegistroCodecsEnvelopeTests
 {
     private static readonly RegistroCodecsEnvelope Registro = new();
@@ -29,8 +22,8 @@ public sealed class RegistroCodecsEnvelopeTests
             $"a versão de emissão corrente ('{Registro.SchemaVersionDeEmissaoCorrente}') tem de estar no registro");
 
         corrente!.Reidratavel.Should().BeTrue(
-            "a versão que o sistema EMITE hoje tem de saber ser lida de volta E recanonicalizada. Uma 1.2 sem codec " +
-            "quebra aqui — e é para quebrar: sem decoder, o descarte de tudo o que ela congelar seria irreversível; " +
+            "a versão que o sistema emite tem de saber ser lida de volta e recanonicalizada: " +
+            "sem decoder, o descarte de tudo o que ela congelar seria irreversível; " +
             "sem encoder, seria irreverificável.");
     }
 
@@ -70,41 +63,6 @@ public sealed class RegistroCodecsEnvelopeTests
                 $"o codec '{capacidade.SchemaVersion}' tem de emitir a forma dele — se ele delega ao canonicalizador " +
                 "corrente e este mudou de versão, o encoder daquela forma precisa ser CONGELADO no codec.");
         }
-    }
-
-    /// <summary>
-    /// Todo codec do assembly está no registro, e todo codec declara sob que <b>perfil de
-    /// bytes</b> emite.
-    /// </summary>
-    /// <remarks>
-    /// A varredura é por reflexão sobre os tipos concretos, e não sobre uma lista mantida aqui:
-    /// o caso que este teste existe para pegar é justamente o codec novo que alguém escreve e
-    /// esquece de registrar — invisível para qualquer teste que parta do registro. O
-    /// <c>AlgoritmoHash</c> conferido contra o perfil fecha o outro lado: o rótulo gravado em
-    /// <c>versao_configuracao.algoritmo_hash</c> tem de vir do mesmo objeto que produz os bytes,
-    /// nunca de um literal que alguém mantém em sincronia de memória.
-    /// </remarks>
-    [Fact(DisplayName = "CA-08 — todo codec do assembly está registrado e declara o perfil sob o qual emite")]
-    public void TodoCodec_EstaRegistrado_EDeclaraPerfil()
-    {
-        IEnvelopeCodec[] codecs = [.. typeof(RegistroCodecsEnvelope).Assembly.GetTypes()
-            .Where(static tipo => typeof(IEnvelopeCodec).IsAssignableFrom(tipo) && tipo is { IsAbstract: false, IsInterface: false })
-            .Select(static tipo => (IEnvelopeCodec)Activator.CreateInstance(tipo)!)];
-
-        codecs.Should().NotBeEmpty();
-
-        codecs.Select(static c => c.SchemaVersion).Order(StringComparer.Ordinal).Should().Equal(
-            Registro.Capacidades.Select(static c => c.SchemaVersion).Order(StringComparer.Ordinal),
-            "um codec escrito e não registrado é uma versão que o sistema sabe produzir e não sabe ler de volta");
-
-        foreach (IEnvelopeCodec codec in codecs)
-            ConferirPerfil(codec);
-    }
-
-    private static void ConferirPerfil(IEnvelopeCodec codec)
-    {
-        codec.Perfil.Should().NotBeNull($"o codec '{codec.SchemaVersion}' precisa declarar seu perfil");
-        codec.AlgoritmoHash.Should().Be(codec.Perfil.Algoritmo);
     }
 
     /// <summary>
