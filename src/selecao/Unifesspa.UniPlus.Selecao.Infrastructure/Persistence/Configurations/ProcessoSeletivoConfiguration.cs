@@ -245,13 +245,11 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Árvore de satisfação (Story #920) — 0..*, coleção PLANA (todos os nós, não só
-        // raízes; ver NoExigenciaConfiguration). Cascade: FK obrigatória, mesmo padrão de
-        // DocumentosExigidos — Clear()+Add() no replace-all do agregado já prova orphan-delete.
-        builder.HasMany(p => p.NosExigencia)
+        // A coleção inclui as regras sem grupo e os itens de todos os grupos.
+        builder.HasMany(p => p.RegrasDeComprovacao)
             .WithOne()
             .HasForeignKey(n => n.ProcessoSeletivoId)
-            .HasConstraintName("fk_nos_da_arvore_de_exigencias_processo_seletivo")
+            .HasConstraintName("fk_regras_de_comprovacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Grafo de coleta de fatos (Story #926) — quais fatos o processo coleta, em que ordem e
@@ -349,14 +347,14 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.DocumentosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Navigation(p => p.NosExigencia)
+        builder.Navigation(p => p.RegrasDeComprovacao)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // RaizesDeExigencia é projeção EM MEMÓRIA de NosExigencia (NoPaiId == null) — sem
-        // isto, o EF a descobre por convenção como uma SEGUNDA coleção de NoExigencia
-        // (mesmo tipo de retorno IEnumerable<NoExigencia>) e cria uma FK-sombra duplicada
+        // RegrasDeComprovacaoSemGrupo é projeção EM MEMÓRIA de RegrasDeComprovacao (RegraQueContemId == null) — sem
+        // isto, o EF a descobre por convenção como uma SEGUNDA coleção de RegraDeComprovacao
+        // (mesmo tipo de retorno IEnumerable<RegraDeComprovacao>) e cria uma FK-sombra duplicada
         // (processo_seletivo_id1) para desambiguar.
-        builder.Ignore(p => p.RaizesDeExigencia);
+        builder.Ignore(p => p.RegrasDeComprovacaoSemGrupo);
     }
 
     // Valor inválido no banco indica corrupção: falha alto ao reidratar, como o conversor do

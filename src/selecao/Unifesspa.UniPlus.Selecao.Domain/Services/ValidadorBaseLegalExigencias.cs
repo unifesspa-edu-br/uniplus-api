@@ -25,6 +25,6 @@ public static class ValidadorBaseLegalExigencias
 
         return exigencias
             .Where(static e => e.DeterminaResultado())
-            .All(static e => e.BasesLegais.Any(static b => b.Status == StatusBaseLegal.Resolvido));
+            .All(static e => e.BasesLegais.Any(static b => b.Situacao == StatusBaseLegal.Resolvido));
     }
 }

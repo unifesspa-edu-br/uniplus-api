@@ -5,21 +5,18 @@ using Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A exigência repetida por entidade repete pelas ocorrências de um grupo repetível do formulário
-/// do processo (ADR-0138, UNI-REQ-0069), nomeado pelo código. O código só significa alguma coisa
-/// contra os grupos que estão ao lado dele: vive aqui porque a configuração congelada volta por um
-/// caminho próprio, que monta o mesmo grafo sem passar pela escrita.
+/// Confere se os grupos de repetição das regras existem no formulário (ADR-0138, UNI-REQ-0069).
 /// </summary>
 public static class ValidadorRepeticaoPorGrupo
 {
     /// <summary>A repetição nomeia grupo que o processo não tem.</summary>
-    public const string GrupoInexistente = "NoExigencia.TipoEntidadeInvalido";
+    public const string GrupoInexistente = "RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado";
 
-    /// <summary>A primeira repetição de <paramref name="nos"/> que nomeia grupo ausente de <paramref name="grupos"/>.</summary>
-    public static DomainError? PrimeiraSemGrupo(IEnumerable<NoExigencia> nos, IEnumerable<GrupoColetado> grupos)
+    /// <summary>A primeira repetição de <paramref name="regras"/> que nomeia grupo ausente de <paramref name="grupos"/>.</summary>
+    public static DomainError? PrimeiraSemGrupo(IEnumerable<RegraDeComprovacao> regras, IEnumerable<GrupoColetado> grupos)
     {
-        ArgumentNullException.ThrowIfNull(nos);
-        return PrimeiroGrupoInexistente(nos.Select(static n => n.RepetePorEntidade).OfType<string>(), grupos);
+        ArgumentNullException.ThrowIfNull(regras);
+        return PrimeiroGrupoInexistente(regras.Select(static n => n.GrupoDoFormularioParaRepeticao).OfType<string>(), grupos);
     }
 
     /// <summary>O primeiro código de repetição ausente de <paramref name="grupos"/>.</summary>

@@ -13,242 +13,232 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ArvoreDeTeste;
+using static CenariosDeComprovacao;
 
-/// <summary>
-/// Cobertura da álgebra de <see cref="AvaliadorDaComprovacao"/> (Story #920) — álgebra ternária de 5
-/// estados e emissão de consequência por fronteira ativa, todos os cenários BDD da issue #920
-/// e da spec <c>documentos-exigidos-composicao</c> (requirements "Álgebra ternária de
-/// satisfação" e "Consequência por nó e fronteira ativa de emissão"). Substitui
-/// <c>ResolvedorExigenciasDocumentaisTests</c> (grupo plano, removido).
-/// </summary>
+/// <summary>Verifica situações e consequências das regras de comprovação.</summary>
 public sealed class AvaliadorDaComprovacaoTests
 {
-    [Fact(DisplayName = "Árvore nula é erro de programação: a configuração congelada sempre traz a árvore")]
-    public void Resolver_ArvoreNula_Lanca()
+    [Fact(DisplayName = "A ausência das regras é erro de programação")]
+    public void Resolver_RegrasNulas_Lanca()
     {
         Action resolver = () => AvaliadorDaComprovacao.Resolver(null!, SemFatos, SemApresentacoes);
 
-        resolver.Should().Throw<ArgumentNullException>().WithParameterName("arvore");
+        resolver.Should().Throw<ArgumentNullException>().WithParameterName("regras");
     }
 
-    // ── (RG E CPF) OU CIN — cenário central da issue #920 ──────────────────────────────
 
-    [Fact(DisplayName = "OU[E[RG,CPF],CIN]: apresentar RG e CPF satisfaz")]
-    public void ArvoreCentral_ApresentaRgECpf_Satisfaz()
+    [Fact(DisplayName = "RG e CPF juntos cumprem a alternativa à CIN")]
+    public void CombinacaoDeDocumentos_ApresentaRgECpf_Cumpre()
     {
         DocumentoExigido rg = DocumentoGeral();
         DocumentoExigido cpf = DocumentoGeral();
         DocumentoExigido cin = DocumentoGeral();
-        NoExigencia noRg = NoExigencia.CriarFolha(rg, 0).Value!;
-        NoExigencia noCpf = NoExigencia.CriarFolha(cpf, 1).Value!;
-        NoExigencia grupoE = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [noRg, noCpf]).Value!;
-        NoExigencia noCin = NoExigencia.CriarFolha(cin, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [], [grupoE, noCin]).Value!;
+        RegraDeComprovacao regraDeRg = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!;
+        RegraDeComprovacao regraDeCpf = RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeRg, regraDeCpf]).Value!;
+        RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(rg, cpf));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(rg, cpf));
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
     }
 
-    [Fact(DisplayName = "OU[E[RG,CPF],CIN]: apresentar só a CIN também satisfaz")]
-    public void ArvoreCentral_ApresentaSoCin_Satisfaz()
+    [Fact(DisplayName = "CIN cumpre a alternativa a RG e CPF")]
+    public void CombinacaoDeDocumentos_ApresentaSoCin_Cumpre()
     {
         DocumentoExigido rg = DocumentoGeral();
         DocumentoExigido cpf = DocumentoGeral();
         DocumentoExigido cin = DocumentoGeral();
-        NoExigencia grupoE = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!]).Value!;
-        NoExigencia noCin = NoExigencia.CriarFolha(cin, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [], [grupoE, noCin]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
+        RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(cin));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(cin));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
     }
 
-    [Fact(DisplayName = "OU[E[RG,CPF],CIN]: apresentar só o RG não satisfaz")]
-    public void ArvoreCentral_ApresentaSoRg_NaoSatisfaz()
+    [Fact(DisplayName = "RG sozinho não cumpre a alternativa a RG e CPF")]
+    public void CombinacaoDeDocumentos_ApresentaSoRg_NaoCumpre()
     {
         DocumentoExigido rg = DocumentoGeral();
         DocumentoExigido cpf = DocumentoGeral();
         DocumentoExigido cin = DocumentoGeral();
-        NoExigencia grupoE = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!]).Value!;
-        NoExigencia noCin = NoExigencia.CriarFolha(cin, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [], [grupoE, noCin]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
+        RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(rg));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(rg));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
     }
 
-    // ── OU plano (caso degenerado) ──────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "OU plano continua válido — uma apresentação satisfaz o grupo")]
-    public void OuPlano_UmaApresentacao_Satisfaz()
+    [Fact(DisplayName = "Uma apresentação cumpre o grupo que exige ao menos um item")]
+    public void GrupoComQuantidadeMinima_UmaApresentacao_Cumpre()
     {
         DocumentoExigido certidao = DocumentoGeral();
         DocumentoExigido declaracao = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, null, null, [],
-            [NoExigencia.CriarFolha(certidao, 0).Value!, NoExigencia.CriarFolha(declaracao, 1).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(declaracao, 1).Value!]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(declaracao));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(declaracao));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
     }
 
-    // ── N-de (N > 1) ─────────────────────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "N-de com N=2: duas de três apresentadas satisfaz")]
-    public void NDe_DuasDeTresApresentadas_Satisfaz()
+    [Fact(DisplayName = "Duas apresentações cumprem o grupo que exige dois de três itens")]
+    public void QuantidadeMinima_DuasDeTresApresentadas_Cumpre()
     {
         DocumentoExigido a = DocumentoGeral();
         DocumentoExigido b = DocumentoGeral();
         DocumentoExigido c = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 2, null, [],
-            [NoExigencia.CriarFolha(a, 0).Value!, NoExigencia.CriarFolha(b, 1).Value!, NoExigencia.CriarFolha(c, 2).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(a, b));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(a, b));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
     }
 
-    [Fact(DisplayName = "N-de com N=2: só uma de três apresentada fica pendente")]
-    public void NDe_UmaDeTresApresentada_Pendente()
+    [Fact(DisplayName = "Uma apresentação deixa pendente o grupo que exige dois de três itens")]
+    public void QuantidadeMinima_UmaDeTresApresentada_Pendente()
     {
         DocumentoExigido a = DocumentoGeral();
         DocumentoExigido b = DocumentoGeral();
         DocumentoExigido c = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 2, null, [],
-            [NoExigencia.CriarFolha(a, 0).Value!, NoExigencia.CriarFolha(b, 1).Value!, NoExigencia.CriarFolha(c, 2).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(a));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(a));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
     }
 
-    // ── Aplicabilidade ternária ──────────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "OU com todos os filhos não-aplicáveis é não-aplicável, não pendente permanente")]
-    public void Ou_TodosNaoAplicaveis_NaoAplicavel()
+    [Fact(DisplayName = "Grupo com todos os itens não exigidos também não é exigido")]
+    public void Grupo_TodosNaoAplicaveis_NaoAplicavel()
     {
         DocumentoExigido a = DocumentoCondicional("FATO_X");
         DocumentoExigido b = DocumentoCondicional("FATO_X");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, null, null, [], [NoExigencia.CriarFolha(a, 0).Value!, NoExigencia.CriarFolha(b, 1).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), fatos: Fatos("FATO_X", false));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos("FATO_X", false));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.NaoExigida);
     }
 
-    [Fact(DisplayName = "OU cujo máximo atingível é menor que N é IMPOSSIVEL sinalizado")]
-    public void Ou_MaximoAtingivelMenorQueN_Impossivel()
+    [Fact(DisplayName = "Grupo sem itens suficientes fica sem possibilidade de cumprimento")]
+    public void Grupo_MaximoAtingivelMenorQueN_Impossivel()
     {
-        DocumentoExigido satisfeita = DocumentoGeral();
+        DocumentoExigido cumprida = DocumentoGeral();
         DocumentoExigido naoAplicavel1 = DocumentoCondicional("FATO_X");
         DocumentoExigido naoAplicavel2 = DocumentoCondicional("FATO_X");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 2, null, [],
-            [NoExigencia.CriarFolha(satisfeita, 0).Value!,
-             NoExigencia.CriarFolha(naoAplicavel1, 1).Value!,
-             NoExigencia.CriarFolha(naoAplicavel2, 2).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!,
+             RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel1, 1).Value!,
+             RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel2, 2).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(satisfeita));
+            Regras(regraSemGrupo), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(cumprida));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
     }
 
-    [Fact(DisplayName = "Folha indeterminada mantém o grupo pendente — nunca some (não-exigido)")]
-    public void Ou_FolhaIndeterminada_MantemPendente()
+    [Fact(DisplayName = "Regra de documento que aguarda dados mantém a espera do grupo")]
+    public void Grupo_RegraQueAguardaDados_MantemPendente()
     {
         DocumentoExigido indeterminada = DocumentoCondicional("FATO_X");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, null, null, [], [NoExigencia.CriarFolha(indeterminada, 0).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(indeterminada, 0).Value!]).Value!;
 
         // FATO_X ausente do dicionário de fatos resolvidos — Ternario.Indeterminado.
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.AguardandoDados);
     }
 
-    [Fact(DisplayName = "Story #926: fato ausente e fato NAO_APLICAVEL levam a estados opostos na fronteira do resolvedor")]
-    public void Folha_FatoAusenteVersusNaoAplicavel_EstadosOpostos()
+    [Fact(DisplayName = "Fato ausente e fato não aplicável produzem situações distintas")]
+    public void RegraDeDocumento_FatoAusenteVersusNaoAplicavel_EstadosOpostos()
     {
-        NoExigencia raiz = GrupoComDocumentoCondicional("CONCORRER_PCD");
+        RegraDeComprovacao regraSemGrupo = GrupoComDocumentoCondicional("CONCORRER_PCD");
 
         // Ausente do dicionário: nada se sabe sobre o fato, a exigência segue pendente.
-        Result<ResultadoDaComprovacao> comFatoAusente = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> comFatoAusente = Resolver(Regras(regraSemGrupo));
 
         // Declarado não-aplicável: a pré-condição do campo é falsa, a exigência está resolvida
         // como não-exigida — e o candidato não é cobrado por um documento que não lhe cabe.
         Dictionary<string, FatoResolvido> naoAplicavel = FatoNaoAplicavel("CONCORRER_PCD");
-        Result<ResultadoDaComprovacao> comFatoNaoAplicavel = Resolver(Arvore(raiz), naoAplicavel);
+        Result<ResultadoDaComprovacao> comFatoNaoAplicavel = Resolver(Regras(regraSemGrupo), naoAplicavel);
 
-        comFatoAusente.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
-        comFatoNaoAplicavel.Value!.SituacoesPorRegra[raiz.Id].Should().Be(
-            SituacaoDaComprovacao.NaoAplicavel,
+        comFatoAusente.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.AguardandoDados);
+        comFatoNaoAplicavel.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(
+            SituacaoDaComprovacao.NaoExigida,
             "a ausência do fato é pendência; a inaplicabilidade declarada é resposta definitiva");
     }
 
-    [Fact(DisplayName = "E ignora alternativa não-aplicável")]
-    public void E_AlternativaNaoAplicavelIgnorada()
+    [Fact(DisplayName = "Grupo que exige todos os itens desconsidera item não exigido")]
+    public void GrupoDeTodos_AlternativaNaoAplicavelIgnorada()
     {
         DocumentoExigido a = DocumentoGeral();
         DocumentoExigido b = DocumentoCondicional("FATO_X");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(a, 0).Value!, NoExigencia.CriarFolha(b, 1).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
     }
 
     [Theory(DisplayName = "Atendimento especializado: o laudo é exigido da condição de saúde e a certidão da lactante, só de quem solicita o atendimento")]
-    [InlineData(true, "PCD", SituacaoDaComprovacao.Pendente, SituacaoDaComprovacao.NaoAplicavel)]
-    [InlineData(true, "LACTANTE", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.Pendente)]
-    [InlineData(true, "PESSOA_IDOSA", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.NaoAplicavel)]
-    [InlineData(false, "PCD", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.NaoAplicavel)]
-    public void Folha_DocumentosDoAtendimentoEspecializado_SaoExigidosPeloFato(
+    [InlineData(true, "PCD", SituacaoDaComprovacao.PendenteDeComprovacao, SituacaoDaComprovacao.NaoExigida)]
+    [InlineData(true, "LACTANTE", SituacaoDaComprovacao.NaoExigida, SituacaoDaComprovacao.PendenteDeComprovacao)]
+    [InlineData(true, "PESSOA_IDOSA", SituacaoDaComprovacao.NaoExigida, SituacaoDaComprovacao.NaoExigida)]
+    [InlineData(false, "PCD", SituacaoDaComprovacao.NaoExigida, SituacaoDaComprovacao.NaoExigida)]
+    public void RegraDeDocumento_DocumentosDoAtendimentoEspecializado_SaoExigidosPeloFato(
         bool solicita, string condicao, SituacaoDaComprovacao laudo, SituacaoDaComprovacao certidao)
     {
-        NoExigencia noLaudo = NoExigencia.CriarFolha(DocumentoDeAtendimento("LAUDO_MEDICO", "PCD", "DISLEXIA"), 0).Value!;
-        NoExigencia noCertidao = NoExigencia.CriarFolha(DocumentoDeAtendimento("CERTIDAO_NASCIMENTO", "LACTANTE"), 1).Value!;
+        RegraDeComprovacao regraDeLaudo = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoDeAtendimento("LAUDO_MEDICO", "PCD", "DISLEXIA"), 0).Value!;
+        RegraDeComprovacao regraDeCertidao = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoDeAtendimento("CERTIDAO_NASCIMENTO", "LACTANTE"), 1).Value!;
         Dictionary<string, FatoResolvido> fatos = new(StringComparer.Ordinal)
         {
             ["SOLICITA_ATENDIMENTO_ESPECIALIZADO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(solicita)),
             ["CONDICAO_ATENDIMENTO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(new[] { condicao })),
         };
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(noLaudo, noCertidao), fatos);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraDeLaudo, regraDeCertidao), fatos);
 
-        resultado.Value!.SituacoesPorRegra[noLaudo.Id].Should().Be(laudo);
-        resultado.Value!.SituacoesPorRegra[noCertidao.Id].Should().Be(certidao);
+        resultado.Value!.SituacoesPorRegra[regraDeLaudo.Id].Should().Be(laudo);
+        resultado.Value!.SituacoesPorRegra[regraDeCertidao.Id].Should().Be(certidao);
     }
 
-    [Fact(DisplayName = "E com filho IMPOSSIVEL é IMPOSSIVEL")]
-    public void E_ComFilhoImpossivel_EhImpossivel()
+    [Fact(DisplayName = "Grupo que exige todos os itens não pode ser cumprido quando um item não pode ser cumprido")]
+    public void GrupoDeTodos_ComItemImpossivel_EhImpossivel()
     {
         DocumentoExigido a = DocumentoGeral();
-        DocumentoExigido satisfeita = DocumentoGeral();
+        DocumentoExigido cumprida = DocumentoGeral();
         DocumentoExigido naoAplicavel = DocumentoCondicional("FATO_X");
-        NoExigencia ouImpossivel = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 2, null, [],
-            [NoExigencia.CriarFolha(satisfeita, 0).Value!, NoExigencia.CriarFolha(naoAplicavel, 1).Value!]).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(a, 0).Value!, ouImpossivel]).Value!;
+        RegraDeComprovacao grupoSemPossibilidadeDeCumprimento = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, grupoSemPossibilidadeDeCumprimento]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a, satisfeita));
+            Regras(regraSemGrupo), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a, cumprida));
 
-        resultado.Value!.SituacoesPorRegra[ouImpossivel.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
+        resultado.Value!.SituacoesPorRegra[grupoSemPossibilidadeDeCumprimento.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
     }
     private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
             FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
@@ -261,8 +251,8 @@ public sealed class AvaliadorDaComprovacaoTests
     private static Dictionary<string, FatoResolvido> FatoNaoAplicavel(string codigo) =>
         new(StringComparer.Ordinal) { [codigo] = FatoResolvido.NaoAplicavel() };
 
-    private static NoExigencia GrupoComDocumentoCondicional(string fato) =>
-        NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [],
-            [NoExigencia.CriarFolha(DocumentoCondicional(fato), 0).Value!]).Value!;
+    private static RegraDeComprovacao GrupoComDocumentoCondicional(string fato) =>
+        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional(fato), 0).Value!]).Value!;
 
 }

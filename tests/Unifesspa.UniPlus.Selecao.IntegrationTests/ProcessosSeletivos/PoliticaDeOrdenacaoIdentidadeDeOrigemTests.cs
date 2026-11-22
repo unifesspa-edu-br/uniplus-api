@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -71,7 +72,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     }
 
     // (código do tipo) empata: as duas bancas são do MESMO tipo. Quem desempata é a
-    // posição no tipo, que a raiz calcula pela ordem de chegada — nunca o id nem os candidatos
+    // posição no tipo, que o processo calcula pela ordem de chegada — nunca o id nem os candidatos
     // atendidos.
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo seguem a posição no tipo — oráculo de sequência exata")]
     public void CronogramaFases_BancasRequeridas_MesmoTipo_SeguemAPosicaoNoTipo()
@@ -193,51 +194,47 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ordensJson.Select(static o => o!["origem"]!.GetValue<string>()).Should().Equal(["ALFA_ORIGEM", "ZETA_ORIGEM"]);
     }
 
-    /// <summary>
-    /// Combina raízes e filhos num teste só, com a precondição que o parecer da issue nomeou:
-    /// <b>duas raízes e dois irmãos</b> — duas raízes de um filho cada deixariam <c>filhos</c>
-    /// trivial (qualquer ordenação produziria o mesmo resultado).
-    /// </summary>
-    [Fact(DisplayName = "arvoreSatisfacao: raízes e filhos — Ordem governa sobre o conteúdo, com duas raízes e dois irmãos")]
-    public void ArvoreSatisfacao_RaizesEFilhos_OrdemGovernaSobreConteudo()
+    // Duas regras sem grupo e dois itens permitem observar as duas ordenações.
+    [Fact(DisplayName = "A ordem declarada governa as regras sem grupo e os itens do grupo")]
+    public void RegrasDeComprovacao_OrdemDeclaradaPrevalece()
     {
         FaseCronograma fase = FaseMinima();
-        NoExigencia raizFolha = RaizSolteira(fase);
-        NoExigencia filhoZeta = FolhaComIdentidade(fase, 2, 4, 0, "FILHO_ZETA");
-        NoExigencia filhoAlfa = FolhaComIdentidade(fase, 1, 3, 1, "FILHO_ALFA");
-        NoExigencia raizGrupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, null, [], [filhoAlfa, filhoZeta]).Value!;
-        ConferirEntradasContrariasAOrdem(raizFolha, raizGrupo, filhoAlfa, filhoZeta);
-        ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [raizFolha, raizGrupo]);
-        JsonArray arvore = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["arvoreSatisfacao"]!.AsArray();
-        arvore.Should().HaveCount(2);
-        arvore.Select(static r => r!["tipo"]!.GetValue<string>()).Should().Equal(["OU", "FOLHA"]);
-        JsonArray filhos = arvore[0]!["filhos"]!.AsArray();
-        filhos.Should().HaveCount(2);
-        filhos.Select(static f => f!["exigenciaId"]!.GetValue<Guid>()).Should().Equal([filhoZeta.DocumentoExigidoId!.Value, filhoAlfa.DocumentoExigidoId!.Value]);
+        RegraDeComprovacao regraDeDocumentoSemGrupo = RegraDeDocumentoSemGrupo(fase);
+        RegraDeComprovacao itemZeta = RegraDeDocumentoComIdentidade(fase, 2, 4, 0, "ITEM_ZETA");
+        RegraDeComprovacao itemAlfa = RegraDeDocumentoComIdentidade(fase, 1, 3, 1, "ITEM_ALFA");
+        RegraDeComprovacao grupoSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [itemAlfa, itemZeta]).Value!;
+        ConferirEntradasContrariasAOrdem(regraDeDocumentoSemGrupo, grupoSemGrupo, itemAlfa, itemZeta);
+        ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [regraDeDocumentoSemGrupo, grupoSemGrupo]);
+        JsonArray regras = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDeComprovacao"]!.AsArray();
+        regras.Should().HaveCount(2);
+        regras.Select(static r => r!["forma"]!.GetValue<string>()).Should().Equal(["QUANTIDADE_MINIMA_DE_ITENS", "DOCUMENTO"]);
+        JsonArray itens = regras[0]!["itens"]!.AsArray();
+        itens.Should().HaveCount(2);
+        itens.Select(static f => f!["exigenciaId"]!.GetValue<Guid>()).Should().Equal([itemZeta.DocumentoExigidoId!.Value, itemAlfa.DocumentoExigidoId!.Value]);
     }
 
-    private static NoExigencia RaizSolteira(FaseCronograma fase)
+    private static RegraDeComprovacao RegraDeDocumentoSemGrupo(FaseCronograma fase)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RAIZ_ZETA", "Documento raiz solteira", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            fase.Id, Guid.CreateVersion7(), "REGRA_ZETA", "Documento sem grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, false, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
             finalidade: FinalidadeFormulario.Inscricao).Value!;
-        return NoExigencia.CriarFolha(documento, 1).Value!;
+        return RegraDeComprovacao.CriarRegraDeDocumento(documento, 1).Value!;
     }
 
-    private static NoExigencia FolhaComIdentidade(FaseCronograma fase, int idDocumento, int idNo, int ordem, string codigo)
+    private static RegraDeComprovacao RegraDeDocumentoComIdentidade(FaseCronograma fase, int idDocumento, int idDaRegra, int ordem, string codigo)
     {
         DocumentoExigido documento = DocumentoExigido.Reidratar(IdFixo(idDocumento), fase.Id, Guid.CreateVersion7(),
-            codigo, "Documento filho", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
+            codigo, "Documento do grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao);
-        return NoExigencia.ReidratarFolha(IdFixo(idNo), ordem, documento, NoExigencia.QuantidadeMinimaPadrao, null, null);
+        return RegraDeComprovacao.ReidratarRegraDeDocumento(IdFixo(idDaRegra), ordem, documento, RegraDeComprovacao.QuantidadeMinimaPadrao, null, null);
     }
 
-    private static void ConferirEntradasContrariasAOrdem(NoExigencia folha, NoExigencia grupo, NoExigencia alfa, NoExigencia zeta)
+    private static void ConferirEntradasContrariasAOrdem(RegraDeComprovacao regraDeDocumento, RegraDeComprovacao grupo, RegraDeComprovacao alfa, RegraDeComprovacao zeta)
     {
-        // A ordenação pelo tipo das raízes ou pelo Id dos filhos deve divergir da ordem declarada.
-        new[] { folha, grupo }.OrderBy(static r => r.Tipo.ToCodigo(), StringComparer.Ordinal).Select(static r => r.Tipo.ToCodigo())
-            .Should().Equal(["FOLHA", "OU"]);
+        // A ordenação pela forma das regras ou pelo identificador dos itens deve divergir da ordem declarada.
+        new[] { regraDeDocumento, grupo }.OrderBy(static r => r.Forma.Codigo(), StringComparer.Ordinal).Select(static r => r.Forma.Codigo())
+            .Should().Equal(["DOCUMENTO", "QUANTIDADE_MINIMA_DE_ITENS"]);
         new[] { alfa, zeta }.OrderBy(static f => f.Id).Select(static f => f.DocumentoExigidoId)
             .Should().Equal([alfa.DocumentoExigidoId, zeta.DocumentoExigidoId]);
     }

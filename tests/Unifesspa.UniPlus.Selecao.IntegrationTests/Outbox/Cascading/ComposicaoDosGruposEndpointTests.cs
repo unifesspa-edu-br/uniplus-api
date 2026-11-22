@@ -28,48 +28,48 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
     public async Task DefinirDocumentos_GruposComFasesEFormulariosDiferentes_AcumulaRecusas()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object primeiro = Folha(tipo, fase, "INSCRICAO");
-        object segundo = Folha(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA");
-        object grupo = new { tipo = "E", filhos = new[] { primeiro, segundo } };
+        object primeiro = RegraDeDocumento(tipo, fase, "INSCRICAO");
+        object segundo = RegraDeDocumento(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA");
+        object grupo = new { forma = "TODOS_OS_ITENS", itens = new[] { primeiro, segundo } };
         using JsonDocument problema = await EnviarAsync(processo, [grupo, grupo]);
 
         JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
         erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal(
-            "nos[0].filhos", "nos[0].filhos", "nos[1].filhos", "nos[1].filhos");
+            "regrasDeComprovacao[0].itens", "regrasDeComprovacao[0].itens", "regrasDeComprovacao[1].itens", "regrasDeComprovacao[1].itens");
         Conferir(erros[0], "grupo_com_fases_diferentes", "No item 1 da lista: Os itens deste grupo pertencem a fases diferentes. Escolha a mesma fase para todos os itens do grupo.");
-        Conferir(erros[1], "grupo_com_finalidades_diferentes", "No item 1 da lista: Os documentos deste grupo pertencem a formulários diferentes. Escolha o mesmo formulário para todos os documentos do grupo.");
+        Conferir(erros[1], "grupo_com_formularios_diferentes", "No item 1 da lista: Os documentos deste grupo pertencem a formulários diferentes. Escolha o mesmo formulário para todos os documentos do grupo.");
     }
 
     [Fact]
     public async Task DefinirDocumentos_ItemRecusadoEGrupoIncoerente_AcumulaCausasIndependentes()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object grupo = new { tipo = "E", filhos = new[] { Folha(tipo, fase, "INSCRICAO"), Folha(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA") } };
-        using JsonDocument problema = await EnviarAsync(processo, [CasosDeRecusaDoNo.FolhaSemDocumento(), grupo]);
+        object grupo = new { forma = "TODOS_OS_ITENS", itens = new[] { RegraDeDocumento(tipo, fase, "INSCRICAO"), RegraDeDocumento(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA") } };
+        using JsonDocument problema = await EnviarAsync(processo, [CasosDeRecusaDaRegra.RegraSemDocumento(), grupo]);
 
         JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
-        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal("nos[0].documento", "nos[1].filhos", "nos[1].filhos");
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal("regrasDeComprovacao[0].documento", "regrasDeComprovacao[1].itens", "regrasDeComprovacao[1].itens");
         erros.Select(static e => e.GetProperty("code").GetString()).Should().Equal(
-            "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
-            "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes", "uniplus.selecao.no_exigencia.grupo_com_finalidades_diferentes");
+            "uniplus.selecao.regra_de_comprovacao.documento_obrigatorio",
+            "uniplus.selecao.regra_de_comprovacao.grupo_com_fases_diferentes", "uniplus.selecao.regra_de_comprovacao.grupo_com_formularios_diferentes");
     }
 
     [Fact]
     public async Task DefinirDocumentos_RepeticaoAninhada_ApontaOGrupo()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object interno = new { tipo = "E", repetePorEntidade = "PESSOAS", filhos = new[] { Folha(tipo, fase, "INSCRICAO") } };
-        object externo = new { tipo = "E", repetePorEntidade = "PESSOAS", filhos = new[] { interno } };
+        object interno = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { RegraDeDocumento(tipo, fase, "INSCRICAO") } };
+        object externo = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { interno } };
         using JsonDocument problema = await EnviarAsync(processo, [externo]);
 
         JsonElement erro = problema.RootElement.GetProperty("errors").EnumerateArray().Single();
-        erro.GetProperty("field").GetString().Should().Be("nos[0].repetePorEntidade");
-        Conferir(erro, "repeticao_de_entidade_aninhada", "No item 1 da lista: Este grupo repete itens que já se repetem por outro grupo. Retire uma das repetições.");
+        erro.GetProperty("field").GetString().Should().Be("regrasDeComprovacao[0].grupoDoFormularioParaRepeticao");
+        Conferir(erro, "repeticao_dentro_de_repeticao", "No item 1 da lista: Este grupo repete itens que já se repetem por outro grupo. Retire uma das repetições.");
     }
 
     private static void Conferir(JsonElement erro, string codigo, string mensagem)
     {
-        erro.GetProperty("code").GetString().Should().Be($"uniplus.selecao.no_exigencia.{codigo}");
+        erro.GetProperty("code").GetString().Should().Be($"uniplus.selecao.regra_de_comprovacao.{codigo}");
         erro.GetProperty("message").GetString().Should().Be(mensagem);
     }
 
@@ -103,19 +103,16 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
         processo.DefinirItens([], grupos: [grupo]).IsSuccess.Should().BeTrue();
     }
 
-    private static object Folha(Guid tipo, Guid fase, string finalidade) => new
+    private static object RegraDeDocumento(Guid tipo, Guid fase, string finalidade) => new
     {
-        tipo = "FOLHA",
+        forma = "DOCUMENTO",
         documento = new
         {
-            exigidoNaFaseId = fase,
-            tipoDocumentoId = tipo,
-            finalidade,
-            aplicabilidade = "GERAL",
-            obrigatorio = true,
-            condicoes = Array.Empty<object>(),
-            basesLegais = Array.Empty<object>(),
-            formatosPermitidos = "QUALQUER",
+            tipoDocumento = new { id = tipo },
+            momento = new { faseId = fase, finalidade },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
         },
     };
 

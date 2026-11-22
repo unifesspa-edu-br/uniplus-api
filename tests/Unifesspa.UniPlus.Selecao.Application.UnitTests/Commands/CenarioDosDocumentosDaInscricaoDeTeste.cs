@@ -138,15 +138,15 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
 
     private ConfiguracaoPublicada ConfiguracaoComDocumentos(ConfiguracaoPublicada conforme, FaseCronograma faseDaInscricao, FaseCronograma outraFase)
     {
-        NoExigencia folhaLaudo = NoExigencia.CriarFolha(Laudo, 0).Value!;
-        NoExigencia folhaCertidao = NoExigencia.CriarFolha(Certidao, 1, repetePorEntidade: Grupo).Value!;
-        NoExigencia folhaOutraFase = NoExigencia.CriarFolha(DeOutraFase, 2).Value!;
+        RegraDeComprovacao regraDeLaudo = RegraDeComprovacao.CriarRegraDeDocumento(Laudo, 0).Value!;
+        RegraDeComprovacao regraDeCertidao = RegraDeComprovacao.CriarRegraDeDocumento(Certidao, 1, grupoDoFormularioParaRepeticao: Grupo).Value!;
+        RegraDeComprovacao regraDeOutraFase = RegraDeComprovacao.CriarRegraDeDocumento(DeOutraFase, 2).Value!;
         return new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [faseDaInscricao, outraFase]),
             new AvaliacaoDeclarada(conforme.Avaliacao.Etapas, conforme.Avaliacao.CriteriosDesempate, conforme.Avaliacao.Classificacao),
             new VagasDeclaradas(conforme.Vagas.DistribuicaoVagas, 1, conforme.Vagas.BonusRegional is not null,
                 conforme.Vagas.BonusRegional, null, conforme.Vagas.AtendimentoEspecializado),
-            new ExigenciasDeclaradas([Laudo, Certidao, DeOutraFase], [folhaLaudo, folhaCertidao, folhaOutraFase]),
+            new ExigenciasDeclaradas([Laudo, Certidao, DeOutraFase], [regraDeLaudo, regraDeCertidao, regraDeOutraFase]),
             new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(conforme.Coleta.Itens, conforme.Coleta.GruposColetados), conforme.Coleta.GruposColetados, conforme.Coleta.Formularios, [],
                 [], [], null),
             new DivulgacaoETaxaDeclaradas(null, null), null);

@@ -147,14 +147,14 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos);
 
-    // NosExigencia.DocumentoExigido é preenchido pelo rastreador de alterações a partir da mesma instância
+    // RegrasDeComprovacao.DocumentoExigido é preenchido pelo rastreador de alterações a partir da mesma instância
     // trazida por DocumentosExigidos, e por isso não tem Include próprio.
     private static IQueryable<ProcessoSeletivo> ComDocumentosExigidos(IQueryable<ProcessoSeletivo> query) =>
         query
             .Include(p => p.DocumentosExigidos).ThenInclude(d => d.Condicoes)
             .Include(p => p.DocumentosExigidos).ThenInclude(d => d.BasesLegais)
-            .Include(p => p.NosExigencia).ThenInclude(n => n.DocumentoExigido)
-            .Include(p => p.NosExigencia).ThenInclude(n => n.BasesLegais);
+            .Include(p => p.RegrasDeComprovacao).ThenInclude(n => n.DocumentoExigido)
+            .Include(p => p.RegrasDeComprovacao).ThenInclude(n => n.BasesLegais);
 
     private static IQueryable<ProcessoSeletivo> ComColetaDeFatos(IQueryable<ProcessoSeletivo> query) =>
         query

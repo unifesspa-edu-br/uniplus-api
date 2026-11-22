@@ -7,68 +7,75 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-/// <summary>
-/// Percorre a árvore de entrada em pré-ordem, sem nenhum I/O, confirmando a forma de cada nó antes de
-/// resolver qualquer cadastro externo (ADR-0125). Confere a declaração de cada nó, o documento da folha
-/// e as bases legais; acumula as recusas com os caminhos das posições enviadas.
-/// </summary>
+/// <summary>Confere as regras e reúne as recusas antes de consultar cadastros externos.</summary>
 internal static class EscritaDasRegrasDeComprovacao
 {
-    public static List<NoDeEntradaConferido> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> nos, IEnumerable<GrupoColetado> grupos) =>
-        Conferir(nos, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "nos");
+    public static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IEnumerable<GrupoColetado> grupos) =>
+        Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "regrasDeComprovacao");
 
-    private static List<NoDeEntradaConferido> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> nos, IReadOnlySet<string> grupos, string caminho) =>
-        [.. nos.Select((no, indice) => ConferirNo(no, grupos, $"{caminho}[{indice}]", indice))];
+    private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho) =>
+        [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice))];
 
-    private static NoDeEntradaConferido ConferirNo(RegraDeComprovacaoInformada no, IReadOnlySet<string> grupos, string caminho, int indice)
+    private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice)
     {
-        DeclaracaoDoNoDeExigencia declaracao = DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, no.Documento is not null, no.Filhos?.Count ?? 0,
-            no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no));
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, regra.Documento is not null, regra.Itens?.Count ?? 0,
+            regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
         List<FieldError> recusas = [.. declaracao.Recusas.Select(erro => Contextualizar(erro, caminho, indice))];
-        recusas.AddRange(FormaDoNo(no).Select(erro => erro.NoCaminhoDe(caminho)));
-        if (ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(no.RepetePorEntidade, grupos) is { } repeticao)
+        recusas.AddRange(FormaDaRegra(regra).Select(erro => erro.NoCaminhoDe(caminho)));
+        if (ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, grupos) is { } repeticao)
         {
-            recusas.Add(Contextualizar(new FieldError("repetePorEntidade", repeticao), caminho, indice));
+            recusas.Add(Contextualizar(new FieldError("grupoDoFormularioParaRepeticao", repeticao), caminho, indice));
         }
-        return new(no, declaracao, caminho, indice, recusas, Conferir(no.Filhos ?? [], grupos, $"{caminho}.filhos"));
+        return new(regra, declaracao, caminho, indice, recusas, Conferir(regra.Itens ?? [], grupos, $"{caminho}.itens"));
     }
 
-    public static List<RegraDeComprovacaoInformada> FolhasConferidas(IEnumerable<NoDeEntradaConferido> nos) =>
-        [.. nos.SelectMany(no => FolhasConferidasDoNo(no, repeticaoRecusada: false))];
+    public static List<RegraDeComprovacaoInformada> RegrasDeDocumentoConferidas(IEnumerable<RegraInformadaConferida> regras) =>
+        [.. regras.SelectMany(regra => RegrasDeDocumentoDaRegra(regra, repeticaoRecusada: false))];
 
-    private static IEnumerable<RegraDeComprovacaoInformada> FolhasConferidasDoNo(NoDeEntradaConferido no, bool repeticaoRecusada)
+    private static IEnumerable<RegraDeComprovacaoInformada> RegrasDeDocumentoDaRegra(RegraInformadaConferida regra, bool repeticaoRecusada)
     {
-        bool bloqueada = repeticaoRecusada || NoDeEntradaConferido.RepeticaoRecusada(no);
-        if (no.Declaracao.Tipo == TipoNo.Folha && no.Recusas.Count == 0
-            && (!bloqueada || no.Entrada.Documento?.Condicoes().Count == 0))
+        bool bloqueada = repeticaoRecusada || RegraInformadaConferida.RepeticaoRecusada(regra);
+        if (regra.Declaracao.Forma == FormaDeComprovacao.Documento && regra.Recusas.Count == 0
+            && (!bloqueada || regra.Entrada.Documento?.Condicoes().Count == 0))
         {
-            yield return no.Entrada with { Filhos = null };
+            yield return regra.Entrada with { Itens = null };
         }
-        foreach (NoDeEntradaConferido filho in no.Filhos)
+        foreach (RegraInformadaConferida item in regra.Itens)
         {
-            foreach (RegraDeComprovacaoInformada folha in FolhasConferidasDoNo(filho, bloqueada))
+            foreach (RegraDeComprovacaoInformada regraDeDocumento in RegrasDeDocumentoDaRegra(item, bloqueada))
             {
-                yield return folha;
+                yield return regraDeDocumento;
             }
         }
     }
 
     private static FieldError Contextualizar(FieldError erro, string caminho, int indice) =>
-        erro.NoCaminhoDe(caminho) with
+        (erro with { Field = CampoDaDeclaracao(erro.Field) }).NoCaminhoDe(caminho) with
         {
             Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" },
         };
 
-    private static List<FieldError> FormaDoNo(RegraDeComprovacaoInformada no)
+    private static string? CampoDaDeclaracao(string? campo) => campo switch
     {
-        bool ehFolha = RegrasDeComprovacaoInformadas.EhFolha(no);
-        List<FieldError> erros = ehFolha && no.Documento is { } documento
+        "quantidadeMinima" => "cardinalidade.quantidadeMinima",
+        "criterioDeDistincao" => "cardinalidade.distincao.chave",
+        "dataReferencia" => "cardinalidade.distincao.dataReferencia",
+        "ocorrenciasEsperadas" => "cardinalidade.distincao.ocorrenciasEsperadas",
+        "consequencia" => "indeferimento.consequencia",
+        "basesLegais" => "indeferimento.basesLegais",
+        _ => campo,
+    };
+
+    private static List<FieldError> FormaDaRegra(RegraDeComprovacaoInformada regra)
+    {
+        bool ehRegraDeDocumento = RegrasDeComprovacaoInformadas.EhRegraDeDocumento(regra);
+        List<FieldError> erros = ehRegraDeDocumento && regra.Documento is { } documento
             ? FormaDoDocumento(documento).Select(erro => erro.NoCaminhoDe("documento")).ToList() : [];
-        IReadOnlyList<BaseLegalInput> basesLegais = ehFolha ? no.Documento?.BasesLegais() ?? [] : no.BasesLegaisDoGrupo();
+        IReadOnlyList<BaseLegalInput> basesLegais = ehRegraDeDocumento ? regra.Documento?.BasesLegais() ?? [] : regra.BasesLegaisDoGrupo();
         for (int indice = 0; indice < basesLegais.Count; indice++)
         {
-            IEnumerable<FieldError> recusas = EscritaDasBasesLegais.ComIndice(FormaDaBaseLegal(basesLegais[indice], ehFolha), indice);
-            erros.AddRange(ehFolha ? recusas.Select(erro => erro.NoCaminhoDe("documento")) : recusas);
+            IEnumerable<FieldError> recusas = EscritaDasBasesLegais.ComIndice(FormaDaBaseLegal(basesLegais[indice], ehRegraDeDocumento), indice);
+            erros.AddRange(ehRegraDeDocumento ? recusas.Select(erro => erro.NoCaminhoDe("documento")) : recusas);
         }
 
         return erros;
@@ -83,13 +90,13 @@ internal static class EscritaDasRegrasDeComprovacao
             EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade()),
             documento.FatosComprovados).Select(EscritaDaExigencia.NoCaminhoDoPedido).ToList();
 
-    private static List<FieldError> FormaDaBaseLegal(BaseLegalInput baseLegal, bool daFolha) =>
-        daFolha
+    private static List<FieldError> FormaDaBaseLegal(BaseLegalInput baseLegal, bool doDocumento) =>
+        doDocumento
             ? DocumentoExigidoBaseLegal.ValidarFormaBasica(
-                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal))
+                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Situacao(baseLegal))
             : BaseLegalDaComprovacao.ValidarFormaBasica(
-                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal));
-    private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada no) =>
-        DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);
+                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Situacao(baseLegal));
+    private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada regra) =>
+        DistincaoDeclarada.Interpretar(regra.Distincao()?.Chave, regra.Distincao()?.DataReferencia, regra.Distincao()?.OcorrenciasEsperadas);
 
 }

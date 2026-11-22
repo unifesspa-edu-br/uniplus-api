@@ -50,7 +50,7 @@ public sealed class EnvelopeLidoPredicadosTests
     public void Reidratar_FaixaEtariaNoFimDaFase_ConservaAReferenciaEReproduzOsBytes()
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS faixa etária");
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(DeclaracaoDeMaioridade(fase), 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(DeclaracaoDeMaioridade(fase), 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!)
             .IsSuccess.Should().BeTrue();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));

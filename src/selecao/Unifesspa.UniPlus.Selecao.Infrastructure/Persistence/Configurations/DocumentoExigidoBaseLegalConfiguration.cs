@@ -47,7 +47,7 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
             .HasMaxLength(AbrangenciaCodigoMaxLength)
             .IsRequired();
 
-        builder.Property(b => b.Status)
+        builder.Property(b => b.Situacao)
             .HasConversion(StatusConverter)
             .HasMaxLength(StatusCodigoMaxLength)
             .IsRequired();

@@ -173,7 +173,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS comprovado", out Guid faseId);
         FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         DocumentoExigido exigencia = ExigenciaQueComprovaBaixaRenda(faseId);
-        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]);
+        Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(

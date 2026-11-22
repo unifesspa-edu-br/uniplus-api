@@ -141,7 +141,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(fase.Id, Guid.CreateVersion7()).ComFatosComprovados("A", "A");
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -156,7 +156,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         ItemDocumentoExigidoDeTeste primeira = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("Lei Federal X", "FEDERAL", "RESOLVIDO", null));
         ItemDocumentoExigidoDeTeste segunda = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null));
         DefinirDocumentosExigidosCommand command = new(
-            cenario.Processo.Id, [NoExigenciaDeTeste.Folha(primeira).Construir(), NoExigenciaDeTeste.Folha(segunda).Construir()]);
+            cenario.Processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(primeira).Construir(), RegraDeComprovacaoDeTeste.DeDocumento(segunda).Construir()]);
 
         Result resultado = await HandleAsync(cenario.Mocks, command);
 

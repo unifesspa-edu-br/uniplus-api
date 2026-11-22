@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Copia o conjunto padrão de documentos exigidos do modelo para a árvore do processo, resolvendo a fase
+/// Copia o conjunto padrão de documentos exigidos do modelo para as regras do processo, resolvendo a fase
 /// pelo código no cronograma e o tipo pelo código no catálogo. Os documentos da finalidade do modelo que o
 /// processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os das outras
-/// finalidades ficam. Modelo sem conjunto não mexe na árvore. A cláusula que cita valor que o processo não
+/// finalidades ficam. Modelo sem conjunto não altera as regras. A cláusula que cita valor que o processo não
 /// oferta — a condição de atendimento fora das condições ofertadas — não tem como valer e sai da cópia; o documento sem
 /// nenhuma cláusula que valha sai com ela. O documento que o modelo multiplica pelas opções de um fato
 /// entra uma vez por opção ofertada.
@@ -54,10 +54,10 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             .ConfigureAwait(false);
     }
 
-    // A raiz cujas folhas são todas da finalidade do modelo é a que o modelo substitui.
-    private List<NoExigencia> RaizesQueOModeloNaoSubstitui() =>
-        [.. processo.RaizesDeExigencia.Where(raiz => !raiz.AchatarComDescendentes()
-            .Where(static n => n.Tipo == TipoNo.Folha)
+    // O modelo substitui as regras sem grupo cujos documentos pertencem à sua finalidade.
+    private List<RegraDeComprovacao> RaizesQueOModeloNaoSubstitui() =>
+        [.. processo.RegrasDeComprovacaoSemGrupo.Where(raiz => !raiz.AchatarComDescendentes()
+            .Where(static n => n.Forma == FormaDeComprovacao.Documento)
             .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
 
     /// <summary>
@@ -166,7 +166,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             erros.Add(RecusaDoTipo(documento, campo));
         }
 
-        return fase is null || tipo is null ? null : FolhaDoModelo(documento, fase, tipo);
+        return fase is null || tipo is null ? null : RegraDeDocumentoDoModelo(documento, fase, tipo);
     }
 
     private static FieldError RecusaDaFase(DocumentoExigidoDoModeloInput documento, string campo) =>
@@ -179,10 +179,10 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente,
             $"O modelo exige o tipo de documento '{documento.TipoDocumentoCodigo}', que o catálogo não tem."));
 
-    private RegraDeComprovacaoInformada FolhaDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
-        new("FOLHA", DocumentoDaFolha(documento, fase, tipo), Cardinalidade: null, Indeferimento: null, Filhos: null);
+    private RegraDeComprovacaoInformada RegraDeDocumentoDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
+        new("DOCUMENTO", DocumentoInformadoDoModelo(documento, fase, tipo), Cardinalidade: null, Indeferimento: null, Itens: null);
 
-    private ItemDocumentoExigidoInput DocumentoDaFolha(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
+    private ItemDocumentoExigidoInput DocumentoInformadoDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>
         new(
             new TipoDocumentoDaExigenciaInput(tipo.Id),
             new MomentoDaExigenciaInput(fase.Id, Finalidade: EstruturaFormulario.ParaToken(finalidade)),

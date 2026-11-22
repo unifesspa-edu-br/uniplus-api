@@ -170,7 +170,7 @@ internal static class RegrasDoCronograma
         && RegrasDasExigencias.ExisteConsequenciaPendenciaReenvioNaFase(configuracao, antiga.Id)
             ? new DomainError(
                 "FaseCronograma.PendenciaReenvioExigeComplementacao",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por uma exigência (folha ou grupo) com consequência PENDENCIA_REENVIO.")
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.")
             : null;
 
     private static DomainError? ExtremoQueAAncoraDeIdadeUsa(FaseCronograma antiga, FaseCronograma nova, List<DocumentoExigido> documentosQueFicam)

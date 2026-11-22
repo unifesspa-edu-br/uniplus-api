@@ -307,3 +307,7 @@ referências feitas a ela.
 Outras coleções passam a guardar identidade pelo mesmo critério da E4.1, quando surgir referência de
 fora da versão. A forma nova das bancas entra no avanço único que fecha o conjunto coordenado de
 commits em que ela é introduzida; D1 e E2.1 não mudam.
+
+## Emenda 5 (2026-11-21) — códigos de contrato no conteúdo congelado
+
+Os valores migrados para o catálogo da ADR-0176 são escritos pelo código declarado em cada membro. A mudança da forma publicável exige nova versão do esquema e atualização das referências. Enquanto não houver uso real, a versão corrente não conserva conversão da forma anterior.

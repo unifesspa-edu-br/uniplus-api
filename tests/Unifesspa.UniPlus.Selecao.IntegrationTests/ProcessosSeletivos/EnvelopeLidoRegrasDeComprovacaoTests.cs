@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
 
-public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
+public sealed class EnvelopeLidoRegrasDeComprovacaoTests
 {
     [Fact(DisplayName = "Round-trip 1.3 — reidratar e recanonicalizar o processo de referência (exigência documental rica + metadadosFatos) reproduz os bytes")]
     public void Reidratar_ProcessoDeReferencia_ReproduzOsBytes()
@@ -37,12 +37,12 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
             ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-    [Fact(DisplayName = "Round-trip 1.4 — árvore com grupo OU, folha com cardinalidade qualificada e folha repetePorEntidade reproduz os bytes")]
+    [Fact(DisplayName = "As regras de quantidade mínima, cardinalidade e repetição preservam o envelope")]
     public void Reidratar_ArvoreComGrupoCardinalidadeERepeticao_ReproduzOsBytes()
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Árvore 1.4");
         DocumentoExigido comprovanteRenda = ComprovanteDeRendaComModelo(fase);
-        DefinirArvoreDeSatisfacao(processo, fase, comprovanteRenda);
+        DefinirRegrasDeComprovacao(processo, fase, comprovanteRenda);
         EntradaCanonicalizacao entrada = EntradaDaArvore(processo);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
@@ -52,7 +52,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         ConferirArvoreRecarregada(ProcessoDoGrafoLidoDeTeste.Criar(processo, reidratado.Configuracao));
     }
 
-    private static void DefinirArvoreDeSatisfacao(ProcessoSeletivo processo, FaseCronograma fase, DocumentoExigido comprovanteRenda)
+    private static void DefinirRegrasDeComprovacao(ProcessoSeletivo processo, FaseCronograma fase, DocumentoExigido comprovanteRenda)
     {
         DefinirGrupoDeComposicaoFamiliar(processo);
         processo.DefinirDocumentosExigidos([RaizGrupoOuDeRgERenda(fase, comprovanteRenda)])
@@ -87,17 +87,17 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
                 .Construir(),
         ]).IsSuccess.Should().BeTrue();
 
-    private static NoExigencia RaizGrupoOuDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)
+    private static RegraDeComprovacao RaizGrupoOuDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)
     {
-        NoExigencia folhaRg = NoExigencia.CriarFolha(
+        RegraDeComprovacao folhaRg = RegraDeComprovacao.CriarRegraDeDocumento(
             DocumentoDeRgSemObrigatoriedade(fase), 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
             dataReferencia: new DateOnly(2026, 3, 31)).Value!;
-        NoExigencia folhaRenda = NoExigencia.CriarFolha(
-            comprovanteRenda, 1, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao folhaRenda = RegraDeComprovacao.CriarRegraDeDocumento(
+            comprovanteRenda, 1, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
         BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
-        return NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [baseLegalDoGrupo], [folhaRg, folhaRenda]).Value!;
+        return RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [folhaRg, folhaRenda]).Value!;
     }
     private static void ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(
         EnvelopeReidratado reidratado, DocumentoExigido comprovanteRenda) =>
@@ -106,16 +106,16 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
 
     private static void ConferirArvoreRecarregada(ProcessoSeletivo processo)
     {
-        NoExigencia raiz = processo.RaizesDeExigencia.Should().ContainSingle().Which;
-        raiz.Tipo.Should().Be(TipoNo.GrupoOu);
+        RegraDeComprovacao raiz = processo.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
+        raiz.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         raiz.Consequencia.Should().Be("ELIMINA");
         raiz.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
-        raiz.Filhos.Should().HaveCount(2);
-        ConferirFolhaDeRgRecarregada(raiz.Filhos.Should().ContainSingle(static f => f.Distincao != null).Which);
-        ConferirFolhaDeRendaRecarregada(raiz.Filhos.Should().ContainSingle(static f => f.RepetePorEntidade != null).Which);
+        raiz.Itens.Should().HaveCount(2);
+        ConferirFolhaDeRgRecarregada(raiz.Itens.Should().ContainSingle(static f => f.Distincao != null).Which);
+        ConferirFolhaDeRendaRecarregada(raiz.Itens.Should().ContainSingle(static f => f.GrupoDoFormularioParaRepeticao != null).Which);
     }
 
-    private static void ConferirFolhaDeRgRecarregada(NoExigencia folha)
+    private static void ConferirFolhaDeRgRecarregada(RegraDeComprovacao folha)
     {
         folha.QuantidadeMinima.Should().Be(3);
         folha.Distincao!.Chave.Should().Be(ChaveDistincao.CompetenciaMensal);
@@ -124,9 +124,9 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         folha.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
     }
 
-    private static void ConferirFolhaDeRendaRecarregada(NoExigencia folha)
+    private static void ConferirFolhaDeRendaRecarregada(RegraDeComprovacao folha)
     {
-        folha.RepetePorEntidade.Should().Be("COMPOSICAO_FAMILIAR");
+        folha.GrupoDoFormularioParaRepeticao.Should().Be("COMPOSICAO_FAMILIAR");
         folha.DocumentoExigido.Should().NotBeNull();
         folha.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
     }

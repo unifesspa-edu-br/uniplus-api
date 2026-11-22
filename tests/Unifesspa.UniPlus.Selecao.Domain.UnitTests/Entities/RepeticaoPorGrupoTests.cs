@@ -77,9 +77,9 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
 
         Result resultado = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: "PESSOAS_JURIDICAS").Value!]);
+            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, grupoDoFormularioParaRepeticao: "PESSOAS_JURIDICAS").Value!]);
 
-        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
     }
 
     [Fact(DisplayName = "Repetir na inscrição pelo grupo coletado só na habilitação é recusado")]
@@ -88,10 +88,10 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma habilitacao) = Processo();
 
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(inscricao.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: Composicao).Value!])
+                [RegraDeComprovacao.CriarRegraDeDocumento(Documento(inscricao.Id, FinalidadeFormulario.Inscricao), 0, grupoDoFormularioParaRepeticao: Composicao).Value!])
             .Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!])
+                [RegraDeComprovacao.CriarRegraDeDocumento(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, grupoDoFormularioParaRepeticao: Composicao).Value!])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -103,7 +103,7 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComGrupoDaIsencaoNaFaseCompartilhada();
 
         Result resultado = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Documento(compartilhada.Id, finalidade), 0, repetePorEntidade: Composicao).Value!]);
+            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(compartilhada.Id, finalidade), 0, grupoDoFormularioParaRepeticao: Composicao).Value!]);
 
         resultado.IsSuccess.Should().Be(aceito, resultado.Error?.Message);
         if (!aceito)
@@ -117,23 +117,23 @@ public sealed class RepeticaoPorGrupoTests
     {
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!])
+                [RegraDeComprovacao.CriarRegraDeDocumento(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, grupoDoFormularioParaRepeticao: Composicao).Value!])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], []).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
     }
 
-    [Fact(DisplayName = "A folha dentro da subárvore repetida cita os campos do grupo; a de fora, não")]
-    public void CamposDaRepeticao_PelaSubarvoreRepetida()
+    [Fact(DisplayName = "A regra repetida cita os campos do grupo; a regra de fora, não")]
+    public void CamposDaRepeticao_PelasRegrasRepetidas()
     {
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
         DocumentoExigido certidao = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
         DocumentoExigido avulso = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
-        NoExigencia repetido = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(certidao, 0).Value!], repetePorEntidade: Composicao).Value!;
-        processo.DefinirDocumentosExigidos([repetido, NoExigencia.CriarFolha(avulso, 1).Value!])
+        RegraDeComprovacao repetido = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!], grupoDoFormularioParaRepeticao: Composicao).Value!;
+        processo.DefinirDocumentosExigidos([repetido, RegraDeComprovacao.CriarRegraDeDocumento(avulso, 1).Value!])
             .IsSuccess.Should().BeTrue();
 
         RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), certidao.Id).Should().BeEquivalentTo(["SOB_GUARDA"]);

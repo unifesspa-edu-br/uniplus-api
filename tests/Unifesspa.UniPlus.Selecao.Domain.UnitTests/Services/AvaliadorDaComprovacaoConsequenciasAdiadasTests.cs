@@ -42,217 +42,208 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
             static f => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(f.Valor)),
             StringComparer.Ordinal);
 
-    private static RegrasDeComprovacaoDaVersao Arvore(params NoExigencia[] raizes) =>
-        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
+    private static RegrasDeComprovacaoDaVersao Regras(params RegraDeComprovacao[] regrasSemGrupo) =>
+        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo);
 
     private static Result<ResultadoDaComprovacao> Resolver(
-        RegrasDeComprovacaoDaVersao arvore,
+        RegrasDeComprovacaoDaVersao regras,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlySet<Guid>? bloqueadas = null) =>
         AvaliadorDaComprovacao.Resolver(
-            arvore, fatos ?? new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            regras, fatos ?? new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             apresentacoes ?? SemApresentacoes, null, bloqueadas);
 
-    [Fact(DisplayName = "Folha BLOQUEADA sob E projeta INDETERMINADO, não emite; o irmão desbloqueado emite")]
-    public void FolhaBloqueadaSobE_NaoEmite_IrmaoEmite()
+    [Fact(DisplayName = "Regra de documento que aguarda dados não aplica consequência, enquanto o outro item aplica")]
+    public void RegraQueAguardaDadosEmGrupoDeTodos_AdiaConsequencia_OutroItemAplica()
     {
         DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
         DocumentoExigido aberto = DocumentoGeral("REMOVE_VANTAGEM");
-        NoExigencia folhaBloqueada = NoExigencia.CriarFolha(bloqueado, 0).Value!;
-        NoExigencia folhaAberta = NoExigencia.CriarFolha(aberto, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaBloqueada, folhaAberta]).Value!;
+        RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!;
+        RegraDeComprovacao regraComDados = RegraDeComprovacao.CriarRegraDeDocumento(aberto, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraQueAguardaDados, regraComDados]).Value!;
 
-        ResultadoDaComprovacao r = Resolver(Arvore(raiz), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
+        ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
-        r.SituacoesPorRegra[folhaBloqueada.Id].Should().Be(SituacaoDaComprovacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
-        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id);
-        r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folhaAberta.Id && c.Consequencia == "REMOVE_VANTAGEM");
-        r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "o ramo bloqueado não emite");
+        resultado.SituacoesPorRegra[regraQueAguardaDados.Id].Should().Be(SituacaoDaComprovacao.AguardandoDados, "a regra de documento aguarda dados");
+        resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id);
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraComDados.Id && c.Consequencia == "REMOVE_VANTAGEM");
+        resultado.ConsequenciasVigentes.Should().NotContain(c => c.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra que aguarda dados não aplica consequência");
     }
 
-    [Fact(DisplayName = "OU opaco cuja fronteira decisiva é toda bloqueada suprime a própria consequência")]
-    public void OuComFronteiraDecisivaBloqueada_Suprime()
+    [Fact(DisplayName = "Grupo com quantidade mínima adia a consequência quando as regras decisivas aguardam dados")]
+    public void GrupoComRegrasDecisivasQueAguardamDados_AdiaConsequencia()
     {
-        // OU[N=1, E[BLOQUEADO, NAO_APLICAVEL], NAO_APLICAVEL]
         DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
-        (NoExigencia raiz, NoExigencia grupoE) = CriarGrupoAlternativoComCondicionais(bloqueado);
+        (RegraDeComprovacao regraSemGrupo, RegraDeComprovacao grupoDeTodos) = CriarGrupoAlternativoComCondicionais(bloqueado);
+        ResultadoDaComprovacao resultado = Resolver(
+            Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false)), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
-        // GATE=false → as duas folhas condicionais são NAO_APLICAVEL; a bloqueada é a única decisiva.
-        ResultadoDaComprovacao r = Resolver(
-            Arvore(raiz), fatos: Fatos(("GATE", false)), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
-
-        VerificarFronteiraBloqueada(r, raiz, grupoE);
+        VerificarConsequenciaAdiada(resultado, regraSemGrupo, grupoDeTodos);
     }
 
-    [Fact(DisplayName = "A mesma árvore com a razão decisiva alcançada (não bloqueada) emite a consequência do OU")]
-    public void OuComRazaoAlcancada_Emite()
+    [Fact(DisplayName = "Grupo aplica a consequência quando a regra decisiva pode ser avaliada")]
+    public void GrupoComRegraDecisivaAvaliada_Emite()
     {
         DocumentoExigido alcancavel = DocumentoGeral("ELIMINA");
-        DocumentoExigido naoAplicavelDentro = DocumentoCondicional("GATE");
-        DocumentoExigido naoAplicavelFora = DocumentoCondicional("GATE");
-        NoExigencia folha = NoExigencia.CriarFolha(alcancavel, 0).Value!;
-        NoExigencia folhaNaDentro = NoExigencia.CriarFolha(naoAplicavelDentro, 1).Value!;
-        NoExigencia grupoE = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha, folhaNaDentro]).Value!;
-        NoExigencia folhaNaFora = NoExigencia.CriarFolha(naoAplicavelFora, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "RECLASSIFICA_AC", [], [grupoE, folhaNaFora]).Value!;
+        DocumentoExigido naoAplicavelDentro = DocumentoCondicional("CONDICAO");
+        DocumentoExigido naoAplicavelFora = DocumentoCondicional("CONDICAO");
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(alcancavel, 0).Value!;
+        RegraDeComprovacao regraNaoAplicavelDentro = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavelDentro, 1).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento, regraNaoAplicavelDentro]).Value!;
+        RegraDeComprovacao regraNaoAplicavelFora = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavelFora, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "RECLASSIFICA_AC", [], [grupoDeTodos, regraNaoAplicavelFora]).Value!;
+        ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false))).Value!;
 
-        // Nada bloqueado: a folha alcançável fica pendente, a fronteira decisiva do OU não é bloqueada.
-        ResultadoDaComprovacao r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false))).Value!;
-
-        r.RegrasComConsequenciaAdiada.Should().BeEmpty();
-        r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "RECLASSIFICA_AC");
+        resultado.RegrasComConsequenciaAdiada.Should().BeEmpty();
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "RECLASSIFICA_AC");
     }
 
-    [Fact(DisplayName = "N-de(N=2)[SATISFEITO, NAO_APLICAVEL] é IMPOSSIVEL e emite — fronteira vazia não bloqueia")]
-    public void NDeImpossivel_SemBloqueio_Emite()
+    [Fact(DisplayName = "Grupo sem possibilidade de cumprimento aplica consequência quando não aguarda dados")]
+    public void GrupoSemPossibilidadeDeCumprimento_AplicaConsequencia()
     {
         DocumentoExigido satisfeito = DocumentoGeral(null);
-        DocumentoExigido naoAplicavel = DocumentoCondicional("GATE");
-        NoExigencia folhaSat = NoExigencia.CriarFolha(satisfeito, 0).Value!;
-        NoExigencia folhaNa = NoExigencia.CriarFolha(naoAplicavel, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 2, "ELIMINA", [], [folhaSat, folhaNa]).Value!;
+        DocumentoExigido naoAplicavel = DocumentoCondicional("CONDICAO");
+        RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
+        RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, "ELIMINA", [], [regraCumprida, regraNaoAplicavel]).Value!;
 
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresenta = ApresentacaoDe(satisfeito);
-        ResultadoDaComprovacao r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false)), apresentacoes: apresenta).Value!;
+        ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false)), apresentacoes: apresenta).Value!;
 
-        VerificarImpossivelComConsequencia(r, raiz);
+        VerificarImpossivelComConsequencia(resultado, regraSemGrupo);
     }
 
-    [Fact(DisplayName = "Desbloqueio reavalia sem latch: a mesma árvore emite quando a folha deixa o conjunto bloqueado")]
-    public void Desbloqueio_ReavaliaSemLatch()
+    [Fact(DisplayName = "Consequência adiada é aplicada quando os dados chegam")]
+    public void DadosRecebidos_PermitemReavaliar()
     {
         DocumentoExigido documento = DocumentoGeral("ELIMINA");
-        NoExigencia folha = NoExigencia.CriarFolha(documento, 0).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha]).Value!;
-        RegrasDeComprovacaoDaVersao arvore = Arvore(raiz);
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento]).Value!;
+        RegrasDeComprovacaoDaVersao regras = Regras(regraSemGrupo);
 
-        ResultadoDaComprovacao bloqueado = Resolver(arvore, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
-        bloqueado.RegrasComConsequenciaAdiada.Should().Contain(folha.Id);
+        ResultadoDaComprovacao bloqueado = Resolver(regras, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
+        bloqueado.RegrasComConsequenciaAdiada.Should().Contain(regraDeDocumento.Id);
         bloqueado.ConsequenciasVigentes.Should().BeEmpty("bloqueada, não emite");
 
-        ResultadoDaComprovacao desbloqueado = Resolver(arvore).Value!;
-        desbloqueado.RegrasComConsequenciaAdiada.Should().BeEmpty("sem latch — o desbloqueio reavalia do zero");
-        desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folha.Id && c.Consequencia == "ELIMINA");
+        ResultadoDaComprovacao desbloqueado = Resolver(regras).Value!;
+        desbloqueado.RegrasComConsequenciaAdiada.Should().BeEmpty("os dados recebidos permitem reavaliar a consequência");
+        desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraDeDocumento.Id && c.Consequencia == "ELIMINA");
     }
 
-    [Fact(DisplayName = "Folha BLOQUEADA sob grupo IMPOSSIVEL continua suprimida — o grupo emite o inevitável, a folha não")]
-    public void FolhaBloqueadaSobGrupoImpossivel_ContinuaSuprimida()
+    [Fact(DisplayName = "Grupo sem possibilidade de cumprimento aplica consequência e mantém adiada a da regra que aguarda dados")]
+    public void RegraQueAguardaDadosSobGrupoImpossivel_ContinuaAdiada()
     {
-        // E[BLOQUEADA(ELIMINA), OU N=2[SATISFEITO, NAO_APLICAVEL]] — o OU interno é IMPOSSIVEL, então
-        // o E é IMPOSSIVEL. A folha bloqueada não pode emitir só porque o ancestral virou terminal.
         DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
         DocumentoExigido satisfeito = DocumentoGeral(null);
-        DocumentoExigido naoAplicavel = DocumentoCondicional("GATE");
-        NoExigencia folhaBloqueada = NoExigencia.CriarFolha(bloqueado, 0).Value!;
-        NoExigencia folhaSat = NoExigencia.CriarFolha(satisfeito, 0).Value!;
-        NoExigencia folhaNa = NoExigencia.CriarFolha(naoAplicavel, 1).Value!;
-        NoExigencia ouInterno = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 1, 2, "RECLASSIFICA_AC", [], [folhaSat, folhaNa]).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaBloqueada, ouInterno]).Value!;
+        DocumentoExigido naoAplicavel = DocumentoCondicional("CONDICAO");
+        RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!;
+        RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
+        RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
+        RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 2, "RECLASSIFICA_AC", [], [regraCumprida, regraNaoAplicavel]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraQueAguardaDados, grupoInterno]).Value!;
 
-        ResultadoDaComprovacao r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
+        ResultadoDaComprovacao resultado = ResolverComDocumentoBloqueado(regraSemGrupo, satisfeito, bloqueado);
 
-        VerificarBloqueioSobGrupoImpossivel(r, raiz, folhaBloqueada, ouInterno);
+        VerificarBloqueioSobGrupoImpossivel(resultado, regraSemGrupo, regraQueAguardaDados, grupoInterno);
     }
 
-    [Fact(DisplayName = "OU N-de IMPOSSIVEL não gera orientação para o filho BLOQUEADO")]
-    public void OuNDeImpossivel_NaoOrientaFilhoBloqueado()
+    [Fact(DisplayName = "Grupo sem possibilidade de cumprimento não orienta item que aguarda dados")]
+    public void GrupoSemPossibilidadeDeCumprimento_NaoOrientaItemQueAguardaDados()
     {
-        // OU N=3[SATISFEITO, NAO_APLICAVEL, BLOQUEADA]: maximo atingível 2 < 3 → IMPOSSIVEL; a folha
-        // bloqueada não deve virar orientação (não se pede o que não está disponível).
         DocumentoExigido satisfeito = DocumentoGeral(null);
-        DocumentoExigido naoAplicavel = DocumentoCondicional("GATE");
+        DocumentoExigido naoAplicavel = DocumentoCondicional("CONDICAO");
         DocumentoExigido bloqueado = DocumentoGeral(null);
-        NoExigencia folhaSat = NoExigencia.CriarFolha(satisfeito, 0).Value!;
-        NoExigencia folhaNa = NoExigencia.CriarFolha(naoAplicavel, 1).Value!;
-        NoExigencia folhaBloqueada = NoExigencia.CriarFolha(bloqueado, 2).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 3, "ELIMINA", [], [folhaSat, folhaNa, folhaBloqueada]).Value!;
+        RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
+        RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
+        RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 2).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 3, "ELIMINA", [], [regraCumprida, regraNaoAplicavel, regraQueAguardaDados]).Value!;
 
-        ResultadoDaComprovacao r = ResolverComDocumentoBloqueado(raiz, satisfeito, bloqueado);
+        ResultadoDaComprovacao resultado = ResolverComDocumentoBloqueado(regraSemGrupo, satisfeito, bloqueado);
 
-        VerificarOrientacaoBloqueada(r, raiz, folhaBloqueada);
+        VerificarOrientacaoBloqueada(resultado, regraSemGrupo, regraQueAguardaDados);
     }
 
-    [Fact(DisplayName = "Dentro da repetição por membro, a folha BLOQUEADA projeta INDETERMINADO em cada ocorrência e não emite")]
-    public void RepeticaoPorMembro_FolhaBloqueada_NaoEmiteEmNenhumaOcorrencia()
+    [Fact(DisplayName = "Regra repetida aguarda dados em cada ocorrência sem aplicar consequência")]
+    public void RepeticaoPorMembro_RegraQueAguardaDados_NaoAplicaConsequencia()
     {
         DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
         DocumentoExigido aberto = DocumentoGeral("REMOVE_VANTAGEM");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [],
-            [NoExigencia.CriarFolha(bloqueado, 0).Value!, NoExigencia.CriarFolha(aberto, 1).Value!],
-            repetePorEntidade: "FAMILIA").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.TodosOsItens, 0, null, null, [],
+            [RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(aberto, 1).Value!],
+            grupoDoFormularioParaRepeticao: "FAMILIA").Value!;
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> membros = MembrosDaFamilia();
 
-        ResultadoDaComprovacao r = AvaliadorDaComprovacao.Resolver(
-            Arvore(raiz), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), SemApresentacoes, membros,
+        ResultadoDaComprovacao resultado = AvaliadorDaComprovacao.Resolver(
+            Regras(regraSemGrupo), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), SemApresentacoes, membros,
             new HashSet<Guid> { bloqueado.Id }).Value!;
 
-        VerificarOcorrencias(r, bloqueado);
+        VerificarOcorrencias(resultado, bloqueado);
     }
 
-    [Fact(DisplayName = "Sem conjunto bloqueado, a resolução é idêntica à anterior — a fronteira não muda o comportamento existente")]
+    [Fact(DisplayName = "Sem regras aguardando dados, a avaliação aplica as consequências previstas")]
     public void SemBloqueio_ComportamentoInalterado()
     {
         DocumentoExigido a = DocumentoGeral("ELIMINA");
         DocumentoExigido b = DocumentoGeral("REMOVE_VANTAGEM");
-        NoExigencia folhaA = NoExigencia.CriarFolha(a, 0).Value!;
-        NoExigencia folhaB = NoExigencia.CriarFolha(b, 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folhaA, folhaB]).Value!;
+        RegraDeComprovacao primeiraRegra = RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!;
+        RegraDeComprovacao segundaRegra = RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [primeiraRegra, segundaRegra]).Value!;
 
-        ResultadoDaComprovacao r = Resolver(Arvore(raiz)).Value!;
+        ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo)).Value!;
 
-        r.RegrasComConsequenciaAdiada.Should().BeEmpty();
-        r.ConsequenciasVigentes.Should().HaveCount(2, "os dois ramos pendentes emitem, como antes da fronteira");
+        resultado.RegrasComConsequenciaAdiada.Should().BeEmpty();
+        resultado.ConsequenciasVigentes.Should().HaveCount(2, "os dois itens pendentes aplicam suas consequências");
     }
-    private static void VerificarFronteiraBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia grupoE)
+    private static void VerificarConsequenciaAdiada(ResultadoDaComprovacao resultado, RegraDeComprovacao regraSemGrupo, RegraDeComprovacao grupoDeTodos)
     {
-        r.RegrasComConsequenciaAdiada.Should().Contain(raiz.Id, "toda a fronteira decisiva do OU está bloqueada");
-        r.RegrasComConsequenciaAdiada.Should().Contain(grupoE.Id);
-        r.ConsequenciasVigentes.Should().BeEmpty("o OU opaco não emite a própria consequência sob fronteira bloqueada");
+        resultado.RegrasComConsequenciaAdiada.Should().Contain(regraSemGrupo.Id, "todas as regras decisivas do grupo aguardam dados");
+        resultado.RegrasComConsequenciaAdiada.Should().Contain(grupoDeTodos.Id);
+        resultado.ConsequenciasVigentes.Should().BeEmpty("o grupo adia a própria consequência enquanto aguarda dados");
     }
 
-    private static void VerificarImpossivelComConsequencia(ResultadoDaComprovacao r, NoExigencia raiz)
+    private static void VerificarImpossivelComConsequencia(ResultadoDaComprovacao resultado, RegraDeComprovacao regraSemGrupo)
     {
-        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
-        r.RegrasComConsequenciaAdiada.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca aguarda dados");
-        r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
+        resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento, "uma regra cumprida não alcança o mínimo de duas regras");
+        resultado.RegrasComConsequenciaAdiada.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca aguarda dados");
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA");
     }
 
     private static void VerificarBloqueioSobGrupoImpossivel(
-        ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada, NoExigencia ouInterno)
+        ResultadoDaComprovacao resultado, RegraDeComprovacao regraSemGrupo, RegraDeComprovacao regraQueAguardaDados, RegraDeComprovacao grupoInterno)
     {
-        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
-        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id, "a folha bloqueada sob grupo terminal continua suprimida");
-        r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não emite o ELIMINA");
-        r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == ouInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o OU IMPOSSIVEL emite o inevitável");
+        resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
+        resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id, "a regra que aguarda dados continua com consequência adiada");
+        resultado.ConsequenciasVigentes.Should().NotContain(c => c.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra que aguarda dados não aplica a eliminação");
+        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == grupoInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o grupo sem possibilidade de cumprimento aplica a consequência");
     }
 
-    private static void VerificarOrientacaoBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada)
+    private static void VerificarOrientacaoBloqueada(ResultadoDaComprovacao resultado, RegraDeComprovacao regraSemGrupo, RegraDeComprovacao regraQueAguardaDados)
     {
-        r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
-        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id);
-        r.PendenciasDeOrientacao.Should().NotContain(p => p.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não vira orientação");
-        r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
+        resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
+        resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id);
+        resultado.PendenciasDeOrientacao.Should().NotContain(p => p.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra de documento bloqueada não gera orientação");
+        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA");
     }
 
-    private static void VerificarOcorrencias(ResultadoDaComprovacao r, DocumentoExigido bloqueado)
+    private static void VerificarOcorrencias(ResultadoDaComprovacao resultado, DocumentoExigido bloqueado)
     {
-        r.StatusPorEntidade.Where(s => s.DocumentoExigidoId == bloqueado.Id)
-            .Should().OnlyContain(static s => s.Status == StatusResolucaoExigencia.AplicabilidadeIndeterminada);
-        r.ConsequenciasVigentes.Should().NotContain(static c => c.Consequencia == "ELIMINA", "a folha bloqueada não emite em ocorrência nenhuma");
-        r.ConsequenciasVigentes.Where(static c => c.Consequencia == "REMOVE_VANTAGEM").Select(static c => c.EntidadeId)
+        resultado.SituacoesDeExigenciaPorOcorrencia.Where(s => s.DocumentoExigidoId == bloqueado.Id)
+            .Should().OnlyContain(static s => s.Situacao == StatusResolucaoExigencia.AguardandoDados);
+        resultado.ConsequenciasVigentes.Should().NotContain(static c => c.Consequencia == "ELIMINA", "a regra que aguarda dados não aplica consequência em nenhuma ocorrência");
+        resultado.ConsequenciasVigentes.Where(static c => c.Consequencia == "REMOVE_VANTAGEM").Select(static c => c.OcorrenciaId)
             .Should().Equal("m1", "m2");
     }
 
-    private static (NoExigencia Raiz, NoExigencia Grupo) CriarGrupoAlternativoComCondicionais(DocumentoExigido documento)
+    private static (RegraDeComprovacao RegraSemGrupo, RegraDeComprovacao Grupo) CriarGrupoAlternativoComCondicionais(DocumentoExigido documento)
     {
-        NoExigencia folha = NoExigencia.CriarFolha(documento, 0).Value!;
-        NoExigencia condicionalDentro = NoExigencia.CriarFolha(DocumentoCondicional("GATE"), 1).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [folha, condicionalDentro]).Value!;
-        NoExigencia condicionalFora = NoExigencia.CriarFolha(DocumentoCondicional("GATE"), 1).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "RECLASSIFICA_AC", [], [grupo, condicionalFora]).Value!;
-        return (raiz, grupo);
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
+        RegraDeComprovacao condicionalDentro = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional("CONDICAO"), 1).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento, condicionalDentro]).Value!;
+        RegraDeComprovacao condicionalFora = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional("CONDICAO"), 1).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "RECLASSIFICA_AC", [], [grupo, condicionalFora]).Value!;
+        return (regraSemGrupo, grupo);
     }
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacaoDe(DocumentoExigido documento) =>
@@ -269,8 +260,8 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         };
 
     private static ResultadoDaComprovacao ResolverComDocumentoBloqueado(
-        NoExigencia raiz, DocumentoExigido satisfeito, DocumentoExigido bloqueado) =>
-        Resolver(Arvore(raiz), fatos: Fatos(("GATE", false)), apresentacoes: ApresentacaoDe(satisfeito),
+        RegraDeComprovacao regraSemGrupo, DocumentoExigido satisfeito, DocumentoExigido bloqueado) =>
+        Resolver(Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false)), apresentacoes: ApresentacaoDe(satisfeito),
             bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
 }

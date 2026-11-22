@@ -15,14 +15,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// <summary>
 /// A configuração do processo que a avaliação da inscrição lê — a congelada na versão que a inscrição
 /// fixou (UNI-REQ-0084) ou, na pré-visualização, a viva do rascunho: a definição avaliável inteira, a
-/// oferta de valores de cada campo, a árvore de exigências, os campos e os grupos que dão o rótulo e a
+/// oferta de valores de cada campo, as regras de comprovação, os campos e os grupos que dão o rótulo e a
 /// seção do que falta responder, as modalidades que a distribuição de vagas oferta, com o nome
 /// congelado de cada uma, e as fases e os formulários, que dizem em que fase cada finalidade pergunta.
 /// </summary>
 public sealed record ConfiguracaoAvaliavel(
     DefinicaoFormulario Definicao,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
-    RegrasDeComprovacaoDaVersao Arvore,
+    RegrasDeComprovacaoDaVersao RegrasDeComprovacao,
     IReadOnlyCollection<FatoColetado> Campos,
     IReadOnlyCollection<GrupoColetado> Grupos,
     IReadOnlyCollection<ModalidadeSelecionada> ModalidadesOfertadas,
@@ -91,7 +91,7 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
 }
 
 /// <summary>
-/// O resultado de uma avaliação só: a do formulário, a de cada exigência da árvore diante do candidato
+/// O resultado de uma avaliação só: a do formulário, a de cada exigência diante do candidato
 /// e as modalidades em que ele concorre.
 /// </summary>
 /// <remarks>
@@ -106,11 +106,11 @@ public sealed record ResultadoDaAvaliacaoDaInscricao(
     ModalidadesDeConcorrencia? ModalidadesSegundaOpcao = null);
 
 /// <summary>
-/// Os documentos que o edital exige do candidato (UNI-REQ-0069, UNI-REQ-0077): cada folha da árvore com
+/// Os documentos que o edital exige do candidato (UNI-REQ-0069, UNI-REQ-0077): cada regra de documento com
 /// a situação dela diante das respostas e dos documentos enviados, e, por fase, o que falta responder
 /// para saber se as exigências daquela fase que podem ser exigidas se aplicam. A fase sem pendência não
 /// tem entrada. <see cref="Ausentes"/> são os documentos obrigatórios da inscrição que ainda faltam,
-/// decididos pelo estado do nó da árvore (UNI-REQ-0028).
+/// decididos pela situação da regra de comprovação (UNI-REQ-0028).
 /// </summary>
 public sealed record DocumentosDaInscricao(
     IReadOnlyList<DocumentoAvaliado> Itens,
@@ -171,31 +171,23 @@ public sealed record ModalidadeDeConcorrencia(string Codigo, string Nome, int Or
 public sealed record PendenciaDaAvaliacao(string FatoCodigo, string Rotulo, string? SecaoCodigo);
 
 /// <summary>
-/// Uma folha da árvore de exigências diante do candidato: a exigência, a situação, o grupo de membros a
-/// que ela se liga e a ocorrência dele — a ocorrência é nula quando ainda não se sabe quais membros o
-/// grupo tem —, os grupos da árvore que a contêm, do mais externo ao mais interno, e o grupo pelo qual a
-/// própria folha se repete, quando é nela que a repetição começa. <paramref name="DispensadoPeloGrupo"/> diz que a folha
-/// não foi atendida, mas um grupo "um ou outro" que a contém já está atendido: ela não precisava ser enviada. Pelos grupos se reconstrói a escolha
-/// inteira: o E sob um OU é uma alternativa só, e a repetição vale do nó que a declara para baixo.
+/// O documento diante do candidato, sua situação e os grupos de comprovação que o contêm.
+/// A dispensa indica que um grupo atendido não precisa desse documento para ser cumprido.
 /// </summary>
 public sealed record DocumentoAvaliado(
     DocumentoExigido Documento,
     SituacaoDoDocumento Situacao,
     string? GrupoCodigo,
     string? OcorrenciaId,
-    IReadOnlyList<GrupoDaArvore> Grupos,
-    string? RepetePorEntidade,
-    int QuantidadeMinima = NoExigencia.QuantidadeMinimaPadrao,
+    IReadOnlyList<GrupoDeComprovacao> Grupos,
+    string? GrupoDoFormularioParaRepeticao,
+    int QuantidadeMinima = RegraDeComprovacao.QuantidadeMinimaPadrao,
     bool DispensadoPeloGrupo = false);
 
 /// <summary>
-/// Um grupo da árvore de exigências: o nó, se é um E ou um OU, no OU quantos dos filhos bastam — o N-de
-/// é o OU com mínimo maior que um; no E todos os filhos são exigidos, e o mínimo é nulo —, e o grupo de
-/// membros pelo qual o nó se repete, quando a repetição começa nele: a escolha vale então para cada
-/// membro, e não para o candidato. <paramref name="Consequencia"/> é a do OU, quando o edital a declara
-/// no grupo e não em cada alternativa.
+/// Grupo que exige todos os itens ou uma quantidade mínima, com repetição e consequência quando declaradas.
 /// </summary>
-public sealed record GrupoDaArvore(Guid GrupoId, TipoNo Tipo, int? Minimo, string? RepetePorEntidade, string? Consequencia = null);
+public sealed record GrupoDeComprovacao(Guid GrupoId, FormaDeComprovacao Forma, int? Minimo, string? GrupoDoFormularioParaRepeticao, string? Consequencia = null);
 
 /// <summary>
 /// Os códigos que o formulário pergunta e de que a avaliação depende: os campos — os subitens de grupo

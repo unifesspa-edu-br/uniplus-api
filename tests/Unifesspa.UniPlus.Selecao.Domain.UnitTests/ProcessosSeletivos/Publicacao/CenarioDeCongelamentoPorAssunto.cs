@@ -296,7 +296,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'))
             .IsSuccess.Should().BeTrue();
         Guid faseDoFormulario = processo.CronogramaFases.First().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaGeral(faseDoFormulario), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeral(faseDoFormulario), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         return processo;

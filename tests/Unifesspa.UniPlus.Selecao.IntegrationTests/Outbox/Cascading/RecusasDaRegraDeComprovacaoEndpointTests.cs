@@ -16,16 +16,16 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 [Collection(CascadingCollection.Name)]
-public sealed class RecusasDoNoDeExigenciaEndpointTests(CascadingFixture fixture)
+public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fixture)
 {
     [Fact]
     public async Task DefinirDocumentosExigidos_DeclaracoesInvalidas_DevolveCodigoCampoEMensagem()
     {
         Guid processoId = await SemearProcessoAsync();
         using HttpClient client = fixture.Factory.CreateClient();
-        foreach (CasoDeRecusaDoNo caso in CasosDeRecusaDoNo.Todos())
+        foreach (CasoDeRecusaDaRegra caso in CasosDeRecusaDaRegra.Todos())
         {
-            using HttpResponseMessage resposta = await EnviarAsync(client, processoId, caso.Nos);
+            using HttpResponseMessage resposta = await EnviarAsync(client, processoId, caso.Regras);
             resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
             using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             ConferirRecusa(problema, caso);
@@ -37,13 +37,13 @@ public sealed class RecusasDoNoDeExigenciaEndpointTests(CascadingFixture fixture
     {
         Guid processoId = await SemearProcessoAsync();
         using HttpClient client = fixture.Factory.CreateClient();
-        using HttpResponseMessage resposta = await EnviarAsync(client, processoId, [CasosDeRecusaDoNo.FolhaSemDocumento(), CasosDeRecusaDoNo.GrupoVazio()]);
+        using HttpResponseMessage resposta = await EnviarAsync(client, processoId, [CasosDeRecusaDaRegra.RegraSemDocumento(), CasosDeRecusaDaRegra.GrupoVazio()]);
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
-        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal("nos[0].documento", "nos[1].filhos");
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal("regrasDeComprovacao[0].documento", "regrasDeComprovacao[1].itens");
         erros.Select(static e => e.GetProperty("code").GetString()).Should().Equal(
-            "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha", "uniplus.selecao.no_exigencia.grupo_vazio");
+            "uniplus.selecao.regra_de_comprovacao.documento_obrigatorio", "uniplus.selecao.regra_de_comprovacao.grupo_sem_itens");
     }
 
     [Fact]
@@ -51,16 +51,16 @@ public sealed class RecusasDoNoDeExigenciaEndpointTests(CascadingFixture fixture
     {
         Guid processoId = await SemearProcessoAsync();
         using HttpClient client = fixture.Factory.CreateClient();
-        object grupo = CasosDeRecusaDoNo.GrupoCom([CasosDeRecusaDoNo.FolhaSemDocumento()]);
+        object grupo = CasosDeRecusaDaRegra.GrupoCom([CasosDeRecusaDaRegra.RegraSemDocumento()]);
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, [grupo]);
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement erro = problema.RootElement.GetProperty("errors").EnumerateArray().Single();
-        erro.GetProperty("field").GetString().Should().Be("nos[0].filhos[0].documento");
-        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha");
+        erro.GetProperty("field").GetString().Should().Be("regrasDeComprovacao[0].itens[0].documento");
+        erro.GetProperty("code").GetString().Should().Be("uniplus.selecao.regra_de_comprovacao.documento_obrigatorio");
     }
 
-    private static void ConferirRecusa(JsonDocument problema, CasoDeRecusaDoNo caso)
+    private static void ConferirRecusa(JsonDocument problema, CasoDeRecusaDaRegra caso)
     {
         problema.RootElement.GetProperty("code").GetString().Should().Be(caso.Codigo);
         JsonElement erro = problema.RootElement.GetProperty("errors").EnumerateArray()

@@ -16,8 +16,7 @@ using Xunit;
 /// tipos de deficiência), distribuição de vagas e ofertas, critérios de desempate, cronograma de
 /// fases (inclusive as bancas requeridas de uma fase), fatos coletados, regras de derivação (a
 /// lista externa, as regras internas de uma configuração e as condições aninhadas de uma regra),
-/// destinos da cascata de remanejamento (dentro de uma mesma origem) e a árvore de satisfação (as
-/// raízes e os filhos de um grupo) — sem mudar nenhum valor — SHALL produzir os mesmos bytes
+/// destinos da cascata de remanejamento (dentro de uma mesma origem) e as regras de comprovação e os itens dos grupos — sem mudar nenhum valor — SHALL produzir os mesmos bytes
 /// canônicos e o mesmo hash.
 /// </summary>
 /// <remarks>
@@ -65,8 +64,8 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     [Fact(DisplayName = "Permutar a ordem de entrada das coleções produz bytes canônicos e hash idênticos")]
     public void Permutacao_ProduzMesmosBytesEHash()
     {
-        ProcessoSeletivo direto = CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: true);
-        ProcessoSeletivo permutado = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: true, comArvoreSatisfacao: true);
+        ProcessoSeletivo direto = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
+        ProcessoSeletivo permutado = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: true, comRegrasDeComprovacao: true);
 
         ConferirQueAPermutacaoInverteACadaColecao(direto, permutado);
 
@@ -126,7 +125,7 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         ConferirInversaoDoCronograma(direto, permutado);
         ConferirInversaoDosFatosEDaDerivacao(direto, permutado);
         ConferirInversaoDosDestinosDaCascata(direto, permutado);
-        ConferirInversaoDaArvoreDeSatisfacao(direto, permutado);
+        ConferirInversaoDasRegrasDeComprovacao(direto, permutado);
     }
 
     private static void ConferirInversao<T>(
@@ -218,16 +217,16 @@ public sealed class EnvelopeCanonicoPermutacaoTests
             p => p.Cascata!.Destinos.Where(d => d.ModalidadeOrigemCodigo == origemCascataDeTeste).Select(static d => d.ModalidadeDestinoCodigo));
     }
 
-    private static void ConferirInversaoDaArvoreDeSatisfacao(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    private static void ConferirInversaoDasRegrasDeComprovacao(ProcessoSeletivo direto, ProcessoSeletivo permutado)
     {
-        ConferirInversao(direto, permutado, "das raízes da árvore de satisfação",
-            static p => p.RaizesDeExigencia.Select(static r => r.Tipo));
-        ConferirInversao(direto, permutado, "dos filhos do grupo da árvore de satisfação",
-            static p => GrupoDaArvore(p).Filhos.Select(static f => f.DocumentoExigido!.TipoDocumentoCodigo));
+        ConferirInversao(direto, permutado, "das regras sem grupo",
+            static p => p.RegrasDeComprovacaoSemGrupo.Select(static r => r.Forma));
+        ConferirInversao(direto, permutado, "dos itens do grupo de comprovação",
+            static p => GrupoDaComprovacao(p).Itens.Select(static f => f.DocumentoExigido!.TipoDocumentoCodigo));
     }
 
-    private static NoExigencia GrupoDaArvore(ProcessoSeletivo processo) =>
-        processo.RaizesDeExigencia.Single(static r => r.Filhos.Count > 0);
+    private static RegraDeComprovacao GrupoDaComprovacao(ProcessoSeletivo processo) =>
+        processo.RegrasDeComprovacaoSemGrupo.Single(static r => r.Itens.Count > 0);
 
     private static void ConferirQueAPermutacaoInverteAListaDeCorRaca()
     {
@@ -247,7 +246,7 @@ public sealed class EnvelopeCanonicoPermutacaoTests
             "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, atendimento especializado, " +
             "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
             "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
-            "configuração e as condições aninhadas de uma regra), destinos da cascata e a árvore de satisfação " +
+            "configuração e as condições aninhadas de uma regra), destinos da cascata e as regras de comprovação " +
             "não muda um único byte");
         PerfilCanonicoV1.Instancia.HashHex(bytesPermutado.Bytes)
             .Should().Be(PerfilCanonicoV1.Instancia.HashHex(bytesDireto.Bytes),

@@ -134,7 +134,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
         DocumentoExigido cpf = ExigenciaDeInscricao(fase, "CPF", "CPF");
 
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!])
+            [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!])
             .IsSuccess.Should().BeTrue();
     }
 

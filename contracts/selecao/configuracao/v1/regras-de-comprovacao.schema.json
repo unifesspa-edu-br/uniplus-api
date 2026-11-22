@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/regras-de-comprovacao.schema.json",
+  "title": "Regra de comprovação",
+  "description": "Regra que define como uma exigência documental é comprovada.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "forma"
+  ],
+  "properties": {
+    "forma": {
+      "title": "Forma de comprovação",
+      "description": "A regra exige um documento, todos os itens ou uma quantidade mínima de itens.",
+      "enum": [
+        "DOCUMENTO",
+        "TODOS_OS_ITENS",
+        "QUANTIDADE_MINIMA_DE_ITENS"
+      ]
+    },
+    "exigenciaChave": {
+      "title": "Exigência documental",
+      "description": "Chave local da exigência citada pela regra de documento.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
+    "quantidadeMinima": {
+      "title": "Quantidade mínima",
+      "description": "Na regra de documento, quantidade de apresentações exigidas, até 366; no grupo, quantidade mínima de itens cumpridos.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "consequencia": {
+      "title": "Consequência",
+      "description": "Consequência quando a regra não é cumprida.",
+      "enum": [
+        "ELIMINA",
+        "RECLASSIFICA_AC",
+        "REMOVE_VANTAGEM",
+        "PENDENCIA_REENVIO"
+      ]
+    },
+    "basesLegais": {
+      "title": "Bases legais",
+      "description": "Base legal da regra de comprovação.",
+      "type": "array",
+      "items": {
+        "$ref": "predicado.schema.json#/$defs/baseLegal"
+      }
+    },
+    "criterioDeDistincao": {
+      "title": "Critério de distinção",
+      "description": "Critério que distingue apresentações do mesmo documento.",
+      "enum": [
+        "COMPETENCIA_MENSAL",
+        "EXERCICIO_ANUAL",
+        "OCORRENCIA"
+      ]
+    },
+    "dataReferencia": {
+      "title": "Data de referência",
+      "description": "Data de referência: a competência ou o exercício dela é o último a comprovar, contando-se para trás.",
+      "type": "string",
+      "format": "date"
+    },
+    "ocorrenciasEsperadas": {
+      "title": "Ocorrências esperadas",
+      "description": "Identificadores das ocorrências esperadas, quando o critério é ocorrência.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "grupoDoFormularioParaRepeticao": {
+      "title": "Grupo do formulário para repetição",
+      "description": "Código do grupo do formulário para cujos registros a regra é aplicada.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "itens": {
+      "title": "Itens",
+      "description": "Regras contidas no grupo de comprovação.",
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "forma": {
+        "const": "DOCUMENTO"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "quantidadeMinima": {
+        "maximum": 366
+      }
+    }
+  }
+}

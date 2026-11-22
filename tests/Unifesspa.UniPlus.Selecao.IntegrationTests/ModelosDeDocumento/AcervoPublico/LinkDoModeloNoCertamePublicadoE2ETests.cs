@@ -104,7 +104,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
             processo.Id, "Autodeclaração étnico-racial", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         modelo.Confirmar(conteudo.LongLength, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
         db.ModelosDeDocumento.Add(modelo);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaQueOfereceOModelo(processo, modelo), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaQueOfereceOModelo(processo, modelo), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         return modelo;

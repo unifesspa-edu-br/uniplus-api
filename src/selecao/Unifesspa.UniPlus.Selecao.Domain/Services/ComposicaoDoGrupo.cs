@@ -7,52 +7,52 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>Coerência estrutural entre os descendentes de um grupo de exigências.</summary>
 internal static class ComposicaoDoGrupo
 {
-    internal static DomainError? Recusa(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade) =>
-        Recusas(filhos, repetePorEntidade).FirstOrDefault()?.Error;
+    internal static DomainError? Recusa(IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao) =>
+        Recusas(itens, grupoDoFormularioParaRepeticao).FirstOrDefault()?.Error;
 
-    internal static List<FieldError> Recusas(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
+    internal static List<FieldError> Recusas(IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao)
     {
-        if (RecusaSeVazio(filhos.Count) is { } vazio)
+        if (RecusaSeVazio(itens.Count) is { } vazio)
         {
-            return [new("filhos", vazio)];
+            return [new("itens", vazio)];
         }
-        if (ContemCiclo(filhos))
+        if (ContemCiclo(itens))
         {
-            return [new("filhos", new DomainError("NoExigencia.ArvoreComCiclo",
+            return [new("itens", new DomainError("RegraDeComprovacao.RegraContemASiMesma",
                 "Este grupo contém uma repetição circular de itens. Organize os grupos sem repetir um item dentro de si."))];
         }
-        return [.. RecusasDasFasesEFinalidades(filhos), .. RecusaDaRepeticao(filhos, repetePorEntidade)];
+        return [.. RecusasDasFasesEFinalidades(itens), .. RecusaDaRepeticao(itens, grupoDoFormularioParaRepeticao)];
     }
 
-    internal static DomainError? RecusaSeVazio(int quantidadeDeFilhos) => quantidadeDeFilhos == 0
-        ? new("NoExigencia.GrupoVazio", "Este grupo não contém itens. Acrescente ao menos um item ao grupo.") : null;
+    internal static DomainError? RecusaSeVazio(int quantidadeDeItens) => quantidadeDeItens == 0
+        ? new("RegraDeComprovacao.GrupoSemItens", "Este grupo não contém itens. Acrescente ao menos um item ao grupo.") : null;
 
-    private static IEnumerable<FieldError> RecusasDasFasesEFinalidades(IReadOnlyList<NoExigencia> filhos)
+    private static IEnumerable<FieldError> RecusasDasFasesEFinalidades(IReadOnlyList<RegraDeComprovacao> itens)
     {
-        if (FaseComumDosFilhos(filhos) is null)
+        if (FaseComumDosItens(itens) is null)
         {
-            yield return new("filhos", new DomainError("NoExigencia.GrupoComFasesDiferentes",
+            yield return new("itens", new DomainError("RegraDeComprovacao.GrupoComFasesDiferentes",
                 "Os itens deste grupo pertencem a fases diferentes. Escolha a mesma fase para todos os itens do grupo."));
         }
-        if (!FinalidadeComumDosFilhos(filhos, out _))
+        if (!FinalidadeComumDosItens(itens, out _))
         {
-            yield return new("filhos", new DomainError("NoExigencia.GrupoComFinalidadesDiferentes",
+            yield return new("itens", new DomainError("RegraDeComprovacao.GrupoComFormulariosDiferentes",
                 "Os documentos deste grupo pertencem a formulários diferentes. Escolha o mesmo formulário para todos os documentos do grupo."));
         }
     }
 
-    private static IEnumerable<FieldError> RecusaDaRepeticao(IReadOnlyList<NoExigencia> filhos, string? repeticao) =>
-        repeticao is not null && filhos.Any(ContemRepeticaoDeEntidade)
-            ? [new("repetePorEntidade", new DomainError("NoExigencia.RepeticaoDeEntidadeAninhada",
+    private static IEnumerable<FieldError> RecusaDaRepeticao(IReadOnlyList<RegraDeComprovacao> itens, string? repeticao) =>
+        repeticao is not null && itens.Any(ContemRepeticaoPorGrupo)
+            ? [new("grupoDoFormularioParaRepeticao", new DomainError("RegraDeComprovacao.RepeticaoDentroDeRepeticao",
                 "Este grupo repete itens que já se repetem por outro grupo. Retire uma das repetições."))] : [];
 
-    private static bool ContemRepeticaoDeEntidade(NoExigencia no) =>
-        no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoDeEntidade);
+    private static bool ContemRepeticaoPorGrupo(RegraDeComprovacao regra) =>
+        regra.GrupoDoFormularioParaRepeticao is not null || regra.Itens.Any(ContemRepeticaoPorGrupo);
 
-    internal static Guid? FaseComumDosFilhos(IReadOnlyList<NoExigencia> filhos)
+    internal static Guid? FaseComumDosItens(IReadOnlyList<RegraDeComprovacao> itens)
     {
         HashSet<Guid> fases = [];
-        foreach (Guid? fase in filhos.Select(static filho => filho.FaseComum()))
+        foreach (Guid? fase in itens.Select(static item => item.FaseComum()))
         {
             if (fase is null)
             {
@@ -65,27 +65,27 @@ internal static class ComposicaoDoGrupo
         return fases.Count == 1 ? fases.First() : null;
     }
 
-    internal static bool FinalidadeComumDosFilhos(IReadOnlyList<NoExigencia> filhos, out FinalidadeFormulario? finalidade)
+    internal static bool FinalidadeComumDosItens(IReadOnlyList<RegraDeComprovacao> itens, out FinalidadeFormulario? finalidade)
     {
         finalidade = null;
-        if (filhos.Count == 0)
+        if (itens.Count == 0)
         {
             return true;
         }
-        if (!filhos[0].TentarFinalidadeComum(out finalidade))
+        if (!itens[0].TentarFinalidadeComum(out finalidade))
         {
             return false;
         }
         FinalidadeFormulario? comum = finalidade;
-        return filhos.Skip(1).All(filho => filho.TentarFinalidadeComum(out FinalidadeFormulario? doFilho) && doFilho == comum);
+        return itens.Skip(1).All(item => item.TentarFinalidadeComum(out FinalidadeFormulario? doItem) && doItem == comum);
     }
 
-    internal static bool ContemCiclo(IReadOnlyList<NoExigencia> raizes)
+    internal static bool ContemCiclo(IReadOnlyList<RegraDeComprovacao> regras)
     {
-        HashSet<NoExigencia> visitados = new(ReferenceEqualityComparer.Instance);
-        return raizes.Any(raiz => !Visitar(raiz, visitados));
+        HashSet<RegraDeComprovacao> visitados = new(ReferenceEqualityComparer.Instance);
+        return regras.Any(regra => !Visitar(regra, visitados));
     }
 
-    private static bool Visitar(NoExigencia no, HashSet<NoExigencia> visitados) =>
-        visitados.Add(no) && no.Filhos.All(filho => Visitar(filho, visitados));
+    private static bool Visitar(RegraDeComprovacao regra, HashSet<RegraDeComprovacao> visitados) =>
+        visitados.Add(regra) && regra.Itens.All(item => Visitar(item, visitados));
 }

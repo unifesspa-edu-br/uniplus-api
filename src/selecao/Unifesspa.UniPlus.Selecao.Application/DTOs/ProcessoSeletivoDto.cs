@@ -39,7 +39,7 @@ public sealed record ProcessoSeletivoDto(
     ConfiguracaoClassificacaoDto? Classificacao,
     IReadOnlyList<FaseCronogramaDto> CronogramaFases,
     IReadOnlyList<DocumentoExigidoDto> DocumentosExigidos,
-    IReadOnlyList<NoExigenciaDto> RaizesExigencia,
+    IReadOnlyList<RegraDeComprovacaoDto> RegrasDeComprovacao,
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
     IReadOnlyList<ConfiguracaoDerivacaoDto> RegrasDerivacao,
     // Formulários por finalidade (UNI-REQ-0144): read-back administrativo do que foi salvo antes

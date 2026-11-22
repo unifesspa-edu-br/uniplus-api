@@ -25,7 +25,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
         ProjecaoDaClassificacao.ProjetarCriteriosDeDesempate(processo), ProjecaoDaClassificacao.Projetar(processo),
         ProjecaoDaFaseDoCronograma.ProjetarCronograma(processo),
-        ProjecaoDaColeta.ProjetarDocumentosExigidos(processo), ProjecaoDaColeta.ProjetarRaizesDeExigencia(processo),
+        ProjecaoDaColeta.ProjetarDocumentosExigidos(processo), ProjecaoDaColeta.ProjetarRegrasDeComprovacaoSemGrupo(processo),
         ProjecaoDaColeta.ProjetarReferenciaTemporal(processo.ReferenciaTemporalFatos), ProjecaoDaColeta.ProjetarDerivacoes(processo),
         ProjecaoDaColeta.ProjetarFormularios(processo), ProjecaoDaColeta.ProjetarOpcoesDeclaradas(processo),
         ProjetarDivulgacao(processo.ConfiguracaoDivulgacao), ProjetarTaxaDeInscricao(processo.ConfiguracaoTaxaInscricao),

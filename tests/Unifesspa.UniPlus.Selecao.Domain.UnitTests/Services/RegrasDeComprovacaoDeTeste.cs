@@ -13,8 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>Os documentos, árvores e entradas que os testes do resolvedor da árvore de satisfação compartilham.</summary>
-internal static class ArvoreDeTeste
+internal static class RegrasDeComprovacaoDeTeste
 {
     internal static readonly Guid FaseId = Guid.CreateVersion7();
     internal static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
@@ -40,39 +39,39 @@ internal static class ArvoreDeTeste
             static d => d.Id,
             static IReadOnlyList<ApresentacaoDocumento> (d) => [new ApresentacaoDocumento(Guid.CreateVersion7())]);
 
-    internal static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentaComChaves(
-        DocumentoExigido documento, params string?[] chavesDistincao) =>
+    internal static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacoesComIdentificacao(
+        DocumentoExigido documento, params string?[] identificacoes) =>
         new()
         {
-            [documento.Id] = [.. chavesDistincao.Select(static chave => new ApresentacaoDocumento(Guid.CreateVersion7(), chave))],
+            [documento.Id] = [.. identificacoes.Select(static identificacao => new ApresentacaoDocumento(Guid.CreateVersion7(), identificacao))],
         };
 
     internal static readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> SemApresentacoes =
         new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
 
-    internal static RegrasDeComprovacaoDaVersao Arvore(params NoExigencia[] raizes) =>
-        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
+    internal static RegrasDeComprovacaoDaVersao Regras(params RegraDeComprovacao[] regrasSemGrupo) =>
+        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo);
 
     internal static Result<ResultadoDaComprovacao> Resolver(
-        RegrasDeComprovacaoDaVersao arvore,
+        RegrasDeComprovacaoDaVersao regrasDeComprovacao,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instancias = null) =>
-        AvaliadorDaComprovacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? ocorrencias = null) =>
+        AvaliadorDaComprovacao.Resolver(regrasDeComprovacao, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, ocorrencias);
 
-    internal static OcorrenciaDoGrupo Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
-        new(entidadeId, atributos.ToDictionary(
+    internal static OcorrenciaDoGrupo Ocorrencia(string ocorrenciaId, params (string Fato, bool Valor)[] atributos) =>
+        new(ocorrenciaId, atributos.ToDictionary(
             static a => a.Fato,
             static a => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(a.Valor)),
             StringComparer.Ordinal));
 
-    internal static Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> InstanciasDe(
-        string grupo, params OcorrenciaDoGrupo[] instancias) =>
-        new(StringComparer.Ordinal) { [grupo] = instancias };
+    internal static Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> OcorrenciasDe(
+        string grupo, params OcorrenciaDoGrupo[] ocorrencias) =>
+        new(StringComparer.Ordinal) { [grupo] = ocorrencias };
 
-    internal static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentaDeEntidade(
-        DocumentoExigido documento, string entidadeId) =>
-        new() { [documento.Id] = [new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: entidadeId)] };
+    internal static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacoesDaOcorrencia(
+        DocumentoExigido documento, string ocorrenciaId) =>
+        new() { [documento.Id] = [new ApresentacaoDocumento(Guid.CreateVersion7(), OcorrenciaId: ocorrenciaId)] };
 
     internal static BaseLegalDaComprovacao BaseLegalResolvida() =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;

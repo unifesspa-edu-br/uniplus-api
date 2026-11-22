@@ -71,7 +71,7 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        request.Content = JsonContent.Create(new[] { new { tipo = "FOLHA", documento = DocumentoExigido(processo.CronogramaFases.Single(f => f.Ordem == 1).Id, tipoDocumentoId, fato) } });
+        request.Content = JsonContent.Create(new[] { new { forma = "DOCUMENTO", documento = DocumentoExigido(processo.CronogramaFases.Single(f => f.Ordem == 1).Id, tipoDocumentoId, fato) } });
 
         return request;
     }

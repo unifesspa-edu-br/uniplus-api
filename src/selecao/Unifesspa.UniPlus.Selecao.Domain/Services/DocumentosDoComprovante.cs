@@ -11,13 +11,13 @@ using ValueObjects;
 /// <summary>
 /// Compõe a seção de documentos do comprovante (UNI-REQ-0029) a partir da avaliação da inscrição e dos
 /// arquivos confirmados: cada exigência da inscrição que se aplica, ou pode se aplicar, ao candidato,
-/// com a consequência escrita por extenso. A alternativa de um grupo "um ou outro" que o candidato não
+/// com a consequência escrita por extenso. O item de um grupo de quantidade mínima que o candidato não
 /// precisou enviar porque o grupo já está atendido sai como dispensada, e sem consequência: listá-la como
 /// pendente, com a consequência de eliminação, contradiria a inscrição aceita.
 /// </summary>
 public static class DocumentosDoComprovante
 {
-    /// <summary>A situação da alternativa de um grupo "um ou outro" que o grupo atendido dispensa.</summary>
+    /// <summary>A situação do item que um grupo de quantidade mínima atendido dispensa.</summary>
     public const string SituacaoDispensada = "DISPENSADA";
 
     public static IReadOnlyList<DocumentoDoComprovante> Compor(
@@ -61,23 +61,23 @@ public static class DocumentosDoComprovante
     };
 
     /// <summary>
-    /// O grupo "um ou outro" é a unidade da consequência (UNI-REQ-0070): dentro dele, vale a do grupo mais
+    /// O grupo de quantidade mínima é a unidade da consequência (UNI-REQ-0070): dentro dele, vale a do grupo mais
     /// externo, escrita sobre os documentos do grupo, e as alternativas só orientam o que falta — a
-    /// consequência própria delas não vale, e o grupo sem consequência não tem texto. Fora de grupo "um ou
-    /// outro", vale a da própria exigência; o grupo "E" não carrega consequência.
+    /// consequência própria delas não vale, e o grupo sem consequência não tem texto. Fora de um grupo de
+    /// quantidade mínima, vale a da própria exigência; o grupo que exige todos os itens não carrega consequência.
     /// </summary>
     private static string? ConsequenciaDe(DocumentoAvaliado avaliado, IReadOnlyList<DocumentoAvaliado> todos)
     {
-        GrupoDaArvore? ou = avaliado.Grupos.FirstOrDefault(static g => g.Tipo == TipoNo.GrupoOu);
-        if (ou is null)
+        GrupoDeComprovacao? grupo = avaliado.Grupos.FirstOrDefault(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens);
+        if (grupo is null)
         {
             return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaIndeferimento, $"o documento {avaliado.Documento.TipoDocumentoNome}");
         }
 
-        string nomes = string.Join(", ", NoGrupo(ou, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));
-        return ConsequenciaPorEscrito(ou.Consequencia, $"os documentos exigidos ({nomes})");
+        string nomes = string.Join(", ", NoGrupo(grupo, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));
+        return ConsequenciaPorEscrito(grupo.Consequencia, $"os documentos exigidos ({nomes})");
     }
 
-    private static IEnumerable<DocumentoAvaliado> NoGrupo(GrupoDaArvore grupo, IReadOnlyList<DocumentoAvaliado> todos) =>
+    private static IEnumerable<DocumentoAvaliado> NoGrupo(GrupoDeComprovacao grupo, IReadOnlyList<DocumentoAvaliado> todos) =>
         todos.Where(d => d.Grupos.Any(g => g.GrupoId == grupo.GrupoId));
 }

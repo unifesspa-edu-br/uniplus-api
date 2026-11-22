@@ -288,7 +288,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             EnviarAsync(
                 HttpMethod.Put,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/documentos-exigidos", UriKind.Relative),
-                new[] { new { tipo = "FOLHA", documento = DocumentoDaExigencia(tipoDocumentoId, comprova ?? [FatoSensivel]) } });
+                new[] { new { forma = "DOCUMENTO", documento = DocumentoDaExigencia(tipoDocumentoId, comprova ?? [FatoSensivel]) } });
 
         private object DocumentoDaExigencia(Guid tipoDocumentoId, string[] fatosComprovados) => new
         {

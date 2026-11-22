@@ -90,7 +90,7 @@ internal static class FormularioDoEnvioDeTeste
     /// </summary>
     internal static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
         IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null, Action<ProcessoSeletivo>? ajustar = null,
-        Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<NoExigencia> Nos)>? exigencias = null)
+        Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<RegraDeComprovacao> Nos)>? exigencias = null)
     {
         VersaoTermoEscolhida versaoDoTermo = new(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo de veracidade", "Declaro que as informações são verdadeiras.",
@@ -116,9 +116,9 @@ internal static class FormularioDoEnvioDeTeste
         "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
     internal static ConfiguracaoPublicada ConfiguracaoDoProcesso(
-        ProcessoSeletivo processoBase, Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<NoExigencia> Nos)>? exigencias)
+        ProcessoSeletivo processoBase, Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<RegraDeComprovacao> Nos)>? exigencias)
     {
-        (IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<NoExigencia> nos) =
+        (IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<RegraDeComprovacao> nos) =
             exigencias?.Invoke(processoBase) ?? ([.. processoBase.DocumentosExigidos], []);
 
         return new ConfiguracaoPublicada(

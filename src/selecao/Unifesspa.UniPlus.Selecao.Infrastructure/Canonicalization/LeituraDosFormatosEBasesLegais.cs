@@ -125,39 +125,39 @@ internal static class LeituraDosFormatosEBasesLegais
             return null;
         }
 
-        Result<DocumentoExigidoBaseLegal> baseLegal = DocumentoExigidoBaseLegal.Criar(lida.Referencia, lida.Abrangencia, lida.Status, lida.Observacao);
+        Result<DocumentoExigidoBaseLegal> baseLegal = DocumentoExigidoBaseLegal.Criar(lida.Referencia, lida.Abrangencia, lida.Situacao, lida.Observacao);
         return baseLegal.IsFailure ? leitor.Propagar<DocumentoExigidoBaseLegal?>(baseLegal.Error!) : baseLegal.Value;
     }
 
     /// <summary>
-    /// Lê uma base legal congelada, que só é materializada quando resolvida. O status é conferido na
+    /// Lê uma base legal congelada, que só é materializada quando resolvida. A situação é conferida na
     /// fronteira de leitura, porque Reidratar não teria como saber disso sozinho.
     /// </summary>
     internal static BaseLegalLida? LerBaseLegalResolvida(LeitorEnvelope leitor, JsonObject baseItem, string path)
     {
-        leitor.ExigirChaves(baseItem, path, "referencia", "abrangencia", "status", "observacao");
+        leitor.ExigirChaves(baseItem, path, "referencia", "abrangencia", "situacao", "observacao");
 
         string referencia = leitor.TextoNaoVazio(baseItem, "referencia", path, LimitesDoEnvelope.BaseLegal);
         string abrangenciaCodigo = leitor.TextoNaoVazio(baseItem, "abrangencia", path);
-        string statusCodigo = leitor.TextoNaoVazio(baseItem, "status", path);
+        string situacaoCodigo = leitor.TextoNaoVazio(baseItem, "situacao", path);
         string? observacao = leitor.TextoOpcional(baseItem, "observacao", path, LimitesDoEnvelope.ObservacaoBaseLegal);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(statusCodigo);
-        return status == StatusBaseLegal.Resolvido
-            ? new BaseLegalLida(referencia, TipoAbrangenciaCodigo.FromCodigo(abrangenciaCodigo), status, observacao)
-            : leitor.Recusar<BaseLegalLida?>($"'{path}.status' deveria ser sempre RESOLVIDO — encontrado '{statusCodigo}'.");
+        StatusBaseLegal situacao = StatusBaseLegalCodigo.FromCodigo(situacaoCodigo);
+        return situacao == StatusBaseLegal.Resolvido
+            ? new BaseLegalLida(referencia, TipoAbrangenciaCodigo.FromCodigo(abrangenciaCodigo), situacao, observacao)
+            : leitor.Recusar<BaseLegalLida?>($"'{path}.situacao' deveria ser sempre RESOLVIDO — encontrado '{situacaoCodigo}'.");
     }
 
     /// <summary>
-    /// A base legal congelada de uma exigência ou de um nó da árvore, já conferida como resolvida.
+    /// A base legal congelada de uma exigência ou regra de comprovação, conferida como resolvida.
     /// </summary>
     /// <param name="Referencia">O texto de referência da norma.</param>
     /// <param name="Abrangencia">A abrangência da base legal.</param>
-    /// <param name="Status">O status da base legal, sempre resolvido.</param>
+    /// <param name="Situacao">A situação da base legal, sempre resolvida.</param>
     /// <param name="Observacao">A observação opcional.</param>
-    internal sealed record BaseLegalLida(string Referencia, TipoAbrangencia Abrangencia, StatusBaseLegal Status, string? Observacao);
+    internal sealed record BaseLegalLida(string Referencia, TipoAbrangencia Abrangencia, StatusBaseLegal Situacao, string? Observacao);
 }

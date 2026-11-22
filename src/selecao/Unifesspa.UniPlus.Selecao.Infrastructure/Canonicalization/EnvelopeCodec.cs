@@ -46,7 +46,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "cronogramaFases",
         "documentosExigidos",
         "vagas",
-        "arvoreSatisfacao",
+        "regrasDeComprovacao",
         "formularios",
         "divulgacao",
         "identidadesUnidade",

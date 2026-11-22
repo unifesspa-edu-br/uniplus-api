@@ -23,29 +23,29 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDosDocumentosExigidos;
 
 /// <summary>
-/// A validação da folha de exigência antes de qualquer leitura: base legal, aplicabilidade e finalidade inválidas em folha profunda e a âncora da idade máxima de emissão.
+/// A validação da regra de documento antes de consultar outros cadastros.
 /// </summary>
-public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
+public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerTests
 {
-    [Fact(DisplayName = "ADR-0125: base legal inválida numa fase profunda da árvore recusa ANTES de consultar TipoDocumento/vocabulário de fatos")]
-    public async Task Handle_BaseLegalInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
+    [Fact(DisplayName = "ADR-0125: base legal inválida em regra aninhada é recusada antes de consultar cadastros")]
+    public async Task Handle_BaseLegalInvalidaEmRegraDeDocumentoAninhada_RecusaSemConsultarReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        ItemDocumentoExigidoInput folha = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("", "FEDERAL", "RESOLVIDO", null)).Construir();
+        ItemDocumentoExigidoInput documentoInformado = cenario.ItemGeral().ComBasesLegais(new BaseLegalInput("", "FEDERAL", "RESOLVIDO", null)).Construir();
 
-        Result resultado = await HandleAsync(cenario.Mocks, GrupoOuComUmaFolha(cenario, folha));
+        Result resultado = await HandleAsync(cenario.Mocks, GrupoComUmaRegraDeDocumento(cenario, documentoInformado));
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigidoBaseLegal.ReferenciaObrigatoria"]);
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
-    [Fact(DisplayName = "ADR-0125: aplicabilidade Nenhuma numa fase profunda da árvore recusa ANTES de consultar TipoDocumento/vocabulário de fatos")]
-    public async Task Handle_AplicabilidadeInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
+    [Fact(DisplayName = "ADR-0125: aplicabilidade inválida em regra aninhada é recusada antes de consultar cadastros")]
+    public async Task Handle_AplicabilidadeInvalidaEmRegraDeDocumentoAninhada_RecusaSemConsultarReaders()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        ItemDocumentoExigidoInput folha = cenario.ItemGeral().ComAplicabilidade("INVALIDA").Construir();
+        ItemDocumentoExigidoInput documentoInformado = cenario.ItemGeral().ComAplicabilidade("INVALIDA").Construir();
 
-        Result resultado = await HandleAsync(cenario.Mocks, GrupoOuComUmaFolha(cenario, folha));
+        Result resultado = await HandleAsync(cenario.Mocks, GrupoComUmaRegraDeDocumento(cenario, documentoInformado));
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.AplicabilidadeObrigatoria"]);
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
@@ -58,12 +58,12 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("MATRICULA"));
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("nos[0].documento.momento.finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
         await cenario.Mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 
-    [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma folha acumulam, com o índice prefixado ao field")]
-    public async Task Handle_DuasBasesLegaisInvalidasNaMesmaFolha_AcumulaComIndicePrefixado()
+    [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma regra acumulam com seus índices")]
+    public async Task Handle_DuasBasesLegaisInvalidasNaMesmaRegra_AcumulaComIndicePrefixado()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         BaseLegalInput baseSemReferencia = new("", "FEDERAL", "RESOLVIDO", null);
@@ -73,20 +73,20 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["nos[0].documento.indeferimento.basesLegais[0].referencia", "nos[0].documento.indeferimento.basesLegais[1].abrangencia"]);
+            ["regrasDeComprovacao[0].documento.indeferimento.basesLegais[0].referencia", "regrasDeComprovacao[0].documento.indeferimento.basesLegais[1].abrangencia"]);
     }
 
     [Fact]
     public async Task Handle_DeclaracoesInvalidasEmNosDiferentes_AcumulaComCaminhos()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        RegraDeComprovacaoInformada semDocumento = new("FOLHA");
+        RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO");
         RegraDeComprovacaoInformada desconhecido = new("XOR");
-        RegraDeComprovacaoInformada grupo = new("E", Filhos: [desconhecido]);
+        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Itens: [desconhecido]);
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, grupo]));
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
-            ("nos[0].documento", "NoExigencia.DocumentoObrigatorioEmFolha"),
-            ("nos[1].filhos[0].tipo", "NoExigencia.TipoInvalido"));
+            ("regrasDeComprovacao[0].documento", "RegraDeComprovacao.DocumentoObrigatorio"),
+            ("regrasDeComprovacao[1].itens[0].forma", "RegraDeComprovacao.FormaInvalida"));
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
@@ -94,14 +94,14 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_DistincaoEOutroNoInvalidos_AcumulaAntesDosCadastros()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        RegraDeComprovacaoInformada folha = NoExigenciaDeTeste.Folha(cenario.ItemGeral().Construir()).ComDistincao("COMPETENCIA_MENSAL").Construir();
-        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada documentoInformado = RegraDeComprovacaoDeTeste.DeDocumento(cenario.ItemGeral().Construir()).ComDistincao("COMPETENCIA_MENSAL").Construir();
+        RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO", null, null, null, null, null);
 
-        Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [folha, semDocumento]));
+        Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [documentoInformado, semDocumento]));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
-            ("nos[0].dataReferencia", "NoExigencia.DataReferenciaObrigatoriaParaChaveCalendario"),
-            ("nos[1].documento", "NoExigencia.DocumentoObrigatorioEmFolha"));
+            ("regrasDeComprovacao[0].cardinalidade.distincao.dataReferencia", "RegraDeComprovacao.DataReferenciaObrigatoriaParaCalendario"),
+            ("regrasDeComprovacao[1].documento", "RegraDeComprovacao.DocumentoObrigatorio"));
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
@@ -109,13 +109,13 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     public async Task Handle_RepeticaoEOutroNoInvalidos_AcumulaSemRepetirCodigo()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
-        RegraDeComprovacaoInformada repetida = new("FOLHA", cenario.ItemGeral().Construir(), RepetePorEntidade: "INEXISTENTE");
-        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada repetida = new("DOCUMENTO", cenario.ItemGeral().Construir(), GrupoDoFormularioParaRepeticao: "INEXISTENTE");
+        RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [repetida, semDocumento]));
 
-        resultado.Errors.Select(e => e.Field).Should().Equal("nos[0].repetePorEntidade", "nos[1].documento");
-        resultado.Errors.Should().Contain(e => e.Error.Code == "NoExigencia.TipoEntidadeInvalido" && !e.Error.Message.Contains("INEXISTENTE", StringComparison.Ordinal));
+        resultado.Errors.Select(e => e.Field).Should().Equal("regrasDeComprovacao[0].grupoDoFormularioParaRepeticao", "regrasDeComprovacao[1].documento");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado" && !e.Error.Message.Contains("INEXISTENTE", StringComparison.Ordinal));
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
@@ -130,12 +130,12 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo, grupo]));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
-            ("nos[0].filhos", "NoExigencia.GrupoComFasesDiferentes"), ("nos[0].filhos", "NoExigencia.GrupoComFinalidadesDiferentes"),
-            ("nos[1].filhos", "NoExigencia.GrupoComFasesDiferentes"), ("nos[1].filhos", "NoExigencia.GrupoComFinalidadesDiferentes"));
+            ("regrasDeComprovacao[0].itens", "RegraDeComprovacao.GrupoComFasesDiferentes"), ("regrasDeComprovacao[0].itens", "RegraDeComprovacao.GrupoComFormulariosDiferentes"),
+            ("regrasDeComprovacao[1].itens", "RegraDeComprovacao.GrupoComFasesDiferentes"), ("regrasDeComprovacao[1].itens", "RegraDeComprovacao.GrupoComFormulariosDiferentes"));
     }
 
     private static RegraDeComprovacaoInformada GrupoCom(ItemDocumentoExigidoInput primeira, ItemDocumentoExigidoInput outra) =>
-        new("E", Filhos: [new("FOLHA", primeira), new("FOLHA", outra)]);
+        new("TODOS_OS_ITENS", Itens: [new("DOCUMENTO", primeira), new("DOCUMENTO", outra)]);
 
     [Fact]
     public async Task Handle_DeclaracaoRecusadaEOutroGrupoIncoerente_AcumulaCausasIndependentes()
@@ -143,13 +143,13 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), Finalidade = "ISENCAO_TAXA" } };
-        RegraDeComprovacaoInformada semDocumento = new("FOLHA", null, null, null, null, null);
+        RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, GrupoCom(primeira, outra)]));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
-            ("nos[0].documento", "NoExigencia.DocumentoObrigatorioEmFolha"),
-            ("nos[1].filhos", "NoExigencia.GrupoComFasesDiferentes"), ("nos[1].filhos", "NoExigencia.GrupoComFinalidadesDiferentes"));
+            ("regrasDeComprovacao[0].documento", "RegraDeComprovacao.DocumentoObrigatorio"),
+            ("regrasDeComprovacao[1].itens", "RegraDeComprovacao.GrupoComFasesDiferentes"), ("regrasDeComprovacao[1].itens", "RegraDeComprovacao.GrupoComFormulariosDiferentes"));
     }
 
     [Fact]
@@ -157,16 +157,16 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
         ItemDocumentoExigidoInput item = cenario.ItemCondicional(new CondicaoGatilhoInput(0, "FATO_FICTICIO", "IGUAL", "SIM")).Construir();
-        RegraDeComprovacaoInformada folha = new("FOLHA", item, null, null, null, null);
-        RegraDeComprovacaoInformada grupo = new("E", Filhos: [folha], RepetePorEntidade: "GRUPO_INEXISTENTE");
+        RegraDeComprovacaoInformada documentoInformado = new("DOCUMENTO", item, null, null, null, null);
+        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Itens: [documentoInformado], GrupoDoFormularioParaRepeticao: "GRUPO_INEXISTENTE");
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo]));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
-    [Fact(DisplayName = "CA-08: âncora de fase de IdadeMaximaEmissao que não pertence ao processo é recusada")]
+    [Fact(DisplayName = "CA-08: fase de referência da idade máxima de emissão que não pertence ao processo é recusada")]
     public async Task Handle_IdadeMaximaEmissaoComFaseDeOutroProcesso_RetornaErroNomeado()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
@@ -179,7 +179,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     }
 
     /// <summary>A fase do cenário não tem início nem fim definidos: FIM_FASE não tem extremo a apontar.</summary>
-    [Fact(DisplayName = "CA-08: âncora de fase de IdadeMaximaEmissao sem o extremo definido é recusada")]
+    [Fact(DisplayName = "CA-08: fase de referência da idade máxima de emissão sem o extremo definido é recusada")]
     public async Task Handle_IdadeMaximaEmissaoComFaseSemExtremo_RetornaErroNomeado()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
@@ -199,7 +199,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComAplicabilidade(null));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
-            [("nos[0].documento.aplicabilidade.tipo", "DocumentoExigido.AplicabilidadeObrigatoria")]);
+            [("regrasDeComprovacao[0].documento.aplicabilidade.tipo", "DocumentoExigido.AplicabilidadeObrigatoria")]);
         await ConferirQueNenhumLeitorFoiConsultado(cenario.Mocks);
     }
 
@@ -212,8 +212,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("nos[0].documento.indeferimento.consequencia", "DocumentoExigido.ConsequenciaIndeferimentoInvalida"),
-            ("nos[0].documento.requisitos.tamanhoMaximoBytes", "DocumentoExigido.TamanhoMaximoBytesInvalido"),
+            ("regrasDeComprovacao[0].documento.indeferimento.consequencia", "DocumentoExigido.ConsequenciaIndeferimentoInvalida"),
+            ("regrasDeComprovacao[0].documento.requisitos.tamanhoMaximoBytes", "DocumentoExigido.TamanhoMaximoBytesInvalido"),
         ]);
     }
 
@@ -226,7 +226,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         Result resultado = await cenario.DefinirAsync(item);
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
-            [("nos[0].documento.aplicabilidade.condicoes", "DocumentoExigido.GeralComCondicao")]);
+            [("regrasDeComprovacao[0].documento.aplicabilidade.condicoes", "DocumentoExigido.GeralComCondicao")]);
     }
 
     [Fact(DisplayName = "Sem o objeto dos requisitos, os formatos permitidos ausentes são recusados com código")]
@@ -239,9 +239,8 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         resultado.Error!.Code.Should().Be("FormatosPermitidos.Obrigatorio");
     }
 
-    /// <summary>O grupo (nó raiz) é visitado antes da folha, mas não tem bases legais próprias: a travessia recursa até a violação na folha.</summary>
-    private static DefinirDocumentosExigidosCommand GrupoOuComUmaFolha(CenarioDaExigencia cenario, ItemDocumentoExigidoInput folha) =>
-        new(cenario.Processo.Id, [NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(folha).Construir()).ComQuantidadeMinima(1).ComIndeferimento("ELIMINA").Construir()]);
+    private static DefinirDocumentosExigidosCommand GrupoComUmaRegraDeDocumento(CenarioDaExigencia cenario, ItemDocumentoExigidoInput documentoInformado) =>
+        new(cenario.Processo.Id, [RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(documentoInformado).Construir()).ComQuantidadeMinima(1).ComIndeferimento("ELIMINA").Construir()]);
 
     private static async Task ConferirQueNenhumLeitorFoiConsultado(Mocks mocks)
     {

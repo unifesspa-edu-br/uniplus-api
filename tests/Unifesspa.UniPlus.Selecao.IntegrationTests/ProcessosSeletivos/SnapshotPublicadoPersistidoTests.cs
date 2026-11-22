@@ -66,7 +66,7 @@ public sealed class SnapshotPublicadoPersistidoTests
         [
             "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
             "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
-            "documentosExigidos", "arvoreSatisfacao", "formularios", "cascataRemanejamento", "divulgacao",
+            "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
             // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
             // interpretador e conjunto de modalidades ofertadas.

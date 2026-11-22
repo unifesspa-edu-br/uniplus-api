@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class PendenciasDasExigencias
 {
     /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
-    internal static DomainError? PendenciaDaRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao) => RegrasDasExigencias.ConferirRepeticaoPorGrupo(configuracao, configuracao.Exigencias.NosExigencia);
+    internal static DomainError? PendenciaDaRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao) => RegrasDasExigencias.ConferirRepeticaoPorGrupo(configuracao, configuracao.Exigencias.RegrasDeComprovacao);
 
     /// <summary>
     /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o

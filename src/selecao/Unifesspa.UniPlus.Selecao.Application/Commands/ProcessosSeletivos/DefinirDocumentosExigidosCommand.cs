@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.Text.Json;
 
+using Domain.Enums;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -26,7 +27,7 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodi
 /// RESOLVIDO por exigência que determina resultado) é da publicação, não deste PUT —
 /// aqui só a forma de cada item é validada.
 /// </summary>
-public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Status, string? Observacao)
+public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Situacao, string? Observacao)
 {
     /// <summary>O caminho da lista de bases legais no pedido, igual na exigência de documento e no grupo.</summary>
     public const string CaminhoDaLista = "indeferimento.basesLegais";
@@ -165,32 +166,14 @@ public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null,
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
 public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
 
-/// <summary>
-/// Entrada de um nó da árvore de satisfação, por posição literal na árvore. <see cref="Tipo"/> ∈ {<c>FOLHA</c>,
-/// <c>E</c>, <c>OU</c>}: <c>FOLHA</c> exige <see cref="Documento"/> presente e os demais campos de grupo
-/// ausentes; <c>E</c>/<c>OU</c> exigem <see cref="Filhos"/> não vazio e <see cref="Documento"/> ausente — o
-/// <c>E</c> nunca carrega quantidade mínima nem indeferimento (é transparente); o <c>OU</c> aceita a
-/// quantidade mínima (ausente vale 1) e o indeferimento, com bases legais só quando a consequência está
-/// presente. O pedido é uma árvore <b>por valor</b>, que não expressa ciclo por construção (ver
-/// <see cref="Domain.Entities.NoExigencia.CriarGrupo"/>).
-/// </summary>
-/// <param name="Tipo"><c>FOLHA</c>, <c>E</c> ou <c>OU</c>.</param>
-/// <param name="Documento">A exigência da folha.</param>
-/// <param name="Cardinalidade">A quantidade mínima de apresentações e como elas se distinguem.</param>
-/// <param name="Indeferimento">A consequência do indeferimento do grupo.</param>
-/// <param name="Filhos">Os nós filhos do grupo, na ordem.</param>
-/// <param name="RepetePorEntidade">
-/// Código de um grupo repetível dos formulários do processo (ADR-0138): marca esta subárvore como repetida por
-/// ocorrência do grupo, nunca aninhada. Grupo que o processo não tem é recusado como
-/// <c>NoExigencia.TipoEntidadeInvalido</c>. Ausente, o nó não repete.
-/// </param>
+/// <summary>Regra informada para comprovar uma exigência documental.</summary>
 public sealed record RegraDeComprovacaoInformada(
-    string Tipo,
+    [property: AceitaCodigosDe<FormaDeComprovacao>] string? Forma,
     ItemDocumentoExigidoInput? Documento = null,
     CardinalidadeQualificadaInput? Cardinalidade = null,
     IndeferimentoDoGrupoInput? Indeferimento = null,
-    IReadOnlyList<RegraDeComprovacaoInformada>? Filhos = null,
-    string? RepetePorEntidade = null);
+    IReadOnlyList<RegraDeComprovacaoInformada>? Itens = null,
+    string? GrupoDoFormularioParaRepeticao = null);
 
 /// <summary>
 /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo: fase, cópia do tipo de

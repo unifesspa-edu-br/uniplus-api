@@ -11,7 +11,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
     {
-        [typeof(ExigenciasDeclaradas)] = (["DocumentosExigidos", "NosExigencia"], []),
+        [typeof(ExigenciasDeclaradas)] = (["DocumentosExigidos", "RegrasDeComprovacao"], []),
         [typeof(ColetaDeclarada)] = (
             ["Campos", "GruposColetados", "Formularios", "TermosExigidos", "OpcoesDeclaradas", "RegrasDerivacao", "ReferenciaTemporalFatos"],
             [("Itens", "Projeção de Campos que exclui os campos de grupos repetíveis.")]),
@@ -34,23 +34,18 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [("DocumentoExigidoId", "FK interna.")]),
 
         [typeof(DocumentoExigidoBaseLegal)] = (
-            ["Referencia", "Abrangencia", "Status", "Observacao"],
+            ["Referencia", "Abrangencia", "Situacao", "Observacao"],
             [("DocumentoExigidoId", "FK interna.")]),
 
-        // Árvore de satisfação (Story #920, #921, #922) — substituiu o grupo de satisfação
-        // plano, que era correlação por Guid solto na exigência. Story #923 (bump 1.4):
-        // congelada por inteiro no bloco de topo `arvoreSatisfacao` — cada folha referencia
-        // sua exigência pelo MESMO `exigenciaId` já congelado em
-        // `documentosExigidos.exigencias[]` (por isso `DocumentoExigido` — a navegação — não
-        // é uma chave própria do envelope: é `DocumentoExigidoId` que vira `exigenciaId`).
-        [typeof(NoExigencia)] = (
+        // A regra de documento referencia a exigência já presente no envelope.
+        [typeof(RegraDeComprovacao)] = (
             [
-                "NoPaiId", "Ordem", "Tipo", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Filhos",
-                "BasesLegais", "Distincao", "RepetePorEntidade",
+                "RegraQueContemId", "Ordem", "Forma", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Itens",
+                "BasesLegais", "Distincao", "GrupoDoFormularioParaRepeticao",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("DocumentoExigido", "Navegação da folha — o envelope congela DocumentoExigidoId (como `exigenciaId`, referenciando documentosExigidos.exigencias[]), não o objeto/conteúdo duplicado."),
+                ("DocumentoExigido", "Navegação da regra de documento — o envelope congela DocumentoExigidoId (como `exigenciaId`, referenciando documentosExigidos.exigencias[]), não o objeto/conteúdo duplicado."),
             ]),
 
         [typeof(DistincaoDasApresentacoes)] = (
@@ -58,8 +53,8 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [("ConferivelPelaContagem", "Derivada da chave e da ausência de ocorrências esperadas; não acrescenta conteúdo ao envelope.")]),
 
         [typeof(BaseLegalDaComprovacao)] = (
-            ["Referencia", "Abrangencia", "Status", "Observacao"],
-            [("NoExigenciaId", "FK interna.")]),
+            ["Referencia", "Abrangencia", "Situacao", "Observacao"],
+            [("RegraDeComprovacaoId", "FK interna.")]),
 
         [typeof(IdadeMaximaEmissao)] = (
             ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],

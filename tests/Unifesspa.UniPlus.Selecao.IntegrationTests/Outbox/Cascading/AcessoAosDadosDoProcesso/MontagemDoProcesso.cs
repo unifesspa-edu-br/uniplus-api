@@ -68,14 +68,14 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
 
     private async Task<object[]> SemearExigenciasAsync(Guid faseId)
     {
-        List<object> folhas = [];
+        List<object> regras = [];
         foreach ((ClassificacaoDeProtecao classificacao, string prefixo, string[] fatosComprovados) in TiposExigidos)
         {
             Guid tipoId = await SemearTipoAsync(classificacao, prefixo);
-            folhas.Add(CorposDasRequisicoesDoProcesso.Folha(faseId, tipoId, fatosComprovados));
+            regras.Add(CorposDasRequisicoesDoProcesso.RegraDeDocumento(faseId, tipoId, fatosComprovados));
         }
 
-        return [.. folhas];
+        return [.. regras];
     }
 
     private async Task ExigirSemConteudoAsync(HttpMethod metodo, string rota, object corpo)

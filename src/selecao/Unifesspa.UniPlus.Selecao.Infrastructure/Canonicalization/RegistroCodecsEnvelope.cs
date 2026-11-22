@@ -140,7 +140,7 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
             return Result<EnvelopeReidratado>.Failure(evidencia);
         }
         Result<EnvelopeReidratado> decodificado = codec.Decodificar(versao);
-        return decodificado.IsFailure ? decodificado : SincronizarArvoreComDocumentosExigidos(decodificado.Value!);
+        return decodificado.IsFailure ? decodificado : ConferirCoberturaDosDocumentos(decodificado.Value!);
     }
 
     private static DomainError? ConferirCapacidades(VersaoConfiguracao versao, IEnvelopeCodec codec)
@@ -184,34 +184,25 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
         return VerificarFormaCanonica(codec.Perfil, versao.ConfiguracaoCongeladaCanonica);
     }
 
-    /// <summary>
-    /// O terceiro gate, específico da árvore de satisfação (Story #923). Toda versão
-    /// da árvore: toda exigência viva em <c>documentosExigidos.exigencias</c> tem de ser folha
-    /// de exatamente uma raiz em <c>arvoreSatisfacao</c>. A forma corrente sempre serializa a
-    /// árvore junto das exigências, então uma exigência sem folha só é alcançável por
-    /// adulteração dos bytes — e é recusada como envelope malformado, nunca preenchida por
-    /// adivinhação. (A síntese da raiz achatada de versões pré-<c>1.4</c>, que não serializavam
-    /// árvore, deixou de existir junto com o codec-por-versão: não há mais versão sem árvore.)
-    /// </summary>
-    private static Result<EnvelopeReidratado> SincronizarArvoreComDocumentosExigidos(EnvelopeReidratado envelope)
+    // Cada exigência precisa estar associada a uma regra de documento na configuração publicada.
+    private static Result<EnvelopeReidratado> ConferirCoberturaDosDocumentos(EnvelopeReidratado envelope)
     {
         ConfiguracaoPublicada configuracao = envelope.Configuracao;
-        DocumentoExigido? orfa = ExigenciaSemFolha(configuracao);
+        DocumentoExigido? orfa = ExigenciaSemRegraDeDocumento(configuracao);
         if (orfa is not null)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado,
-                $"A exigência '{orfa.TipoDocumentoCodigo}' ({orfa.Id}) não é folha de nenhuma raiz em " +
-                "'arvoreSatisfacao' — toda exigência tem de ser folha de exatamente uma árvore."));
+                "Uma exigência documental não está associada a uma regra de documento na configuração publicada."));
         }
 
         return Result<EnvelopeReidratado>.Success(envelope);
     }
 
-    private static DocumentoExigido? ExigenciaSemFolha(ConfiguracaoPublicada configuracao)
+    private static DocumentoExigido? ExigenciaSemRegraDeDocumento(ConfiguracaoPublicada configuracao)
     {
-        HashSet<Guid> cobertas = [.. configuracao.Exigencias.NosExigencia
-            .Where(static n => n.Tipo == TipoNo.Folha)
+        HashSet<Guid> cobertas = [.. configuracao.Exigencias.RegrasDeComprovacao
+            .Where(static n => n.Forma == FormaDeComprovacao.Documento)
             .Select(static n => n.DocumentoExigidoId!.Value)];
         return configuracao.Exigencias.DocumentosExigidos.FirstOrDefault(d => !cobertas.Contains(d.Id));
     }

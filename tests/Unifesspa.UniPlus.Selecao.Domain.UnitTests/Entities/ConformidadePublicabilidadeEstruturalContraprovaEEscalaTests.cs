@@ -73,7 +73,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     ];
 
     // Exigência GERAL, sem qualquer condição de gatilho — não aciona FAIXA_ETARIA.
-    private static NoExigencia ExigenciaGeralDeIdentidade(Guid faseId) => NoExigencia.CriarFolha(
+    private static RegraDeComprovacao ExigenciaGeralDeIdentidade(Guid faseId) => RegraDeComprovacao.CriarRegraDeDocumento(
         DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,

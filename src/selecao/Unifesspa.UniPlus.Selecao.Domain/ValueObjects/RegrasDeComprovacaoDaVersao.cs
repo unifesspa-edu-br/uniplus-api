@@ -8,21 +8,21 @@ using Entities;
 /// </summary>
 public sealed record RegrasDeComprovacaoDaVersao
 {
-    private RegrasDeComprovacaoDaVersao(IReadOnlyList<NoExigencia> raizes)
+    private RegrasDeComprovacaoDaVersao(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
-        Raizes = raizes;
+        RegrasSemGrupo = regrasSemGrupo;
     }
 
     /// <summary>Regras sem grupo que as contenha.</summary>
-    public IReadOnlyList<NoExigencia> Raizes { get; }
+    public IReadOnlyList<RegraDeComprovacao> RegrasSemGrupo { get; }
 
     /// <summary>
     /// Constrói as regras sem grupo que as contenha a partir da configuração reidratada da versão publicada.
     /// </summary>
-    public static RegrasDeComprovacaoDaVersao DeGrafoReidratado(IReadOnlyList<NoExigencia> raizes)
+    public static RegrasDeComprovacaoDaVersao DeGrafoReidratado(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
-        ArgumentNullException.ThrowIfNull(raizes);
-        return new RegrasDeComprovacaoDaVersao([.. raizes]);
+        ArgumentNullException.ThrowIfNull(regrasSemGrupo);
+        return new RegrasDeComprovacaoDaVersao([.. regrasSemGrupo]);
     }
 
     /// <summary>
@@ -32,6 +32,6 @@ public sealed record RegrasDeComprovacaoDaVersao
     public static RegrasDeComprovacaoDaVersao DaConfiguracaoViva(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        return new RegrasDeComprovacaoDaVersao([.. processo.RaizesDeExigencia]);
+        return new RegrasDeComprovacaoDaVersao([.. processo.RegrasDeComprovacaoSemGrupo]);
     }
 }

@@ -19,9 +19,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <c>REMOVE_VANTAGEM</c> exige vantagem viva, e <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c>
 /// forward (na escrita da árvore) e reverso (ao redefinir o cronograma) — os mesmos quatro
 /// conferências que já existiam para <see cref="DocumentoExigido"/> (folha), agora também para
-/// <see cref="NoExigencia"/> do tipo <see cref="TipoNo.GrupoOu"/>.
+/// <see cref="RegraDeComprovacao"/> do tipo <see cref="FormaDeComprovacao.QuantidadeMinimaDeItens"/>.
 /// </summary>
-public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
+public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
@@ -49,16 +49,16 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "REMOVE_VANTAGEM", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "REMOVE_VANTAGEM", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("NoExigencia.RemoveVantagemSemVantagemViva");
+        pendencia!.Code.Should().Be("RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada");
     }
 
     [Fact(DisplayName = "Grupo com consequência e base legal só PENDENTE reprova o checklist de conformidade")]
@@ -68,9 +68,9 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Pendente)], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Pendente)], [folha]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
@@ -85,9 +85,9 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
@@ -102,8 +102,8 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: false);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
 
         Result resultado = processo.DefinirDocumentosExigidos([grupo]);
 
@@ -119,8 +119,8 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma faseComComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: true);
         processo.DefinirCronogramaFases([faseComComplementacao], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
@@ -131,7 +131,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     }
 
     // ── Story #923: o snapshot conjunto final congela a topologia inteira da árvore
-    // (bloco `arvoreSatisfacao`, bump 1.4) — os três fail-closed que bloqueavam grupo E/OU
+    // (bloco `regrasDeComprovacao`, bump 1.4) — os três fail-closed que bloqueavam grupo E/OU
     // (Story #920), cardinalidade qualificada (Story #921) e repetição por entidade (Story
     // #922) por falta de onde congelar foram REMOVIDOS. Os três casos abaixo, que antes
     // bloqueavam `PendenciaPreCanonicalizacao`, agora publicam normalmente. ──
@@ -143,7 +143,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
@@ -158,7 +158,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(
             DocumentoQualquer(fase.Id), 0, quantidadeMinima: 1,
             chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
@@ -175,7 +175,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
@@ -203,15 +203,15 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Folha solteira repetePorEntidade não bloqueia PendenciaPreCanonicalizacao")]
-    public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
+    [Fact(DisplayName = "Folha solteira grupoDoFormularioParaRepeticao não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_GrupoDoFormularioParaRepeticao_NaoBloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirComposicaoFamiliarNaInscricao(processo, fase);
-        NoExigencia folha = NoExigencia.CriarFolha(
-            DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(
+            DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
         processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
@@ -226,9 +226,9 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        RegraDeComprovacao folha = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);

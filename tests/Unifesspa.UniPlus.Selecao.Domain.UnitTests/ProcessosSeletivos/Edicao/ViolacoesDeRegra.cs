@@ -86,9 +86,9 @@ internal sealed record ViolacaoDeRegra(
             "ProcessoSeletivo.OrdemFaseDuplicada",
             static p => [.. p.CronogramaFases]),
         [nameof(ProcessoSeletivo.DefinirDocumentosExigidos)] = new(
-            p => p.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(Guid.CreateVersion7()), 0).Value!]),
+            p => p.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(Guid.CreateVersion7()), 0).Value!]),
             "DocumentoExigido.FaseNaoPertenceAoProcesso",
-            static p => [.. p.NosExigencia]),
+            static p => [.. p.RegrasDeComprovacao]),
         [nameof(ProcessoSeletivo.DefinirFatosColetados)] = new(
             p => p.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, []),
             FormularioProcessoErrorCodes.FormularioInexistente,
@@ -150,6 +150,6 @@ internal sealed record ViolacaoDeRegra(
 
         CondicaoGatilho condicao = CondicaoGatilho.Criar(0, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement("PCD")).Value!;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Exigencia(processo.CronogramaFases.First().Id, condicao), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(processo.CronogramaFases.First().Id, condicao), 0).Value!]).IsSuccess.Should().BeTrue();
     }
 }

@@ -23,35 +23,35 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDosDocumentosExigidos;
 
 /// <summary>
-/// O gatilho da exigência quanto à fase: o fato citado não pode ser resolvido numa fase posterior à da exigência, a folha repetida cita o campo do grupo e a habilitação cita o grupo em que o candidato foi convocado.
+/// O gatilho da exigência quanto à fase: o fato citado não pode ser resolvido numa fase posterior à da exigência, a regra de documento repetida cita o campo do grupo e a habilitação cita o grupo em que o candidato foi convocado.
 /// </summary>
 public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
 {
-    [Theory(DisplayName = "O gatilho da folha repetida cita o campo do grupo, marcada na folha ou herdada do grupo ancestral")]
+    [Theory(DisplayName = "O gatilho da regra de documento repetida cita o campo do grupo, marcada na regraDeDocumento ou herdada do grupo ancestral")]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Handle_GatilhoPorCampoDoGrupo_AceitoNaSubarvoreRepetida(bool herdadaDoAncestral)
+    public async Task Handle_GatilhoPorCampoDoGrupo_AceitoNasRegrasRepetidas(bool herdadaDoGrupo)
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
-        NoExigenciaDeTeste folha = NoExigenciaDeTeste.Folha(ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId));
-        RegraDeComprovacaoInformada raiz = herdadaDoAncestral
-            ? NoExigenciaDeTeste.Grupo("E", folha.Construir()).RepetidoPor("COMPOSICAO_FAMILIAR").Construir()
-            : folha.RepetidoPor("COMPOSICAO_FAMILIAR").Construir();
+        RegraDeComprovacaoDeTeste regraDeDocumento = RegraDeComprovacaoDeTeste.DeDocumento(ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId));
+        RegraDeComprovacaoInformada regraSemGrupo = herdadaDoGrupo
+            ? RegraDeComprovacaoDeTeste.Grupo("TODOS_OS_ITENS", regraDeDocumento.Construir()).RepetidoPor("COMPOSICAO_FAMILIAR").Construir()
+            : regraDeDocumento.RepetidoPor("COMPOSICAO_FAMILIAR").Construir();
 
-        Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [raiz]));
+        Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [regraSemGrupo]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Condicoes.Any(c => c.Fato == "MAIOR_IDADE"));
     }
 
-    [Fact(DisplayName = "Fora da subárvore repetida, o campo do grupo não é citável")]
+    [Fact(DisplayName = "Fora das regras repetidas, o campo do grupo não é citável")]
     public async Task Handle_CampoDoGrupoForaDaRepeticao_Recusa()
     {
         (ProcessoSeletivo processo, FaseCronograma fase, Mocks mocks, Guid tipoDocumentoId) = ProcessoComComposicaoFamiliar();
         ItemDocumentoExigidoDeTeste item = ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId);
 
         Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]));
+            processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]));
 
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
     }
@@ -63,9 +63,9 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         ItemDocumentoExigidoDeTeste item = ItemDoMembroMaiorDeIdade(fase.Id, tipoDocumentoId);
 
         Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [NoExigenciaDeTeste.Folha(item).RepetidoPor("PESSOAS_JURIDICAS").Construir()]));
+            processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).RepetidoPor("PESSOAS_JURIDICAS").Construir()]));
 
-        resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
     }
 
     [Fact(DisplayName = "Gate de fase: condição sobre fato cujo PontoResolucao é uma fase POSTERIOR à da exigência é recusada")]
@@ -131,7 +131,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
 
-        return await HandleAsync(mocks, new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]));
+        return await HandleAsync(mocks, new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]));
     }
 
     [Fact(DisplayName = "Exigência da habilitação cita o grupo em que o candidato foi convocado")]
@@ -173,7 +173,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     {
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
         ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).Condicional(condicao).NaFinalidade("HABILITACAO");
-        return new(processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
+        return new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
     }
 
     private static ItemDocumentoExigidoDeTeste ItemDoMembroMaiorDeIdade(Guid faseId, Guid tipoDocumentoId) =>

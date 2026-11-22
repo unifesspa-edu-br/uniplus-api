@@ -27,7 +27,7 @@ internal static class PodaDoCronograma
         {
             Etapas = Troca.Retirando(configuracao.Avaliacao.Etapas.Where(e => e.FaseCodigo is { } codigo && codigos.Contains(codigo))),
             DocumentosExigidos = Troca.Retirando(exigencias),
-            NosExigencia = Troca.Retirando(NosDasExigencias(configuracao.Exigencias.NosExigencia, exigencias)),
+            RegrasDeComprovacao = Troca.Retirando(RegrasDasExigencias(configuracao.Exigencias.RegrasDeComprovacao, exigencias)),
         };
     }
 
@@ -35,9 +35,8 @@ internal static class PodaDoCronograma
     private static List<DocumentoExigido> ExigenciasDasFases(ConfiguracaoDeclarada configuracao, HashSet<Guid> fases) =>
         [.. configuracao.Exigencias.DocumentosExigidos.Where(d => fases.Contains(d.ExigidoNaFaseId))];
 
-    // A folha sai com o nó que a carregava; o grupo que ficou sem filho nenhum sai atrás, senão
-    // sobraria um "um destes documentos" sem documento algum.
-    private static List<NoExigencia> NosDasExigencias(IReadOnlyCollection<NoExigencia> nos, IReadOnlyList<DocumentoExigido> exigencias)
+    // Um grupo sem itens não representa uma exigência válida.
+    private static List<RegraDeComprovacao> RegrasDasExigencias(IReadOnlyCollection<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> exigencias)
     {
         if (exigencias.Count == 0)
         {
@@ -45,18 +44,18 @@ internal static class PodaDoCronograma
         }
 
         HashSet<Guid> removidas = [.. exigencias.Select(static d => d.Id)];
-        List<NoExigencia> restantes = [.. nos.Where(no => no.DocumentoExigidoId is not { } id || !removidas.Contains(id))];
-        while (RetirarGruposSemFilho(restantes) > 0)
+        List<RegraDeComprovacao> restantes = [.. regras.Where(regra => regra.DocumentoExigidoId is not { } id || !removidas.Contains(id))];
+        while (RetirarGruposSemItens(restantes) > 0)
         {
-            // O grupo cujo filho era outro grupo que acabou de sair também fica vazio: repete até parar de encolher.
+            // A remoção de um grupo pode deixar vazio o grupo que o contém.
         }
 
-        return [.. nos.Except(restantes)];
+        return [.. regras.Except(restantes)];
     }
 
-    private static int RetirarGruposSemFilho(List<NoExigencia> nos)
+    private static int RetirarGruposSemItens(List<RegraDeComprovacao> regras)
     {
-        HashSet<Guid> pais = [.. nos.Where(static no => no.NoPaiId is not null).Select(static no => no.NoPaiId!.Value)];
-        return nos.RemoveAll(no => no.Tipo != TipoNo.Folha && !pais.Contains(no.Id));
+        HashSet<Guid> pais = [.. regras.Where(static regra => regra.RegraQueContemId is not null).Select(static regra => regra.RegraQueContemId!.Value)];
+        return regras.RemoveAll(regra => regra.Forma != FormaDeComprovacao.Documento && !pais.Contains(regra.Id));
     }
 }

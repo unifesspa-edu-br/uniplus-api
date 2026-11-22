@@ -26,7 +26,7 @@ public sealed record EtapaConcluidaInput(string Finalidade, string Etapa);
 
 /// <summary>
 /// O processo avaliado contra o perfil simulado: o que cada formulário mostra e exige, e os
-/// documentos que a árvore de exigências pediria. Os estados são <c>VERDADEIRO</c>, <c>FALSO</c>
+/// documentos exigidos pelas regras de comprovação. Os estados são <c>VERDADEIRO</c>, <c>FALSO</c>
 /// ou <c>INDETERMINADO</c>, quando dependem de resposta ainda não dada.
 /// </summary>
 public sealed record PreVisualizacaoDoProcessoDto(
@@ -84,7 +84,7 @@ public sealed record OcorrenciaSimuladaDto(string Id, IReadOnlyList<ItemSimulado
 public sealed record TermoSimuladoDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
 
 /// <summary>
-/// Um documento da árvore de exigências diante do perfil: <c>EXIGIDO</c>, <c>NAO_EXIGIDO</c> ou
+/// Um documento exigido pelas regras de comprovação diante do perfil: <c>EXIGIDO</c>, <c>NAO_EXIGIDO</c> ou
 /// <c>INDETERMINADO</c>, quando a aplicabilidade depende de resposta ainda não dada. O documento de
 /// um grupo repetível aparece uma vez por ocorrência, com a identidade dela; o que está dentro de
 /// grupos de alternativas traz cada um deles, do mais externo ao mais interno, com o mínimo que pede.
@@ -103,7 +103,7 @@ public sealed record DocumentoSimuladoDto(
     string? Finalidade,
     Guid? EtapaId,
     string Situacao,
-    string? EntidadeId,
+    string? OcorrenciaId,
     IReadOnlyList<AlternativasSimuladasDto> Alternativas);
 
 /// <summary>Um grupo de alternativas em que o documento está e quantas alternativas ele pede.</summary>

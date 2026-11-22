@@ -21,7 +21,7 @@ public sealed class DocumentoExigidoBaseLegalTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Referencia.Should().Be("Lei 12.711/2012, art. 3º");
         resultado.Value.Abrangencia.Should().Be(TipoAbrangencia.Federal);
-        resultado.Value.Status.Should().Be(StatusBaseLegal.Resolvido);
+        resultado.Value.Situacao.Should().Be(StatusBaseLegal.Resolvido);
         resultado.Value.Observacao.Should().Be("Observação livre");
     }
 
@@ -62,7 +62,7 @@ public sealed class DocumentoExigidoBaseLegalTests
             "Lei X", TipoAbrangencia.Federal, StatusBaseLegal.Nenhuma, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigidoBaseLegal.StatusObrigatorio");
+        resultado.Error!.Code.Should().Be("DocumentoExigidoBaseLegal.SituacaoObrigatoria");
     }
 
     [Theory(DisplayName = "Todas as abrangências e status válidos são aceitos")]

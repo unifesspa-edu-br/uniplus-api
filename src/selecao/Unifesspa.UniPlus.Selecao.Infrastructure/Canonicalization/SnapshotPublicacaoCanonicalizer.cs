@@ -43,7 +43,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <summary>
     /// Versão da forma do envelope (ADR-0109 D1). O codec é um só, reescrito no lugar quando a forma muda.
     /// </summary>
-    internal const string SchemaVersionAtual = "0.0.55";
+    internal const string SchemaVersionAtual = "0.0.56";
 
     /// <summary>
     /// Projeta o processo seletivo e os dados do edital no envelope canônico.
@@ -136,7 +136,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProcessoSeletivo processo = entrada.Processo;
         TimeZoneInfo fusoDaVersao = TimeZoneInfo.FindSystemTimeZoneById(entrada.FusoHorario);
         payload["documentosExigidos"] = SerializacaoDasExigencias.SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.DadosDeCatalogo.MetadadosFatosCongelados, fusoDaVersao);
-        payload["arvoreSatisfacao"] = SerializacaoDasExigencias.SerializarArvoreSatisfacao(processo);
+        payload["regrasDeComprovacao"] = SerializacaoDasExigencias.SerializarRegrasDeComprovacao(processo);
         payload["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo);
         payload["divulgacao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao(processo);
         payload["taxaInscricao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarTaxaInscricao(processo);

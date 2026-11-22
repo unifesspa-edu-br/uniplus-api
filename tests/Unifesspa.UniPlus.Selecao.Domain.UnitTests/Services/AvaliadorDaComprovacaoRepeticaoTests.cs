@@ -13,219 +13,230 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ApoioDaArvoreDeSatisfacao;
+using static RegrasDeComprovacaoDeTeste;
 
 public sealed class AvaliadorDaComprovacaoRepeticaoTests
 {
+    [Fact]
+    public void Resolver_RegraReidratadaSemDocumento_RecusaConfiguracaoInvalida()
+    {
+        RegraDeComprovacao regra = RegraDeComprovacao.ReidratarGrupo(
+            Guid.CreateVersion7(), 0, new CombinacaoDoGrupo(FormaDeComprovacao.Documento, null, null), [], [], null);
+
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regra));
+
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.RegraSemDocumento");
+    }
+
     [Fact(DisplayName = "RG e CPF são pedidos de cada membro, e a certidão de guarda só do membro sob guarda")]
     public void RepeticaoPorGrupo_DocumentosPorMembroECertidaoDoMenorSobGuarda()
     {
         DocumentoExigido rg = DocumentoGeral("ELIMINA");
         DocumentoExigido cpf = DocumentoGeral("ELIMINA");
         DocumentoExigido certidaoDeGuarda = DocumentoCondicional("SOB_GUARDA", "ELIMINA");
-        NoExigencia raiz = GrupoFamiliar(rg, cpf, certidaoDeGuarda);
+        RegraDeComprovacao regraSemGrupo = GrupoFamiliar(rg, cpf, certidaoDeGuarda);
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(raiz),
-            instancias: InstanciasDe(
-                "COMPOSICAO_FAMILIAR", Instancia("membro_1", ("SOB_GUARDA", false)), Instancia("membro_2", ("SOB_GUARDA", true))));
+            Regras(regraSemGrupo),
+            ocorrencias: OcorrenciasDe(
+                "COMPOSICAO_FAMILIAR", Ocorrencia("membro_1", ("SOB_GUARDA", false)), Ocorrencia("membro_2", ("SOB_GUARDA", true))));
 
         ConferirDocumentosPendentesDosMembros(resultado.Value!, rg, cpf, certidaoDeGuarda);
     }
 
-    [Fact(DisplayName = "Story #926: atributo NAO_APLICAVEL da instância sobrescreve o mesmo fato resolvido do candidato")]
-    public void RepeticaoPorEntidade_AtributoNaoAplicavelSobrescreveFatoDoCandidato()
+    [Fact(DisplayName = "Atributo não aplicável da ocorrência prevalece sobre o fato do candidato")]
+    public void RepeticaoPorGrupo_AtributoNaoAplicavelSobrescreveFatoDoCandidato()
     {
         DocumentoExigido condicional = DocumentoCondicional("SEM_RENDA");
-        NoExigencia raiz = NoExigencia.CriarFolha(condicional, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(condicional, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
         // O candidato declarou o fato, mas para ESTE membro da composição familiar ele não se
-        // aplica — o sujeito do gatilho é a instância, não o candidato.
+        // aplica — o sujeito do gatilho é a ocorrência, não o candidato.
         Dictionary<string, FatoResolvido> fatosDoCandidato = Fatos("SEM_RENDA", true);
         OcorrenciaDoGrupo membro = new("membro_1", new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["SEM_RENDA"] = FatoResolvido.NaoAplicavel() });
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), fatosDoCandidato, instancias: InstanciasDe("COMPOSICAO_FAMILIAR", membro));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), fatosDoCandidato, ocorrencias: OcorrenciasDe("COMPOSICAO_FAMILIAR", membro));
 
-        resultado.Value!.StatusPorEntidade.Should().Contain(
-            s => s.DocumentoExigidoId == condicional.Id && s.EntidadeId == "membro_1" && s.Status == StatusResolucaoExigencia.NaoAplicavel);
+        resultado.Value!.SituacoesDeExigenciaPorOcorrencia.Should().Contain(
+            s => s.DocumentoExigidoId == condicional.Id && s.OcorrenciaId == "membro_1" && s.Situacao == StatusResolucaoExigencia.NaoExigida);
     }
 
-    [Fact(DisplayName = "Documento correlacionado à instância certa: RG do membro 2 satisfaz só (RG, COMPOSICAO_FAMILIAR, membro_2)")]
-    public void RepeticaoPorEntidade_DocumentoCorrelacionadoAInstanciaCerta()
+    [Fact(DisplayName = "Documento associado à ocorrência correspondente: RG do membro 2 satisfaz só (RG, COMPOSICAO_FAMILIAR, membro_2)")]
+    public void RepeticaoPorGrupo_DocumentoAssociadoAOcorrenciaCorrespondente()
     {
         DocumentoExigido rg = DocumentoGeral("ELIMINA");
-        NoExigencia raiz = NoExigencia.CriarFolha(rg, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_2"), Instancia("membro_3"));
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "COMPOSICAO_FAMILIAR", Ocorrencia("membro_1"), Ocorrencia("membro_2"), Ocorrencia("membro_3"));
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(raiz), apresentacoes: ApresentaDeEntidade(rg, "membro_2"), instancias: instancias);
+            Regras(regraSemGrupo), apresentacoes: ApresentacoesDaOcorrencia(rg, "membro_2"), ocorrencias: ocorrencias);
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
-        resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.Consequencia))
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
+        resultado.Value.ConsequenciasVigentes.Select(static c => (c.OcorrenciaId, c.Consequencia))
             .Should().BeEquivalentTo([("membro_1", "ELIMINA"), ("membro_3", "ELIMINA")]);
         ConferirStatusDosMembros(resultado.Value, rg.Id, "membro_2", ["membro_1", "membro_3"]);
     }
 
-    [Fact(DisplayName = "Repetição por entidade: folha sem ConsequenciaIndeferimento continua visível por instância via StatusPorEntidade")]
-    public void RepeticaoPorEntidade_SemConsequencia_StatusPorEntidadeSinalizaInstanciaPendente()
+    [Fact(DisplayName = "Regra de documento sem consequência permanece visível em cada ocorrência")]
+    public void RepeticaoPorGrupo_SemConsequencia_SituacoesDeExigenciaPorOcorrenciaSinalizaOcorrenciaPendente()
     {
         DocumentoExigido comprovante = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarFolha(comprovante, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(comprovante, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_2"));
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "COMPOSICAO_FAMILIAR", Ocorrencia("membro_1"), Ocorrencia("membro_2"));
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(raiz), apresentacoes: ApresentaDeEntidade(comprovante, "membro_1"), instancias: instancias);
+            Regras(regraSemGrupo), apresentacoes: ApresentacoesDaOcorrencia(comprovante, "membro_1"), ocorrencias: ocorrencias);
 
         // Sem consequência configurada, nada é emitido em ConsequenciasVigentes — o único
-        // sinal de QUAL instância está pendente é StatusPorEntidade.
+        // sinal de QUAL ocorrência está pendente é SituacoesDeExigenciaPorOcorrencia.
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
         ConferirStatusDosMembros(resultado.Value!, comprovante.Id, "membro_1", ["membro_2"]);
     }
 
-    [Fact(DisplayName = "Gatilho por atributo da entidade: declaração de isento só é exigida do membro adulto e sem renda")]
-    public void RepeticaoPorEntidade_GatilhoPorAtributoDaEntidade()
+    [Fact(DisplayName = "Gatilho por atributo da ocorrência: declaração de isento só é exigida do membro adulto e sem renda")]
+    public void RepeticaoPorGrupo_GatilhoPorAtributoDaEntidade()
     {
         DocumentoExigido declaracaoIsento = DeclaracaoDeIsento();
-        NoExigencia raiz = NoExigencia.CriarFolha(declaracaoIsento, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(declaracaoIsento, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
             "COMPOSICAO_FAMILIAR",
-            Instancia("membro_adulto_sem_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", true)),
-            Instancia("membro_adulto_com_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", false)),
-            Instancia("membro_menor", ("MAIOR_IDADE", false), ("SEM_RENDA", true)));
+            Ocorrencia("membro_adulto_sem_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", true)),
+            Ocorrencia("membro_adulto_com_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", false)),
+            Ocorrencia("membro_menor", ("MAIOR_IDADE", false), ("SEM_RENDA", true)));
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), ocorrencias: ocorrencias);
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
-            c => c.EntidadeId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
+            c => c.OcorrenciaId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
     }
 
     [Fact(DisplayName = "PF + PJ vinculada repete por empresa: extrato da PJ 1 satisfaz só essa PJ — PJ 2 continua com extrato e IRPJ pendentes")]
-    public void RepeticaoPorEntidade_PessoaJuridicaVinculada_CorrelacaoPorPj()
+    public void RepeticaoPorGrupo_PessoaJuridicaVinculada_CorrelacaoPorPj()
     {
         DocumentoExigido extrato = DocumentoGeral("ELIMINA");
         DocumentoExigido irpj = DocumentoGeral("ELIMINA");
-        NoExigencia folhaExtrato = NoExigencia.CriarFolha(extrato, 0).Value!;
-        NoExigencia folhaIrpj = NoExigencia.CriarFolha(irpj, 1).Value!;
-        NoExigencia grupo = GrupoJuridico(folhaExtrato, folhaIrpj);
+        RegraDeComprovacao regraDeExtrato = RegraDeComprovacao.CriarRegraDeDocumento(extrato, 0).Value!;
+        RegraDeComprovacao regraDeImposto = RegraDeComprovacao.CriarRegraDeDocumento(irpj, 1).Value!;
+        RegraDeComprovacao grupo = GrupoJuridico(regraDeExtrato, regraDeImposto);
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "PESSOAS_JURIDICAS", Instancia("pj_1"), Instancia("pj_2"));
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "PESSOAS_JURIDICAS", Ocorrencia("pj_1"), Ocorrencia("pj_2"));
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(grupo), apresentacoes: ApresentaDeEntidade(extrato, "pj_1"), instancias: instancias);
+            Regras(grupo), apresentacoes: ApresentacoesDaOcorrencia(extrato, "pj_1"), ocorrencias: ocorrencias);
 
-        resultado.Value!.SituacoesPorRegra[grupo.Id].Should().Be(SituacaoDaComprovacao.Pendente);
-        resultado.Value.ConsequenciasVigentes.Select(static c => (c.EntidadeId, c.NoExigenciaId)).Should().BeEquivalentTo([("pj_1", folhaIrpj.Id), ("pj_2", folhaExtrato.Id), ("pj_2", folhaIrpj.Id)]);
+        resultado.Value!.SituacoesPorRegra[grupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
+        resultado.Value.ConsequenciasVigentes.Select(static c => (c.OcorrenciaId, c.RegraDeComprovacaoId)).Should().BeEquivalentTo([("pj_1", regraDeImposto.Id), ("pj_2", regraDeExtrato.Id), ("pj_2", regraDeImposto.Id)]);
     }
 
-    [Fact(DisplayName = "Repetição por entidade sem nenhuma instância declarada é não-aplicável")]
-    public void RepeticaoPorEntidade_SemInstanciasDeclaradas_NaoAplicavel()
+    [Fact(DisplayName = "Repetição sem ocorrências declaradas não é exigida")]
+    public void RepeticaoPorGrupo_SemOcorrenciasDeclaradas_NaoAplicavel()
     {
         DocumentoExigido documento = DocumentoGeral("ELIMINA");
-        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo));
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.NaoExigida);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Repetição por entidade: todas as instâncias satisfeitas suprime consequências")]
-    public void RepeticaoPorEntidade_TodasSatisfeitas_Suprime()
+    [Fact(DisplayName = "Repetição com todas as ocorrências cumpridas não aplica consequências")]
+    public void RepeticaoPorGrupo_TodasSatisfeitas_Suprime()
     {
         DocumentoExigido rg = DocumentoGeral("ELIMINA");
-        NoExigencia raiz = NoExigencia.CriarFolha(rg, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_2"));
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "COMPOSICAO_FAMILIAR", Ocorrencia("membro_1"), Ocorrencia("membro_2"));
 
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = ApresentacoesDosMembros(rg, "membro_1", "membro_2");
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes, instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: apresentacoes, ocorrencias: ocorrencias);
 
-        resultado.Value!.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
+        resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.Cumprida);
         resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Repetição por entidade: PendenciasDeOrientacao de um grupo OU opaco repetido carrega o EntidadeId correto por instância")]
-    public void RepeticaoPorEntidade_GrupoOuOpaco_PendenciasDeOrientacaoComEntidadeId()
+    [Fact(DisplayName = "Orientações do grupo repetido identificam a ocorrência correspondente")]
+    public void RepeticaoPorGrupo_GrupoComQuantidadeMinima_PendenciasDeOrientacaoComOcorrenciaId()
     {
-        DocumentoExigido docA = DocumentoGeral();
-        DocumentoExigido docB = DocumentoGeral();
-        NoExigencia folhaA = NoExigencia.CriarFolha(docA, 0).Value!;
-        NoExigencia folhaB = NoExigencia.CriarFolha(docB, 1).Value!;
-        NoExigencia grupo = GrupoOuJuridico(folhaA, folhaB);
+        DocumentoExigido primeiroDocumento = DocumentoGeral();
+        DocumentoExigido segundoDocumento = DocumentoGeral();
+        RegraDeComprovacao primeiraRegra = RegraDeComprovacao.CriarRegraDeDocumento(primeiroDocumento, 0).Value!;
+        RegraDeComprovacao segundaRegra = RegraDeComprovacao.CriarRegraDeDocumento(segundoDocumento, 1).Value!;
+        RegraDeComprovacao grupo = GrupoDeQuantidadeMinimaJuridico(primeiraRegra, segundaRegra);
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "PESSOAS_JURIDICAS", Instancia("pj_1"), Instancia("pj_2"));
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "PESSOAS_JURIDICAS", Ocorrencia("pj_1"), Ocorrencia("pj_2"));
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
-            Arvore(grupo), apresentacoes: ApresentaDeEntidade(docA, "pj_1"), instancias: instancias);
+            Regras(grupo), apresentacoes: ApresentacoesDaOcorrencia(primeiroDocumento, "pj_1"), ocorrencias: ocorrencias);
 
-        ConferirOrientacoesDoGrupo(resultado.Value!, grupo, folhaA, folhaB);
+        ConferirOrientacoesDoGrupo(resultado.Value!, grupo, primeiraRegra, segundaRegra);
     }
 
-    [Fact(DisplayName = "Árvore congelada com repetição por entidade aninhada (só alcançável via Reidratar) é recusada")]
-    public void RepeticaoPorEntidade_AninhadaViaReidratar_Recusa()
+    [Fact(DisplayName = "Regras reidratadas com repetição dentro de repetição são recusadas")]
+    public void RepeticaoPorGrupo_AninhadaViaReidratar_Recusa()
     {
         DocumentoExigido documento = DocumentoGeral();
-        NoExigencia folhaInterna = NoExigencia.ReidratarFolha(
+        RegraDeComprovacao regraInterna = RegraDeComprovacao.ReidratarRegraDeDocumento(
             Guid.CreateVersion7(), 0, documento, null, null, "PESSOAS_JURIDICAS");
-        NoExigencia grupoExterno = NoExigencia.ReidratarGrupo(
-            Guid.CreateVersion7(), 0, new CombinacaoDoGrupo(TipoNo.GrupoE, null, null), [], [folhaInterna], "COMPOSICAO_FAMILIAR");
+        RegraDeComprovacao grupoExterno = RegraDeComprovacao.ReidratarGrupo(
+            Guid.CreateVersion7(), 0, new CombinacaoDoGrupo(FormaDeComprovacao.TodosOsItens, null, null), [], [regraInterna], "COMPOSICAO_FAMILIAR");
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(grupoExterno));
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(grupoExterno));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.ArvoreEstruturalmenteInvalida");
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.RepeticaoDentroDeRepeticao");
     }
 
-    [Fact(DisplayName = "Instâncias de entidade com EntidadeId duplicado são recusadas")]
-    public void RepeticaoPorEntidade_InstanciasComIdDuplicado_Recusa()
+    [Fact(DisplayName = "Ocorrências com identificador repetido são recusadas")]
+    public void RepeticaoPorGrupo_OcorrenciasComIdentificadorRepetido_Recusa()
     {
         DocumentoExigido documento = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "COMPOSICAO_FAMILIAR", Instancia("membro_1"), Instancia("membro_1"));
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "COMPOSICAO_FAMILIAR", Ocorrencia("membro_1"), Ocorrencia("membro_1"));
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), ocorrencias: ocorrencias);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.InstanciaEntidadeInvalida");
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.OcorrenciaDoGrupoInvalida");
     }
 
-    [Fact(DisplayName = "Instância de entidade com EntidadeId vazio é recusada")]
-    public void RepeticaoPorEntidade_InstanciaComIdVazio_Recusa()
+    [Fact(DisplayName = "Ocorrência sem identificador é recusada")]
+    public void RepeticaoPorGrupo_OcorrenciaSemIdentificador_Recusa()
     {
         DocumentoExigido documento = DocumentoGeral();
-        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
-        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = InstanciasDe(
-            "COMPOSICAO_FAMILIAR", Instancia(""));
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
+        Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
+            "COMPOSICAO_FAMILIAR", Ocorrencia(""));
 
-        Result<ResultadoDaComprovacao> resultado = Resolver(Arvore(raiz), instancias: instancias);
+        Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), ocorrencias: ocorrencias);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.InstanciaEntidadeInvalida");
+        resultado.Error!.Code.Should().Be("AvaliadorDaComprovacao.OcorrenciaDoGrupoInvalida");
     }
 
     private static void ConferirDocumentosPendentesDosMembros(
         ResultadoDaComprovacao resultado, DocumentoExigido rg, DocumentoExigido cpf, DocumentoExigido certidao)
     {
-        resultado.StatusPorEntidade.Where(static s => s.Status == StatusResolucaoExigencia.Pendente)
-            .Select(static s => (s.DocumentoExigidoId, s.EntidadeId)).Should().BeEquivalentTo(
+        resultado.SituacoesDeExigenciaPorOcorrencia.Where(static s => s.Situacao == StatusResolucaoExigencia.PendenteDeComprovacao)
+            .Select(static s => (s.DocumentoExigidoId, s.OcorrenciaId)).Should().BeEquivalentTo(
                 [(rg.Id, "membro_1"), (rg.Id, "membro_2"), (cpf.Id, "membro_1"), (cpf.Id, "membro_2"), (certidao.Id, "membro_2")]);
     }
     private static void ConferirStatusDosMembros(ResultadoDaComprovacao resultado, Guid documentoId, string satisfeito, string[] pendentes)
     {
-        resultado.StatusPorEntidade.Select(static s => (s.DocumentoExigidoId, s.EntidadeId, s.Status)).Should().BeEquivalentTo(
-            pendentes.Select(id => (documentoId, id, StatusResolucaoExigencia.Pendente))
-                .Append((documentoId, satisfeito, StatusResolucaoExigencia.Satisfeita)));
+        resultado.SituacoesDeExigenciaPorOcorrencia.Select(static s => (s.DocumentoExigidoId, s.OcorrenciaId, s.Situacao)).Should().BeEquivalentTo(
+            pendentes.Select(id => (documentoId, id, StatusResolucaoExigencia.PendenteDeComprovacao))
+                .Append((documentoId, satisfeito, StatusResolucaoExigencia.Cumprida)));
     }
     private static DocumentoExigido DeclaracaoDeIsento() => DocumentoExigido.Criar(
             FaseId, Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
@@ -235,23 +246,23 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
                 CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
             ],
             [], null, Qualquer, null).Value!;
-    private static NoExigencia GrupoFamiliar(params DocumentoExigido[] documentos) => NoExigencia.CriarGrupo(
-        TipoNo.GrupoE, 0, null, null, [], [.. documentos.Select(static (d, i) => NoExigencia.CriarFolha(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
+    private static RegraDeComprovacao GrupoFamiliar(params DocumentoExigido[] documentos) => RegraDeComprovacao.CriarGrupo(
+        FormaDeComprovacao.TodosOsItens, 0, null, null, [], [.. documentos.Select(static (d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
 
-    private static NoExigencia GrupoJuridico(params NoExigencia[] folhas) =>
-        NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], folhas, "PESSOAS_JURIDICAS").Value!;
+    private static RegraDeComprovacao GrupoJuridico(params RegraDeComprovacao[] itens) =>
+        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], itens, "PESSOAS_JURIDICAS").Value!;
 
-    private static NoExigencia GrupoOuJuridico(params NoExigencia[] folhas) =>
-        NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 2, "ELIMINA", [BaseLegalResolvida()], folhas, "PESSOAS_JURIDICAS").Value!;
+    private static RegraDeComprovacao GrupoDeQuantidadeMinimaJuridico(params RegraDeComprovacao[] itens) =>
+        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, "ELIMINA", [BaseLegalResolvida()], itens, "PESSOAS_JURIDICAS").Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacoesDosMembros(DocumentoExigido documento, params string[] membros) =>
-        new() { [documento.Id] = [.. membros.Select(static membro => new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: membro))] };
+        new() { [documento.Id] = [.. membros.Select(static membro => new ApresentacaoDocumento(Guid.CreateVersion7(), OcorrenciaId: membro))] };
 
-    private static void ConferirOrientacoesDoGrupo(ResultadoDaComprovacao resultado, NoExigencia grupo, NoExigencia folhaA, NoExigencia folhaB)
+    private static void ConferirOrientacoesDoGrupo(ResultadoDaComprovacao resultado, RegraDeComprovacao grupo, RegraDeComprovacao primeiraRegra, RegraDeComprovacao segundaRegra)
     {
-        resultado.PendenciasDeOrientacao.Select(static p => (p.NoExigenciaId, p.EntidadeId)).Should()
-            .BeEquivalentTo([(folhaB.Id, "pj_1"), (folhaA.Id, "pj_2"), (folhaB.Id, "pj_2")]);
-        resultado.ConsequenciasVigentes.Select(static c => (c.NoExigenciaId, c.EntidadeId)).Should()
+        resultado.PendenciasDeOrientacao.Select(static p => (p.RegraDeComprovacaoId, p.OcorrenciaId)).Should()
+            .BeEquivalentTo([(segundaRegra.Id, "pj_1"), (primeiraRegra.Id, "pj_2"), (segundaRegra.Id, "pj_2")]);
+        resultado.ConsequenciasVigentes.Select(static c => (c.RegraDeComprovacaoId, c.OcorrenciaId)).Should()
             .BeEquivalentTo([(grupo.Id, "pj_1"), (grupo.Id, "pj_2")]);
     }
 }

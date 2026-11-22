@@ -78,10 +78,10 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
         DocumentoExigido daConvocacao = Exigencia(fase, "CERTIDAO", [("MODALIDADE_CONVOCACAO", JsonSerializer.SerializeToElement("AC"))]);
         processo.DefinirDocumentosExigidos(
             [
-                NoExigencia.CriarFolha(identidade, 0).Value!,
-                NoExigencia.CriarFolha(renda, 1).Value!,
-                NoExigencia.CriarFolha(doMembro, 2, repetePorEntidade: familia).Value!,
-                NoExigencia.CriarFolha(daConvocacao, 3).Value!,
+                RegraDeComprovacao.CriarRegraDeDocumento(identidade, 0).Value!,
+                RegraDeComprovacao.CriarRegraDeDocumento(renda, 1).Value!,
+                RegraDeComprovacao.CriarRegraDeDocumento(doMembro, 2, grupoDoFormularioParaRepeticao: familia).Value!,
+                RegraDeComprovacao.CriarRegraDeDocumento(daConvocacao, 3).Value!,
             ]).IsSuccess.Should().BeTrue();
     }
 

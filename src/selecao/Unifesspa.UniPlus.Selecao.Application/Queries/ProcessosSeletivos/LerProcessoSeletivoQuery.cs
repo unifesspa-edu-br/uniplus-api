@@ -81,7 +81,7 @@ public static class LerProcessoSeletivoQueryHandler
         Classificacao: null,
         CronogramaFases: [],
         DocumentosExigidos: [],
-        RaizesExigencia: [],
+        RegrasDeComprovacao: [],
         ReferenciaTemporalFatos: null,
         RegrasDerivacao: [],
         Formularios: [],

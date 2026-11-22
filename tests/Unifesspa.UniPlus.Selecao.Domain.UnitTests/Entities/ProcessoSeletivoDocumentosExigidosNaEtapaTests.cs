@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.ExigidoNaEtapaId == etapa.Id);
@@ -61,7 +61,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         FaseCronograma fase = Fase(1, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaNaEtapa(fase.Id, Guid.CreateVersion7(), FinalidadeFormulario.Habilitacao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(fase.Id, Guid.CreateVersion7(), FinalidadeFormulario.Habilitacao));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
@@ -79,7 +79,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         EtapaProcesso prova = Etapa("Prova objetiva", "AVALIACAO", 1);
         AdicionarEtapas(processo, prova);
 
-        Result resultado = DefinirFolhas(processo, ExigenciaNaEtapa(habilitacao.Id, prova.Id, FinalidadeFormulario.Habilitacao));
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(habilitacao.Id, prova.Id, FinalidadeFormulario.Habilitacao));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
@@ -96,7 +96,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
-        ExigirFolhas(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
+        ExigirDocumentos(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirEtapas([Etapa("Entrevista", "HABILITACAO", 1)]);
 
@@ -116,7 +116,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         ProcessoSeletivo processo = ProcessoComFases(habilitacao, Fase(2, "AVALIACAO"));
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
-        ExigirFolhas(processo, ExigenciaNaEtapa(habilitacao.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
+        ExigirDocumentos(processo, ExigenciaNaEtapa(habilitacao.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
         // A MESMA etapa, com o MESMO id — só a fase mudou. A guarda de remoção não vê nada,
         // porque o id continua na lista.

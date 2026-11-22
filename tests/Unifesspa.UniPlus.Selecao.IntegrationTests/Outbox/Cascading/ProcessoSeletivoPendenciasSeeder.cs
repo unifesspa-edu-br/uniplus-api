@@ -171,7 +171,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(exigencia, 0).Value!]);
+            [RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);
     }
 }

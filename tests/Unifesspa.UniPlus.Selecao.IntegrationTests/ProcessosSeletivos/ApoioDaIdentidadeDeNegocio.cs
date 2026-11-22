@@ -113,7 +113,7 @@ internal static class ApoioDaIdentidadeDeNegocio
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
 
-    internal static IReadOnlyList<string> NomesDasExigenciasNoEnvelope(FaseCronograma fase, params NoExigencia[] raizes)
+    internal static IReadOnlyList<string> NomesDasExigenciasNoEnvelope(FaseCronograma fase, params RegraDeComprovacao[] raizes)
     {
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: raizes);
         JsonArray exigenciasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["documentosExigidos"]!["exigencias"]!.AsArray();

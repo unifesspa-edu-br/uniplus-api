@@ -177,7 +177,7 @@ internal static class EnvelopeDeReferencia
     private static void DefinirDocumentosEFatos(ProcessoSeletivo processo, FaseCronograma fase)
     {
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(DocumentoExigidoDeReferencia(fase.Id), 0).Value!])
+            [RegraDeComprovacao.CriarRegraDeDocumento(DocumentoExigidoDeReferencia(fase.Id), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirReferenciaTemporalFatos(

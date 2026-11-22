@@ -178,7 +178,7 @@ internal static class CorpusEnvelope
     /// chave determinística antes de serializar. Compartilhado por toda coleção do corpus
     /// que declara <c>permutar</c>: etapas, distribuição de vagas, critérios de desempate,
     /// cronograma de fases, fatos coletados, regras de derivação, destinos da cascata
-    /// (dentro de uma mesma origem) e a árvore de satisfação (raízes e filhos).
+    /// (dentro de uma mesma origem) e as regras de comprovação e seus itens.
     /// </summary>
     internal static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
         inverter ? [.. ((IEnumerable<T>)itens).Reverse()] : itens;

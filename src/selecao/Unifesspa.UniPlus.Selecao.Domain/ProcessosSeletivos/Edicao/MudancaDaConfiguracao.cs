@@ -14,7 +14,7 @@ internal sealed record MudancaDaConfiguracao
 
     internal Troca<DocumentoExigido> DocumentosExigidos { get; init; }
 
-    internal Troca<NoExigencia> NosExigencia { get; init; }
+    internal Troca<RegraDeComprovacao> RegrasDeComprovacao { get; init; }
 
     internal Troca<FatoColetado> Campos { get; init; }
 

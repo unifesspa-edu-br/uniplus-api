@@ -37,14 +37,14 @@ internal static class LeituraDoEnvelope
             return null;
         }
 
-        IReadOnlyList<NoExigencia> raizes = LeituraDaArvoreDeSatisfacao.LerArvoreSatisfacao(leitor, payload, exigenciasPorId);
+        IReadOnlyList<RegraDeComprovacao> regrasSemGrupo = LeituraDasRegrasDeComprovacao.LerRegrasDeComprovacao(leitor, payload, exigenciasPorId);
         if (leitor.Falhou)
         {
             return null;
         }
 
         BlocosDeColeta coleta = LerColeta(leitor, payload, configuracao);
-        return leitor.Falhou ? null : new BlocosDoEnvelope(configuracao, documentos, publicacao, retificacao, raizes, coleta);
+        return leitor.Falhou ? null : new BlocosDoEnvelope(configuracao, documentos, publicacao, retificacao, regrasSemGrupo, coleta);
     }
 
     private static BlocosDaConfiguracao LerConfiguracao(LeitorEnvelope leitor, JsonObject payload)

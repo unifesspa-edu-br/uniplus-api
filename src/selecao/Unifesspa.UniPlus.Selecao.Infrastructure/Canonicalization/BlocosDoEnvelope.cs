@@ -12,12 +12,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="Documentos">Os documentos exigidos, os formulários e os metadados dos fatos.</param>
 /// <param name="Publicacao">A divulgação, a taxa, a localidade, o calendário e o identificador legível.</param>
 /// <param name="Retificacao">O bloco de retificação, quando o envelope o carrega.</param>
-/// <param name="Raizes">As raízes da árvore de satisfação das exigências.</param>
+/// <param name="RegrasSemGrupo">As regras de comprovação que não pertencem a um grupo.</param>
 /// <param name="Coleta">Os fatos coletados, os grupos e a derivação.</param>
 internal sealed record BlocosDoEnvelope(
     BlocosDaConfiguracao Configuracao,
     BlocosDosDocumentos Documentos,
     BlocosDaPublicacao Publicacao,
     RetificacaoDoEdital? Retificacao,
-    IReadOnlyList<NoExigencia> Raizes,
+    IReadOnlyList<RegraDeComprovacao> RegrasSemGrupo,
     BlocosDeColeta Coleta);

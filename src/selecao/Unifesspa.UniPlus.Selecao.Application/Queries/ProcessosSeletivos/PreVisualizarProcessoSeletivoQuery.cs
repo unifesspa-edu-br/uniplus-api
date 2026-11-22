@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// Avalia a configuração viva do processo — o rascunho, nunca o envelope
 /// publicado — contra um perfil simulado de candidato: o que cada formulário mostra e exige e os
-/// documentos que a árvore de exigências pediria (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0064).
+/// documentos exigidos pelas regras de comprovação (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0064).
 /// </summary>
 /// <remarks>
 /// O perfil carrega fatos pessoais e sensíveis simulados: não é gravado nem registrado em log.
@@ -40,8 +40,8 @@ public sealed record PreVisualizarProcessoSeletivoQuery(Guid ProcessoSeletivoId,
 
 /// <summary>
 /// A pré-visualização usa a mesma avaliação do candidato (<see cref="AvaliacaoDaInscricao"/>): o
-/// formulário, com as derivações e os agregados do processo intercalados, e a árvore de exigências,
-/// sem apresentação nenhuma — a folha aplicável sai pendente, isto é, exigida.
+/// formulário, com as derivações e os agregados do processo intercalados, e as regras de comprovação,
+/// sem apresentação nenhuma — a regra de documento aplicável fica pendente, isto é, exigida.
 /// </summary>
 public static class PreVisualizarProcessoSeletivoQueryHandler
 {
@@ -144,7 +144,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
             documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
             documento.ExigidoNaEtapaId, Situacao(avaliado.Situacao), avaliado.OcorrenciaId,
             [.. avaliado.Grupos
-                .Where(static g => g.Tipo == TipoNo.GrupoOu)
+                .Where(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens)
                 .Select(static g => new AlternativasSimuladasDto(g.GrupoId, g.Minimo!.Value))]);
     }
 

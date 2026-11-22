@@ -23,10 +23,10 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Verso
 /// </summary>
 internal static class AdulteracaoDeEnvelopeDeTeste
 {
-    public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comArvoreSatisfacao = false)
+    public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comRegrasDeComprovacao = false)
     {
         byte[] originais = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
+            CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegrasDeComprovacao))).Bytes;
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de
         // integridade não é o que os recusa. É a gramática.

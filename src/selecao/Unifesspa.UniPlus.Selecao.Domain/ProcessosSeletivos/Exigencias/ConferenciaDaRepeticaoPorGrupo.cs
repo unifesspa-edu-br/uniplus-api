@@ -32,12 +32,12 @@ public static class ConferenciaDaRepeticaoPorGrupo
         if (coletaDoGrupo is null)
         {
             yield return Recusa(
-                "NoExigencia.RepeticaoPorGrupoInexistente", "O grupo repetível nomeado pela exigência não é coletado por nenhum formulário do processo.");
+                "RegraDeComprovacao.RepeticaoPorGrupoInexistente", "O grupo repetível nomeado pela exigência não é coletado por nenhum formulário do processo.");
         }
         else if (!CamposDoGrupoConhecidos(conhecimento, coletaDoGrupo, codigoDoGrupo, ponto))
         {
             yield return Recusa(
-                "NoExigencia.RepeticaoPorGrupoNaoAlcancado", "O grupo repetível nomeado pela exigência não é conhecido no formulário que a entrega.");
+                "RegraDeComprovacao.RepeticaoPorGrupoNaoAlcancado", "O grupo repetível nomeado pela exigência não é conhecido no formulário que a entrega.");
         }
     }
 

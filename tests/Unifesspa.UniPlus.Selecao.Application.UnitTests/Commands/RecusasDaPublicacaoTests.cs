@@ -118,7 +118,7 @@ public sealed class RecusasDaPublicacaoTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS referência temporal", out faseId);
 
         DocumentoExigido exigencia = ExigenciaPorFaixaEtaria(faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
 
         // Nenhuma ReferenciaTemporalFatos configurada — o gatilho FAIXA_ETARIA a exige.
 

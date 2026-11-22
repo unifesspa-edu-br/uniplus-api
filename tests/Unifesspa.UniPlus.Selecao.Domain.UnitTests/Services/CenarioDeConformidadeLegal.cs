@@ -104,7 +104,7 @@ internal static class CenarioDeConformidadeLegal
 
     internal static void DefinirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] documentos) =>
         processo.DefinirDocumentosExigidos(
-            [.. documentos.Select(d => NoExigencia.CriarFolha(d, 0).Value!)]).IsSuccess.Should().BeTrue();
+            [.. documentos.Select(d => RegraDeComprovacao.CriarRegraDeDocumento(d, 0).Value!)]).IsSuccess.Should().BeTrue();
 
     /// <summary>Define a fase de envio de documentos e uma oferta com a modalidade; devolve o id da fase.</summary>
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)

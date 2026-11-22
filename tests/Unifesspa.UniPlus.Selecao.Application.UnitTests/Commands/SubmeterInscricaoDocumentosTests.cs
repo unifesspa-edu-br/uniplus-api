@@ -80,13 +80,13 @@ public sealed class SubmeterInscricaoDocumentosTests
         await documentos.Received(1).AgendarLimpezaAsync(orfao.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
-    private (IReadOnlyList<DocumentoExigido>, IReadOnlyList<NoExigencia>) Exigencias(ProcessoSeletivo processo)
+    private (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) Exigencias(ProcessoSeletivo processo)
     {
         Guid fase = processo.CronogramaFases.First(static f => f.ColetaInscricao).Id;
         _laudo = Documento(fase, "Laudo", Aplicabilidade.Geral, []);
         _naoSeAplica = Documento(fase, "Outro", Aplicabilidade.Condicional,
             [CondicaoGatilho.Criar(0, "APELIDO", Operador.Igual, JsonSerializer.SerializeToElement("Outro")).Value!]);
-        return ([_laudo, _naoSeAplica], [NoExigencia.CriarFolha(_laudo, 0).Value!, NoExigencia.CriarFolha(_naoSeAplica, 1).Value!]);
+        return ([_laudo, _naoSeAplica], [RegraDeComprovacao.CriarRegraDeDocumento(_laudo, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(_naoSeAplica, 1).Value!]);
     }
 
     private static DocumentoExigido Documento(Guid fase, string nome, Aplicabilidade aplicabilidade, IReadOnlyList<CondicaoGatilho> condicoes) =>

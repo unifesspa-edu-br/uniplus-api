@@ -83,8 +83,8 @@ internal static class ItensEstruturaisDeConformidade
         new ItemConformidade("taxa_inscricao_sem_fundamento_de_isencao", DimensaoConformidade.TaxaInscricao, "Fundamentos de isenção do processo que cobra taxa", TemFundamentoDeIsencaoQuandoCobra(configuracao)),
     ];
 
-    // Toda exigência que determina resultado precisa de ao menos uma base legal resolvida, e o grupo OU/N-de com
-    // consequência própria também: a base legal dele não vem dos filhos.
+    // Toda exigência que determina resultado precisa de ao menos uma base legal resolvida, e o grupo com quantidade mínima de itens e
+    // consequência própria também: a base legal dele não vem dos itens.
     private static List<ItemConformidade> ItensDasExigenciasDocumentais(ConfiguracaoDeclarada configuracao) =>
     [
         new ItemConformidade(
@@ -236,9 +236,9 @@ internal static class ItensEstruturaisDeConformidade
     internal static bool TemFundamentoDeIsencaoQuandoCobra(ConfiguracaoDeclarada configuracao) =>
         configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is not { Cobra: true, Fundamentos.Count: 0 };
 
-    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria — cada um precisa de ≥1 <see cref="BaseLegalDaComprovacao"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
+    /// <summary>Confere a base legal das regras de quantidade mínima que declaram consequência.</summary>
     internal static bool GruposComConsequenciaTemBaseLegalResolvida(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Exigencias.NosExigencia
+        configuracao.Exigencias.RegrasDeComprovacao
             .Where(static no => no.DeterminaResultado())
-            .All(no => no.BasesLegais.Any(static b => b.Status == StatusBaseLegal.Resolvido));
+            .All(no => no.BasesLegais.Any(static b => b.Situacao == StatusBaseLegal.Resolvido));
 }

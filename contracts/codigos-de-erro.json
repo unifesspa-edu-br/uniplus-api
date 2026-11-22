@@ -4272,6 +4272,21 @@
       "titulo": "O token não identifica quem confirma a política de divulgação"
     },
     {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.documento_referenciado_mais_de_uma_vez",
+      "status": 422,
+      "titulo": "A exigência documental aparece em mais de uma regra de comprovação"
+    },
+    {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.ocorrencia_do_grupo_invalida",
+      "status": 422,
+      "titulo": "Uma ocorrência do grupo tem identificador ausente ou repetido"
+    },
+    {
+      "codigo": "uniplus.selecao.avaliacao_da_comprovacao.regra_sem_documento",
+      "status": 422,
+      "titulo": "Uma regra de documento não indica a exigência documental"
+    },
+    {
       "codigo": "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos",
       "status": 422,
       "titulo": "A banca que julga recurso não define candidatos atendidos"
@@ -4400,6 +4415,21 @@
       "codigo": "uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos",
       "status": 422,
       "titulo": "A banca repete uma categoria de documento nos candidatos atendidos"
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.abrangencia_obrigatoria",
+      "status": 422,
+      "titulo": "A abrangência da base legal é obrigatória"
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.referencia_obrigatoria",
+      "status": 422,
+      "titulo": "A referência da base legal é obrigatória"
+    },
+    {
+      "codigo": "uniplus.selecao.base_legal_da_comprovacao.situacao_obrigatoria",
+      "status": 422,
+      "titulo": "A situação da base legal é obrigatória"
     },
     {
       "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado",
@@ -5457,9 +5487,9 @@
       "titulo": "A referência da base legal é obrigatória"
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido_base_legal.status_obrigatorio",
+      "codigo": "uniplus.selecao.documento_exigido_base_legal.situacao_obrigatoria",
       "status": 422,
-      "titulo": "O status da base legal é obrigatório"
+      "titulo": "A situação da base legal é obrigatória"
     },
     {
       "codigo": "uniplus.selecao.envelope_codec.algoritmo_nao_suportado",
@@ -6537,161 +6567,6 @@
       "titulo": "A escala de atendimento precisa de um nível que valha a pontuação inteira"
     },
     {
-      "codigo": "uniplus.selecao.no_exigencia.arvore_com_ciclo",
-      "status": 422,
-      "titulo": "A árvore de satisfação não pode conter ciclos"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.base_legal_proibida_em_grupo_e",
-      "status": 422,
-      "titulo": "Um grupo E é transparente e não carrega base legal própria"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.base_legal_sem_consequencia",
-      "status": 422,
-      "titulo": "Base legal de grupo só é permitida quando o grupo carrega consequência"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.chave_distincao_invalida",
-      "status": 422,
-      "titulo": "chaveDistincao fora do catálogo fechado"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga",
-      "status": 422,
-      "titulo": "A consequência do grupo é incoerente com a ação de indeferimento da modalidade que ele alcança"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_invalida",
-      "status": 422,
-      "titulo": "Consequência do grupo fora do domínio conhecido"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.consequencia_proibida_em_grupo_e",
-      "status": 422,
-      "titulo": "Um grupo E é transparente e não carrega consequência própria"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.data_referencia_indevida_para_chave",
-      "status": 422,
-      "titulo": "dataReferencia não é aceita para a chaveDistincao informada"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.data_referencia_obrigatoria_para_chave_calendario",
-      "status": 422,
-      "titulo": "dataReferencia é obrigatória quando chaveDistincao é COMPETENCIA_MENSAL ou EXERCICIO_ANUAL"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
-      "status": 422,
-      "titulo": "Documento não informado"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.documento_proibido_em_grupo",
-      "status": 422,
-      "titulo": "Documento informado no grupo"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.filhos_proibidos_em_folha",
-      "status": 422,
-      "titulo": "Documento reúne outros itens"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes",
-      "status": 422,
-      "titulo": "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_com_finalidades_diferentes",
-      "status": 422,
-      "titulo": "Todos os documentos de um grupo pertencem ao mesmo formulário"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.grupo_vazio",
-      "status": 422,
-      "titulo": "Um grupo E/OU não pode ter zero filhos"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_id_vazio",
-      "status": 422,
-      "titulo": "Os identificadores de ocorrenciasEsperadas não podem ser vazios ou em branco"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_ids_duplicados",
-      "status": 422,
-      "titulo": "Os identificadores de ocorrenciasEsperadas devem ser únicos"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_indevidas_para_chave",
-      "status": 422,
-      "titulo": "ocorrenciasEsperadas só é aceita quando chaveDistincao é OCORRENCIA"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_quantidade_minima_divergente",
-      "status": 422,
-      "titulo": "quantidadeMinima deve ser igual ao número de ocorrenciasEsperadas"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.ocorrencias_esperadas_vazia",
-      "status": 422,
-      "titulo": "ocorrenciasEsperadas, quando presente, não pode ser vazia"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_de_folha_invalida",
-      "status": 422,
-      "titulo": "A quantidade mínima de apresentações deve estar entre 1 e 366"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_excede_janela_representavel",
-      "status": 422,
-      "titulo": "quantidadeMinima excede o calendário representável a partir de dataReferencia"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_fora_dos_limites",
-      "status": 422,
-      "titulo": "quantidadeMinima de um grupo OU/N-de deve estar entre 1 e o número de filhos"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e",
-      "status": 422,
-      "titulo": "Quantidade mínima de documentos não permitida em grupo E"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva",
-      "status": 422,
-      "titulo": "O grupo declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada",
-      "status": 422,
-      "titulo": "Uma subárvore repetePorEntidade não pode conter outra — repetição não aninha"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.tipo_entidade_invalido",
-      "status": 422,
-      "titulo": "repetePorEntidade não nomeia grupo repetível dos formulários do processo"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.tipo_invalido",
-      "status": 422,
-      "titulo": "Tipo do item não reconhecido"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria",
-      "status": 422,
-      "titulo": "A abrangência da base legal é obrigatória"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria",
-      "status": 422,
-      "titulo": "A referência da base legal é obrigatória"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio",
-      "status": 422,
-      "titulo": "O status da base legal é obrigatório"
-    },
-    {
       "codigo": "uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute",
       "status": 422,
       "titulo": "O arquivo não confere com o leiaute escolhido"
@@ -7442,11 +7317,6 @@
       "titulo": "Ao menos uma etapa deve compor a nota final"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado",
-      "status": 422,
-      "titulo": "Duas folhas não podem citar a mesma exigência"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.nota_do_enem_sem_banca_de_importacao_das_notas",
       "status": 422,
       "titulo": "O processo que usa a nota do ENEM com inscrição própria não prevê a banca de importação das notas do INEP"
@@ -7485,16 +7355,6 @@
       "codigo": "uniplus.selecao.processo_seletivo.ordem_fase_duplicada",
       "status": 422,
       "titulo": "Cada fase deve ter uma ordem única dentro do cronograma"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.ordem_irmao_no_exigencia_duplicada",
-      "status": 422,
-      "titulo": "Cada filho de um mesmo nó pai deve ter uma ordem única entre os irmãos"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada",
-      "status": 422,
-      "titulo": "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.origem_candidatos_ausente",
@@ -7817,6 +7677,146 @@
       "titulo": "Regra não encontrada no catálogo na versão pedida"
     },
     {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_proibida_quando_exige_todos",
+      "status": 422,
+      "titulo": "O grupo que exige todos os itens não declara base legal própria"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_sem_consequencia",
+      "status": 422,
+      "titulo": "A base legal própria do grupo exige consequência declarada"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga",
+      "status": 422,
+      "titulo": "A consequência não corresponde à ação de indeferimento da modalidade alcançada"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_invalida",
+      "status": 422,
+      "titulo": "A consequência informada não é reconhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_proibida_quando_exige_todos",
+      "status": 422,
+      "titulo": "O grupo que exige todos os itens não declara consequência própria"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.criterio_de_distincao_invalido",
+      "status": 422,
+      "titulo": "O critério de distinção das apresentações não é reconhecido"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.data_referencia_indevida_para_criterio",
+      "status": 422,
+      "titulo": "O critério de distinção não aceita data de referência"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.data_referencia_obrigatoria_para_calendario",
+      "status": 422,
+      "titulo": "Competência mensal e exercício anual exigem data de referência"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.documento_obrigatorio",
+      "status": 422,
+      "titulo": "A regra de documento precisa indicar a exigência documental"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.documento_proibido_em_grupo",
+      "status": 422,
+      "titulo": "O grupo de comprovação não pode indicar documento próprio"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.forma_invalida",
+      "status": 422,
+      "titulo": "Informe documento, todos os itens ou quantidade mínima de itens"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_com_fases_diferentes",
+      "status": 422,
+      "titulo": "Os itens do grupo precisam pertencer à mesma fase"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_com_formularios_diferentes",
+      "status": 422,
+      "titulo": "Os documentos do grupo precisam pertencer ao mesmo formulário"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_para_repeticao_nao_declarado",
+      "status": 422,
+      "titulo": "O grupo para repetição não existe no formulário do processo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.grupo_sem_itens",
+      "status": 422,
+      "titulo": "O grupo de comprovação precisa de pelo menos um item"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.itens_proibidos_em_regra_de_documento",
+      "status": 422,
+      "titulo": "A regra de documento não pode conter outros itens"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencia_com_identificador_repetido",
+      "status": 422,
+      "titulo": "Os identificadores das ocorrências não podem se repetir"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencia_sem_identificador",
+      "status": 422,
+      "titulo": "Cada ocorrência esperada precisa de identificador"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencias_esperadas_indevidas_para_criterio",
+      "status": 422,
+      "titulo": "A lista só é aceita no critério por ocorrência"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.ocorrencias_esperadas_vazias",
+      "status": 422,
+      "titulo": "Informe pelo menos uma ocorrência esperada"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_de_apresentacoes_invalida",
+      "status": 422,
+      "titulo": "A quantidade mínima de apresentações deve estar entre 1 e 366"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_de_itens_fora_dos_limites",
+      "status": 422,
+      "titulo": "A quantidade mínima deve estar entre um e o total de itens do grupo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_diferente_das_ocorrencias",
+      "status": 422,
+      "titulo": "A quantidade mínima deve ser igual ao total de ocorrências esperadas"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_excede_calendario",
+      "status": 422,
+      "titulo": "A quantidade exige meses ou anos anteriores ao início do calendário representável"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_proibida_quando_exige_todos",
+      "status": 422,
+      "titulo": "O grupo que exige todos os itens não declara quantidade mínima"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.regra_contem_a_si_mesma",
+      "status": 422,
+      "titulo": "Uma regra não pode conter a si mesma, diretamente ou dentro de outro grupo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada",
+      "status": 422,
+      "titulo": "O grupo determina retirar vantagem, mas nenhuma está configurada"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.repeticao_dentro_de_repeticao",
+      "status": 422,
+      "titulo": "Uma regra repetida não pode conter outra regra de repetição"
+    },
+    {
       "codigo": "uniplus.selecao.regra_derivacao_configurada.contribui_em_branco",
       "status": 422,
       "titulo": "O código contribuído pela regra não pode ficar em branco"
@@ -7935,16 +7935,6 @@
       "codigo": "uniplus.selecao.regras_de_nome_abreviado.nome_em_branco",
       "status": 422,
       "titulo": "O nome a abreviar não pode ser vazio ou só espaços"
-    },
-    {
-      "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida",
-      "status": 422,
-      "titulo": "A árvore de exigências congelada tem identidade repetida entre folhas"
-    },
-    {
-      "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida",
-      "status": 422,
-      "titulo": "Uma instância de entidade declarada tem EntidadeId vazio ou duplicado"
     },
     {
       "codigo": "uniplus.selecao.retificacao.eixo_do_fato_ja_coletado_alterado",

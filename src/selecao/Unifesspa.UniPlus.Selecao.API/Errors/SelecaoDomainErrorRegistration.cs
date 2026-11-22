@@ -33,7 +33,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         .. ErrosDoEnvelopeEDaRetificacao.Mapeamentos(),
         .. ErrosDosDocumentosExigidos.Mapeamentos(),
         .. ErrosDaInscricao.Mapeamentos(),
-        .. ErrosDaArvoreDeExigencias.Mapeamentos(),
+        .. ErrosDasRegrasDeComprovacao.Mapeamentos(),
         .. ErrosDaAdministracaoDoProcesso.Mapeamentos(),
         .. ErrosDasIntegracoesExternas.Mapeamentos(),
         .. ErrosDoDocumentoDaConfiguracao.Mapeamentos(),

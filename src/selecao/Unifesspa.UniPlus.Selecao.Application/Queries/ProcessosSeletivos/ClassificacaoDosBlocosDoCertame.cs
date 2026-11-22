@@ -50,7 +50,7 @@ public static class ClassificacaoDosBlocosDoCertame
 
     /// <summary>
     /// Blocos que não atravessam a fronteira pública. São o critério que decide o resultado do
-    /// certame, a mecânica de distribuição e remanejamento, a árvore documental com o grafo de
+    /// certame, a mecânica de distribuição e remanejamento, as regras documentais com o grafo de
     /// dependência entre fatos, e os parâmetros do interpretador de regras — nada que o cidadão
     /// precise ler para se inscrever, e boa parte do que a instituição não publica num endereço
     /// anônimo.
@@ -63,7 +63,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "cascataRemanejamento",
         "distribuicao",
         "modalidades",
-        "arvoreSatisfacao",
+        "regrasDeComprovacao",
         "grafoDependencia",
         "regrasDerivacao",
         "fatosColetados",

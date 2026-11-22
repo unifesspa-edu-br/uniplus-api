@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
         processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-        ExigirFolhas(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, CondicaoDe(fato, "LB_PPI")));
+        ExigirDocumentos(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, CondicaoDe(fato, "LB_PPI")));
         return processo;
     }
 
@@ -77,7 +77,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
         processo.DefinirAtendimentoEspecializado(atendimento).IsSuccess.Should().BeTrue();
-        ExigirFolhas(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, condicao));
+        ExigirDocumentos(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, condicao));
         return processo;
     }
 

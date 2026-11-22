@@ -5,23 +5,17 @@ using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>
-/// Base legal de um <see cref="NoExigencia"/> do tipo <see cref="TipoNo.GrupoOu"/> com
-/// <see cref="NoExigencia.Consequencia"/> declarada (Story #920) — mesmo shape/validação de
-/// <see cref="DocumentoExigidoBaseLegal"/>, mas o grupo opaco é exigência de 1ª classe: carrega
-/// sua PRÓPRIA base legal 1:N, não derivada das folhas. Duas classes concretas separadas
-/// (sem herança EF/TPH) — decisão deliberada, ver <see cref="NoExigencia"/>.
-/// </summary>
+/// <summary>Base legal da consequência de uma regra de comprovação.</summary>
 public sealed class BaseLegalDaComprovacao : EntityBase
 {
-    public Guid NoExigenciaId { get; private set; }
+    public Guid RegraDeComprovacaoId { get; private set; }
 
     /// <summary>Referência textual institucional (ex.: "Lei 12.711/2012, art. 3º") — não é PII.</summary>
     public string Referencia { get; private set; } = string.Empty;
 
     public TipoAbrangencia Abrangencia { get; private set; }
 
-    public StatusBaseLegal Status { get; private set; }
+    public StatusBaseLegal Situacao { get; private set; }
 
     public string? Observacao { get; private set; }
 
@@ -31,7 +25,7 @@ public sealed class BaseLegalDaComprovacao : EntityBase
     /// Acumula (ADR-0125) as três checagens — mesmo shape/validação de
     /// <see cref="DocumentoExigidoBaseLegal.ValidarFormaBasica"/>, ver ali.
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal status)
+    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao)
     {
         List<FieldError> erros = [];
 
@@ -39,26 +33,26 @@ public sealed class BaseLegalDaComprovacao : EntityBase
         {
             erros.Add(new("referencia", new DomainError("BaseLegalDaComprovacao.ReferenciaObrigatoria", "A referência da base legal é obrigatória.")));
         }
-        ValidarAbrangenciaEStatus(erros, abrangencia, status);
+        ValidarAbrangenciaESituacao(erros, abrangencia, situacao);
         return erros;
     }
 
-    private static void ValidarAbrangenciaEStatus(List<FieldError> erros, TipoAbrangencia abrangencia, StatusBaseLegal status)
+    private static void ValidarAbrangenciaESituacao(List<FieldError> erros, TipoAbrangencia abrangencia, StatusBaseLegal situacao)
     {
         if (abrangencia == TipoAbrangencia.Nenhuma)
         {
             erros.Add(new("abrangencia", new DomainError("BaseLegalDaComprovacao.AbrangenciaObrigatoria", "A abrangência da base legal é obrigatória.")));
         }
-        if (status == StatusBaseLegal.Nenhuma)
+        if (situacao == StatusBaseLegal.Nenhuma)
         {
-            erros.Add(new("status", new DomainError("BaseLegalDaComprovacao.StatusObrigatorio", "O status da base legal é obrigatório.")));
+            erros.Add(new("situacao", new DomainError("BaseLegalDaComprovacao.SituacaoObrigatoria", "A situação da base legal é obrigatória.")));
         }
     }
 
     public static Result<BaseLegalDaComprovacao> Criar(
-        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
+        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao, string? observacao)
     {
-        List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, status);
+        List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, situacao);
         if (erros.Count > 0)
         {
             return Result<BaseLegalDaComprovacao>.ValidationFailure(erros);
@@ -68,11 +62,11 @@ public sealed class BaseLegalDaComprovacao : EntityBase
         {
             Referencia = referencia.Trim(),
             Abrangencia = abrangencia,
-            Status = status,
+            Situacao = situacao,
             Observacao = string.IsNullOrWhiteSpace(observacao) ? null : observacao.Trim(),
         });
     }
 
-    internal void VincularNoExigencia(Guid noExigenciaId) =>
-        NoExigenciaId = noExigenciaId;
+    internal void VincularRegraDeComprovacao(Guid regraDeComprovacaoId) =>
+        RegraDeComprovacaoId = regraDeComprovacaoId;
 }

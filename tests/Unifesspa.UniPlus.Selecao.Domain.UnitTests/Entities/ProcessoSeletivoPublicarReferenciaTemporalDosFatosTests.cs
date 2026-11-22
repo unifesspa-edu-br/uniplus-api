@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         TimeZoneInfo fuso = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
 
@@ -87,7 +87,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
         // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
@@ -118,7 +118,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseSemExtremoId = AcrescentarFaseSemExtremo(processo);
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!)
@@ -147,7 +147,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(OrigemCandidatos.ImportacaoExterna);
         Guid faseColetaId = DefinirCronogramaSemFaseDeColeta(processo);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
@@ -277,7 +277,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         FormularioDeTeste.TrocarCronograma(processo, [ColetaNaSegundaQuinzena(), ColetaNaPrimeiraQuinzena()]).IsSuccess.Should().BeTrue();
         Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
@@ -296,7 +296,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
         Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!)

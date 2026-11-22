@@ -291,7 +291,10 @@
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "HOMOLOGACAO_DAS_INSCRICOES",
-              "regra": { "codigo": "PROCEDIMENTO-RECURSO-CONFERENCIA", "versao": "v1" }
+              "regra": {
+                "codigo": "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                "versao": "v1"
+              }
             }
           ]
         },
@@ -393,13 +396,23 @@
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "CLASSIFICACAO",
-              "alvo": { "itemDeAvaliacaoChave": "argumentacao" },
-              "regra": { "codigo": "PROCEDIMENTO-RECURSO-RECORRECAO", "versao": "v1" }
+              "alvo": {
+                "itemDeAvaliacaoChave": "argumentacao"
+              },
+              "regra": {
+                "codigo": "PROCEDIMENTO-RECURSO-RECORRECAO",
+                "versao": "v1"
+              }
             },
             {
               "tipoDeDecisao": "CLASSIFICACAO",
-              "alvo": { "areaDoEnem": "REDACAO" },
-              "regra": { "codigo": "PROCEDIMENTO-RECURSO-RECALCULO", "versao": "v1" }
+              "alvo": {
+                "areaDoEnem": "REDACAO"
+              },
+              "regra": {
+                "codigo": "PROCEDIMENTO-RECURSO-RECALCULO",
+                "versao": "v1"
+              }
             }
           ]
         }
@@ -475,7 +488,7 @@
           {
             "referencia": "Decreto 6.593/2008",
             "abrangencia": "FEDERAL",
-            "status": "RESOLVIDO"
+            "situacao": "RESOLVIDO"
           }
         ],
         "idadeMaximaEmissao": {
@@ -485,19 +498,18 @@
         }
       }
     ],
-    "arvoreDeSatisfacao": [
+    "regrasDeComprovacao": [
       {
-        "ordem": 1,
-        "tipo": "E",
-        "filhos": [
+        "forma": "TODOS_OS_ITENS",
+        "itens": [
           {
-            "tipo": "FOLHA",
-            "exigenciaChave": "documento-de-identificacao"
+            "exigenciaChave": "documento-de-identificacao",
+            "forma": "DOCUMENTO"
           },
           {
-            "tipo": "FOLHA",
             "exigenciaChave": "comprovante-de-renda",
-            "consequencia": "REMOVE_VANTAGEM"
+            "consequencia": "REMOVE_VANTAGEM",
+            "forma": "DOCUMENTO"
           }
         ]
       }

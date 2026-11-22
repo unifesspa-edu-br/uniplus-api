@@ -159,14 +159,14 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         // obrigatorio: false, consequenciaIndeferimento: null — DeterminaResultado() fica falso,
         // então nem PendenciaDasExigenciasDocumentais (CA-01) nem a checagem de base legal de
         // AvaliadorConformidadeLegal exigem nada além do gatilho em si (mesmo raciocínio já
-        // documentado em EnvelopeCodecRoundTripTests.RoundTrip14_ArvoreComGrupoCardinalidadeERepeticao).
+        // usado nos testes de leitura do envelope).
         DocumentoExigido documento = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(documento, 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static JsonNode CondicaoGatilhoDoEnvelope(SnapshotCanonico snapshot) =>

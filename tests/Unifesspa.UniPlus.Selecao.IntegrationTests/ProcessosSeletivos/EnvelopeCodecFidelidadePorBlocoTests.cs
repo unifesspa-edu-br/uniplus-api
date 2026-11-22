@@ -17,7 +17,7 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
     [
         "Id", "CreatedAt", "UpdatedAt", "DomainEvents", "ProcessoSeletivoId", "EtapaProcessoId", "FaseCronogramaId",
         "AtendimentoEspecializadoId", "ConfiguracaoDistribuicaoVagasId", "ConfiguracaoBonusRegionalId", "ConfiguracaoClassificacaoId",
-        "ConfiguracaoCascataRemanejamentoId", "GrupoPesoAreaEnemCongeladoId", "BancaRequeridaId", "NoExigenciaId",
+        "ConfiguracaoCascataRemanejamentoId", "GrupoPesoAreaEnemCongeladoId", "BancaRequeridaId", "RegraDeComprovacaoId",
         "GrupoColetadoId", "FormularioProcessoId", "FatoColetadoId", "ConfiguracaoDerivacaoFatoId", "RegraDerivacaoConfiguradaId",
     ];
 
@@ -54,9 +54,9 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
     {
         (ConfiguracaoDeclarada d, ConfiguracaoPublicada g) = Ler();
 
-        Conferir(d.Exigencias, new { g.Exigencias.DocumentosExigidos, g.Exigencias.NosExigencia });
-        g.Exigencias.NosExigencia.Select(static n => (n.Id, n.DocumentoExigidoId, n.NoPaiId)).Should()
-            .BeEquivalentTo(d.Exigencias.NosExigencia.Select(static n => (n.Id, n.DocumentoExigidoId, n.NoPaiId)));
+        Conferir(d.Exigencias, new { g.Exigencias.DocumentosExigidos, g.Exigencias.RegrasDeComprovacao });
+        g.Exigencias.RegrasDeComprovacao.Select(static n => (n.Id, n.DocumentoExigidoId, n.RegraQueContemId)).Should()
+            .BeEquivalentTo(d.Exigencias.RegrasDeComprovacao.Select(static n => (n.Id, n.DocumentoExigidoId, n.RegraQueContemId)));
         g.Exigencias.DocumentosExigidos.Select(static e => e.Id).Should().BeEquivalentTo(d.Exigencias.DocumentosExigidos.Select(static e => e.Id));
     }
 
@@ -95,7 +95,7 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
 
     private static (ConfiguracaoDeclarada Declarada, ConfiguracaoPublicada Lida) Ler()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
         SnapshotCanonico documento = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         ConfiguracaoPublicada lida = ApoioDoEnvelopeCodec.Reidratado(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, documento.Bytes)).Configuracao;
         return (processo.Declaracao(), lida);

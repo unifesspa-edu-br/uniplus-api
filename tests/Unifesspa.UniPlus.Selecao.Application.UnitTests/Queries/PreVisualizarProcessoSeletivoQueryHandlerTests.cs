@@ -98,7 +98,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(perfil with { Respostas = semCorRaca });
 
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
-            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", EntidadeId = (string?)null });
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", OcorrenciaId = (string?)null });
     }
 
     [Fact(DisplayName = "Com a composição familiar visível e sem resposta, o documento por membro sai indeterminado, sem ocorrência")]
@@ -108,7 +108,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "LB_PPI", membros: null));
 
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
-            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", EntidadeId = (string?)null });
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "INDETERMINADO", OcorrenciaId = (string?)null });
     }
 
     [Fact(DisplayName = "Com a composição familiar visível e a lista vazia declarada, o documento por membro não é exigido")]
@@ -119,7 +119,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             ProcessoDeMedicina(minimoDaComposicao: 0));
 
         resultado.Value!.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
-            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", EntidadeId = (string?)null });
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", OcorrenciaId = (string?)null });
     }
 
     [Fact(DisplayName = "Com a composição familiar oculta e sem resposta, o documento por membro não é exigido")]
@@ -129,7 +129,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             nacionalidade: "NATO", corRaca: "BRANCA", convocacao: "AC", membros: null));
 
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
-            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", EntidadeId = (string?)null });
+            .Should().ContainSingle().Which.Should().BeEquivalentTo(new { Situacao = "NAO_EXIGIDO", OcorrenciaId = (string?)null });
     }
 
     [Fact(DisplayName = "A ocorrência sem identidade, ou com identidade repetida no grupo, é recusada no campo dela")]
@@ -213,7 +213,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     /// <summary>Os documentos exigidos, pelo código, com a identidade da ocorrência quando repetidos por membro.</summary>
     private static IEnumerable<string> Exigidos(PreVisualizacaoDoProcessoDto previa) =>
         previa.Documentos.Where(static d => d.Situacao == "EXIGIDO")
-            .Select(static d => d.EntidadeId is null ? d.TipoDocumentoCodigo : $"{d.TipoDocumentoCodigo}@{d.EntidadeId}");
+            .Select(static d => d.OcorrenciaId is null ? d.TipoDocumentoCodigo : $"{d.TipoDocumentoCodigo}@{d.OcorrenciaId}");
 
     /// <summary>
     /// Um candidato com a inscrição e a habilitação concluídas; sem membros, a composição familiar
@@ -288,20 +288,20 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         .DaFinalidade(FinalidadeFormulario.Habilitacao)
         .Construir();
 
-    private static NoExigencia[] DocumentosDaHabilitacaoDeMedicina(Guid fase) =>
+    private static RegraDeComprovacao[] DocumentosDaHabilitacaoDeMedicina(Guid fase) =>
     [
-        NoExigencia.CriarFolha(Documento(fase, "PERTENCIMENTO_INDIGENA",
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "PERTENCIMENTO_INDIGENA",
             Condicao(0, "MODALIDADE_CONVOCACAO", Operador.Em, new[] { "LB_PPI", "LI_PPI" }),
             Condicao(0, "COR_RACA", Operador.Igual, "INDIGENA")), 0).Value!,
-        NoExigencia.CriarFolha(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, new[] { "RURAL" })), 1).Value!,
-        NoExigencia.CriarFolha(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, repetePorEntidade: Composicao).Value!,
-        NoExigencia.CriarGrupo(TipoNo.GrupoOu, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, new[] { "RURAL" })), 1).Value!,
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, grupoDoFormularioParaRepeticao: Composicao).Value!,
+        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
         [
-            NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, quantidadeMinima: null, consequencia: null, basesLegais: [],
-                [NoExigencia.CriarFolha(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
-            NoExigencia.CriarFolha(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
+            RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, quantidadeMinima: null, consequencia: null, basesLegais: [],
+                [RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
+            RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
         ]).Value!,
-        NoExigencia.CriarFolha(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
     ];
 
     private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => DocumentoExigido.Criar(

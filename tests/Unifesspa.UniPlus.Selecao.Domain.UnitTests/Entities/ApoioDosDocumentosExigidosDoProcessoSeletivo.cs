@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Montagem comum dos testes dos documentos exigidos do processo seletivo: o processo, as fases,
-/// as etapas, as exigências e a gravação das folhas, para que cada assunto parta do mesmo cenário.
+/// as etapas, as exigências e a gravação das regras de documento, para que cada assunto parta do mesmo cenário.
 /// </summary>
 internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 {
@@ -68,8 +68,8 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-    internal static NoExigencia FolhaDaFase(Guid exigidoNaFaseId, int ordem) =>
-        NoExigencia.CriarFolha(Exigencia(exigidoNaFaseId), ordem).Value!;
+    internal static RegraDeComprovacao RegraDeDocumentoDaFase(Guid exigidoNaFaseId, int ordem) =>
+        RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(exigidoNaFaseId), ordem).Value!;
 
     internal static ProcessoSeletivo ProcessoComFases(params FaseCronograma[] fases)
     {
@@ -81,12 +81,12 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static void AdicionarEtapas(ProcessoSeletivo processo, params EtapaProcesso[] etapas) =>
         processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
 
-    internal static Result DefinirFolhas(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
+    internal static Result DefinirRegrasDeDocumento(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
         processo.DefinirDocumentosExigidos(
-            [.. exigencias.Select((exigencia, ordem) => NoExigencia.CriarFolha(exigencia, ordem).Value!)]);
+            [.. exigencias.Select((exigencia, ordem) => RegraDeComprovacao.CriarRegraDeDocumento(exigencia, ordem).Value!)]);
 
-    internal static void ExigirFolhas(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
-        DefinirFolhas(processo, exigencias).IsSuccess.Should().BeTrue();
+    internal static void ExigirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
+        DefinirRegrasDeDocumento(processo, exigencias).IsSuccess.Should().BeTrue();
 
     internal static CondicaoGatilho GatilhoFaixaEtaria() =>
         CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
@@ -116,11 +116,11 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             condicoes: gatilhos, basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
-    /// <summary>Grupo OU de um documento geral só, com a consequência dada e base legal resolvida, como única exigência do processo.</summary>
-    internal static void ExigirGrupoOuDeUmDocumento(ProcessoSeletivo processo, string consequencia)
+    /// <summary>Grupo com quantidade mínima de um documento, consequência e base legal resolvida.</summary>
+    internal static void ExigirGrupoDeQuantidadeMinimaComDocumento(ProcessoSeletivo processo, string consequencia)
     {
-        NoExigencia folha = NoExigencia.CriarFolha(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
     }

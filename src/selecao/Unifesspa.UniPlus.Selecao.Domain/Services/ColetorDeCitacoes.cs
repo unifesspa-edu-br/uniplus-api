@@ -21,43 +21,43 @@ internal sealed class ColetorDeCitacoes
             StringComparer.Ordinal);
     }
 
-    internal DependenciasDaInscricao.CitacoesDosGatilhos Coletar(IEnumerable<NoExigencia> raizes)
+    internal DependenciasDaInscricao.CitacoesDosGatilhos Coletar(IEnumerable<RegraDeComprovacao> regrasSemGrupo)
     {
-        foreach (NoExigencia raiz in raizes)
+        foreach (RegraDeComprovacao regra in regrasSemGrupo)
         {
-            Citar(raiz, null);
+            Citar(regra, null);
         }
 
         return new(_doCandidato, _deMembro, _repetidos);
     }
 
-    private bool Citar(NoExigencia no, string? grupoRepetido)
+    private bool Citar(RegraDeComprovacao regra, string? grupoRepetido)
     {
-        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
-        bool temFolha = CitarFilhos(no, repetido);
-        if (no.DocumentoExigido is { } documento && _incluir?.Invoke(documento.Id) != false)
+        string? repetido = regra.GrupoDoFormularioParaRepeticao ?? grupoRepetido;
+        bool temDocumento = CitarItens(regra, repetido);
+        if (regra.DocumentoExigido is { } documento && _incluir?.Invoke(documento.Id) != false)
         {
-            temFolha = true;
+            temDocumento = true;
             CitarGatilho(documento, repetido);
         }
 
-        if (temFolha && no.RepetePorEntidade is { } grupo)
+        if (temDocumento && regra.GrupoDoFormularioParaRepeticao is { } grupo)
         {
             _repetidos.Add(grupo);
         }
 
-        return temFolha;
+        return temDocumento;
     }
 
-    private bool CitarFilhos(NoExigencia no, string? repetido)
+    private bool CitarItens(RegraDeComprovacao regra, string? repetido)
     {
-        bool temFolha = false;
-        foreach (NoExigencia filho in no.Filhos)
+        bool temDocumento = false;
+        foreach (RegraDeComprovacao item in regra.Itens)
         {
-            temFolha |= Citar(filho, repetido);
+            temDocumento |= Citar(item, repetido);
         }
 
-        return temFolha;
+        return temDocumento;
     }
 
     private void CitarGatilho(DocumentoExigido documento, string? repetido)
