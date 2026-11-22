@@ -10,6 +10,16 @@ public sealed class RegrasDasDescricoesDeErrosTests
     private const string OutroCodigo = "uniplus.exemplo.regra_antiga";
     private const string TerceiroCodigo = "uniplus.exemplo.terceira_regra";
 
+    [Fact]
+    public void Conferir_QuandoLinkApontaParaCodigoNaoPublicado_IdentificaDestino()
+    {
+        DescricaoDeErro entrada = Entrada() with { ComoResolver = [$"Consulte [outra regra](/erros/{OutroCodigo})."] };
+
+        string[] falhas = ConferenciaDasDescricoesDeErros.Conferir(Documento(entrada), [Codigo]);
+
+        falhas.Should().Contain($"{Codigo}: comoResolver, link para código de erro não publicado: {OutroCodigo}.");
+    }
+
     [Theory]
     [InlineData("Envie o PAYLOAD.", "termo de implementação fora de código")]
     [InlineData("Confira o end**point**.", "termo de implementação fora de código")]

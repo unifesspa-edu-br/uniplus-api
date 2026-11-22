@@ -14218,7 +14218,7 @@
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.quorum` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.quorum` na banca da etapa."
       ],
       "comoResolver": [
-        "Informe, no campo `quorum`, que é obrigatório, um número de 1 até o número de integrantes que o edital\ndeclara. O quórum só existe na deliberação por votação: no ato individual, ele\nnão é informado (ver [ato individual sem votação](/erros/uniplus.selecao.banca.ato_individual_sem_votacao)).",
+        "Informe, no campo `quorum`, um número de 1 até o número de integrantes que o edital\ndeclara. Na deliberação por votação, o quórum é obrigatório. No ato individual,\nele só é aceito junto com o critério e o encerramento da votação do recurso.",
         "Quando o encerramento da votação é por todos os titulares, o quórum precisa ser\nigual ao número de integrantes, o que tem [recusa própria](/erros/uniplus.selecao.banca.quorum_incoerente)."
       ],
       "ondeAparece": [
