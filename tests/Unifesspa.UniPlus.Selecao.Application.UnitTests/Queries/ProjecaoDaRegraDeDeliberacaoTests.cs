@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -23,11 +24,14 @@ public sealed class ProjecaoDaRegraDeDeliberacaoTests
             EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), SemUnanimidade: null))).Value!;
 
         RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
-
-        projetada.Should().Be(new RegraDeDeliberacaoDto(
-            ModoDeDeliberacao.ColegiadaComVotacao, 3, 1, 2,
-            CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia,
-            EncerramentoDaVotacao.PresidenciaNoQuorum, null));
+        projetada.Modo.Should().Be(CodigoComRotulo<ModoDeDeliberacao>.De(ModoDeDeliberacao.ColegiadaComVotacao));
+        projetada.Integrantes.Should().Be(3);
+        projetada.Suplentes.Should().Be(1);
+        projetada.Quorum.Should().Be(2);
+        projetada.Criterio.Should().Be(CodigoComRotulo<CriterioDeVotacao>.De(CriterioDeVotacao.MaioriaSimples));
+        projetada.Desempate.Should().Be(CodigoComRotulo<DesempateDaVotacao>.De(DesempateDaVotacao.VotoDaPresidencia));
+        projetada.Encerramento.Should().Be(CodigoComRotulo<EncerramentoDaVotacao>.De(EncerramentoDaVotacao.PresidenciaNoQuorum));
+        projetada.SemUnanimidade.Should().BeNull();
     }
 
     [Fact(DisplayName = "A regra do ato individual projeta só a composição, sem campos de votação")]
@@ -39,6 +43,42 @@ public sealed class ProjecaoDaRegraDeDeliberacaoTests
 
         RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
 
-        projetada.Should().Be(new RegraDeDeliberacaoDto(ModoDeDeliberacao.AtoIndividual, 1, 0, null, null, null, null, null));
+        projetada.Modo.Should().Be(CodigoComRotulo<ModoDeDeliberacao>.De(ModoDeDeliberacao.AtoIndividual));
+        projetada.Integrantes.Should().Be(1);
+        projetada.Suplentes.Should().Be(0);
+        projetada.Quorum.Should().BeNull();
+        projetada.Criterio.Should().BeNull();
+        projetada.Desempate.Should().BeNull();
+        projetada.Encerramento.Should().BeNull();
+        projetada.SemUnanimidade.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A regra do ato individual projeta a votação declarada para o recurso")]
+    public void De_AtoIndividualComVotacao_ProjetaCamposDaVotacao()
+    {
+        RegraDeDeliberacao regra = RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
+            ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 0, new(2,
+            CriterioDeVotacao.MaioriaSimples.Codigo(), DesempateDaVotacao.VotoDaPresidencia.Codigo(),
+            EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null))).Value!;
+
+        RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
+
+        projetada.Quorum.Should().Be(2);
+        projetada.Criterio.Should().Be(CodigoComRotulo<CriterioDeVotacao>.De(CriterioDeVotacao.MaioriaSimples));
+        projetada.Encerramento.Should().Be(CodigoComRotulo<EncerramentoDaVotacao>.De(EncerramentoDaVotacao.PresidenciaNoQuorum));
+    }
+
+    [Fact(DisplayName = "A regra de unanimidade projeta o resultado sem unanimidade")]
+    public void De_Unanimidade_ProjetaResultadoSemUnanimidade()
+    {
+        RegraDeDeliberacao regra = RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
+            ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 3, 0, new(3,
+            CriterioDeVotacao.Unanimidade.Codigo(), null, EncerramentoDaVotacao.TodosOsTitulares.Codigo(),
+            ResultadoSemUnanimidade.NovaVotacao.Codigo()))).Value!;
+
+        RegraDeDeliberacaoDto projetada = ProjecaoDaRegraDeDeliberacao.De(regra)!;
+
+        projetada.SemUnanimidade.Should().Be(CodigoComRotulo<ResultadoSemUnanimidade>.De(ResultadoSemUnanimidade.NovaVotacao));
+        projetada.Desempate.Should().BeNull();
     }
 }
