@@ -14834,6 +14834,15 @@
         ],
         "type": "string"
       },
+      "CriterioDeVotacaoCodigo": {
+        "enum": [
+          "maioriaSimples",
+          "maioriaAbsoluta",
+          "unanimidade"
+        ],
+        "type": "string",
+        "description": "- \u0060maioriaSimples\u0060: Maioria simples\n- \u0060maioriaAbsoluta\u0060: Maioria absoluta\n- \u0060unanimidade\u0060: Unanimidade"
+      },
       "CronogramaDaFaseDto": {
         "required": [
           "ordem",
@@ -15426,6 +15435,14 @@
           null
         ],
         "type": "string"
+      },
+      "DesempateDaVotacaoCodigo": {
+        "enum": [
+          "votoDaPresidencia",
+          "novaVotacao"
+        ],
+        "type": "string",
+        "description": "- \u0060votoDaPresidencia\u0060: Voto da presid\u00EAncia\n- \u0060novaVotacao\u0060: Nova vota\u00E7\u00E3o"
       },
       "DestinoRemanejamentoDto": {
         "required": [
@@ -19780,6 +19797,14 @@
         ],
         "type": "string"
       },
+      "EncerramentoDaVotacaoCodigo": {
+        "enum": [
+          "todosOsTitulares",
+          "presidenciaNoQuorum"
+        ],
+        "type": "string",
+        "description": "- \u0060todosOsTitulares\u0060: Todos os titulares votam\n- \u0060presidenciaNoQuorum\u0060: A presid\u00EAncia encerra ao atingir o qu\u00F3rum"
+      },
       "EnvioDoComprovanteDto": {
         "required": [
           "numeroInscricao",
@@ -23346,6 +23371,14 @@
         ],
         "type": "string"
       },
+      "ModoDeDeliberacaoCodigo": {
+        "enum": [
+          "colegiadaComVotacao",
+          "atoIndividual"
+        ],
+        "type": "string",
+        "description": "- \u0060colegiadaComVotacao\u0060: Colegiada, com vota\u00E7\u00E3o\n- \u0060atoIndividual\u0060: Ato individual"
+      },
       "MomentoDaExigenciaDto": {
         "required": [
           "faseId",
@@ -26494,7 +26527,14 @@
         "type": "object",
         "properties": {
           "modo": {
-            "$ref": "#/components/schemas/ModoDeDeliberacao"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModoDeDeliberacaoCodigo"
+              }
+            ]
           },
           "integrantes": {
             "type": "integer",
@@ -26517,7 +26557,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/CriterioDeVotacao"
+                "$ref": "#/components/schemas/CriterioDeVotacaoCodigo"
               }
             ]
           },
@@ -26527,7 +26567,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DesempateDaVotacao"
+                "$ref": "#/components/schemas/DesempateDaVotacaoCodigo"
               }
             ]
           },
@@ -26537,7 +26577,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EncerramentoDaVotacao"
+                "$ref": "#/components/schemas/EncerramentoDaVotacaoCodigo"
               }
             ]
           },
@@ -26547,7 +26587,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ResultadoSemUnanimidade"
+                "$ref": "#/components/schemas/ResultadoSemUnanimidadeCodigo"
               }
             ]
           }
@@ -27220,6 +27260,15 @@
           null
         ],
         "type": "string"
+      },
+      "ResultadoSemUnanimidadeCodigo": {
+        "enum": [
+          "favoravel",
+          "desfavoravel",
+          "novaVotacao"
+        ],
+        "type": "string",
+        "description": "- \u0060favoravel\u0060: Favor\u00E1vel\n- \u0060desfavoravel\u0060: Desfavor\u00E1vel\n- \u0060novaVotacao\u0060: Nova vota\u00E7\u00E3o"
       },
       "RetificacaoCertameDto": {
         "required": [

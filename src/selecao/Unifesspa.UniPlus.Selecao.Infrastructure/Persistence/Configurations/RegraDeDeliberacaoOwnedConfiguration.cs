@@ -21,14 +21,14 @@ internal static class RegraDeDeliberacaoOwnedConfiguration
 
         regra.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        regra.Property(r => r.Modo).HasColumnName("regra_deliberacao_modo").HasConversion<int>().IsRequired();
+        regra.Property(r => r.Modo).HasColumnName("regra_deliberacao_modo").IsRequired();
         regra.Property(r => r.Integrantes).HasColumnName("regra_deliberacao_integrantes").IsRequired();
         regra.Property(r => r.Suplentes).HasColumnName("regra_deliberacao_suplentes").IsRequired();
         regra.Property(r => r.Quorum).HasColumnName("regra_deliberacao_quorum");
-        regra.Property(r => r.Criterio).HasColumnName("regra_deliberacao_criterio").HasConversion<int>();
-        regra.Property(r => r.Desempate).HasColumnName("regra_deliberacao_desempate").HasConversion<int>();
-        regra.Property(r => r.Encerramento).HasColumnName("regra_deliberacao_encerramento").HasConversion<int>();
-        regra.Property(r => r.SemUnanimidade).HasColumnName("regra_deliberacao_sem_unanimidade").HasConversion<int>();
+        regra.Property(r => r.Criterio).HasColumnName("regra_deliberacao_criterio");
+        regra.Property(r => r.Desempate).HasColumnName("regra_deliberacao_desempate");
+        regra.Property(r => r.Encerramento).HasColumnName("regra_deliberacao_encerramento");
+        regra.Property(r => r.SemUnanimidade).HasColumnName("regra_deliberacao_sem_unanimidade");
 
         return regra;
     }

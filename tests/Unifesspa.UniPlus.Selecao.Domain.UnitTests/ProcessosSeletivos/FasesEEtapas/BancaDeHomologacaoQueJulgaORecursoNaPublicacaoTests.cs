@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -24,7 +25,7 @@ public sealed class BancaDeHomologacaoQueJulgaORecursoNaPublicacaoTests
     private const string ItemDaDeliberacao = "cronograma_banca_com_regra_de_deliberacao";
 
     private static RegraDeDeliberacao AtoIndividualSemVotacao() =>
-        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual, 1, 0, null, null, null, null, null)).Value!;
+        RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 1, 0, new(null, null, null, null, null))).Value!;
 
     private static ProcessoSeletivo ProcessoComABancaDeHomologacao(RegraDeDeliberacao regra)
     {

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -15,10 +17,10 @@ internal static class BancasDeTeste
 
     public static RegraDeDeliberacao Regra(int integrantes, int quorum) =>
         RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(
-            ModoDeDeliberacao.ColegiadaComVotacao, integrantes, Suplentes: 0, quorum,
-            CriterioDeVotacao.MaioriaSimples,
-            integrantes > 1 ? DesempateDaVotacao.VotoDaPresidencia : null,
-            EncerramentoDaVotacao.PresidenciaNoQuorum, SemUnanimidade: null)).Value!;
+            ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), integrantes, Suplentes: 0, new(quorum,
+            CriterioDeVotacao.MaioriaSimples.Codigo(),
+            integrantes > 1 ? DesempateDaVotacao.VotoDaPresidencia.Codigo() : null,
+            EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), SemUnanimidade: null))).Value!;
 
     /// <summary>A banca de análise de recursos da fase, com a regra de deliberação declarada.</summary>
     public static BancaRequerida DeRecursosDaFase() =>

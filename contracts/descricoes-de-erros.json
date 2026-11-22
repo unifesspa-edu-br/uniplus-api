@@ -13947,6 +13947,7 @@
         "UNI-REQ-0275"
       ],
       "oQueAconteceu": [
+        "A recusa também ocorre quando o código informado não corresponde a uma das opções aceitas.",
         "A banca declarada com deliberação por votação (`colegiadaComVotacao`) não traz o\ncritério de decisão. O edital define, para cada banca, o critério pelo qual a\nvotação decide (UNI-REQ-0275), e o sistema não escolhe um no lugar dele.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.criterio` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.criterio` na banca da etapa."
       ],
@@ -13983,6 +13984,7 @@
         "UNI-REQ-0400"
       ],
       "oQueAconteceu": [
+        "A recusa também ocorre quando o código informado não corresponde a uma das opções aceitas.",
         "A banca decide por maioria (`maioriaSimples` ou `maioriaAbsoluta`), tem 2 ou mais\nintegrantes e não declara a forma de desempate. Com mais de um integrante a\nvotação pode empatar, e o edital precisa dizer o que acontece então\n(UNI-REQ-0275). Uma banca de 4 integrantes com maioria simples e sem desempate\nfica sem resposta para o empate de 2 a 2.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.desempate` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.desempate` na banca da etapa."
       ],
@@ -14000,6 +14002,7 @@
         "UNI-REQ-0275"
       ],
       "oQueAconteceu": [
+        "A recusa também ocorre quando o código informado não corresponde a uma das opções aceitas.",
         "A banca declarada com deliberação por votação (`colegiadaComVotacao`) não diz como\na votação termina. O edital define se ela acaba quando todos os titulares votam\nou quando a presidência a encerra ao atingir o quórum (UNI-REQ-0275), e a\ndiferença muda quando a decisão sai e como se conta a unanimidade.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.encerramento` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.encerramento` na banca da etapa."
       ],
@@ -14192,9 +14195,10 @@
         "UNI-REQ-0338"
       ],
       "oQueAconteceu": [
+        "A recusa também ocorre quando o código informado não corresponde a uma das opções aceitas.",
         "A regra de deliberação da banca informou um `modo` que não pertence ao vocabulário\nde deliberação. O vocabulário é fechado e tem dois modos:",
         "- `colegiadaComVotacao`: a banca decide por votação, com quórum, critério de\n  decisão e forma de encerramento (UNI-REQ-0275);\n- `atoIndividual`: qualquer pessoa titular designada pratica o ato, sem votação\n  (UNI-REQ-0338). Ao lado do ato individual, a banca pode declarar a votação usada no\n  julgamento do recurso.",
-        "O modo escolhido define quais campos da regra existem. A mensagem da resposta diz que o\nmodo deve ser colegiada com votação ou ato individual, e que, no ato individual, a banca\npode declarar ao lado a votação usada no julgamento do recurso. Um valor fora do\nvocabulário não permite saber como a banca decide nem o que conferir na\ndeclaração.",
+        "O modo escolhido define quais campos da regra existem. Quando o modo está ausente, a mensagem pede seu preenchimento; quando o código é desconhecido, informa que ele não é uma das opções disponíveis. No ato individual, a banca pode declarar a votação usada no julgamento do recurso. Um código desconhecido não permite saber como a banca decide nem conferir os campos que dependem do modo.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.modo` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.modo` na banca da etapa."
       ],
       "comoResolver": [
@@ -14285,6 +14289,7 @@
         "UNI-REQ-0401"
       ],
       "oQueAconteceu": [
+        "A recusa também ocorre quando o código informado não corresponde a uma das opções aceitas.",
         "A banca decide por unanimidade (`unanimidade`), tem 2 ou mais integrantes e não\ndeclara o que vale quando a unanimidade não é alcançada. Com mais de um\nintegrante, os votos podem divergir, e o edital precisa dizer a decisão nesse\ncaso (UNI-REQ-0275). Sem o campo, a votação dividida ficaria sem desfecho.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.semUnanimidade` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.semUnanimidade` na banca da etapa."
       ],

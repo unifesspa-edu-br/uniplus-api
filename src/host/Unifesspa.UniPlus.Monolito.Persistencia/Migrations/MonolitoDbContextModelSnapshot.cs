@@ -18705,32 +18705,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
-                            b1.Property<int?>("Criterio")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Criterio")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_criterio");
 
-                            b1.Property<int?>("Desempate")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Desempate")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_desempate");
 
-                            b1.Property<int?>("Encerramento")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Encerramento")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_encerramento");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
                                 .HasColumnName("regra_deliberacao_integrantes");
 
-                            b1.Property<int>("Modo")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Modo")
+                                .IsRequired()
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_modo");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
                                 .HasColumnName("regra_deliberacao_quorum");
 
-                            b1.Property<int?>("SemUnanimidade")
-                                .HasColumnType("integer")
+                            b1.Property<string>("SemUnanimidade")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_sem_unanimidade");
 
                             b1.Property<int>("Suplentes")
@@ -18820,32 +18821,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
-                            b1.Property<int?>("Criterio")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Criterio")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_criterio");
 
-                            b1.Property<int?>("Desempate")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Desempate")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_desempate");
 
-                            b1.Property<int?>("Encerramento")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Encerramento")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_encerramento");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
                                 .HasColumnName("regra_deliberacao_integrantes");
 
-                            b1.Property<int>("Modo")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Modo")
+                                .IsRequired()
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_modo");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
                                 .HasColumnName("regra_deliberacao_quorum");
 
-                            b1.Property<int?>("SemUnanimidade")
-                                .HasColumnType("integer")
+                            b1.Property<string>("SemUnanimidade")
+                                .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_sem_unanimidade");
 
                             b1.Property<int>("Suplentes")

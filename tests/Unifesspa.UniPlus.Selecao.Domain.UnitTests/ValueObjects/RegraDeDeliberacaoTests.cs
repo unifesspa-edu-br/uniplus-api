@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -18,10 +19,10 @@ public sealed class RegraDeDeliberacaoTests
         DesempateDaVotacao? desempate = DesempateDaVotacao.VotoDaPresidencia,
         EncerramentoDaVotacao? encerramento = EncerramentoDaVotacao.PresidenciaNoQuorum,
         ResultadoSemUnanimidade? semUnanimidade = null) =>
-        new(ModoDeDeliberacao.ColegiadaComVotacao, integrantes, suplentes, quorum, criterio, desempate, encerramento, semUnanimidade);
+        new(ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), integrantes, suplentes, new(quorum, criterio?.Codigo(), desempate?.Codigo(), encerramento?.Codigo(), semUnanimidade?.Codigo()));
 
     private static DeclaracaoDaDeliberacao AtoIndividualComVotacao() =>
-        new(ModoDeDeliberacao.AtoIndividual, 3, 0, 2, CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null);
+        new(ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 0, new(2, CriterioDeVotacao.MaioriaSimples.Codigo(), DesempateDaVotacao.VotoDaPresidencia.Codigo(), EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null));
 
     private static void DeveRecusar(DeclaracaoDaDeliberacao declaracao, string campo, string codigo)
     {
@@ -31,21 +32,33 @@ public sealed class RegraDeDeliberacaoTests
         regra.Errors.Should().Contain(erro => erro.Field == campo && erro.Error.Code == codigo);
     }
 
+    private static void ConferirCampos(RegraDeDeliberacao regra, DeclaracaoDaDeliberacao declarada)
+    {
+        regra.Modo.Codigo().Should().Be(declarada.Modo);
+        regra.Integrantes.Should().Be(declarada.Integrantes);
+        regra.Suplentes.Should().Be(declarada.Suplentes);
+        regra.Quorum.Should().Be(declarada.Votacao.Quorum);
+        (regra.Criterio?.Codigo()).Should().Be(declarada.Votacao.Criterio);
+        (regra.Desempate?.Codigo()).Should().Be(declarada.Votacao.Desempate);
+        (regra.Encerramento?.Codigo()).Should().Be(declarada.Votacao.Encerramento);
+        (regra.SemUnanimidade?.Codigo()).Should().Be(declarada.Votacao.SemUnanimidade);
+    }
+
     [Fact(DisplayName = "A banca de recursos da Medicina, com 3 titulares e quórum 2, é aceita")]
     public void Votacao_DaMedicina_Aceita()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(Votacao());
 
         regra.IsSuccess.Should().BeTrue();
-        regra.Value!.Declaracao().Should().Be(Votacao());
-        regra.Value.QuorumExigido.Should().Be(2);
+        ConferirCampos(regra.Value!, Votacao());
+        regra.Value!.QuorumExigido.Should().Be(2);
     }
 
     [Fact(DisplayName = "Ato individual é aceito sem quórum, critério nem desempate")]
     public void AtoIndividual_SemVotacao_Aceita()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            new(ModoDeDeliberacao.AtoIndividual, 2, 1, null, null, null, null, null));
+            new(ModoDeDeliberacao.AtoIndividual.Codigo(), 2, 1, new(null, null, null, null, null)));
 
         regra.IsSuccess.Should().BeTrue();
         regra.Value!.QuorumExigido.Should().Be(1);
@@ -57,15 +70,15 @@ public sealed class RegraDeDeliberacaoTests
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(AtoIndividualComVotacao());
 
         regra.IsSuccess.Should().BeTrue();
-        regra.Value!.Declaracao().Should().Be(AtoIndividualComVotacao());
-        regra.Value.QuorumExigido.Should().Be(2);
+        ConferirCampos(regra.Value!, AtoIndividualComVotacao());
+        regra.Value!.QuorumExigido.Should().Be(2);
     }
 
     public static TheoryData<DeclaracaoDaDeliberacao, string> VotacoesSemUmCampo => new()
     {
-        { AtoIndividualComVotacao() with { Quorum = null }, "quorum" },
-        { AtoIndividualComVotacao() with { Criterio = null }, "criterio" },
-        { AtoIndividualComVotacao() with { Encerramento = null }, "encerramento" },
+        { AtoIndividualComVotacao() with { Votacao = AtoIndividualComVotacao().Votacao with { Quorum = null } }, "quorum" },
+        { AtoIndividualComVotacao() with { Votacao = AtoIndividualComVotacao().Votacao with { Criterio = null } }, "criterio" },
+        { AtoIndividualComVotacao() with { Votacao = AtoIndividualComVotacao().Votacao with { Encerramento = null } }, "encerramento" },
     };
 
     [Theory(DisplayName = "Ato individual com a votação pela metade recusa só o campo que falta")]
@@ -83,7 +96,7 @@ public sealed class RegraDeDeliberacaoTests
     public void AtoIndividual_SoComOQuorum_RecusaCriterioEEncerramento()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            new(ModoDeDeliberacao.AtoIndividual, 3, 0, 2, null, null, null, null));
+            new(ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 0, new(2, null, null, null, null)));
 
         regra.Errors.Select(static e => e.Field).Should().BeEquivalentTo("criterio", "encerramento");
         regra.Errors.Should().OnlyContain(static e => e.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
@@ -93,7 +106,7 @@ public sealed class RegraDeDeliberacaoTests
     public void AtoIndividual_SoComODesempate_RecusaOsTresCampos()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            new(ModoDeDeliberacao.AtoIndividual, 3, 0, null, null, DesempateDaVotacao.VotoDaPresidencia, null, null));
+            new(ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 0, new(null, null, DesempateDaVotacao.VotoDaPresidencia.Codigo(), null, null)));
 
         regra.Errors.Select(static e => e.Field).Should().BeEquivalentTo("quorum", "criterio", "encerramento");
         regra.Errors.Should().OnlyContain(static e => e.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
@@ -103,7 +116,7 @@ public sealed class RegraDeDeliberacaoTests
     public void AtoIndividual_ComVotacaoPelaMetadeEQuorumForaDoIntervalo_AcumulaAsDuasRecusas()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            new(ModoDeDeliberacao.AtoIndividual, 3, 0, 9, CriterioDeVotacao.Unanimidade, null, null, ResultadoSemUnanimidade.NovaVotacao));
+            new(ModoDeDeliberacao.AtoIndividual.Codigo(), 3, 0, new(9, CriterioDeVotacao.Unanimidade.Codigo(), null, null, ResultadoSemUnanimidade.NovaVotacao.Codigo())));
 
         regra.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -115,9 +128,9 @@ public sealed class RegraDeDeliberacaoTests
     [Fact(DisplayName = "As regras de cada campo continuam valendo na votação do recurso do ato individual")]
     public void AtoIndividual_ComVotacaoInteira_AplicaAsRegrasDeCadaCampo()
     {
-        DeveRecusar(AtoIndividualComVotacao() with { Desempate = null }, "desempate", "Banca.DesempateObrigatorio");
+        DeveRecusar(AtoIndividualComVotacao() with { Votacao = AtoIndividualComVotacao().Votacao with { Desempate = null } }, "desempate", "Banca.DesempateObrigatorio");
         DeveRecusar(
-            AtoIndividualComVotacao() with { Encerramento = EncerramentoDaVotacao.TodosOsTitulares }, "quorum", "Banca.QuorumIncoerente");
+            AtoIndividualComVotacao() with { Votacao = AtoIndividualComVotacao().Votacao with { Encerramento = EncerramentoDaVotacao.TodosOsTitulares.Codigo() } }, "quorum", "Banca.QuorumIncoerente");
     }
 
     [Fact(DisplayName = "A deliberação colegiada sem critério nem encerramento segue recusada pelas regras de sempre")]
@@ -131,7 +144,7 @@ public sealed class RegraDeDeliberacaoTests
     [Fact(DisplayName = "Modo fora do vocabulário é recusado")]
     public void Modo_Invalido_Recusa()
     {
-        DeveRecusar(Votacao() with { Modo = (ModoDeDeliberacao)99 }, "modo", "Banca.ModoDeDeliberacaoInvalido");
+        DeveRecusar(Votacao() with { Modo = "desconhecido" }, "modo", "Banca.ModoDeDeliberacaoInvalido");
     }
 
     [Theory(DisplayName = "Integrantes menor que 1 é recusado")]

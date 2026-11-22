@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -24,7 +25,14 @@ public sealed class MontagemDaRegraDeDeliberacaoTests
         Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(RegrasDeDeliberacaoDeTeste.Valida(), "bancas[0]");
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Declaracao().Should().BeEquivalentTo(RegrasDeDeliberacaoDeTeste.Valida().ParaDeclaracao());
+        resultado.Value!.Modo.Codigo().Should().Be("colegiadaComVotacao");
+        resultado.Value.Integrantes.Should().Be(3);
+        resultado.Value.Suplentes.Should().Be(1);
+        resultado.Value.Quorum.Should().Be(2);
+        (resultado.Value.Criterio?.Codigo()).Should().Be("maioriaSimples");
+        (resultado.Value.Desempate?.Codigo()).Should().Be("votoDaPresidencia");
+        (resultado.Value.Encerramento?.Codigo()).Should().Be("presidenciaNoQuorum");
+        resultado.Value.SemUnanimidade.Should().BeNull();
     }
 
     [Fact(DisplayName = "Cada violação da regra sai sob o caminho da banca, e todas juntas")]

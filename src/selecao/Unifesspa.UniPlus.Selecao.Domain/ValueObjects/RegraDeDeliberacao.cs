@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -12,20 +13,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Modo">Votação do colegiado ou ato individual.</param>
 /// <param name="Integrantes">Titulares da banca, no mínimo 1.</param>
 /// <param name="Suplentes">Suplentes da banca, no mínimo 0.</param>
-/// <param name="Quorum">De 1 ao número de integrantes; na votação do colegiado e na votação do recurso do ato individual.</param>
-/// <param name="Criterio">O que basta para a votação decidir; na votação do colegiado e na votação do recurso do ato individual.</param>
-/// <param name="Desempate">Obrigatório nos critérios de maioria com mais de 1 integrante.</param>
-/// <param name="Encerramento">Quando a votação se encerra; na votação do colegiado e na votação do recurso do ato individual.</param>
-/// <param name="SemUnanimidade">Obrigatório na unanimidade com mais de 1 integrante.</param>
-public sealed record DeclaracaoDaDeliberacao(
-    ModoDeDeliberacao Modo,
-    int Integrantes,
-    int Suplentes,
-    int? Quorum,
-    CriterioDeVotacao? Criterio,
-    DesempateDaVotacao? Desempate,
-    EncerramentoDaVotacao? Encerramento,
-    ResultadoSemUnanimidade? SemUnanimidade);
+/// <param name="Votacao">Campos declarados para a votação.</param>
+public sealed record DeclaracaoDaDeliberacao(string? Modo, int Integrantes, int Suplentes, DeclaracaoDaVotacao Votacao)
+{
+    internal ModoDeDeliberacao? ModoConferido() =>
+        CatalogoDe<ModoDeDeliberacao>.TentarObter(Modo, out ModoDeDeliberacao valor) ? valor : null;
+}
 
 /// <summary>A regra de deliberação de uma banca, congelada na publicação junto com a banca.</summary>
 public sealed class RegraDeDeliberacao
@@ -60,14 +53,14 @@ public sealed class RegraDeDeliberacao
 
     private RegraDeDeliberacao(DeclaracaoDaDeliberacao declarada)
     {
-        Modo = declarada.Modo;
+        Modo = declarada.ModoConferido()!.Value;
         Integrantes = declarada.Integrantes;
         Suplentes = declarada.Suplentes;
-        Quorum = declarada.Quorum;
-        Criterio = declarada.Criterio;
-        Desempate = declarada.Desempate;
-        Encerramento = declarada.Encerramento;
-        SemUnanimidade = declarada.SemUnanimidade;
+        Quorum = declarada.Votacao.Quorum;
+        Criterio = declarada.Votacao.CriterioConferido();
+        Desempate = declarada.Votacao.DesempateConferido();
+        Encerramento = declarada.Votacao.EncerramentoConferido();
+        SemUnanimidade = declarada.Votacao.SemUnanimidadeConferido();
     }
 
     /// <summary>Acumula, campo a campo, tudo o que a declaração viola.</summary>
@@ -81,7 +74,4 @@ public sealed class RegraDeDeliberacao
             : Result<RegraDeDeliberacao>.Success(new RegraDeDeliberacao(declarada));
     }
 
-    /// <summary>A declaração que originou esta regra, para a comparação e para a reposição.</summary>
-    public DeclaracaoDaDeliberacao Declaracao() =>
-        new(Modo, Integrantes, Suplentes, Quorum, Criterio, Desempate, Encerramento, SemUnanimidade);
 }

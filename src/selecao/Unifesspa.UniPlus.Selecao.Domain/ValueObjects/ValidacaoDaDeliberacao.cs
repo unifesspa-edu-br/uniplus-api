@@ -15,13 +15,13 @@ internal static class ValidacaoDaDeliberacao
 
     internal static List<FieldError> Violacoes(DeclaracaoDaDeliberacao declarada)
     {
-        if (!Enum.IsDefined(declarada.Modo))
+        if (declarada.ModoConferido() is null)
         {
-            return [Recusa("modo", BancaErrorCodes.ModoDeDeliberacaoInvalido, "O modo de deliberação deve ser colegiada com votação ou ato individual. No ato individual, a banca pode declarar ao lado a votação usada no julgamento do recurso.")];
+            return [Recusa("modo", BancaErrorCodes.ModoDeDeliberacaoInvalido, declarada.Modo is null ? "Informe o modo de deliberação." : "O modo de deliberação não é uma das opções disponíveis: colegiada com votação ou ato individual."), .. DaComposicao(declarada)];
         }
 
         List<FieldError> violacoes = [.. DaComposicao(declarada)];
-        violacoes.AddRange(declarada.Modo == ModoDeDeliberacao.AtoIndividual
+        violacoes.AddRange(declarada.ModoConferido() == ModoDeDeliberacao.AtoIndividual
             ? DoAtoIndividual(declarada)
             : DaVotacao(declarada));
         return violacoes;
@@ -45,30 +45,23 @@ internal static class ValidacaoDaDeliberacao
     /// juntos. A votação pela metade recusa um campo que falta por vez.
     /// </summary>
     private static IEnumerable<FieldError> DoAtoIndividual(DeclaracaoDaDeliberacao declarada) =>
-        DeclaraAlgoDaVotacao(declarada)
+        declarada.Votacao.DeclaraAlgo()
             ? [.. CamposQueFaltamNaVotacao(declarada).Select(static campo => Recusa(campo, BancaErrorCodes.VotacaoDoRecursoIncompleta, DetalheDaVotacaoIncompleta)), .. DaVotacaoDeclarada(declarada)]
             : [];
 
-    private static bool DeclaraAlgoDaVotacao(DeclaracaoDaDeliberacao declarada) =>
-        declarada.Quorum.HasValue
-        || declarada.Criterio.HasValue
-        || declarada.Encerramento.HasValue
-        || declarada.Desempate.HasValue
-        || declarada.SemUnanimidade.HasValue;
-
     private static IEnumerable<string> CamposQueFaltamNaVotacao(DeclaracaoDaDeliberacao declarada)
     {
-        if (!declarada.Quorum.HasValue)
+        if (!declarada.Votacao.Quorum.HasValue)
         {
             yield return "quorum";
         }
 
-        if (!declarada.Criterio.HasValue)
+        if (declarada.Votacao.Criterio is null)
         {
             yield return "criterio";
         }
 
-        if (!declarada.Encerramento.HasValue)
+        if (declarada.Votacao.Encerramento is null)
         {
             yield return "encerramento";
         }
@@ -77,9 +70,9 @@ internal static class ValidacaoDaDeliberacao
     // As regras de cada campo valem para o que a votação do recurso declarou; o que falta já foi recusado como votação incompleta.
     private static IEnumerable<FieldError> DaVotacaoDeclarada(DeclaracaoDaDeliberacao declarada) =>
     [
-        .. declarada.Quorum.HasValue ? DoQuorum(declarada) : [],
-        .. declarada.Criterio.HasValue ? DoCriterio(declarada) : [],
-        .. declarada.Encerramento.HasValue ? DoEncerramento(declarada) : [],
+        .. declarada.Votacao.Quorum.HasValue ? DoQuorum(declarada) : [],
+        .. declarada.Votacao.Criterio is not null ? DoCriterio(declarada) : [],
+        .. declarada.Votacao.Encerramento is not null ? DoEncerramento(declarada) : [],
         .. DoDesempate(declarada),
         .. DoResultadoSemUnanimidade(declarada),
     ];
@@ -100,65 +93,61 @@ internal static class ValidacaoDaDeliberacao
             return [];
         }
 
-        if (declarada.Quorum is not { } quorum || quorum < 1 || quorum > declarada.Integrantes)
+        if (declarada.Votacao.Quorum is not { } quorum || quorum < 1 || quorum > declarada.Integrantes)
         {
             return [Recusa("quorum", BancaErrorCodes.QuorumForaDoIntervalo, $"O quórum deve ficar entre 1 e {declarada.Integrantes}, o número de integrantes.")];
         }
 
-        return declarada.Encerramento == EncerramentoDaVotacao.TodosOsTitulares && quorum != declarada.Integrantes
+        return declarada.Votacao.EncerramentoConferido() == EncerramentoDaVotacao.TodosOsTitulares && quorum != declarada.Integrantes
             ? [Recusa("quorum", BancaErrorCodes.QuorumIncoerente, $"Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes ({declarada.Integrantes}).")]
             : [];
     }
 
     private static IEnumerable<FieldError> DoCriterio(DeclaracaoDaDeliberacao declarada) =>
-        Definido(declarada.Criterio)
+        declarada.Votacao.CriterioConferido().HasValue
             ? []
-            : [Recusa("criterio", BancaErrorCodes.CriterioObrigatorio, "Informe o critério de votação: maioria simples, maioria absoluta ou unanimidade.")];
+            : [Recusa("criterio", BancaErrorCodes.CriterioObrigatorio, declarada.Votacao.Criterio is not null ? "O critério deve ser maioria simples, maioria absoluta ou unanimidade." : "Informe o critério de votação: maioria simples, maioria absoluta ou unanimidade.")];
 
     private static IEnumerable<FieldError> DoEncerramento(DeclaracaoDaDeliberacao declarada) =>
-        Definido(declarada.Encerramento)
+        declarada.Votacao.EncerramentoConferido().HasValue
             ? []
-            : [Recusa("encerramento", BancaErrorCodes.EncerramentoObrigatorio, "Informe o encerramento da votação: todos os titulares ou a presidência ao atingir o quórum.")];
+            : [Recusa("encerramento", BancaErrorCodes.EncerramentoObrigatorio, declarada.Votacao.Encerramento is not null ? "O encerramento deve ser todos os titulares ou a presidência ao atingir o quórum." : "Informe o encerramento da votação: todos os titulares ou a presidência ao atingir o quórum.")];
 
     private static IEnumerable<FieldError> DoDesempate(DeclaracaoDaDeliberacao declarada)
     {
-        if (!Definido(declarada.Criterio))
+        if (!declarada.Votacao.CriterioConferido().HasValue)
         {
             return [];
         }
 
-        bool exige = declarada.Integrantes > 1 && declarada.Criterio != CriterioDeVotacao.Unanimidade;
-        if (exige && !Definido(declarada.Desempate))
+        bool exige = declarada.Integrantes > 1 && declarada.Votacao.CriterioConferido() != CriterioDeVotacao.Unanimidade;
+        if ((exige || declarada.Votacao.Desempate is not null) && !declarada.Votacao.DesempateConferido().HasValue)
         {
-            return [Recusa("desempate", BancaErrorCodes.DesempateObrigatorio, "Informe o desempate: voto da presidência ou nova votação.")];
+            return [Recusa("desempate", BancaErrorCodes.DesempateObrigatorio, declarada.Votacao.Desempate is not null ? "O desempate deve ser voto da presidência ou nova votação." : "Informe o desempate: voto da presidência ou nova votação.")];
         }
 
-        return !exige && declarada.Desempate.HasValue
+        return !exige && declarada.Votacao.Desempate is not null
             ? [Recusa("desempate", BancaErrorCodes.DesempateNaoSeAplica, "O desempate só se aplica aos critérios de maioria, em banca com mais de 1 integrante.")]
             : [];
     }
 
     private static IEnumerable<FieldError> DoResultadoSemUnanimidade(DeclaracaoDaDeliberacao declarada)
     {
-        if (!Definido(declarada.Criterio))
+        if (!declarada.Votacao.CriterioConferido().HasValue)
         {
             return [];
         }
 
-        bool exige = declarada.Integrantes > 1 && declarada.Criterio == CriterioDeVotacao.Unanimidade;
-        if (exige && !Definido(declarada.SemUnanimidade))
+        bool exige = declarada.Integrantes > 1 && declarada.Votacao.CriterioConferido() == CriterioDeVotacao.Unanimidade;
+        if ((exige || declarada.Votacao.SemUnanimidade is not null) && !declarada.Votacao.SemUnanimidadeConferido().HasValue)
         {
-            return [Recusa("semUnanimidade", BancaErrorCodes.SemUnanimidadeObrigatoria, "Informe o resultado quando a unanimidade não é alcançada: favorável, desfavorável ou nova votação.")];
+            return [Recusa("semUnanimidade", BancaErrorCodes.SemUnanimidadeObrigatoria, declarada.Votacao.SemUnanimidade is not null ? "O resultado deve ser favorável, desfavorável ou nova votação." : "Informe o resultado quando a unanimidade não é alcançada: favorável, desfavorável ou nova votação.")];
         }
 
-        return !exige && declarada.SemUnanimidade.HasValue
+        return !exige && declarada.Votacao.SemUnanimidade is not null
             ? [Recusa("semUnanimidade", BancaErrorCodes.SemUnanimidadeNaoSeAplica, "O resultado sem unanimidade só se aplica ao critério de unanimidade, em banca com mais de 1 integrante.")]
             : [];
     }
-
-    private static bool Definido<TEnum>(TEnum? valor)
-        where TEnum : struct, Enum =>
-        valor is { } declarado && Enum.IsDefined(declarado);
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) =>
         new(campo, new DomainError(codigo, mensagem));
