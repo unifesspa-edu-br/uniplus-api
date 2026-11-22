@@ -66,6 +66,11 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "horas", "diasUteis" })]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "semEfeitoSuspensivo" })]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga", new[] { "ateOResultadoDefinitivo", "naoGuarda" })]
+    [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao", new[] { "colegiadaComVotacao", "atoIndividual" })]
+    [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao", new[] { "maioriaSimples", "maioriaAbsoluta", "unanimidade" })]
+    [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao", new[] { "votoDaPresidencia", "novaVotacao" })]
+    [InlineData("/api/selecao/vocabularios/encerramentos-votacao", "encerramento-votacao", new[] { "todosOsTitulares", "presidenciaNoQuorum" })]
+    [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade", "resultado-sem-unanimidade", new[] { "favoravel", "desfavoravel", "novaVotacao" })]
     public async Task Vocabularios_DevolvemCodigoERotulo(string rota, string recurso, string[] codigos)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -96,6 +101,11 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso")]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo")]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga")]
+    [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao")]
+    [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao")]
+    [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao")]
+    [InlineData("/api/selecao/vocabularios/encerramentos-votacao", "encerramento-votacao")]
+    [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade", "resultado-sem-unanimidade")]
     public async Task Vocabularios_VersaoDesconhecida_Recusa(string rota, string recurso)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -114,6 +124,11 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso")]
     [InlineData("/api/selecao/efeitos-suspensivos")]
     [InlineData("/api/selecao/guardas-da-vaga")]
+    [InlineData("/api/selecao/vocabularios/modos-deliberacao")]
+    [InlineData("/api/selecao/vocabularios/criterios-votacao")]
+    [InlineData("/api/selecao/vocabularios/desempates-votacao")]
+    [InlineData("/api/selecao/vocabularios/encerramentos-votacao")]
+    [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade")]
     public async Task Vocabularios_NaoTemRotaDeEscrita(string rota)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
