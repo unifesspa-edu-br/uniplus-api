@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -28,7 +29,6 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
     private static void ConfigurarAbrangencia(EntityTypeBuilder<DiaNaoUtil> builder)
     {
         builder.Property(d => d.Abrangencia)
-            .HasConversion<AbrangenciaValueConverter>()
             .HasMaxLength(20)
             .IsRequired();
 
@@ -47,13 +47,16 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
 
     private static void ConfigurarChecks(TableBuilder<DiaNaoUtil> table)
     {
+        string municipal = SqlDosCodigosDeContrato.Literal(Abrangencia.Municipal);
+        string estadual = SqlDosCodigosDeContrato.Literal(Abrangencia.Estadual);
+
         table.HasCheckConstraint(
             "ck_dias_nao_uteis_municipio_coerente",
-            "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) "
-            + "AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) "
-            + "AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)");
+            $"(abrangencia = {municipal}) = (municipio_ibge IS NOT NULL) "
+            + $"AND (abrangencia = {municipal}) = (municipio_nome IS NOT NULL) "
+            + $"AND (abrangencia = {municipal}) = (municipio_uf IS NOT NULL)");
         table.HasCheckConstraint(
             "ck_dias_nao_uteis_uf_coerente",
-            "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
+            $"(abrangencia = {estadual}) = (uf IS NOT NULL)");
     }
 }

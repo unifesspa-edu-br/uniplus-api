@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Implementação de <see cref="ICalendarioVigenteReader"/> (ADR-0056): leitura
@@ -14,10 +15,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// soft-delete por convenção). Sem cache — troca de vigente é rara e o
 /// congelamento por valor no consumidor (ADR-0061) dispensa releitura quente.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class CalendarioVigenteReader : ICalendarioVigenteReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -48,7 +45,7 @@ internal sealed class CalendarioVigenteReader : ICalendarioVigenteReader
     private static DiaNaoUtilView ParaView(DiaNaoUtil dia) =>
         new(
             dia.Data,
-            Abrangencias.ParaTokenCanonico(dia.Abrangencia),
+            dia.Abrangencia.Codigo(),
             dia.MunicipioIbge,
             dia.MunicipioNome,
             dia.MunicipioUf,

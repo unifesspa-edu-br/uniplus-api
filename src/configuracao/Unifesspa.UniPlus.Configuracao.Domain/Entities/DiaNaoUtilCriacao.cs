@@ -5,10 +5,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
 /// Entrada de criação de um <see cref="DiaNaoUtil"/>, usada só por
-/// <see cref="CalendarioDiasUteis.Criar"/>. <c>Abrangencia</c> é o token canônico
-/// UPPER_SNAKE (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>), analisado internamente.
-/// <c>MunicipioIbge</c>, <c>MunicipioNome</c> e <c>MunicipioUf</c> formam um
-/// snapshot atômico obrigatório apenas para abrangência MUNICIPAL.
+/// <see cref="CalendarioDiasUteis.Criar"/>. <c>Abrangencia</c> é o código de
+/// contrato (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>), reconhecido internamente.
+/// <c>MunicipioIbge</c>, <c>MunicipioNome</c> e <c>MunicipioUf</c> formam uma
+/// cópia completa obrigatória apenas para abrangência MUNICIPAL.
 /// <c>Uf</c> é obrigatória para abrangência ESTADUAL — sem ela, feriados de
 /// estados diferentes seriam indistinguíveis para o consumidor cross-módulo.
 /// </summary>

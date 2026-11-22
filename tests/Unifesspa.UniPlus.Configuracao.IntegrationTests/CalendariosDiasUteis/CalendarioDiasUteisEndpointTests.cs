@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CalendariosDiasUteis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -18,10 +17,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// vigente, com Wolverine rodando contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CalendarioDiasUteisEndpointTests
 {
     private const string VendorMime = "application/vnd.uniplus.calendario-dias-uteis.v1+json";
@@ -86,23 +81,7 @@ public sealed class CalendarioDiasUteisEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
-        root.GetProperty("vigente").GetBoolean().Should().BeFalse("todo dataset nasce não vigente");
-        JsonElement dias = root.GetProperty("diasNaoUteis");
-        dias.GetArrayLength().Should().Be(3);
-        dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetString() == "NACIONAL");
-        dias.EnumerateArray().Should().Contain(d =>
-            d.GetProperty("abrangencia").GetString() == "ESTADUAL"
-            && d.GetProperty("municipioIbge").ValueKind == JsonValueKind.Null
-            && d.GetProperty("municipioNome").ValueKind == JsonValueKind.Null
-            && d.GetProperty("municipioUf").ValueKind == JsonValueKind.Null
-            && d.GetProperty("uf").GetString() == "PA");
-        dias.EnumerateArray().Should().Contain(d =>
-            d.GetProperty("abrangencia").GetString() == "MUNICIPAL"
-            && d.GetProperty("municipioIbge").GetString() == "1504208"
-            && d.GetProperty("municipioNome").GetString() == "Marabá"
-            && d.GetProperty("municipioUf").GetString() == "PA"
-            && d.GetProperty("uf").ValueKind == JsonValueKind.Null);
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        ConferirCalendarioCriado(root);
     }
 
     [Theory(DisplayName = "POST admin rejeita snapshot municipal parcial")]
@@ -149,12 +128,7 @@ public sealed class CalendarioDiasUteisEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(
             client,
             AdminPath,
-            CorpoComDia(
-                abrangencia,
-                "1504208",
-                "Marabá",
-                "PA",
-                uf: abrangencia == "ESTADUAL" ? "PA" : null));
+            CorpoComDia(abrangencia, "1504208", "Marabá", "PA", uf: abrangencia == "ESTADUAL" ? "PA" : null));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(response)).Should().Be(
@@ -174,11 +148,7 @@ public sealed class CalendarioDiasUteisEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         JsonElement itens = doc.RootElement;
         itens.GetArrayLength().Should().BeGreaterThan(0);
-        foreach (JsonElement item in itens.EnumerateArray())
-        {
-            item.TryGetProperty("diasNaoUteis", out _).Should().BeFalse(
-                "a listagem não carrega a coleção filha — use ObterPorId para o dataset completo");
-        }
+        ConferirResumos(itens);
     }
 
     [Fact(DisplayName = "POST .../{id}/vigente marca o novo vigente e desmarca o vigente anterior")]
@@ -187,15 +157,13 @@ public sealed class CalendarioDiasUteisEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         Guid primeiroId = await CriarDataset(client, VersaoUnica());
-        HttpResponseMessage marcarPrimeiro = await EnviarPostAdmin(
-            client, $"{AdminPath}/{primeiroId}/vigente", null);
+        HttpResponseMessage marcarPrimeiro = await EnviarPostAdmin(client, $"{AdminPath}/{primeiroId}/vigente", null);
         marcarPrimeiro.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ObterVigente(client, primeiroId)).Should().BeTrue();
 
         Guid segundoId = await CriarDataset(client, VersaoUnica());
-        HttpResponseMessage marcarSegundo = await EnviarPostAdmin(
-            client, $"{AdminPath}/{segundoId}/vigente", null);
+        HttpResponseMessage marcarSegundo = await EnviarPostAdmin(client, $"{AdminPath}/{segundoId}/vigente", null);
         marcarSegundo.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ObterVigente(client, segundoId)).Should().BeTrue();
@@ -231,21 +199,7 @@ public sealed class CalendarioDiasUteisEndpointTests
     [Fact(DisplayName = "POST com versaoDataset genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
     public async Task Criar_VersaoDatasetAusenteNoJson_Retorna422()
     {
-        var corpo = new
-        {
-            diasNaoUteis = new[]
-            {
-                new
-                {
-                    abrangencia = "NACIONAL",
-                    municipioIbge = (string?)null,
-                    municipioNome = (string?)null,
-                    municipioUf = (string?)null,
-                    data = "2027-01-01",
-                    descricao = "Confraternização Universal",
-                },
-            },
-        };
+        object corpo = CorpoSemVersao();
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, corpo);
@@ -257,33 +211,7 @@ public sealed class CalendarioDiasUteisEndpointTests
     [Fact(DisplayName = "POST com violações em dois itens da lista acumula em errors[] com o índice de cada item")]
     public async Task Criar_ViolacoesEmDoisItens_AcumulaEmErrorsComIndiceDeCadaItem()
     {
-        var corpo = new
-        {
-            versaoDataset = VersaoUnica(),
-            diasNaoUteis = new object[]
-            {
-                new
-                {
-                    abrangencia = "INVALIDO",
-                    municipioIbge = (string?)null,
-                    municipioNome = (string?)null,
-                    municipioUf = (string?)null,
-                    uf = (string?)null,
-                    data = "2027-05-08",
-                    descricao = "Item quebrado",
-                },
-                new
-                {
-                    abrangencia = "ESTADUAL",
-                    municipioIbge = (string?)null,
-                    municipioNome = (string?)null,
-                    municipioUf = (string?)null,
-                    uf = (string?)null,
-                    data = "2027-05-09",
-                    descricao = "Falta UF",
-                },
-            },
-        };
+        object corpo = new { versaoDataset = VersaoUnica(), diasNaoUteis = new[] { DiaInvalido("INVALIDO", "2027-05-08", "Item quebrado"), DiaInvalido("ESTADUAL", "2027-05-09", "Falta UF") } };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, corpo);
@@ -296,64 +224,78 @@ public sealed class CalendarioDiasUteisEndpointTests
             .Should().BeEquivalentTo(["diasNaoUteis[0].abrangencia", "diasNaoUteis[1].uf"]);
     }
 
+    private static void ConferirResumos(JsonElement itens)
+    {
+        foreach (JsonElement item in itens.EnumerateArray())
+        {
+            item.TryGetProperty("diasNaoUteis", out _).Should().BeFalse(
+                "a listagem não carrega a coleção filha — use ObterPorId para o dataset completo");
+        }
+    }
+
+    private static void ConferirCalendarioCriado(JsonElement root)
+    {
+        root.GetProperty("vigente").GetBoolean().Should().BeFalse("todo dataset nasce não vigente");
+        JsonElement dias = root.GetProperty("diasNaoUteis");
+        dias.GetArrayLength().Should().Be(3);
+        dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "NACIONAL");
+        ConferirDiasRegionais(dias);
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    private static void ConferirDiasRegionais(JsonElement dias)
+    {
+        dias.EnumerateArray().Should().Contain(d =>
+            d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "ESTADUAL"
+            && d.GetProperty("municipioIbge").ValueKind == JsonValueKind.Null
+            && d.GetProperty("municipioNome").ValueKind == JsonValueKind.Null
+            && d.GetProperty("municipioUf").ValueKind == JsonValueKind.Null
+            && d.GetProperty("uf").GetString() == "PA");
+        ConferirDiaMunicipal(dias);
+    }
+
+    private static void ConferirDiaMunicipal(JsonElement dias)
+    {
+        dias.EnumerateArray().Should().Contain(d =>
+            d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "MUNICIPAL"
+            && d.GetProperty("municipioIbge").GetString() == "1504208"
+            && d.GetProperty("municipioNome").GetString() == "Marabá"
+            && d.GetProperty("municipioUf").GetString() == "PA"
+            && d.GetProperty("uf").ValueKind == JsonValueKind.Null);
+    }
+
+    private static object CorpoSemVersao() => new
+    {
+        diasNaoUteis = new[] { new { abrangencia = "NACIONAL", municipioIbge = (string?)null, municipioNome = (string?)null, municipioUf = (string?)null, data = "2027-01-01", descricao = "Confraternização Universal" } },
+    };
+
+    private static object DiaInvalido(string abrangencia, string data, string descricao) => new
+    {
+        abrangencia,
+        municipioIbge = (string?)null,
+        municipioNome = (string?)null,
+        municipioUf = (string?)null,
+        uf = (string?)null,
+        data,
+        descricao,
+    };
+
     private static object CorpoValido(string? versaoDataset = null) => new
     {
         versaoDataset = versaoDataset ?? "2027.1",
         diasNaoUteis = new object[]
         {
-            new
-            {
-                abrangencia = "NACIONAL",
-                municipioIbge = (string?)null,
-                municipioNome = (string?)null,
-                municipioUf = (string?)null,
-                data = "2027-01-01",
-                descricao = "Confraternização Universal",
-            },
-            new
-            {
-                abrangencia = "ESTADUAL",
-                municipioIbge = (string?)null,
-                municipioNome = (string?)null,
-                municipioUf = (string?)null,
-                uf = "PA",
-                data = "2027-08-15",
-                descricao = "Adesão do Pará à Independência",
-            },
-            new
-            {
-                abrangencia = "MUNICIPAL",
-                municipioIbge = "1504208",
-                municipioNome = "Marabá",
-                municipioUf = "PA",
-                data = "2027-05-08",
-                descricao = "Aniversário de Marabá",
-            },
+            new { abrangencia = "NACIONAL", municipioIbge = (string?)null, municipioNome = (string?)null, municipioUf = (string?)null, data = "2027-01-01", descricao = "Confraternização Universal" },
+            new { abrangencia = "ESTADUAL", municipioIbge = (string?)null, municipioNome = (string?)null, municipioUf = (string?)null, uf = "PA", data = "2027-08-15", descricao = "Adesão do Pará à Independência" },
+            new { abrangencia = "MUNICIPAL", municipioIbge = "1504208", municipioNome = "Marabá", municipioUf = "PA", data = "2027-05-08", descricao = "Aniversário de Marabá" },
         },
     };
 
-    private static object CorpoComDia(
-        string abrangencia,
-        string? municipioIbge,
-        string? municipioNome,
-        string? municipioUf,
-        string? uf = null) => new
-        {
-            versaoDataset = VersaoUnica(),
-            diasNaoUteis = new[]
-            {
-                new
-                {
-                    abrangencia,
-                    municipioIbge,
-                    municipioNome,
-                    municipioUf,
-                    uf,
-                    data = "2027-05-08",
-                    descricao = "Dia não útil",
-                },
-            },
-        };
+    private static object CorpoComDia(string abrangencia, string? municipioIbge, string? municipioNome, string? municipioUf, string? uf = null) => new
+    {
+        versaoDataset = VersaoUnica(),
+        diasNaoUteis = new[] { new { abrangencia, municipioIbge, municipioNome, municipioUf, uf, data = "2027-05-08", descricao = "Dia não útil" } },
+    };
 
     // Versão de até 60 chars, única por teste — não é chave natural, mas a
     // unicidade evita confundir datasets entre testes que rodam na mesma coleção.

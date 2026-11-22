@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CalendariosDiasUteis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -23,10 +22,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// atomicidade, com Wolverine rodando contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class IncluirDiaNaoUtilEndpointTests
 {
     private const string ColecaoPath = "/api/configuracao/calendarios-dias-uteis";
@@ -51,12 +46,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
         incluir.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await incluir.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
-        root.GetProperty("id").GetGuid().Should().Be(id);
-        JsonElement dias = root.GetProperty("diasNaoUteis");
-        dias.GetArrayLength().Should().Be(2, "a data original de CriarDataset permanece, e a nova se soma a ela");
-        dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetString() == "NACIONAL");
-        dias.EnumerateArray().Should().Contain(d =>
-            d.GetProperty("abrangencia").GetString() == "ESTADUAL" && d.GetProperty("uf").GetString() == "PA");
+        ConferirInclusao(root, id);
 
         // CA01: consulta subsequente confirma a persistência.
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
@@ -84,25 +74,13 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarDataset(client, VersaoUnica());
-
         HttpResponseMessage incluir = await EnviarPostAdmin(
             client,
             $"{AdminPath}/{id}/dias-nao-uteis",
-            new
-            {
-                abrangencia = "INVALIDO",
-                municipioIbge = (string?)null,
-                municipioNome = (string?)null,
-                municipioUf = (string?)null,
-                uf = (string?)null,
-                data = "2028-03-01",
-                descricao = "Dia qualquer",
-            });
-
+            Item("INVALIDO", "2028-03-01", "Dia qualquer"));
         incluir.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(incluir)).Should().Be(
             "uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida");
-
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("diasNaoUteis").GetArrayLength().Should().Be(
@@ -115,25 +93,13 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarDataset(client, VersaoUnica());
-
         HttpResponseMessage incluir = await EnviarPostAdmin(
             client,
             $"{AdminPath}/{id}/dias-nao-uteis",
-            new
-            {
-                abrangencia = "NACIONAL",
-                municipioIbge = (string?)null,
-                municipioNome = (string?)null,
-                municipioUf = (string?)null,
-                uf = (string?)null,
-                data = "2028-01-01",
-                descricao = "Confraternização Universal (duplicata)",
-            });
-
+            Item("NACIONAL", "2028-01-01", "Confraternização Universal (duplicata)"));
         incluir.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(incluir)).Should().Be(
             "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset");
-
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("diasNaoUteis").GetArrayLength().Should().Be(1);
@@ -183,6 +149,28 @@ public sealed class IncluirDiaNaoUtilEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await incluir.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("vigente").GetBoolean().Should().BeTrue();
     }
+
+    private static void ConferirInclusao(JsonElement root, Guid id)
+    {
+        root.GetProperty("id").GetGuid().Should().Be(id);
+        JsonElement dias = root.GetProperty("diasNaoUteis");
+        dias.GetArrayLength().Should().Be(2, "a data original de CriarDataset permanece, e a nova se soma a ela");
+        dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "NACIONAL");
+        dias.EnumerateArray().Should().Contain(d =>
+            d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "ESTADUAL" && d.GetProperty("uf").GetString() == "PA");
+
+    }
+
+    private static object Item(string abrangencia, string data, string descricao) => new
+    {
+        abrangencia,
+        municipioIbge = (string?)null,
+        municipioNome = (string?)null,
+        municipioUf = (string?)null,
+        uf = (string?)null,
+        data,
+        descricao,
+    };
 
     private static object ItemValido() => new
     {
