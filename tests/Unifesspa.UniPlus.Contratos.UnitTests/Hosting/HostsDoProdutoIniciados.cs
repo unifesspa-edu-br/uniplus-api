@@ -70,7 +70,7 @@ internal static class HostsDoProdutoIniciados
         CapturingFactory<TEntryPoint> fabrica = new();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => fabrica.Dispose();
 
-        return new HostIniciado(fabrica.CapturedSnapshot, fabrica.Services);
+        return new HostIniciado(fabrica.CapturedSnapshot, fabrica.Services, fabrica.CreateClient());
     }
 }
 
@@ -82,4 +82,5 @@ internal static class HostsDoProdutoIniciados
 /// <param name="ProvedorDeServicos">O provedor do host iniciado, já sem a migration e sem o runtime do Wolverine.</param>
 internal sealed record HostIniciado(
     IReadOnlyList<ServiceDescriptor> RegistrosDeServico,
-    IServiceProvider ProvedorDeServicos);
+    IServiceProvider ProvedorDeServicos,
+    HttpClient Cliente);
