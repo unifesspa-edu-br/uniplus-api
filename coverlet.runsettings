@@ -17,7 +17,7 @@
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <ExcludeByFile>**/Migrations/*.cs,**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
           <SingleHit>false</SingleHit>
-          <UseSourceLink>true</UseSourceLink>
+          <UseSourceLink>false</UseSourceLink>
           <IncludeTestAssembly>false</IncludeTestAssembly>
           <SkipAutoProps>true</SkipAutoProps>
         </Configuration>
