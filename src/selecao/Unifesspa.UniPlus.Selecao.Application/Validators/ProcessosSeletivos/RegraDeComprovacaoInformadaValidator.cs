@@ -8,11 +8,11 @@ using FluentValidation;
 /// Validação recursiva de UM nó da árvore — auto-referenciada via
 /// <c>RuleForEach(x =&gt; x.Filhos).SetValidator(this)</c> (padrão documentado do
 /// FluentValidation para estruturas em árvore): coerência de campos por
-/// <see cref="NoExigenciaInput.Tipo"/> e delegação ao validador de folha.
+/// <see cref="RegraDeComprovacaoInformada.Tipo"/> e delegação ao validador de folha.
 /// </summary>
-public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInput>
+public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<RegraDeComprovacaoInformada>
 {
-    public NoExigenciaInputValidator()
+    public RegraDeComprovacaoInformadaValidator()
     {
         RegrasDoDocumento();
         RegrasDosFilhos();

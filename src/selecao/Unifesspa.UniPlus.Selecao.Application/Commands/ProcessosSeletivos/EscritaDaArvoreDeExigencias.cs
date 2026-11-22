@@ -14,13 +14,13 @@ using Kernel.Results;
 /// </summary>
 internal static class EscritaDaArvoreDeExigencias
 {
-    public static List<NoDeEntradaConferido> Conferir(IReadOnlyList<NoExigenciaInput> nos, IEnumerable<GrupoColetado> grupos) =>
+    public static List<NoDeEntradaConferido> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> nos, IEnumerable<GrupoColetado> grupos) =>
         Conferir(nos, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "nos");
 
-    private static List<NoDeEntradaConferido> Conferir(IReadOnlyList<NoExigenciaInput> nos, IReadOnlySet<string> grupos, string caminho) =>
+    private static List<NoDeEntradaConferido> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> nos, IReadOnlySet<string> grupos, string caminho) =>
         [.. nos.Select((no, indice) => ConferirNo(no, grupos, $"{caminho}[{indice}]", indice))];
 
-    private static NoDeEntradaConferido ConferirNo(NoExigenciaInput no, IReadOnlySet<string> grupos, string caminho, int indice)
+    private static NoDeEntradaConferido ConferirNo(RegraDeComprovacaoInformada no, IReadOnlySet<string> grupos, string caminho, int indice)
     {
         DeclaracaoDoNoDeExigencia declaracao = DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, no.Documento is not null, no.Filhos?.Count ?? 0,
             no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no));
@@ -33,10 +33,10 @@ internal static class EscritaDaArvoreDeExigencias
         return new(no, declaracao, caminho, indice, recusas, Conferir(no.Filhos ?? [], grupos, $"{caminho}.filhos"));
     }
 
-    public static List<NoExigenciaInput> FolhasConferidas(IEnumerable<NoDeEntradaConferido> nos) =>
+    public static List<RegraDeComprovacaoInformada> FolhasConferidas(IEnumerable<NoDeEntradaConferido> nos) =>
         [.. nos.SelectMany(no => FolhasConferidasDoNo(no, repeticaoRecusada: false))];
 
-    private static IEnumerable<NoExigenciaInput> FolhasConferidasDoNo(NoDeEntradaConferido no, bool repeticaoRecusada)
+    private static IEnumerable<RegraDeComprovacaoInformada> FolhasConferidasDoNo(NoDeEntradaConferido no, bool repeticaoRecusada)
     {
         bool bloqueada = repeticaoRecusada || NoDeEntradaConferido.RepeticaoRecusada(no);
         if (no.Declaracao.Tipo == TipoNo.Folha && no.Recusas.Count == 0
@@ -46,7 +46,7 @@ internal static class EscritaDaArvoreDeExigencias
         }
         foreach (NoDeEntradaConferido filho in no.Filhos)
         {
-            foreach (NoExigenciaInput folha in FolhasConferidasDoNo(filho, bloqueada))
+            foreach (RegraDeComprovacaoInformada folha in FolhasConferidasDoNo(filho, bloqueada))
             {
                 yield return folha;
             }
@@ -59,7 +59,7 @@ internal static class EscritaDaArvoreDeExigencias
             Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" },
         };
 
-    private static List<FieldError> FormaDoNo(NoExigenciaInput no)
+    private static List<FieldError> FormaDoNo(RegraDeComprovacaoInformada no)
     {
         bool ehFolha = RegrasDeComprovacaoInformadas.EhFolha(no);
         List<FieldError> erros = ehFolha && no.Documento is { } documento
@@ -89,7 +89,7 @@ internal static class EscritaDaArvoreDeExigencias
                 baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal))
             : BaseLegalDaComprovacao.ValidarFormaBasica(
                 baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal));
-    private static DistincaoDeclarada DistincaoDe(NoExigenciaInput no) =>
+    private static DistincaoDeclarada DistincaoDe(RegraDeComprovacaoInformada no) =>
         DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);
 
 }

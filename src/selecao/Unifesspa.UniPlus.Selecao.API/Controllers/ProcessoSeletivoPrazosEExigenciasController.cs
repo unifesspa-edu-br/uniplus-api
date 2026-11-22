@@ -75,18 +75,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>
-    /// Substitui integralmente os documentos exigidos do processo: fase,
-    /// snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
-    /// obrigatoriedade, consequência de indeferimento, grupo de satisfação, o gatilho
-    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO), a base
-    /// legal 1:N — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
-    /// exigência que determina resultado" é da publicação (ADR-0074) — e a idade máxima
-    /// de emissão/formato/tamanho do arquivo — aviso, não bloqueio de
-    /// presença; congelados por chamada (substituição integral, não <i>merge</i> parcial).
-    /// O <c>GET</c> vem do endpoint agregado (<see cref="ProcessoSeletivoController.ObterPorId"/>) — não há rota
-    /// aninhada própria de leitura.
-    /// </summary>
+    /// <summary>Substitui as regras de comprovação e os documentos exigidos do processo.</summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/documentos-exigidos")]
     [RequiresIdempotencyKey]
@@ -96,11 +85,11 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> DefinirDocumentosExigidos(
         Guid id,
-        [FromBody] IReadOnlyList<NoExigenciaInput> raizes,
+        [FromBody] IReadOnlyList<RegraDeComprovacaoInformada> regrasDeComprovacao,
         CancellationToken cancellationToken)
     {
         Result resultado = await _commandBus.Send(
-            new DefinirDocumentosExigidosCommand(id, raizes), cancellationToken);
+            new DefinirDocumentosExigidosCommand(id, regrasDeComprovacao), cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
