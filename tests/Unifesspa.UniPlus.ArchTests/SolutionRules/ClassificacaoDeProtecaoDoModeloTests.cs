@@ -17,7 +17,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 public sealed class ClassificacaoDeProtecaoDoModeloTests
 {
     private const string AtualizarRetratoEnvVar = "UPDATE_RETRATO_CLASSIFICACAO";
-    private const string ArquivoDoRetrato = "tests/Unifesspa.UniPlus.ArchTests/SolutionRules/ClassificacaoDeProtecaoDoModelo.retrato.txt";
 
     // Os modelos são construídos uma vez por execução: cada DbContext custa um OnModelCreating completo.
     private static readonly Lazy<IReadOnlyList<(string Contexto, IReadOnlyList<string> Violacoes, string Retrato)>> Modelos = new(Analisar);
@@ -45,14 +44,13 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
     public void RetratoVersionadoBateComOModelo()
     {
         string atual = string.Concat(Modelos.Value.Select(c => $"# {c.Contexto}\n{c.Retrato}\n"));
-        string caminho = Path.Join(SolutionRootLocator.Locate(), ArquivoDoRetrato);
 
         if (Environment.GetEnvironmentVariable(AtualizarRetratoEnvVar) == "1")
         {
-            File.WriteAllText(caminho, atual);
+            RetratoDaClassificacaoDeProtecao.Regravar(atual);
         }
 
-        string versionado = File.ReadAllText(caminho).ReplaceLineEndings("\n");
+        string versionado = RetratoDaClassificacaoDeProtecao.LerTexto();
 
         atual.Should().Be(
             versionado,

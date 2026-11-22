@@ -54,7 +54,7 @@ public sealed class DtoAdministrativoClassificadoTests
         Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.Application.dll").Select(Assembly.LoadFrom);
 
     private static Dictionary<string, ClassificacaoDeProtecao> RetratoVersionado() =>
-        File.ReadAllLines(Path.Join(SolutionRootLocator.Locate(), "tests/Unifesspa.UniPlus.ArchTests/SolutionRules/ClassificacaoDeProtecaoDoModelo.retrato.txt"))
+        RetratoDaClassificacaoDeProtecao.LerLinhas()
             .Where(static l => l.Length > 0 && l[0] != '#')
             .Select(static l => l.Split(": ", 2))
             .Where(static p => Enum.TryParse(p[1], out ClassificacaoDeProtecao _))
