@@ -10452,7 +10452,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("ExigenciaId")
                         .HasColumnType("uuid")
                         .HasColumnName("exigencia_id")
-                        .HasComment("O DocumentoExigido.Id da árvore congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070).");
+                        .HasComment("O DocumentoExigido.Id da configuração congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070).");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
@@ -10942,6 +10942,56 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_bancas_requeridas_fase_cronograma_id");
 
                     b.ToTable("bancas_requeridas", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BaseLegalDaComprovacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Abrangencia")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("abrangencia");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("observacao");
+
+                    b.Property<string>("Referencia")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("referencia");
+
+                    b.Property<Guid>("RegraDeComprovacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("regra_de_comprovacao_id");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("situacao");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_bases_legais_da_comprovacao");
+
+                    b.HasIndex("RegraDeComprovacaoId")
+                        .HasDatabaseName("ix_bases_legais_da_comprovacao_regra_de_comprovacao_id");
+
+                    b.ToTable("bases_legais_da_comprovacao", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>
@@ -12170,11 +12220,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("referencia");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Situacao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
+                        .HasColumnName("situacao");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13459,132 +13509,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Consequencia")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("consequencia");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("DocumentoExigidoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("documento_exigido_id");
-
-                    b.Property<Guid?>("NoPaiId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("no_pai_id");
-
-                    b.Property<int>("Ordem")
-                        .HasColumnType("integer")
-                        .HasColumnName("ordem");
-
-                    b.Property<Guid>("ProcessoSeletivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
-
-                    b.Property<int?>("QuantidadeMinima")
-                        .HasColumnType("integer")
-                        .HasColumnName("quantidade_minima");
-
-                    b.Property<string>("RepetePorEntidade")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("repete_por_entidade");
-
-                    b.Property<int>("Tipo")
-                        .HasColumnType("integer")
-                        .HasColumnName("tipo");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_nos_da_arvore_de_exigencias");
-
-                    b.HasIndex("DocumentoExigidoId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_nos_da_arvore_de_exigencias_documento_exigido_id")
-                        .HasFilter("documento_exigido_id IS NOT NULL");
-
-                    b.HasIndex("NoPaiId")
-                        .HasDatabaseName("ix_nos_da_arvore_de_exigencias_no_pai_id");
-
-                    b.HasIndex("ProcessoSeletivoId")
-                        .HasDatabaseName("ix_nos_da_arvore_de_exigencias_processo_seletivo_id");
-
-                    b.ToTable("nos_da_arvore_de_exigencias", "selecao", t =>
-                        {
-                            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_chave_distincao_coerente", "(chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
-
-                            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_id_diferente_de_no_pai_id", "id <> no_pai_id");
-
-                            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_ordem_nao_negativa", "ordem >= 0");
-
-                            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
-
-                            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes", "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
-                        });
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigenciaBaseLegal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Abrangencia")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("abrangencia");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("NoExigenciaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("no_exigencia_id");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("observacao");
-
-                    b.Property<string>("Referencia")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("referencia");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_bases_legais_dos_nos");
-
-                    b.HasIndex("NoExigenciaId")
-                        .HasDatabaseName("ix_bases_legais_dos_nos_no_exigencia_id");
-
-                    b.ToTable("bases_legais_dos_nos", "selecao");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14654,6 +14578,83 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Invariantes = "[\"o recálculo parte dos dados registrados na versão publicada, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]",
                             Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDeComprovacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Consequencia")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("consequencia");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("DocumentoExigidoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_exigido_id");
+
+                    b.Property<string>("Forma")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("forma");
+
+                    b.Property<string>("GrupoDoFormularioParaRepeticao")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("grupo_para_repeticao");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<int?>("QuantidadeMinima")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantidade_minima");
+
+                    b.Property<Guid?>("RegraQueContemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("regra_que_contem_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_regras_de_comprovacao");
+
+                    b.HasIndex("DocumentoExigidoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_regras_de_comprovacao_documento_exigido_id")
+                        .HasFilter("documento_exigido_id IS NOT NULL");
+
+                    b.HasIndex("ProcessoSeletivoId")
+                        .HasDatabaseName("ix_regras_de_comprovacao_processo_seletivo_id");
+
+                    b.HasIndex("RegraQueContemId")
+                        .HasDatabaseName("ix_regras_de_comprovacao_regra_que_contem_id");
+
+                    b.ToTable("regras_de_comprovacao", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_regras_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
+
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
+
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
                         });
                 });
 
@@ -18919,6 +18920,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BaseLegalDaComprovacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDeComprovacao", null)
+                        .WithMany("BasesLegais")
+                        .HasForeignKey("RegraDeComprovacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_bases_legais_comprovacao_regra");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", null)
@@ -19995,69 +20006,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", "DocumentoExigido")
-                        .WithMany()
-                        .HasForeignKey("DocumentoExigidoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_documento_exigido");
-
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", null)
-                        .WithMany("Filhos")
-                        .HasForeignKey("NoPaiId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_no_pai");
-
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithMany("NosExigencia")
-                        .HasForeignKey("ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_processo_seletivo");
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DistincaoDasApresentacoes", "Distincao", b1 =>
-                        {
-                            b1.Property<Guid>("NoExigenciaId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<int?>("Chave")
-                                .HasColumnType("integer")
-                                .HasColumnName("chave_distincao");
-
-                            b1.Property<DateOnly?>("DataReferencia")
-                                .HasColumnType("date")
-                                .HasColumnName("data_referencia");
-
-                            b1.Property<string>("OcorrenciasEsperadas")
-                                .HasColumnType("jsonb")
-                                .HasColumnName("ocorrencias_esperadas");
-
-                            b1.HasKey("NoExigenciaId");
-
-                            b1.ToTable("nos_da_arvore_de_exigencias", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("NoExigenciaId")
-                                .HasConstraintName("fk_nos_da_arvore_de_exigencias_nos_da_arvore_de_exigencias_id");
-                        });
-
-                    b.Navigation("Distincao");
-
-                    b.Navigation("DocumentoExigido");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigenciaBaseLegal", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", null)
-                        .WithMany("BasesLegais")
-                        .HasForeignKey("NoExigenciaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_bases_legais_dos_nos_no_exigencia_no_exigencia_id");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", null)
@@ -20478,6 +20426,59 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recursos_ofertados_atendimento_especializado");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDeComprovacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", "DocumentoExigido")
+                        .WithMany()
+                        .HasForeignKey("DocumentoExigidoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_regras_de_comprovacao_documento_exigido");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany("RegrasDeComprovacao")
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_regras_de_comprovacao_processo_seletivo");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDeComprovacao", null)
+                        .WithMany("Itens")
+                        .HasForeignKey("RegraQueContemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_regras_comprovacao_grupo");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DistincaoDasApresentacoes", "Distincao", b1 =>
+                        {
+                            b1.Property<Guid>("RegraDeComprovacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int?>("Criterio")
+                                .HasColumnType("integer")
+                                .HasColumnName("criterio_de_distincao");
+
+                            b1.Property<DateOnly?>("DataReferencia")
+                                .HasColumnType("date")
+                                .HasColumnName("data_referencia");
+
+                            b1.Property<string>("OcorrenciasEsperadas")
+                                .HasColumnType("jsonb")
+                                .HasColumnName("ocorrencias_esperadas");
+
+                            b1.HasKey("RegraDeComprovacaoId");
+
+                            b1.ToTable("regras_de_comprovacao", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RegraDeComprovacaoId")
+                                .HasConstraintName("fk_regras_de_comprovacao_regras_de_comprovacao_id");
+                        });
+
+                    b.Navigation("Distincao");
+
+                    b.Navigation("DocumentoExigido");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDerivacaoConfigurada", b =>
@@ -20975,13 +20976,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("Ocorrencias");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>
-                {
-                    b.Navigation("BasesLegais");
-
-                    b.Navigation("Filhos");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
                 {
                     b.Navigation("AtendimentoEspecializado");
@@ -21012,13 +21006,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Navigation("GruposColetados");
 
-                    b.Navigation("NosExigencia");
-
                     b.Navigation("OpcoesDeclaradas");
+
+                    b.Navigation("RegrasDeComprovacao");
 
                     b.Navigation("RegrasDerivacao");
 
                     b.Navigation("TermosExigidos");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDeComprovacao", b =>
+                {
+                    b.Navigation("BasesLegais");
+
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDerivacaoConfigurada", b =>

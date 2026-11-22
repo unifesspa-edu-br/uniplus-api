@@ -9313,7 +9313,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/NoExigenciaInput"
+                  "$ref": "#/components/schemas/RegraDeComprovacaoInformada"
                 }
               }
             },
@@ -9321,7 +9321,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/NoExigenciaInput"
+                  "$ref": "#/components/schemas/RegraDeComprovacaoInformada"
                 }
               }
             },
@@ -9329,7 +9329,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/NoExigenciaInput"
+                  "$ref": "#/components/schemas/RegraDeComprovacaoInformada"
                 }
               }
             }
@@ -11827,6 +11827,38 @@
           }
         }
       }
+    },
+    "/api/selecao/vocabularios/formas-comprovacao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.forma-de-comprovacao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormaDeComprovacao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13169,7 +13201,7 @@
           "id",
           "referencia",
           "abrangencia",
-          "status",
+          "situacao",
           "observacao"
         ],
         "type": "object",
@@ -13184,7 +13216,7 @@
           "abrangencia": {
             "type": "string"
           },
-          "status": {
+          "situacao": {
             "type": "string"
           },
           "observacao": {
@@ -13199,7 +13231,7 @@
         "required": [
           "referencia",
           "abrangencia",
-          "status",
+          "situacao",
           "observacao"
         ],
         "type": "object",
@@ -13210,7 +13242,7 @@
           "abrangencia": {
             "type": "string"
           },
-          "status": {
+          "situacao": {
             "type": "string"
           },
           "observacao": {
@@ -15448,13 +15480,13 @@
       },
       "DistincaoDasApresentacoesDto": {
         "required": [
-          "chave",
+          "criterioDeDistincao",
           "dataReferencia",
           "ocorrenciasEsperadas"
         ],
         "type": "object",
         "properties": {
-          "chave": {
+          "criterioDeDistincao": {
             "type": [
               "null",
               "string"
@@ -15480,13 +15512,13 @@
       },
       "DistincaoDasApresentacoesInput": {
         "required": [
-          "chave",
+          "criterioDeDistincao",
           "dataReferencia",
           "ocorrenciasEsperadas"
         ],
         "type": "object",
         "properties": {
-          "chave": {
+          "criterioDeDistincao": {
             "type": [
               "null",
               "string"
@@ -15745,114 +15777,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoMotivo"
-            }
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoArvoreDeSatisfacao": {
-        "title": "N\u00F3 da \u00E1rvore de satisfa\u00E7\u00E3o",
-        "description": "Um n\u00F3 da \u00E1rvore que diz quais documentos satisfazem a exig\u00EAncia do candidato: a folha aponta uma exig\u00EAncia; E e OU combinam os filhos.",
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "tipo"
-        ],
-        "properties": {
-          "ordem": {
-            "title": "Ordem",
-            "description": "Posi\u00E7\u00E3o do n\u00F3 entre os irm\u00E3os.",
-            "type": "integer",
-            "minimum": 0
-          },
-          "tipo": {
-            "title": "Tipo do n\u00F3",
-            "description": "FOLHA cita uma exig\u00EAncia; E exige todos os filhos; OU exige algum deles.",
-            "enum": [
-              "FOLHA",
-              "E",
-              "OU"
-            ]
-          },
-          "exigenciaChave": {
-            "title": "Exig\u00EAncia da folha",
-            "description": "Chave local da exig\u00EAncia que a folha cita. S\u00F3 existe no n\u00F3 FOLHA.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
-          },
-          "quantidadeMinima": {
-            "title": "Quantidade m\u00EDnima",
-            "description": "Quantas ocorr\u00EAncias do documento satisfazem a folha (at\u00E9 366), ou quantos filhos o n\u00F3 OU precisa.",
-            "type": "integer",
-            "minimum": 1
-          },
-          "consequencia": {
-            "title": "Consequ\u00EAncia",
-            "description": "Consequ\u00EAncia da insatisfa\u00E7\u00E3o do n\u00F3.",
-            "enum": [
-              "ELIMINA",
-              "RECLASSIFICA_AC",
-              "REMOVE_VANTAGEM",
-              "PENDENCIA_REENVIO"
-            ]
-          },
-          "basesLegais": {
-            "title": "Bases legais",
-            "description": "Embasamento normativo do n\u00F3.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
-            }
-          },
-          "chaveDistincao": {
-            "title": "Chave de distin\u00E7\u00E3o",
-            "description": "O que torna duas ocorr\u00EAncias do mesmo documento distintas.",
-            "enum": [
-              "COMPETENCIA_MENSAL",
-              "EXERCICIO_ANUAL",
-              "OCORRENCIA"
-            ]
-          },
-          "dataReferencia": {
-            "title": "Data de refer\u00EAncia",
-            "description": "Data de refer\u00EAncia: a compet\u00EAncia ou o exerc\u00EDcio dela \u00E9 o \u00FAltimo a comprovar, contando-se para tr\u00E1s.",
-            "type": "string",
-            "format": "date"
-          },
-          "ocorrenciasEsperadas": {
-            "title": "Ocorr\u00EAncias esperadas",
-            "description": "R\u00F3tulos das ocorr\u00EAncias esperadas, quando a chave de distin\u00E7\u00E3o \u00E9 a ocorr\u00EAncia.",
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "repetePorEntidade": {
-            "title": "Repete por entidade",
-            "description": "C\u00F3digo do grupo de entidades do formul\u00E1rio (por exemplo, os integrantes da fam\u00EDlia) para cada uma das quais o n\u00F3 se repete. Ausente quando o n\u00F3 n\u00E3o se repete.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60
-          },
-          "filhos": {
-            "title": "Filhos",
-            "description": "N\u00F3s filhos, nos n\u00F3s E e OU.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoArvoreDeSatisfacao"
-            }
-          }
-        },
-        "if": {
-          "properties": {
-            "tipo": {
-              "const": "FOLHA"
-            }
-          }
-        },
-        "then": {
-          "properties": {
-            "quantidadeMinima": {
-              "maximum": 366
             }
           }
         }
@@ -17785,7 +17709,7 @@
       },
       "DocumentoDaConfiguracaoExigencias": {
         "title": "Documentos exigidos",
-        "description": "As exig\u00EAncias de documentos do processo e a \u00E1rvore que combina os documentos que satisfazem a exig\u00EAncia do candidato.",
+        "description": "As exig\u00EAncias de documentos do processo e as regras para comprov\u00E1-las.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -17797,12 +17721,12 @@
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasExigencia"
             }
           },
-          "arvoreDeSatisfacao": {
-            "title": "\u00C1rvore de satisfa\u00E7\u00E3o",
-            "description": "Ra\u00EDzes da \u00E1rvore de satisfa\u00E7\u00E3o das exig\u00EAncias.",
+          "regrasDeComprovacao": {
+            "title": "Regras de comprova\u00E7\u00E3o",
+            "description": "Regras de comprova\u00E7\u00E3o que n\u00E3o est\u00E3o contidas em um grupo.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoArvoreDeSatisfacao"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoRegrasDeComprovacao"
             }
           }
         }
@@ -18902,7 +18826,7 @@
               "INTERNA_EDITAL"
             ]
           },
-          "status": {
+          "situacao": {
             "title": "Situa\u00E7\u00E3o",
             "description": "Se a refer\u00EAncia foi resolvida ou ainda est\u00E1 pendente.",
             "enum": [
@@ -19137,6 +19061,108 @@
           }
         }
       },
+      "DocumentoDaConfiguracaoRegrasDeComprovacao": {
+        "title": "Regra de comprova\u00E7\u00E3o",
+        "description": "Regra que define como uma exig\u00EAncia documental \u00E9 comprovada.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "forma"
+        ],
+        "properties": {
+          "forma": {
+            "title": "Forma de comprova\u00E7\u00E3o",
+            "description": "A regra exige um documento, todos os itens ou uma quantidade m\u00EDnima de itens.",
+            "enum": [
+              "DOCUMENTO",
+              "TODOS_OS_ITENS",
+              "QUANTIDADE_MINIMA_DE_ITENS"
+            ]
+          },
+          "exigenciaChave": {
+            "title": "Exig\u00EAncia documental",
+            "description": "Chave local da exig\u00EAncia citada pela regra de documento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "quantidadeMinima": {
+            "title": "Quantidade m\u00EDnima",
+            "description": "Na regra de documento, quantidade de apresenta\u00E7\u00F5es exigidas, at\u00E9 366; no grupo, quantidade m\u00EDnima de itens cumpridos.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "consequencia": {
+            "title": "Consequ\u00EAncia",
+            "description": "Consequ\u00EAncia quando a regra n\u00E3o \u00E9 cumprida.",
+            "enum": [
+              "ELIMINA",
+              "RECLASSIFICA_AC",
+              "REMOVE_VANTAGEM",
+              "PENDENCIA_REENVIO"
+            ]
+          },
+          "basesLegais": {
+            "title": "Bases legais",
+            "description": "Base legal da regra de comprova\u00E7\u00E3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
+            }
+          },
+          "criterioDeDistincao": {
+            "title": "Crit\u00E9rio de distin\u00E7\u00E3o",
+            "description": "Crit\u00E9rio que distingue apresenta\u00E7\u00F5es do mesmo documento.",
+            "enum": [
+              "COMPETENCIA_MENSAL",
+              "EXERCICIO_ANUAL",
+              "OCORRENCIA"
+            ]
+          },
+          "dataReferencia": {
+            "title": "Data de refer\u00EAncia",
+            "description": "Data de refer\u00EAncia: a compet\u00EAncia ou o exerc\u00EDcio dela \u00E9 o \u00FAltimo a comprovar, contando-se para tr\u00E1s.",
+            "type": "string",
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "title": "Ocorr\u00EAncias esperadas",
+            "description": "Identificadores das ocorr\u00EAncias esperadas, quando o crit\u00E9rio \u00E9 ocorr\u00EAncia.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "grupoDoFormularioParaRepeticao": {
+            "title": "Grupo do formul\u00E1rio para repeti\u00E7\u00E3o",
+            "description": "C\u00F3digo do grupo do formul\u00E1rio para cujos registros a regra \u00E9 aplicada.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "itens": {
+            "title": "Itens",
+            "description": "Regras contidas no grupo de comprova\u00E7\u00E3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoRegrasDeComprovacao"
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "forma": {
+              "const": "DOCUMENTO"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "quantidadeMinima": {
+              "maximum": 366
+            }
+          }
+        }
+      },
       "DocumentoDaConfiguracaoRestricaoDeValor": {
         "title": "Restri\u00E7\u00E3o de valor",
         "description": "Limite que o formul\u00E1rio imp\u00F5e \u00E0 resposta de um campo. O tipo escolhe quais outras propriedades valem; a coer\u00EAncia com o tipo de renderiza\u00E7\u00E3o do fato \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
@@ -19334,7 +19360,7 @@
           "grupoCodigo",
           "ocorrenciaId",
           "grupos",
-          "repetePorEntidade",
+          "grupoDoFormularioParaRepeticao",
           "formatosAceitos",
           "tamanhoMaximoBytes",
           "quantidadeMinima",
@@ -19399,10 +19425,10 @@
           "grupos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/GrupoDaArvoreDto"
+              "$ref": "#/components/schemas/GrupoDeComprovacaoDto"
             }
           },
-          "repetePorEntidade": {
+          "grupoDoFormularioParaRepeticao": {
             "type": [
               "null",
               "string"
@@ -19625,7 +19651,7 @@
           "finalidade",
           "etapaId",
           "situacao",
-          "entidadeId",
+          "ocorrenciaId",
           "alternativas"
         ],
         "type": "object",
@@ -19663,7 +19689,7 @@
           "situacao": {
             "type": "string"
           },
-          "entidadeId": {
+          "ocorrenciaId": {
             "type": [
               "null",
               "string"
@@ -20733,6 +20759,30 @@
         ],
         "type": "string"
       },
+      "FormaDeComprovacao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaDeComprovacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaDeComprovacaoCodigo": {
+        "enum": [
+          "DOCUMENTO",
+          "TODOS_OS_ITENS",
+          "QUANTIDADE_MINIMA_DE_ITENS"
+        ],
+        "type": "string",
+        "description": "- \u0060DOCUMENTO\u0060: Documento\n- \u0060TODOS_OS_ITENS\u0060: Todos estes itens\n- \u0060QUANTIDADE_MINIMA_DE_ITENS\u0060: Pelo menos a quantidade indicada destes itens"
+      },
       "FormatosAceitosCertameDto": {
         "required": [
           "qualquer",
@@ -21264,37 +21314,6 @@
           }
         }
       },
-      "GrupoDaArvoreDto": {
-        "required": [
-          "grupoId",
-          "tipo",
-          "minimo",
-          "repetePorEntidade"
-        ],
-        "type": "object",
-        "properties": {
-          "grupoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipo": {
-            "type": "string"
-          },
-          "minimo": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "repetePorEntidade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "GrupoDaInscricaoDto": {
         "required": [
           "codigo",
@@ -21314,6 +21333,37 @@
             "items": {
               "$ref": "#/components/schemas/OcorrenciaDaInscricaoDto"
             }
+          }
+        }
+      },
+      "GrupoDeComprovacaoDto": {
+        "required": [
+          "grupoId",
+          "forma",
+          "minimo",
+          "grupoDoFormularioParaRepeticao"
+        ],
+        "type": "object",
+        "properties": {
+          "grupoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "forma": {
+            "$ref": "#/components/schemas/FormaDeComprovacao"
+          },
+          "minimo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "grupoDoFormularioParaRepeticao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -23478,111 +23528,6 @@
           }
         }
       },
-      "NoExigenciaDto": {
-        "required": [
-          "id",
-          "tipo",
-          "documento",
-          "cardinalidade",
-          "indeferimento",
-          "filhos",
-          "repetePorEntidade"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipo": {
-            "type": "string"
-          },
-          "documento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DocumentoExigidoDto"
-              }
-            ]
-          },
-          "cardinalidade": {
-            "$ref": "#/components/schemas/CardinalidadeQualificadaDto"
-          },
-          "indeferimento": {
-            "$ref": "#/components/schemas/IndeferimentoDoGrupoDto"
-          },
-          "filhos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NoExigenciaDto"
-            }
-          },
-          "repetePorEntidade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "NoExigenciaInput": {
-        "required": [
-          "tipo"
-        ],
-        "type": "object",
-        "properties": {
-          "tipo": {
-            "type": "string"
-          },
-          "documento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
-              }
-            ]
-          },
-          "cardinalidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/CardinalidadeQualificadaInput"
-              }
-            ]
-          },
-          "indeferimento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/IndeferimentoDoGrupoInput"
-              }
-            ]
-          },
-          "filhos": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/NoExigenciaInput"
-            }
-          },
-          "repetePorEntidade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "NomeClassificadoDto": {
         "required": [
           "valor"
@@ -25168,7 +25113,7 @@
           "classificacao",
           "cronogramaFases",
           "documentosExigidos",
-          "raizesExigencia",
+          "regrasDeComprovacao",
           "referenciaTemporalFatos",
           "regrasDerivacao",
           "formularios",
@@ -25294,10 +25239,10 @@
               "$ref": "#/components/schemas/DocumentoExigidoDto"
             }
           },
-          "raizesExigencia": {
+          "regrasDeComprovacao": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/NoExigenciaDto"
+              "$ref": "#/components/schemas/RegraDeComprovacaoDto"
             }
           },
           "referenciaTemporalFatos": {
@@ -26352,6 +26297,118 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "RegraDeComprovacaoDto": {
+        "required": [
+          "id",
+          "forma",
+          "documento",
+          "cardinalidade",
+          "indeferimento",
+          "itens",
+          "grupoDoFormularioParaRepeticao"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "forma": {
+            "$ref": "#/components/schemas/FormaDeComprovacao"
+          },
+          "documento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoExigidoDto"
+              }
+            ]
+          },
+          "cardinalidade": {
+            "$ref": "#/components/schemas/CardinalidadeQualificadaDto"
+          },
+          "indeferimento": {
+            "$ref": "#/components/schemas/IndeferimentoDoGrupoDto"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraDeComprovacaoDto"
+            }
+          },
+          "grupoDoFormularioParaRepeticao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RegraDeComprovacaoInformada": {
+        "required": [
+          "forma"
+        ],
+        "type": "object",
+        "properties": {
+          "forma": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaDeComprovacaoCodigo"
+              }
+            ]
+          },
+          "documento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
+              }
+            ]
+          },
+          "cardinalidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardinalidadeQualificadaInput"
+              }
+            ]
+          },
+          "indeferimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndeferimentoDoGrupoInput"
+              }
+            ]
+          },
+          "itens": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RegraDeComprovacaoInformada"
+            }
+          },
+          "grupoDoFormularioParaRepeticao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
