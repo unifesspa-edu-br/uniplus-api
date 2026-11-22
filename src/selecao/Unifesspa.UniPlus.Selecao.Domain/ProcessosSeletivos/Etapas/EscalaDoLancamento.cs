@@ -12,6 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class EscalaDoLancamento
 {
+    private const int ValorPrecisao = 18;
+    private const int ValorEscala = 4;
+
     /// <summary>
     /// Acumula as recusas da escala: primeiro os valores isolados (nota máxima, passo), depois os que
     /// dependem da nota máxima. A nota mínima chega nula quando outra regra já a recusou isolada, e não é
@@ -29,8 +32,8 @@ internal static class EscalaDoLancamento
 
         FieldError?[] precisao =
         [
-            PrecisaoDecimal.Recusa(notaMaxima, "notaMaxima", PrecisaoDecimal.NotaMaxima),
-            PrecisaoDecimal.Recusa(passoDoLancamento, "passoDoLancamento", PrecisaoDecimal.Passo),
+            PrecisaoDecimal.Recusa(notaMaxima, ValorPrecisao, ValorEscala, "notaMaxima", "Nota máxima deve ter no máximo 14 dígitos inteiros e 4 casas decimais."),
+            PrecisaoDecimal.Recusa(passoDoLancamento, ValorPrecisao, ValorEscala, "passoDoLancamento", "Passo do lançamento deve ter no máximo 14 dígitos inteiros e 4 casas decimais."),
         ];
         erros.AddRange(precisao.OfType<FieldError>());
         return erros;

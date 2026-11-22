@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O que se confere na distribuição de vagas declarada para uma oferta antes de montar o quadro: a
@@ -14,6 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class ConferenciaDaDistribuicaoDeVagas
 {
+    private const int PercentualPrecisao = 5;
+    private const int PercentualEscala = 4;
     private const decimal PercentualMinimoDaReservaLegal = 0.5m;
     private const decimal PercentualMaximoDaReservaLegal = 1m;
 
@@ -61,6 +64,8 @@ public static class ConferenciaDaDistribuicaoDeVagas
             .. Presentes(
                 VagasOfertadasBaseInvalidas(vagasOfertadasBase),
                 PercentualForaDoLimite(percentualDaReservaLegal),
+                PrecisaoDecimal.Recusa(percentualDaReservaLegal, PercentualPrecisao, PercentualEscala, "percentualDaReservaLegal",
+                    "O percentual da reserva legal deve ter no máximo 1 dígito inteiro e 4 casas decimais."),
                 ModalidadesAusentes(quantidadeDeModalidades)),
             .. QuantidadesNegativas(quantidadesDoQuadro),
         ];

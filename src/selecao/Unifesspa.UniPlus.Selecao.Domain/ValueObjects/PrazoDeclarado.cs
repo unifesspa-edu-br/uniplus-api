@@ -11,6 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Unidade">Código de contrato da unidade declarada, ou <see langword="null"/> quando não foi informada.</param>
 public sealed record PrazoDeclarado(decimal? Valor, string? Unidade)
 {
+    private const int ValorPrecisao = 18;
+    private const int ValorEscala = 4;
+
     /// <summary>Nenhuma das duas partes foi declarada.</summary>
     public static PrazoDeclarado Ausente { get; } = new(null, null);
 
@@ -23,10 +26,10 @@ public sealed record PrazoDeclarado(decimal? Valor, string? Unidade)
     /// <param name="nomeDoPrazo">Como a mensagem chama o prazo: "prazo de interposição" ou "prazo da 2ª instância".</param>
     internal RecusaDosParametrosDoRecurso? Recusa(string campoDoValor, string campoDaUnidade, string nomeDoPrazo)
     {
-        if (!PrecisaoDecimal.Cabe(Valor))
+        if (!PrecisaoDecimal.Cabe(Valor, ValorPrecisao, ValorEscala))
         {
             return new(MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida, campoDoValor,
-                campoDoValor == "prazoValor" ? PrecisaoDecimal.Prazo : PrecisaoDecimal.PrazoSegunda);
+                campoDoValor == "prazoValor" ? "O prazo de interposição deve ter no máximo 14 dígitos inteiros e 4 casas decimais." : "O prazo da 2ª instância deve ter no máximo 14 dígitos inteiros e 4 casas decimais.");
         }
 
         if (Valor is not > 0m)

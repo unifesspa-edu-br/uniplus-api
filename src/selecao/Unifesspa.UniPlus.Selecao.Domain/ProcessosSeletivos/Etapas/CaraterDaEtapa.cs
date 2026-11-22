@@ -13,6 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class CaraterDaEtapa
 {
+    private const int ValorPrecisao = 18;
+    private const int ValorEscala = 4;
+
     /// <summary>A etapa pontua quando o caráter é classificatório ou ambos.</summary>
     public static bool Pontua(CaraterEtapa carater) => carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas;
 
@@ -29,8 +32,8 @@ public static class CaraterDaEtapa
         FieldError?[] recusas =
         [
             RecusaDoCarater(carater), RecusaDoPeso(carater, peso), RecusaDaNotaMinima(carater, notaMinima),
-            PrecisaoDecimal.Recusa(peso, "peso", PrecisaoDecimal.Peso),
-            PrecisaoDecimal.Recusa(notaMinima, "notaMinima", PrecisaoDecimal.NotaMinima),
+            PrecisaoDecimal.Recusa(peso, ValorPrecisao, ValorEscala, "peso", "Peso da etapa deve ter no máximo 14 dígitos inteiros e 4 casas decimais."),
+            PrecisaoDecimal.Recusa(notaMinima, ValorPrecisao, ValorEscala, "notaMinima", "Nota mínima deve ter no máximo 14 dígitos inteiros e 4 casas decimais."),
         ];
 
         return [.. recusas.OfType<FieldError>()];

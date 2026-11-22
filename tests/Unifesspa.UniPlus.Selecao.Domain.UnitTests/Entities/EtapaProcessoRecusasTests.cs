@@ -295,7 +295,7 @@ public sealed class EtapaProcessoRecusasTests
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Field.Should().Be("escalaDeAtendimento[1].fracao");
         erro.Error.Code.Should().Be(CodigosDeValidacao.Formato);
-        erro.Error.Message.Should().Be(PrecisaoDecimal.Fracao);
+        erro.Error.Message.Should().Be("A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1.");
     }
 
     [Fact(DisplayName = "Criar com a escala só de elemento nulo e itens recusa o nulo e a falta de nível completo")]

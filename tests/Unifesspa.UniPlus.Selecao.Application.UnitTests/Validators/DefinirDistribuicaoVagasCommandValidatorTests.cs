@@ -63,15 +63,15 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando o percentual da reserva legal tem mais de 4 casas decimais (arredondaria silenciosamente)")]
-    public void Rejeita_PercentualDaReservaLegalComEscalaExcessiva()
+    [Fact]
+    public void Aceita_PercentualDaReservaLegalComEscalaExcessiva()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { PercentualDaReservaLegal = 0.75001m };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator passa com lista de modalidades vazia — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]

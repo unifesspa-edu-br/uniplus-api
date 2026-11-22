@@ -9,6 +9,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class NiveisDeAtendimento
 {
+    private const int ValorPrecisao = 18;
+    private const int ValorEscala = 4;
+
     public const string RotuloInvalido = "NivelDeAtendimento.RotuloInvalido";
     public const string FracaoInvalida = "NivelDeAtendimento.FracaoInvalida";
     public const string NivelDuplicado = "NivelDeAtendimento.Duplicado";
@@ -57,11 +60,11 @@ public static class NiveisDeAtendimento
 
     private static IEnumerable<FieldError> ValidarFracao(string campo, decimal fracao)
     {
-        if (fracao is < 0m or > 1m || !PrecisaoDecimal.Cabe(fracao))
+        if (fracao is < 0m or > 1m || !PrecisaoDecimal.Cabe(fracao, ValorPrecisao, ValorEscala))
         {
             yield return new($"{campo}.fracao", new DomainError(
                 CodigosDeValidacao.Formato,
-                PrecisaoDecimal.Fracao));
+                "A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1."));
         }
     }
 

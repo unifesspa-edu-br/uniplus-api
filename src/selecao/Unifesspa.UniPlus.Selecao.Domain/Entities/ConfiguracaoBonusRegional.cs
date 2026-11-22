@@ -30,6 +30,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
 {
+    private const int FatorPrecisao = 6;
+    private const int FatorEscala = 4;
+    private const int TetoPrecisao = 6;
+    private const int TetoEscala = 4;
+
     private readonly List<ConfiguracaoBonusRegionalMunicipio> _municipios = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -78,16 +83,22 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(baseLegal);
 
         string? fatoElegibilidade = fatoElegibilidadeCodigo?.Trim();
-        FieldError?[] candidatas =
-        [
-            RecusaDaRegra(regra), RecusaDoFator(fator), RecusaDoTeto(teto), RecusaDoFato(fatoElegibilidade), RecusaDosMunicipios(baseLegal),
-        ];
-        FieldError[] erros = [.. candidatas.OfType<FieldError>()];
+        FieldError[] erros = [.. Recusas(regra, fator, teto, fatoElegibilidade, baseLegal).OfType<FieldError>()];
 
         return erros.Length > 0
             ? Result<ConfiguracaoBonusRegional>.ValidationFailure(erros)
             : Result<ConfiguracaoBonusRegional>.Success(Montar(regra, fator, teto, fatoElegibilidade, baseLegal));
     }
+
+    private static FieldError?[] Recusas(ReferenciaRegra regra, decimal fator, decimal? teto, string? fato, BaseLegalCongelada baseLegal) =>
+    [
+        RecusaDaRegra(regra),
+        RecusaDoFator(fator),
+        PrecisaoDecimal.Recusa(fator, FatorPrecisao, FatorEscala, "fator", "O fator do bônus deve ter no máximo 2 dígitos inteiros e 4 casas decimais."),
+        RecusaDoTeto(teto),
+        PrecisaoDecimal.Recusa(teto, TetoPrecisao, TetoEscala, "teto", "O teto do bônus deve ter no máximo 2 dígitos inteiros e 4 casas decimais."),
+        RecusaDoFato(fato), RecusaDosMunicipios(baseLegal),
+    ];
 
     private static FieldError? RecusaDaRegra(ReferenciaRegra regra) =>
         regra.Codigo == RegraBonusCodigo.Multiplicativo
