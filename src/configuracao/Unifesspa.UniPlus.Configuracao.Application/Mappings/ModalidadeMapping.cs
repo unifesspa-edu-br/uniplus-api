@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -14,20 +15,22 @@ public static class ModalidadeMapping
             modalidade.Codigo.Valor,
             modalidade.Codigo.EhLegalFixa,
             modalidade.Descricao,
-            NaturezasLegais.ParaTokenCanonico(modalidade.NaturezaLegal),
-            ComposicoesVagas.ParaTokenCanonico(modalidade.ComposicaoVagas),
+            CodigoComRotulo<NaturezaLegal>.De(modalidade.NaturezaLegal),
+            CodigoComRotulo<ComposicaoVagas>.De(modalidade.ComposicaoVagas),
             modalidade.ComposicaoOrigem,
-            modalidade.RegraRemanejamento is { } regra
-                ? RegrasRemanejamento.ParaTokenCanonico(regra)
-                : null,
-            modalidade.RemanejamentoParametros.Destino,
-            modalidade.RemanejamentoParametros.Par,
-            modalidade.RemanejamentoParametros.Fallback,
+            RemanejamentoDasVagas(modalidade),
             modalidade.RegraDeAplicabilidade.ToDto(),
-            modalidade.AcaoQuandoIndeferido is { } acao
-                ? AcoesQuandoIndeferido.ParaTokenCanonico(acao)
-                : null,
+            modalidade.AcaoQuandoIndeferido is { } acao ? CodigoComRotulo<AcaoQuandoIndeferido>.De(acao) : null,
             modalidade.BaseLegal,
             modalidade.CreatedAt);
     }
+
+    private static RemanejamentoDasVagasDto? RemanejamentoDasVagas(Modalidade modalidade) =>
+        modalidade.RegraRemanejamento is { } regra
+            ? new(
+                CodigoComRotulo<RegraRemanejamento>.De(regra),
+                modalidade.RemanejamentoParametros.Destino,
+                modalidade.RemanejamentoParametros.Par,
+                modalidade.RemanejamentoParametros.Fallback)
+            : null;
 }

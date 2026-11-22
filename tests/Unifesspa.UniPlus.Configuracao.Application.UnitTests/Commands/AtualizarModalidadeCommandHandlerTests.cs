@@ -95,7 +95,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
 
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
-            RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC", RegraDeAplicabilidade: OptouPelasCotas(false));
+            Remanejamento: new("DESTINO_UNICO", Destino: "AC"), RegraDeAplicabilidade: OptouPelasCotas(false));
 
         Result resultado = await Atualizar(comando);
 
@@ -115,7 +115,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
 
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
-            RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "XPTO", RegraDeAplicabilidade: OptouPelasCotas(false));
+            Remanejamento: new("DESTINO_UNICO", Destino: "XPTO"), RegraDeAplicabilidade: OptouPelasCotas(false));
 
         Result resultado = await Atualizar(comando);
 
@@ -135,7 +135,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         Modalidade existente = ExistenteNoRepositorio("LB_PPI");
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
-            RegraRemanejamento: "SEGUE_CASCATA", RegraDeAplicabilidade: Incondicional);
+            Remanejamento: new("SEGUE_CASCATA"), RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await Atualizar(comando);
 
@@ -183,7 +183,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
 
     private static AtualizarModalidadeCommand ComandoQueCita(Guid id, string fato) => new(
         id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
-        RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
+        Remanejamento: new("DESTINO_UNICO", Destino: "AC"),
         RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao(fato, true)]]);
 
     [Fact(DisplayName = "Regra malformada se acumula com as recusas dos demais campos, sem a de regra ausente")]

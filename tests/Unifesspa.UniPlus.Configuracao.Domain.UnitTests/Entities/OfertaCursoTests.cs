@@ -117,7 +117,7 @@ public sealed class OfertaCursoTests
         OfertaCurso oferta = Criar(d => d with { FormatoPedagogico = token }).Value!;
 
         oferta.FormatoPedagogico.Should().Be(
-            FormatoPedagogico.Presencial, "o default conceitual espelha o AMPLA de NaturezasLegais");
+            FormatoPedagogico.Presencial, "o formato ausente vale presencial, como a natureza ausente vale ampla concorrência");
     }
 
     [Theory(DisplayName = "Formato fora do domínio fechado é rejeitado")]

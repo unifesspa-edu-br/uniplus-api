@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -19,10 +20,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// no consumidor (ADR-0061) dispensa releitura quente (mesmo padrão do
 /// <c>TipoDocumentoReader</c>). Ordena por <c>Codigo</c> ascendente.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class ModalidadeReader : IModalidadeReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -63,25 +60,29 @@ internal sealed class ModalidadeReader : IModalidadeReader
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Trim + NFC antes da query pelo mesmo motivo do leitor de tipo de etapa: o EF
-        // não traduz normalização Unicode para SQL, e o cadastro guarda o código já
-        // normalizado — comparar sem isso erraria o "mesmo" texto em outra forma.
-        // Código fora do formato do value object não tem modalidade viva alguma, então
-        // a consulta é dispensável.
-        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
-        Result<CodigoModalidade> codigoResult = CodigoModalidade.Criar(codigoNormalizado);
-        if (codigoResult.IsFailure)
+        if (CodigoNormalizado(codigo) is not { } codigoBuscado)
         {
             return null;
         }
 
-        CodigoModalidade codigoVo = codigoResult.Value!;
         Modalidade? entidade = await _dbContext.Modalidades
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Codigo == codigoVo, cancellationToken)
+            .FirstOrDefaultAsync(m => m.Codigo == codigoBuscado, cancellationToken)
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
+    }
+
+    // Trim + NFC antes da query pelo mesmo motivo do leitor de tipo de etapa: o EF
+    // não traduz normalização Unicode para SQL, e o cadastro guarda o código já
+    // normalizado — comparar sem isso erraria o "mesmo" texto em outra forma.
+    // Código fora do formato do value object não tem modalidade viva alguma, então
+    // a consulta é dispensável.
+    private static CodigoModalidade? CodigoNormalizado(string codigo)
+    {
+        Result<CodigoModalidade> resultado = CodigoModalidade.Criar(codigo.Trim().Normalize(NormalizationForm.FormC));
+
+        return resultado.IsSuccess ? resultado.Value : null;
     }
 
     private static ModalidadeView ParaView(Modalidade m) =>
@@ -89,14 +90,14 @@ internal sealed class ModalidadeReader : IModalidadeReader
             m.Id,
             m.Codigo.Valor,
             m.Descricao,
-            NaturezasLegais.ParaTokenCanonico(m.NaturezaLegal),
-            ComposicoesVagas.ParaTokenCanonico(m.ComposicaoVagas),
+            m.NaturezaLegal.Codigo(),
+            m.ComposicaoVagas.Codigo(),
             m.ComposicaoOrigem,
-            m.RegraRemanejamento is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
+            m.RegraRemanejamento?.Codigo(),
             m.RemanejamentoParametros.Destino,
             m.RemanejamentoParametros.Par,
             m.RemanejamentoParametros.Fallback,
             m.RegraDeAplicabilidade,
-            m.AcaoQuandoIndeferido is { } acao ? AcoesQuandoIndeferido.ParaTokenCanonico(acao) : null,
+            m.AcaoQuandoIndeferido?.Codigo(),
             m.BaseLegal);
 }

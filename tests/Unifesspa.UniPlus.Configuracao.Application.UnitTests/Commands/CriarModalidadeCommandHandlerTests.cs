@@ -177,7 +177,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato), FatoDesativado("PCD")]);
         var comando = new CriarModalidadeCommand(
             CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "ACAO_AFIRMATIVA",
-            ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL", RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
+            ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL", Remanejamento: new("DESTINO_UNICO", Destino: "AC"),
             RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)]]);
 
         Result<Guid> resultado = await Criar(comando);

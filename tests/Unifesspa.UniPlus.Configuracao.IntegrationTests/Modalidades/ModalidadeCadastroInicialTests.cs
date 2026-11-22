@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -78,9 +79,9 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
     [InlineData("AC_Q", "AC_I")]
     public async Task Seed_AcIAcQ_ParCruzadoReciproco(string codigo, string par)
     {
-        CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
+        CodigoModalidade codigoModalidade = CodigoModalidade.Criar(codigo).Value!;
         await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
-        Modalidade modalidade = await context.Modalidades.AsNoTracking().SingleAsync(m => !m.IsDeleted && m.Codigo == vo);
+        Modalidade modalidade = await context.Modalidades.AsNoTracking().SingleAsync(m => !m.IsDeleted && m.Codigo == codigoModalidade);
         modalidade.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
         modalidade.ComposicaoVagas.Should().Be(ComposicaoVagas.SuplementarAoTotal);
         modalidade.ComposicaoOrigem.Should().BeNull();
@@ -97,12 +98,12 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
     [InlineData("AC_Q", "532/2021-CONSEPE, art. 2º")]
     public async Task Seed_AcaoAfirmativa_FundamentadaNaResolucao532(string codigo, string normaEsperada)
     {
-        CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
+        CodigoModalidade codigoModalidade = CodigoModalidade.Criar(codigo).Value!;
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Modalidade modalidade = await ctx.Modalidades.AsNoTracking()
-            .SingleAsync(m => !m.IsDeleted && m.Codigo == vo);
+            .SingleAsync(m => !m.IsDeleted && m.Codigo == codigoModalidade);
 
         modalidade.BaseLegal.Should().NotBeNullOrWhiteSpace()
             .And.NotContain("12.711")
@@ -135,9 +136,9 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
     private static Result<Modalidade> CriarModalidade(ModalidadeSeedItem item) => Modalidade.Criar(
         item.Codigo,
         new DeclaracaoDaModalidade(
-            item.Descricao, NaturezasLegais.ParaTokenCanonico(item.Natureza),
-            ComposicoesVagas.ParaTokenCanonico(item.Composicao), item.ComposicaoOrigem,
-            item.Regra is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
+            item.Descricao, item.Natureza.Codigo(),
+            item.Composicao.Codigo(), item.ComposicaoOrigem,
+            item.Regra?.Codigo(),
             item.RemanejamentoParametros.Destino, item.RemanejamentoParametros.Par, item.RemanejamentoParametros.Fallback,
             item.RegraDeAplicabilidade, CodigoDaAcaoQuandoIndeferido: null, item.BaseLegal));
 }

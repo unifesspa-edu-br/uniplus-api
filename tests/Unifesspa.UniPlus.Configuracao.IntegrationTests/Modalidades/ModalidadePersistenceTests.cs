@@ -46,6 +46,23 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         persistida.IsDeleted.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "As colunas da natureza, da composição e da regra de remanejamento gravam o código de contrato")]
+    public async Task Insert_ColunasDosEnums_GravamOCodigoDeContrato()
+    {
+        Modalidade modalidade = Cota(CodigoUnico());
+        await GravarAsync(_fixture, modalidade);
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        List<string> gravados = await leitura.Database
+            .SqlQuery<string>($"""
+                SELECT concat_ws('|', natureza_legal, composicao_vagas, regra_remanejamento, acao_quando_indeferido) AS "Value"
+                FROM configuracao.modalidades WHERE id = {modalidade.Id}
+                """)
+            .ToListAsync();
+
+        gravados.Should().Equal("COTA_RESERVADA|DENTRO_DA_RESERVA_LEGAL|SEGUE_CASCATA");
+    }
+
     [Fact(DisplayName = "Modalidade criada fica visível pelo leitor")]
     public async Task Insert_FicaVisivelPeloReader()
     {
@@ -71,7 +88,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
+        // Confere as constantes usadas para informar o conflito entre gravações simultâneas
         // (UniqueConstraintViolation) em CodigoJaExiste/409.
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
