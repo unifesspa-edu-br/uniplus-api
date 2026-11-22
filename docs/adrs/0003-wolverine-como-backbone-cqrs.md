@@ -74,6 +74,8 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 > **Emenda (2026-11-14):** com o contexto de persistência único ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)) não há mais ambiguidade de `DbContext` e a exceção de 2026-08-04 deixa de ter motivo: os handlers de comando que a usavam participam da transação do Wolverine. `[NonTransactional]` só permanece em consultas que registram o acesso de forma síncrona no Kafka, para não segurar a conexão aberta enquanto o broker confirma.
 >
 > **Emenda (2026-10-06):** o gatilho diário da sincronização de discentes usa mensagem agendada durável, que se reagenda a cada ciclo. A exceção e as condições de durabilidade estão na [ADR-0140](0140-gatilho-diario-duravel-de-sincronizacao.md).
+>
+> **Emenda (2026-11-22):** o teste de arquitetura que procurava referências a `MediatR.*` em todos os assemblies do produto foi retirado. O pacote não existe no repositório e a proibição está registrada nesta ADR; o teste carregava a solução inteira em cada execução do CI sem proteger regra de arquitetura que outra conferência não cubra.
 
 ## Consequências
 
@@ -99,7 +101,7 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 ## Confirmação
 
 - Fitness test ArchUnitNET `Stage1ArchitectureRulesTests.ApplicationEDomain_NaoDependemDeWolverine` (presente nos projetos `Unifesspa.UniPlus.Selecao.ArchTests` e `Unifesspa.UniPlus.Ingresso.ArchTests`) falha o build se `Application.Abstractions`, `Selecao.Application`/`Ingresso.Application` ou `Selecao.Domain`/`Ingresso.Domain` importarem `Wolverine.*` (ver ADR-0012) — com a exceção estreita de `Wolverine.Attributes` registrada na emenda de 2026-08-04.
-- Fitness test `SolutionNaoTemMediatRTests.NenhumTipoDoProdutoDependeDeMediatR` (no projeto solution-wide `Unifesspa.UniPlus.ArchTests`) falha o build se qualquer assembly do produto importar `MediatR.*`.
+- A proibição do MediatR no produto fica registrada nesta ADR, sem teste de arquitetura dedicado (emenda de 2026-11-22).
 
 ## Prós e contras das opções
 

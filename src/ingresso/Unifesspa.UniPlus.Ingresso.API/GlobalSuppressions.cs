@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 
-// IngressoApiAssemblyMarker é referenciado pelo projeto Unifesspa.UniPlus.ArchTests
-// como âncora typeof().Assembly para o R4 (SolutionNaoTemMediatR). Top-level
+// IngressoApiAssemblyMarker é referenciado pelos projetos de testes de arquitetura
+// como âncora typeof().Assembly. Top-level
 // statements deixam Program no namespace global, e ambos os entry points
 // (Selecao.API/Program e Ingresso.API/Program) compartilham o mesmo nome —
 // um marker dedicado evita a ambiguidade no carregador de assemblies.
