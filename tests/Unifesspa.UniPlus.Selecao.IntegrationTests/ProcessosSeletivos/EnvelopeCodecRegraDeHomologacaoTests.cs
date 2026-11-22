@@ -40,7 +40,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
         CorpusEnvelopeEntrada.Publicar(processo);
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
-        EnvelopeReidratado reidratado = AssertRoundTrip(processo, versao, congelado);
+        EnvelopeReidratado reidratado = AssertSerializacaoEReidratacao(processo, versao, congelado);
 
         HashCanonicalComputer.ComputeSha256Hex(congelado.Bytes).Should().Be(versao.HashConfiguracao);
         FaseReidratada(reidratado, FasePreliminar).RegraDeHomologacao!.MesmoConteudo(CorpusEnvelopeCronograma.RegraDeHomologacaoDoCorpus())

@@ -98,7 +98,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
         CorpusEnvelopeEntrada.Publicar(processo);
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
-        AssertRoundTrip(processo, versao, congelado);
+        AssertSerializacaoEReidratacao(processo, versao, congelado);
 
         HashCanonicalComputer.ComputeSha256Hex(congelado.Bytes).Should().Be(versao.HashConfiguracao);
     }

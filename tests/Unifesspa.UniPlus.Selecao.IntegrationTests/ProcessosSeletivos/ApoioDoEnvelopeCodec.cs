@@ -73,10 +73,10 @@ internal static class ApoioDoEnvelopeCodec
     /// original — o envelope escreve decimais como string e inteiros como número, e trocar
     /// um pelo outro testaria o parser de tipos, não a leitura do campo.
     /// </summary>
-    internal static void Mutar(JsonObject raiz, string caminho, string valorNovo)
+    internal static void Mutar(JsonObject objetoPrincipal, string caminho, string valorNovo)
     {
         string[] partes = caminho.Split('.');
-        JsonNode atual = PaiDoCampo(raiz, partes);
+        JsonNode atual = PaiDoCampo(objetoPrincipal, partes);
 
         MutarNo(atual, partes[^1], caminho, valorNovo);
     }
@@ -95,8 +95,8 @@ internal static class ApoioDoEnvelopeCodec
     }
 
     /// <summary>
-    /// Sem o ramo <c>True</c>/<c>False</c>, os campos booleanos mutados por este helper
-    /// (<c>baseadoEmEnem</c>, <c>notaDeOrigemNoEnem</c>) virariam string JSON e seriam
+    /// Sem o tratamento de <c>True</c>/<c>False</c>, os campos booleanos alterados por este auxiliar
+    /// (<c>baseadoEmEnem</c>, <c>notaDeOrigemNoEnem</c>) seriam convertidos em texto JSON e
     /// recusados por <see cref="LeitorEnvelope.Booleano"/>, que só aceita
     /// <c>JsonValueKind.True</c>/<c>False</c>.
     /// </summary>
@@ -141,10 +141,10 @@ internal static class ApoioDoEnvelopeCodec
 
     /// <summary>
     /// Reidrata e recanonicaliza <b>com o encoder da versão dela</b>, nunca com o corrente: no dia da próxima versão do
-    /// esquema, recanonicalizar uma versão anterior com o encoder corrente produziria bytes da nova, e a fidelidade da
-    /// reidratação de tudo o que já foi publicado deixaria de ser verificável.
+    /// esquema, recanonicalizar uma versão anterior com o encoder corrente produziria bytes da nova, e não seria possível verificar a fidelidade da
+    /// reidratação de tudo o que já foi publicado.
     /// </summary>
-    internal static EnvelopeReidratado AssertRoundTrip(ProcessoSeletivo processo, VersaoConfiguracao versao, SnapshotCanonico congelado)
+    internal static EnvelopeReidratado AssertSerializacaoEReidratacao(ProcessoSeletivo processo, VersaoConfiguracao versao, SnapshotCanonico congelado)
     {
         EnvelopeReidratado envelope = Reidratado(versao);
         SnapshotCanonico recodificado = Recodificado(processo, versao, envelope);
@@ -167,9 +167,9 @@ internal static class ApoioDoEnvelopeCodec
         return recodificado.Value!;
     }
 
-    private static JsonNode PaiDoCampo(JsonObject raiz, string[] partes)
+    private static JsonNode PaiDoCampo(JsonObject objetoPrincipal, string[] partes)
     {
-        JsonNode atual = raiz;
+        JsonNode atual = objetoPrincipal;
         for (int i = 0; i < partes.Length - 1; i++)
         {
             atual = int.TryParse(partes[i], CultureInfo.InvariantCulture, out int indice)

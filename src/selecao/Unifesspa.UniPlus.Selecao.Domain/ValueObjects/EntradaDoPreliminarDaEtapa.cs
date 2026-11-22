@@ -60,11 +60,11 @@ internal static class EntradaDoPreliminarDaEtapa
         ];
     }
 
-    // A janela recursal se distingue pelo fato de que o prazo corre e pelo ato em que ancora.
+    // A configuração do recurso se distingue pelo evento que inicia o prazo e pela publicação de referência.
     private static IEnumerable<string> DoRecurso(EtapaProcesso etapa, RecursoDaEtapa recurso)
     {
-        IProdutoPublicado? ancora = ProdutoAncora(etapa.Produtos, recurso.ProdutoAncoraId);
-        string campo = $"recursos[{Valor(recurso.Ancora)}|{Valor(ancora?.AtoCodigo)}|{Valor(ancora?.Papel)}]";
+        IProdutoPublicado? publicacaoDeReferencia = PublicacaoDeReferencia(etapa.Produtos, recurso.ProdutoAncoraId);
+        string campo = $"recursos[{Valor(recurso.Ancora)}|{Valor(publicacaoDeReferencia?.AtoCodigo)}|{Valor(publicacaoDeReferencia?.Papel)}]";
 
         return
         [
