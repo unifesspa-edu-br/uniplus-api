@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 /// <summary>
@@ -15,7 +17,7 @@ public sealed class RegistrosDeErroSemRepeticaoTests
     [Fact(DisplayName = "Nenhum registro de erros repete código de domínio")]
     public void NenhumRegistroRepeteCodigo()
     {
-        IReadOnlyList<IDomainErrorRegistration> registros = RegistrosDeErroDaSolucao.Instanciar();
+        IReadOnlyList<IDomainErrorRegistration> registros = HostsDoProdutoIniciados.Executaveis.SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetServices<IDomainErrorRegistration>()).DistinctBy(registro => registro.GetType()).ToArray();
 
         string[] repeticoes =
         [

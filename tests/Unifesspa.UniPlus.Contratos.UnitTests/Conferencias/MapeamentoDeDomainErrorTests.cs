@@ -1,38 +1,16 @@
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Microsoft.Extensions.DependencyInjection;
 
-using ReflectionType = System.Type;
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 namespace Unifesspa.UniPlus.Contratos.UnitTests;
 
 /// <summary>Confere os mapeamentos publicados dos códigos de erro do domínio.</summary>
 public sealed class MapeamentoDeDomainErrorTests
 {
-    public static TheoryData<string> Modulos()
-    {
-        TheoryData<string> dados = new();
-        foreach (string modulo in DescobrirModulos())
-            dados.Add(modulo);
-        return dados;
-    }
-
-    private static IReadOnlyList<string> DescobrirModulos() =>
-    [
-        .. Directory.EnumerateFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.API.dll")
-            .Select(Path.GetFileNameWithoutExtension)
-            .Where(static nome => nome is not null)
-            .Select(static nome => nome!["Unifesspa.UniPlus.".Length..^".API".Length])
-            .Order(StringComparer.Ordinal),
-    ];
-
-    private static bool EhAssemblyDeProducao(string nome, string modulo) =>
-        nome is "Unifesspa.UniPlus.Kernel" or "Unifesspa.UniPlus.Application.Abstractions" or "Unifesspa.UniPlus.Infrastructure.Core"
-        || new[] { "Domain", "Application", "Infrastructure", "API" }
-            .Any(camada => nome == $"Unifesspa.UniPlus.{modulo}.{camada}");
-
     [Theory(DisplayName = "Guard rail da cadeia de versões: corrida responde 409, recusa de corpo responde 422")]
     [InlineData("VersaoConfiguracao.NumeroDuplicado", 409)]
     [InlineData("VersaoConfiguracao.CadeiaQuebrada", 422)]
@@ -41,7 +19,7 @@ public sealed class MapeamentoDeDomainErrorTests
     [InlineData("VersaoConfiguracao.NumeracaoComBuraco", 422)]
     public void GuardRailDaCadeiaDeVersoes_TemOStatusDaSuaEspecie(string code, int statusEsperado)
     {
-        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados("Selecao");
+        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados(HostsDoProdutoIniciados.UniPlus);
 
         mapeamentos.Should().ContainKey(code);
         mapeamentos[code].Status.Should().Be(statusEsperado);
@@ -57,7 +35,7 @@ public sealed class MapeamentoDeDomainErrorTests
     [Fact(DisplayName = "As recusas da cadeia de versões mantêm code próprio, sem colapsar no conflito genérico")]
     public void GuardRailDaCadeiaDeVersoes_NaoColapsaNoCodeGenericoDeConflito()
     {
-        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados("Selecao");
+        Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados(HostsDoProdutoIniciados.UniPlus);
 
         IEnumerable<KeyValuePair<string, DomainErrorMapping>> daCadeia = mapeamentos
             .Where(m => m.Key.StartsWith("VersaoConfiguracao.", StringComparison.Ordinal));
@@ -80,7 +58,8 @@ public sealed class MapeamentoDeDomainErrorTests
     /// cenário de corrida na mão.
     /// </remarks>
     [Theory(DisplayName = "só um conflito pode declarar-se retentável")]
-    [MemberData(nameof(Modulos))]
+    [InlineData(HostsDoProdutoIniciados.UniPlus)]
+    [InlineData(HostsDoProdutoIniciados.Portal)]
     public void RetryableConflict_SoEhDeclaradoEmStatusDeConflito(string modulo)
     {
         Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados(modulo);
@@ -95,56 +74,9 @@ public sealed class MapeamentoDeDomainErrorTests
                 + "ele promete ao cliente uma saída que a repetição não oferece");
     }
 
-    private static Dictionary<string, DomainErrorMapping> LerMapeamentosRegistrados(string modulo)
-    {
-        CarregarAssembliesDoModulo(modulo);
-
-        IEnumerable<ReflectionType> registrations = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(assembly => assembly.GetName().Name is { } nome && EhAssemblyDeProducao(nome, modulo))
-            .SelectMany(TiposDe)
-            .Where(tipo => !tipo.IsAbstract && !tipo.IsInterface && typeof(IDomainErrorRegistration).IsAssignableFrom(tipo));
-        Dictionary<string, DomainErrorMapping> mapeamentos = new(StringComparer.Ordinal);
-        foreach (IDomainErrorRegistration registration in registrations.Select(InstanciarRegistro).OfType<IDomainErrorRegistration>())
-        {
-            foreach ((string codigo, DomainErrorMapping mapeamento) in registration.GetMappings())
-                mapeamentos[codigo] = mapeamento;
-        }
-
-        return mapeamentos;
-    }
-
-    private static IDomainErrorRegistration? InstanciarRegistro(ReflectionType tipo)
-    {
-        ConstructorInfo? construtor = tipo.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, types: []);
-        return construtor is null ? null : (IDomainErrorRegistration)construtor.Invoke(null);
-    }
-
-    private static void CarregarAssembliesDoModulo(string modulo)
-    {
-        // A registration mora na camada API. Assembly.Load é determinístico, ao
-        // contrário de tocar um tipo e depender de a JIT já ter materializado a carga.
-        _ = typeof(IDomainErrorRegistration).Assembly;
-
-        try
-        {
-            Assembly.Load($"Unifesspa.UniPlus.{modulo}.API");
-        }
-        catch (FileNotFoundException)
-        {
-            // Módulo sem camada API não serve registration própria: os codes que
-            // emitir têm de estar cobertos pelas registrations compartilhadas.
-        }
-    }
-
-    private static IEnumerable<ReflectionType> TiposDe(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException ex)
-        {
-            return ex.Types.OfType<ReflectionType>();
-        }
-    }
+    private static Dictionary<string, DomainErrorMapping> LerMapeamentosRegistrados(string executavel) =>
+        HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetServices<IDomainErrorRegistration>()
+            .SelectMany(registro => registro.GetMappings())
+            .GroupBy(mapeamento => mapeamento.Key, StringComparer.Ordinal)
+            .ToDictionary(grupo => grupo.Key, grupo => grupo.Last().Value, StringComparer.Ordinal);
 }

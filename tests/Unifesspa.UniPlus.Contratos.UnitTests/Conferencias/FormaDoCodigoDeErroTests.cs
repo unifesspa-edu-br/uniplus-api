@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport.CodigosDeErro;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 public sealed class FormaDoCodigoDeErroTests
 {
@@ -11,7 +14,7 @@ public sealed class FormaDoCodigoDeErroTests
     public void TodoCodigoDoCatalogoSegueAForma()
     {
         DocumentoDoCatalogoDeErros catalogo = DocumentoDoCatalogoDeErros.Gerar(
-            AgregadorDoCatalogoDeErros.Agregar(RegistrosDeErroDaSolucao.Instanciar()));
+            AgregadorDoCatalogoDeErros.Agregar(HostsDoProdutoIniciados.Executaveis.SelectMany(executavel => HostsDoProdutoIniciados.Obter(executavel).ProvedorDeServicos.GetServices<IDomainErrorRegistration>()).DistinctBy(registro => registro.GetType()).ToArray()));
 
         string[] foraDaForma = [.. catalogo.Codigos.Select(static e => e.Codigo).Where(static c => !FormaDoCodigoDeErro.EstaNaForma(c))];
 
