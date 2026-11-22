@@ -88,8 +88,8 @@ public sealed class AvaliadorDaComprovacao
         foreach (NoExigencia raiz in arvore.Raizes)
         {
             SituacaoDaComprovacao estado = ResolverNo(raiz);
-            CalcularEmissionBlocked(raiz, _estados, _bloqueadas, _suprimidos);
-            EmitirFronteira(raiz, estado);
+            IdentificarConsequenciasQueAguardamDados(raiz, _estados, _bloqueadas, _suprimidos);
+            DeterminarConsequenciasAplicaveis(raiz, estado);
         }
         return new(_estados, _status, _consequencias, _pendencias, StatusPorEntidade(), EstadosPorEntidade(), _suprimidos);
     }
@@ -122,7 +122,7 @@ public sealed class AvaliadorDaComprovacao
             FiltrarApresentacoesPorEntidade(_apresentacoes, instancia.EntidadeId), _instancias, _bloqueadas);
         SituacaoDaComprovacao estado = resolvedor.ResolverNoSemRepeticao(no);
         resolvedor._estados[no.Id] = estado;
-        CalcularEmissionBlocked(no, resolvedor._estados, _bloqueadas, resolvedor._suprimidos, naInstancia: true);
+        IdentificarConsequenciasQueAguardamDados(no, resolvedor._estados, _bloqueadas, resolvedor._suprimidos, naInstancia: true);
         return new(instancia.EntidadeId, estado, resolvedor._estados, resolvedor._status, resolvedor._suprimidos);
     }
 
@@ -205,7 +205,7 @@ public sealed class AvaliadorDaComprovacao
             : indeterminados > 0 ? SituacaoDaComprovacao.Indeterminado : SituacaoDaComprovacao.Pendente;
     }
 
-    private static bool CalcularEmissionBlocked(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
+    private static bool IdentificarConsequenciasQueAguardamDados(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
         IReadOnlySet<Guid> bloqueadas, HashSet<Guid> suprimidos, bool naInstancia = false)
     {
         if (no.RepetePorEntidade is not null && !naInstancia)
@@ -228,7 +228,7 @@ public sealed class AvaliadorDaComprovacao
         List<bool> decisivos = [];
         foreach (NoExigencia filho in no.Filhos)
         {
-            bool bloqueado = CalcularEmissionBlocked(filho, estados, bloqueadas, suprimidos, naInstancia);
+            bool bloqueado = IdentificarConsequenciasQueAguardamDados(filho, estados, bloqueadas, suprimidos, naInstancia);
             if (EhPendenteOuPior(estados[filho.Id]))
             {
                 decisivos.Add(bloqueado);
@@ -237,7 +237,7 @@ public sealed class AvaliadorDaComprovacao
         return estados[no.Id] is SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Indeterminado && decisivos.Count > 0 && decisivos.All(static b => b);
     }
 
-    private void EmitirFronteira(NoExigencia no, SituacaoDaComprovacao estado)
+    private void DeterminarConsequenciasAplicaveis(NoExigencia no, SituacaoDaComprovacao estado)
     {
         if (!EhPendenteOuPior(estado) || _suprimidos.Contains(no.Id))
         {
@@ -251,23 +251,23 @@ public sealed class AvaliadorDaComprovacao
             }
             return;
         }
-        EmitirFronteiraNormal(no, _estados, _suprimidos, _consequencias, _pendencias);
+        DeterminarConsequenciasAplicaveisParaRegra(no, _estados, _suprimidos, _consequencias, _pendencias);
     }
 
     private void EmitirInstancia(NoExigencia no, InstanciaResolvida instancia)
     {
-        if (!EhPendenteOuPior(instancia.Estado) || instancia.NosEmissaoSuprimida.Contains(no.Id))
+        if (!EhPendenteOuPior(instancia.Estado) || instancia.RegrasComConsequenciaAdiada.Contains(no.Id))
         {
             return;
         }
         List<ConsequenciaEmitida> consequencias = [];
         List<PendenciaDeOrientacao> pendencias = [];
-        EmitirFronteiraNormal(no, instancia.EstadosDescendentes, instancia.NosEmissaoSuprimida, consequencias, pendencias);
+        DeterminarConsequenciasAplicaveisParaRegra(no, instancia.EstadosDescendentes, instancia.RegrasComConsequenciaAdiada, consequencias, pendencias);
         _consequencias.AddRange(consequencias.Select(c => c with { EntidadeId = instancia.EntidadeId }));
         _pendencias.AddRange(pendencias.Select(p => p with { EntidadeId = instancia.EntidadeId }));
     }
 
-    private void EmitirFronteiraNormal(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
+    private void DeterminarConsequenciasAplicaveisParaRegra(NoExigencia no, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> estados,
         IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
         switch (no.Tipo)
@@ -323,9 +323,9 @@ public sealed class AvaliadorDaComprovacao
         }
         if (filho.RepetePorEntidade is not null)
         {
-            EmitirFronteira(filho, estados[filho.Id]);
+            DeterminarConsequenciasAplicaveis(filho, estados[filho.Id]);
         }
-        else { EmitirFronteiraNormal(filho, estados, suprimidos, consequencias, pendencias); }
+        else { DeterminarConsequenciasAplicaveisParaRegra(filho, estados, suprimidos, consequencias, pendencias); }
     }
 
     private static bool EhPendenteOuPior(SituacaoDaComprovacao estado) => estado is SituacaoDaComprovacao.Pendente or SituacaoDaComprovacao.Indeterminado or SituacaoDaComprovacao.Impossivel;
@@ -336,5 +336,5 @@ public sealed class AvaliadorDaComprovacao
     private static bool ContemRepeticaoOuDescendente(NoExigencia no) => no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
 
     private sealed record InstanciaResolvida(string EntidadeId, SituacaoDaComprovacao Estado,
-        Dictionary<Guid, SituacaoDaComprovacao> EstadosDescendentes, Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes, IReadOnlySet<Guid> NosEmissaoSuprimida);
+        Dictionary<Guid, SituacaoDaComprovacao> EstadosDescendentes, Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes, IReadOnlySet<Guid> RegrasComConsequenciaAdiada);
 }
