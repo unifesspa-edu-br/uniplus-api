@@ -87,3 +87,7 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 ## Emenda (2026-11-13) — o esquema `autorizacao` é contribuição ao contexto único
 
 O esquema `autorizacao` deixa de ter contexto e migrations próprios: passa a ser contribuição do módulo ao contexto único ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). A pendência de role própria para o esquema deixa de existir, porque há uma só conexão e um só usuário do banco. Continua pendente a fronteira da trilha forense. Nenhum outro trecho desta ADR muda.
+
+## Emenda (2026-11-22) — dependências do domínio
+
+O projeto de domínio da autorização referencia apenas o Kernel. A regra de isolamento entre módulos confere os usos entre eles; o compilador garante as referências declaradas pelo projeto.
