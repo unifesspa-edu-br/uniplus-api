@@ -37,9 +37,6 @@ concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  SOLUTION_PATH: UniPlus.slnx
-
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -50,10 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # build-mode manual em vez de autobuild: o solution file UniPlus.slnx
-          # usa o formato XML novo do .NET, que o autobuild ainda não reconhece
-          # de forma totalmente previsível para .NET 10. Build explícito via
-          # dotnet build é determinístico e segue o mesmo comando do ci.yml.
+          # A compilação explícita mantém a extração do código gerado.
           - language: csharp
             build-mode: manual
 
@@ -77,10 +71,14 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      - name: Build .NET solution
+      - name: Build production projects
         run: |
-          dotnet restore "$SOLUTION_PATH"
-          dotnet build "$SOLUTION_PATH" \
+          # Todo projeto de src/ entra, inclusive os que não são dependência
+          # dos hosts; os projetos de teste ficam fora da análise de segurança.
+          dotnet new sln --name producao --output "$RUNNER_TEMP" --format slnx
+          find src -name '*.csproj' -print0 | xargs -0 dotnet sln "$RUNNER_TEMP/producao.slnx" add
+          dotnet restore "$RUNNER_TEMP/producao.slnx"
+          dotnet build "$RUNNER_TEMP/producao.slnx" \
             --configuration Release \
             --no-restore
 
