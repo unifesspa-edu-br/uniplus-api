@@ -17,7 +17,7 @@ A decisão é binding para todos os endpoints de coleção paginada (`GET /edita
 
 ## Drivers da decisão
 
-- **Regra de dependência da [ADR-0002](0002-clean-architecture-com-quatro-camadas.md).** Application depende apenas de Domain e SharedKernel. Qualquer arranjo que importe `Infrastructure.Core` em um handler quebra o fitness test R3 ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
+- **Regra de dependência da [ADR-0002](0002-clean-architecture-com-quatro-camadas.md).** Application depende apenas de Domain e SharedKernel. As referências dos projetos impedem que um handler importe `Infrastructure.Core`.
 - **Coerência com o decode de outros formatos de wire.** Content negotiation (vendor MIME, [ADR-0028](0028-versionamento-per-resource-content-negotiation.md)) acontece em `VendorMediaTypeAttribute` na camada API. Decoding de query strings, headers HTTP e body JSON também é boundary. Cursor é mais um decoder de wire encoding.
 - **Single Responsibility.** Handler responde "lista editais com (afterId, limit)"; controller responde "traduz HTTP para a query e formata a resposta". Misturar cursor → handler dilui as responsabilidades.
 - **Custo de manutenção e teste.** Handler com primitivas é trivial de testar sem HTTP; handler com `ICursorCodec` exige fake/mock do codec em todo teste.
@@ -27,7 +27,7 @@ A decisão é binding para todos os endpoints de coleção paginada (`GET /edita
 
 - **A. Decode no boundary HTTP (controller).** Controller injeta `CursorEncoder` direto, decoda antes de despachar a query. Query trafega só primitivas (`Guid? AfterId`, `int Limit`).
 - **B. Interface `ICursorCodec` em `Application.Abstractions`, implementação em `Infrastructure.Core`.** Handler depende da abstração e decoda dentro de si; cursor errors viram `DomainError` no `Result<Page<T>>`.
-- **C. Dependência direta de `CursorEncoder` no handler.** Handler importa `Infrastructure.Core/Pagination/` diretamente. Inválida — viola R3.
+- **C. Dependência direta de `CursorEncoder` no handler.** Handler importa `Infrastructure.Core/Pagination/` diretamente. Inválida — viola a direção de dependência entre camadas.
 
 ## Resultado da decisão
 
@@ -64,7 +64,7 @@ O controller (camada API) é responsável por:
 
 ### Positivas
 
-- **Application desacoplada de `Infrastructure.Core`.** O fitness test R3 ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)) detecta automaticamente qualquer regressão.
+- **Application desacoplada de `Infrastructure.Core`.** As referências dos projetos mantêm essa fronteira.
 - **Handlers triviais de testar.** Não precisam de fake de `ICursorCodec`; recebem `Guid?` e `int`.
 - **Coerência entre decoders de wire.** Vendor MIME, body JSON, query strings, cursor — todos decoded no mesmo boundary, mesma camada. Reduz carga cognitiva.
 - **Cursor errors se enquadram no fluxo `Result + DomainError + IDomainErrorMapper` existente** ([ADR-0023](0023-wire-formato-erro-rfc-9457.md), [ADR-0024](0024-mapeamento-domain-error-http.md)) sem precisar de pipeline novo.
@@ -82,7 +82,7 @@ O controller (camada API) é responsável por:
 
 ## Confirmação
 
-1. **Fitness test R3** ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md), `Stage1ArchitectureRulesTests.Camadas_RespeitamDirecaoDeDependencia`) — qualquer importação de `Infrastructure.Core` em assembly de Application falha o build. Esta é a confirmação primária; é executada no CI a cada PR.
+1. **Referências dos projetos** — a importação de `Infrastructure.Core` por Application exige referência que contraria a direção entre camadas. O compilador confere as referências declaradas.
 2. **Code review checklist.** Em handlers CQRS de queries paginadas, verificar que parâmetros são primitivas (`Guid?`, `int`, etc.) e não strings de cursor opaco.
 3. **Inspeção manual no controller pilot** (`EditalController.Listar`) — bloco de decode de cursor + validação de `ResourceTag` é referência para replicação. Quando um terceiro endpoint paginado aparecer, abrir spike de extração para helper compartilhado.
 
@@ -90,9 +90,13 @@ O controller (camada API) é responsável por:
 
 - [ADR-0002](0002-clean-architecture-com-quatro-camadas.md) — regra de dependência das quatro camadas; origem da restrição.
 - [ADR-0003](0003-wolverine-como-backbone-cqrs.md) — handlers CQRS convention-based; modelo de assinatura que esta ADR mantém limpa.
-- [ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md) — fitness tests R1/R2/R3 que enforçam mecanicamente.
+- [ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md) — conferências arquiteturais e referências entre projetos.
 - [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — wire format de erro consumido por `cursor_invalido`/`cursor_expirado`/`cursor_limit_invalido`.
 - [ADR-0024](0024-mapeamento-domain-error-http.md) — `IDomainErrorMapper` registry usado pelo controller para 400/410/422.
 - [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — formato e ciclo de vida do cursor (esta ADR é complementar, não revisa nada).
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — content negotiation no boundary; precedente arquitetural de decoder de wire na camada API.
 - PR #310 (story #288) — implementação pilot que motivou esta ADR.
+
+## Emenda (2026-11-22) — conferência das dependências
+
+As referências dos projetos e o compilador garantem a direção entre camadas.

@@ -91,3 +91,7 @@ Padrões obrigatórios na camada Application e Domain:
 - ADR-0003 define o framework de CQRS (Wolverine).
 - ADR-0012 define ArchUnitNET para enforcement das regras de dependência.
 - **Origem:** revisão da ADR interna Uni+ ADR-002 (não publicada) — split: o componente "Clean Architecture" desta ADR vem da ADR-002 antiga; o componente "framework CQRS" foi extraído para a ADR-0003 atual.
+
+## Emenda (2026-11-22) — conferência das dependências
+
+A direção de dependência entre camadas é garantida pelas referências dos projetos e pelo compilador, sem uma regra de arquitetura que repita essa conferência.

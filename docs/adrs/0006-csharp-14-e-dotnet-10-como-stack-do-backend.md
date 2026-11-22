@@ -47,7 +47,7 @@ Bibliotecas complementares de mercado:
 | MinIO .NET SDK | object storage (ver ADR-0009) |
 | Asp.Versioning | versionamento de API REST |
 
-`MediatR` é proibido na codebase — a escolha de framework de mediação é Wolverine (ADR-0003), enforçada por fitness test ArchUnitNET (ADR-0012).
+`MediatR` é proibido na codebase — a escolha de framework de mediação é Wolverine (ADR-0003), conferida na revisão conforme a ADR-0012.
 
 ## Consequências
 

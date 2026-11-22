@@ -283,7 +283,7 @@ dotnet test UniPlus.slnx
 
 # Executar apenas testes de arquitetura
 dotnet test tests/Unifesspa.UniPlus.Selecao.ArchTests
-dotnet test tests/Unifesspa.UniPlus.Ingresso.ArchTests
+dotnet test tests/Unifesspa.UniPlus.ArchTests
 ```
 
 ## Troubleshooting

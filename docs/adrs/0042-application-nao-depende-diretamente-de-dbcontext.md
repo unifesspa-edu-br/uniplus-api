@@ -30,7 +30,7 @@ A pergunta: aderir ao exemplo do framework ou manter Clean Architecture?
 ## Drivers da decisão
 
 - **ADR-0002 — Clean Architecture obrigatória**: Application → Domain + SharedKernel; nunca Infrastructure.
-- **Fitness test R3 do contrato V1** (PR #319): regra arquitetural detecta dependências Application → Infrastructure e falha o build.
+- **Referências dos projetos**: Application não referencia Infrastructure nem Entity Framework.
 - **Test surface**: handler que injeta `DbContext` precisa de PG real ou InMemory provider; handler que injeta `IRepository` aceita NSubstitute mock — testável em unit, não só em integration.
 - **Ergonomics**: o exemplo do Wolverine economiza ~3 linhas; a manutenibilidade longo prazo paga isso muitas vezes.
 
@@ -46,7 +46,7 @@ A pergunta: aderir ao exemplo do framework ou manter Clean Architecture?
 
 `Selecao.Application/Commands/Editais/PublicarEditalCommandHandler` injeta `IEditalRepository` (interface em `Selecao.Domain/Interfaces/`) + `IUnitOfWork` (em `Application.Abstractions/Interfaces/`). Implementações vivem em `Selecao.Infrastructure/Persistence/Repositories/`.
 
-A regra arquitetural R3 (fitness test em `Selecao.ArchTests`) protege contra recidiva — se algum handler em `Selecao.Application` adicionar `using Microsoft.EntityFrameworkCore` ou referenciar `SelecaoDbContext`, o build falha.
+As referências de `Selecao.Application` impedem o uso de `SelecaoDbContext` e Entity Framework sem uma mudança nas dependências do projeto.
 
 A opção C foi rejeitada porque introduz divergência: para o reviewer, ler "este é query, OK depender direto de DbContext, mas aquele é command" exige memorizar a regra. B é uma única convenção universal.
 
@@ -56,7 +56,7 @@ A opção C foi rejeitada porque introduz divergência: para o reviewer, ler "es
 
 - Application unit-testável com mocks (NSubstitute) — não precisa de PG ou InMemory provider.
 - Mudança de provider (Postgres → outro RDBMS, ou Marten) afeta só Infrastructure.
-- Fitness test R3 protege contra recidiva.
+- As referências declaradas mantêm a fronteira.
 
 ### Negativas
 
@@ -65,12 +65,12 @@ A opção C foi rejeitada porque introduz divergência: para o reviewer, ler "es
 
 ### Neutras
 
-- A decisão é consistente com ADR-0002 e R3 — esta ADR formaliza retroativamente o que a fitness test já garante.
+- A decisão é consistente com a ADR-0002 e com as referências dos projetos.
 
 ## Confirmação
 
 - `PublicarEditalCommandHandler` em `Selecao.Application/Commands/Editais/` injeta `IEditalRepository` + `IUnitOfWork`.
-- Fitness test R3 (PR #319) detecta dependências Application → Infrastructure.
+- As referências de Application não incluem Infrastructure nem Entity Framework.
 - `IEditalRepository` em `Selecao.Domain/Interfaces/`; `EditalRepository` em `Selecao.Infrastructure/Persistence/Repositories/`.
 
 ## Prós e contras das opções
@@ -93,5 +93,9 @@ A opção C foi rejeitada porque introduz divergência: para o reviewer, ler "es
 ## Mais informações
 
 - ADR-0002 — Clean Architecture obrigatória
-- Fitness test R3 — Application não depende de Infrastructure (PR [#319](https://github.com/unifesspa-edu-br/uniplus-api/pull/319))
+- ADR-0012 — conferências arquiteturais e referências dos projetos
 - Origem: PR [#173](https://github.com/unifesspa-edu-br/uniplus-api/pull/173); issue [#183](https://github.com/unifesspa-edu-br/uniplus-api/issues/183)
+
+## Emenda (2026-11-22) — conferência das dependências
+
+As referências de `Selecao.Application` não incluem Infrastructure nem Entity Framework; o compilador garante essa fronteira.
