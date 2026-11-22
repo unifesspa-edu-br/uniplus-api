@@ -56,17 +56,17 @@ internal static class ApoioDaArvoreDeSatisfacao
         ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instancias = null) =>
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instancias = null) =>
         ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
 
-    internal static InstanciaEntidade Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
+    internal static OcorrenciaDoGrupo Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
         new(entidadeId, atributos.ToDictionary(
             static a => a.Fato,
             static a => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(a.Valor)),
             StringComparer.Ordinal));
 
-    internal static Dictionary<string, IReadOnlyList<InstanciaEntidade>> InstanciasDe(
-        string grupo, params InstanciaEntidade[] instancias) =>
+    internal static Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> InstanciasDe(
+        string grupo, params OcorrenciaDoGrupo[] instancias) =>
         new(StringComparer.Ordinal) { [grupo] = instancias };
 
     internal static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentaDeEntidade(
