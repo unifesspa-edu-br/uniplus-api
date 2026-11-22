@@ -85,14 +85,11 @@ public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, Si
 /// O estado de todo nó dentro de QUALQUER subárvore <c>repetePorEntidade</c>, uma entrada por (nó,
 /// instância). Vazio quando a árvore não usa repetição.
 /// </param>
-/// <param name="NosEmissaoSuprimida">
-/// Story #928, §6 — os ids dos nós cuja emissão está suprimida pela fronteira de disponibilidade
-/// (<c>emissionBlocked</c>): folha BLOQUEADA ou grupo cuja fronteira decisiva é toda bloqueada. Um
-/// nó aqui projeta <see cref="SituacaoDaComprovacao.Indeterminado"/> na agregação, mas não emite
-/// consequência nem orientação — distingue "bloqueado" (não pedir) de "indeterminado no ponto
-/// devido" (pode emitir), que compartilham o mesmo estado. Vazio quando não há fronteira a mascarar.
-/// Cobre os nós fora de repetição: dentro de uma subárvore repetida, a máscara é de cada ocorrência e
-/// já se reflete nas consequências emitidas por ela.
+/// <param name="RegrasComConsequenciaAdiada">
+/// Identificadores das regras cuja consequência aguarda dados necessários. A regra projeta
+/// <see cref="SituacaoDaComprovacao.Indeterminado"/> na agregação, sem aplicar consequência
+/// nem produzir orientação enquanto aguarda. Nas regras repetidas, o adiamento é apurado
+/// por ocorrência e já se reflete nas consequências correspondentes.
 /// </param>
 public sealed record ResultadoDaComprovacao(
     IReadOnlyDictionary<Guid, SituacaoDaComprovacao> SituacoesPorRegra,
@@ -101,4 +98,4 @@ public sealed record ResultadoDaComprovacao(
     IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,
     IReadOnlyList<StatusPorEntidade> StatusPorEntidade,
     IReadOnlyList<EstadoPorEntidade> EstadosPorEntidade,
-    IReadOnlySet<Guid> NosEmissaoSuprimida);
+    IReadOnlySet<Guid> RegrasComConsequenciaAdiada);

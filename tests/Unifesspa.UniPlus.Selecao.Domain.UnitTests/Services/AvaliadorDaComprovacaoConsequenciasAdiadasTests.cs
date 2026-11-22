@@ -14,13 +14,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #928, §6 — a fronteira de disponibilidade (<c>BLOQUEADO</c>) e o predicado recursivo
-/// <c>emissionBlocked</c> sobre a árvore de satisfação. <c>BLOQUEADO</c> não é um 6º estado: a folha
-/// projeta <see cref="SituacaoDaComprovacao.Indeterminado"/> na agregação e tem a emissão suprimida.
-/// Cobre os cenários do delta "Consequência por nó e fronteira ativa de emissão" e da requirement
-/// "Grafo de dependência executável e ordem de coleta".
+/// Verifica o adiamento de consequências quando regras aguardam dados de outra fase.
+/// A espera projeta situação indeterminada na agregação e não aplica consequência antecipada.
 /// </summary>
-public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
+public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
 {
     private static readonly Guid FaseId = Guid.CreateVersion7();
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
@@ -69,7 +66,7 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
         ResultadoDaComprovacao r = Resolver(Arvore(raiz), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
         r.SituacoesPorRegra[folhaBloqueada.Id].Should().Be(SituacaoDaComprovacao.Indeterminado, "a folha bloqueada projeta INDETERMINADO");
-        r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
+        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id);
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folhaAberta.Id && c.Consequencia == "REMOVE_VANTAGEM");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "o ramo bloqueado não emite");
     }
@@ -103,7 +100,7 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
         // Nada bloqueado: a folha alcançável fica pendente, a fronteira decisiva do OU não é bloqueada.
         ResultadoDaComprovacao r = Resolver(Arvore(raiz), fatos: Fatos(("GATE", false))).Value!;
 
-        r.NosEmissaoSuprimida.Should().BeEmpty();
+        r.RegrasComConsequenciaAdiada.Should().BeEmpty();
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "RECLASSIFICA_AC");
     }
 
@@ -131,11 +128,11 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
         ArvoreExigenciasCongelada arvore = Arvore(raiz);
 
         ResultadoDaComprovacao bloqueado = Resolver(arvore, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
-        bloqueado.NosEmissaoSuprimida.Should().Contain(folha.Id);
+        bloqueado.RegrasComConsequenciaAdiada.Should().Contain(folha.Id);
         bloqueado.ConsequenciasVigentes.Should().BeEmpty("bloqueada, não emite");
 
         ResultadoDaComprovacao desbloqueado = Resolver(arvore).Value!;
-        desbloqueado.NosEmissaoSuprimida.Should().BeEmpty("sem latch — o desbloqueio reavalia do zero");
+        desbloqueado.RegrasComConsequenciaAdiada.Should().BeEmpty("sem latch — o desbloqueio reavalia do zero");
         desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == folha.Id && c.Consequencia == "ELIMINA");
     }
 
@@ -205,20 +202,20 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
 
         ResultadoDaComprovacao r = Resolver(Arvore(raiz)).Value!;
 
-        r.NosEmissaoSuprimida.Should().BeEmpty();
+        r.RegrasComConsequenciaAdiada.Should().BeEmpty();
         r.ConsequenciasVigentes.Should().HaveCount(2, "os dois ramos pendentes emitem, como antes da fronteira");
     }
     private static void VerificarFronteiraBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia grupoE)
     {
-        r.NosEmissaoSuprimida.Should().Contain(raiz.Id, "toda a fronteira decisiva do OU está bloqueada");
-        r.NosEmissaoSuprimida.Should().Contain(grupoE.Id);
+        r.RegrasComConsequenciaAdiada.Should().Contain(raiz.Id, "toda a fronteira decisiva do OU está bloqueada");
+        r.RegrasComConsequenciaAdiada.Should().Contain(grupoE.Id);
         r.ConsequenciasVigentes.Should().BeEmpty("o OU opaco não emite a própria consequência sob fronteira bloqueada");
     }
 
     private static void VerificarImpossivelComConsequencia(ResultadoDaComprovacao r, NoExigencia raiz)
     {
         r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel, "1 satisfeito < 2 exigidos e o resto é NAO_APLICAVEL");
-        r.NosEmissaoSuprimida.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca é emissionBlocked");
+        r.RegrasComConsequenciaAdiada.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca aguarda dados");
         r.ConsequenciasVigentes.Should().ContainSingle(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
 
@@ -226,7 +223,7 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
         ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada, NoExigencia ouInterno)
     {
         r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
-        r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id, "a folha bloqueada sob grupo terminal continua suprimida");
+        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id, "a folha bloqueada sob grupo terminal continua suprimida");
         r.ConsequenciasVigentes.Should().NotContain(c => c.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não emite o ELIMINA");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == ouInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o OU IMPOSSIVEL emite o inevitável");
     }
@@ -234,7 +231,7 @@ public sealed class AvaliadorDaComprovacaoEmissionBlockedTests
     private static void VerificarOrientacaoBloqueada(ResultadoDaComprovacao r, NoExigencia raiz, NoExigencia folhaBloqueada)
     {
         r.SituacoesPorRegra[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
-        r.NosEmissaoSuprimida.Should().Contain(folhaBloqueada.Id);
+        r.RegrasComConsequenciaAdiada.Should().Contain(folhaBloqueada.Id);
         r.PendenciasDeOrientacao.Should().NotContain(p => p.NoExigenciaId == folhaBloqueada.Id, "a folha bloqueada não vira orientação");
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
