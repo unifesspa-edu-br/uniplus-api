@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -76,13 +77,14 @@ public sealed class MotivosDosLugaresQueSaemTests
     private void Escolher(ProcessoSeletivo processo, MotivoDoProcesso escolhido) =>
         _motivos.ListarEscolhaAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns([escolhido]);
 
-    private Task<Result> SubstituirEtapas(ProcessoSeletivo processo, EtapaProcessoInput etapa)
+    private async Task<Result> SubstituirEtapas(ProcessoSeletivo processo, EtapaProcessoInput etapa)
     {
         IProcessoSeletivoRepository repositorio = RepositorioDe(processo);
 
-        return DefinirEtapasCommandHandler.Handle(
+        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapasCommandHandler.Handle(
             new DefinirEtapasCommand(processo.Id, [etapa]),
             repositorio, DefinicaoDasEtapasComMotivos(repositorio, _motivos), _unitOfWork, TimeProvider.System, CancellationToken.None);
+        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
     }
 
     private static IProcessoSeletivoRepository RepositorioDe(ProcessoSeletivo processo)

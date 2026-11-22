@@ -48,7 +48,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
 
         HttpResponseMessage resposta = await PutAsync(processoId, Regra(Condicao()));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         RegraDeHomologacaoDto? lida = (await LerFaseAsync(processoId)).Publicacoes.RegraDeHomologacao;
         lida!.ResultadoAtoCodigo.Should().Be(ResultadoDaFase);
         CondicaoDeHomologacaoDto condicao = lida.Alternativas.Single().Condicoes.Single();
@@ -59,11 +59,11 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
     public async Task PutSemRegra_RemoveARegraGravada()
     {
         Guid processoId = await SemearAsync();
-        (await PutAsync(processoId, Regra(Condicao()))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await PutAsync(processoId, Regra(Condicao()))).StatusCode.Should().Be(HttpStatusCode.OK);
 
         HttpResponseMessage resposta = await PutAsync(processoId, regra: null);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         (await LerFaseAsync(processoId)).Publicacoes.RegraDeHomologacao.Should().BeNull();
     }
 

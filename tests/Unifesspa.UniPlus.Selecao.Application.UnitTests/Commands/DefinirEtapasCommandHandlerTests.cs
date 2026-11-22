@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -49,6 +51,24 @@ public sealed class DefinirEtapasCommandHandlerTests
         processo.Etapas.Should().ContainSingle(e => e.Nome == "Prova Objetiva");
         processo.Etapas.Single().TipoEtapa.Codigo.Should().Be("PROVA_OBJETIVA");
         repository.DidNotReceive().Atualizar(Arg.Any<ProcessoSeletivo>());
+        await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O sucesso devolve a etapa gravada com o identificador gerado")]
+    public async Task Handle_EtapaValida_DevolveEtapaGravada()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = RepositorioCom(processo);
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        DefinirEtapasCommand command = new(processo.Id, [EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)]);
+
+        Result<IReadOnlyList<EtapaProcessoDto>> result = await DefinirEtapasCommandHandler.Handle(
+            command, repository, new CadastrosDeApoioDeDefinirEtapas().Definicao(ReaderPadrao(), repository), unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        EtapaProcessoDto etapa = result.Value!.Should().ContainSingle().Subject;
+        etapa.Id.Should().Be(processo.Etapas.Single().Id).And.NotBeEmpty();
+        etapa.Identificacao.Nome.Should().Be(processo.Etapas.Single().Nome);
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

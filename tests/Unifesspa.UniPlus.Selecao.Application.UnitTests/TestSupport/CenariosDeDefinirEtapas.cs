@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -71,19 +72,22 @@ internal static class CenariosDeDefinirEtapas
     /// produtos precisa stubar o catálogo e passá-lo aqui, sob pena de recusa por ato fora do
     /// catálogo em vez do que ele pretendia exercitar.
     /// </remarks>
-    internal static Task<Result> Executar(
+    internal static async Task<Result> Executar(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository repository,
         IUnitOfWork unitOfWork,
         ITipoEtapaReader? tipoEtapaReader = null,
-        CadastrosDeApoioDeDefinirEtapas? cadastros = null) =>
-        DefinirEtapasCommandHandler.Handle(
+        CadastrosDeApoioDeDefinirEtapas? cadastros = null)
+    {
+        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapasCommandHandler.Handle(
             command,
             repository,
             (cadastros ?? new CadastrosDeApoioDeDefinirEtapas()).Definicao(tipoEtapaReader ?? ReaderPadrao(), repository),
             unitOfWork,
             TimeProvider.System,
             CancellationToken.None);
+        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
+    }
 
     /// <summary>A definição das etapas sobre o repositório e a escolha de motivos dados, com os cadastros que resolvem os dois tipos de etapa.</summary>
     internal static DefinicaoDasEtapas DefinicaoDasEtapasComMotivos(IProcessoSeletivoRepository repository, IMotivoDoProcessoRepository motivos) => new(

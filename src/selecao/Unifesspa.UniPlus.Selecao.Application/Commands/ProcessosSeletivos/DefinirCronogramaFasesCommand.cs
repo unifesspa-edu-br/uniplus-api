@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Entrada de recurso de uma fase, usada por <see cref="FaseCronogramaInput"/>.
@@ -18,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <param name="AtoAncoraCodigo">
 /// Tipo de ato do qual o prazo conta o instante de publicação. É resolvido <b>dentro dos
 /// produtos desta mesma fase</b> (<see cref="FaseCronogramaInput.Produtos"/>) e congelado
-/// como a identidade daquele produto — ancorar na publicação de outra fase deixa de ser
+/// como a identidade daquele produto — vincular à publicação de outra fase deixa de ser
 /// exprimível, ainda que as duas declarem o mesmo tipo de ato.
 /// </param>
 /// <param name="PrazoValor">Valor do prazo de interposição; ausente é recusado pelo domínio.</param>
@@ -138,4 +139,4 @@ public sealed record FaseCronogramaInput(
 /// </summary>
 public sealed record DefinirCronogramaFasesCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result>;
+    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result<IReadOnlyList<FaseCronogramaDto>>>;

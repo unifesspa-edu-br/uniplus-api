@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -49,7 +50,7 @@ public sealed class PublicacaoConcorrenciaTests
         using HttpClient cliente = api.CreateClient();
         (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync();
 
-        (Result definicao, Result publicacao) = await DefinirEPublicarAsync(EtapasRevisadas(processoId), Publicacao(processoId, documentoId));
+        (Result<IReadOnlyList<EtapaProcessoDto>> definicao, Result publicacao) = await DefinirEPublicarAsync(EtapasRevisadas(processoId), Publicacao(processoId, documentoId));
 
         await ConferirEtapasAsync(processoId, definicao, publicacao);
     }
@@ -96,6 +97,19 @@ public sealed class PublicacaoConcorrenciaTests
         return await SemearProcessoFederalSemCascataAsync(db, $"Concorrência Cascata {Guid.CreateVersion7()}");
     }
 
+    private async Task<(Result<IReadOnlyList<EtapaProcessoDto>> Definicao, Result Publicacao)> DefinirEPublicarAsync(
+        DefinirEtapasCommand definicao, PublicarProcessoSeletivoCommand publicacao)
+    {
+        await using AsyncServiceScope definirEscopo = _fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope publicarEscopo = _fixture.Factory.Services.CreateAsyncScope();
+        IMessageBus definirBus = definirEscopo.ServiceProvider.GetRequiredService<IMessageBus>();
+        IMessageBus publicarBus = publicarEscopo.ServiceProvider.GetRequiredService<IMessageBus>();
+        Task<Result<IReadOnlyList<EtapaProcessoDto>>> definir = definirBus.InvokeAsync<Result<IReadOnlyList<EtapaProcessoDto>>>(definicao);
+        Task<Result> publicar = publicarBus.InvokeAsync<Result>(publicacao);
+        await Task.WhenAll(definir, publicar);
+        return (await definir, await publicar);
+    }
+
     private async Task<(Result Definicao, Result Publicacao)> DefinirEPublicarAsync<TDefinicao>(
         TDefinicao definicao, PublicarProcessoSeletivoCommand publicacao)
     {
@@ -109,7 +123,7 @@ public sealed class PublicacaoConcorrenciaTests
         return (await definir, await publicar);
     }
 
-    private async Task ConferirEtapasAsync(Guid processoId, Result definicao, Result publicacao)
+    private async Task ConferirEtapasAsync(Guid processoId, Result<IReadOnlyList<EtapaProcessoDto>> definicao, Result publicacao)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();

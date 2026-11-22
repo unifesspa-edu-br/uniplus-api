@@ -26,7 +26,7 @@ public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture fixture)
         await ConferirRecusaAsync(invalida);
         regra["modo"] = "colegiadaComVotacao";
         using HttpResponseMessage valida = await EnviarAsync(client, processoId, etapas);
-        valida.StatusCode.Should().Be(HttpStatusCode.NoContent, await valida.Content.ReadAsStringAsync());
+        valida.StatusCode.Should().Be(HttpStatusCode.OK, await valida.Content.ReadAsStringAsync());
     }
 
     private static JsonArray Etapas(Guid tipoBancaId)

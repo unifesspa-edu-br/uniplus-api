@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -170,9 +171,12 @@ internal sealed class CenarioDoCronogramaDeFases
     public Task<Result> DefinirAsync(DefinirCronogramaFasesCommand command) =>
         ChamarHandlerAsync(command, Repository);
 
-    private Task<Result> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio) =>
-        DefinirCronogramaFasesCommandHandler.Handle(
+    private async Task<Result> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio)
+    {
+        Result<IReadOnlyList<FaseCronogramaDto>> resultado = await DefinirCronogramaFasesCommandHandler.Handle(
             command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
+        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
+    }
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
         new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader, FatoCandidatoReader),
