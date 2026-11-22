@@ -50,11 +50,11 @@ internal static class ArvoreDeTeste
     internal static readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> SemApresentacoes =
         new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
 
-    internal static ArvoreExigenciasCongelada Arvore(params NoExigencia[] raizes) =>
-        ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
+    internal static RegrasDeComprovacaoDaVersao Arvore(params NoExigencia[] raizes) =>
+        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
 
     internal static Result<ResultadoDaComprovacao> Resolver(
-        ArvoreExigenciasCongelada arvore,
+        RegrasDeComprovacaoDaVersao arvore,
         IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDoGrupo>>? instancias = null) =>

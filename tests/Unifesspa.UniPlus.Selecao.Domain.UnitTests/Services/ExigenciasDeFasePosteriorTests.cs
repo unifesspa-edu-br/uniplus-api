@@ -153,7 +153,7 @@ public sealed class ExigenciasDeFasePosteriorTests
         ConfiguracaoAvaliavel configuracao = new(
             DefinicaoComUmaEtapaPorFinalidade(),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            ArvoreExigenciasCongelada.DeGrafoReidratado([.. Finalidades.Select((f, indice) => NoExigencia.CriarFolha(documentos[f], indice).Value!)]),
+            RegrasDeComprovacaoDaVersao.DeGrafoReidratado([.. Finalidades.Select((f, indice) => NoExigencia.CriarFolha(documentos[f], indice).Value!)]),
             [],
             [],
             [],

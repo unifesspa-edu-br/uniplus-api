@@ -139,7 +139,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         string[]? ocorrencias = null)
     {
-        ArvoreExigenciasCongelada arvore = ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
+        RegrasDeComprovacaoDaVersao arvore = RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = ocorrencias is null
             ? []
             : new() { [Familia] = [.. ocorrencias.Select(static o => new OcorrenciaDoGrupo(o, new Dictionary<string, FatoResolvido>()))] };

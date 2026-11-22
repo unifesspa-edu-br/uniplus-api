@@ -15,7 +15,7 @@ internal sealed class ColetorDeDocumentosAvaliados(
 {
     private readonly List<DocumentoAvaliado> _documentos = [];
 
-    internal List<DocumentoAvaliado> Coletar(ArvoreExigenciasCongelada arvore)
+    internal List<DocumentoAvaliado> Coletar(RegrasDeComprovacaoDaVersao arvore)
     {
         foreach (NoExigencia raiz in arvore.Raizes.OrderBy(static r => r.Ordem))
         {

@@ -131,7 +131,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         ConfiguracaoAvaliavel configuracao = new(
             new DefinicaoFormulario([], [], []),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            ArvoreExigenciasCongelada.DeGrafoReidratado([]),
+            RegrasDeComprovacaoDaVersao.DeGrafoReidratado([]),
             [], [], [],
             [FaseDaHabilitacao, FaseDaInscricao],
             []);

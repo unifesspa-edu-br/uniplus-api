@@ -12,7 +12,7 @@ public static class ExigenciaDaInscricao
 {
     public sealed record Localizada(DocumentoExigido Exigencia, string? GrupoRepetido);
 
-    public static Localizada? Localizar(ArvoreExigenciasCongelada arvore, Guid exigenciaId)
+    public static Localizada? Localizar(RegrasDeComprovacaoDaVersao arvore, Guid exigenciaId)
     {
         ArgumentNullException.ThrowIfNull(arvore);
 
@@ -35,9 +35,14 @@ public static class ExigenciaDaInscricao
             return no.DocumentoExigido is { } documento && documento.Id == exigenciaId ? new Localizada(documento, repetido) : null;
         }
 
-        foreach (NoExigencia filho in no.Filhos)
+        return LocalizarNosItens(no.Filhos, exigenciaId, repetido);
+    }
+
+    private static Localizada? LocalizarNosItens(IEnumerable<NoExigencia> itens, Guid exigenciaId, string? repetido)
+    {
+        foreach (NoExigencia item in itens)
         {
-            if (Localizar(filho, exigenciaId, repetido) is { } encontrada)
+            if (Localizar(item, exigenciaId, repetido) is { } encontrada)
             {
                 return encontrada;
             }

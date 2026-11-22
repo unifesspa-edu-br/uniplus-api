@@ -19,7 +19,7 @@ using ValueObjects;
 /// </summary>
 public static class DocumentosAusentesDaInscricao
 {
-    public static IReadOnlyList<DocumentoAusente> Apurar(ArvoreExigenciasCongelada arvore, ResultadoDaComprovacao resultado)
+    public static IReadOnlyList<DocumentoAusente> Apurar(RegrasDeComprovacaoDaVersao arvore, ResultadoDaComprovacao resultado)
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(resultado);
