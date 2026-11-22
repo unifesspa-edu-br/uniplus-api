@@ -1695,7 +1695,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    exigencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "O DocumentoExigido.Id da árvore congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070)."),
+                    exigencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "O DocumentoExigido.Id da configuração congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070)."),
                     ocorrencia_id = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "A ocorrência do grupo repetível a que o documento se refere; nulo quando a exigência não se repete."),
                     nome_do_documento = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "O nome do documento como a exigência o chamava no envio; dá nome ao arquivo baixado."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -4360,7 +4360,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     documento_exigido_id = table.Column<Guid>(type: "uuid", nullable: false),
                     referencia = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     abrangencia = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     observacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
@@ -4378,49 +4378,49 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "nos_da_arvore_de_exigencias",
+                name: "regras_de_comprovacao",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    no_pai_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    regra_que_contem_id = table.Column<Guid>(type: "uuid", nullable: true),
                     ordem = table.Column<int>(type: "integer", nullable: false),
-                    tipo = table.Column<int>(type: "integer", nullable: false),
+                    forma = table.Column<string>(type: "text", nullable: false),
                     documento_exigido_id = table.Column<Guid>(type: "uuid", nullable: true),
                     quantidade_minima = table.Column<int>(type: "integer", nullable: true),
                     consequencia = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    chave_distincao = table.Column<int>(type: "integer", nullable: true),
+                    criterio_de_distincao = table.Column<int>(type: "integer", nullable: true),
                     data_referencia = table.Column<DateOnly>(type: "date", nullable: true),
                     ocorrencias_esperadas = table.Column<string>(type: "jsonb", nullable: true),
-                    repete_por_entidade = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    grupo_para_repeticao = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_nos_da_arvore_de_exigencias", x => x.id);
-                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_chave_distincao_coerente", "(chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
-                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_id_diferente_de_no_pai_id", "id <> no_pai_id");
-                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_ordem_nao_negativa", "ordem >= 0");
-                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
-                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes", "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+                    table.PrimaryKey("pk_regras_de_comprovacao", x => x.id);
+                    table.CheckConstraint("ck_regras_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+                    table.CheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+                    table.CheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
+                    table.CheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
+                    table.CheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
                     table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_documento_exigido",
+                        name: "fk_regras_comprovacao_grupo",
+                        column: x => x.regra_que_contem_id,
+                        principalSchema: "selecao",
+                        principalTable: "regras_de_comprovacao",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_regras_de_comprovacao_documento_exigido",
                         column: x => x.documento_exigido_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_exigidos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_no_pai",
-                        column: x => x.no_pai_id,
-                        principalSchema: "selecao",
-                        principalTable: "nos_da_arvore_de_exigencias",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_processo_seletivo",
+                        name: "fk_regras_de_comprovacao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -4806,27 +4806,27 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "bases_legais_dos_nos",
+                name: "bases_legais_da_comprovacao",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    no_exigencia_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    regra_de_comprovacao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     referencia = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     abrangencia = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     observacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_bases_legais_dos_nos", x => x.id);
+                    table.PrimaryKey("pk_bases_legais_da_comprovacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_bases_legais_dos_nos_no_exigencia_no_exigencia_id",
-                        column: x => x.no_exigencia_id,
+                        name: "fk_bases_legais_comprovacao_regra",
+                        column: x => x.regra_de_comprovacao_id,
                         principalSchema: "selecao",
-                        principalTable: "nos_da_arvore_de_exigencias",
+                        principalTable: "regras_de_comprovacao",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -5815,6 +5815,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_bases_legais_da_comprovacao_regra_de_comprovacao_id",
+                schema: "selecao",
+                table: "bases_legais_da_comprovacao",
+                column: "regra_de_comprovacao_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_bases_legais_do_bonus_regional_codigo_vivo",
                 schema: "configuracao",
                 table: "bases_legais_do_bonus_regional",
@@ -5827,12 +5833,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "bases_legais_do_bonus_regional",
                 column: "tipo_instrumento");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_bases_legais_dos_nos_no_exigencia_id",
-                schema: "selecao",
-                table: "bases_legais_dos_nos",
-                column: "no_exigencia_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_calendarios_de_dias_uteis_versao_dataset",
@@ -6742,26 +6742,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "configuracao_bonus_regional_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_nos_da_arvore_de_exigencias_no_pai_id",
-                schema: "selecao",
-                table: "nos_da_arvore_de_exigencias",
-                column: "no_pai_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_nos_da_arvore_de_exigencias_processo_seletivo_id",
-                schema: "selecao",
-                table: "nos_da_arvore_de_exigencias",
-                column: "processo_seletivo_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_nos_da_arvore_de_exigencias_documento_exigido_id",
-                schema: "selecao",
-                table: "nos_da_arvore_de_exigencias",
-                column: "documento_exigido_id",
-                unique: true,
-                filter: "documento_exigido_id IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
                 name: "ux_obrigatoriedades_legais_hash_ativos",
                 schema: "selecao",
                 table: "obrigatoriedades_legais",
@@ -6992,6 +6972,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "censo_referencia",
                 unique: true,
                 filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_regras_de_comprovacao_processo_seletivo_id",
+                schema: "selecao",
+                table: "regras_de_comprovacao",
+                column: "processo_seletivo_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_regras_de_comprovacao_regra_que_contem_id",
+                schema: "selecao",
+                table: "regras_de_comprovacao",
+                column: "regra_que_contem_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_regras_de_comprovacao_documento_exigido_id",
+                schema: "selecao",
+                table: "regras_de_comprovacao",
+                column: "documento_exigido_id",
+                unique: true,
+                filter: "documento_exigido_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ux_regras_derivacao_configuradas_config_ordem",
@@ -7646,7 +7646,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "bases_legais_dos_nos",
+                name: "bases_legais_da_comprovacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8018,7 +8018,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "nos_da_arvore_de_exigencias",
+                name: "regras_de_comprovacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
