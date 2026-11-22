@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// satisfação (folha ou grupo), para um candidato (Story #920). Compõe a aplicabilidade
 /// ternária do gatilho (<see cref="Ternario"/>, change irmã #914) com apresentação/cardinalidade.
 /// </summary>
-public enum EstadoSatisfacao
+public enum SituacaoDaComprovacao
 {
     Nenhum = 0,
 

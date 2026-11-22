@@ -29,7 +29,7 @@ internal sealed class ColetorDeDocumentosAvaliados(
         (ocorrenciaId is not null
             && resultado.EstadosPorEntidade.FirstOrDefault(e => e.NoExigenciaId == grupoId && e.EntidadeId == ocorrenciaId) is { } daOcorrencia
                 ? daOcorrencia.Estado
-                : resultado.EstadosPorNo.GetValueOrDefault(grupoId, EstadoSatisfacao.Indeterminado)) == EstadoSatisfacao.Satisfeito;
+                : resultado.EstadosPorNo.GetValueOrDefault(grupoId, SituacaoDaComprovacao.Indeterminado)) == SituacaoDaComprovacao.Satisfeito;
 
     private void ColetarNo(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? grupoRepetido)
     {

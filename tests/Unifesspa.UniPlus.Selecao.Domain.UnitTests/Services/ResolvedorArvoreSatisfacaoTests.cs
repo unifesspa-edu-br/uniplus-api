@@ -49,7 +49,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(rg, cpf));
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "OU[E[RG,CPF],CIN]: apresentar só a CIN também satisfaz")]
@@ -65,7 +65,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(cin));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "OU[E[RG,CPF],CIN]: apresentar só o RG não satisfaz")]
@@ -81,7 +81,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(rg));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     // ── OU plano (caso degenerado) ──────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(declaracao));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     // ── N-de (N > 1) ─────────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(a, b));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Fact(DisplayName = "N-de com N=2: só uma de três apresentada fica pendente")]
@@ -129,7 +129,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: Apresenta(a));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Pendente);
     }
 
     // ── Aplicabilidade ternária ──────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), fatos: Fatos("FATO_X", false));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.NaoAplicavel);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.NaoAplicavel);
     }
 
     [Fact(DisplayName = "OU cujo máximo atingível é menor que N é IMPOSSIVEL sinalizado")]
@@ -162,7 +162,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(
             Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(satisfeita));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Impossivel);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
     }
 
     [Fact(DisplayName = "Folha indeterminada mantém o grupo pendente — nunca some (não-exigido)")]
@@ -175,30 +175,25 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         // FATO_X ausente do dicionário de fatos resolvidos — Ternario.Indeterminado.
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
     }
 
     [Fact(DisplayName = "Story #926: fato ausente e fato NAO_APLICAVEL levam a estados opostos na fronteira do resolvedor")]
     public void Folha_FatoAusenteVersusNaoAplicavel_EstadosOpostos()
     {
-        DocumentoExigido condicional = DocumentoCondicional("CONCORRER_PCD");
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, null, null, [], [NoExigencia.CriarFolha(condicional, 0).Value!]).Value!;
+        NoExigencia raiz = GrupoComDocumentoCondicional("CONCORRER_PCD");
 
         // Ausente do dicionário: nada se sabe sobre o fato, a exigência segue pendente.
         Result<ResultadoResolucaoArvore> comFatoAusente = Resolver(Arvore(raiz));
 
         // Declarado não-aplicável: a pré-condição do campo é falsa, a exigência está resolvida
         // como não-exigida — e o candidato não é cobrado por um documento que não lhe cabe.
-        Dictionary<string, FatoResolvido> naoAplicavel = new(StringComparer.Ordinal)
-        {
-            ["CONCORRER_PCD"] = FatoResolvido.NaoAplicavel(),
-        };
+        Dictionary<string, FatoResolvido> naoAplicavel = FatoNaoAplicavel("CONCORRER_PCD");
         Result<ResultadoResolucaoArvore> comFatoNaoAplicavel = Resolver(Arvore(raiz), naoAplicavel);
 
-        comFatoAusente.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
+        comFatoAusente.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Indeterminado);
         comFatoNaoAplicavel.Value!.EstadosPorNo[raiz.Id].Should().Be(
-            EstadoSatisfacao.NaoAplicavel,
+            SituacaoDaComprovacao.NaoAplicavel,
             "a ausência do fato é pendência; a inaplicabilidade declarada é resposta definitiva");
     }
 
@@ -212,27 +207,19 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a));
 
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Satisfeito);
     }
 
     [Theory(DisplayName = "Atendimento especializado: o laudo é exigido da condição de saúde e a certidão da lactante, só de quem solicita o atendimento")]
-    [InlineData(true, "PCD", EstadoSatisfacao.Pendente, EstadoSatisfacao.NaoAplicavel)]
-    [InlineData(true, "LACTANTE", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.Pendente)]
-    [InlineData(true, "PESSOA_IDOSA", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.NaoAplicavel)]
-    [InlineData(false, "PCD", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.NaoAplicavel)]
+    [InlineData(true, "PCD", SituacaoDaComprovacao.Pendente, SituacaoDaComprovacao.NaoAplicavel)]
+    [InlineData(true, "LACTANTE", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.Pendente)]
+    [InlineData(true, "PESSOA_IDOSA", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.NaoAplicavel)]
+    [InlineData(false, "PCD", SituacaoDaComprovacao.NaoAplicavel, SituacaoDaComprovacao.NaoAplicavel)]
     public void Folha_DocumentosDoAtendimentoEspecializado_SaoExigidosPeloFato(
-        bool solicita, string condicao, EstadoSatisfacao laudo, EstadoSatisfacao certidao)
+        bool solicita, string condicao, SituacaoDaComprovacao laudo, SituacaoDaComprovacao certidao)
     {
-        static DocumentoExigido Documento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
-            [.. condicoes.SelectMany(static (c, clausula) => new[]
-            {
-                CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
-                CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
-            })],
-            [], null, Qualquer, null).Value!;
-        NoExigencia noLaudo = NoExigencia.CriarFolha(Documento("LAUDO_MEDICO", "PCD", "DISLEXIA"), 0).Value!;
-        NoExigencia noCertidao = NoExigencia.CriarFolha(Documento("CERTIDAO_NASCIMENTO", "LACTANTE"), 1).Value!;
+        NoExigencia noLaudo = NoExigencia.CriarFolha(DocumentoDeAtendimento("LAUDO_MEDICO", "PCD", "DISLEXIA"), 0).Value!;
+        NoExigencia noCertidao = NoExigencia.CriarFolha(DocumentoDeAtendimento("CERTIDAO_NASCIMENTO", "LACTANTE"), 1).Value!;
         Dictionary<string, FatoResolvido> fatos = new(StringComparer.Ordinal)
         {
             ["SOLICITA_ATENDIMENTO_ESPECIALIZADO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(solicita)),
@@ -260,7 +247,22 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(
             Arvore(raiz), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a, satisfeita));
 
-        resultado.Value!.EstadosPorNo[ouImpossivel.Id].Should().Be(EstadoSatisfacao.Impossivel);
-        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Impossivel);
+        resultado.Value!.EstadosPorNo[ouImpossivel.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(SituacaoDaComprovacao.Impossivel);
     }
+    private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
+            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
+            [.. condicoes.SelectMany(static (c, clausula) => new[]
+            {
+                CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+                CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
+            })],
+            [], null, Qualquer, null).Value!;
+    private static Dictionary<string, FatoResolvido> FatoNaoAplicavel(string codigo) =>
+        new(StringComparer.Ordinal) { [codigo] = FatoResolvido.NaoAplicavel() };
+
+    private static NoExigencia GrupoComDocumentoCondicional(string fato) =>
+        NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, null, null, [],
+            [NoExigencia.CriarFolha(DocumentoCondicional(fato), 0).Value!]).Value!;
+
 }
