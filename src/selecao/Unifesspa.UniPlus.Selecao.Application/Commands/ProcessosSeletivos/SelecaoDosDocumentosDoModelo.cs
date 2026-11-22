@@ -50,15 +50,15 @@ internal sealed class SelecaoDosDocumentosDoModelo(
         }
 
         return await DefinicaoDosDocumentosExigidos.DefinirAsync(
-                processo, entradas.Value!, RaizesQueOModeloNaoSubstitui(), cadastros, cancellationToken)
+                processo, entradas.Value!, RegrasSemGrupoQueOModeloNaoSubstitui(), cadastros, cancellationToken)
             .ConfigureAwait(false);
     }
 
     // O modelo substitui as regras sem grupo cujos documentos pertencem à sua finalidade.
-    private List<RegraDeComprovacao> RaizesQueOModeloNaoSubstitui() =>
-        [.. processo.RegrasDeComprovacaoSemGrupo.Where(raiz => !raiz.AchatarComDescendentes()
-            .Where(static n => n.Forma == FormaDeComprovacao.Documento)
-            .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
+    private List<RegraDeComprovacao> RegrasSemGrupoQueOModeloNaoSubstitui() =>
+        [.. processo.RegrasDeComprovacaoSemGrupo.Where(regraSemGrupo => !regraSemGrupo.EnumerarRegraEItens()
+            .Where(static regraDeDocumento => regraDeDocumento.Forma == FormaDeComprovacao.Documento)
+            .All(regraDeDocumento => regraDeDocumento.DocumentoExigido!.Finalidade == finalidade))];
 
     /// <summary>
     /// O campo da recusa no conjunto de documentos do modelo: o da fase e o do tipo já trazem a posição; os

@@ -13,10 +13,10 @@ internal static class EscritaDasRegrasDeComprovacao
     public static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IEnumerable<GrupoColetado> grupos) =>
         Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "regrasDeComprovacao", RepeticaoDaRegra.SemRepeticao);
 
-    private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho, RepeticaoDaRegra ancestral) =>
-        [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice, ancestral))];
+    private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho, RepeticaoDaRegra repeticaoDoGrupoQueContem) =>
+        [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice, repeticaoDoGrupoQueContem))];
 
-    private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice, RepeticaoDaRegra ancestral)
+    private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice, RepeticaoDaRegra repeticaoDoGrupoQueContem)
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, regra.Documento is not null, regra.Itens?.Count ?? 0,
             regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
@@ -27,7 +27,7 @@ internal static class EscritaDasRegrasDeComprovacao
         {
             recusas.Add(Contextualizar(new FieldError("grupoDoFormularioParaRepeticao", repeticao), caminho, indice));
         }
-        RepeticaoDaRegra estado = ancestral.Avancar(regra.GrupoDoFormularioParaRepeticao, repeticao is not null);
+        RepeticaoDaRegra estado = repeticaoDoGrupoQueContem.Avancar(regra.GrupoDoFormularioParaRepeticao, repeticao is not null);
         return new(regra, declaracao, caminho, indice, recusas, estado, Conferir(regra.Itens ?? [], grupos, $"{caminho}.itens", estado));
     }
 

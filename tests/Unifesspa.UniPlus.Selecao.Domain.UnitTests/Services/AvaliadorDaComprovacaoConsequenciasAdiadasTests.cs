@@ -43,7 +43,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
             StringComparer.Ordinal);
 
     private static RegrasDeComprovacaoDaVersao Regras(params RegraDeComprovacao[] regrasSemGrupo) =>
-        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo);
+        RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo);
 
     private static Result<ResultadoDaComprovacao> Resolver(
         RegrasDeComprovacaoDaVersao regras,

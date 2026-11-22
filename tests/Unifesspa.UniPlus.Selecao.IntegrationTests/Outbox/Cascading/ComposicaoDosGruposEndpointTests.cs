@@ -55,7 +55,7 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
     }
 
     [Fact]
-    public async Task DefinirDocumentos_RepeticaoAninhada_ApontaOGrupo()
+    public async Task DefinirDocumentos_RepeticaoDentroDeRepeticao_ApontaOGrupo()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
         object interno = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { RegraDeDocumento(tipo, fase, "INSCRICAO") } };

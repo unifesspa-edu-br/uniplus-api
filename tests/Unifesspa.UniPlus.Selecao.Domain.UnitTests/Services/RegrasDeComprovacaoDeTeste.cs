@@ -50,7 +50,7 @@ internal static class RegrasDeComprovacaoDeTeste
         new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
 
     internal static RegrasDeComprovacaoDaVersao Regras(params RegraDeComprovacao[] regrasSemGrupo) =>
-        RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo);
+        RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo);
 
     internal static Result<ResultadoDaComprovacao> Resolver(
         RegrasDeComprovacaoDaVersao regrasDeComprovacao,

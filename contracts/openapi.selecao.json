@@ -15743,7 +15743,7 @@
           },
           "documentosExigidos": {
             "title": "Documentos exigidos",
-            "description": "As exig\u00EAncias de documentos do processo e a \u00E1rvore de satisfa\u00E7\u00E3o delas. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem comprova\u00E7\u00E3o documental.",
+            "description": "As exig\u00EAncias de documentos do processo e as regras de comprova\u00E7\u00E3o delas. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem comprova\u00E7\u00E3o documental.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigencias"
           },
           "classificacao": {
@@ -17742,7 +17742,7 @@
         "properties": {
           "chave": {
             "title": "Chave da exig\u00EAncia",
-            "description": "Chave local da exig\u00EAncia, \u00FAnica no documento. A \u00E1rvore de satisfa\u00E7\u00E3o a cita por ela. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a exig\u00EAncia, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local da exig\u00EAncia, \u00FAnica no documento. As regras de comprova\u00E7\u00E3o a utilizam. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a exig\u00EAncia, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "tipoDocumentoCodigo": {

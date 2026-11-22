@@ -50,18 +50,18 @@ public sealed class AvaliadorDaComprovacao
 
     private static DomainError? RecusaDasRegras(RegrasDeComprovacaoDaVersao regras)
     {
-        List<RegraDeComprovacao> regrasDeDocumento = [.. regras.RegrasSemGrupo.SelectMany(static r => r.AchatarComDescendentes()).Where(static n => n.Forma == FormaDeComprovacao.Documento)];
-        return RecusaDasRegrasDeDocumento(regrasDeDocumento) ?? (regras.RegrasSemGrupo.Any(ContemRepeticaoAninhada)
+        List<RegraDeComprovacao> regrasDeDocumento = [.. regras.RegrasSemGrupo.SelectMany(static r => r.EnumerarRegraEItens()).Where(static regra => regra.Forma == FormaDeComprovacao.Documento)];
+        return RecusaDasRegrasDeDocumento(regrasDeDocumento) ?? (regras.RegrasSemGrupo.Any(ContemRepeticaoDentroDeRepeticao)
             ? new DomainError("RegraDeComprovacao.RepeticaoDentroDeRepeticao", "Uma regra repetida não pode conter outra regra de repetição.") : null);
     }
 
     private static DomainError? RecusaDasRegrasDeDocumento(List<RegraDeComprovacao> regrasDeDocumento)
     {
-        if (regrasDeDocumento.Any(static n => n.DocumentoExigidoId is null || n.DocumentoExigido is null))
+        if (regrasDeDocumento.Any(static regra => regra.DocumentoExigidoId is null || regra.DocumentoExigido is null))
         {
             return new DomainError("AvaliadorDaComprovacao.RegraSemDocumento", "Uma regra de documento não indica a exigência documental.");
         }
-        return regrasDeDocumento.Select(static n => n.DocumentoExigidoId).Distinct().Count() != regrasDeDocumento.Count
+        return regrasDeDocumento.Select(static regra => regra.DocumentoExigidoId).Distinct().Count() != regrasDeDocumento.Count
             ? DocumentoReferenciadoMaisDeUmaVez("Uma exigência documental aparece em mais de uma regra de comprovação.") : null;
     }
 
@@ -333,10 +333,10 @@ public sealed class AvaliadorDaComprovacao
 
     private static bool RequerAvaliacaoDeConsequencia(SituacaoDaComprovacao situacao) => situacao is SituacaoDaComprovacao.PendenteDeComprovacao or SituacaoDaComprovacao.AguardandoDados or SituacaoDaComprovacao.SemPossibilidadeDeCumprimento;
 
-    private static bool ContemRepeticaoAninhada(RegraDeComprovacao regra) =>
-        (regra.GrupoDoFormularioParaRepeticao is not null && regra.Itens.Any(ContemRepeticaoOuDescendente)) || regra.Itens.Any(ContemRepeticaoAninhada);
+    private static bool ContemRepeticaoDentroDeRepeticao(RegraDeComprovacao regra) =>
+        (regra.GrupoDoFormularioParaRepeticao is not null && regra.Itens.Any(ContemRepeticaoNaRegraOuNosItens)) || regra.Itens.Any(ContemRepeticaoDentroDeRepeticao);
 
-    private static bool ContemRepeticaoOuDescendente(RegraDeComprovacao regra) => regra.GrupoDoFormularioParaRepeticao is not null || regra.Itens.Any(ContemRepeticaoOuDescendente);
+    private static bool ContemRepeticaoNaRegraOuNosItens(RegraDeComprovacao regra) => regra.GrupoDoFormularioParaRepeticao is not null || regra.Itens.Any(ContemRepeticaoNaRegraOuNosItens);
 
     private sealed record OcorrenciaAvaliada(string OcorrenciaId, SituacaoDaComprovacao Situacao,
         Dictionary<Guid, SituacaoDaComprovacao> SituacoesDasRegras, Dictionary<Guid, StatusResolucaoExigencia> SituacoesDasExigencias, IReadOnlySet<Guid> RegrasComConsequenciaAdiada);

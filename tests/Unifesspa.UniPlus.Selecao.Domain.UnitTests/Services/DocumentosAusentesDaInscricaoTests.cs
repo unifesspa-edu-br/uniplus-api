@@ -135,11 +135,11 @@ public sealed class DocumentosAusentesDaInscricaoTests
             static g => (IReadOnlyList<ApresentacaoDocumento>)[.. g.Select(static e => new ApresentacaoDocumento(Guid.CreateVersion7(), e.Ocorrencia, e.Ocorrencia))]);
 
     private static IReadOnlyList<DocumentoAusente> Ausentes(
-        IReadOnlyList<RegraDeComprovacao> raizes,
+        IReadOnlyList<RegraDeComprovacao> regrasSemGrupo,
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         string[]? ocorrencias = null)
     {
-        RegrasDeComprovacaoDaVersao regrasDaVersao = RegrasDeComprovacaoDaVersao.DeGrafoReidratado(raizes);
+        RegrasDeComprovacaoDaVersao regrasDaVersao = RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo);
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = ocorrencias is null
             ? []
             : new() { [Familia] = [.. ocorrencias.Select(static o => new OcorrenciaDoGrupo(o, new Dictionary<string, FatoResolvido>()))] };

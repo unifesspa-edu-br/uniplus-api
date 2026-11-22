@@ -45,28 +45,24 @@ internal sealed class PendenciasDaInscricao
         return pendencias;
     }
 
-    private void AdicionarCampos(DefinicaoEtapa etapa, List<PendenciaDaAvaliacao> pendencias)
-    {
-        foreach (DefinicaoItem item in etapa.Itens.Where(i => _campos.Contains(i.FatoCodigo)))
-        {
-            if (_itemPorFato.GetValueOrDefault(item.FatoCodigo) is { Visivel: Ternario.Verdadeiro }
-                && _formulario.Fatos.GetValueOrDefault(item.FatoCodigo)?.Estado == EstadoFato.Indeterminado
-                && _campoPorFato.TryGetValue(item.FatoCodigo, out FatoColetado? campo))
-            {
-                pendencias.Add(new PendenciaDaAvaliacao(campo.FatoCodigo, campo.Rotulo, campo.EtapaCodigo));
-            }
-        }
-    }
+    private void AdicionarCampos(DefinicaoEtapa etapa, List<PendenciaDaAvaliacao> pendencias) =>
+        pendencias.AddRange(etapa.Itens
+            .Where(item => _campos.Contains(item.FatoCodigo) && CampoPendente(item.FatoCodigo))
+            .Select(item => _campoPorFato[item.FatoCodigo])
+            .Select(static campo => new PendenciaDaAvaliacao(campo.FatoCodigo, campo.Rotulo, campo.EtapaCodigo)));
 
-    private void AdicionarGrupos(DefinicaoEtapa etapa, List<PendenciaDaAvaliacao> pendencias)
-    {
-        foreach (DefinicaoGrupo grupo in etapa.Grupos.Where(g => _grupos.Contains(g.Codigo)))
-        {
-            if (_grupoPorCodigo.GetValueOrDefault(grupo.Codigo) is { Visivel: Ternario.Verdadeiro, Estado: EstadoFato.Indeterminado }
-                && _grupoColetado.TryGetValue(grupo.Codigo, out GrupoColetado? coletado))
-            {
-                pendencias.Add(new PendenciaDaAvaliacao(coletado.Codigo, coletado.Rotulo, coletado.EtapaCodigo));
-            }
-        }
-    }
+    private bool CampoPendente(string fatoCodigo) =>
+        _itemPorFato.GetValueOrDefault(fatoCodigo) is { Visivel: Ternario.Verdadeiro }
+        && _formulario.Fatos.GetValueOrDefault(fatoCodigo)?.Estado == EstadoFato.Indeterminado
+        && _campoPorFato.ContainsKey(fatoCodigo);
+
+    private void AdicionarGrupos(DefinicaoEtapa etapa, List<PendenciaDaAvaliacao> pendencias) =>
+        pendencias.AddRange(etapa.Grupos
+            .Where(grupo => _grupos.Contains(grupo.Codigo) && GrupoPendente(grupo.Codigo))
+            .Select(grupo => _grupoColetado[grupo.Codigo])
+            .Select(static coletado => new PendenciaDaAvaliacao(coletado.Codigo, coletado.Rotulo, coletado.EtapaCodigo)));
+
+    private bool GrupoPendente(string codigo) =>
+        _grupoPorCodigo.GetValueOrDefault(codigo) is { Visivel: Ternario.Verdadeiro, Estado: EstadoFato.Indeterminado }
+        && _grupoColetado.ContainsKey(codigo);
 }

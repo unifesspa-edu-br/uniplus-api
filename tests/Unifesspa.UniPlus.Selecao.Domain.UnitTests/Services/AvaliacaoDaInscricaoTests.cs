@@ -222,7 +222,7 @@ public sealed class AvaliacaoDaInscricaoTests
         GrupoColetado[] grupos = municipioNoGrupo ? [GrupoDeMunicipiosColetado()] : [];
 
         return new ConfiguracaoAvaliavel(
-            definicao, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RegrasDeComprovacaoDaVersao.DeGrafoReidratado([]),
+            definicao, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([]),
             CamposDe(perguntas), grupos, ofertadas, [], []);
     }
 

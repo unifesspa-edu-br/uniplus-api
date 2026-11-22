@@ -15,7 +15,7 @@ internal static class ConferenciaDosVinculosDasExigencias
     public static Result Conferir(ProcessoSeletivo processo, FatosDoGatilho fatos, IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
         List<DocumentoExigido> documentos = [.. regrasSemGrupo
-            .SelectMany(static r => r.AchatarComDescendentes())
+            .SelectMany(static r => r.EnumerarRegraEItens())
             .Select(static n => n.DocumentoExigido)
             .OfType<DocumentoExigido>()];
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(

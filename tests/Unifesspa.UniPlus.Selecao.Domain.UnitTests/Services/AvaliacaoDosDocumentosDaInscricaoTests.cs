@@ -127,8 +127,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         grupos[comprovante.Id].Should().Equal(grupos[cnh.Id], "os dois são uma alternativa só, e não duas");
     }
 
-    [Fact(DisplayName = "Num N-de com um OU aninhado, cada documento traz os dois grupos, do mais externo ao mais interno")]
-    public void GrupoAninhado_TrazOsDoisGrupos()
+    [Fact(DisplayName = "Quando um grupo contém outro, cada documento traz os dois grupos, do mais externo ao mais interno")]
+    public void GrupoDentroDeGrupo_TrazOsDoisGrupos()
     {
         DocumentoExigido a = Geral(), b = Geral(), c = Geral();
         RegraDeComprovacao interno = RegraDeComprovacao.CriarGrupo(
@@ -206,7 +206,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Enviados(params DocumentoExigido[] documentos) =>
         documentos.ToDictionary(static d => d.Id, static _ => (IReadOnlyList<ApresentacaoDocumento>)[new(Guid.CreateVersion7())]);
 
-    [Fact(DisplayName = "A alternativa não enviada de um OU atendido, inclusive de um OU externo, é dispensada pelo grupo")]
+    [Fact(DisplayName = "A alternativa não enviada de um grupo atendido, inclusive de um grupo externo, é dispensada")]
     public void GrupoCumprido_DispensaAsAlternativasNaoEnviadas()
     {
         DocumentoExigido rg = Geral(), cnh = Geral(), passaporte = Geral();
@@ -218,11 +218,11 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         List<DocumentoAvaliado> semNada = [.. Avaliar(ComRegrasSemGrupo([externo]), Respostas()).Documentos.Itens];
 
         comRg.Single(d => d.Documento.Id == rg.Id).DispensadoPeloGrupo.Should().BeFalse("o enviado está atendido, não dispensado");
-        comRg.Where(d => d.Documento.Id != rg.Id).Should().OnlyContain(static d => d.DispensadoPeloGrupo, "o RG atende o OU de fora, e a CNH e o passaporte não são necessários");
+        comRg.Where(d => d.Documento.Id != rg.Id).Should().OnlyContain(static d => d.DispensadoPeloGrupo, "o RG atende o grupo externo, e a CNH e o passaporte não são necessários");
         semNada.Should().OnlyContain(static d => !d.DispensadoPeloGrupo);
     }
 
-    [Fact(DisplayName = "O OU atendido por uma alternativa sem repetição dispensa a alternativa repetida por membro, em cada ocorrência")]
+    [Fact(DisplayName = "O grupo atendido por uma alternativa sem repetição dispensa a alternativa repetida por membro, em cada ocorrência")]
     public void GrupoCumpridoForaDaRepeticao_DispensaAAlternativaRepetida()
     {
         DocumentoExigido cadUnico = Geral(), renda = Geral();
@@ -351,7 +351,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         new(
             DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            RegrasDeComprovacaoDaVersao.DeGrafoReidratado(regrasSemGrupo),
+            RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo),
             [Campo(BaixaRenda), Campo(PediuFator)],
             [GrupoDaFamilia()],
             [],

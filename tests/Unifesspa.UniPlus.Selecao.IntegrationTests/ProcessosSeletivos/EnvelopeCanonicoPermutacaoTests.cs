@@ -15,7 +15,7 @@ using Xunit;
 /// agregado. Permutar a ordem de entrada de etapas, do atendimento especializado (condições, recursos e
 /// tipos de deficiência), distribuição de vagas e ofertas, critérios de desempate, cronograma de
 /// fases (inclusive as bancas requeridas de uma fase), fatos coletados, regras de derivação (a
-/// lista externa, as regras internas de uma configuração e as condições aninhadas de uma regra),
+/// lista externa, as regras internas de uma configuração e as condições dentro de uma regra),
 /// destinos da cascata de remanejamento (dentro de uma mesma origem) e as regras de comprovação e os itens dos grupos — sem mudar nenhum valor — SHALL produzir os mesmos bytes
 /// canônicos e o mesmo hash.
 /// </summary>
@@ -246,7 +246,7 @@ public sealed class EnvelopeCanonicoPermutacaoTests
             "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, atendimento especializado, " +
             "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
             "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
-            "configuração e as condições aninhadas de uma regra), destinos da cascata e as regras de comprovação " +
+            "configuração e as condições dentro de uma regra), destinos da cascata e as regras de comprovação " +
             "não muda um único byte");
         PerfilCanonicoV1.Instancia.HashHex(bytesPermutado.Bytes)
             .Should().Be(PerfilCanonicoV1.Instancia.HashHex(bytesDireto.Bytes),

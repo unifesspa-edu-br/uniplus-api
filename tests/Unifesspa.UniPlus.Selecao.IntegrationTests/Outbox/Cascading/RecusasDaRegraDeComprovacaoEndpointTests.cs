@@ -50,7 +50,7 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
     }
 
     [Fact]
-    public async Task DefinirDocumentosExigidos_RecusaEmGrupoAninhado_ApontaOCaminho()
+    public async Task DefinirDocumentosExigidos_RecusaEmGrupoDentroDeGrupo_ApontaOCaminho()
     {
         Guid processoId = await SemearProcessoAsync();
         using HttpClient client = fixture.Factory.CreateClient();
