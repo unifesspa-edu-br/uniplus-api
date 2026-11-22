@@ -77,8 +77,8 @@ public sealed class DecisaoPeloPontoUnicoTests
         ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction chamada = MethodMembers().That().AreDeclaredIn(typeof(AuthorizationPolicyBuilder))
             .And().HaveNameStartingWith("RequireRole(");
 
-        Types().That().HaveFullName(configuracao).And().CallAny(chamada)
-            .GetObjects(Arquitetura).Should().NotBeEmpty("a exceção técnica deve existir e ser detectada");
+        Types().That().HaveFullName(configuracao).Should().CallAny(chamada)
+            .Evaluate(Arquitetura).Should().Contain(static resultado => resultado.Passed, "a exceção técnica deve existir e ser detectada");
 
         List<string> violacoes = [];
         Verificar(
@@ -92,8 +92,13 @@ public sealed class DecisaoPeloPontoUnicoTests
     private static List<string> Violacoes(string escopo)
     {
         List<string> violacoes = [];
+        VerificarLeituraDePapeis(escopo, violacoes);
+        VerificarServicoDeDecisao(escopo, violacoes);
+        return violacoes;
+    }
 
-        Verificar(
+    private static void VerificarLeituraDePapeis(string escopo, List<string> violacoes)
+        => Verificar(
             Types().That().ResideInNamespaceMatching(escopo).And().DoNotResideInNamespaceMatching(Infraestrutura).Should()
                 .NotCallAny(MethodMembers().That().HaveNameStartingWith("IsInRole(")
                     .Or().HaveNameStartingWith("HasClaim(")
@@ -103,14 +108,12 @@ public sealed class DecisaoPeloPontoUnicoTests
                     .Or().HaveNameStartingWith("GetResourceRoles(")),
             violacoes);
 
-        Verificar(
+    private static void VerificarServicoDeDecisao(string escopo, List<string> violacoes)
+        => Verificar(
             Types().That().ResideInNamespaceMatching(escopo).And().DoNotResideInNamespaceMatching(PontoDeDecisao).Should()
                 .NotDependOnAnyTypesThat().HaveFullName("Unifesspa.UniPlus.Authorization.Abstractions.IAuthorizationDecisionService")
                 .AndShould().NotDependOnAnyTypesThat().HaveFullName("Unifesspa.UniPlus.Authorization.Abstractions.IAuthorizationSubjectResolver"),
             violacoes);
-
-        return violacoes;
-    }
 
     private static void Verificar(TypesShouldConjunction regra, List<string> violacoes)
         => violacoes.AddRange(regra.Evaluate(Arquitetura).Where(static r => !r.Passed).Select(static r => r.Description));
