@@ -16,7 +16,10 @@ using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>Handler de <see cref="ConfirmarEnvioDoModeloDeDocumentoCommand"/>.</summary>
+/// <summary>
+/// Handler de <see cref="ConfirmarEnvioDoModeloDeDocumentoCommand"/>. Bloqueia o dono antes de qualquer leitura do
+/// documento: a ordem dos bloqueios é a do rascunho, depois a do documento, a mesma de quem exclui ou publica o rascunho.
+/// </summary>
 public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
 {
     private static readonly ConfirmacaoDoArquivoEnviado.Recusas Recusas = new(
@@ -29,6 +32,7 @@ public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
 
     public static async Task<Result<ModeloDeDocumentoDto>> Handle(
         ConfirmarEnvioDoModeloDeDocumentoCommand command,
+        BloqueioCompartilhadoDoProcessoSeletivo bloqueio,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IArquivoArmazenadoStorage storage,
         IUnitOfWork unitOfWork,
@@ -36,11 +40,21 @@ public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(bloqueio);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
 
+        return await bloqueio.BloquearSeExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false)
+            ? await ConfirmarAsync(command, modeloDeDocumentoRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false)
+            : Result<ModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId));
+    }
+
+    private static async Task<Result<ModeloDeDocumentoDto>> ConfirmarAsync(
+        ConfirmarEnvioDoModeloDeDocumentoCommand command, IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IArquivoArmazenadoStorage storage, IUnitOfWork unitOfWork, TimeProvider clock, CancellationToken cancellationToken)
+    {
         ModeloDeDocumento? modelo = await modeloDeDocumentoRepository
             .ObterPorIdAsync(command.ModeloDeDocumentoId, cancellationToken)
             .ConfigureAwait(false);
@@ -50,6 +64,13 @@ public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
                 ModeloDeDocumentoErrorCodes.NaoEncontrado, "Modelo de documento não encontrado neste Processo Seletivo."));
         }
 
+        return await ConfirmarEGravarAsync(modelo, modeloDeDocumentoRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ModeloDeDocumentoDto>> ConfirmarEGravarAsync(
+        ModeloDeDocumento modelo, IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IArquivoArmazenadoStorage storage, IUnitOfWork unitOfWork, TimeProvider clock, CancellationToken cancellationToken)
+    {
         Result confirmacao = await ConfirmacaoDoArquivoEnviado
             .ConfirmarAsync(modelo, ModeloDeDocumento.TamanhoMaximoBytes, Recusas, modeloDeDocumentoRepository, storage, clock, cancellationToken)
             .ConfigureAwait(false);

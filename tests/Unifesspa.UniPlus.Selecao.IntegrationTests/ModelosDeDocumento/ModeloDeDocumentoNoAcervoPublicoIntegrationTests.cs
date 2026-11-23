@@ -64,7 +64,7 @@ public sealed class ModeloDeDocumentoNoAcervoPublicoIntegrationTests
         Result<ModeloDeDocumentoDto> confirmar = await envio.ConfirmarAsync(iniciar.ModeloDeDocumentoId);
 
         confirmar.IsSuccess.Should().BeTrue(confirmar.Error?.Message);
-        (await _acervo.ObjetosDoProcessoNoAcervoAsync(envio.Processo.Id)).Should().BeEmpty(
+        (await _acervo.ObjetosDoProcessoNoAcervoAsync(envio.ProcessoId)).Should().BeEmpty(
             "confirmar é pré-requisito de publicar, não o ato de publicar: o arquivo continua só no bucket privado");
     }
 
