@@ -248,7 +248,7 @@ Em "Forma do fato", o escopo deixa de ser só `CANDIDATO` ou `MEMBRO_GRUPO`: pas
 
 ## Emenda (2026-11-15) — fonte `MUNICIPIOS_PROVA_PRESENCIAL`
 
-O fato de sistema que coleta a cidade de prova (UNI-REQ-0407) tem como fonte dos valores os municípios de aplicação que o processo declara.
+O fato de sistema que coleta a cidade de prova (UNI-REQ-0407) tem como fonte dos valores os municípios de prova que o processo declara.
 
 - **Valores.** Cada valor é um município pelo código do IBGE, com o nome e a UF que o Geo devolveu na conferência, congelados na publicação (ADR-0090, emenda de 2026-11-15).
 - **Escolha do candidato.** É conferida contra a lista congelada, sem nova consulta ao Geo, e só aceita município declarado.

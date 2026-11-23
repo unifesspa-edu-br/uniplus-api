@@ -25275,6 +25275,96 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.prova_presencial.municipio_nao_conferido_no_geo",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Município de prova não encontrado no Geo."
+      ],
+      "comoResolver": [
+        "Confira o código do IBGE e a UF informados para o município; a causa aponta o código do IBGE no item."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipio_repetido",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Município de prova repetido."
+      ],
+      "comoResolver": [
+        "Informe cada município uma única vez."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipios_acima_do_limite",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Limite de municípios de prova excedido."
+      ],
+      "comoResolver": [
+        "Reduza a lista de municípios ao limite configurado."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipios_sem_prova_presencial",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Municípios informados sem prova presencial."
+      ],
+      "comoResolver": [
+        "Retire os municípios ou declare que há prova presencial."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.por_declarar",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Prova presencial ainda não declarada."
+      ],
+      "comoResolver": [
+        "Informe se o processo tem prova presencial."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.sem_municipio",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "Município de prova não informado."
+      ],
+      "comoResolver": [
+        "Informe ao menos um município de prova."
+      ],
+      "ondeAparece": [
+        "Definição ou publicação da prova presencial do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.conteudo_do_documento_ausente",
       "requisitos": [
         "UNI-REQ-0416"

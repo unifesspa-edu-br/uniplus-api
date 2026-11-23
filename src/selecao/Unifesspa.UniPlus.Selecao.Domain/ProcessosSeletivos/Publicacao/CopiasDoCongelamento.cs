@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -14,4 +15,5 @@ public sealed record CopiasDoCongelamento(
     IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> CopiasDoCatalogo,
     IReadOnlySet<string> FatosJaColetados,
     IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> UnidadesVivas,
-    ProtecaoVigenteDasExigencias ProtecaoVigente);
+    ProtecaoVigenteDasExigencias ProtecaoVigente,
+    MunicipiosConferidosNoGeo MunicipiosDoGeo);

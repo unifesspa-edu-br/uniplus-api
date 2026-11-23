@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>Os blocos da configuração reconstruídos a partir de uma versão congelada.</summary>
@@ -37,6 +39,8 @@ public sealed class ConfiguracaoPublicada
     public ColetaDeclarada Coleta { get; }
     public DivulgacaoETaxaDeclaradas DivulgacaoETaxa { get; }
     public IdentificadorLegivel? IdentificadorLegivel { get; }
+    public DeclaracaoDaProvaPresencial? ProvaPresencial { get; init; }
+    public IReadOnlyList<MotivoDeDecisaoDeclarado> MotivosDeDecisao { get; init; } = [];
 
     /// <summary>As derivações configuradas e as que a união das ofertas escolhidas define.</summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas(IReadOnlyCollection<Guid>? ofertasDeCurso = null) =>

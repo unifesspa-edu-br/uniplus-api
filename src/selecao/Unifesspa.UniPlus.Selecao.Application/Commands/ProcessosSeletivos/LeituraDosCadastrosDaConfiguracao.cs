@@ -8,6 +8,8 @@ using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ValueObjects;
 
+using Microsoft.Extensions.Options;
+
 using Services;
 
 /// <summary>
@@ -21,7 +23,8 @@ public sealed class LeituraDosCadastrosDaConfiguracao(
     LeituraDoContextoDeContagemDePrazos contextos,
     LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     LeituraDasPrecedenciasDosCadastros precedencias,
-    IMotivoDeDecisaoDoProcessoRepository motivos)
+    IMotivoDeDecisaoDoProcessoRepository motivos,
+    IOptions<ProvaPresencialOptions> options)
 {
     // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois não alcança o processo já
     // publicado, nem pela retificação. O catálogo e o calendário valem no dia em que a operação publica.
@@ -47,11 +50,11 @@ public sealed class LeituraDosCadastrosDaConfiguracao(
         return Montar(contexto, vivo, tipos, regrasCitadas, escolhidos, lidas);
     }
 
-    private static CadastrosDaConfiguracao Montar(ContextoDeContagemDePrazos contexto, CatalogoERecopia vivo,
+    private CadastrosDaConfiguracao Montar(ContextoDeContagemDePrazos contexto, CatalogoERecopia vivo,
         TiposDeAtoUnicosPorObjeto tipos, RegrasCitadasNaConfiguracao regras, MotivosEscolhidos escolhidos, PrecedenciasDosCadastros precedencias) =>
         new(contexto, vivo.Catalogo.FatosDeModalidade, tipos, regras.Corretores, vivo.Recopiado.Protecao.Exigencias,
             escolhidos, vivo.Recopiado.Publicadas)
-        { Regras = regras.Regras, NomesDasFases = vivo.Catalogo.NomesDasFases, Precedencias = precedencias };
+        { Regras = regras.Regras, NomesDasFases = vivo.Catalogo.NomesDasFases, MunicipiosDoGeo = vivo.MunicipiosDoGeo, LimiteDeMunicipiosDeProva = options.Value.LimiteDeMunicipios, Precedencias = precedencias };
 
     private async Task<MotivosEscolhidos> LerOsMotivosEscolhidosAsync(Guid processoId, int numeroDaVersaoQueNasce, CancellationToken cancellationToken) =>
         new(await motivos.ListarEscolhaAtualComOrigemAsync(processoId, cancellationToken).ConfigureAwait(false), numeroDaVersaoQueNasce);

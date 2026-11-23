@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 public sealed class LimitesDoEsquemaDaConfiguracaoTests
 {
     private const string Atendimento = "atendimento.schema.json";
-    private const string Bonus = "bonus-regional.schema.json";
+    private const string Bonus = "fada.schema.json";
     private const string Comuns = "comuns.schema.json";
     private const string Etapas = "etapas.schema.json";
     private const string Distribuicao = "distribuicao-de-vagas.schema.json";

@@ -31,7 +31,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "9";
+    public const string Versao = "10";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta. A única parte
@@ -86,13 +86,14 @@ internal static class ProjecaoDoCertamePublicado
         return IdentidadeDoCertame.Ler(envelope, ato).Encadear(identidade =>
             OfertaDoCertame.Ler(envelope).Encadear(oferta =>
             ParticipacaoNoCertame.Ler(envelope, acervo).Encadear(participacao =>
-            LerRetificacao(envelope).Compor(retificacao => new CertamePublicadoDto(
+            LerRetificacao(envelope).Encadear(retificacao => LeituraDaProvaPresencialDoCertame.Ler(envelope).Compor(prova => new CertamePublicadoDto(
                 processoSeletivoId, identidade.IdentificadorLegivel, ato.Id, identidade.Nome, Versao, hashConfiguracao,
                 identidade.TipoProcesso, identidade.Periodo, identidade.Localidade, identidade.Unidade,
                 identidade.DocumentoDoEdital.NoContratoPublico(enderecoNoAcervo),
                 oferta.Ofertas, oferta.OpcoesDeCurso, oferta.Modalidades, oferta.Vagas,
                 participacao.Etapas, participacao.OrigemCandidatos, participacao.Fases,
-                participacao.Exigencias, participacao.Atendimento, participacao.Taxa, retificacao)))));
+                participacao.Exigencias, participacao.Atendimento, participacao.Taxa, retificacao)
+            { ProvaPresencial = prova })))));
     }
 
     private static Result<RetificacaoCertameDto?> LerRetificacao(JsonObject envelope) =>

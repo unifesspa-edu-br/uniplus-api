@@ -147,6 +147,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         [NomeDoAssunto.Cascata] = new(static c => c.ComModalidadeQueSegueACascataSemCascata()),
         [NomeDoAssunto.CondicoesDaCanonicalizacao] = new(static c => Definir(c._processo.DocumentosExigidos.Single(), nameof(DocumentoExigido.Aplicabilidade), Aplicabilidade.Condicional)),
         [NomeDoAssunto.MotivosDeDecisao] = new(static c => c.ComMotivoDesativadoNaInscricao()),
+        [NomeDoAssunto.ProvaPresencial] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ProvaPresencial), null)),
     };
 
     // Sem natureza legal declarada, o remanejamento que segue a cascata não destoa dela: só a cobertura da cascata recusa.

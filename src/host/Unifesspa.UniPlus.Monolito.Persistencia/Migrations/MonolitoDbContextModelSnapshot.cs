@@ -21319,6 +21319,95 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_processos_seletivos_processos_seletivos_id");
                         });
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.DeclaracaoDaProvaPresencial", "ProvaPresencial", b1 =>
+                        {
+                            b1.Property<Guid>("ProcessoSeletivoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("TemProvaPresencial")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tem_prova_presencial")
+                                .HasComment("Declara se o processo tem prova presencial. Nulo = ainda não declarado.");
+
+                            b1.HasKey("ProcessoSeletivoId");
+
+                            b1.ToTable("processos_seletivos", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProcessoSeletivoId")
+                                .HasConstraintName("fk_processos_seletivos_processos_seletivos_id");
+
+                            b1.OwnsMany("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.MunicipioDeProva", "Municipios", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer")
+                                        .HasColumnName("id")
+                                        .HasComment("Identificador técnico da linha, substituída com a declaração.");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<string>("CodigoIbge")
+                                        .IsRequired()
+                                        .HasMaxLength(7)
+                                        .HasColumnType("character(7)")
+                                        .HasColumnName("codigo_ibge")
+                                        .IsFixedLength()
+                                        .HasComment("Código do IBGE do município de prova da prova.");
+
+                                    b2.Property<string>("Nome")
+                                        .HasMaxLength(150)
+                                        .HasColumnType("character varying(150)")
+                                        .HasColumnName("nome")
+                                        .HasComment("Nome copiado do Geo na última publicação ou retificação; nulo antes da primeira.");
+
+                                    b2.Property<int>("Posicao")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("posicao")
+                                        .HasComment("Posição do município na declaração, a partir de 1.");
+
+                                    b2.Property<Guid>("ProcessoSeletivoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("processo_seletivo_id")
+                                        .HasComment("Processo seletivo que declara o município de prova.");
+
+                                    b2.Property<string>("Uf")
+                                        .IsRequired()
+                                        .HasMaxLength(2)
+                                        .HasColumnType("character(2)")
+                                        .HasColumnName("uf")
+                                        .IsFixedLength()
+                                        .HasComment("UF do município de prova da prova.");
+
+                                    b2.HasKey("Id")
+                                        .HasName("pk_municipios_de_prova");
+
+                                    b2.HasIndex("ProcessoSeletivoId", "CodigoIbge")
+                                        .IsUnique()
+                                        .HasDatabaseName("ix_municipios_de_prova_processo_codigo_ibge");
+
+                                    b2.HasIndex("ProcessoSeletivoId", "Posicao")
+                                        .IsUnique()
+                                        .HasDatabaseName("ix_municipios_de_prova_processo_posicao");
+
+                                    b2.ToTable("municipios_de_prova", "selecao", t =>
+                                        {
+                                            t.HasComment("Municípios de prova da prova presencial, na ordem declarada pelo processo seletivo.");
+
+                                            t.HasCheckConstraint("ck_municipios_de_prova_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
+
+                                            t.HasCheckConstraint("ck_municipios_de_prova_posicao", "posicao >= 1");
+                                        });
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProcessoSeletivoId")
+                                        .HasConstraintName("fk_municipios_de_prova_processo_seletivo");
+                                });
+
+                            b1.Navigation("Municipios");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.LocalidadeRegente", "Localidade", b1 =>
                         {
                             b1.Property<Guid>("ProcessoSeletivoId")
@@ -21497,6 +21586,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Navigation("Localidade")
                         .IsRequired();
+
+                    b.Navigation("ProvaPresencial");
 
                     b.Navigation("ReferenciaTemporalFatos");
 

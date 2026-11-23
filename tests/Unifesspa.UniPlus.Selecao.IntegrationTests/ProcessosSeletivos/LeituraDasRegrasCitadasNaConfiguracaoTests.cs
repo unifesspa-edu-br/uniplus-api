@@ -99,6 +99,6 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests(ProcessoSeletivoD
         CadastrosDaConfiguracao padrao = CadastrosDeTeste.Padrao;
         return new CadastrosDaConfiguracao(padrao.ContagemDePrazos, padrao.FatosDeModalidade, padrao.TiposDeAtoUnicos,
             lidas.Corretores, padrao.Protecao, padrao.MotivosEscolhidos)
-        { Regras = lidas.Regras, Precedencias = padrao.Precedencias };
+        { Regras = lidas.Regras, MunicipiosDoGeo = padrao.MunicipiosDoGeo, Precedencias = padrao.Precedencias };
     }
 }

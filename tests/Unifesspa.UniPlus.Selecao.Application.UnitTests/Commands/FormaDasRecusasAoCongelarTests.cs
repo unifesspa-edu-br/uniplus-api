@@ -205,7 +205,7 @@ public sealed class FormaDasRecusasAoCongelarTests
     {
         CatalogoVivo catalogo = await servicos.Catalogos().LerAsync(processo, CancellationToken.None);
 
-        return await servicos.Recopia().RecopiarAsync(processo, catalogo, new PrimeiraPublicacao(), CancellationToken.None);
+        return await servicos.Recopia().RecopiarAsync(processo, catalogo, new PrimeiraPublicacao(), Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.MunicipiosConferidosNoGeo.Nenhum, CancellationToken.None);
     }
 
     private static IFatoCandidatoReader CatalogoComORgUfPorMunicipio()

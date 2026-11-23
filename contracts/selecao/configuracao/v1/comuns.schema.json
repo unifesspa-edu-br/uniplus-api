@@ -52,6 +52,13 @@
           "minLength": 1,
           "maxLength": 60
         },
+        "atoNome": {
+          "title": "Nome do tipo de ato",
+          "description": "Nome do tipo de ato no catálogo de publicações, copiado ao publicar. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        },
         "papel": {
           "title": "Papel do ato",
           "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato não é um resultado.",

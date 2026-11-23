@@ -5,10 +5,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Os campos declarados no cadastro do motivo, como chegaram, antes da validação.</summary>
-/// <param name="TipoCodigo">Código do tipo como chegou no wire; a validação o converte e separa o ausente do desconhecido.</param>
+/// <param name="TipoDeDecisaoCodigo">Código do tipo como chegou no wire; a validação o converte e separa o ausente do desconhecido.</param>
 /// <param name="Sentido">Já convertido do código do wire; <see cref="SentidoDoMotivo.Nenhum"/> quando ausente ou desconhecido.</param>
 public sealed record CamposDoMotivo(
-    string? TipoCodigo,
+    string? TipoDeDecisaoCodigo,
     string? Codigo,
     string? Descricao,
     string? Subclassificacao,

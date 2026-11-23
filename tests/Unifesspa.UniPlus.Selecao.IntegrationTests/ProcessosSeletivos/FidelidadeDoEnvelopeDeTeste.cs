@@ -27,7 +27,8 @@ internal static class FidelidadeDoEnvelopeDeTeste
     {
         SnapshotCanonico recodificado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
-                envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo));
+                envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo)
+            { ConfiguracaoPublicada = envelope.Configuracao });
         return recodificado;
     }
 

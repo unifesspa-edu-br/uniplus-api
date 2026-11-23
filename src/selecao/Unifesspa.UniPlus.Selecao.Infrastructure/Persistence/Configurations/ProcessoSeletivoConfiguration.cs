@@ -181,7 +181,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasComment("Resumo da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
         });
 
-        // Coleções filhas do agregado: entidades próprias com FK para a raiz
+        // Coleções de entidades filhas do agregado
         // (nunca owned types).
         builder.HasMany(p => p.Etapas)
             .WithOne()
@@ -324,6 +324,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).
+        builder.OwnsOne(p => p.ProvaPresencial, prova => prova.ConfigurarProvaPresencial());
         builder.OwnsOne(p => p.ReferenciaTemporalFatos, referencia =>
         {
             referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);

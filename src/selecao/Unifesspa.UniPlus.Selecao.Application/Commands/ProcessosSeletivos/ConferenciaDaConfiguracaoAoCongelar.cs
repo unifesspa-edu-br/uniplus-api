@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Domain.ProcessosSeletivos.Edicao;
 using Domain.ProcessosSeletivos.FasesEEtapas;
+using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -31,7 +33,7 @@ internal sealed record LeiturasDoCongelamento(
     IReadOnlyList<FieldError> CausasDaAprovacao);
 
 /// <summary>O catálogo vivo, a recópia feita ao congelar e as causas da aprovação da proteção, lidos antes da configuração.</summary>
-internal sealed record CatalogoERecopia(CatalogoVivo Catalogo, RecopiadoAoCongelar Recopiado, IReadOnlyList<FieldError> CausasDaAprovacao);
+internal sealed record CatalogoERecopia(CatalogoVivo Catalogo, RecopiadoAoCongelar Recopiado, IReadOnlyList<FieldError> CausasDaAprovacao, MunicipiosConferidosNoGeo MunicipiosDoGeo);
 
 /// <summary>
 /// Confere a configuração que a publicação e a retificação de ato único congelam, numa ordem só
@@ -44,6 +46,7 @@ internal sealed record CatalogoERecopia(CatalogoVivo Catalogo, RecopiadoAoCongel
 public sealed class ConferenciaDaConfiguracaoAoCongelar(
     ConferenciaDoCatalogoEDaProtecao catalogos,
     RecopiaAoCongelar recopia,
+    ConferenciaDosMunicipiosNoGeo municipios,
     IResolvedorFusoInstitucional resolvedorFuso,
     LeituraDosCadastrosDaConfiguracao cadastros,
     ConferenciaDaOperacaoAoCongelar operacao)
@@ -108,16 +111,26 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         ProcessoSeletivo processo, AtoEDocumentoConferidos ato, OrigemDoCongelamento origem, TimeZoneInfo fuso, CancellationToken cancellationToken)
     {
         Result<CatalogoERecopia> vivo = await LerOCatalogoEARecopiaAsync(processo, origem, cancellationToken).ConfigureAwait(false);
+        if (vivo.Error?.Code == ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel)
+        {
+            return Result<LeiturasDoCongelamento>.Failure(vivo.Error);
+        }
+
+        return await ConcluirLeituraAsync(processo, ato, origem, fuso, vivo, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<LeiturasDoCongelamento>> ConcluirLeituraAsync(
+        ProcessoSeletivo processo, AtoEDocumentoConferidos ato, OrigemDoCongelamento origem, TimeZoneInfo fuso,
+        Result<CatalogoERecopia> vivo, CancellationToken cancellationToken)
+    {
         Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> jaCongelados = origem.TiposJaCongelados();
         if (vivo.IsFailure || jaCongelados.IsFailure)
         {
             IReadOnlyList<FieldError> daAprovacao = vivo.IsSuccess ? vivo.Value!.CausasDaAprovacao : [];
-
             return Result<LeiturasDoCongelamento>.ValidationFailure([.. daAprovacao.Concat(vivo.Errors).Concat(jaCongelados.Errors).Distinct()]);
         }
 
         CadastrosDaConfiguracao lidos = await cadastros.LerAsync(processo, ato, origem, jaCongelados.Value!, vivo.Value!, cancellationToken).ConfigureAwait(false);
-
         return Result<LeiturasDoCongelamento>.Success(
             new LeiturasDoCongelamento(vivo.Value!.Catalogo, vivo.Value.Recopiado, fuso, lidos, vivo.Value.CausasDaAprovacao));
     }
@@ -128,12 +141,18 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         ProcessoSeletivo processo, OrigemDoCongelamento origem, CancellationToken cancellationToken)
     {
         CatalogoVivo catalogo = await catalogos.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+        Result<MunicipiosConferidosNoGeo> conferidos = await municipios.ConferirAsync(processo.ProvaPresencial, cancellationToken).ConfigureAwait(false);
+        if (conferidos.IsFailure)
+        {
+            return Result<CatalogoERecopia>.Failure(conferidos.Error!);
+        }
+
         IReadOnlyList<FieldError> daAprovacao = ConferenciaDaAprovacaoDaProtecao.CausasAoCongelar(processo, catalogo.TiposVivos, catalogo.Fatos);
-        Result<RecopiadoAoCongelar> recopiado = await recopia.RecopiarAsync(processo, catalogo, origem, cancellationToken).ConfigureAwait(false);
+        Result<RecopiadoAoCongelar> recopiado = await recopia.RecopiarAsync(processo, catalogo, origem, conferidos.Value!, cancellationToken).ConfigureAwait(false);
 
         return recopiado.IsFailure
             ? Result<CatalogoERecopia>.ValidationFailure([.. daAprovacao, .. recopiado.Errors])
-            : Result<CatalogoERecopia>.Success(new CatalogoERecopia(catalogo, recopiado.Value!, daAprovacao));
+            : Result<CatalogoERecopia>.Success(new CatalogoERecopia(catalogo, recopiado.Value!, daAprovacao, conferidos.Value!));
     }
 
     private static Result<ConfiguracaoConferida> Resultado(
@@ -163,6 +182,10 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
                 AgregadosDosGrupos: daOperacao.Fatos.Agregados,
                 ApresentacaoDosPressupostos: daOperacao.Fatos.Avaliavel!.ApresentacaoDosPressupostos,
                 TiposDeAtoCongelados: daOperacao.Documentos.TiposDeAto,
-                FatosDerivadosCongelados: lidos.Recopiado.Protecao.FatosDerivados));
+                FatosDerivadosCongelados: lidos.Recopiado.Protecao.FatosDerivados))
+        {
+            Configuracao = processo.Declaracao([.. lidos.Cadastros.MotivosEscolhidos
+                .QueCompoemAVersao(LugaresDaDecisao.Da(processo.Declaracao())).Select(MotivoDeDecisaoDeclarado.DaEscolha)]),
+        };
 
 }

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -53,7 +54,7 @@ public sealed class RecopiarAoCongelarTests
             new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.Pessoal }, new HashSet<string>(), new HashSet<Guid>());
 
         Result resultado = processo.RecopiarAoCongelar(new(new Dictionary<string, CopiaDoItemNoCatalogo>(),
-            new HashSet<string>(), new Dictionary<Guid, UnidadeResponsavelSnapshot>(), protecao));
+            new HashSet<string>(), new Dictionary<Guid, UnidadeResponsavelSnapshot>(), protecao, MunicipiosConferidosNoGeo.Nenhum));
 
         resultado.IsSuccess.Should().BeTrue();
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
@@ -71,7 +72,7 @@ public sealed class RecopiarAoCongelarTests
             new Dictionary<string, ClassificacaoDeProtecao>(),
             new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
             new HashSet<string>(),
-            new HashSet<Guid>()));
+            new HashSet<Guid>()), MunicipiosConferidosNoGeo.Nenhum);
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(

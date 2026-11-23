@@ -114,6 +114,7 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         ["Cascata"] = ["cascata_pendente", "cascata_modalidade_fora_do_regime_federal"],
         ["CondicoesDaCanonicalizacao"] = ["exigencia_condicional_vazia_determina_resultado"],
         ["MotivosDeDecisao"] = ["motivos_escolhidos_ativos_no_cadastro", "motivos_escolhidos_de_tipo_declarado_pelo_lugar"],
+        ["ProvaPresencial"] = ["prova_presencial"],
     };
 
     private static readonly Dictionary<string, Action<ProcessoSeletivo>> Estragos = new(StringComparer.Ordinal)

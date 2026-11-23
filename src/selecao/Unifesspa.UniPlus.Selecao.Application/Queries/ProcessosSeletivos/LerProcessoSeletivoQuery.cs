@@ -35,9 +35,7 @@ public static class LerProcessoSeletivoQueryHandler
         IVerificadorDeAcesso verificador,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processos);
-        ArgumentNullException.ThrowIfNull(certameDivulgado);
+        ValidarArgumentos(query, processos, certameDivulgado);
 
         EstadoDoProcesso? estado = await processos.ObterEstadoAsync(query.Id, cancellationToken).ConfigureAwait(false);
         ProcessoSeletivoDto? processo = await ObterProcessoSeletivoQueryHandler
@@ -48,48 +46,38 @@ public static class LerProcessoSeletivoQueryHandler
             return null;
         }
 
-        if (await AcessoAoProcesso.ConfiguraAsync(verificador, estado.UnidadeId, query.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return processo;
-        }
+        return await AcessoAoProcesso.ConfiguraAsync(verificador, estado.UnidadeId, query.Id, cancellationToken).ConfigureAwait(false)
+            ? processo
+            : await LerIdentificacaoAsync(query.Id, processo, certameDivulgado, processos, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static void ValidarArgumentos(
+        LerProcessoSeletivoQuery query, IProcessoSeletivoRepository processos, ICertameDivulgadoRepository certameDivulgado)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(processos);
+        ArgumentNullException.ThrowIfNull(certameDivulgado);
+    }
+
+    private static async Task<ProcessoSeletivoDto> LerIdentificacaoAsync(
+        Guid id, ProcessoSeletivoDto processo, ICertameDivulgadoRepository certameDivulgado,
+        IProcessoSeletivoRepository processos, CancellationToken cancellationToken)
+    {
         // Sem divulgação (ou com ela ilegível), o leitor recebe a identificação sem localidade, como sem versão.
         Result<VersaoDivulgada> divulgada = await VersaoDivulgadaResolver
-            .ResolverAsync(query.Id, certameDivulgado, processos, cancellationToken)
+            .ResolverAsync(id, certameDivulgado, processos, cancellationToken)
             .ConfigureAwait(false);
 
         return SoIdentificacao(processo, LocalidadePublicada(divulgada.IsSuccess ? divulgada.Value!.Versao : null));
     }
 
     private static ProcessoSeletivoDto SoIdentificacao(ProcessoSeletivoDto processo, LocalidadeRegenteDto localidade) => new(
-        processo.Id,
-        processo.Nome,
-        IdentificadorLegivel: null,
-        processo.TipoProcesso,
-        processo.Status,
-        processo.OrigemCandidatos,
-        processo.UnidadeAdministradora,
-        localidade,
-        Etapas: [],
-        AtendimentoEspecializado: null,
-        DistribuicaoVagas: [],
-        BonusRegional: null,
-        AplicaBonusRegional: null,
-        OpcoesDeCurso: null,
-        Cascata: null,
-        CriteriosDesempate: [],
-        Classificacao: null,
-        CronogramaFases: [],
-        DocumentosExigidos: [],
-        RegrasDeComprovacao: [],
-        ReferenciaTemporalFatos: null,
-        RegrasDerivacao: [],
-        Formularios: [],
-        OpcoesDeclaradas: [],
-        ConfiguracaoDivulgacao: null,
-        ConfiguracaoTaxaInscricao: null,
-        AlgoritmoContagemPrazo: null,
-        processo.CriadoEm);
+        processo.Id, processo.Nome, IdentificadorLegivel: null, processo.TipoProcesso, processo.Status,
+        processo.OrigemCandidatos, processo.UnidadeAdministradora, localidade, Etapas: [], AtendimentoEspecializado: null,
+        DistribuicaoVagas: [], BonusRegional: null, AplicaBonusRegional: null, OpcoesDeCurso: null, ProvaPresencial: null,
+        Cascata: null, CriteriosDesempate: [], Classificacao: null, CronogramaFases: [], DocumentosExigidos: [],
+        RegrasDeComprovacao: [], ReferenciaTemporalFatos: null, RegrasDerivacao: [], Formularios: [], OpcoesDeclaradas: [],
+        ConfiguracaoDivulgacao: null, ConfiguracaoTaxaInscricao: null, AlgoritmoContagemPrazo: null, processo.CriadoEm);
 
     // A localidade que a versão divulgada congelou. Envelope ausente ou ilegível, ou sem o bloco (versões antigas), devolve
     // o valor vazio: o leitor recebe a identificação sem localidade, nunca um erro nem a localidade da configuração viva.

@@ -36,6 +36,7 @@ public static class DimensaoConformidade
     public const string ColetaDeFatos = "coleta_de_fatos";
     public const string BonusRegional = "bonus_regional";
     public const string Desempate = "desempate";
+    public const string ProvaPresencial = "prova_presencial";
 
     /// <summary>
     /// Os dados do processo que regem a contagem dos prazos de recurso — a localidade cujo
@@ -58,7 +59,8 @@ public static class DimensaoConformidade
         [ExigenciasDocumentais] = "documentosExigidos",
         [CascataRemanejamento] = "cascataRemanejamento",
         [ColetaDeFatos] = "coleta",
-        [BonusRegional] = "bonusRegional",
+        [BonusRegional] = "fada",
+        [ProvaPresencial] = "provaPresencial",
     };
 
     /// <summary>O bloco do documento de configuração em que a pendência da dimensão se corrige.</summary>

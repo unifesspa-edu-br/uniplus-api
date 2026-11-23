@@ -174,6 +174,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDosDocumentosDaOperacao>();
         services.AddScoped<ConferenciaDaOperacaoAoCongelar>();
         services.AddScoped<ConferenciaDaConfiguracaoAoCongelar>();
+        services.AddScoped<ConferenciaDosMunicipiosNoGeo>();
     }
 
     // A cópia dos documentos do ato ao acervo é o efeito posterior da publicação: o handler a recebe pronta, sem service location.

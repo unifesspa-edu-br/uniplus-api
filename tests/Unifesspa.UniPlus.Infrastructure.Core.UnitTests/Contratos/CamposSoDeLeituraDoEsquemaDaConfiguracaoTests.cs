@@ -30,8 +30,14 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("motivo.schema.json", "properties/descricao")]
     [InlineData("motivo.schema.json", "properties/subclassificacao")]
     [InlineData("motivo.schema.json", "properties/sentido")]
+    [InlineData("motivo.schema.json", "properties/sentidoRotulo")]
+    [InlineData("prova-presencial.schema.json", "$defs/municipio/properties/nome")]
     [InlineData("motivo.schema.json", "properties/versaoDoEditalDeEntrada")]
     [InlineData("formulario.schema.json", "properties/modeloOrigemCodigo")]
+    [InlineData("formulario.schema.json", "properties/modeloOrigemNome")]
+    [InlineData("cronograma.schema.json", "$defs/fase/properties/tipoFaseNome")]
+    [InlineData("comuns.schema.json", "$defs/publicacaoPrevista/properties/atoNome")]
+    [InlineData("bancas.schema.json", "properties/categoriasDocumentoNomes")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/cursoNome")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/cursoGrau")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/unidadeOfertanteNome")]
@@ -56,11 +62,11 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelCodigo")]
     [InlineData("exigencias.schema.json", "$defs/exigencia/properties/tipoDocumentoCodigo")]
     [InlineData("atendimento.schema.json", "$defs/condicao/properties/condicaoCodigo")]
-    [InlineData("bonus-regional.schema.json", "properties/baseLegalBonusRegionalCodigo")]
+    [InlineData("fada.schema.json", "properties/baseLegalCodigo")]
     [InlineData("motivo.schema.json", "properties/codigo")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/ofertaCursoCodigo")]
     [InlineData("distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/codigo")]
-    [InlineData("motivo.schema.json", "properties/tipoCodigo")]
+    [InlineData("motivo.schema.json", "properties/tipoDeDecisaoCodigo")]
     public void Codigo_NaoEReadOnly(string arquivo, string caminho)
     {
         ArgumentNullException.ThrowIfNull(arquivo);

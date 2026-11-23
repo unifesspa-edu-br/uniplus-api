@@ -30,6 +30,7 @@ public static class ClassificacaoDosBlocosDoCertame
     /// </summary>
     public static readonly IReadOnlySet<string> Publicados = new HashSet<string>(StringComparer.Ordinal)
     {
+        "provaPresencial",
         "tipoProcesso",
         "periodo",
         "identificadorLegivel",
@@ -58,6 +59,7 @@ public static class ClassificacaoDosBlocosDoCertame
     /// </summary>
     public static readonly IReadOnlySet<string> Internos = new HashSet<string>(StringComparer.Ordinal)
     {
+        "motivosDeDecisao",
         "classificacao",
         "criteriosDesempate",
         "fada",

@@ -32,8 +32,8 @@
   "importacao": {
     "relatorios": [
       {
-        "leiauteCodigo": "INEP_RETORNO_ENEM",
-        "leiauteVersao": "v1"
+        "formatoCodigo": "INEP_RETORNO_ENEM",
+        "formatoVersao": "v1"
       }
     ],
     "primeiraFaseDepoisDaImportacaoChave": "fase_resultado_final"

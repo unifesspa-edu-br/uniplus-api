@@ -62,9 +62,15 @@ public static class ChecklistDeConformidade
             .. ItensDaCascata.Avaliar(configuracao),
             .. ItensDasReferenciasDeRegra.Avaliar(configuracao, cadastros),
             .. ItensDasCondicoesDaCanonicalizacao.Avaliar(configuracao, cadastros),
-            .. ItensDosMotivosDeDecisao.Avaliar(configuracao, cadastros.MotivosEscolhidos),
+            .. ItensDasEscolhasDoProcesso(configuracao, cadastros),
         ];
     }
+
+    private static IEnumerable<ItemConformidade> ItensDasEscolhasDoProcesso(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>
+    [
+        .. ItensDosMotivosDeDecisao.Avaliar(configuracao, cadastros.MotivosEscolhidos),
+        ItensDaProvaPresencial.Avaliar(configuracao, cadastros),
+    ];
 
     /// <summary>
     /// Uma causa por item estrutural pendente, no campo do bloco do documento da dimensão do item, com a mensagem do item. O

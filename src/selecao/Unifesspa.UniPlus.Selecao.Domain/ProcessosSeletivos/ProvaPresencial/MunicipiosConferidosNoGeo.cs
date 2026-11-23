@@ -1,10 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
-using Unifesspa.UniPlus.Kernel.Results;
-
 /// <summary>
-/// O que o Geo disse de um município de aplicação: confirmou e devolveu o nome, recusou com o erro da
-/// conferência, ou não foi consultado ou não respondeu. O que não foi conferido nunca vale como aceito
+/// O que o Geo disse de um município de prova: confirmou e devolveu o nome, ou não conferiu o município (a indisponibilidade do Geo é outra resposta, antes da conferência). O que não foi conferido nunca vale como aceito
 /// (falha fechada, ADR-0090).
 /// </summary>
 public abstract record ResultadoDoMunicipioNoGeo
@@ -20,25 +17,16 @@ public abstract record ResultadoDoMunicipioNoGeo
         return new ConferidoNoGeo(nome);
     }
 
-    /// <summary>O Geo recusou o município: não existe, ou a UF não é a dele.</summary>
-    public static ResultadoDoMunicipioNoGeo Recusado(DomainError erro)
-    {
-        ArgumentNullException.ThrowIfNull(erro);
-        return new RecusadoNoGeo(erro);
-    }
-
-    /// <summary>O município não foi conferido: o Geo não respondeu, ou a chamada nem chegou a ser feita.</summary>
+    /// <summary>O município não foi conferido no Geo: a chamada não foi feita ou o Geo não o conhece.</summary>
     public static ResultadoDoMunicipioNoGeo NaoConferido { get; } = new NaoConferidoNoGeo();
 
     internal sealed record ConferidoNoGeo(string Nome) : ResultadoDoMunicipioNoGeo;
-
-    internal sealed record RecusadoNoGeo(DomainError Erro) : ResultadoDoMunicipioNoGeo;
 
     internal sealed record NaoConferidoNoGeo : ResultadoDoMunicipioNoGeo;
 }
 
 /// <summary>
-/// O resultado da conferência no Geo de cada município de aplicação, pelo código do IBGE: o domínio o
+/// O resultado da conferência no Geo de cada município de prova, pelo código do IBGE: o domínio o
 /// recebe já resolvido, sem conhecer a porta nem o Geo. O código sem resultado é um município não conferido.
 /// </summary>
 public sealed record MunicipiosConferidosNoGeo

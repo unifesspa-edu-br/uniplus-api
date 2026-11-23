@@ -107,7 +107,7 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, atendimento-especializado, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **formulário de inscrição e os seus itens** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/laudo de `AC_PCD`, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
 | **Rascunho do processo seletivo** | `POST` do documento da configuração (guarda `rascunho_id` e o ETag) → `GET` da exportação → `PUT` com `If-Match` (revisão 2) → `DELETE` com `If-Match` |
-| **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
+| **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → declarar sem prova presencial → `Publicar` → `ObterSnapshotVigente` |
 | **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (ato único) |
 | **ProcessoSeletivo — Regras de Comprovação (padrões estruturais)** | Cinco padrões com grupos de todos os itens, quantidade mínima e repetição por grupo do formulário. |
 

@@ -14,7 +14,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
 {
     private const string Atendimento = "atendimento.schema.json";
 
-    private const string Bonus = "bonus-regional.schema.json";
+    private const string Bonus = "fada.schema.json";
 
     [Fact(DisplayName = "O atendimento com condição, recurso e tipo de deficiência pelo código valida")]
     public void Atendimento_PorCodigo_Valida() =>
@@ -43,7 +43,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     {
         JsonNode completo = Documento("""
             { "aplica": true, "regra": { "codigo": "BONUS-MULTIPLICATIVO", "versao": "v1" }, "fator": 1.2, "teto": 50.5,
-              "codigoDoDadoDeElegibilidade": "MUNICIPIO_RESIDENCIA", "baseLegalBonusRegionalCodigo": "LEI_REGIONAL",
+              "codigoDoDadoDeElegibilidade": "MUNICIPIO_RESIDENCIA", "baseLegalCodigo": "LEI_REGIONAL",
               "tipoInstrumento": "LEI", "identificacao": "Lei 1/2020", "descricao": "Bônus para municípios do sul e sudeste do Pará.",
               "municipios": [ { "codigoIbge": "1505304", "nome": "Marabá", "uf": "PA" } ] }
             """);
@@ -57,13 +57,13 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     {
         CaminhosComErro(Documento("""{ "aplica": false }"""), Bonus).Should().BeEmpty();
         CaminhosComErro(Documento("""{ "aplica": false, "fator": 1.2 }"""), Bonus).Should().Contain("/fator");
-        CaminhosComErro(Documento("""{ "aplica": false, "baseLegalBonusRegionalCodigo": "LEI_REGIONAL" }"""), Bonus).Should().Contain("/baseLegalBonusRegionalCodigo");
+        CaminhosComErro(Documento("""{ "aplica": false, "baseLegalCodigo": "LEI_REGIONAL" }"""), Bonus).Should().Contain("/baseLegalCodigo");
     }
 
     [Theory(DisplayName = "A base legal e o município fora do formato do cadastro são recusados")]
-    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalBonusRegionalCodigo": "lei regional" }""", "/baseLegalBonusRegionalCodigo")]
-    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalBonusRegionalCodigo": "LEI", "municipios": [ { "codigoIbge": "15053" } ] }""", "/municipios/0/codigoIbge")]
-    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": -1, "baseLegalBonusRegionalCodigo": "LEI" }""", "/fator")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalCodigo": "lei regional" }""", "/baseLegalCodigo")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalCodigo": "LEI", "municipios": [ { "codigoIbge": "15053" } ] }""", "/municipios/0/codigoIbge")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": -1, "baseLegalCodigo": "LEI" }""", "/fator")]
     public void Bonus_FormaInvalida_Recusa(string json, string caminho)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -77,7 +77,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Documento("""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-              "atendimento": { "condicoes": [ { "condicaoCodigo": "PCD" } ] }, "bonusRegional": { "aplica": false } }
+              "atendimento": { "condicoes": [ { "condicaoCodigo": "PCD" } ] }, "fada": { "aplica": false } }
             """);
 
         CaminhosComErro(documento).Should().BeEmpty();
@@ -92,7 +92,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     {
         ArgumentNullException.ThrowIfNull(propriedade);
         ArgumentNullException.ThrowIfNull(valor);
-        JsonNode bonus = Documento("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalBonusRegionalCodigo": "LEI" }""");
+        JsonNode bonus = Documento("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalCodigo": "LEI" }""");
         bonus[propriedade] = JsonNode.Parse(valor);
 
         CaminhosComErro(bonus, Bonus).Should().Contain($"/{propriedade}");

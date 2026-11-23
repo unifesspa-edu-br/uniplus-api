@@ -100,6 +100,10 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             baseLegal = new { id = baseLegalBonusRegionalId },
         });
 
+    public Task<HttpResponseMessage> PutProvaPresencialAsync() => EnviarAsync(
+        HttpMethod.Put, $"{Rota}/{ProcessoId}/prova-presencial",
+        new { temProvaPresencial = false, municipios = Array.Empty<object>() });
+
     public Task<HttpResponseMessage> PutTaxaInscricaoAsync() => EnviarAsync(
         HttpMethod.Put, $"{Rota}/{ProcessoId}/taxa-inscricao",
         new

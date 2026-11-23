@@ -6,7 +6,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "tipoCodigo",
+    "tipoDeDecisaoCodigo",
     "codigo"
   ],
   "oneOf": [
@@ -32,7 +32,7 @@
       "description": "Chave da etapa em que o motivo vale. Exatamente um entre a fase e a etapa.",
       "$ref": "comuns.schema.json#/$defs/chave"
     },
-    "tipoCodigo": {
+    "tipoDeDecisaoCodigo": {
       "title": "Tipo de decisão",
       "description": "Tipo de decisão a que o motivo pertence.",
       "$ref": "comuns.schema.json#/$defs/tipoDeDecisao"
@@ -62,6 +62,12 @@
         "FAVORAVEL",
         "DESFAVORAVEL"
       ],
+      "readOnly": true
+    },
+    "sentidoRotulo": {
+      "title": "Rótulo do sentido",
+      "description": "Rótulo atual do sentido do motivo. Campo só de leitura: ignorado na importação.",
+      "type": "string",
       "readOnly": true
     },
     "justificativaDaInclusao": {

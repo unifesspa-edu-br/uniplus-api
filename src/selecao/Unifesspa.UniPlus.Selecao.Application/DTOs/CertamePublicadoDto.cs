@@ -274,6 +274,9 @@ public sealed record CertamePublicadoDto(
     TaxaInscricaoCertameDto? TaxaInscricao,
     RetificacaoCertameDto? Retificacao)
 {
+    [JsonRequired]
+    public ProvaPresencialCertameDto ProvaPresencial { get; init; } = new(false, []);
+
     /// <summary>
     /// Situação da janela de inscrição no instante da leitura, pela mesma regra da vitrine.
     /// </summary>

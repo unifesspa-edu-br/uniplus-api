@@ -81,6 +81,7 @@ internal static class PassosDoEnvelopeFechado
     internal static async Task ConfigurarTodasAsDimensoesAsync(Cenario c)
     {
         await CriarProcessoEmRascunhoAsync(c);
+        await ExecutarPassoAsync(() => c.Ctx.PutProvaPresencialAsync(), HttpStatusCode.NoContent, "PUT prova presencial", "/prova-presencial");
         await DeclararEtapasAsync(c);
         await DeclararAtendimentoEVagasAsync(c);
         await DeclararBonusETaxaAsync(c);

@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests.Conferencias;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -14,6 +16,16 @@ internal static class ManifestoDeEditalSnapshotsECronograma
     {
         [typeof(CronogramaDeclarado)] = (["Localidade", "AlgoritmoContagemPrazo", "CronogramaFases"], []),
         [typeof(DivulgacaoETaxaDeclaradas)] = (["ConfiguracaoDivulgacao", "ConfiguracaoTaxaInscricao"], []),
+
+        // Prova presencial: a declaração do processo e os municípios de prova, com o nome copiado do Geo na publicação.
+        [typeof(DeclaracaoDaProvaPresencial)] = (["TemProvaPresencial", "Municipios"], []),
+        [typeof(MunicipioDeProva)] = (["CodigoIbge", "Uf", "Nome", "Posicao"], []),
+
+        // Motivo de decisão escolhido pelo processo, copiado por valor no bloco motivosDeDecisao.
+        [typeof(MotivoDeDecisaoDeclarado)] = (
+            ["Tipo", "Codigo", "Lugar", "Descricao", "Subclassificacao", "Sentido", "VersaoDeEntrada", "JustificativaDaInclusao"],
+            []),
+        [typeof(LugarDaDecisao)] = (["FaseCanonicaOrigemId", "EtapaProcessoId"], []),
 
         [typeof(DadosEdital)] = (
             ["Numero", "PeriodoInscricaoInicio", "PeriodoInscricaoFim", "DocumentoEditalId", "Anexos"],

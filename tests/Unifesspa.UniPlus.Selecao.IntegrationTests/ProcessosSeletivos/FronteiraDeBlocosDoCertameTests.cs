@@ -282,7 +282,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("10")]
+    [InlineData("11")]
     [InlineData("6")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {

@@ -171,7 +171,12 @@ public sealed record EntradaCanonicalizacao(
     string FusoHorario,
     RetificacaoDoEdital? Retificacao,
     ResultadoConformidade? Conformidade,
-    DadosDeCatalogoDaConfiguracaoPublicada DadosDeCatalogo);
+    DadosDeCatalogoDaConfiguracaoPublicada DadosDeCatalogo)
+{
+    public ConfiguracaoDeclarada? Configuracao { get; init; }
+
+    public ConfiguracaoPublicada? ConfiguracaoPublicada { get; init; }
+}
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).

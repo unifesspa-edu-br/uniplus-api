@@ -7587,6 +7587,36 @@
       "titulo": "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo"
     },
     {
+      "codigo": "uniplus.selecao.prova_presencial.municipio_nao_conferido_no_geo",
+      "status": 422,
+      "titulo": "Município de prova não encontrado no Geo"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipio_repetido",
+      "status": 422,
+      "titulo": "Município de prova repetido"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipios_acima_do_limite",
+      "status": 422,
+      "titulo": "Limite de municípios de prova excedido"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.municipios_sem_prova_presencial",
+      "status": 422,
+      "titulo": "Municípios informados sem prova presencial"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.por_declarar",
+      "status": 422,
+      "titulo": "Prova presencial ainda não declarada"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.sem_municipio",
+      "status": 422,
+      "titulo": "Município de prova não informado"
+    },
+    {
       "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.conteudo_do_documento_ausente",
       "status": 422,
       "titulo": "O documento do rascunho veio sem conteúdo"

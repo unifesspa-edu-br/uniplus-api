@@ -19,7 +19,7 @@ public sealed class RecopiaAoCongelarTests
         RecopiaAoCongelar servico = new ServicosDoCongelamentoDeTeste().ComUnidades(ResolvedorDeUnidadeDeTeste.Com()).Recopia();
 
         Result<RecopiadoAoCongelar> recopia = await servico
-            .RecopiarAsync(processo, CatalogoComRgUfPorMunicipio(), new PrimeiraPublicacao(), CancellationToken.None);
+            .RecopiarAsync(processo, CatalogoComRgUfPorMunicipio(), new PrimeiraPublicacao(), Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.MunicipiosConferidosNoGeo.Nenhum, CancellationToken.None);
 
         recopia.IsFailure.Should().BeTrue();
         string[] codigos = [.. recopia.Errors.Select(static e => e.Error.Code)];
