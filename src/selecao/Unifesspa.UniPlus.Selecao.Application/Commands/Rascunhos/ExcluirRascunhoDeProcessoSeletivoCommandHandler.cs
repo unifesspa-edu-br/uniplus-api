@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="ExcluirRascunhoDeProcessoSeletivoCommand"/>: precondição ausente, bloqueio da linha, processo já publicado
-/// ou inexistente, precondição que não casa, e só então apaga a linha e, na mesma transação, os documentos a publicar dela. Os
-/// objetos desses documentos saem do armazenamento pela mensagem que acompanha a resposta. Sem chave de idempotência, a exceção
+/// ou inexistente, precondição que não casa, e só então apaga a linha e, na mesma transação, os documentos e modelos dela. Os
+/// objetos desses arquivos saem do armazenamento pela mensagem que acompanha a resposta. Sem chave de idempotência, a exceção
 /// de concorrência propaga.
 /// </summary>
 public static class ExcluirRascunhoDeProcessoSeletivoCommandHandler
@@ -21,6 +21,7 @@ public static class ExcluirRascunhoDeProcessoSeletivoCommandHandler
         BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
         IRascunhoDeProcessoSeletivoRepository rascunhos,
         IDocumentoAPublicarRepository documentos,
+        IModeloDeDocumentoRepository modelos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -28,25 +29,29 @@ public static class ExcluirRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(bloqueio);
         ArgumentNullException.ThrowIfNull(rascunhos);
         ArgumentNullException.ThrowIfNull(documentos);
+        ArgumentNullException.ThrowIfNull(modelos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<RascunhoDeProcessoSeletivo> rascunho = await bloqueio.BloquearEConferirAsync(command.Id, command.Precondicao, cancellationToken).ConfigureAwait(false);
         return rascunho.IsFailure
             ? (Result.ValidationFailure(rascunho.Errors), [])
-            : await ExcluirAsync(rascunho.Value!, rascunhos, documentos, unitOfWork, cancellationToken).ConfigureAwait(false);
+            : await ExcluirAsync(rascunho.Value!, rascunhos, documentos, modelos, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Mensagens)> ExcluirAsync(
         RascunhoDeProcessoSeletivo rascunho,
         IRascunhoDeProcessoSeletivoRepository rascunhos,
         IDocumentoAPublicarRepository documentos,
+        IModeloDeDocumentoRepository modelos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<string> chaves = await documentos.RemoverDoProcessoAsync(rascunho.Id, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<string> chavesDosModelos = await modelos.RemoverDoProcessoAsync(rascunho.Id, cancellationToken).ConfigureAwait(false);
         rascunhos.Remover(rascunho);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return (Result.Success(), chaves.Count == 0 ? [] : [new RemoverArquivosDoRascunhoExcluido(chaves)]);
+        string[] todasAsChaves = [.. chaves, .. chavesDosModelos];
+        return (Result.Success(), todasAsChaves.Length == 0 ? [] : [new RemoverArquivosDoRascunhoExcluido(todasAsChaves)]);
     }
 }

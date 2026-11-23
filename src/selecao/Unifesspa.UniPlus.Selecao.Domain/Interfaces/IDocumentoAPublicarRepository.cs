@@ -45,12 +45,4 @@ public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>
         Guid processoSeletivoId,
         IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Marca para remoção, na gravação da unidade de trabalho, todos os documentos da identidade do processo e devolve
-    /// as chaves de objeto deles no armazenamento: a de envio e a da cópia gravada na confirmação de cada um, pendente ou confirmado
-    /// (a cópia pode existir num pendente cuja confirmação falhou depois de gravá-la). Só identificadores; o nome do
-    /// arquivo nunca entra na chave. Quem chama já bloqueia o dono, de modo que nenhuma confirmação corre junto.
-    /// </summary>
-    Task<IReadOnlyList<string>> RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 }

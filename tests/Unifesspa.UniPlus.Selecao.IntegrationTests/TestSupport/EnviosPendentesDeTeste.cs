@@ -14,9 +14,11 @@ internal static class EnviosPendentesDeTeste
         TimeSpan? prazo = null,
         FinalidadeDoDocumento finalidade = FinalidadeDoDocumento.DocumentoDoEdital,
         string nomeArquivo = "edital.pdf",
-        string tipoDeMidia = TiposDeMidiaDeDocumento.Pdf) =>
-        DocumentoAPublicar.IniciarPendente(processoId, finalidade, nomeArquivo, tipoDeMidia, TimeProvider.System, prazo ?? PrazoDeEnvio).Value!;
+        string tipoDeMidia = TiposDeMidiaDeDocumento.Pdf,
+        TimeProvider? relogio = null) =>
+        DocumentoAPublicar.IniciarPendente(processoId, finalidade, nomeArquivo, tipoDeMidia, relogio ?? TimeProvider.System, prazo ?? PrazoDeEnvio).Value!;
 
-    public static ModeloDeDocumento Modelo(Guid processoId, TimeSpan? prazo = null, string nomeArquivo = "Autodeclaração") =>
-        ModeloDeDocumento.IniciarPendente(processoId, nomeArquivo, "ODT", TimeProvider.System, prazo ?? PrazoDeEnvio).Value!;
+    public static ModeloDeDocumento Modelo(
+        Guid processoId, TimeSpan? prazo = null, string nomeArquivo = "Autodeclaração", TimeProvider? relogio = null) =>
+        ModeloDeDocumento.IniciarPendente(processoId, nomeArquivo, "ODT", relogio ?? TimeProvider.System, prazo ?? PrazoDeEnvio).Value!;
 }

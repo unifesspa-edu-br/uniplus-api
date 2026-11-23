@@ -3,15 +3,13 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosAPublicar;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 using Npgsql;
 
-using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -33,6 +31,7 @@ public sealed class DocumentoAPublicarSemLinhaDeProcessoIntegrationTests
     private static readonly TimeSpan Vencido = -(RemocaoDeArquivosPendentesVencidos.Tolerancia + TimeSpan.FromMinutes(1));
     private static readonly byte[] Conteudo = [.. "%PDF-1.7 envio de teste"u8];
 
+    private readonly FakeTimeProvider _relogio = new(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
     private readonly ProcessoSeletivoDbFixture _db;
     private readonly ArquivoArmazenadoStorageService _storage;
 
@@ -77,14 +76,15 @@ public sealed class DocumentoAPublicarSemLinhaDeProcessoIntegrationTests
     [Fact(DisplayName = "O pendente que ficou sem dono, criado em corrida com a exclusão do rascunho, é removido ao vencer com o objeto")]
     public async Task PendenteSemDono_RemovidoAoVencer()
     {
-        DocumentoAPublicar orfao = EnviosPendentesDeTeste.Documento(Guid.CreateVersion7(), Vencido);
+        DocumentoAPublicar orfao = EnviosPendentesDeTeste.Documento(Guid.CreateVersion7(), Vencido, relogio: _relogio);
         await PersistirAsync(orfao);
-        await _storage.SalvarConteudoSeladoAsync(orfao.ObjectKey, Conteudo, TiposDeMidiaDeDocumento.Pdf);
+        await GravarObjetosAsync(orfao);
 
-        await ExecutarRemocaoAsync();
+        await RemocaoDePendentesDeTeste.ExecutarAsync(_db, _storage, _relogio);
 
         (await DocumentosDoDonoAsync(orfao.ProcessoSeletivoId)).Should().BeEmpty();
         (await _storage.ObterInfoAsync(orfao.ObjectKey)).Should().BeNull();
+        (await _storage.ObterInfoAsync(orfao.ChaveDaCopiaGravada)).Should().BeNull();
     }
 
     [Fact(DisplayName = "Remover os documentos do dono grava a remoção, devolve as chaves e preserva os de outro dono")]
@@ -116,6 +116,15 @@ public sealed class DocumentoAPublicarSemLinhaDeProcessoIntegrationTests
             [pendente.ObjectKey, pendente.ChaveDaCopiaGravada, confirmado.ObjectKey, confirmado.ObjectKeyConfirmado!]);
     }
 
+    private async Task GravarObjetosAsync(DocumentoAPublicar documento)
+    {
+        foreach (string chave in new[] { documento.ObjectKey, documento.ChaveDaCopiaGravada })
+        {
+            await _storage.SalvarConteudoSeladoAsync(chave, Conteudo, TiposDeMidiaDeDocumento.Pdf);
+            (await _storage.ObterInfoAsync(chave)).Should().NotBeNull();
+        }
+    }
+
     private async Task<IReadOnlyList<string>> RemoverDoDonoAsync(Guid dono)
     {
         await using UniPlusDbContext contexto = _db.CreateDbContext();
@@ -137,17 +146,4 @@ public sealed class DocumentoAPublicarSemLinhaDeProcessoIntegrationTests
         return await leitura.DocumentosAPublicar.AsNoTracking().Where(d => d.ProcessoSeletivoId == dono).ToListAsync();
     }
 
-    private async Task ExecutarRemocaoAsync()
-    {
-        await using UniPlusDbContext contexto = _db.CreateDbContext();
-        RemocaoDeArquivosPendentesVencidos remocao = new(
-            new DocumentoAPublicarRepository(contexto),
-            new ModeloDeDocumentoRepository(contexto),
-            new DocumentoDaInscricaoRepository(contexto),
-            _storage,
-            Substitute.For<IArquivoDoCandidatoStorage>(),
-            TimeProvider.System,
-            NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
-        await remocao.ExecutarAsync(CancellationToken.None);
-    }
 }

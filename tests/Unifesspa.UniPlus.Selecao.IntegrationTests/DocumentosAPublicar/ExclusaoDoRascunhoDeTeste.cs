@@ -39,7 +39,7 @@ internal sealed class ExclusaoDoRascunhoDeTeste(UniPlusDbContext contexto)
 
         return ExcluirRascunhoDeProcessoSeletivoCommandHandler.Handle(
             new ExcluirRascunhoDeProcessoSeletivoCommand(rascunhoId, PrecondicaoIfMatch.Curinga),
-            bloqueio, rascunhos, new DocumentoAPublicarRepository(contexto), contexto, CancellationToken.None);
+            bloqueio, rascunhos, new DocumentoAPublicarRepository(contexto), new ModeloDeDocumentoRepository(contexto), contexto, CancellationToken.None);
     }
 
     private static IVerificadorDeAcesso PessoaQuePodeConfigurar()

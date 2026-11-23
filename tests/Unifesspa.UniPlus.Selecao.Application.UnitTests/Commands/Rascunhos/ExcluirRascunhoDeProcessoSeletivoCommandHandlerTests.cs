@@ -9,11 +9,13 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ExcluirRascunhoDeProcessoSeletivoCommandHandlerTests
 {
     private readonly CenarioDoRascunho _cenario = new();
+    private readonly IModeloDeDocumentoRepository _modelos = Substitute.For<IModeloDeDocumentoRepository>();
 
     private async Task<Result> Excluir(Guid id, PrecondicaoIfMatch precondicao) =>
         (await ExcluirComMensagens(id, precondicao)).Resposta;
@@ -24,6 +26,7 @@ public sealed class ExcluirRascunhoDeProcessoSeletivoCommandHandlerTests
             _cenario.Bloqueio,
             _cenario.Rascunhos,
             _cenario.Documentos,
+            _modelos,
             _cenario.UnitOfWork,
             CancellationToken.None);
 
@@ -124,7 +127,7 @@ public sealed class ExcluirRascunhoDeProcessoSeletivoCommandHandlerTests
     public async Task ArgumentosNulos_Lancam()
     {
         Func<Task> semComando = () => ExcluirRascunhoDeProcessoSeletivoCommandHandler.Handle(
-            null!, _cenario.Bloqueio, _cenario.Rascunhos, _cenario.Documentos, _cenario.UnitOfWork, CancellationToken.None);
+            null!, _cenario.Bloqueio, _cenario.Rascunhos, _cenario.Documentos, _modelos, _cenario.UnitOfWork, CancellationToken.None);
 
         await semComando.Should().ThrowAsync<ArgumentNullException>();
     }
