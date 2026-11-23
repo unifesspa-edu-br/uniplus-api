@@ -132,3 +132,17 @@ A recusa `AtoNormativo.AtoJaRetificado`, que a ADR-0107 cita como `RaizJaRetific
 O efeito posterior que escreve na linha de um processo, como a cópia ao acervo, trava o processo antes de tocar a linha, na ordem desta ADR, e faz o trabalho externo fora da trava.
 
 **Consequências.** A recusa sem resíduo vale por construção. A tradução do conflito vive num lugar só. O efeito posterior não disputa a linha com quem publica.
+
+## Emenda 2 (2026-11-23) — migrations somadas à Inicial a partir do fim de 25/11
+
+Decisão do líder técnico (23/11/2026). Vale a partir do fim de 25/11/2026, depois da subida do cadastro do processo à produção.
+
+A regra da seção "Persistência" de gerar de novo a migration única quando o modelo muda vale até o fim de 25/11/2026. A partir do fim de 25/11:
+
+- A migration `Inicial` fica como está e não é gerada de novo. Toda mudança de modelo entra numa migration nova, que se soma à `Inicial`, com o nome do que ela muda.
+- Ao rebasear, descarta-se e gera-se de novo só a migration própria ainda não integrada à `main`, nunca uma que já esteja nela.
+- A migration nova preserva o dado existente: renomear coluna é renomear, não apagar e criar; o dado de produção não é descartado.
+- A base local pronta (`docker/base-local`) é gerada de novo no último commit do PR que traz a migration.
+- `dotnet ef migrations has-pending-model-changes` continua no CI.
+
+A partir do fim de 25/11, a estrutura das tabelas do processo e as chaves do documento da versão publicada só mudam por migration nova e com o veredito do arquiteto.
