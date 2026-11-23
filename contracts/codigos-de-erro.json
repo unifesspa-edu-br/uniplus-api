@@ -4472,6 +4472,11 @@
       "titulo": "A configuração congelada não tem a forma que a projeção pública espera"
     },
     {
+      "codigo": "uniplus.selecao.chave_local.invalida",
+      "status": 422,
+      "titulo": "A chave local é inválida"
+    },
+    {
       "codigo": "uniplus.selecao.condicao_gatilho.clausula_invalida",
       "status": 422,
       "titulo": "O ordinal da cláusula não pode ser negativo"
