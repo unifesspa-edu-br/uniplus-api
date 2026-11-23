@@ -56,6 +56,16 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<string>> RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
+    {
+        List<ModeloDeDocumento> modelos = await _context.ModelosDeDocumento
+            .Where(modelo => modelo.ProcessoSeletivoId == processoSeletivoId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        _context.ModelosDeDocumento.RemoveRange(modelos);
+        return [.. modelos.SelectMany(modelo => new[] { modelo.ObjectKey, modelo.ChaveDaCopiaGravada })];
+    }
+
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
     {
@@ -88,8 +98,6 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        // Nenhum caso de uso remove modelo pela entidade rastreada: o pendente vencido sai por
-        // RemoverSePendenteVencidoAsync, condicionado no banco.
         _context.ModelosDeDocumento.Remove(entity);
     }
 

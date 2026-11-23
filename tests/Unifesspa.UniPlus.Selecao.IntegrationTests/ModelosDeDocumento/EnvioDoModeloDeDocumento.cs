@@ -4,7 +4,9 @@ using System.Net.Http.Headers;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -26,6 +28,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// </summary>
 internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
 {
+    private readonly FakeTimeProvider _relogio = new(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
     private readonly UniPlusDbContext _context;
     private readonly ModeloDeDocumentoRepository _modelos;
     private readonly ProcessoSeletivoRepository _processos;
@@ -61,13 +64,13 @@ internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
     public Task<Result<IniciarEnvioDoModeloDeDocumentoDto>> TentarIniciarAsync(string formato) =>
         IniciarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new IniciarEnvioDoModeloDeDocumentoCommand(ProcessoId, "Declaração", formato),
-            new UnidadeDonaDoProcesso(_context), _modelos, _storage, _context, TimeProvider.System, CancellationToken.None);
+            new UnidadeDonaDoProcesso(_context), _modelos, _storage, _context, _relogio, CancellationToken.None);
 
     public async Task<IniciarEnvioDoModeloDeDocumentoDto> IniciarEEnviarAsync(byte[] conteudo, string nomeArquivo)
     {
         Result<IniciarEnvioDoModeloDeDocumentoDto> iniciar = await IniciarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new IniciarEnvioDoModeloDeDocumentoCommand(ProcessoId, nomeArquivo, "ODT"),
-            new UnidadeDonaDoProcesso(_context), _modelos, _storage, _context, TimeProvider.System, CancellationToken.None);
+            new UnidadeDonaDoProcesso(_context), _modelos, _storage, _context, _relogio, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
         using HttpClient http = new();
         using ByteArrayContent corpo = new(conteudo);
@@ -76,18 +79,29 @@ internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
         return iniciar.Value;
     }
 
-    public Task<Result<ModeloDeDocumentoDto>> ConfirmarAsync(Guid modeloId) =>
+    public EnvioDoModeloDeDocumento EmNovoContexto(ProcessoSeletivoDbFixture db) =>
+        new(db.CreateDbContext(), ProcessoId, _storage);
+
+    public Task<Result<ModeloDeDocumentoDto>> ConfirmarAsync(Guid modeloId, IArquivoArmazenadoStorage? armazenamento = null) =>
         ConfirmarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new ConfirmarEnvioDoModeloDeDocumentoCommand(ProcessoId, modeloId),
             new BloqueioCompartilhadoDoProcessoSeletivo(
                 new RascunhoDeProcessoSeletivoRepository(_context, Options.Create(new TravaDoProcessoOptions())), _processos),
-            _modelos, _storage, _context, TimeProvider.System, CancellationToken.None);
+            _modelos, armazenamento ?? _storage, _context, _relogio, CancellationToken.None);
+
+    public async Task<Result<ModeloDeDocumentoDto>> ConfirmarNaTransacaoAsync(Guid modeloId, IArquivoArmazenadoStorage? armazenamento = null)
+    {
+        await using IDbContextTransaction transacao = await _context.Database.BeginTransactionAsync();
+        Result<ModeloDeDocumentoDto> resultado = await ConfirmarAsync(modeloId, armazenamento);
+        await transacao.CommitAsync();
+        return resultado;
+    }
 
     public async Task<byte[]> BaixarPeloAcessoAsync(Guid modeloId)
     {
         Result<AcessoModeloDeDocumentoDto> acesso = await ObterAcessoModeloDeDocumentoQueryHandler.Handle(
             new ObterAcessoModeloDeDocumentoQuery(ProcessoId, modeloId),
-            new UnidadeDonaDoProcesso(_context), _modelos, _storage, TimeProvider.System, CancellationToken.None);
+            new UnidadeDonaDoProcesso(_context), _modelos, _storage, _relogio, CancellationToken.None);
         acesso.IsSuccess.Should().BeTrue(acesso.Error?.Message);
         using HttpClient http = new();
         return await http.GetByteArrayAsync(acesso.Value!.Url);

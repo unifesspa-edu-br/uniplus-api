@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -19,11 +20,12 @@ public sealed class ExcluirRascunhoComDocumentosAPublicarTests
     private static readonly string[] Chaves = ["selecao/documentos-a-publicar/p/d.pdf", "selecao/documentos-a-publicar/p/d/confirmado.pdf"];
 
     private readonly CenarioDoRascunho _cenario = new();
+    private readonly IModeloDeDocumentoRepository _modelos = Substitute.For<IModeloDeDocumentoRepository>();
 
     private Task<(Result Resposta, IEnumerable<object> Mensagens)> Excluir(RascunhoDeProcessoSeletivo rascunho, PrecondicaoIfMatch? precondicao = null) =>
         ExcluirRascunhoDeProcessoSeletivoCommandHandler.Handle(
             new ExcluirRascunhoDeProcessoSeletivoCommand(rascunho.Id, precondicao ?? CenarioDoRascunho.Precondicao(rascunho)),
-            _cenario.Bloqueio, _cenario.Rascunhos, _cenario.Documentos, _cenario.UnitOfWork, CancellationToken.None);
+            _cenario.Bloqueio, _cenario.Rascunhos, _cenario.Documentos, _modelos, _cenario.UnitOfWork, CancellationToken.None);
 
     private RascunhoDeProcessoSeletivo ComDocumentos(params string[] chaves)
     {
@@ -59,6 +61,21 @@ public sealed class ExcluirRascunhoComDocumentosAPublicarTests
             .Which.Chaves.Should().Equal(Chaves);
     }
 
+    [Fact]
+    public async Task Excluir_ComDocumentosEModelos_ReuneAsChavesNaMesmaMensagem()
+    {
+        RascunhoDeProcessoSeletivo rascunho = ComDocumentos(Chaves);
+        string[] chavesDosModelos = ["modelos/envio", "modelos/copia"];
+        _modelos.RemoverDoProcessoAsync(rascunho.Id, Arg.Any<CancellationToken>()).Returns(chavesDosModelos);
+
+        (Result resposta, IEnumerable<object> mensagens) = await Excluir(rascunho);
+
+        resposta.IsSuccess.Should().BeTrue();
+        mensagens.Should().ContainSingle().Which.Should().BeOfType<RemoverArquivosDoRascunhoExcluido>()
+            .Which.Chaves.Should().Equal([.. Chaves, .. chavesDosModelos]);
+        await _modelos.Received(1).RemoverDoProcessoAsync(rascunho.Id, Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Sem documentos não há objeto a remover e a mensagem não sai")]
     public async Task SemDocumentos_SemMensagem()
     {
@@ -80,6 +97,7 @@ public sealed class ExcluirRascunhoComDocumentosAPublicarTests
         resposta.IsFailure.Should().BeTrue();
         mensagens.Should().BeEmpty();
         await _cenario.Documentos.DidNotReceiveWithAnyArgs().RemoverDoProcessoAsync(default, default);
+        await _modelos.DidNotReceiveWithAnyArgs().RemoverDoProcessoAsync(default, default);
     }
 
     [Fact(DisplayName = "A mensagem espera a URL de envio expirar e a tolerância da rotina dos pendentes vencidos")]
