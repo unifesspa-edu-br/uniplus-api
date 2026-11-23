@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -124,10 +125,12 @@ internal static class CenarioDeConformidadeLegal
     internal static DocumentoExigido ExigenciaGeral(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, Guid? tipoDocumentoOrigemId = null, bool obrigatorio = true) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId, tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
-            ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: obrigatorio, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(obrigatorio, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     internal static DocumentoExigido ExigenciaCondicionalPorModalidade(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null,
@@ -142,11 +145,11 @@ internal static class CenarioDeConformidadeLegal
             condicoes.Add(CondicaoGatilho.Criar(0, fatoExtra, Operador.Igual, JsonSerializer.SerializeToElement("QUALQUER")).Value!);
         }
 
-        return DocumentoExigido.Criar(
-            exigidoNaFaseId, tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
-            ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: condicoes, basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        return new DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .NaFase(exigidoNaFaseId)
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
+            .Construir();
     }
 
     /// <summary>

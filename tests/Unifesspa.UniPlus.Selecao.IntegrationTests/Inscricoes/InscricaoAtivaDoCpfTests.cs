@@ -76,8 +76,12 @@ public sealed class InscricaoAtivaDoCpfTests
 
     private static DocumentoExigido LaudoMedico() =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
-            [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
+            null).Value!;
 
     private static void ConferirDadosDoCancelamento(Inscricao cancelada, DateTimeOffset canceladaEm)
     {

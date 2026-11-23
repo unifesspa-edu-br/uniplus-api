@@ -44,9 +44,8 @@ public sealed record FormatoPermitidoEntry
 /// restrição") é substituído pelo token explícito <c>QUALQUER</c>, eliminando a ambiguidade.
 /// </summary>
 /// <remarks>
-/// Diferente de <see cref="IdadeMaximaEmissao"/> (regra 0..1, <see langword="null"/> é
-/// sucesso "ausente"), aqui não há variante "ausente": <see cref="Criar"/> sempre devolve um
-/// VO completo (nunca nulo) — a exigência declara sempre um dos dois braços.
+/// Não há variante "ausente": <see cref="Criar"/> sempre devolve um VO completo (nunca nulo) — a
+/// exigência declara sempre um dos dois braços.
 /// </remarks>
 public sealed record FormatosPermitidos
 {
@@ -64,58 +63,59 @@ public sealed record FormatosPermitidos
 
     /// <summary>
     /// <paramref name="qualquer"/> e <paramref name="entradas"/> são mutuamente exclusivos —
-    /// nenhuma combinação produz um VO "ausente" (ao contrário de <see cref="IdadeMaximaEmissao.Criar"/>):
-    /// o campo é obrigatório, e <see cref="Result{T}"/> aqui só carrega falha ou sucesso completo.
+    /// nenhuma combinação produz um VO "ausente": o campo é obrigatório, e <see cref="Result{T}"/> aqui
+    /// só carrega falha ou sucesso completo.
     /// </summary>
     public static Result<FormatosPermitidos> Criar(
         bool qualquer, IReadOnlyList<(string Formato, int? TamanhoMaximoBytesMax)>? entradas)
     {
         if (qualquer)
         {
-            if (entradas is { Count: > 0 })
-            {
-                return Result<FormatosPermitidos>.Failure(new DomainError(
+            return entradas is { Count: > 0 }
+                ? Result<FormatosPermitidos>.Failure(new DomainError(
                     "FormatosPermitidos.QualquerComFormatosEspecificos",
-                    "QUALQUER não pode conviver com uma lista de formatos específicos — são mutuamente exclusivos."));
-            }
-
-            return Result<FormatosPermitidos>.Success(new FormatosPermitidos(true, null));
+                    "QUALQUER não pode conviver com uma lista de formatos específicos — são mutuamente exclusivos."))
+                : Result<FormatosPermitidos>.Success(new FormatosPermitidos(true, null));
         }
 
-        if (entradas is null || entradas.Count == 0)
-        {
-            return Result<FormatosPermitidos>.Failure(new DomainError(
+        return entradas is null || entradas.Count == 0
+            ? Result<FormatosPermitidos>.Failure(new DomainError(
                 "FormatosPermitidos.Obrigatorio",
-                "FormatosPermitidos é obrigatório: declare QUALQUER ou uma lista com ao menos um formato."));
-        }
+                "FormatosPermitidos é obrigatório: declare QUALQUER ou uma lista com ao menos um formato."))
+            : CriarLista(entradas);
+    }
 
+    private static Result<FormatosPermitidos> CriarLista(IReadOnlyList<(string Formato, int? TamanhoMaximoBytesMax)> entradas)
+    {
         List<FormatoPermitidoEntry> lista = [];
         HashSet<FormatoPermitido> formatosVistos = [];
         foreach ((string formatoCodigo, int? tamanhoMaximoBytesMax) in entradas)
         {
-            if (FormatoPermitidoCodigo.FromCodigo(formatoCodigo) is not { } formato)
+            Result<FormatoPermitidoEntry> entrada = CriarEntrada(formatoCodigo, tamanhoMaximoBytesMax, formatosVistos);
+            if (entrada.IsFailure)
             {
-                return Result<FormatosPermitidos>.Failure(new DomainError(
-                    "FormatosPermitidos.FormatoInvalido",
-                    $"Formato '{formatoCodigo}' não reconhecido."));
+                return Result<FormatosPermitidos>.Failure(entrada.Error!);
             }
 
-            if (!formatosVistos.Add(formato))
-            {
-                return Result<FormatosPermitidos>.Failure(new DomainError(
-                    "FormatosPermitidos.FormatoDuplicado",
-                    $"O formato '{formatoCodigo}' aparece mais de uma vez na lista."));
-            }
-
-            Result<FormatoPermitidoEntry> entradaResult = FormatoPermitidoEntry.Criar(formato, tamanhoMaximoBytesMax);
-            if (entradaResult.IsFailure)
-            {
-                return Result<FormatosPermitidos>.Failure(entradaResult.Error!);
-            }
-
-            lista.Add(entradaResult.Value!);
+            lista.Add(entrada.Value!);
         }
 
         return Result<FormatosPermitidos>.Success(new FormatosPermitidos(false, lista));
+    }
+
+    private static Result<FormatoPermitidoEntry> CriarEntrada(string formatoCodigo, int? tamanhoMaximoBytesMax, HashSet<FormatoPermitido> formatosVistos)
+    {
+        if (FormatoPermitidoCodigo.FromCodigo(formatoCodigo) is not { } formato)
+        {
+            return Result<FormatoPermitidoEntry>.Failure(new DomainError(
+                "FormatosPermitidos.FormatoInvalido",
+                $"Formato '{formatoCodigo}' não reconhecido."));
+        }
+
+        return formatosVistos.Add(formato)
+            ? FormatoPermitidoEntry.Criar(formato, tamanhoMaximoBytesMax)
+            : Result<FormatoPermitidoEntry>.Failure(new DomainError(
+                "FormatosPermitidos.FormatoDuplicado",
+                $"O formato '{formatoCodigo}' aparece mais de uma vez na lista."));
     }
 }

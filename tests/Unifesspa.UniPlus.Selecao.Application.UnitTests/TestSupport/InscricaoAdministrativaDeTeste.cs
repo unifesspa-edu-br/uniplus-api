@@ -129,9 +129,12 @@ internal sealed class InscricaoAdministrativaDeTeste
     private DocumentoExigido CriarExigencia(string codigo, ClassificacaoDeProtecao classificacao)
     {
         return DocumentoExigido.Criar(
-            _faseId, Guid.CreateVersion7(), codigo, $"Documento {codigo}", "CATEGORIA", ProtecaoDoDocumentoDeTeste.De(classificacao),
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
-            FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, $"Documento {codigo}", "CATEGORIA", ProtecaoDoDocumentoDeTeste.De(classificacao)),
+            new MomentoDaExigencia(_faseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null),
+            null).Value!;
     }
 
     private void AdicionarArquivoDaExigencia(DocumentoExigido exigencia)

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -167,31 +168,6 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         await cenario.Mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);
     }
 
-    [Fact(DisplayName = "CA-08: fase de referência da idade máxima de emissão que não pertence ao processo é recusada")]
-    public async Task Handle_IdadeMaximaEmissaoComFaseDeOutroProcesso_RetornaErroNomeado()
-    {
-        CenarioDaExigencia cenario = ProcessoComUmaFase();
-        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, Guid.CreateVersion7());
-
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComIdadeMaxima(idade));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
-    }
-
-    /// <summary>A fase do cenário não tem início nem fim definidos: FIM_FASE não tem extremo a apontar.</summary>
-    [Fact(DisplayName = "CA-08: fase de referência da idade máxima de emissão sem o extremo definido é recusada")]
-    public async Task Handle_IdadeMaximaEmissaoComFaseSemExtremo_RetornaErroNomeado()
-    {
-        CenarioDaExigencia cenario = ProcessoComUmaFase();
-        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, cenario.Fase.Id);
-
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComIdadeMaxima(idade));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
-    }
-
     [Fact(DisplayName = "A aplicabilidade ausente é recusada com código no campo aplicabilidade.tipo, e consulta TipoDocumento")]
     public async Task Handle_AplicabilidadeAusente_RecusaNoCampoDoTipo()
     {
@@ -254,12 +230,15 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     public async Task Handle_RestricoesInvalidas_AcumulaNaOrdem()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        RequisitosDoDocumentoInput requisitos = new(null, null, new(1, null, null, null, null), new(Guid.CreateVersion7()));
+        PrazoDeEmissaoInput prazoSemUnidade = new("COM_PRAZO", 1, null, null, null);
+        ValidadeDoDocumentoInput validadeSemReferencia = new("EXIGE_DOCUMENTO_VALIDO", null, null);
+        RequisitosDoDocumentoInput requisitos = new(null, null, prazoSemUnidade, validadeSemReferencia, new(Guid.CreateVersion7()));
         ItemDocumentoExigidoInput documento = cenario.ItemGeral().Construir() with { Requisitos = requisitos };
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [new("DOCUMENTO", documento)]));
 
-        resultado.Errors.Select(e => e.Error.Code).Should().Equal("IdadeMaximaEmissao.CamposIncompletos", "FormatosPermitidos.Obrigatorio", "DocumentoExigido.ModeloNaoEncontrado");
+        resultado.Errors.Select(e => e.Error.Code).Should().Equal(
+            PrazoDeEmissaoErrorCodes.UnidadeInvalida, DataDeReferenciaDoDocumentoErrorCodes.Ausente, "FormatosPermitidos.Obrigatorio", "DocumentoExigido.ModeloNaoEncontrado");
     }
 
     [Fact]
@@ -286,7 +265,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput item = cenario.ItemCondicional(new(0, "FATO_FICTICIO", "IGUAL", "SIM")).Construir();
-        item = item with { Requisitos = new(null, null, null, new(Guid.CreateVersion7())) };
+        item = item with { Requisitos = new(null, null, null, null, new(Guid.CreateVersion7())) };
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [new("DOCUMENTO", item, GrupoDoFormularioParaRepeticao: "INEXISTENTE")]));
         resultado.Errors.Select(e => e.Error.Code).Should().Equal("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado", "FormatosPermitidos.Obrigatorio", "DocumentoExigido.ModeloNaoEncontrado");
         await cenario.Mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);

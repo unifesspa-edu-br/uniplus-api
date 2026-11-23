@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
 /// Monta a exigência de documento que o pedido recebe: geral, obrigatória, com qualquer formato e sem
-/// condições, bases legais, idade, modelo nem tamanho, salvo o que o teste diz. Cada método devolve um construtor
+/// condições, bases legais, prazo de emissão, validade, modelo nem tamanho, salvo o que o teste diz. Cada método devolve um construtor
 /// novo, então um ponto de partida compartilhado não vaza para os demais.
 /// </summary>
 internal sealed record ItemDocumentoExigidoDeTeste
@@ -35,7 +35,9 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     private int? TamanhoMaximoBytes { get; init; }
 
-    private IdadeMaximaEmissaoInput? IdadeMaximaEmissao { get; init; }
+    private PrazoDeEmissaoInput? PrazoDeEmissao { get; init; }
+
+    private ValidadeDoDocumentoInput? Validade { get; init; }
 
     private Guid? ModeloId { get; init; }
 
@@ -66,13 +68,15 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     public ItemDocumentoExigidoDeTeste ComTamanhoMaximo(int? tamanhoMaximoBytes) => this with { TamanhoMaximoBytes = tamanhoMaximoBytes };
 
-    public ItemDocumentoExigidoDeTeste ComIdadeMaxima(IdadeMaximaEmissaoInput? idade) => this with { IdadeMaximaEmissao = idade };
+    public ItemDocumentoExigidoDeTeste ComPrazoDeEmissao(PrazoDeEmissaoInput? prazo) => this with { PrazoDeEmissao = prazo };
+
+    public ItemDocumentoExigidoDeTeste ComValidade(ValidadeDoDocumentoInput? validade) => this with { Validade = validade };
 
     public ItemDocumentoExigidoDeTeste ComModelo(Guid modeloId) => this with { ModeloId = modeloId };
 
     public ItemDocumentoExigidoDeTeste ComFatosComprovados(params string[] fatos) => this with { FatosComprovados = fatos };
 
-    /// <summary>Sem o objeto dos requisitos: nem formatos, nem tamanho, nem idade, nem modelo.</summary>
+    /// <summary>Sem o objeto dos requisitos: nem formatos, nem tamanho, nem prazo, nem validade, nem modelo.</summary>
     public ItemDocumentoExigidoDeTeste SemRequisitos() => this with { ComRequisitos = false };
 
     public ItemDocumentoExigidoInput Construir() =>
@@ -83,7 +87,7 @@ internal sealed record ItemDocumentoExigidoDeTeste
             new IndeferimentoDoDocumentoInput(Obrigatorio, Consequencia, BasesLegais),
             ComRequisitos
                 ? new RequisitosDoDocumentoInput(
-                    FormatosPermitidos, TamanhoMaximoBytes, IdadeMaximaEmissao, ModeloId is { } modelo ? new ModeloDaExigenciaInput(modelo) : null)
+                    FormatosPermitidos, TamanhoMaximoBytes, PrazoDeEmissao, Validade, ModeloId is { } modelo ? new ModeloDaExigenciaInput(modelo) : null)
                 : null,
             FatosComprovados);
 }

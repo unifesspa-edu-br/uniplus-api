@@ -118,9 +118,12 @@ public sealed class DocumentosAusentesDaInscricaoTests
 
     private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao, bool gatilhoFalso = false) =>
         DocumentoExigido.Criar(
-            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: null,
-            gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : [], [], null, Qualquer, null, finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Fase, null, finalidade),
+            new AplicabilidadeDaExigencia(gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : []),
+            new IndeferimentoDoDocumento(obrigatorio, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     private static RegraDeComprovacao QuantidadeMinimaDeItens(int ordem, params DocumentoExigido[] alternativas) =>
         RegraDeComprovacao.CriarGrupo(

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -77,8 +78,8 @@ public sealed class AtomicidadeDoEnvioDaInscricaoTests(InscricaoDbFixture fixtur
 
     private static async Task<ArquivoDaApresentacao> GravarArquivoSemExigenciaAplicavelAsync(UniPlusDbContext db, Guid inscricaoId)
     {
-        DocumentoExigido exigencia = DocumentoExigido.Criar(Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE",
-            ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        DocumentoExigido exigencia = new DocumentoExigidoBuilder().ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [])).Construir();
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, exigencia, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(apresentacao.Id, inscricaoId, exigencia,
             "application/pdf", 1024, DentroDoPeriodo, TimeSpan.FromMinutes(15)).Value!;

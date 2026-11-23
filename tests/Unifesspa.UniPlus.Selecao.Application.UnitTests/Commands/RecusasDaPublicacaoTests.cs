@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -96,15 +97,12 @@ public sealed class RecusasDaPublicacaoTests
     }
 
     private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => DocumentoExigido.Criar(
-            faseId,
-            tipoDocumentoOrigemId: CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"),
-            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
-            tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [CondicaoDeMaioridade()], basesLegais: [BaseLegalDaLeiDeCotas()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoDeMaioridade()]),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalDaLeiDeCotas()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 
     private static CondicaoGatilho CondicaoDeMaioridade() => CondicaoGatilho.Criar(
         0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;

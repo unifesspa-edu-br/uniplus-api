@@ -169,7 +169,7 @@ public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<stri
 /// Uma exigência documental, reduzida ao que o candidato precisa saber para reunir os documentos.
 /// </summary>
 /// <remarks>
-/// Rótulo, aplicabilidade, obrigatoriedade e formatos aceitos, e nada mais. O que motiva
+/// Rótulo, aplicabilidade, obrigatoriedade, formatos aceitos, prazo de emissão e validade, e nada mais. O que motiva
 /// juridicamente cada exigência, a condição que a dispara, a fase em que ela incide e os metadados
 /// dos fatos que a condicionam ficam fora: a página do certame não explica o requisito legal de
 /// cada exigência.
@@ -185,6 +185,8 @@ public sealed record ExigenciaDocumentalCertameDto(
     string Aplicabilidade,
     bool Obrigatorio,
     FormatosAceitosCertameDto Formatos,
+    PrazoDeEmissaoCertameDto? PrazoDeEmissao,
+    ValidadeDoDocumentoCertameDto? Validade,
     ModeloDocumentalCertameDto? Modelo);
 
 /// <summary>

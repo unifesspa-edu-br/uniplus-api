@@ -34,9 +34,6 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
             .WithMessage("Item de base legal não pode ser nulo.")
             .SetValidator(new BaseLegalInputValidator())
             .When(static i => i.Indeferimento?.BasesLegais is not null);
-        RuleFor(i => i.Requisitos!.IdadeMaximaEmissao!)
-            .SetValidator(new IdadeMaximaEmissaoInputValidator())
-            .When(static i => i.Requisitos?.IdadeMaximaEmissao is not null);
     }
 }
 
@@ -74,32 +71,5 @@ public sealed class BaseLegalInputValidator : AbstractValidator<BaseLegalInput>
             .MaximumLength(ObservacaoMaxLength)
             .When(b => b.Observacao is not null)
             .WithMessage($"A observação da base legal deve ter no máximo {ObservacaoMaxLength} caracteres.");
-    }
-}
-
-/// <summary>
-/// Forma de cada campo não nulo da idade máxima de emissão. A coerência tudo-nulo ou completo é do domínio
-/// (<c>IdadeMaximaEmissao.Criar</c>).
-/// </summary>
-public sealed class IdadeMaximaEmissaoInputValidator : AbstractValidator<IdadeMaximaEmissaoInput>
-{
-    private static readonly string[] UnidadesValidas = ["DIAS", "MESES", "ANOS"];
-
-    private static readonly string[] ReferenciaTiposValidos =
-        ["FIM_INSCRICAO", "INICIO_FASE", "FIM_FASE", "DATA_ESPECIFICA", "DATA_SUBMISSAO"];
-
-    public IdadeMaximaEmissaoInputValidator()
-    {
-        RuleFor(i => i.Valor)
-            .GreaterThan(0)
-            .WithMessage("O valor da idade máxima de emissão deve ser maior que zero.");
-        RuleFor(i => i.Unidade)
-            .Must(valor => UnidadesValidas.Contains(valor, StringComparer.Ordinal))
-            .When(i => i.Unidade is not null)
-            .WithMessage($"Unidade da idade máxima de emissão deve ser um de: {string.Join(", ", UnidadesValidas)}.");
-        RuleFor(i => i.ReferenciaTipo)
-            .Must(valor => ReferenciaTiposValidos.Contains(valor, StringComparer.Ordinal))
-            .When(i => i.ReferenciaTipo is not null)
-            .WithMessage($"ReferenciaTipo da idade máxima de emissão deve ser um de: {string.Join(", ", ReferenciaTiposValidos)}.");
     }
 }

@@ -72,9 +72,10 @@ public sealed class EnvelopeLidoPredicadosTests
         DescricaoHumana: "Regra com parâmetro decimal", VigenciaInicio: new DateOnly(2020, 1, 1), VigenciaFim: null, Hash: new string('c', 64));
 
     private static DocumentoExigido DeclaracaoDeMaioridade(FaseCronograma fase) => DocumentoExigido.Criar(
-        fase.Id, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-        [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!],
-        [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!],
-        null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(fase.Id, null, Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!]),
+        new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+        null).Value!;
 }

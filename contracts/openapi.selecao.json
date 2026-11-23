@@ -12071,6 +12071,166 @@
           }
         }
       }
+    },
+    "/api/selecao/vocabularios/escolhas-prazo-emissao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.escolha-prazo-emissao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/escolhas-validade": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.escolha-validade.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EscolhaDaValidade"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/unidades-prazo-emissao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.unidade-prazo-emissao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/tipos-data-referencia": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.tipo-data-referencia.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoDaDataDeReferencia"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/efeitos-analise-documento": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.efeito-analise-documento.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15164,6 +15324,67 @@
           }
         }
       },
+      "DataDeReferenciaDoDocumentoDto": {
+        "required": [
+          "tipo",
+          "data",
+          "faseId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDaDataDeReferencia"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "DataDeReferenciaDoDocumentoInput": {
+        "required": [
+          "tipo",
+          "data",
+          "faseId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDaDataDeReferenciaCodigo"
+              }
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "DeficienciaAtendidaDto": {
         "required": [
           "id",
@@ -18197,6 +18418,36 @@
           }
         }
       },
+      "DocumentoDaConfiguracaoExigenciasDataDeReferenciaDoDocumento": {
+        "title": "Data de refer\u00EAncia",
+        "description": "Refer\u00EAncia usada para o documento.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tipo": {
+            "title": "Tipo",
+            "description": "Tipo da data de refer\u00EAncia.",
+            "enum": [
+              "FIM_DAS_INSCRICOES",
+              "INICIO_DA_FASE",
+              "FIM_DA_FASE",
+              "DATA_ESPECIFICA",
+              "DATA_DA_APRESENTACAO"
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "description": "Data espec\u00EDfica da refer\u00EAncia.",
+            "type": "string",
+            "format": "date"
+          },
+          "faseChave": {
+            "title": "Fase da refer\u00EAncia",
+            "description": "Chave local da fase de refer\u00EAncia.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          }
+        }
+      },
       "DocumentoDaConfiguracaoExigenciasExigencia": {
         "title": "Exig\u00EAncia de documento",
         "description": "Um documento que o processo exige, onde \u00E9 exigido, se \u00E9 obrigat\u00F3rio, em que condi\u00E7\u00E3o e como \u00E9 entregue. O tipo de documento \u00E9 citado pelo c\u00F3digo do cat\u00E1logo.",
@@ -18327,11 +18578,6 @@
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesBaseLegal"
             }
           },
-          "idadeMaximaEmissao": {
-            "title": "Idade m\u00E1xima de emiss\u00E3o",
-            "description": "Quanto tempo o documento pode ter desde a emiss\u00E3o, contado a partir da refer\u00EAncia.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasIdadeMaximaEmissao"
-          },
           "formatosPermitidos": {
             "title": "Formatos permitidos",
             "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho m\u00E1ximo de cada formato.",
@@ -18369,6 +18615,16 @@
                 "pattern": "^[0-9a-f]{64}$"
               }
             }
+          },
+          "prazoDeEmissao": {
+            "title": "Prazo de emiss\u00E3o",
+            "description": "Escolha e detalhes do prazo de emiss\u00E3o do documento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasPrazoDeEmissao"
+          },
+          "validade": {
+            "title": "Validade do documento",
+            "description": "Escolha e detalhes da exig\u00EAncia de validade do documento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasValidade"
           }
         }
       },
@@ -18413,48 +18669,76 @@
           }
         }
       },
-      "DocumentoDaConfiguracaoExigenciasIdadeMaximaEmissao": {
-        "title": "Idade m\u00E1xima de emiss\u00E3o",
-        "description": "Quanto tempo o documento pode ter desde a emiss\u00E3o, contado a partir da refer\u00EAncia.",
+      "DocumentoDaConfiguracaoExigenciasPrazoDeEmissao": {
+        "title": "Prazo de emiss\u00E3o",
+        "description": "Escolha e detalhes do prazo de emiss\u00E3o.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "escolha": {
+            "title": "Escolha",
+            "description": "Escolha sobre o prazo.",
+            "enum": [
+              "SEM_PRAZO",
+              "COM_PRAZO"
+            ]
+          },
           "valor": {
             "title": "Valor",
-            "description": "Quantidade de unidades, maior que zero.",
+            "description": "Quantidade de unidades do prazo.",
             "type": "integer",
             "minimum": 1
           },
           "unidade": {
             "title": "Unidade",
-            "description": "Unidade do valor.",
+            "description": "Unidade do prazo.",
             "enum": [
               "DIAS",
               "MESES",
               "ANOS"
             ]
           },
-          "referenciaTipo": {
+          "referencia": {
             "title": "Refer\u00EAncia",
-            "description": "Instante de onde a idade \u00E9 contada.",
+            "description": "Data usada como refer\u00EAncia.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasDataDeReferenciaDoDocumento"
+          },
+          "efeitoForaDoPrazo": {
+            "title": "Efeito fora do prazo",
+            "description": "Efeito na an\u00E1lise do documento fora do prazo.",
             "enum": [
-              "FIM_INSCRICAO",
-              "INICIO_FASE",
-              "FIM_FASE",
-              "DATA_ESPECIFICA",
-              "DATA_SUBMISSAO"
+              "RECUSAR_DOCUMENTO",
+              "ACEITAR_COM_AVISO"
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoExigenciasValidade": {
+        "title": "Validade do documento",
+        "description": "Escolha e detalhes da exig\u00EAncia de validade.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "escolha": {
+            "title": "Escolha",
+            "description": "Escolha sobre a validade.",
+            "enum": [
+              "NAO_EXIGE_DOCUMENTO_VALIDO",
+              "EXIGE_DOCUMENTO_VALIDO"
             ]
           },
-          "data": {
-            "title": "Data",
-            "description": "Data da refer\u00EAncia, quando ela \u00E9 uma data espec\u00EDfica.",
-            "type": "string",
-            "format": "date"
+          "referencia": {
+            "title": "Refer\u00EAncia",
+            "description": "Data usada como refer\u00EAncia.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasDataDeReferenciaDoDocumento"
           },
-          "referenciaFaseChave": {
-            "title": "Fase da refer\u00EAncia",
-            "description": "Chave local da fase de onde a idade \u00E9 contada, quando a refer\u00EAncia \u00E9 o in\u00EDcio ou o fim de uma fase.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          "efeitoDoVencimento": {
+            "title": "Efeito do vencimento",
+            "description": "Efeito na an\u00E1lise do documento vencido.",
+            "enum": [
+              "RECUSAR_DOCUMENTO",
+              "ACEITAR_COM_AVISO"
+            ]
           }
         }
       },
@@ -20000,6 +20284,29 @@
           }
         }
       },
+      "EfeitoNaAnaliseDoDocumento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EfeitoNaAnaliseDoDocumentoCodigo": {
+        "enum": [
+          "RECUSAR_DOCUMENTO",
+          "ACEITAR_COM_AVISO"
+        ],
+        "type": "string",
+        "description": "Efeito na an\u00E1lise de um documento fora do prazo ou vencido.\n\n- \u0060RECUSAR_DOCUMENTO\u0060: Recusar documento\n- \u0060ACEITAR_COM_AVISO\u0060: Aceitar com aviso"
+      },
       "EfeitoSuspensivo": {
         "required": [
           "codigo",
@@ -20087,6 +20394,52 @@
             "type": "string"
           }
         }
+      },
+      "EscolhaDaValidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EscolhaDaValidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EscolhaDaValidadeCodigo": {
+        "enum": [
+          "NAO_EXIGE_DOCUMENTO_VALIDO",
+          "EXIGE_DOCUMENTO_VALIDO"
+        ],
+        "type": "string",
+        "description": "Escolha sobre a validade do documento.\n\n- \u0060NAO_EXIGE_DOCUMENTO_VALIDO\u0060: N\u00E3o exige documento v\u00E1lido\n- \u0060EXIGE_DOCUMENTO_VALIDO\u0060: Exige documento v\u00E1lido"
+      },
+      "EscolhaDoPrazoDeEmissao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EscolhaDoPrazoDeEmissaoCodigo": {
+        "enum": [
+          "SEM_PRAZO",
+          "COM_PRAZO"
+        ],
+        "type": "string",
+        "description": "Escolha sobre o prazo de emiss\u00E3o do documento.\n\n- \u0060SEM_PRAZO\u0060: Sem prazo\n- \u0060COM_PRAZO\u0060: Com prazo"
       },
       "EscolhasDeCursoDaInscricaoDto": {
         "required": [
@@ -20643,6 +20996,8 @@
           "aplicabilidade",
           "obrigatorio",
           "formatos",
+          "prazoDeEmissao",
+          "validade",
           "modelo"
         ],
         "type": "object",
@@ -20658,6 +21013,26 @@
           },
           "formatos": {
             "$ref": "#/components/schemas/FormatosAceitosCertameDto"
+          },
+          "prazoDeEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrazoDeEmissaoCertameDto"
+              }
+            ]
+          },
+          "validade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidadeDoDocumentoCertameDto"
+              }
+            ]
           },
           "modelo": {
             "oneOf": [
@@ -21863,87 +22238,6 @@
           },
           "descricao": {
             "type": "string"
-          }
-        }
-      },
-      "IdadeMaximaEmissaoDto": {
-        "required": [
-          "valor",
-          "unidade",
-          "referenciaTipo",
-          "data",
-          "referenciaFaseId"
-        ],
-        "type": "object",
-        "properties": {
-          "valor": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unidade": {
-            "type": "string"
-          },
-          "referenciaTipo": {
-            "type": "string"
-          },
-          "data": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "referenciaFaseId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          }
-        }
-      },
-      "IdadeMaximaEmissaoInput": {
-        "required": [
-          "valor",
-          "unidade",
-          "referenciaTipo",
-          "data",
-          "referenciaFaseId"
-        ],
-        "type": "object",
-        "properties": {
-          "valor": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "unidade": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "referenciaTipo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "data": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "referenciaFaseId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           }
         }
       },
@@ -24908,6 +25202,145 @@
           }
         }
       },
+      "PrazoDeEmissaoCertameDto": {
+        "required": [
+          "escolha",
+          "valor",
+          "unidade",
+          "referencia",
+          "efeito"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissao"
+          },
+          "valor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidade": {
+            "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissao"
+          },
+          "referencia": {
+            "$ref": "#/components/schemas/ReferenciaDoDocumentoCertameDto"
+          },
+          "efeito": {
+            "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+          }
+        }
+      },
+      "PrazoDeEmissaoDto": {
+        "required": [
+          "escolha",
+          "valor",
+          "unidade",
+          "referencia",
+          "efeitoForaDoPrazo"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissao"
+          },
+          "valor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissao"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDto"
+              }
+            ]
+          },
+          "efeitoForaDoPrazo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+              }
+            ]
+          }
+        }
+      },
+      "PrazoDeEmissaoInput": {
+        "required": [
+          "escolha",
+          "valor",
+          "unidade",
+          "referencia",
+          "efeitoForaDoPrazo"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissaoCodigo"
+              }
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissaoCodigo"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoInput"
+              }
+            ]
+          },
+          "efeitoForaDoPrazo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+              }
+            ]
+          }
+        }
+      },
       "PredicadoObrigatoriedade": {
         "required": [
           "$tipo"
@@ -26383,6 +26816,33 @@
           }
         }
       },
+      "ReferenciaDoDocumentoCertameDto": {
+        "required": [
+          "tipo",
+          "data",
+          "faseId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDaDataDeReferencia"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "ReferenciaRegraDto": {
         "required": [
           "codigo",
@@ -27326,7 +27786,8 @@
         "required": [
           "formatosPermitidos",
           "tamanhoMaximoBytes",
-          "idadeMaximaEmissao",
+          "prazoDeEmissao",
+          "validade",
           "modelo"
         ],
         "type": "object",
@@ -27341,13 +27802,23 @@
             ],
             "format": "int32"
           },
-          "idadeMaximaEmissao": {
+          "prazoDeEmissao": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/IdadeMaximaEmissaoDto"
+                "$ref": "#/components/schemas/PrazoDeEmissaoDto"
+              }
+            ]
+          },
+          "validade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidadeDoDocumentoDto"
               }
             ]
           },
@@ -27367,7 +27838,8 @@
         "required": [
           "formatosPermitidos",
           "tamanhoMaximoBytes",
-          "idadeMaximaEmissao",
+          "prazoDeEmissao",
+          "validade",
           "modelo"
         ],
         "type": "object",
@@ -27389,13 +27861,23 @@
             ],
             "format": "int32"
           },
-          "idadeMaximaEmissao": {
+          "prazoDeEmissao": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/IdadeMaximaEmissaoInput"
+                "$ref": "#/components/schemas/PrazoDeEmissaoInput"
+              }
+            ]
+          },
+          "validade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidadeDoDocumentoInput"
               }
             ]
           },
@@ -28032,6 +28514,32 @@
           }
         }
       },
+      "TipoDaDataDeReferencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDaDataDeReferenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDaDataDeReferenciaCodigo": {
+        "enum": [
+          "FIM_DAS_INSCRICOES",
+          "INICIO_DA_FASE",
+          "FIM_DA_FASE",
+          "DATA_ESPECIFICA",
+          "DATA_DA_APRESENTACAO"
+        ],
+        "type": "string",
+        "description": "Data usada como refer\u00EAncia para o documento.\n\n- \u0060FIM_DAS_INSCRICOES\u0060: Fim das inscri\u00E7\u00F5es\n- \u0060INICIO_DA_FASE\u0060: In\u00EDcio da fase\n- \u0060FIM_DA_FASE\u0060: Fim da fase\n- \u0060DATA_ESPECIFICA\u0060: Data espec\u00EDfica\n- \u0060DATA_DA_APRESENTACAO\u0060: Data da apresenta\u00E7\u00E3o"
+      },
       "TipoDeBanca": {
         "required": [
           "codigo",
@@ -28284,6 +28792,30 @@
           }
         }
       },
+      "UnidadeDoPrazoDeEmissao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "UnidadeDoPrazoDeEmissaoCodigo": {
+        "enum": [
+          "DIAS",
+          "MESES",
+          "ANOS"
+        ],
+        "type": "string",
+        "description": "Unidade de contagem do prazo de emiss\u00E3o.\n\n- \u0060DIAS\u0060: Dias\n- \u0060MESES\u0060: Meses\n- \u0060ANOS\u0060: Anos"
+      },
       "UnidadePrazo": {
         "required": [
           "codigo",
@@ -28439,6 +28971,98 @@
           "quantidade": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ValidadeDoDocumentoCertameDto": {
+        "required": [
+          "escolha",
+          "referencia",
+          "efeito"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDaValidade"
+          },
+          "referencia": {
+            "$ref": "#/components/schemas/ReferenciaDoDocumentoCertameDto"
+          },
+          "efeito": {
+            "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+          }
+        }
+      },
+      "ValidadeDoDocumentoDto": {
+        "required": [
+          "escolha",
+          "referencia",
+          "efeitoDoVencimento"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDaValidade"
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDto"
+              }
+            ]
+          },
+          "efeitoDoVencimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+              }
+            ]
+          }
+        }
+      },
+      "ValidadeDoDocumentoInput": {
+        "required": [
+          "escolha",
+          "referencia",
+          "efeitoDoVencimento"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EscolhaDaValidadeCodigo"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoInput"
+              }
+            ]
+          },
+          "efeitoDoVencimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+              }
+            ]
           }
         }
       },

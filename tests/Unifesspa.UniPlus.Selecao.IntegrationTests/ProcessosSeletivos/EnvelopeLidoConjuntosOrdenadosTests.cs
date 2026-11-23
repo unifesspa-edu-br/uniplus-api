@@ -58,11 +58,12 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
 
     private static DocumentoExigido DocumentoDeIdentidadeComFormatosEnumerados(FaseCronograma fase) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            [], [], null,
-            FormatosPermitidos.Criar(qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!,
-            null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!),
+            null).Value!;
 
     private static ResultadoConformidade ConformidadeComArgumentosEmOrdemNaoAlfabetica() =>
         new(

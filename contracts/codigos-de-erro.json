@@ -5172,6 +5172,41 @@
       "titulo": "O período de inscrição exige início e fim definidos"
     },
     {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.ausente",
+      "status": 422,
+      "titulo": "A data de referência do documento é obrigatória"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.data_da_fase_indefinida",
+      "status": 422,
+      "titulo": "A data da fase de referência não foi definida"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.data_incoerente_com_tipo",
+      "status": 422,
+      "titulo": "A data não corresponde ao tipo de referência"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fase_incoerente_com_tipo",
+      "status": 422,
+      "titulo": "A fase não corresponde ao tipo de referência"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fase_nao_pertence_ao_processo",
+      "status": 422,
+      "titulo": "A fase da referência não pertence ao processo"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fim_das_inscricoes_indefinido",
+      "status": 422,
+      "titulo": "O fim das inscrições não foi definido"
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.tipo_invalido",
+      "status": 422,
+      "titulo": "O tipo da data de referência não é reconhecido"
+    },
+    {
       "codigo": "uniplus.selecao.dia_nao_util_congelado.abrangencia_invalida",
       "status": 422,
       "titulo": "Abrangência do dia não útil fora do vocabulário do calendário"
@@ -5492,6 +5527,11 @@
       "titulo": "A situação da base legal é obrigatória"
     },
     {
+      "codigo": "uniplus.selecao.efeito_na_analise_do_documento.invalido",
+      "status": 422,
+      "titulo": "O efeito na análise do documento não é reconhecido"
+    },
+    {
       "codigo": "uniplus.selecao.envelope_codec.algoritmo_nao_suportado",
       "status": 422,
       "titulo": "O algoritmo de hash da versão não é o que o codec daquela forma emite"
@@ -5739,7 +5779,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva",
       "status": 422,
-      "titulo": "A fase removida do cronograma é usada por um documento de outra fase como âncora de idade máxima"
+      "titulo": "A fase é usada pela referência do prazo ou da validade de uma exigência documental"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado",
@@ -5920,41 +5960,6 @@
       "codigo": "uniplus.selecao.homologacao_das_inscricoes.resultado_nao_declarado",
       "status": 422,
       "titulo": "A regra de homologação das inscrições não aponta um resultado da fase"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia",
-      "status": 422,
-      "titulo": "Data e a fase que inicia a contagem só são aceitas quando a idade máxima de emissão está definida"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incompletos",
-      "status": 422,
-      "titulo": "Valor, Unidade e ReferenciaTipo devem estar todos presentes, ou todos ausentes"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo",
-      "status": 422,
-      "titulo": "A data só é aceita (e é exigida) quando o tipo é DATA_ESPECIFICA"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente",
-      "status": 422,
-      "titulo": "A fase que inicia a contagem da idade máxima de emissão não tem definida a data de início ou de término usada na contagem; defina essa data na fase"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo",
-      "status": 422,
-      "titulo": "A fase que inicia a contagem só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo",
-      "status": 422,
-      "titulo": "A fase que inicia a contagem da idade máxima de emissão não pertence ao cronograma deste processo; escolha uma fase do cronograma"
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.valor_invalido",
-      "status": 422,
-      "titulo": "O valor da idade máxima de emissão deve ser maior que zero"
     },
     {
       "codigo": "uniplus.selecao.inscricao.aceite_de_outra_versao",
@@ -6802,6 +6807,31 @@
       "titulo": "O rótulo da opção é obrigatório e respeita o tamanho máximo"
     },
     {
+      "codigo": "uniplus.selecao.prazo_de_emissao.detalhes_sem_prazo",
+      "status": 422,
+      "titulo": "Detalhes informados sem prazo de emissão"
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.escolha_invalida",
+      "status": 422,
+      "titulo": "A escolha do prazo de emissão não é reconhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.escolha_nao_declarada",
+      "status": 422,
+      "titulo": "O prazo de emissão não foi escolhido"
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.unidade_invalida",
+      "status": 422,
+      "titulo": "A unidade do prazo de emissão não é reconhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.valor_invalido",
+      "status": 422,
+      "titulo": "O valor do prazo de emissão deve ser maior que zero"
+    },
+    {
       "codigo": "uniplus.selecao.precondicao_falhou",
       "status": 412,
       "titulo": "O If-Match não corresponde ao estado atual do recurso"
@@ -7394,12 +7424,12 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_extremo_ausente",
       "status": 422,
-      "titulo": "A fase âncora da referência temporal de fatos não tem o extremo (início/fim) definido"
+      "titulo": "A fase da referência temporal de fatos não tem o extremo (início/fim) definido"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fase_inexistente",
       "status": 422,
-      "titulo": "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma"
+      "titulo": "A fase da referência temporal de fatos não pertence (mais) ao cronograma"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fim_inscricao_indisponivel",
@@ -7649,12 +7679,12 @@
     {
       "codigo": "uniplus.selecao.referencia_temporal_fatos.fase_incoerente_com_tipo",
       "status": 422,
-      "titulo": "A fase âncora só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE"
+      "titulo": "A fase de referência só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE"
     },
     {
       "codigo": "uniplus.selecao.referencia_temporal_fatos.fase_nao_pertence_ao_processo",
       "status": 422,
-      "titulo": "A fase âncora não pertence ao cronograma deste processo"
+      "titulo": "A fase de referência não pertence ao cronograma deste processo"
     },
     {
       "codigo": "uniplus.selecao.referencia_temporal_fatos.tipo_desconhecido",
@@ -8025,6 +8055,21 @@
       "codigo": "uniplus.selecao.vaga_ofertada.modalidade_codigo_obrigatorio",
       "status": 422,
       "titulo": "Código da modalidade da vaga ofertada é obrigatório"
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.detalhes_sem_exigencia",
+      "status": 422,
+      "titulo": "Detalhes informados sem exigência de validade"
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.escolha_invalida",
+      "status": 422,
+      "titulo": "A escolha da validade não é reconhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.escolha_nao_declarada",
+      "status": 422,
+      "titulo": "A validade do documento não foi escolhida"
     },
     {
       "codigo": "uniplus.selecao.versao_configuracao.ato_criador_ja_criou_versao",

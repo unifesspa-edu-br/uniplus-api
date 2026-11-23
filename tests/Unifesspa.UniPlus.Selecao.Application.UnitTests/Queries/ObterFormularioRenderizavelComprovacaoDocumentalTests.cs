@@ -126,7 +126,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
         string envelope = $$"""
             {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
               {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
-               {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
+               {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "prazoDeEmissao": null, "validade": null, "modelo": null }
             ] } }
             """;
         Guid? faseDoFormulario = formularioComFase ? Guid.Parse("0199a000-0000-7000-8000-0000000000f2") : null;
@@ -138,12 +138,38 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
         resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
     }
 
+    [Fact(DisplayName = "A comprovação traz o prazo de emissão com a data resolvida nas fases e no fuso congelados da versão")]
+    public async Task Handle_PrazoNaComprovacao_ResolveADataNoCronogramaEFusoDaVersao()
+    {
+        Guid faseHabilitacao = Guid.Parse("0199a000-0000-7000-8000-0000000000f2");
+        EnvelopeReidratado reidratado = EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, faseHabilitacao, comComprovacao: true));
+        Guid faseDoCronograma = reidratado.Configuracao.Cronograma.CronogramaFases[0].Id;
+        string envelope = $$"""
+            {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
+              {{ExigenciaComPrazo(faseHabilitacao, faseDoCronograma)}}
+            ] } }
+            """;
+
+        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(Guid.CreateVersion7(), envelope, reidratado, FinalidadeFormulario.Habilitacao);
+
+        PrazoDeEmissaoCertameDto prazo = habilitacao.Value!.ComprovacaoDocumental!.Single().PrazoDeEmissao!;
+        prazo.Referencia.FaseId.Should().Be(faseDoCronograma);
+        prazo.Referencia.Data.Should().Be(new DateOnly(2025, 12, 31), "o início da fase, 1º de janeiro à meia-noite em UTC, é 31 de dezembro no fuso da versão");
+    }
+
+    private static string ExigenciaComPrazo(Guid fase, Guid faseDeReferencia) => $$"""
+        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+         "finalidade": "HABILITACAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null, "validade": null,
+         "prazoDeEmissao": {"escolha": "COM_PRAZO", "valor": 3, "unidade": "MESES", "efeitoForaDoPrazo": "ACEITAR_COM_AVISO",
+           "referencia": {"tipo": "INICIO_DA_FASE", "data": null, "faseId": "{{faseDeReferencia}}" } } }
+        """;
+
     private const string Modelo = """
         {"modeloId": "0199a000-0000-7000-8000-0000000000aa", "nomeArquivo": "Autodeclaração.odt", "formato": "ODT", "hashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
         """;
 
     private static string Exigencia(string nome, string aplicabilidade, Guid fase, string? finalidade, string modelo = "null") => $$"""
         {"tipoDocumentoNome": "{{nome}}", "aplicabilidade": "{{aplicabilidade}}", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-         "finalidade": {{(finalidade is null ? "null" : $"\"{finalidade}\"")}}, "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": {{modelo}} }
+         "finalidade": {{(finalidade is null ? "null" : $"\"{finalidade}\"")}}, "formatosPermitidos": {"lista": null, "qualquer": true}, "prazoDeEmissao": null, "validade": null, "modelo": {{modelo}} }
         """;
 }

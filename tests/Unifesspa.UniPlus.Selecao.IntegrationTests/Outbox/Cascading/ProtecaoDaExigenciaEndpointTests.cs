@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A proteção do tipo de documento na exigência, pelo HTTP e com versões de verdade: a exigência
@@ -296,7 +297,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             momento = new { faseId = FaseId, finalidade = "INSCRICAO" },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
             indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
-            requisitos = new { formatosPermitidos = "QUALQUER" },
+            requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,
             fatosComprovados,
         };
 

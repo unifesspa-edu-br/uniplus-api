@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -41,17 +42,22 @@ public sealed class VerificacaoDosArquivosNoHostTests
             Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
 
-        DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
-            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
-        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
-        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-            apresentacao.Id, inscricao.Id, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        arquivo.Confirmar("\"etag\"", new RelogioFixo(publicadoEm)).IsSuccess.Should().BeTrue();
+        (ApresentacaoDeDocumento apresentacao, ArquivoDaApresentacao arquivo) = CriarArquivo(inscricao.Id, publicadoEm);
         await documentos.AdicionarApresentacaoAsync(apresentacao);
         await documentos.AdicionarArquivoAsync(arquivo);
         await sp.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
         return arquivo.Id;
+    }
+
+    private static (ApresentacaoDeDocumento, ArquivoDaApresentacao) CriarArquivo(Guid inscricaoId, DateTimeOffset publicadoEm)
+    {
+        DocumentoExigido laudo = new DocumentoExigidoBuilder().ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [])).Construir();
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, laudo, null);
+        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+            apresentacao.Id, inscricaoId, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        arquivo.Confirmar("\"etag\"", new RelogioFixo(publicadoEm)).IsSuccess.Should().BeTrue();
+        return (apresentacao, arquivo);
     }
 
     private async Task<ArquivoDaApresentacao> LerAsync(Guid id)
@@ -99,19 +105,19 @@ public sealed class VerificacaoDosArquivosNoHostTests
         DateTimeOffset vencido = DateTimeOffset.UtcNow.AddHours(-2);
         Guid id = await SemearEmVerificacaoAsync(vencido);
 
-        async Task<int> Replica()
-        {
-            await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-            Result<int> resultado = await scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus>()
-                .Send(new ReconciliarVerificacaoDosArquivosCommand());
-            return resultado.Value;
-        }
-
         int[] republicados = await Task.WhenAll(Replica(), Replica());
 
         republicados.Sum().Should().Be(1);
         ArquivoDaApresentacao arquivo = await LerAsync(id);
         arquivo.ProximaPublicacaoEm.Should().BeAfter(DateTimeOffset.UtcNow);
         (await Replica()).Should().Be(0, "a publicação nova reinicia o prazo");
+    }
+
+    private async Task<int> Replica()
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        Result<int> resultado = await scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus>()
+            .Send(new ReconciliarVerificacaoDosArquivosCommand());
+        return resultado.Value;
     }
 }

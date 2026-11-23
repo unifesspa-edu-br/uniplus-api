@@ -16,8 +16,12 @@ public sealed class DocumentosDoComprovanteTests
     private static DocumentoExigido Documento(
         string nome, string? consequencia = null, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
         DocumentoExigido.Criar(
-            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio, consequencia,
-            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Fase, null, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(obrigatorio, consequencia, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static DocumentosDaInscricao Avaliacao(params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens) =>
         new([.. itens.Select(static i => new DocumentoAvaliado(i.Documento, i.Situacao, null, i.Ocorrencia, [], null))],

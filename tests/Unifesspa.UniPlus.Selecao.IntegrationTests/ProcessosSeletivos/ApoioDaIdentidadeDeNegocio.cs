@@ -108,10 +108,13 @@ internal static class ApoioDaIdentidadeDeNegocio
 
     internal static DocumentoExigido ExigenciaDeTeste(Guid id, Guid faseId, Guid tipoDocumentoOrigemId, string tipoDocumentoNome) =>
         DocumentoExigido.Reidratar(
-            id, faseId, tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
+            id,
+            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
+            null);
 
     internal static IReadOnlyList<string> NomesDasExigenciasNoEnvelope(FaseCronograma fase, params RegraDeComprovacao[] regrasSemGrupo)
     {

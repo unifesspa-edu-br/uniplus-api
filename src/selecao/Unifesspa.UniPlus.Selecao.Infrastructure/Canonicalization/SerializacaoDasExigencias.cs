@@ -98,6 +98,7 @@ internal static class SerializacaoDasExigencias
     {
         JsonObject item = SerializarIdentificacaoDaExigencia(exigencia);
         AcrescentarCondicoesDaExigencia(item, exigencia);
+        AcrescentarRequisitosDaExigencia(item, exigencia);
         return item;
     }
 
@@ -126,7 +127,12 @@ internal static class SerializacaoDasExigencias
             : null;
         item["condicoes"] = SerializarCondicaoGatilho(exigencia.Condicoes);
         item["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas());
-        item["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null;
+    }
+
+    private static void AcrescentarRequisitosDaExigencia(JsonObject item, DocumentoExigido exigencia)
+    {
+        item["prazoDeEmissao"] = SerializacaoDoPrazoEDaValidade.Prazo(exigencia.PrazoDeEmissao);
+        item["validade"] = SerializacaoDoPrazoEDaValidade.Validade(exigencia.Validade);
         item["formatosPermitidos"] = SerializarFormatosPermitidos(exigencia.FormatosPermitidos);
         item["tamanhoMaximoBytes"] = exigencia.TamanhoMaximoBytes;
         item["modelo"] = exigencia.Modelo is { } modelo ? SerializarModelo(modelo) : null;
@@ -163,15 +169,6 @@ internal static class SerializacaoDasExigencias
             ["situacao"] = b.Situacao.ToCodigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
         }));
-
-    private static JsonObject SerializarIdadeMaximaEmissao(IdadeMaximaEmissao idade) => new()
-    {
-        ["valor"] = idade.Valor,
-        ["unidade"] = idade.Unidade.ToCodigo(),
-        ["referenciaTipo"] = idade.ReferenciaTipo.ToCodigo(),
-        ["data"] = idade.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["referenciaFaseId"] = idade.ReferenciaFaseId,
-    };
 
     private static JsonArray SerializarObrigatoriedades(ResultadoConformidade? conformidade)
     {

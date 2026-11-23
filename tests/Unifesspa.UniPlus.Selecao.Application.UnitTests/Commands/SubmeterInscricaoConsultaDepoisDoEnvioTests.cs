@@ -87,9 +87,13 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
     }
 
     private static DocumentoExigido DocumentoCondicional(Guid fase, string codigo, string fato, JsonElement valor) =>
-        DocumentoExigido.Criar(fase, Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, null, [CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!], [], null,
-            FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        DocumentoExigido.Criar(
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!]),
+            new IndeferimentoDoDocumento(false, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) ExigenciaRegional(ProcessoSeletivo processo)
     {

@@ -12,6 +12,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -45,52 +46,16 @@ internal static class PrimitivasDaProjecao
         return true;
     }
 
-    private static bool TentarIdentificadores(JsonObject objeto, string chave, [NotNullWhen(true)] out List<Guid>? valores)
-    {
-        valores = null;
-        if (!TentarArray(objeto, chave, out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<Guid> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonValue valor
-                || !valor.TryGetValue(out string? texto)
-                || !Guid.TryParse(texto, CultureInfo.InvariantCulture, out Guid identificador))
-            {
-                return false;
-            }
-
-            lidos.Add(identificador);
-        }
-
-        valores = lidos;
-        return true;
-    }
-
     internal static bool TentarTextos(JsonObject objeto, string chave, [NotNullWhen(true)] out List<string>? valores)
     {
         valores = null;
-        if (!TentarArray(objeto, chave, out JsonArray? array))
-        {
-            return false;
-        }
+        return TentarArray(objeto, chave, out JsonArray? array) && TentarItens<string>(array, TentarTextoDoItem, out valores);
+    }
 
-        List<string> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonValue valor || !valor.TryGetValue(out string? texto))
-            {
-                return false;
-            }
-
-            lidos.Add(texto);
-        }
-
-        valores = lidos;
-        return true;
+    private static bool TentarTextoDoItem(JsonNode? item, [NotNullWhen(true)] out string? texto)
+    {
+        texto = null;
+        return item is JsonValue valor && valor.TryGetValue(out texto);
     }
 
     internal static bool TentarArray(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonArray? valor)
@@ -167,18 +132,13 @@ internal static class PrimitivasDaProjecao
             return false;
         }
 
-        if (node is null)
-        {
-            return true;
-        }
-
         if (node is JsonValue jv && jv.TryGetValue(out int lido))
         {
             valor = lido;
             return true;
         }
 
-        return false;
+        return node is null;
     }
 
     /// <summary>
@@ -206,6 +166,72 @@ internal static class PrimitivasDaProjecao
 
         valor = lido;
         return true;
+    }
+
+    /// <summary>Chave presente com <c>null</c> explícito ou com identificador na forma exata do envelope; ausente ou fora da forma, falha.</summary>
+    internal static bool TentarIdentificadorOpcional(JsonObject? objeto, string chave, out Guid? valor)
+    {
+        valor = null;
+        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return true;
+        }
+
+        bool lido = TentarIdentificador(objeto, chave, out Guid identificador);
+        valor = lido ? identificador : null;
+        return lido;
+    }
+
+    /// <summary>Chave presente com <c>null</c> explícito ou com data <c>yyyy-MM-dd</c>; ausente ou fora da forma, falha.</summary>
+    internal static bool TentarDataOpcional(JsonObject? objeto, string chave, out DateOnly? valor)
+    {
+        valor = null;
+        if (!TentarTextoOpcional(objeto, chave, out string? texto))
+        {
+            return false;
+        }
+
+        if (texto is null)
+        {
+            return true;
+        }
+
+        bool lida = DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly data);
+        valor = lida ? data : null;
+        return lida;
+    }
+
+    /// <summary>Código de contrato de um enum, na forma exata que o envelope grava; texto fora do catálogo falha.</summary>
+    internal static bool TentarCodigo<TEnum>(JsonObject? objeto, string chave, out TEnum valor)
+        where TEnum : struct, Enum
+    {
+        valor = default;
+        return TentarTexto(objeto, chave, out string codigo) && CatalogoDe<TEnum>.TentarObter(codigo, out valor);
+    }
+
+    /// <summary>Chave presente com <c>null</c> explícito ou com código de contrato; ausente ou fora do catálogo, falha.</summary>
+    internal static bool TentarCodigoOpcional<TEnum>(JsonObject? objeto, string chave, out TEnum? valor)
+        where TEnum : struct, Enum
+    {
+        valor = null;
+        if (!TentarTextoOpcional(objeto, chave, out string? codigo))
+        {
+            return false;
+        }
+
+        if (codigo is null)
+        {
+            return true;
+        }
+
+        bool lido = CatalogoDe<TEnum>.TentarObter(codigo, out TEnum encontrado);
+        valor = lido ? encontrado : null;
+        return lido;
     }
 
     /// <summary>Instante congelado, exigido na forma canônica do envelope: a projeção não é mais leniente que o decodificador.</summary>

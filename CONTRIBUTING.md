@@ -744,7 +744,7 @@ public void Aprovar_PedidoPendente_RegistraQuemDecidiu()
 **5. Supressão de aviso: proibida** ([ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md)).
 
 - **Proibido:** calar aviso com `[SuppressMessage]`, `GlobalSuppressions.cs`, `#pragma warning disable` ou `<NoWarn>`. O aviso se corrige no código.
-- **Design ruim se refaz:** quando o analisador revela design ruim, o design é refeito. Por exemplo, um `bool?` usado como três estados vira um `enum` com os três estados.
+- **Design ruim se refaz:** quando o analisador revela design ruim, o design é refeito. Por exemplo, um `bool?` usado como três estados é representado por um `enum` com os estados escolhidos. A escolha ainda não feita é anulável (ADR-0176, item 3).
 - **Permitido:** desligar no `.editorconfig`, com comentário justificando, uma regra que não se aplica ao projeto inteiro ou a uma camada inteira. Camada é código com o mesmo papel, como testes, controllers ou configuração do EF, selecionado por glob de caminho. Isso é decisão de projeto, não supressão por símbolo.
 - **Supressão disfarçada:** seção que isenta um arquivo ou um tipo específico, e não uma camada inteira, também é proibida.
 

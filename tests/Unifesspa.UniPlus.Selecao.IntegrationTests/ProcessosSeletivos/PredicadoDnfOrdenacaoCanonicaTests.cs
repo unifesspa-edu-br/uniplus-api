@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -154,16 +155,12 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
     private static void DefinirExigenciaCondicional(ProcessoSeletivo processo, FaseCronograma fase, IReadOnlyList<CondicaoGatilho> condicoes)
     {
-        FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
-
-        // obrigatorio: false, consequenciaIndeferimento: null — DeterminaResultado() fica falso,
-        // então nem PendenciaDasExigenciasDocumentais (CA-01) nem a checagem de base legal de
-        // AvaliadorConformidadeLegal exigem nada além do gatilho em si (mesmo raciocínio já
-        // usado nos testes de leitura do envelope).
-        DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        DocumentoExigido documento = new DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .NaFase(fase.Id, FinalidadeFormulario.Inscricao)
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .Construir();
 
         processo.DefinirDocumentosExigidos(
             [RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!]).IsSuccess.Should().BeTrue();

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -68,6 +69,11 @@
     <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />
     <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
+    <Compile Include="../Shared/Cenarios/DocumentoExigidoBuilder.cs" Link="Cenarios/DocumentoExigidoBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/DataDeReferenciaBuilder.cs" Link="Cenarios/DataDeReferenciaBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/ValidadeDoDocumentoBuilder.cs" Link="Cenarios/ValidadeDoDocumentoBuilder.cs" />
+    <Compile Include="../Shared/RequisitosDoDocumentoDeTeste.cs" Link="RequisitosDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />

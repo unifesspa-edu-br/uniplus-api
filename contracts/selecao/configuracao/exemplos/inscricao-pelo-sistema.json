@@ -491,11 +491,14 @@
             "situacao": "RESOLVIDO"
           }
         ],
-        "idadeMaximaEmissao": {
+        "prazoDeEmissao": {
+          "escolha": "COM_PRAZO",
           "valor": 90,
           "unidade": "DIAS",
-          "referenciaTipo": "FIM_INSCRICAO"
-        }
+          "referencia": { "tipo": "FIM_DAS_INSCRICOES" },
+          "efeitoForaDoPrazo": "RECUSAR_DOCUMENTO"
+        },
+        "validade": { "escolha": "NAO_EXIGE_DOCUMENTO_VALIDO" }
       }
     ],
     "regrasDeComprovacao": [

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -157,39 +158,29 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
     }
 
     private static DocumentoExigido ExigenciaCondicionalVaziaObrigatoria(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
-        exigidoNaFaseId,
-        tipoDocumentoOrigemId: Guid.CreateVersion7(),
-        tipoDocumentoCodigo: "CERTIDAO_RESERVISTA",
-        tipoDocumentoNome: "Certidão de reservista",
-        tipoDocumentoCategoria: "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal,
-        aplicabilidade: Aplicabilidade.Condicional,
-        obrigatorio: true,
-        consequenciaIndeferimento: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
-        exigidoNaFaseId,
-        tipoDocumentoOrigemId: Guid.CreateVersion7(),
-        tipoDocumentoCodigo: "IDENTIDADE",
-        tipoDocumentoNome: "Documento de identidade",
-        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        aplicabilidade: Aplicabilidade.Geral,
-        obrigatorio: true,
-        consequenciaIndeferimento: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 
     private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(
         "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
     private static DocumentoExigido ExigenciaObrigatoriaCom(Guid exigidoNaFaseId, params DocumentoExigidoBaseLegal[] basesLegais) => DocumentoExigido.Criar(
-        exigidoNaFaseId: exigidoNaFaseId,
-        tipoDocumentoOrigemId: Guid.CreateVersion7(),
-        tipoDocumentoCodigo: "IDENTIDADE",
-        tipoDocumentoNome: "Documento de identidade",
-        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        aplicabilidade: Aplicabilidade.Geral,
-        obrigatorio: true,
-        consequenciaIndeferimento: null,
-        condicoes: [],
-        basesLegais: basesLegais, idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, basesLegais),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 }

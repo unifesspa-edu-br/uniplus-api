@@ -39,10 +39,12 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static DocumentoExigido ExigenciaGatilhadaPor(string fato) =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
-            [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            [], null, Qualquer, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]),
+            new IndeferimentoDoDocumento(false, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     private static Result<GrafoDependenciaConjunta> Construir(
         IReadOnlyCollection<FatoColetado>? fatos = null,

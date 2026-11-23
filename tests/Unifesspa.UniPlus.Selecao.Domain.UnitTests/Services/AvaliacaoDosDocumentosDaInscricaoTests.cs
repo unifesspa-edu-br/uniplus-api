@@ -200,8 +200,12 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static DocumentoExigido Geral() =>
         DocumentoExigido.Criar(
-            FaseDaInscricao.Id, Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(FaseDaInscricao.Id, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Enviados(params DocumentoExigido[] documentos) =>
         documentos.ToDictionary(static d => d.Id, static _ => (IReadOnlyList<ApresentacaoDocumento>)[new(Guid.CreateVersion7())]);
@@ -379,10 +383,12 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)],
-            [], null, Qualquer, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)]),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, FaseCronograma fase) =>
         FormularioProcesso.Criar(

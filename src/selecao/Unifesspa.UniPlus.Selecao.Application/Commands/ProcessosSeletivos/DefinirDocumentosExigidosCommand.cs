@@ -33,14 +33,6 @@ public sealed record BaseLegalInput(string Referencia, string Abrangencia, strin
     public const string CaminhoDaLista = "indeferimento.basesLegais";
 }
 
-/// <summary>
-/// Entrada da idade máxima de emissão, usada por <see cref="RequisitosDoDocumentoInput"/>. Tudo-nulo
-/// (os 5 campos) é a variante "regra ausente". <see cref="Unidade"/>/<see cref="ReferenciaTipo"/> são
-/// tokens canônicos (<see cref="Domain.Enums.UnidadeIdadeCodigo"/>/<see cref="Domain.Enums.ReferenciaTipoIdadeEmissaoCodigo"/>).
-/// </summary>
-public sealed record IdadeMaximaEmissaoInput(
-    int? Valor, string? Unidade, string? ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
-
 /// <summary>O tipo de documento do catálogo que a exigência pede; o handler lê dele só a identidade.</summary>
 /// <param name="Id">Identidade do tipo de documento no catálogo.</param>
 public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
@@ -95,8 +87,7 @@ public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, string? Con
 public sealed record ModeloDaExigenciaInput(Guid ModeloId);
 
 /// <summary>
-/// O que restringe o arquivo que o candidato envia: formatos, tamanho, idade máxima de emissão e modelo. É
-/// aviso, não bloqueio de presença, e fica congelado por chamada.
+/// O que restringe o arquivo que o candidato envia: formatos, tamanho, prazo de emissão, validade e modelo.
 /// </summary>
 /// <param name="FormatosPermitidos">
 /// Valor JSON polimórfico: a string <c>"QUALQUER"</c> ou um array de itens, cada um um texto ou um objeto
@@ -104,12 +95,18 @@ public sealed record ModeloDaExigenciaInput(Guid ModeloId);
 /// <c>FormatosPermitidos.Obrigatorio</c>; presente em forma inválida, com <c>FormatosPermitidos.FormaInvalida</c>.
 /// </param>
 /// <param name="TamanhoMaximoBytes">Tamanho máximo do arquivo, em bytes, quando presente.</param>
-/// <param name="IdadeMaximaEmissao">Idade máxima de emissão do documento.</param>
+/// <param name="PrazoDeEmissao">
+/// Prazo de emissão do documento; omitido, a escolha é apagada e a publicação a recusa como pendente.
+/// </param>
+/// <param name="Validade">
+/// Validade do documento; omitida, a escolha é apagada e a publicação a recusa como pendente.
+/// </param>
 /// <param name="Modelo">Modelo que a exigência oferece; ausente, a exigência não tem modelo.</param>
 public sealed record RequisitosDoDocumentoInput(
     JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
+    PrazoDeEmissaoInput? PrazoDeEmissao,
+    ValidadeDoDocumentoInput? Validade,
     ModeloDaExigenciaInput? Modelo)
 {
     /// <summary>O caminho do tamanho máximo no pedido.</summary>

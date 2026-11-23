@@ -21,15 +21,21 @@ internal static class RegrasDeComprovacaoDeTeste
 
     internal static DocumentoExigido DocumentoGeral(string? consequencia = null) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequencia, [], [], null, Qualquer, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(FaseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, consequencia, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     internal static DocumentoExigido DocumentoCondicional(string fato, string? consequencia = null) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, consequencia,
-            [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            [], null, Qualquer, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(FaseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]),
+            new IndeferimentoDoDocumento(false, consequencia, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            null).Value!;
 
     internal static Dictionary<string, FatoResolvido> Fatos(string fato, bool valor) =>
         new(StringComparer.Ordinal) { [fato] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(valor)) };

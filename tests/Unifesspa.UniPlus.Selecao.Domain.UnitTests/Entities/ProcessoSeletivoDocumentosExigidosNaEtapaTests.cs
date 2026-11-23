@@ -20,19 +20,12 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 {
     private static DocumentoExigido ExigenciaNaEtapa(Guid exigidoNaFaseId, Guid exigidoNaEtapaId, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null,
-            exigidoNaEtapaId: exigidoNaEtapaId,
-            finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, exigidoNaEtapaId, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static EtapaProcesso EtapaMovidaParaAFase(EtapaProcesso etapa, string faseCodigo) =>
         EtapaProcesso.Reidratar(

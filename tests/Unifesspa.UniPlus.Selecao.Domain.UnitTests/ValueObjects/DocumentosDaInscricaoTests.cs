@@ -54,6 +54,11 @@ public sealed class DocumentosDaInscricaoTests
         new([], new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), [new DocumentoAusente(alternativas, ocorrencia)]);
 
     private static DocumentoExigido Documento(string codigo, string nome) =>
-        DocumentoExigido.Criar(Guid.NewGuid(), Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        DocumentoExigido.Criar(
+            new CopiaDoTipoDeDocumento(Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.NewGuid(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 }

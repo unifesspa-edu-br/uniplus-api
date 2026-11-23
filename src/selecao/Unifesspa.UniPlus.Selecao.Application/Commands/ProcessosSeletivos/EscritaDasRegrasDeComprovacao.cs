@@ -87,10 +87,10 @@ internal static class EscritaDasRegrasDeComprovacao
         DocumentoExigido.ValidarFormaBasica(
             EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade()),
             documento.Consequencia(),
-            documento.TamanhoMaximoBytes(),
             documento.Condicoes().Count,
             EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade()),
-            documento.FatosComprovados).Select(EscritaDaExigencia.NoCaminhoDoPedido).ToList();
+            documento.FatosComprovados).Concat(RequisitosDoDocumento.ValidarTamanho(documento.TamanhoMaximoBytes()))
+            .Select(EscritaDaExigencia.NoCaminhoDoPedido).ToList();
 
     private static List<FieldError> FormaDaBaseLegal(BaseLegalInput baseLegal, bool doDocumento) =>
         doDocumento

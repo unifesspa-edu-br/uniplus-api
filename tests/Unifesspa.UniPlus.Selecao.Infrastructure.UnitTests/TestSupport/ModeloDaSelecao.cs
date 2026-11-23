@@ -20,6 +20,19 @@ internal static class ModeloDaSelecao
             ?? throw new InvalidOperationException($"A propriedade {entidade.Name}.{nome} não está no modelo.");
     }
 
+    /// <summary>As colunas da tabela do esquema da Seleção, inclusive as dos tipos próprios gravados na mesma tabela.</summary>
+    public static IReadOnlyList<ColunaDoModelo> Colunas(string tabela)
+    {
+        StoreObjectIdentifier objeto = StoreObjectIdentifier.Table(tabela, "selecao");
+        return [.. Montado.Value.GetEntityTypes().SelectMany(static e => e.GetProperties())
+            .Select(p => (Propriedade: p, Nome: p.GetColumnName(objeto)))
+            .Where(static c => c.Nome is not null)
+            .Select(c => new ColunaDoModelo(c.Nome!, c.Propriedade.IsColumnNullable(objeto), c.Propriedade.GetComment(objeto)))
+            .DistinctBy(static c => c.Nome)];
+    }
+
+    public static string? ComentarioDaTabela(Type entidade) => Montado.Value.FindEntityType(entidade)?.GetComment();
+
     private static IModel Montar()
     {
         DbContextOptions<ContextoDaSelecao> opcoes = new DbContextOptionsBuilder<ContextoDaSelecao>()
@@ -35,3 +48,6 @@ internal static class ModeloDaSelecao
         protected override IReadOnlyList<IContribuicaoDoModulo> Contribuicoes { get; } = [new SelecaoContribuicao()];
     }
 }
+
+/// <summary>O que o modelo diz de uma coluna da tabela: o nome, se aceita nulo e o comentário.</summary>
+internal sealed record ColunaDoModelo(string Nome, bool Anulavel, string? Comentario);

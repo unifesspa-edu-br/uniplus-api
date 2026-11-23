@@ -140,9 +140,12 @@ internal static class ProcessoComDuasExigenciasDeTeste
 
     private static DocumentoExigido ExigenciaDeInscricao(FaseCronograma fase, string codigo, string nome) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), codigo, nome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
-            FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null).Value!;
 
     private static DadosEdital DadosDoEdital() =>
         DadosEdital.Criar(

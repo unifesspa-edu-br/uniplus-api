@@ -58,9 +58,12 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     private static DocumentoExigido ExigenciaCondicionada(
         Guid faseId, TipoDeDocumento tipoDocumento, CondicaoGatilho condicao) =>
         DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), tipoDocumento.Codigo, tipoDocumento.Nome, tipoDocumento.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumento.Codigo, tipoDocumento.Nome, tipoDocumento.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static ProcessoSeletivo ProcessoComModalidadeCitadaPelaExigencia(TipoDeDocumento tipoDocumento, string fato)
     {

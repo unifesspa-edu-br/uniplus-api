@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -237,9 +238,7 @@ public sealed class InscricaoPreenchimentoTests
     public void Submeter_DocumentoObrigatorioAusente_RecusaJuntoDasDemais()
     {
         Inscricao inscricao = NovaInscricao();
-        DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
-            FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        DocumentoExigido laudo = new DocumentoExigidoBuilder().NaFase(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao).Construir();
         ResultadoDaAvaliacaoDaInscricao avaliacao = ComModalidades(SituacaoDasModalidades.FaltaResponder);
         avaliacao = avaliacao with { Documentos = avaliacao.Documentos with { Ausentes = [new DocumentoAusente([laudo], null)] } };
 

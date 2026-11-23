@@ -13,6 +13,7 @@ internal static class ErrosDasRegrasDeComprovacao
     [
         .. BaseLegalDoDocumento(),
         .. LimitesDoDocumento(),
+        .. CompletudeDasReferencias(),
         .. Formatos(),
         .. ConsequenciasDoDocumento(),
         .. EstruturaDasRegras(),
@@ -33,13 +34,21 @@ internal static class ErrosDasRegrasDeComprovacao
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> LimitesDoDocumento() =>
     [
         new("DocumentoExigido.TamanhoMaximoBytesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tamanho_maximo_bytes_invalido", "O tamanho máximo em bytes, quando presente, deve ser maior que zero")),
-        new("IdadeMaximaEmissao.CamposIncoerentesComAusencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia", "Data e a fase que inicia a contagem só são aceitas quando a idade máxima de emissão está definida")),
-        new("IdadeMaximaEmissao.CamposIncompletos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incompletos", "Valor, Unidade e ReferenciaTipo devem estar todos presentes, ou todos ausentes")),
-        new("IdadeMaximaEmissao.ValorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.valor_invalido", "O valor da idade máxima de emissão deve ser maior que zero")),
-        new("IdadeMaximaEmissao.DataIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo", "A data só é aceita (e é exigida) quando o tipo é DATA_ESPECIFICA")),
-        new("IdadeMaximaEmissao.FaseIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo", "A fase que inicia a contagem só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE")),
-        new("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo", "A fase que inicia a contagem da idade máxima de emissão não pertence ao cronograma deste processo; escolha uma fase do cronograma")),
-        new("IdadeMaximaEmissao.FaseExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente", "A fase que inicia a contagem da idade máxima de emissão não tem definida a data de início ou de término usada na contagem; defina essa data na fase")),
+        new("PrazoDeEmissao.DetalhesSemPrazo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prazo_de_emissao.detalhes_sem_prazo", "Detalhes informados sem prazo de emissão")),
+        new("PrazoDeEmissao.ValorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prazo_de_emissao.valor_invalido", "O valor do prazo de emissão deve ser maior que zero")),
+        new("ValidadeDoDocumento.DetalhesSemExigencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.validade_do_documento.detalhes_sem_exigencia", "Detalhes informados sem exigência de validade")),
+        new("DataDeReferenciaDoDocumento.Ausente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.ausente", "A data de referência do documento é obrigatória")),
+        new("DataDeReferenciaDoDocumento.DataIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.data_incoerente_com_tipo", "A data não corresponde ao tipo de referência")),
+        new("DataDeReferenciaDoDocumento.FaseIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.fase_incoerente_com_tipo", "A fase não corresponde ao tipo de referência")),
+        new("DataDeReferenciaDoDocumento.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.fase_nao_pertence_ao_processo", "A fase da referência não pertence ao processo")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CompletudeDasReferencias() =>
+    [
+        new("PrazoDeEmissao.EscolhaNaoDeclarada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prazo_de_emissao.escolha_nao_declarada", "O prazo de emissão não foi escolhido")),
+        new("ValidadeDoDocumento.EscolhaNaoDeclarada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.validade_do_documento.escolha_nao_declarada", "A validade do documento não foi escolhida")),
+        new("DataDeReferenciaDoDocumento.DataDaFaseIndefinida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.data_da_fase_indefinida", "A data da fase de referência não foi definida")),
+        new("DataDeReferenciaDoDocumento.FimDasInscricoesIndefinido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.data_de_referencia_do_documento.fim_das_inscricoes_indefinido", "O fim das inscrições não foi definido")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Formatos() =>

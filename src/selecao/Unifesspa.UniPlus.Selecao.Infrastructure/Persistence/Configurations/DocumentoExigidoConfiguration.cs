@@ -40,8 +40,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private const int FinalidadeTratamentoMaxLength = LimitesDoEnvelope.FinalidadeTratamento;
     private const int HipoteseLegalMaxLength = LimitesDoEnvelope.HipoteseLegal;
     private const int ConsequenciaIndeferimentoMaxLength = 30;
-    private const int IdadeMaximaUnidadeMaxLength = 10;
-    private const int IdadeMaximaReferenciaTipoMaxLength = 20;
+    private const int CodigoDoPrazoEDaValidadeMaxLength = 30;
+    private const int UnidadeDoPrazoMaxLength = 10;
 
     private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
@@ -53,7 +53,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.ToTable("documentos_exigidos", t =>
         {
-            t.HasComment("Documentos exigidos dos candidatos em cada processo seletivo.");
+            t.HasComment("Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
             t.HasCheckConstraint(
                 "ck_documentos_exigidos_formatos_permitidos_coerente",
                 "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR " +
@@ -63,33 +63,50 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasKey(d => d.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // FaseCronograma/ModalidadeSelecionada.
-        builder.Property(d => d.Id).ValueGeneratedNever().HasComment("Identificador da exigência documental.");
-        builder.Property(d => d.ProcessoSeletivoId).HasComment("Identificador do processo seletivo que declara a exigência.");
+        builder.Property(d => d.Id).ValueGeneratedNever().HasComment("Identificador da exigência de documento.");
+        ConfigurarColunasDaExigencia(builder);
+        ConfigurarRelacionamentos(builder);
+        ConfigurarRequisitos(builder);
+    }
 
-        builder.Property(d => d.ExigidoNaFaseId).IsRequired().HasComment("Identificador da fase em que o documento é exigido.");
-        builder.Property(d => d.TipoDocumentoOrigemId).IsRequired().HasComment("Identificador do tipo de documento no cadastro de origem.");
-        builder.Property(d => d.TipoDocumentoCodigo).HasMaxLength(TipoDocumentoCodigoMaxLength).IsRequired().HasComment("Código do tipo de documento copiado do cadastro.");
-        builder.Property(d => d.TipoDocumentoNome).HasMaxLength(TipoDocumentoNomeMaxLength).IsRequired().HasComment("Nome do tipo de documento copiado do cadastro.");
-        builder.Property(d => d.TipoDocumentoCategoria).HasMaxLength(TipoDocumentoCategoriaMaxLength).IsRequired().HasComment("Categoria do tipo de documento copiada do cadastro.");
+    private static void ConfigurarColunasDaExigencia(EntityTypeBuilder<DocumentoExigido> builder)
+    {
+        builder.Property(d => d.ProcessoSeletivoId).HasComment("Processo seletivo que faz a exigência.");
+        builder.Property(d => d.CreatedAt).HasComment("Data e hora em que a exigência foi criada.");
+        builder.Property(d => d.UpdatedAt).HasComment("Data e hora da última alteração da exigência.");
+        builder.Property(d => d.ExigidoNaFaseId).IsRequired().HasComment("Fase do cronograma do processo em que o documento é exigido.");
+        builder.Property(d => d.TipoDocumentoOrigemId).IsRequired().HasComment("Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência.");
+        builder.Property(d => d.TipoDocumentoCodigo).HasMaxLength(TipoDocumentoCodigoMaxLength).IsRequired().HasComment("Código do tipo de documento, copiado do catálogo ao gravar a exigência.");
+        builder.Property(d => d.TipoDocumentoNome).HasMaxLength(TipoDocumentoNomeMaxLength).IsRequired().HasComment("Nome do tipo de documento, copiado do catálogo ao gravar a exigência.");
+        builder.Property(d => d.TipoDocumentoCategoria).HasMaxLength(TipoDocumentoCategoriaMaxLength).IsRequired().HasComment("Categoria do tipo de documento, copiada do catálogo ao gravar a exigência.");
         builder.Property(d => d.ClassificacaoProtecao)
             .HasConversion<ClassificacaoDeProtecaoValueConverter>()
             .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
             .IsRequired()
-            .HasComment("Classificação de proteção copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
-        builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados copiada do tipo de documento.");
-        builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal copiada do tipo de documento: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
-        builder.Property(d => d.FatosComprovados).IsRequired().HasComment("Códigos dos fatos do processo comprovados pelo documento; lista vazia quando nenhum foi declarado.");
-        builder.Property(d => d.Aplicabilidade).HasConversion<int>().IsRequired().HasComment("A quem a exigência se aplica: 1 = todos os candidatos, 2 = candidatos que atendem às condições.");
-        builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a apresentação do documento é obrigatória.");
-        builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength).HasComment("Consequência do indeferimento, quando declarada: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO.");
+            .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+        builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
+        builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
+        builder.Property(d => d.FatosComprovados).IsRequired().HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
+        builder.Property(d => d.Aplicabilidade).HasConversion<int>().IsRequired().HasComment("A quem a exigência se aplica: 1 para todos os candidatos, 2 só para quem atende às condições da exigência.");
+        builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");
+        builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength)
+            .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO; vazio quando a exigência não determina resultado.");
+        // A etapa que coleta o documento, quando a fase se subdivide — opcional.
+        builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
+        // O formulário a que o documento pertence — nulo fora de fase de formulário. O
+        // vocabulário e a coerência com a fase são do domínio, sem CHECK no banco.
+        builder.Property(d => d.Finalidade).HasConversion<int?>()
+            .HasComment("Formulário a que o documento pertence: 1 inscrição, 2 isenção da taxa, 3 habilitação; vazio quando a fase não responde formulário.");
+    }
 
+    private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)
+    {
         // FK real para fases_cronograma — a checagem "fase viva do mesmo processo"
         // (ProcessoSeletivo.DefinirDocumentosExigidos) é check-then-act não-atômico; a
         // constraint do banco é a defesa realmente atômica (mesmo padrão de
         // FaseCronogramaConfiguration). Restrict, não Cascade: reconfigurar o cronograma
         // (DefinirCronogramaFases) não pode apagar silenciosamente uma fase ainda
-        // referenciada por uma exigência viva — falha explícita até a PR #900 formalizar o
-        // guard de domínio equivalente (CA-04).
+        // referenciada por uma exigência viva — falha explícita.
         builder.HasOne<FaseCronograma>()
             .WithMany()
             .HasForeignKey(d => d.ExigidoNaFaseId)
@@ -98,13 +115,10 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasIndex(d => d.ExigidoNaFaseId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
 
-        // A etapa que coleta o documento, quando a fase se subdivide — opcional, com FK
-        // Restrict pela mesma razão da fase: reconfigurar as etapas não pode apagar a
+        // FK Restrict pela mesma razão da fase: reconfigurar as etapas não pode apagar a
         // etapa que uma exigência viva aponta. O guard de domínio equivalente está em
         // DefinirEtapas (EtapaReferenciadaPorExigenciaDocumental); a constraint é a
         // defesa atômica que o check-then-act dele não dá.
-        builder.Property(d => d.ExigidoNaEtapaId).HasComment("Identificador da etapa que coleta o documento; ausente quando a exigência pertence à fase inteira.");
-
         builder.HasOne<EtapaProcesso>()
             .WithMany()
             .HasForeignKey(d => d.ExigidoNaEtapaId)
@@ -113,12 +127,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasIndex(d => d.ExigidoNaEtapaId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_etapa_id");
 
-        // O formulário a que o documento pertence — nulo fora de fase de formulário. O
-        // vocabulário e a coerência com a fase são do domínio, sem CHECK no banco.
-        builder.Property(d => d.Finalidade).HasConversion<int?>().HasComment("Finalidade do formulário: 1 = inscrição, 2 = isenção de taxa, 3 = habilitação; ausente quando a fase não coleta formulário.");
-
-        // Gatilho DNF (Story #554, PR #896) — substituível por inteiro junto com o próprio
-        // DocumentoExigido, mesmo padrão de FaseCronograma/BancasRequeridas.
+        // Gatilho DNF — substituível por inteiro junto com o próprio DocumentoExigido, mesmo
+        // padrão de FaseCronograma/BancasRequeridas.
         builder.HasMany(d => d.Condicoes)
             .WithOne()
             .HasForeignKey(c => c.DocumentoExigidoId)
@@ -128,8 +138,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Navigation(d => d.Condicoes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Base legal 1:N (Story #554, PR #898) — substituível por inteiro junto com o próprio
-        // DocumentoExigido, mesmo padrão de Condicoes.
+        // Base legal 1:N — substituível por inteiro junto com o próprio DocumentoExigido, mesmo
+        // padrão de Condicoes.
         builder.HasMany(d => d.BasesLegais)
             .WithOne()
             .HasForeignKey(b => b.DocumentoExigidoId)
@@ -138,68 +148,96 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.Navigation(d => d.BasesLegais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
 
-        // Idade máxima de emissão (Story #554, PR #900, issue #893) — VO sem identidade
-        // própria, mesmo padrão de ProcessoSeletivo.ReferenciaTemporalFatos (PR #896):
-        // OwnsOne, colunas nullable, 0..1 por exigência.
-        builder.OwnsOne(d => d.IdadeMaximaEmissao, idade =>
+    private static void ConfigurarRequisitos(EntityTypeBuilder<DocumentoExigido> builder)
+    {
+        builder.OwnsOne(d => d.Requisitos, requisitos =>
         {
-            idade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            idade.Property(i => i.Valor).HasColumnName("idade_maxima_valor").HasComment("Quantidade máxima de tempo desde a emissão do arquivo, na unidade informada.");
-            idade.Property(i => i.Unidade)
-                .HasColumnName("idade_maxima_unidade")
-                .HasConversion(UnidadeConverter)
-                .HasMaxLength(IdadeMaximaUnidadeMaxLength)
-                .HasComment("Unidade da idade máxima de emissão: DIAS, MESES ou ANOS.");
-            idade.Property(i => i.ReferenciaTipo)
-                .HasColumnName("idade_maxima_referencia_tipo")
-                .HasConversion(ReferenciaTipoIdadeEmissaoConverter)
-                .HasMaxLength(IdadeMaximaReferenciaTipoMaxLength)
-                .HasComment("Referência para contar a idade da emissão: FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA ou DATA_SUBMISSAO.");
-            idade.Property(i => i.Data).HasColumnName("idade_maxima_referencia_data").HasComment("Data escolhida para contar a idade da emissão quando a referência é uma data específica.");
-            idade.Property(i => i.ReferenciaFaseId).HasColumnName("idade_maxima_referencia_fase_id").HasComment("Identificador da fase usada para contar a idade da emissão quando a referência é seu início ou fim.");
+            requisitos.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            ConfigurarFormatosPermitidos(requisitos);
+            requisitos.Property(d => d.TamanhoMaximoBytes).HasColumnName("tamanho_maximo_bytes")
+                .HasComment("Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite.");
+            ConfigurarModelo(requisitos);
+            requisitos.OwnsOne(d => d.PrazoDeEmissao, ConfigurarPrazoDeEmissao);
+            requisitos.OwnsOne(d => d.Validade, ConfigurarValidade);
         });
+        builder.Navigation(d => d.Requisitos).IsRequired();
+    }
 
-        // Formatos permitidos (Story #918) — VO sem identidade própria, OBRIGATÓRIO (ao
-        // contrário de IdadeMaximaEmissao): duas colunas, `qualquer` (bool NOT NULL) e
-        // `lista` (jsonb, não-nula ⟺ !qualquer) — CHECK de coerência acima
-        // (ck_documentos_exigidos_formatos_permitidos_coerente).
-        builder.OwnsOne(d => d.FormatosPermitidos, formatos =>
+    // Duas colunas: `qualquer` (bool NOT NULL) e `lista` (jsonb, não-nula ⟺ !qualquer) — CHECK de
+    // coerência na tabela (ck_documentos_exigidos_formatos_permitidos_coerente).
+    private static void ConfigurarFormatosPermitidos(OwnedNavigationBuilder<DocumentoExigido, RequisitosDoDocumento> requisitos)
+    {
+        requisitos.OwnsOne(d => d.FormatosPermitidos, formatos =>
         {
             formatos.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            formatos.Property(f => f.Qualquer).HasColumnName("formatos_permitidos_qualquer").IsRequired().HasComment("Indica se qualquer formato de arquivo é permitido.");
+            formatos.Property(f => f.Qualquer).HasColumnName("formatos_permitidos_qualquer").IsRequired()
+                .HasComment("Indica se o documento pode ser enviado em qualquer formato de arquivo.");
             formatos.Property(f => f.Lista)
                 .HasColumnName("formatos_permitidos_lista")
                 .HasConversion(FormatosPermitidosListaConverter, FormatosPermitidosListaComparer)
                 .HasColumnType("jsonb")
-                .HasComment("Lista de formatos permitidos e seus limites de tamanho em bytes; formatos: PDF, JPEG ou PNG. Ausente quando qualquer formato é permitido.");
+                .HasComment("Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito.");
         });
-        builder.Navigation(d => d.FormatosPermitidos).IsRequired();
+        requisitos.Navigation(d => d.FormatosPermitidos).IsRequired();
+    }
 
-        builder.Property(d => d.TamanhoMaximoBytes).HasComment("Tamanho máximo do arquivo apresentado, em bytes; ausente quando não declarado.");
-
-        // O modelo de documento que a exigência oferece ao candidato — cópia por valor do modelo
-        // confirmado, como o tipo de documento: colunas nullable, 0..1 por exigência, sem FK, porque
-        // o modelo confirmado é imutável e não tem remoção.
-        builder.OwnsOne(d => d.Modelo, modelo =>
+    // Cópia por valor do modelo confirmado, como o tipo de documento: colunas nullable, 0..1 por exigência, sem FK,
+    // porque o modelo confirmado é imutável e não tem remoção.
+    private static void ConfigurarModelo(OwnedNavigationBuilder<DocumentoExigido, RequisitosDoDocumento> requisitos)
+    {
+        requisitos.OwnsOne(d => d.Modelo, modelo =>
         {
             modelo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            modelo.Property(m => m.ModeloId).HasColumnName("modelo_id").HasComment("Identificador do modelo oferecido ao candidato, quando há modelo.");
-            modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength).HasComment("Nome do arquivo do modelo oferecido ao candidato.");
-            modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasConversion<int>().HasComment("Formato do arquivo do modelo oferecido ao candidato: 1 = DOCX, 2 = ODT.");
-            modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64).HasComment("Resumo SHA-256 do conteúdo do arquivo do modelo oferecido ao candidato.");
+            modelo.Property(m => m.ModeloId).HasColumnName("modelo_id").HasComment("Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo.");
+            modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength)
+                .HasComment("Nome do arquivo do modelo de documento, copiado ao gravar a exigência.");
+            modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasConversion<int>()
+                .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência: 1 DOCX, 2 ODT.");
+            modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64)
+                .HasComment("Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência.");
         });
     }
 
-    private static readonly ValueConverter<UnidadeIdade, string?> UnidadeConverter =
-        new(
-            unidade => unidade == UnidadeIdade.Nenhuma ? null : unidade.ToCodigo(),
-            codigo => UnidadeIdadeCodigo.FromCodigo(codigo) ?? UnidadeIdade.Nenhuma);
+    // Escolha sobre o prazo de emissão e seus detalhes, todos anuláveis: a coerência entre eles é do
+    // PrazoDeEmissao, sem CHECK nem chave estrangeira no banco.
+    private static void ConfigurarPrazoDeEmissao(OwnedNavigationBuilder<RequisitosDoDocumento, PrazoDeEmissao> prazo)
+    {
+        prazo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+        prazo.Property(p => p.Escolha).HasColumnName("prazo_emissao_escolha").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
+            .HasComment("Escolha sobre o prazo de emissão do documento: SEM_PRAZO ou COM_PRAZO; vazio enquanto a escolha não foi feita.");
+        prazo.Property(p => p.Valor).HasColumnName("prazo_emissao_valor")
+            .HasComment("Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO.");
+        prazo.Property(p => p.Unidade).HasColumnName("prazo_emissao_unidade").HasMaxLength(UnidadeDoPrazoMaxLength)
+            .HasComment("Unidade do prazo de emissão: DIAS, MESES ou ANOS; preenchida só quando a escolha é COM_PRAZO.");
+        prazo.Property(p => p.EfeitoForaDoPrazo).HasColumnName("prazo_emissao_efeito").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
+            .HasComment("O que a análise faz com o documento emitido fora do prazo: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é COM_PRAZO.");
+        prazo.OwnsOne(p => p.Referencia, referencia => ConfigurarReferencia(referencia, "prazo_emissao", "do prazo de emissão", "COM_PRAZO"));
+    }
 
-    private static readonly ValueConverter<ReferenciaTipoIdadeEmissao, string?> ReferenciaTipoIdadeEmissaoConverter =
-        new(
-            tipo => tipo == ReferenciaTipoIdadeEmissao.Nenhuma ? null : tipo.ToCodigo(),
-            codigo => ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(codigo) ?? ReferenciaTipoIdadeEmissao.Nenhuma);
+    private static void ConfigurarValidade(OwnedNavigationBuilder<RequisitosDoDocumento, ValidadeDoDocumento> validade)
+    {
+        validade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+        validade.Property(v => v.Escolha).HasColumnName("validade_escolha").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
+            .HasComment("Escolha sobre a validade do documento: NAO_EXIGE_DOCUMENTO_VALIDO ou EXIGE_DOCUMENTO_VALIDO; vazio enquanto a escolha não foi feita.");
+        validade.Property(v => v.EfeitoDoVencimento).HasColumnName("validade_efeito").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
+            .HasComment("O que a análise faz com o documento vencido: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+        validade.OwnsOne(v => v.Referencia, referencia => ConfigurarReferencia(referencia, "validade", "da validade", "EXIGE_DOCUMENTO_VALIDO"));
+    }
+
+    private static void ConfigurarReferencia<TDono>(
+        OwnedNavigationBuilder<TDono, DataDeReferenciaDoDocumento> referencia, string prefixo, string deQuem, string escolhaQuePreenche)
+        where TDono : class
+    {
+        referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+        referencia.Property(r => r.Tipo).HasColumnName($"{prefixo}_referencia_tipo").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
+            .HasComment($"Data de referência {deQuem}: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é {escolhaQuePreenche}.");
+        referencia.Property(r => r.Data).HasColumnName($"{prefixo}_referencia_data")
+            .HasComment($"Data específica usada como referência {deQuem}; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA.");
+        referencia.Property(r => r.FaseId).HasColumnName($"{prefixo}_referencia_fase_id")
+            .HasComment($"Fase do cronograma cujo início ou fim é a referência {deQuem}; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE.");
+    }
 
     private static readonly ValueConverter<IReadOnlyList<FormatoPermitidoEntry>?, string?> FormatosPermitidosListaConverter =
         new(
