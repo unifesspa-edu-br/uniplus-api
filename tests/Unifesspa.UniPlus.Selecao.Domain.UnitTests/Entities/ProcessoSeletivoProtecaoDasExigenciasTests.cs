@@ -44,10 +44,12 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static DocumentoExigido Exigencia(
         Guid faseId, string tipo, ClassificacaoDeProtecao protecao, string[]? comprova = null, CondicaoGatilho[]? gatilho = null) =>
         DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.De(protecao),
-            gatilho is { Length: > 0 } ? Aplicabilidade.Condicional : Aplicabilidade.Geral,
-            obrigatorio: true, consequenciaIndeferimento: null, gatilho ?? [], [], null, Qualquer, null,
-            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: comprova).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.De(protecao)),
+            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(gatilho is { Length: > 0 } ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilho ?? []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            comprova).Value!;
 
     private static ProcessoSeletivo Processo(params Func<Guid, DocumentoExigido>[] exigencias)
     {
@@ -156,8 +158,12 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     public void FatosComprovadosInvalidos_RecusaNaForma()
     {
         Result<DocumentoExigido> repetido = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
-            obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null, fatosComprovados: [FatoSensivel, FatoSensivel]);
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(Qualquer, null, null, null, null),
+            [FatoSensivel, FatoSensivel]);
 
         repetido.IsFailure.Should().BeTrue();
         repetido.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(DocumentoExigido.FatosComprovadosInvalidos);

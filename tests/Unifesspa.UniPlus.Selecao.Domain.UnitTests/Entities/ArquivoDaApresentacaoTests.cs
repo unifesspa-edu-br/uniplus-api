@@ -20,9 +20,12 @@ public sealed class ArquivoDaApresentacaoTests
 
     private static DocumentoExigido Exigencia(
         IReadOnlyList<(string Formato, int? Teto)>? formatos = null, int? tamanhoMaximoBytes = null) => DocumentoExigido.Criar(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-        [], [], null, FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes, null, null, null),
+            null).Value!;
 
     private static Result<ArquivoDaApresentacao> Iniciar(DocumentoExigido exigencia, string? tipoDeMidia, long tamanhoBytes) =>
         ArquivoDaApresentacao.IniciarPendente(
@@ -118,6 +121,15 @@ public sealed class ArquivoDaApresentacaoTests
         ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
         arquivo.Confirmar("etag", new RelogioFixo(agora), politica).IsSuccess.Should().BeTrue();
 
+        List<TimeSpan> prazos = PrazosDasPublicacoes(arquivo, agora, politica);
+
+        prazos.Should().Equal(
+            TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(40), TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+        arquivo.Publicacoes.Should().Be(5);
+    }
+
+    private static List<TimeSpan> PrazosDasPublicacoes(ArquivoDaApresentacao arquivo, DateTimeOffset agora, PoliticaDeRepublicacao politica)
+    {
         List<TimeSpan> prazos = [arquivo.ProximaPublicacaoEm!.Value - agora];
         for (int i = 0; i < 4; i++)
         {
@@ -125,9 +137,7 @@ public sealed class ArquivoDaApresentacaoTests
             prazos.Add(arquivo.ProximaPublicacaoEm!.Value - agora);
         }
 
-        prazos.Should().Equal(
-            TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(40), TimeSpan.FromHours(1), TimeSpan.FromHours(1));
-        arquivo.Publicacoes.Should().Be(5);
+        return prazos;
     }
 
     [Theory(DisplayName = "O verificado diverge do declarado no formato, no tamanho e no SHA-256 que não tem 64 hexadecimais")]

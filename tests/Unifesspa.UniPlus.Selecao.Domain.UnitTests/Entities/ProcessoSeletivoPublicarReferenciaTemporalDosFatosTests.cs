@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -185,15 +186,12 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         CondicaoGatilho condicao = CondicaoGatilho.Criar(
             0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
         return DocumentoExigido.Criar(
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
-            tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
+            new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+            null).Value!;
     }
 
     /// <summary>Acrescenta ao cronograma conforme uma segunda fase NA_EXECUCAO (sem janela) — a única forma de ter uma fase sem Fim, já que NO_EDITAL exige janela (CA-07).</summary>

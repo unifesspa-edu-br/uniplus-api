@@ -7,8 +7,8 @@ using AwesomeAssertions;
 using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoDaConfiguracao;
 
 /// <summary>
-/// As exigências de documentos e a árvore de satisfação no esquema da configuração: a exigência cita o tipo de documento
-/// pelo código e a fase e a etapa pela chave local, o que vem do catálogo é só de leitura e a árvore recusa o que não é nó.
+/// As exigências de documentos no esquema da configuração citam o tipo de documento pelo código e as fases e etapas
+/// pela chave local; os dados do catálogo são somente de leitura.
 /// </summary>
 public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
 {
@@ -20,7 +20,8 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
           "aplicabilidade": "Condicional", "obrigatorio": true, "consequenciaIndeferimento": "PENDENCIA_REENVIO",
           "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
-          "idadeMaximaEmissao": { "valor": 90, "unidade": "DIAS", "referenciaTipo": "FIM_INSCRICAO" },
+          "prazoDeEmissao": { "escolha": "COM_PRAZO", "valor": 90, "unidade": "DIAS", "referencia": { "tipo": "FIM_DAS_INSCRICOES" }, "efeitoForaDoPrazo": "RECUSAR_DOCUMENTO" },
+          "validade": { "escolha": "NAO_EXIGE_DOCUMENTO_VALIDO" },
           "formatosPermitidos": { "qualquer": false, "lista": [ { "formato": "PDF", "tamanhoMaximoBytesMax": 5242880 } ] },
           "tamanhoMaximoBytes": 5242880 }
         """;
@@ -56,13 +57,13 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Documento($$"""{ "chave": "x", "tipoDocumentoCodigo": "{{Guid.CreateVersion7()}}" }"""), $"{Exigencias}#/$defs/exigencia")
             .Should().Contain("/tipoDocumentoCodigo");
 
-    [Fact(DisplayName = "A idade máxima de emissão exige valor positivo e unidade conhecida")]
-    public void IdadeMaximaDeEmissao_ValorEUnidade()
+    [Fact(DisplayName = "O prazo de emissão aceita valor positivo e unidade conhecida")]
+    public void PrazoDeEmissao_ValorEUnidade()
     {
-        string definicao = $"{Exigencias}#/$defs/idadeMaximaEmissao";
+        string definicao = $"{Exigencias}#/$defs/prazoDeEmissao";
 
-        CaminhosComErro(Documento("""{ "valor": 0, "unidade": "SEMANAS" }"""), definicao).Should().Contain(["/valor", "/unidade"]);
-        CaminhosComErro(Documento("""{ "valor": 6, "unidade": "MESES", "referenciaTipo": "INICIO_FASE", "referenciaFaseChave": "inscricao" }"""), definicao)
+        CaminhosComErro(Documento("""{ "valor": 0, "unidade": "semanas" }"""), definicao).Should().Contain(["/valor", "/unidade"]);
+        CaminhosComErro(Documento("""{ "valor": 6, "unidade": "MESES", "referencia": { "tipo": "INICIO_DA_FASE", "faseChave": "inscricao" } }"""), definicao)
             .Should().BeEmpty();
     }
 

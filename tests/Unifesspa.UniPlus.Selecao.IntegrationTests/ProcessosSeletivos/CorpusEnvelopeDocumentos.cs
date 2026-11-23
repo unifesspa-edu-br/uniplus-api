@@ -65,19 +65,12 @@ internal static class CorpusEnvelopeDocumentos
         string tipoDocumentoNome, string tipoDocumentoCategoria, bool obrigatorio) =>
         DocumentoExigido.Reidratar(
             id,
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: tipoDocumentoOrigemId,
-            tipoDocumentoCodigo: tipoDocumentoCodigo,
-            tipoDocumentoNome: tipoDocumentoNome,
-            tipoDocumentoCategoria: tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Geral,
-            obrigatorio: obrigatorio,
-            consequenciaIndeferimento: null,
-            condicoes: [],
-            basesLegais: [],
-            idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!,
-            tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
+            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(obrigatorio, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
+            null);
 
     /// <summary>
     /// Id fixo de produto — como o das etapas e o das fases, ele entra no envelope, e sortear

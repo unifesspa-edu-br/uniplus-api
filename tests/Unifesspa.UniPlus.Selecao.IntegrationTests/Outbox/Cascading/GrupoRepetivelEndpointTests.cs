@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O grupo repetível pelo HTTP, contra o Postgres (UNI-REQ-0146): o PUT dos itens grava o grupo com
@@ -218,7 +219,7 @@ public sealed class GrupoRepetivelEndpointTests
             obrigatorio = true,
             basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", situacao = "RESOLVIDO" } },
         },
-        requisitos = new { formatosPermitidos = "QUALQUER" },
+        requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,
     };
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId) =>

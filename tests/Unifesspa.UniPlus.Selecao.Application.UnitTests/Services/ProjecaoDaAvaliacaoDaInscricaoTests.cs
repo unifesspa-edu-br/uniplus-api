@@ -151,9 +151,12 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
-            consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
-            modelo: modelo, finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, modelo, null, null),
+            null).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(
@@ -189,9 +192,12 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         internal static ExigenciasComArquivoEnviado Novas()
         {
             DocumentoExigido laudo = DocumentoExigido.Criar(
-                FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
-                consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
-                finalidade: FinalidadeFormulario.Inscricao).Value!;
+                new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(FaseDaInscricao.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(true, null, []),
+                new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000, null, null, null),
+                null).Value!;
             ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
 
             return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), arquivo);

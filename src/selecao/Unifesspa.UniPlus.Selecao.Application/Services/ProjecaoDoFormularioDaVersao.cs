@@ -51,7 +51,7 @@ public static class ProjecaoDoFormularioDaVersao
             : ProjetarFormulario(lida.Value!, finalidade, acervoDaComprovacao);
     }
 
-    private sealed record ConfiguracaoLida(JsonObject Envelope, ConfiguracaoPublicada Configuracao, DefinicaoAvaliavel Avaliavel);
+    private sealed record ConfiguracaoLida(JsonObject Envelope, ConfiguracaoPublicada Configuracao, DefinicaoAvaliavel Avaliavel, string FusoHorario);
 
     private static Result<ConfiguracaoLida> LerConfiguracao(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
     {
@@ -75,7 +75,7 @@ public static class ProjecaoDoFormularioDaVersao
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         return avaliavel.IsFailure
             ? Result<ConfiguracaoLida>.Failure(avaliavel.Error!)
-            : Result<ConfiguracaoLida>.Success(new ConfiguracaoLida(envelope, reidratado.Value!.Configuracao, avaliavel.Value!));
+            : Result<ConfiguracaoLida>.Success(new ConfiguracaoLida(envelope, reidratado.Value!.Configuracao, avaliavel.Value!, reidratado.Value.FusoHorario));
     }
 
     private static Result<JsonObject> LerEnvelope(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
@@ -125,7 +125,7 @@ public static class ProjecaoDoFormularioDaVersao
         FormularioProcesso doFormulario = lida.Configuracao.Coleta.Formularios.First(f => f.Finalidade == finalidade);
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
         if (acervoDaComprovacao is not null
-            && !TentarComprovacaoDocumental(lida.Envelope, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
+            && !TentarComprovacaoDocumental(lida, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
         {
             return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("comprovacaoDocumental");
         }
@@ -236,31 +236,43 @@ public static class ProjecaoDoFormularioDaVersao
 
     /// <summary>
     /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e da finalidade do
-    /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade e formatos. A condição
+    /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade, formatos, prazo de emissão e validade. A condição
     /// de cada uma e as regras de comprovação não atravessam este endereço anônimo
     /// (<see cref="ClassificacaoDosBlocosDoCertame"/>): quais documentos cabem a um candidato é
     /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
     /// </summary>
     private static bool TentarComprovacaoDocumental(
-        JsonObject envelope,
+        ConfiguracaoLida lida,
         FormularioProcesso formulario,
         string finalidade,
         DocumentosDoAtoNoAcervo acervo,
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
-        if (!formulario.Etapas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental))
-        {
-            return true;
-        }
+        return !formulario.Etapas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental)
+            || TentarExigenciasDaFase(lida, formulario.FaseId, finalidade, acervo, out comprovacao);
+    }
 
-        // O formulário publicado tem fase, e toda exigência é de uma fase: a falta de qualquer das
-        // duas é forma inesperada, e omitir o documento em silêncio esconderia exigência do candidato.
-        return formulario.FaseId is { } faseDoFormulario
+    /// <summary>
+    /// O formulário publicado tem fase, e toda exigência é de uma fase: a falta de qualquer das duas é forma
+    /// inesperada, e omitir o documento em silêncio esconderia exigência do candidato. As datas de referência saem
+    /// das fases e do fuso congelados na versão, nunca do cadastro vivo.
+    /// </summary>
+    private static bool TentarExigenciasDaFase(
+        ConfiguracaoLida lida,
+        Guid? faseDoFormulario,
+        string finalidade,
+        DocumentosDoAtoNoAcervo acervo,
+        out List<ExigenciaDocumentalCertameDto>? comprovacao)
+    {
+        comprovacao = null;
+        return faseDoFormulario is { } fase
+            && CronogramaCongelado.Reidratado(lida.Configuracao.Cronograma.CronogramaFases, lida.FusoHorario) is { } cronograma
             && LeituraDoCertameDocumentos.TentarExigencias(
-                envelope,
-                exigencia => DoFormulario(exigencia, faseDoFormulario, finalidade),
+                lida.Envelope,
+                exigencia => DoFormulario(exigencia, fase, finalidade),
                 acervo,
+                cronograma,
                 out comprovacao);
     }
 

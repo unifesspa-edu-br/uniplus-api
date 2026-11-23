@@ -42,14 +42,15 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
     }
 
     private static DocumentoExigido ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(Guid faseId) => DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "HETEROIDENTIFICACAO", "Parecer de heteroidentificação", "ETNICO_RACIAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: "ELIMINA",
-            condicoes:
-            [
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HETEROIDENTIFICACAO", "Parecer de heteroidentificação", "ETNICO_RACIAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
                 CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("LB_PPI")).Value!,
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
-            ],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            ]),
+        new IndeferimentoDoDocumento(false, "ELIMINA", [BaseLegalResolvidaQualquer()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+        null).Value!;
 
     [Fact(DisplayName = "Cláusula que cita a modalidade de concorrência e o grupo da convocação alcança as duas")]
     public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()

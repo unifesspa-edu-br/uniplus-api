@@ -159,9 +159,12 @@ public sealed class ComprovanteGravadoDaInscricaoTests
 
     private static DocumentoExigido LaudoMedicoExigido() =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, true,
-            ConsequenciaIndeferimentoCodigo.RemoveVantagem, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
-            finalidade: Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, ConsequenciaIndeferimentoCodigo.RemoveVantagem, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null).Value!;
 
     private static DocumentosDaInscricao DocumentoSatisfeito(DocumentoExigido laudo) =>
         new(

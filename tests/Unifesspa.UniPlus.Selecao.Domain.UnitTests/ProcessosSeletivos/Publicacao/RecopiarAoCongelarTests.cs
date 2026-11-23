@@ -55,9 +55,12 @@ public sealed class RecopiarAoCongelarTests
     private static DocumentoExigido ExigenciaSensivel(ProcessoSeletivo processo, FaseCronograma fase)
     {
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel),
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null,
-            FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel)),
+            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         return processo.DocumentosExigidos.Single();

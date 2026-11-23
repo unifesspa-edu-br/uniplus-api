@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -135,12 +136,12 @@ internal sealed record ViolacaoDeRegra(
         ConfiguracaoDerivacaoFato.Criar(codigo, [RegraDerivacaoConfigurada.Criar(0, "AC", []).Value!]).Value!;
 
     private static DocumentoExigido Exigencia(Guid faseId, params CondicaoGatilho[] condicoes) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
-        condicoes.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional,
-        obrigatorio: true, consequenciaIndeferimento: null, condicoes: condicoes,
-        basesLegais: [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!],
-        idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-        finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(condicoes.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, condicoes),
+        new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 
     // Uma exigência viva cita a condição de atendimento PCD: redefinir a oferta sem ela deixaria a condição sem como se satisfazer.
     private static void ExigenciaQueCitaACondicaoPcd(ProcessoSeletivo processo)

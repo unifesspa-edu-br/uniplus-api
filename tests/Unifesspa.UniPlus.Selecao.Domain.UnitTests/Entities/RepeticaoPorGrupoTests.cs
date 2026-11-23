@@ -40,8 +40,12 @@ public sealed class RepeticaoPorGrupoTests
         .Construir();
 
     private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
-        obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, finalidade),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, []),
+        new RequisitosDoDocumento(Qualquer, null, null, null, null),
+        null).Value!;
 
     /// <summary>Processo com inscrição e habilitação, e o grupo da composição familiar no formulário da habilitação.</summary>
     private static (ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Habilitacao) Processo()

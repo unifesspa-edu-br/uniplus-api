@@ -78,23 +78,15 @@ internal static class LeituraDeTextoEIdentificadores
 
     public static string? TextoOpcional(this LeitorEnvelope leitor, JsonObject pai, string chave, string path, int maxLength = 0)
     {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        JsonNode? node = pai[chave];
+        JsonNode? node = leitor.Falhou ? null : pai[chave];
         if (node is null)
         {
             return null;
         }
 
-        if (node.GetValueKind() != System.Text.Json.JsonValueKind.String)
-        {
-            return leitor.Malformado<string?>($"{path}.{chave}", "esperado um texto.");
-        }
-
-        return leitor.GuardarComprimento(node.GetValue<string>(), $"{path}.{chave}", maxLength);
+        return node.GetValueKind() == System.Text.Json.JsonValueKind.String
+            ? leitor.GuardarComprimento(node.GetValue<string>(), $"{path}.{chave}", maxLength)
+            : leitor.Malformado<string?>($"{path}.{chave}", "esperado um texto.");
     }
 
     /// <summary>
@@ -104,62 +96,35 @@ internal static class LeituraDeTextoEIdentificadores
     /// </summary>
     public static Guid Identificador(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
-        if (leitor.Falhou)
-        {
-            return default;
-        }
+        string texto = leitor.Falhou ? "" : leitor.Texto(pai, chave, path);
+        return leitor.Falhou ? default : leitor.GuidCanonico(texto, $"{path}.{chave}");
+    }
 
-        string texto = leitor.Texto(pai, chave, path);
-        if (leitor.Falhou)
-        {
-            return default;
-        }
-
+    // Guid vazio é sintaticamente um Guid, e é aí que ele engana. As factories reagem de
+    // dois modos, ambos errados: EtapaProcesso.Reidratar e os filhos do atendimento
+    // LANÇAM (500 no meio de um descarte, em vez de recusa nomeada), enquanto
+    // ConfiguracaoDistribuicaoVagas.Criar simplesmente o ACEITA como oferta de curso — e
+    // o grafo inválido reidrata, persiste e faz round-trip perfeito. Nenhum id do
+    // envelope pode ser vazio; recusar aqui é a única barreira que vale para todos.
+    private static Guid GuidCanonico(this LeitorEnvelope leitor, string texto, string caminho)
+    {
         if (!Guid.TryParseExact(texto, "D", out Guid valor) || !string.Equals(valor.ToString(), texto, StringComparison.Ordinal))
         {
-            return leitor.Malformado<Guid>($"{path}.{chave}", $"esperado um Guid canônico (minúsculo, formato D), encontrado '{texto}'.");
+            return leitor.Malformado<Guid>(caminho, $"esperado um Guid canônico (minúsculo, formato D), encontrado '{texto}'.");
         }
 
-        // Guid vazio é sintaticamente um Guid, e é aí que ele engana. As factories reagem de
-        // dois modos, ambos errados: EtapaProcesso.Reidratar e os filhos do atendimento
-        // LANÇAM (500 no meio de um descarte, em vez de recusa nomeada), enquanto
-        // ConfiguracaoDistribuicaoVagas.Criar simplesmente o ACEITA como oferta de curso — e
-        // o grafo inválido reidrata, persiste e faz round-trip perfeito. Nenhum id do
-        // envelope pode ser vazio; recusar aqui é a única barreira que vale para todos.
-        if (valor == Guid.Empty)
-        {
-            return leitor.Malformado<Guid>($"{path}.{chave}", "o identificador não pode ser o Guid vazio.");
-        }
-
-        return valor;
+        return valor == Guid.Empty ? leitor.Malformado<Guid>(caminho, "o identificador não pode ser o Guid vazio.") : valor;
     }
 
     /// <summary>
     /// Identificador opcional (<c>DocumentoExigido.GrupoSatisfacaoId</c>/
-    /// <c>IdadeMaximaEmissao.ReferenciaFaseId</c>, ambos <c>Guid?</c> por natureza).
+    /// <c>DataDeReferenciaDoDocumento.FaseId</c>, ambos <c>Guid?</c> por natureza).
     /// <see langword="null"/> quando a chave é <c>null</c>; do contrário, mesma validação
     /// estrita de <see cref="Identificador"/> (formato canônico, nunca o Guid vazio).
     /// </summary>
     public static Guid? IdentificadorOpcional(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        string? texto = leitor.TextoOpcional(pai, chave, path);
-        if (leitor.Falhou || texto is null)
-        {
-            return null;
-        }
-
-        if (!Guid.TryParseExact(texto, "D", out Guid valor) || !string.Equals(valor.ToString(), texto, StringComparison.Ordinal))
-        {
-            return leitor.Malformado<Guid?>($"{path}.{chave}", $"esperado um Guid canônico (minúsculo, formato D), encontrado '{texto}'.");
-        }
-
-        return valor == Guid.Empty
-            ? leitor.Malformado<Guid?>($"{path}.{chave}", "o identificador não pode ser o Guid vazio.")
-            : valor;
+        string? texto = leitor.Falhou ? null : leitor.TextoOpcional(pai, chave, path);
+        return leitor.Falhou || texto is null ? null : leitor.GuidCanonico(texto, $"{path}.{chave}");
     }
 }

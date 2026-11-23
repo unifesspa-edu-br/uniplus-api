@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -26,7 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <remarks>
 /// A cobertura da exigência documental rica, dos metadados de fatos e da referência temporal
 /// existe para que a fixture exercite de fato a serialização das exigências, das condições de
-/// gatilho, das bases legais e da idade máxima de emissão — uma <c>exigencias[]</c> sempre
+/// gatilho, das bases legais, do prazo de emissão e da validade — uma <c>exigencias[]</c> sempre
 /// vazia não provaria nada sobre a forma.
 /// </remarks>
 internal static class EnvelopeDeReferencia
@@ -248,15 +249,16 @@ internal static class EnvelopeDeReferencia
     /// </remarks>
     private static DocumentoExigido DocumentoExigidoDeReferencia(Guid exigidoNaFaseId) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId, tipoDocumentoOrigemId: TipoDocumentoFixo, tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
-            tipoDocumentoNome: "Comprovante de residência", tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: "ELIMINA",
-            condicoes: [GatilhoDaModalidade(), GatilhoDaCorRaca()], basesLegais: [BaseLegalDaResolucao()],
-            idadeMaximaEmissao: IdadeMaximaDeNoventaDias(), formatosPermitidos: FormatosPdfComTetoEJpegSemTeto(),
-            tamanhoMaximoBytes: 5_000_000, modelo: ModeloDeDeclaracaoDeResidencia(), finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(TipoDocumentoFixo, "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [GatilhoDaModalidade(), GatilhoDaCorRaca()]),
+            new IndeferimentoDoDocumento(true, "ELIMINA", [BaseLegalDaResolucao()]),
+            new RequisitosDoDocumento(FormatosPdfComTetoEJpegSemTeto(), 5_000_000, ModeloDeDeclaracaoDeResidencia(), PrazoDeNoventaDias(), ValidadeNoFimDasInscricoes()),
+            null).Value!;
 
-    private static IdadeMaximaEmissao IdadeMaximaDeNoventaDias() =>
-        IdadeMaximaEmissao.Criar(90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.FimInscricao, null, null).Value!;
+    private static PrazoDeEmissao PrazoDeNoventaDias() => new PrazoDeEmissaoBuilder().Construir();
+
+    private static ValidadeDoDocumento ValidadeNoFimDasInscricoes() => new ValidadeDoDocumentoBuilder().Construir();
 
     private static FormatosPermitidos FormatosPdfComTetoEJpegSemTeto() =>
         FormatosPermitidos.Criar(qualquer: false, entradas: [("PDF", 5_000_000), ("JPEG", null)]).Value!;

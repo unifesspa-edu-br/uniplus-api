@@ -109,15 +109,12 @@ public sealed class ParidadeExigenciasDocumentaisTests
         acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) => DocumentoExigido.Criar(
-        exigidoNaFaseId,
-        tipoDocumentoOrigemId: Guid.CreateVersion7(),
-        tipoDocumentoCodigo: tipoDocumentoCodigo,
-        tipoDocumentoNome: tipoDocumentoCodigo,
-        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        aplicabilidade: Aplicabilidade.Geral,
-        obrigatorio: false,
-        consequenciaIndeferimento: null,
-        condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoCodigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(false, null, []),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+        null).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));

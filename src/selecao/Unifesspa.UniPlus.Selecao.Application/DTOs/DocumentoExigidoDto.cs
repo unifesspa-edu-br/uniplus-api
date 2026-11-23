@@ -60,7 +60,8 @@ public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, string? Conse
 public sealed record RequisitosDoDocumentoDto(
     JsonElement FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
+    PrazoDeEmissaoDto? PrazoDeEmissao,
+    ValidadeDoDocumentoDto? Validade,
     ModeloDaExigenciaDto? Modelo);
 
 /// <summary>
@@ -69,13 +70,6 @@ public sealed record RequisitosDoDocumentoDto(
 /// </summary>
 /// <param name="Formato"><c>DOCX</c> ou <c>ODT</c>.</param>
 public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, string Formato, string HashSha256);
-
-/// <summary>
-/// DTO de leitura de <see cref="Domain.ValueObjects.IdadeMaximaEmissao"/> (Story #554,
-/// PR #900, issue #893). Mesmo formato flat de <c>IdadeMaximaEmissaoInput</c> (comando de
-/// escrita) — round-trip GET→PUT direto.
-/// </summary>
-public sealed record IdadeMaximaEmissaoDto(int Valor, string Unidade, string ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR #896,

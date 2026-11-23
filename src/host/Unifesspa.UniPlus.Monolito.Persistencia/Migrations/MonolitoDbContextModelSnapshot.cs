@@ -6855,22 +6855,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do modelo de formulário.");
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
-                        .HasColumnName("ativo");
+                        .HasColumnName("ativo")
+                        .HasComment("Indica se o modelo está disponível para uso.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código que identifica o modelo de formulário.");
 
                     b.Property<string>("Conteudo")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("conteudo");
+                        .HasColumnName("conteudo")
+                        .HasComment("Conteúdo do modelo de formulário, com etapas, itens, termos e pressupostos.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6886,24 +6890,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição do modelo de formulário.");
 
                     b.Property<string>("Finalidade")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade");
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome do modelo de formulário.");
 
                     b.Property<string>("TipoProcessoCodigo")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("tipo_processo_codigo");
+                        .HasColumnName("tipo_processo_codigo")
+                        .HasComment("Código do tipo de processo ao qual o modelo se aplica.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6935,6 +6943,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("modelos_formulario", "configuracao", t =>
                         {
+                            t.HasComment("Modelos de formulário e seu conteúdo para processos seletivos.");
+
                             t.HasCheckConstraint("ck_modelos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
                         });
                 });
@@ -12487,25 +12497,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id")
-                        .HasComment("Identificador da exigência documental.");
+                        .HasComment("Identificador da exigência de documento.");
 
                     b.Property<int>("Aplicabilidade")
                         .HasColumnType("integer")
                         .HasColumnName("aplicabilidade")
-                        .HasComment("A quem a exigência se aplica: 1 = todos os candidatos, 2 = candidatos que atendem às condições.");
+                        .HasComment("A quem a exigência se aplica: 1 para todos os candidatos, 2 só para quem atende às condições da exigência.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("classificacao_protecao")
-                        .HasComment("Classificação de proteção copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+                        .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
 
                     b.Property<string>("ConsequenciaIndeferimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("consequencia_indeferimento")
-                        .HasComment("Consequência do indeferimento, quando declarada: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO.");
+                        .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO; vazio quando a exigência não determina resultado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12515,78 +12525,73 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid?>("ExigidoNaEtapaId")
                         .HasColumnType("uuid")
                         .HasColumnName("exigido_na_etapa_id")
-                        .HasComment("Identificador da etapa que coleta o documento; ausente quando a exigência pertence à fase inteira.");
+                        .HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
 
                     b.Property<Guid>("ExigidoNaFaseId")
                         .HasColumnType("uuid")
                         .HasColumnName("exigido_na_fase_id")
-                        .HasComment("Identificador da fase em que o documento é exigido.");
+                        .HasComment("Fase do cronograma do processo em que o documento é exigido.");
 
                     b.PrimitiveCollection<string[]>("FatosComprovados")
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("fatos_comprovados")
-                        .HasComment("Códigos dos fatos do processo comprovados pelo documento; lista vazia quando nenhum foi declarado.");
+                        .HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
 
                     b.Property<int?>("Finalidade")
                         .HasColumnType("integer")
                         .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário: 1 = inscrição, 2 = isenção de taxa, 3 = habilitação; ausente quando a fase não coleta formulário.");
+                        .HasComment("Formulário a que o documento pertence: 1 inscrição, 2 isenção da taxa, 3 habilitação; vazio quando a fase não responde formulário.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("finalidade_tratamento")
-                        .HasComment("Finalidade do tratamento dos dados copiada do tipo de documento.");
+                        .HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("hipotese_legal")
-                        .HasComment("Hipótese legal copiada do tipo de documento: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
+                        .HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
 
                     b.Property<bool>("Obrigatorio")
                         .HasColumnType("boolean")
                         .HasColumnName("obrigatorio")
-                        .HasComment("Indica se a apresentação do documento é obrigatória.");
+                        .HasComment("Indica se a falta do documento impede a inscrição de seguir.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id")
-                        .HasComment("Identificador do processo seletivo que declara a exigência.");
-
-                    b.Property<int?>("TamanhoMaximoBytes")
-                        .HasColumnType("integer")
-                        .HasColumnName("tamanho_maximo_bytes")
-                        .HasComment("Tamanho máximo do arquivo apresentado, em bytes; ausente quando não declarado.");
+                        .HasComment("Processo seletivo que faz a exigência.");
 
                     b.Property<string>("TipoDocumentoCategoria")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("tipo_documento_categoria")
-                        .HasComment("Categoria do tipo de documento copiada do cadastro.");
+                        .HasComment("Categoria do tipo de documento, copiada do catálogo ao gravar a exigência.");
 
                     b.Property<string>("TipoDocumentoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("tipo_documento_codigo")
-                        .HasComment("Código do tipo de documento copiado do cadastro.");
+                        .HasComment("Código do tipo de documento, copiado do catálogo ao gravar a exigência.");
 
                     b.Property<string>("TipoDocumentoNome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("tipo_documento_nome")
-                        .HasComment("Nome do tipo de documento copiado do cadastro.");
+                        .HasComment("Nome do tipo de documento, copiado do catálogo ao gravar a exigência.");
 
                     b.Property<Guid>("TipoDocumentoOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("tipo_documento_origem_id")
-                        .HasComment("Identificador do tipo de documento no cadastro de origem.");
+                        .HasComment("Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12607,7 +12612,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("documentos_exigidos", "selecao", t =>
                         {
-                            t.HasComment("Documentos exigidos dos candidatos em cada processo seletivo.");
+                            t.HasComment("Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
 
                             t.HasCheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
                         });
@@ -20404,65 +20409,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_documentos_exigidos_processo_seletivo_processo_seletivo_id");
 
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.FormatosPermitidos", "FormatosPermitidos", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.Entities.RequisitosDoDocumento", "Requisitos", b1 =>
                         {
                             b1.Property<Guid>("DocumentoExigidoId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
-                            b1.Property<string>("Lista")
-                                .HasColumnType("jsonb")
-                                .HasColumnName("formatos_permitidos_lista")
-                                .HasComment("Lista de formatos permitidos e seus limites de tamanho em bytes; formatos: PDF, JPEG ou PNG. Ausente quando qualquer formato é permitido.");
-
-                            b1.Property<bool>("Qualquer")
-                                .HasColumnType("boolean")
-                                .HasColumnName("formatos_permitidos_qualquer")
-                                .HasComment("Indica se qualquer formato de arquivo é permitido.");
-
-                            b1.HasKey("DocumentoExigidoId");
-
-                            b1.ToTable("documentos_exigidos", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("DocumentoExigidoId")
-                                .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
-                        });
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdadeMaximaEmissao", "IdadeMaximaEmissao", b1 =>
-                        {
-                            b1.Property<Guid>("DocumentoExigidoId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<DateOnly?>("Data")
-                                .HasColumnType("date")
-                                .HasColumnName("idade_maxima_referencia_data")
-                                .HasComment("Data escolhida para contar a idade da emissão quando a referência é uma data específica.");
-
-                            b1.Property<Guid?>("ReferenciaFaseId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("idade_maxima_referencia_fase_id")
-                                .HasComment("Identificador da fase usada para contar a idade da emissão quando a referência é seu início ou fim.");
-
-                            b1.Property<string>("ReferenciaTipo")
-                                .IsRequired()
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
-                                .HasColumnName("idade_maxima_referencia_tipo")
-                                .HasComment("Referência para contar a idade da emissão: FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA ou DATA_SUBMISSAO.");
-
-                            b1.Property<string>("Unidade")
-                                .IsRequired()
-                                .HasMaxLength(10)
-                                .HasColumnType("character varying(10)")
-                                .HasColumnName("idade_maxima_unidade")
-                                .HasComment("Unidade da idade máxima de emissão: DIAS, MESES ou ANOS.");
-
-                            b1.Property<int>("Valor")
+                            b1.Property<int?>("TamanhoMaximoBytes")
                                 .HasColumnType("integer")
-                                .HasColumnName("idade_maxima_valor")
-                                .HasComment("Quantidade máxima de tempo desde a emissão do arquivo, na unidade informada.");
+                                .HasColumnName("tamanho_maximo_bytes")
+                                .HasComment("Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite.");
 
                             b1.HasKey("DocumentoExigidoId");
 
@@ -20471,53 +20427,218 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("DocumentoExigidoId")
                                 .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.FormatosPermitidos", "FormatosPermitidos", b2 =>
+                                {
+                                    b2.Property<Guid>("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Lista")
+                                        .HasColumnType("jsonb")
+                                        .HasColumnName("formatos_permitidos_lista")
+                                        .HasComment("Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito.");
+
+                                    b2.Property<bool>("Qualquer")
+                                        .HasColumnType("boolean")
+                                        .HasColumnName("formatos_permitidos_qualquer")
+                                        .HasComment("Indica se o documento pode ser enviado em qualquer formato de arquivo.");
+
+                                    b2.HasKey("RequisitosDoDocumentoDocumentoExigidoId");
+
+                                    b2.ToTable("documentos_exigidos", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+                                });
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ModeloDaExigencia", "Modelo", b2 =>
+                                {
+                                    b2.Property<Guid>("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<int>("Formato")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("modelo_formato")
+                                        .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência: 1 DOCX, 2 ODT.");
+
+                                    b2.Property<string>("HashSha256")
+                                        .IsRequired()
+                                        .HasMaxLength(64)
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("modelo_hash_sha256")
+                                        .HasComment("Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência.");
+
+                                    b2.Property<Guid>("ModeloId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("modelo_id")
+                                        .HasComment("Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo.");
+
+                                    b2.Property<string>("NomeArquivo")
+                                        .IsRequired()
+                                        .HasMaxLength(120)
+                                        .HasColumnType("character varying(120)")
+                                        .HasColumnName("modelo_nome_arquivo")
+                                        .HasComment("Nome do arquivo do modelo de documento, copiado ao gravar a exigência.");
+
+                                    b2.HasKey("RequisitosDoDocumentoDocumentoExigidoId");
+
+                                    b2.ToTable("documentos_exigidos", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+                                });
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDeEmissao", "PrazoDeEmissao", b2 =>
+                                {
+                                    b2.Property<Guid>("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("EfeitoForaDoPrazo")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
+                                        .HasColumnName("prazo_emissao_efeito")
+                                        .HasComment("O que a análise faz com o documento emitido fora do prazo: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é COM_PRAZO.");
+
+                                    b2.Property<string>("Escolha")
+                                        .IsRequired()
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
+                                        .HasColumnName("prazo_emissao_escolha")
+                                        .HasComment("Escolha sobre o prazo de emissão do documento: SEM_PRAZO ou COM_PRAZO; vazio enquanto a escolha não foi feita.");
+
+                                    b2.Property<string>("Unidade")
+                                        .HasMaxLength(10)
+                                        .HasColumnType("character varying(10)")
+                                        .HasColumnName("prazo_emissao_unidade")
+                                        .HasComment("Unidade do prazo de emissão: DIAS, MESES ou ANOS; preenchida só quando a escolha é COM_PRAZO.");
+
+                                    b2.Property<int?>("Valor")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("prazo_emissao_valor")
+                                        .HasComment("Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO.");
+
+                                    b2.HasKey("RequisitosDoDocumentoDocumentoExigidoId");
+
+                                    b2.ToTable("documentos_exigidos", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+
+                                    b2.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DataDeReferenciaDoDocumento", "Referencia", b3 =>
+                                        {
+                                            b3.Property<Guid>("PrazoDeEmissaoRequisitosDoDocumentoDocumentoExigidoId")
+                                                .HasColumnType("uuid")
+                                                .HasColumnName("id");
+
+                                            b3.Property<DateOnly?>("Data")
+                                                .HasColumnType("date")
+                                                .HasColumnName("prazo_emissao_referencia_data")
+                                                .HasComment("Data específica usada como referência do prazo de emissão; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA.");
+
+                                            b3.Property<Guid?>("FaseId")
+                                                .HasColumnType("uuid")
+                                                .HasColumnName("prazo_emissao_referencia_fase_id")
+                                                .HasComment("Fase do cronograma cujo início ou fim é a referência do prazo de emissão; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE.");
+
+                                            b3.Property<string>("Tipo")
+                                                .IsRequired()
+                                                .HasMaxLength(30)
+                                                .HasColumnType("character varying(30)")
+                                                .HasColumnName("prazo_emissao_referencia_tipo")
+                                                .HasComment("Data de referência do prazo de emissão: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é COM_PRAZO.");
+
+                                            b3.HasKey("PrazoDeEmissaoRequisitosDoDocumentoDocumentoExigidoId");
+
+                                            b3.ToTable("documentos_exigidos", "selecao");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("PrazoDeEmissaoRequisitosDoDocumentoDocumentoExigidoId")
+                                                .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+                                        });
+
+                                    b2.Navigation("Referencia");
+                                });
+
+                            b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ValidadeDoDocumento", "Validade", b2 =>
+                                {
+                                    b2.Property<Guid>("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("EfeitoDoVencimento")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
+                                        .HasColumnName("validade_efeito")
+                                        .HasComment("O que a análise faz com o documento vencido: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+
+                                    b2.Property<string>("Escolha")
+                                        .IsRequired()
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
+                                        .HasColumnName("validade_escolha")
+                                        .HasComment("Escolha sobre a validade do documento: NAO_EXIGE_DOCUMENTO_VALIDO ou EXIGE_DOCUMENTO_VALIDO; vazio enquanto a escolha não foi feita.");
+
+                                    b2.HasKey("RequisitosDoDocumentoDocumentoExigidoId");
+
+                                    b2.ToTable("documentos_exigidos", "selecao");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("RequisitosDoDocumentoDocumentoExigidoId")
+                                        .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+
+                                    b2.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DataDeReferenciaDoDocumento", "Referencia", b3 =>
+                                        {
+                                            b3.Property<Guid>("ValidadeDoDocumentoRequisitosDoDocumentoDocumentoExigidoId")
+                                                .HasColumnType("uuid")
+                                                .HasColumnName("id");
+
+                                            b3.Property<DateOnly?>("Data")
+                                                .HasColumnType("date")
+                                                .HasColumnName("validade_referencia_data")
+                                                .HasComment("Data específica usada como referência da validade; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA.");
+
+                                            b3.Property<Guid?>("FaseId")
+                                                .HasColumnType("uuid")
+                                                .HasColumnName("validade_referencia_fase_id")
+                                                .HasComment("Fase do cronograma cujo início ou fim é a referência da validade; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE.");
+
+                                            b3.Property<string>("Tipo")
+                                                .IsRequired()
+                                                .HasMaxLength(30)
+                                                .HasColumnType("character varying(30)")
+                                                .HasColumnName("validade_referencia_tipo")
+                                                .HasComment("Data de referência da validade: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+
+                                            b3.HasKey("ValidadeDoDocumentoRequisitosDoDocumentoDocumentoExigidoId");
+
+                                            b3.ToTable("documentos_exigidos", "selecao");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("ValidadeDoDocumentoRequisitosDoDocumentoDocumentoExigidoId")
+                                                .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
+                                        });
+
+                                    b2.Navigation("Referencia");
+                                });
+
+                            b1.Navigation("FormatosPermitidos")
+                                .IsRequired();
+
+                            b1.Navigation("Modelo");
+
+                            b1.Navigation("PrazoDeEmissao");
+
+                            b1.Navigation("Validade");
                         });
 
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ModeloDaExigencia", "Modelo", b1 =>
-                        {
-                            b1.Property<Guid>("DocumentoExigidoId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<int>("Formato")
-                                .HasColumnType("integer")
-                                .HasColumnName("modelo_formato")
-                                .HasComment("Formato do arquivo do modelo oferecido ao candidato: 1 = DOCX, 2 = ODT.");
-
-                            b1.Property<string>("HashSha256")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
-                                .HasColumnName("modelo_hash_sha256")
-                                .HasComment("Resumo SHA-256 do conteúdo do arquivo do modelo oferecido ao candidato.");
-
-                            b1.Property<Guid>("ModeloId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("modelo_id")
-                                .HasComment("Identificador do modelo oferecido ao candidato, quando há modelo.");
-
-                            b1.Property<string>("NomeArquivo")
-                                .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("modelo_nome_arquivo")
-                                .HasComment("Nome do arquivo do modelo oferecido ao candidato.");
-
-                            b1.HasKey("DocumentoExigidoId");
-
-                            b1.ToTable("documentos_exigidos", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("DocumentoExigidoId")
-                                .HasConstraintName("fk_documentos_exigidos_documentos_exigidos_id");
-                        });
-
-                    b.Navigation("FormatosPermitidos")
+                    b.Navigation("Requisitos")
                         .IsRequired();
-
-                    b.Navigation("IdadeMaximaEmissao");
-
-                    b.Navigation("Modelo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigidoBaseLegal", b =>

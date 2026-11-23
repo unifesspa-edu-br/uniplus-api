@@ -5,6 +5,7 @@ using System.Globalization;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os corpos das requisições administrativas que montam o processo do cenário: os itens do formulário de inscrição,
@@ -29,7 +30,7 @@ internal static class CorposDasRequisicoesDoProcesso
             momento = new { faseId, finalidade = "INSCRICAO" },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
             indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
-            requisitos = new { formatosPermitidos = "QUALQUER" },
+            requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,
             fatosComprovados = comprova,
         },
     };

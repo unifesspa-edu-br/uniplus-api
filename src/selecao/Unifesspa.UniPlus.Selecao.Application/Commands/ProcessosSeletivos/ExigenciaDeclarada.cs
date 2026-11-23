@@ -32,8 +32,9 @@ internal static class ExigenciaDeclarada
 
     public static int? TamanhoMaximoBytes(this ItemDocumentoExigidoInput item) => item.Requisitos?.TamanhoMaximoBytes;
 
-    public static IdadeMaximaEmissaoInput? IdadeMaximaEmissao(this ItemDocumentoExigidoInput item) =>
-        item.Requisitos?.IdadeMaximaEmissao;
+    public static PrazoDeEmissaoInput? PrazoDeEmissao(this ItemDocumentoExigidoInput item) => item.Requisitos?.PrazoDeEmissao;
+
+    public static ValidadeDoDocumentoInput? Validade(this ItemDocumentoExigidoInput item) => item.Requisitos?.Validade;
 
     public static Guid? ModeloId(this ItemDocumentoExigidoInput item) => item.Requisitos?.Modelo?.ModeloId;
 

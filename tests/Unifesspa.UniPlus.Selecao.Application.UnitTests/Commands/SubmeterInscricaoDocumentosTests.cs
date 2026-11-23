@@ -90,9 +90,13 @@ public sealed class SubmeterInscricaoDocumentosTests
     }
 
     private static DocumentoExigido Documento(Guid fase, string nome, Aplicabilidade aplicabilidade, IReadOnlyList<CondicaoGatilho> condicoes) =>
-        DocumentoExigido.Criar(fase, Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade, obrigatorio: true, null, condicoes, [], null, FormatosPermitidos.Criar(true, null).Value!, null,
-            finalidade: FinalidadeFormulario.Inscricao).Value!;
+        DocumentoExigido.Criar(
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(aplicabilidade, condicoes),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private async Task<(Result<ReciboDaInscricaoDto>, IDocumentoDaInscricaoRepository, ArquivoDaApresentacao, ArquivoDaApresentacao, Inscricao)> EnviarAsync(
         bool comLaudo, bool semApelido = false, bool laudoEmVerificacao = false)

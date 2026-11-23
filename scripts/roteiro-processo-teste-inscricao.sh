@@ -841,7 +841,7 @@ definir_documentos_exigidos() {
                 momento: {faseId: $fase, finalidade: "HABILITACAO"},
                 aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
                 indeferimento: {obrigatorio: true, consequencia: "REMOVE_VANTAGEM", basesLegais: $basesLegais},
-                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, idadeMaximaEmissao: null, modelo: null},
+                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: null, validade: null, modelo: null},
                 fatosComprovados: []
             }
         };

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
@@ -33,7 +34,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Conformidade, static c => ChecklistDeConformidade.CausasDeConformidade(c.Configuracao)),
         new(NomeDoAssunto.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
         new(NomeDoAssunto.ReferenciasDeRegra, static c => ConferenciaDasReferenciasDeRegra.Conferir(c.Configuracao, c.Cadastros)),
-        new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas, c.Cadastros.Precedencias)),
+        new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.Precedencias)),
         new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
         new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),
         new(NomeDoAssunto.Bancas, static c => Bancas(c.Configuracao.Identidade.OrigemCandidatos, c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
@@ -68,8 +69,9 @@ internal static class CausasQueImpedemCongelar
     ];
 
     // A precedência do cadastro só é julgada quando a operação a leu: a conferência da publicação a repete porque o cadastro muda entre gravar e publicar.
-    private static IEnumerable<FieldError> Conjunto(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, PrecedenciasDosCadastros precedencias) =>
+    private static IEnumerable<FieldError> Conjunto(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, PrecedenciasDosCadastros precedencias) =>
     [
+        .. DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos),
         .. cronograma.ConferirEstrutura(),
         .. precedencias.FoiLida ? cronograma.ConferirPrecedencia(precedencias.Arestas) : [],
         .. etapas.Conferir(),
@@ -80,6 +82,7 @@ internal static class CausasQueImpedemCongelar
     private static IEnumerable<FieldError> Completude(
         ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, ContextoDeContagemDePrazos contexto) =>
     [
+        .. DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos),
         .. EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas),
         .. etapas.ConferirCompletude(),
         .. cronograma.ConferirCronogramaExigidoPeloProcesso(configuracao.Identidade.OrigemCandidatos, configuracao.Vagas.HaVagasOfertadas),

@@ -72,10 +72,12 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
     }
 
     private static DocumentoExigido ExigenciaDoPdf(Guid faseId) => DocumentoExigido.Criar(
-        faseId, TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL",
-        ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, condicoes: [],
-        basesLegais: [BaseLegalDaResolucao()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(false, [("PDF", null)]).Value!,
-        tamanhoMaximoBytes: null, modelo: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalDaResolucao()]),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
+        null).Value!;
 
     private static DocumentoExigidoBaseLegal BaseLegalDaResolucao() => DocumentoExigidoBaseLegal.Criar(
         "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!;

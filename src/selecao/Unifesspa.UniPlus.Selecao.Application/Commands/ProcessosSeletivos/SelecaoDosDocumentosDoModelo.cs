@@ -189,7 +189,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             new AplicabilidadeDaExigenciaInput(
                 documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", CondicoesDoGatilho(documento.Quando)),
             new IndeferimentoDoDocumentoInput(documento.Obrigatorio, documento.ConsequenciaIndeferimento, BasesLegaisDoModelo(documento)),
-            new RequisitosDoDocumentoInput(JsonSerializer.SerializeToElement("QUALQUER"), null, null, null));
+            new RequisitosDoDocumentoInput(JsonSerializer.SerializeToElement("QUALQUER"), null, null, null, null));
 
     private static List<BaseLegalInput> BasesLegaisDoModelo(DocumentoExigidoDoModeloInput documento) =>
         [.. (documento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>()

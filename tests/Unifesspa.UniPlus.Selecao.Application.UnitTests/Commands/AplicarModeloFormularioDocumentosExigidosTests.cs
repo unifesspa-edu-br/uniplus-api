@@ -48,8 +48,12 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         FaseCronograma fase = _cenario.FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
         _cenario.DeclararAtendimentoEspecializado();
         DocumentoExigido daHabilitacao = DocumentoExigido.Criar(
-            _cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(_cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
         _cenario.Processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(daHabilitacao, 0).Value!]).IsSuccess.Should().BeTrue();
         return fase;
     }

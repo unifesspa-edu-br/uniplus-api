@@ -162,7 +162,8 @@ internal static class ProjecaoDaColeta
     private static RequisitosDoDocumentoDto ProjetarRequisitos(DocumentoExigido documento) => new(
         ProjetarFormatosPermitidos(documento.FormatosPermitidos),
         documento.TamanhoMaximoBytes,
-        ProjetarIdadeMaximaDeEmissao(documento.IdadeMaximaEmissao),
+        ProjecaoDoPrazoEDaValidadeDoDocumento.Projetar(documento.PrazoDeEmissao),
+        ProjecaoDoPrazoEDaValidadeDoDocumento.Projetar(documento.Validade),
         ProjetarModelo(documento.Modelo));
 
     private static ModeloDaExigenciaDto? ProjetarModelo(ModeloDaExigencia? modelo) => modelo is null ? null
@@ -212,11 +213,6 @@ internal static class ProjecaoDaColeta
         condicao.Fato,
         condicao.Operador.Codigo(),
         condicao.Valor.GetRawText());
-
-    private static IdadeMaximaEmissaoDto? ProjetarIdadeMaximaDeEmissao(IdadeMaximaEmissao? idade) =>
-        idade is null
-            ? null
-            : new IdadeMaximaEmissaoDto(idade.Valor, idade.Unidade.ToCodigo(), idade.ReferenciaTipo.ToCodigo(), idade.Data, idade.ReferenciaFaseId);
 
     // Emite o mesmo token de wire aceito pelo validador de documentos exigidos ("GERAL" e "CONDICIONAL"):
     // Aplicabilidade.ToString() produziria PascalCase, que o validador rejeitaria num reenvio direto do GET para o PUT.

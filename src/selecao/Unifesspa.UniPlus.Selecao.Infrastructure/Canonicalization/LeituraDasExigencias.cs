@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -16,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura das exigências documentais: declaração, modelo, idade máxima de emissão e complementos.
+/// Leitura das exigências documentais: declaração, modelo, prazo de emissão, validade e complementos.
 /// </summary>
 internal static class LeituraDasExigencias
 {
@@ -25,7 +24,7 @@ internal static class LeituraDasExigencias
         "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
         "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "dadosComprovados", "exigidoNaFaseId",
         "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaIndeferimento",
-        "condicoes", "basesLegais", "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
+        "condicoes", "basesLegais", "prazoDeEmissao", "validade", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
     ];
 
     /// <summary>
@@ -97,13 +96,14 @@ internal static class LeituraDasExigencias
         IReadOnlyList<string> fatosComprovados = leitor.Textos(item, "dadosComprovados", path);
         IReadOnlyList<CondicaoGatilho> condicoes = LeituraDasCondicoes.LerCondicaoGatilho(leitor, item, path);
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais = LeituraDosFormatosEBasesLegais.LerBasesLegais(leitor, item, path);
-        IdadeMaximaEmissao? idadeMaximaEmissao = LerIdadeMaximaEmissao(leitor, item, path);
+        PrazoDeEmissao? prazoDeEmissao = LeituraDoPrazoEDaValidade.LerPrazo(leitor, item, path);
+        ValidadeDoDocumento? validade = LeituraDoPrazoEDaValidade.LerValidade(leitor, item, path);
         FormatosPermitidos? formatosPermitidos = LeituraDosFormatosEBasesLegais.LerFormatosPermitidos(leitor, item, path);
         ModeloDaExigencia? modelo = LerModelo(leitor, item, path);
 
         return leitor.Falhou
             ? null
-            : new ComplementosDaExigencia(fatosComprovados, condicoes, basesLegais, idadeMaximaEmissao, formatosPermitidos!, modelo);
+            : new ComplementosDaExigencia(fatosComprovados, condicoes, basesLegais, prazoDeEmissao, validade, formatosPermitidos!, modelo);
     }
 
     private static DocumentoExigido Reidratar(
@@ -111,18 +111,20 @@ internal static class LeituraDasExigencias
         ClassificacaoDeProtecao classificacaoProtecao,
         FinalidadeFormulario? finalidade,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
-            d.ExigenciaId, d.ExigidoNaFaseId, d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo,
-            d.TipoDocumentoNome, d.TipoDocumentoCategoria,
-            new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal),
-            d.Aplicabilidade, d.Obrigatorio, d.ConsequenciaIndeferimento, c.Condicoes, c.BasesLegais,
-            c.IdadeMaximaEmissao, c.FormatosPermitidos, d.TamanhoMaximoBytes, d.ExigidoNaEtapaId,
-            c.Modelo, finalidade, c.FatosComprovados);
+            d.ExigenciaId,
+            new CopiaDoTipoDeDocumento(d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo, d.TipoDocumentoNome, d.TipoDocumentoCategoria, new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal)),
+            new MomentoDaExigencia(d.ExigidoNaFaseId, d.ExigidoNaEtapaId, finalidade),
+            new AplicabilidadeDaExigencia(d.Aplicabilidade, c.Condicoes),
+            new IndeferimentoDoDocumento(d.Obrigatorio, d.ConsequenciaIndeferimento, c.BasesLegais),
+            new RequisitosDoDocumento(c.FormatosPermitidos, d.TamanhoMaximoBytes, c.Modelo, c.PrazoDeEmissao, c.Validade),
+            c.FatosComprovados);
 
     private sealed record ComplementosDaExigencia(
         IReadOnlyList<string> FatosComprovados,
         IReadOnlyList<CondicaoGatilho> Condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> BasesLegais,
-        IdadeMaximaEmissao? IdadeMaximaEmissao,
+        PrazoDeEmissao? PrazoDeEmissao,
+        ValidadeDoDocumento? Validade,
         FormatosPermitidos FormatosPermitidos,
         ModeloDaExigencia? Modelo);
 
@@ -233,51 +235,4 @@ internal static class LeituraDasExigencias
             : leitor.Propagar<ModeloDaExigencia>(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' com formato fora dos editáveis ou hash que não é SHA-256 em hexadecimal minúsculo."));
     }
-
-    internal static IdadeMaximaEmissao? LerIdadeMaximaEmissao(LeitorEnvelope leitor, JsonObject item, string pathPai)
-    {
-        JsonObject? idadeJson = leitor.ObjetoOpcional(item, "idadeMaximaEmissao", pathPai);
-        if (leitor.Falhou || idadeJson is null)
-        {
-            return null;
-        }
-
-        return LerBlocoDaIdade(leitor, idadeJson, $"{pathPai}.idadeMaximaEmissao");
-    }
-
-    private static IdadeMaximaEmissao? LerBlocoDaIdade(LeitorEnvelope leitor, JsonObject idadeJson, string path)
-    {
-        leitor.ExigirChaves(idadeJson, path, "valor", "unidade", "referenciaTipo", "data", "referenciaFaseId");
-
-        int valor = leitor.Inteiro(idadeJson, "valor", path);
-        string unidadeCodigo = leitor.TextoNaoVazio(idadeJson, "unidade", path);
-        string referenciaTipoCodigo = leitor.TextoNaoVazio(idadeJson, "referenciaTipo", path);
-        DateOnly? data = leitor.DataOpcional(idadeJson, "data", path);
-        Guid? referenciaFaseId = leitor.IdentificadorOpcional(idadeJson, "referenciaFaseId", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        return ConferirVocabularioDaIdade(leitor, path, new DadosDaIdade(valor, unidadeCodigo, referenciaTipoCodigo, data, referenciaFaseId));
-    }
-
-    private static IdadeMaximaEmissao? ConferirVocabularioDaIdade(LeitorEnvelope leitor, string path, DadosDaIdade dados)
-    {
-        if (UnidadeIdadeCodigo.FromCodigo(dados.Unidade) is not { } unidade)
-        {
-            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.unidade' não reconhecida: '{dados.Unidade}'.");
-        }
-
-        if (ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(dados.ReferenciaTipo) is not { } referenciaTipo)
-        {
-            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.referenciaTipo' não reconhecida: '{dados.ReferenciaTipo}'.");
-        }
-
-        Result<IdadeMaximaEmissao?> idadeResult = IdadeMaximaEmissao.Criar(dados.Valor, unidade, referenciaTipo, dados.Data, dados.ReferenciaFaseId);
-        return idadeResult.IsFailure ? leitor.Propagar<IdadeMaximaEmissao>(idadeResult.Error!) : idadeResult.Value;
-    }
-
-    private sealed record DadosDaIdade(int Valor, string Unidade, string ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
-
 }

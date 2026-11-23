@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -37,31 +38,22 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null,
         FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade,
-            obrigatorio: consequenciaIndeferimento is null,
-            consequenciaIndeferimento,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-            finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, finalidade),
+            new AplicabilidadeDaExigencia(aplicabilidade, []),
+            new IndeferimentoDoDocumento(consequenciaIndeferimento is null, consequenciaIndeferimento, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+            null).Value!;
 
-    internal static DocumentoExigido ExigenciaComIdade(Guid exigidoNaFaseId, IdadeMaximaEmissao idade, FinalidadeFormulario? finalidade = null) =>
+    internal static DocumentoExigido ExigenciaComPrazoEValidade(
+        Guid exigidoNaFaseId, PrazoDeEmissao? prazo, ValidadeDoDocumento? validade, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
-            tipoDocumentoNome: "Comprovante de residência",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: idade,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null,
-            finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(exigidoNaFaseId, null, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, prazo, validade),
+            null).Value!;
 
     internal static EtapaProcesso Etapa(string nome, string faseCodigo, int ordem) =>
         EtapaProcesso.Criar(
@@ -103,18 +95,22 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static DocumentoExigido DocumentoGeral(
         Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: consequencia,
-            condicoes: [], basesLegais: basesLegais ?? [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, finalidade),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(obrigatorio, consequencia, basesLegais ?? []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+            null).Value!;
 
     /// <summary>O documento obrigatório que só vale quando os gatilhos dados acontecem, exigido na fase, com base legal resolvida.</summary>
     internal static DocumentoExigido DocumentoCondicional(Guid faseId, string codigo, string nome, string categoria, params CondicaoGatilho[] gatilhos) =>
         DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: gatilhos, basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, gatilhos),
+            new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+            null).Value!;
 
     /// <summary>Grupo com quantidade mínima de um documento, consequência e base legal resolvida.</summary>
     internal static void ExigirGrupoDeQuantidadeMinimaComDocumento(ProcessoSeletivo processo, string consequencia)

@@ -239,13 +239,15 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
                 .Append((documentoId, satisfeito, StatusResolucaoExigencia.Cumprida)));
     }
     private static DocumentoExigido DeclaracaoDeIsento() => DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: false, "ELIMINA",
-            [
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(FaseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
                 CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
-            ],
-            [], null, Qualquer, null).Value!;
+            ]),
+        new IndeferimentoDoDocumento(false, "ELIMINA", []),
+        new RequisitosDoDocumento(Qualquer, null, null, null, null),
+        null).Value!;
     private static RegraDeComprovacao GrupoFamiliar(params DocumentoExigido[] documentos) => RegraDeComprovacao.CriarGrupo(
         FormaDeComprovacao.TodosOsItens, 0, null, null, [], [.. documentos.Select(static (d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
 

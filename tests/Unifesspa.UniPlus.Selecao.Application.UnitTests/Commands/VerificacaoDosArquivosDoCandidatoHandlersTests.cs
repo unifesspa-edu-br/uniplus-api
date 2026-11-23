@@ -34,8 +34,12 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
     private static ArquivoDaApresentacao EmVerificacao(DateTimeOffset? confirmadoEm = null)
     {
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
-            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         arquivo.Confirmar("\"etag\"", new RelogioFixo(confirmadoEm ?? Agora)).IsSuccess.Should().BeTrue();
@@ -128,12 +132,7 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
     [Fact(DisplayName = "Verificado que difere do declarado (formato, tamanho ou SHA-256) é recusado por falha fechada e o promovido é removido")]
     public async Task Resultado_VerificadoQueNaoConfere_ERecusado()
     {
-        foreach (Func<Guid, ResultadoDaVerificacaoDeArquivo> divergente in new Func<Guid, ResultadoDaVerificacaoDeArquivo>[]
-        {
-            id => Verificado(id) with { Formato = FormatoDoArquivo.Png },
-            id => Verificado(id) with { TamanhoBytes = 20 * 1024 * 1024 + 1 },
-            id => Verificado(id) with { HashSha256 = "curto" },
-        })
+        foreach (Func<Guid, ResultadoDaVerificacaoDeArquivo> divergente in ResultadosDivergentes())
         {
             ArquivoDaApresentacao arquivo = EmVerificacao();
             _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
@@ -145,6 +144,13 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
             await _documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveDefinitivaPrevista, Agora, Arg.Any<CancellationToken>());
         }
     }
+
+    private static Func<Guid, ResultadoDaVerificacaoDeArquivo>[] ResultadosDivergentes() =>
+    [
+        id => Verificado(id) with { Formato = FormatoDoArquivo.Png },
+        id => Verificado(id) with { TamanhoBytes = 20 * 1024 * 1024 + 1 },
+        id => Verificado(id) with { HashSha256 = "curto" },
+    ];
 
     [Theory(DisplayName = "Verificado para arquivo que já terminou recusado ou a reenviar agenda a remoção do promovido e não altera o arquivo")]
     [InlineData(false)]

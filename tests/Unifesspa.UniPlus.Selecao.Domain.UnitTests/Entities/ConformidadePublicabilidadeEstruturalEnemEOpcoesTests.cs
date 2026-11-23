@@ -311,9 +311,10 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     }
 
     private static DocumentoExigido ExigenciaCondicionalPelaOpcao(Guid faseId, string opcao) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "COMPROVANTE_2024", "Comprovante 2024", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-        condicoes: [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(opcao)).Value!],
-        basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-        formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_2024", "Comprovante 2024", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(opcao)).Value!]),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+        null).Value!;
 }

@@ -63,7 +63,6 @@ internal static class RegrasDoCronograma
         List<DocumentoExigido> documentosQueFicam = DocumentosQueFicam(configuracao, antigasPorOrigem, novasPorOrigem);
 
         return RecusaDasFasesQueSaemOuMudam(configuracao, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
-            ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem);
     }
 
@@ -115,7 +114,7 @@ internal static class RegrasDoCronograma
         foreach (FaseCronograma antiga in antigasPorOrigem.Values)
         {
             DomainError? recusa = novasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova)
-                ? RecusaDaFaseRetida(configuracao, antiga, nova, documentosQueFicam)
+                ? ComplementacaoQueAPendenciaDeReenvioExige(configuracao, antiga, nova)
                 : RecusaDaFaseRemovida(configuracao, antiga, documentosQueFicam);
             if (recusa is not null)
             {
@@ -126,20 +125,22 @@ internal static class RegrasDoCronograma
         return null;
     }
 
-    // A exigência declarada na fase removida sai junto, na poda. A âncora de idade máxima é outra
-    // coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco temporal, e
-    // apagá-la por tabela seria remover configuração alheia. A etapa e o formulário da fase também só
-    // saem se ninguém de fora depende deles.
+    // A exigência declarada na fase removida sai junto, na poda. A referência do prazo de emissão ou da
+    // validade é outra coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco
+    // temporal, e apagá-la por tabela seria remover configuração alheia. A etapa e o formulário da fase
+    // também só saem se ninguém de fora depende deles.
     private static DomainError? RecusaDaFaseRemovida(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
-        JanelaDaFaseUsadaPorOutraExigencia(antiga, documentosQueFicam)
+        FaseUsadaComoReferenciaPorOutraExigencia(antiga, documentosQueFicam)
         ?? EtapaDaFaseReferenciadaPelaClassificacao(configuracao, antiga)
         ?? FormularioRespondidoNaFase(configuracao, antiga);
 
-    private static DomainError? JanelaDaFaseUsadaPorOutraExigencia(FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
-        documentosQueFicam.Find(d => d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id) is { } ancoraDeOutraFase
+    private static DomainError? FaseUsadaComoReferenciaPorOutraExigencia(FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
+        documentosQueFicam
+            .Select(documento => (Documento: documento, Campo: DatasDeReferenciaNoCronograma.CampoQueUsaAFase(documento, antiga.Id)))
+            .FirstOrDefault(static usada => usada.Campo is not null) is { Campo: { } campo } usadaPorOutra
             ? new DomainError(
                 "FaseCronograma.ReferenciadaPorExigenciaViva",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancoraDeOutraFase.TipoDocumentoNome}', exigido em outra fase, usa o período dela para iniciar a contagem da idade máxima de emissão.")
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{usadaPorOutra.Documento.TipoDocumentoNome}', exigido em outra fase, usa a data dela como referência {campo}. Grave primeiro a troca da referência {campo} e depois remova a fase.")
             : null;
 
     private static DomainError? EtapaDaFaseReferenciadaPelaClassificacao(ConfiguracaoDeclarada configuracao, FaseCronograma antiga) =>
@@ -158,58 +159,11 @@ internal static class RegrasDoCronograma
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {EstruturaFormulario.ParaToken(formularioDaFase.Finalidade)} é respondido nela — troque a fase do formulário antes.")
             : null;
 
-    // Um extremo âncora que deixa de existir numa fase que continua: a conferência da exigência só
-    // prova a coerência no instante da escrita dela, e sem esta recusa uma redefinição posterior do
-    // cronograma deixaria a idade máxima apontando para uma âncora irresolvível.
-    private static DomainError? RecusaDaFaseRetida(
-        ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova, List<DocumentoExigido> documentosQueFicam) =>
-        ComplementacaoQueAPendenciaDeReenvioExige(configuracao, antiga, nova) ?? ExtremoQueAAncoraDeIdadeUsa(antiga, nova, documentosQueFicam);
-
     private static DomainError? ComplementacaoQueAPendenciaDeReenvioExige(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova) =>
         antiga.PermiteComplementacao && !nova.PermiteComplementacao
         && RegrasDasExigencias.ExisteConsequenciaPendenciaReenvioNaFase(configuracao, antiga.Id)
             ? new DomainError(
                 "FaseCronograma.PendenciaReenvioExigeComplementacao",
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.")
-            : null;
-
-    private static DomainError? ExtremoQueAAncoraDeIdadeUsa(FaseCronograma antiga, FaseCronograma nova, List<DocumentoExigido> documentosQueFicam)
-    {
-        ReferenciaTipoIdadeEmissao[] extremosPerdidos = [.. ExtremosPerdidos(antiga, nova)];
-
-        return documentosQueFicam.Exists(d => UsaUmDosExtremos(d, antiga.Id, extremosPerdidos))
-            ? new DomainError(
-                "IdadeMaximaEmissao.FaseExtremoAusente",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder a data usada para iniciar a contagem da idade máxima de emissão por um documento exigido configurado.")
-            : null;
-    }
-
-    private static IEnumerable<ReferenciaTipoIdadeEmissao> ExtremosPerdidos(FaseCronograma antiga, FaseCronograma nova)
-    {
-        if (antiga.Inicio is not null && nova.Inicio is null)
-        {
-            yield return ReferenciaTipoIdadeEmissao.InicioFase;
-        }
-
-        if (antiga.Fim is not null && nova.Fim is null)
-        {
-            yield return ReferenciaTipoIdadeEmissao.FimFase;
-        }
-    }
-
-    private static bool UsaUmDosExtremos(DocumentoExigido documento, Guid faseId, ReferenciaTipoIdadeEmissao[] extremos) =>
-        documento.IdadeMaximaEmissao is { ReferenciaFaseId: { } refFaseId } idade
-        && refFaseId == faseId
-        && extremos.Contains(idade.ReferenciaTipo);
-
-    // O fim da inscrição não usa ReferenciaFaseId (a âncora é implícita: a fase que coleta
-    // inscrição), então as recusas por fase nunca pegam uma redefinição que deixa o cronograma sem
-    // nenhuma fase de coleta com fim definido. A checagem é global: importa só se ainda sobra alguma.
-    private static DomainError? RecusaDaAncoraNoFimDaInscricao(IReadOnlyList<FaseCronograma> fases, List<DocumentoExigido> documentosQueFicam) =>
-        documentosQueFicam.Exists(d => d.IdadeMaximaEmissao?.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimInscricao)
-        && !fases.Any(f => f.ColetaInscricao && f.Fim is not null)
-            ? new DomainError(
-                "IdadeMaximaEmissao.FaseExtremoAusente",
-                "A redefinição do cronograma deixaria de ter uma fase que coleta inscrição com Fim definido, mas há documento exigido configurado com idade máxima de emissão contada a partir de FIM_INSCRICAO.")
             : null;
 }

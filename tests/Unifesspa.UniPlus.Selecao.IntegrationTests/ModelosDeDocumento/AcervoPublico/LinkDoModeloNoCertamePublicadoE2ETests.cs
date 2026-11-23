@@ -47,27 +47,29 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
         (Guid processoId, Guid documentoEditalId) = await SemearProcessoComModeloAsync(api, odt, hash);
         using HttpClient client = api.CreateClient();
 
-        using (HttpResponseMessage publicacao = await PublicarAsync(client, processoId, documentoEditalId))
-        {
-            publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
-        }
+        await PublicarComSucessoAsync(client, processoId, documentoEditalId);
 
         await AtoNoRegistroCentral.LerAsync(api, await AtoDaVersaoAsync(api, processoId));
         using JsonDocument certame = await CertameDivulgadoAsync(client, processoId);
-        Uri urlDoModelo = new(certame.RootElement.GetProperty("documentosExigidos").EnumerateArray()
-            .Single()
-            .GetProperty("modelo")
-            .GetProperty("urlDownload")
-            .GetString()!);
-        Uri urlDoEdital = new(certame.RootElement.GetProperty("documentoEdital").GetProperty("urlDownload").GetString()!);
-
-        using HttpClient anonimo = new();
-        Convert.ToHexStringLower(SHA256.HashData(await anonimo.GetByteArrayAsync(urlDoModelo))).Should().Be(hash,
-            "o candidato baixa exatamente o arquivo cujo hash o edital congelou");
-        (await anonimo.GetByteArrayAsync(urlDoEdital)).Should().Equal(PdfDoEdital,
-            "o cidadão baixa o documento do edital sem credencial, pelo endereço que o certame divulga");
+        await ConferirDownloadsAsync(certame, hash);
     }
 
+
+    private static async Task PublicarComSucessoAsync(HttpClient client, Guid processoId, Guid documentoEditalId)
+    {
+        using HttpResponseMessage publicacao = await PublicarAsync(client, processoId, documentoEditalId);
+        publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
+    }
+
+    private static async Task ConferirDownloadsAsync(JsonDocument certame, string hash)
+    {
+        Uri urlDoModelo = new(certame.RootElement.GetProperty("documentosExigidos").EnumerateArray()
+            .Single().GetProperty("modelo").GetProperty("urlDownload").GetString()!);
+        Uri urlDoEdital = new(certame.RootElement.GetProperty("documentoEdital").GetProperty("urlDownload").GetString()!);
+        using HttpClient anonimo = new();
+        Convert.ToHexStringLower(SHA256.HashData(await anonimo.GetByteArrayAsync(urlDoModelo))).Should().Be(hash);
+        (await anonimo.GetByteArrayAsync(urlDoEdital)).Should().Equal(PdfDoEdital);
+    }
 
     /// <summary>
     /// O processo publicável com uma exigência que oferece um modelo confirmado — a cópia selada no
@@ -111,39 +113,45 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
     }
 
     private static DocumentoExigido ExigenciaQueOfereceOModelo(ProcessoSeletivo processo, ModeloDeDocumento modelo) => DocumentoExigido.Criar(
-        processo.CronogramaFases.Single().Id, tipoDocumentoOrigemId: TipoDocumentoSeed.Itens[0].Id,
-        tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL", tipoDocumentoNome: "Autodeclaração étnico-racial",
-        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, aplicabilidade: Aplicabilidade.Geral,
-        obrigatorio: true, consequenciaIndeferimento: null, condicoes: [],
-        basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
-        idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-        modelo: ModeloDaExigencia.Do(modelo).Value!, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(processo.CronogramaFases.Single().Id, null, FinalidadeFormulario.Inscricao),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: ModeloDaExigencia.Do(modelo).Value!),
+        null).Value!;
 
     private static async Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId)
     {
-        using HttpRequestMessage request = new(
+        using HttpRequestMessage request = CriarPedidoDePublicacao(processoId, documentoEditalId);
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage CriarPedidoDePublicacao(Guid processoId, Guid documentoEditalId)
+    {
+        return new HttpRequestMessage(
             HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
                 numero = "001/2027",
                 documentoEditalId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2027,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
-                },
+                ato = CriarAto(),
             }),
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        return await client.SendAsync(request);
     }
+
+    private static object CriarAto() => new
+    {
+        orgao = "CEPS",
+        serie = "EDITAL",
+        ano = 2027,
+        dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        assinante = "Diretor do CEPS",
+        tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
+    };
 
     private static async Task<Guid> AtoDaVersaoAsync(AcervoPublicoApiFactory api, Guid processoId)
     {

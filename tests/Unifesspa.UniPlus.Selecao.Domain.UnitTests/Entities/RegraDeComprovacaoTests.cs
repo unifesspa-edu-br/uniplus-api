@@ -15,20 +15,12 @@ public sealed class RegraDeComprovacaoTests
         Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
         FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
-            faseId ?? Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            "IDENTIDADE",
-            "Documento de identidade",
-            "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade,
-            obrigatorio,
-            consequencia,
-            [],
-            [],
-            null,
-            FormatosPermitidos.Criar(true, null).Value!,
-            null,
-            finalidade: finalidade).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, finalidade),
+            new AplicabilidadeDaExigencia(aplicabilidade, []),
+            new IndeferimentoDoDocumento(obrigatorio, consequencia, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static BaseLegalDaComprovacao BaseLegalResolvida() =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;

@@ -26,6 +26,12 @@
         "resolved": "3.0.321",
         "contentHash": "aFP7GiBBIb2x9rBTuUpw/jSs0JVbTofADlt6WxmYVYQ24KPAjFYyxcnNNVVf4F/eqKyzjik170nOpURmmyJDKg=="
       },
+      "Microsoft.Extensions.TimeProvider.Testing": {
+        "type": "Direct",
+        "requested": "[10.10.0, )",
+        "resolved": "10.10.0",
+        "contentHash": "8duZdxuO3Oo8tlyQXVq1drXee6GJC9DjUU97Pq3YaIqf92jrAHsWxbbRKwvjQI48Mer3IANwUKF0elqvHeY4Rw=="
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[18.12.0, )",

@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -135,11 +136,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     }
 
     private static DocumentoExigido ExigenciaPorMunicipioDeParauapebas(Guid faseId) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-        condicoes: [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!],
-        basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-        formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!]),
+        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+        null).Value!;
 
     [Fact(DisplayName = "Redefinir o bônus recusa tirar da área um município citado por exigência viva")]
     public void DefinirBonusRegional_MunicipioCitadoPorExigencia_Recusa()

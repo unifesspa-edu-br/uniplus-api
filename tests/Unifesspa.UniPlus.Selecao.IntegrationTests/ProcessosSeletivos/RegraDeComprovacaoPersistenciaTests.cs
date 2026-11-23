@@ -28,9 +28,12 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
     }
 
     private static DocumentoExigido Documento(Guid faseId) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-        [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(true, null, []),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+        null).Value!;
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

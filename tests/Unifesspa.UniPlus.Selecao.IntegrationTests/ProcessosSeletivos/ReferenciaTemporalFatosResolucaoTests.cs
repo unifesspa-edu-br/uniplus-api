@@ -121,15 +121,12 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
 
     private static DocumentoExigido ExigenciaDeMaioridade(Guid faseId, CondicaoGatilho condicao, DocumentoExigidoBaseLegal baseLegal) =>
         DocumentoExigido.Criar(
-            faseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
-            tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
+            new IndeferimentoDoDocumento(true, null, [baseLegal]),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));

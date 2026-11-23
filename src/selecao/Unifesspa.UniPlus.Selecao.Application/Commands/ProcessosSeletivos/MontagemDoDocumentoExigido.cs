@@ -75,10 +75,11 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         TipoDocumentoView tipo = partes.Tipo;
         EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
         return DocumentoExigido.Criar(
-            documentoInformado.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
-            new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
-            EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), documentoInformado.Obrigatorio(), documentoInformado.Consequencia(),
-            partes.Condicoes, basesLegais, restricoes.Idade, restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(),
-            documentoInformado.EtapaId(), restricoes.Modelo, EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade()), documentoInformado.FatosComprovados);
+            new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
+            new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade())),
+            new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
+            new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.Consequencia(), basesLegais),
+            new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),
+            documentoInformado.FatosComprovados);
     }
 }

@@ -23,6 +23,9 @@
     <Compile Include="../Shared/OfertaCursoDeTeste.cs" Link="OfertaCursoDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
+    <Compile Include="../Shared/Cenarios/DataDeReferenciaBuilder.cs" Link="Cenarios/DataDeReferenciaBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/ValidadeDoDocumentoBuilder.cs" Link="Cenarios/ValidadeDoDocumentoBuilder.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

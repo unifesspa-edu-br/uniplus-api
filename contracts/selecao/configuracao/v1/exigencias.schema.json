@@ -154,11 +154,6 @@
             "$ref": "condicoes.schema.json#/$defs/baseLegal"
           }
         },
-        "idadeMaximaEmissao": {
-          "title": "Idade máxima de emissão",
-          "description": "Quanto tempo o documento pode ter desde a emissão, contado a partir da referência.",
-          "$ref": "#/$defs/idadeMaximaEmissao"
-        },
         "formatosPermitidos": {
           "title": "Formatos permitidos",
           "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho máximo de cada formato.",
@@ -196,51 +191,16 @@
               "pattern": "^[0-9a-f]{64}$"
             }
           }
-        }
-      }
-    },
-    "idadeMaximaEmissao": {
-      "title": "Idade máxima de emissão",
-      "description": "Quanto tempo o documento pode ter desde a emissão, contado a partir da referência.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "valor": {
-          "title": "Valor",
-          "description": "Quantidade de unidades, maior que zero.",
-          "type": "integer",
-          "minimum": 1
         },
-        "unidade": {
-          "title": "Unidade",
-          "description": "Unidade do valor.",
-          "enum": [
-            "DIAS",
-            "MESES",
-            "ANOS"
-          ]
+        "prazoDeEmissao": {
+          "title": "Prazo de emissão",
+          "description": "Escolha e detalhes do prazo de emissão do documento.",
+          "$ref": "#/$defs/prazoDeEmissao"
         },
-        "referenciaTipo": {
-          "title": "Referência",
-          "description": "Instante de onde a idade é contada.",
-          "enum": [
-            "FIM_INSCRICAO",
-            "INICIO_FASE",
-            "FIM_FASE",
-            "DATA_ESPECIFICA",
-            "DATA_SUBMISSAO"
-          ]
-        },
-        "data": {
-          "title": "Data",
-          "description": "Data da referência, quando ela é uma data específica.",
-          "type": "string",
-          "format": "date"
-        },
-        "referenciaFaseChave": {
-          "title": "Fase da referência",
-          "description": "Chave local da fase de onde a idade é contada, quando a referência é o início ou o fim de uma fase.",
-          "$ref": "comuns.schema.json#/$defs/chave"
+        "validade": {
+          "title": "Validade do documento",
+          "description": "Escolha e detalhes da exigência de validade do documento.",
+          "$ref": "#/$defs/validade"
         }
       }
     },
@@ -282,6 +242,109 @@
               }
             }
           }
+        }
+      }
+    },
+    "prazoDeEmissao": {
+      "title": "Prazo de emissão",
+      "description": "Escolha e detalhes do prazo de emissão.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "escolha": {
+          "title": "Escolha",
+          "description": "Escolha sobre o prazo.",
+          "enum": [
+            "SEM_PRAZO",
+            "COM_PRAZO"
+          ]
+        },
+        "valor": {
+          "title": "Valor",
+          "description": "Quantidade de unidades do prazo.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "unidade": {
+          "title": "Unidade",
+          "description": "Unidade do prazo.",
+          "enum": [
+            "DIAS",
+            "MESES",
+            "ANOS"
+          ]
+        },
+        "referencia": {
+          "title": "Referência",
+          "description": "Data usada como referência.",
+          "$ref": "#/$defs/dataDeReferenciaDoDocumento"
+        },
+        "efeitoForaDoPrazo": {
+          "title": "Efeito fora do prazo",
+          "description": "Efeito na análise do documento fora do prazo.",
+          "enum": [
+            "RECUSAR_DOCUMENTO",
+            "ACEITAR_COM_AVISO"
+          ]
+        }
+      }
+    },
+    "validade": {
+      "title": "Validade do documento",
+      "description": "Escolha e detalhes da exigência de validade.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "escolha": {
+          "title": "Escolha",
+          "description": "Escolha sobre a validade.",
+          "enum": [
+            "NAO_EXIGE_DOCUMENTO_VALIDO",
+            "EXIGE_DOCUMENTO_VALIDO"
+          ]
+        },
+        "referencia": {
+          "title": "Referência",
+          "description": "Data usada como referência.",
+          "$ref": "#/$defs/dataDeReferenciaDoDocumento"
+        },
+        "efeitoDoVencimento": {
+          "title": "Efeito do vencimento",
+          "description": "Efeito na análise do documento vencido.",
+          "enum": [
+            "RECUSAR_DOCUMENTO",
+            "ACEITAR_COM_AVISO"
+          ]
+        }
+      }
+    },
+    "dataDeReferenciaDoDocumento": {
+      "title": "Data de referência",
+      "description": "Referência usada para o documento.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "title": "Tipo",
+          "description": "Tipo da data de referência.",
+          "enum": [
+            "FIM_DAS_INSCRICOES",
+            "INICIO_DA_FASE",
+            "FIM_DA_FASE",
+            "DATA_ESPECIFICA",
+            "DATA_DA_APRESENTACAO"
+          ]
+        },
+        "data": {
+          "title": "Data",
+          "description": "Data específica da referência.",
+          "type": "string",
+          "format": "date"
+        },
+        "faseChave": {
+          "title": "Fase da referência",
+          "description": "Chave local da fase de referência.",
+          "$ref": "comuns.schema.json#/$defs/chave"
         }
       }
     }

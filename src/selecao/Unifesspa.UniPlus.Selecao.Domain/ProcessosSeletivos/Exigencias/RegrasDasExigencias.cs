@@ -20,18 +20,31 @@ public static class RegrasDasExigencias
             .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
             .Select(static regra => regra.DocumentoExigido!)];
 
-        DomainError? recusa = PrimeiraRecusa(configuracao, todasAsRegras, documentos);
-        return recusa is null
+        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos);
+        return recusas.Count == 0
             ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, documentos))
-            : Result<MudancaDaConfiguracao>.Failure(recusa);
+            : Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
     }
 
-    private static DomainError? PrimeiraRecusa(
-        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos) =>
-        ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
-        ?? ConferirRepeticaoPorGrupo(configuracao, regras)
-        ?? documentos.Select(documento => RecusaDaIdadeMaximaDeEmissao(configuracao, documento)).FirstOrDefault(static recusa => recusa is not null)
-        ?? RecusaDaPendenciaDeReenvio(configuracao, regras);
+    // Na ordem em que orientam: o vínculo e a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
+    private static IReadOnlyList<FieldError> Recusas(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos)
+    {
+        DomainError? vinculo = ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
+            ?? ConferirRepeticaoPorGrupo(configuracao, regras);
+        if (vinculo is not null)
+        {
+            return [new FieldError(null, vinculo)];
+        }
+
+        IReadOnlyList<FieldError> datas = DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos);
+        if (datas.Count > 0)
+        {
+            return datas;
+        }
+
+        return RecusaDaPendenciaDeReenvio(configuracao, regras) is { } reenvio ? [new FieldError(null, reenvio)] : [];
+    }
 
     private static MudancaDaConfiguracao MudancaDaTroca(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<DocumentoExigido> documentos) => new()
@@ -39,57 +52,6 @@ public static class RegrasDasExigencias
             DocumentosExigidos = Troca.Substituindo(configuracao.Exigencias.DocumentosExigidos, documentos),
             RegrasDeComprovacao = Troca.Substituindo(configuracao.Exigencias.RegrasDeComprovacao, todasAsRegras),
         };
-
-    // A fase de referência precisa pertencer ao processo e ter o instante necessário definido.
-    private static DomainError? RecusaDaIdadeMaximaDeEmissao(ConfiguracaoDeclarada configuracao, DocumentoExigido documento)
-    {
-        if (documento.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
-        {
-            return RecusaDaFaseDeReferencia(configuracao, referenciaFaseId, idadeComFase);
-        }
-
-        // Basta uma fase de coleta de inscrição com término definido.
-        if (documento.IdadeMaximaEmissao is not { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
-        {
-            return null;
-        }
-
-        return RecusaDoFimDaInscricao(configuracao);
-    }
-
-    private static DomainError? RecusaDoFimDaInscricao(ConfiguracaoDeclarada configuracao)
-    {
-        if (!configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao))
-        {
-            return new DomainError(
-                "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                "É necessária uma fase do cronograma que colete inscrições.");
-        }
-
-        return configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null)
-            ? null
-            : new DomainError(
-                "IdadeMaximaEmissao.FaseExtremoAusente",
-                "É necessário definir o término de uma fase que colete inscrições.");
-    }
-
-    private static DomainError? RecusaDaFaseDeReferencia(ConfiguracaoDeclarada configuracao, Guid referenciaFaseId, IdadeMaximaEmissao idade)
-    {
-        FaseCronograma? faseDeReferencia = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
-        if (faseDeReferencia is null)
-        {
-            return new DomainError(
-                "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                "A fase de referência da idade máxima de emissão não pertence ao cronograma deste processo.");
-        }
-
-        DateTimeOffset? extremo = idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseDeReferencia.Inicio : faseDeReferencia.Fim;
-        return extremo is null
-            ? new DomainError(
-                "IdadeMaximaEmissao.FaseExtremoAusente",
-                $"A fase de referência da idade máxima de emissão não tem {(idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido.")
-            : null;
-    }
 
     // Consequência de reenvio exige que a fase permita complementação, para regra de documento e para grupo; o
     // sentido inverso é conferido ao redefinir o cronograma.

@@ -4,17 +4,20 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDaProjecaoDosDocumentosExigidos;
 
 /// <summary>
 /// Cobertura de <see cref="ProjecaoDoProcessoSeletivo.Projetar"/> para
-/// <c>DocumentosExigidos</c> (Story #554, PR #895): a projeção precisa emitir o mesmo
+/// <c>DocumentosExigidos</c>: a projeção precisa emitir o mesmo
 /// token de wire que <c>DefinirDocumentosExigidosCommandValidator</c> aceita — round-trip
 /// GET→PUT direto, sem transformação do cliente.
 /// </summary>
@@ -90,30 +93,69 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         pendenteDto.Observacao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Story #554/issue #893 (PR #900): projeta IdadeMaximaEmissao/TamanhoMaximoBytes — round-trip GET→PUT")]
-    public async Task Handle_IdadeFormatoTamanho_EmiteTokensDeWire()
+    [Fact(DisplayName = "Projeta os formatos permitidos e o tamanho máximo no mesmo valor que o PUT aceita de volta")]
+    public async Task Handle_FormatoTamanho_EmiteValorDeWire()
     {
-        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComIdadeFormatoETamanho());
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComPrazoValidadeFormatoETamanho());
 
         projetado.Requisitos.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.Array);
         projetado.Requisitos.FormatosPermitidos.EnumerateArray().Should().ContainSingle(
             e => e.GetProperty("formato").GetString() == "PDF" && e.GetProperty("tamanhoMaximoBytesMax").ValueKind == JsonValueKind.Null);
         projetado.Requisitos.TamanhoMaximoBytes.Should().Be(5_000_000);
-        projetado.Requisitos.IdadeMaximaEmissao.Should().NotBeNull();
-        projetado.Requisitos.IdadeMaximaEmissao!.Valor.Should().Be(90);
-        projetado.Requisitos.IdadeMaximaEmissao.Unidade.Should().Be("DIAS");
-        projetado.Requisitos.IdadeMaximaEmissao.ReferenciaTipo.Should().Be("DATA_SUBMISSAO");
-        projetado.Requisitos.IdadeMaximaEmissao.ReferenciaFaseId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Sem idade/tamanho configurados (FormatosPermitidos=QUALQUER), a projeção emite QUALQUER e o resto null (contraprova)")]
-    public async Task Handle_SemIdadeFormatoTamanho_ProjetaNulo()
+    [Fact(DisplayName = "Projeta o prazo de emissão com código e rótulo de cada enum")]
+    public async Task Handle_PrazoDeEmissao_EmiteCodigoERotulo()
+    {
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComPrazoValidadeFormatoETamanho());
+
+        PrazoDeEmissaoDto prazo = projetado.Requisitos.PrazoDeEmissao!;
+        prazo.Escolha.Should().Match<CodigoComRotulo<EscolhaDoPrazoDeEmissao>>(e => e.Codigo == "COM_PRAZO" && e.Rotulo == "Com prazo");
+        prazo.Valor.Should().Be(90);
+        prazo.Unidade!.Codigo.Should().Be("DIAS");
+        prazo.Referencia!.Tipo.Codigo.Should().Be("DATA_DA_APRESENTACAO");
+        prazo.Referencia.FaseId.Should().BeNull();
+        prazo.EfeitoForaDoPrazo!.Codigo.Should().Be("RECUSAR_DOCUMENTO");
+    }
+
+    [Fact(DisplayName = "Projeta a validade com código e rótulo de cada enum")]
+    public async Task Handle_Validade_EmiteCodigoERotulo()
+    {
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComPrazoValidadeFormatoETamanho());
+
+        ValidadeDoDocumentoDto validade = projetado.Requisitos.Validade!;
+        validade.Escolha.Codigo.Should().Be("EXIGE_DOCUMENTO_VALIDO");
+        validade.Referencia!.Tipo.Codigo.Should().Be("FIM_DAS_INSCRICOES");
+        validade.EfeitoDoVencimento!.Codigo.Should().Be("ACEITAR_COM_AVISO");
+    }
+
+    [Fact(DisplayName = "Sem prazo e sem exigência de validade, a projeção traz só a escolha e deixa os detalhes nulos")]
+    public async Task Handle_SemPrazoNaoExigeValidade_ProjetaApenasAEscolha()
+    {
+        ExigenciaParaProjetar exigencia = new()
+        {
+            PrazoDeEmissao = new PrazoDeEmissaoBuilder().SemPrazo().Construir(),
+            Validade = new ValidadeDoDocumentoBuilder().NaoExige().Construir(),
+        };
+
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(exigencia);
+
+        projetado.Requisitos.PrazoDeEmissao!.Escolha.Codigo.Should().Be("SEM_PRAZO");
+        projetado.Requisitos.PrazoDeEmissao.Valor.Should().BeNull();
+        projetado.Requisitos.PrazoDeEmissao.Referencia.Should().BeNull();
+        projetado.Requisitos.Validade!.Escolha.Codigo.Should().Be("NAO_EXIGE_DOCUMENTO_VALIDO");
+        projetado.Requisitos.Validade.Referencia.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Sem a escolha do prazo e da validade (formatos QUALQUER), a projeção emite QUALQUER e o resto nulo")]
+    public async Task Handle_SemEscolhaNemTamanho_ProjetaNulo()
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(new ExigenciaParaProjetar());
 
         projetado.Requisitos.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.String);
         projetado.Requisitos.FormatosPermitidos.GetString().Should().Be("QUALQUER");
         projetado.Requisitos.TamanhoMaximoBytes.Should().BeNull();
-        projetado.Requisitos.IdadeMaximaEmissao.Should().BeNull();
+        projetado.Requisitos.PrazoDeEmissao.Should().BeNull();
+        projetado.Requisitos.Validade.Should().BeNull();
     }
 }

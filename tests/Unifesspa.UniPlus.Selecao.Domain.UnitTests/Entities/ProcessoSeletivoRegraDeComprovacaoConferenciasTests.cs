@@ -29,8 +29,12 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         bancasRequeridas: []).Value!;
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
-        obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, finalidade),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(false, null, []),
+        new RequisitosDoDocumento(Qualquer, null, null, null, null),
+        null).Value!;
 
     private static BaseLegalDaComprovacao BaseLegal(StatusBaseLegal status) =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;

@@ -17107,6 +17107,99 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.ausente",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A data de referência do documento é obrigatória."
+      ],
+      "comoResolver": [
+        "Informe a referência para o prazo de emissão ou a validade."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.data_da_fase_indefinida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A data da fase de referência não foi definida."
+      ],
+      "comoResolver": [
+        "Defina a data de início ou término da fase usada pela exigência."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo.",
+        "O painel de pendências apresenta o item `exigencia_data_de_referencia_resolvida`."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.data_incoerente_com_tipo",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A data não corresponde ao tipo de referência."
+      ],
+      "comoResolver": [
+        "Informe a data somente quando escolher uma data específica."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fase_incoerente_com_tipo",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A fase não corresponde ao tipo de referência."
+      ],
+      "comoResolver": [
+        "Informe a fase somente quando escolher o início ou o fim de uma fase."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fase_nao_pertence_ao_processo",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A fase da referência não pertence ao processo."
+      ],
+      "comoResolver": [
+        "Escolha uma fase do cronograma deste processo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.fim_das_inscricoes_indefinido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O fim das inscrições não foi definido."
+      ],
+      "comoResolver": [
+        "Defina o término de uma fase que coleta inscrição."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo.",
+        "O painel de pendências apresenta o item `exigencia_data_de_referencia_resolvida`."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.data_de_referencia_do_documento.tipo_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O tipo da data de referência não é reconhecido."
+      ],
+      "comoResolver": [
+        "Escolha um tipo de data de referência disponível."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.dia_nao_util_congelado.abrangencia_invalida",
       "requisitos": [
         "UNI-REQ-0080"
@@ -18176,6 +18269,19 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.efeito_na_analise_do_documento.invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O efeito na análise do documento não é reconhecido."
+      ],
+      "comoResolver": [
+        "Escolha um efeito disponível para a análise do documento."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.envelope_codec.algoritmo_nao_suportado",
       "requisitos": [
         "UNI-REQ-0019"
@@ -18989,11 +19095,10 @@
       "codigo": "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva",
       "requisitos": [],
       "oQueAconteceu": [
-        "O documento exigido pode limitar a idade de emissão do comprovante contando a\npartir do início ou do fim de uma fase do cronograma, a referência da idade máxima. A\ndefinição do cronograma retira uma fase que é a referência desse limite para um\ndocumento exigido em **outra** fase que continua no cronograma. Sem a fase, a\nidade máxima do documento ficaria sem referência. A mensagem traz o código e a\nordem da fase removida e o nome do documento.",
-        "O documento exigido na própria fase removida não conta: ele sai junto com a fase.\nSó o documento de uma fase que continua impede a remoção. A conferência é feita\nfase por fase, na ordem em que o processo as tem, e para na primeira recusa; para\numa fase removida, esta vem antes da recusa por etapa referenciada\n([`etapa_da_fase_referenciada`](/erros/uniplus.selecao.fase_cronograma.etapa_da_fase_referenciada))\ne da recusa por formulário respondido na fase\n([`fase_referenciada_por_formulario`](/erros/uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario)).\nNada é gravado."
+        "Uma exigência documental de outra fase usa a fase removida como referência do prazo de emissão ou da validade. A mensagem identifica a exigência e a referência utilizada."
       ],
       "comoResolver": [
-        "Mantenha a fase no cronograma. Se ela deve mesmo sair, ajuste antes a exigência\nnomeada na mensagem (definição de documentos exigidos), apontando a referência da\nidade máxima para outra fase ou retirando o limite, e repita a definição do\ncronograma."
+        "Na exigência indicada, grave primeiro a troca da referência do prazo ou da validade e depois remova a fase."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo"
@@ -19737,164 +19842,6 @@
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A idade máxima de emissão do documento exigido chegou com a data ou a fase de referência preenchidas, mas\nsem valor, unidade e tipo. Sem esses três campos, a regra está ausente, e data ou fase solta não\ntem uma regra a que se referir.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "A conferência é feita na montagem de cada exigência, e é a primeira das três restrições do arquivo\n(idade máxima de emissão, formatos permitidos e modelo citado). Dentro da idade máxima, as causas\nsão conferidas nesta ordem: [`campos_incoerentes_com_ausencia`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia), [`campos_incompletos`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incompletos),\n[`valor_invalido`](/erros/uniplus.selecao.idade_maxima_emissao.valor_invalido), [`data_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo) e [`fase_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo); a primeira que falha interrompe a\nmontagem."
-      ],
-      "comoResolver": [
-        "Complete a regra (valor, unidade e tipo) ou retire a data e a fase de referência, e envie a definição dos\ndocumentos exigidos de novo."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incompletos",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A idade máxima de emissão do documento exigido chegou com só parte dos campos: valor, unidade e\ntipo precisam estar todos presentes, ou todos ausentes. A regra pela metade não diz nem quanto\ntempo vale, nem a partir de quando.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "A conferência é feita na montagem de cada exigência, e é a primeira das três restrições do arquivo\n(idade máxima de emissão, formatos permitidos e modelo citado). Dentro da idade máxima, as causas\nsão conferidas nesta ordem: [`campos_incoerentes_com_ausencia`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia), [`campos_incompletos`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incompletos),\n[`valor_invalido`](/erros/uniplus.selecao.idade_maxima_emissao.valor_invalido), [`data_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo) e [`fase_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo); a primeira que falha interrompe a\nmontagem.",
-        "O valor menor ou igual a zero, a unidade e o tipo desconhecidos não chegam a esta conferência:\nsão recusados antes, na validação do pedido."
-      ],
-      "comoResolver": [
-        "Preencha os três campos para ter a regra, ou deixe os três vazios para não ter limite de idade\nde emissão, e envie a definição dos documentos exigidos de novo."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A data da idade máxima de emissão não combina com o tipo de referência. O tipo `DATA_ESPECIFICA` exige\na data, e a regra chegou sem ela; qualquer outro tipo não usa data, e a regra chegou com uma. A\nmensagem diz qual dos dois casos ocorreu.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "A conferência é feita na montagem de cada exigência, e é a primeira das três restrições do arquivo\n(idade máxima de emissão, formatos permitidos e modelo citado). Dentro da idade máxima, as causas\nsão conferidas nesta ordem: [`campos_incoerentes_com_ausencia`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia), [`campos_incompletos`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incompletos),\n[`valor_invalido`](/erros/uniplus.selecao.idade_maxima_emissao.valor_invalido), [`data_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo) e [`fase_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo); a primeira que falha interrompe a\nmontagem.",
-        "Este mesmo código também aparece quando o sistema relê a configuração congelada da versão publicada:\nem toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários, as operações da inscrição, entre outras; a lista completa\nestá no cabeçalho da página). Antes disso, o sistema confere a integridade dos bytes congelados:\nbytes alterados depois do congelamento são recusados por [`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada) e não chegam a esta\ncausa. Pelo caminho normal de gravação, a configuração congelada nunca traz esse defeito, porque a\ndefinição o recusa antes. Nessas leituras a recusa sai como violação única, sem a lista\n`errors[]`, e se refere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na definição, informe a data quando o tipo é `DATA_ESPECIFICA`, e retire a data nos demais tipos.\nDepois, envie a definição dos documentos exigidos de novo.",
-        "Se a recusa apareceu em uma operação que lê a configuração congelada (qualquer uma das listadas no\ncabeçalho, exceto a definição da própria configuração), o pedido enviado agora não é a causa: o\nsistema recusou a configuração congelada da versão publicada, e redefinir os documentos exigidos do\nprocesso não a corrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
-        "Consulta do formulário da inscrição",
-        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
-        "Avaliação da inscrição",
-        "Início, confirmação e remoção de envio de documento da inscrição",
-        "Consulta e emissão do comprovante da inscrição",
-        "Consulta administrativa da inscrição e dos documentos dela",
-        "Publicação de produto do edital e listagem de produtos previstos do processo",
-        "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A idade máxima de emissão de um documento exigido usa como referência o início ou o fim de uma fase do\ncronograma, e essa data não está definida. O sistema não escolhe outra data no lugar (a mensagem\ndiz que não há alternativa silenciosa), porque uma referência sem data definida deixaria o limite de idade\nsem referência. Os casos são estes:",
-        "- na definição dos documentos exigidos, a fase de referência de `INICIO_FASE` não tem início, ou a de\n  `FIM_FASE` não tem fim;\n- na definição dos documentos exigidos, o tipo é `FIM_INSCRICAO` e nenhuma fase que coleta\n  inscrição tem fim definido;\n- na definição do cronograma de fases, uma fase que continua no cronograma perde o início ou o fim\n  que um documento exigido usa como referência;\n- na definição do cronograma de fases, a redefinição deixa de ter uma fase que coleta inscrição com\n  fim definido, e há documento com idade máxima contada a partir de `FIM_INSCRICAO`.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "Na definição dos documentos exigidos, esta conferência vem depois da de a fase existir no\ncronograma ([`fase_nao_pertence_ao_processo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo)). Na definição do cronograma, a conferência\nda fase que continua vem depois da da consequência de reenvio da mesma fase, e a de\n`FIM_INSCRICAO` vem depois das conferências de todas as fases. Nada é gravado."
-      ],
-      "comoResolver": [
-        "Na definição dos documentos exigidos, defina no cronograma o início ou o fim da fase de referência, ou\nescolha outra referência, e envie a definição de novo.",
-        "Na definição do cronograma, mantenha o início ou o fim que o documento usa como referência, ou ajuste\nantes a exigência nomeada na definição de documentos exigidos, apontando a referência para outra fase ou\nretirando o limite, e repita a definição do cronograma."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Definição do cronograma de fases do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A fase de referência da idade máxima de emissão não combina com o tipo de referência. Os tipos `INICIO_FASE` e\n`FIM_FASE` exigem a fase do cronograma, e a regra chegou sem ela; qualquer outro tipo não usa fase,\ne a regra chegou com uma. A mensagem diz qual dos dois casos ocorreu.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "A conferência é feita na montagem de cada exigência, e é a primeira das três restrições do arquivo\n(idade máxima de emissão, formatos permitidos e modelo citado). Dentro da idade máxima, as causas\nsão conferidas nesta ordem: [`campos_incoerentes_com_ausencia`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia), [`campos_incompletos`](/erros/uniplus.selecao.idade_maxima_emissao.campos_incompletos),\n[`valor_invalido`](/erros/uniplus.selecao.idade_maxima_emissao.valor_invalido), [`data_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo) e [`fase_incoerente_com_tipo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo); a primeira que falha interrompe a\nmontagem.\nEsta causa só confere a presença da fase; que a fase exista no cronograma do processo é conferido\ndepois ([`fase_nao_pertence_ao_processo`](/erros/uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo)).",
-        "Este mesmo código também aparece quando o sistema relê a configuração congelada da versão publicada:\nem toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários, as operações da inscrição, entre outras; a lista completa\nestá no cabeçalho da página). Antes disso, o sistema confere a integridade dos bytes congelados:\nbytes alterados depois do congelamento são recusados por [`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada) e não chegam a esta\ncausa. Pelo caminho normal de gravação, a configuração congelada nunca traz esse defeito, porque a\ndefinição o recusa antes. Nessas leituras a recusa sai como violação única, sem a lista\n`errors[]`, e se refere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na definição, informe a fase de referência quando o tipo é `INICIO_FASE` ou `FIM_FASE`, e retire a fase\nnos demais tipos. Depois, envie a definição dos documentos exigidos de novo.",
-        "Se a recusa apareceu em uma operação que lê a configuração congelada (qualquer uma das listadas no\ncabeçalho, exceto a definição da própria configuração), o pedido enviado agora não é a causa: o\nsistema recusou a configuração congelada da versão publicada, e redefinir os documentos exigidos do\nprocesso não a corrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Retificação em ato único",
-        "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
-        "Consulta do formulário da inscrição",
-        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
-        "Avaliação da inscrição",
-        "Início, confirmação e remoção de envio de documento da inscrição",
-        "Consulta e emissão do comprovante da inscrição",
-        "Consulta administrativa da inscrição e dos documentos dela",
-        "Publicação de produto do edital e listagem de produtos previstos do processo",
-        "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo",
-      "requisitos": [
-        "UNI-REQ-0066"
-      ],
-      "oQueAconteceu": [
-        "A idade máxima de emissão do documento exigido aponta para uma referência que o cronograma do processo\nnão tem. Há dois casos, e a mensagem diz qual ocorreu:",
-        "- a fase de referência, informada para os tipos `INICIO_FASE` e `FIM_FASE`, não está no cronograma deste\n  processo; a mensagem traz o identificador da fase;\n- o tipo é `FIM_INSCRICAO`, que usa a fase que coleta inscrição do próprio cronograma, e o processo\n  não tem nenhuma.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "A referência é conferida na escrita da exigência, e não na publicação, porque a regra vive na\nexigência. Para cada documento, a conferência vem depois das do vínculo do documento (a fase, o\nformulário e a etapa) e da repetição por grupo, e antes da conferência da consequência de\nreenvio. Quando a fase existe mas não tem o extremo usado como referência, a causa é outra\n([`fase_extremo_ausente`](/erros/uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente))."
-      ],
-      "comoResolver": [
-        "Informe como referência uma fase que esteja no cronograma deste processo, ou, para `FIM_INSCRICAO`,\ninclua no cronograma uma fase que coleta inscrição. Depois, envie a definição dos documentos\nexigidos de novo."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.idade_maxima_emissao.valor_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A idade máxima de emissão de um documento exigido, na configuração congelada da versão publicada,\ntraz valor igual ou menor que zero. Um limite de zero ou de tempo negativo não faz sentido para\na idade de um comprovante.",
-        "A idade máxima de emissão é uma regra opcional de cada documento exigido: limita há quanto tempo o\ncomprovante enviado pode ter sido emitido (por exemplo, no máximo 90 dias), contado a partir de um\nmarco de referência. Ela é dada por um valor, uma unidade (`DIAS`, `MESES` ou `ANOS`) e o tipo de\nreferência: `FIM_INSCRICAO`, `INICIO_FASE`, `FIM_FASE`, `DATA_ESPECIFICA` ou `DATA_SUBMISSAO`. Ela funciona como\naviso e não bloqueia a presença do documento. A regra é tudo ou nada: ou os três campos estão\nausentes (sem regra), ou os três estão presentes, com a data quando o tipo é `DATA_ESPECIFICA` e a fase\nquando é `INICIO_FASE` ou `FIM_FASE`.",
-        "Na definição dos documentos exigidos, o valor zero ou negativo é recusado antes, na validação do\npedido, e não chega à montagem da exigência. Por isso esta causa só aparece quando o sistema relê\na configuração congelada.",
-        "Este mesmo código também aparece quando o sistema relê a configuração congelada da versão publicada:\nem toda operação que lê essa configuração e devolve a violação ao chamador (a retificação, a consulta dos formulários, as operações da inscrição, entre outras; a lista completa\nestá no cabeçalho da página). Antes disso, o sistema confere a integridade dos bytes congelados:\nbytes alterados depois do congelamento são recusados por [`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada) e não chegam a esta\ncausa. Pelo caminho normal de gravação, a configuração congelada nunca traz esse defeito, porque a\ndefinição o recusa antes. Nessas leituras a recusa sai como violação única, sem a lista\n`errors[]`, e se refere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "O pedido enviado agora não é a causa: o sistema recusou a configuração congelada da versão\npublicada, e redefinir os documentos exigidos do processo não a corrige. A causa é investigada\npela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Retificação em ato único",
-        "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
-        "Consulta do formulário da inscrição",
-        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
-        "Avaliação da inscrição",
-        "Início, confirmação e remoção de envio de documento da inscrição",
-        "Consulta e emissão do comprovante da inscrição",
-        "Consulta administrativa da inscrição e dos documentos dela",
-        "Publicação de produto do edital e listagem de produtos previstos do processo",
-        "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
       ]
     },
     {
@@ -22650,6 +22597,72 @@
       ],
       "ondeAparece": [
         "Declaração das opções de um fato do processo seletivo (`PUT /api/selecao/processos-seletivos/{id}/fatos/{fatoCodigo}/opcoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.detalhes_sem_prazo",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Detalhes informados sem prazo de emissão."
+      ],
+      "comoResolver": [
+        "Retire os detalhes ou escolha informar um prazo de emissão."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.escolha_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A escolha do prazo de emissão não é reconhecida."
+      ],
+      "comoResolver": [
+        "Escolha sem prazo ou com prazo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.escolha_nao_declarada",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O prazo de emissão não foi escolhido."
+      ],
+      "comoResolver": [
+        "Escolha se o documento tem prazo de emissão."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo.",
+        "O painel de pendências apresenta o item `exigencia_prazo_de_emissao_escolhido`."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.unidade_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A unidade do prazo de emissão não é reconhecida."
+      ],
+      "comoResolver": [
+        "Informe dias, meses ou anos para o prazo de emissão."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prazo_de_emissao.valor_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O valor do prazo de emissão deve ser maior que zero."
+      ],
+      "comoResolver": [
+        "Informe um valor maior que zero para o prazo de emissão."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
       ]
     },
     {
@@ -26862,6 +26875,46 @@
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.detalhes_sem_exigencia",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Detalhes informados sem exigência de validade."
+      ],
+      "comoResolver": [
+        "Retire os detalhes ou escolha exigir documento válido."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.escolha_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A escolha da validade não é reconhecida."
+      ],
+      "comoResolver": [
+        "Escolha se o documento precisa estar válido."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.validade_do_documento.escolha_nao_declarada",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A validade do documento não foi escolhida."
+      ],
+      "comoResolver": [
+        "Escolha se o documento precisa estar válido."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo.",
+        "O painel de pendências apresenta o item `exigencia_validade_escolhida`."
       ]
     },
     {

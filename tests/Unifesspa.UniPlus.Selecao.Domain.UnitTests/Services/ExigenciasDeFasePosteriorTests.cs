@@ -174,10 +174,12 @@ public sealed class ExigenciasDeFasePosteriorTests
 
     private static DocumentoExigido ExigenciaDoFato(FaseCronograma fase, string fato) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]),
+            new IndeferimentoDoDocumento(true, null, []),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid faseId) =>
         FormularioProcesso.Criar(

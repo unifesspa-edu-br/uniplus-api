@@ -180,9 +180,12 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         PersonasDeTeste.NomeSocialFernandaDrumond);
 
     private static DocumentoExigido ExigenciaForaDaVersao(Guid faseId) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "COMPROVANTE_FORA_DA_VERSAO", "Comprovante", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-        [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_FORA_DA_VERSAO", "Comprovante", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(false, null, []),
+        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
+        null).Value!;
 
     private static Task<Guid> AdicionarArquivoDoTipoAsync(
         IDocumentoDaInscricaoRepository documentos, Guid inscricaoId, ProcessoPublicado processo, string prefixoDoTipo) =>

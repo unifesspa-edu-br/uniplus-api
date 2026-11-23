@@ -24,8 +24,8 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
                 "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
-                "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos", "Modelo",
-                "TamanhoMaximoBytes",
+                "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
+                "TamanhoMaximoBytes", "Requisitos",
             ],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
@@ -56,9 +56,11 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ["Referencia", "Abrangencia", "Situacao", "Observacao"],
             [("RegraDeComprovacaoId", "FK interna.")]),
 
-        [typeof(IdadeMaximaEmissao)] = (
-            ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],
-            []),
+        [typeof(RequisitosDoDocumento)] = (["FormatosPermitidos", "TamanhoMaximoBytes", "Modelo", "PrazoDeEmissao", "Validade"], []),
+
+        [typeof(PrazoDeEmissao)] = (["Escolha", "Valor", "Unidade", "Referencia", "EfeitoForaDoPrazo"], []),
+        [typeof(ValidadeDoDocumento)] = (["Escolha", "Referencia", "EfeitoDoVencimento"], []),
+        [typeof(DataDeReferenciaDoDocumento)] = (["Tipo", "Data", "FaseId"], []),
 
         // Formatos permitidos (Story #918) — substitui o campo singular FormatoPermitido?
         // (enum, fora do alcance deste manifesto — EDoDominio exclui enums).

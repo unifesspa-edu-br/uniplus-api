@@ -42,12 +42,13 @@ internal sealed record ParticipacaoNoCertame(
             : ProjecaoDoCertamePublicado.Recusar<CronogramaDeFases>("cronograma");
 
     private static Result<List<ExigenciaDocumentalCertameDto>> LerExigencias(JsonObject envelope, DocumentosDoAtoNoAcervo acervo) =>
-        LeituraDoCertameDocumentos.TentarExigencias(envelope, static _ => true, acervo, out List<ExigenciaDocumentalCertameDto>? exigencias)
+        CronogramaCongelado.TentarDoEnvelope(envelope, out CronogramaCongelado? cronograma)
+        && LeituraDoCertameDocumentos.TentarExigencias(envelope, static _ => true, acervo, cronograma, out List<ExigenciaDocumentalCertameDto>? exigencias)
             ? Result<List<ExigenciaDocumentalCertameDto>>.Success(exigencias)
             : ProjecaoDoCertamePublicado.Recusar<List<ExigenciaDocumentalCertameDto>>("documentos exigidos");
 
     private static Result<AtendimentoCertameDto> LerAtendimento(JsonObject envelope) =>
-        LeituraDoCertameDocumentos.TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento)
+        LeituraDoAtendimentoDoCertame.TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento)
             ? Result<AtendimentoCertameDto>.Success(atendimento)
             : ProjecaoDoCertamePublicado.Recusar<AtendimentoCertameDto>("atendimento especializado");
 

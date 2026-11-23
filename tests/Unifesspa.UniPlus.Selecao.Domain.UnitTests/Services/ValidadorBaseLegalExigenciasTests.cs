@@ -20,19 +20,12 @@ public sealed class ValidadorBaseLegalExigenciasTests
     private static DocumentoExigido Exigencia(
         bool obrigatorio, string? consequenciaIndeferimento, params DocumentoExigidoBaseLegal[] basesLegais) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId: Guid.CreateVersion7(),
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Geral,
-            obrigatorio: obrigatorio,
-            consequenciaIndeferimento: consequenciaIndeferimento,
-            condicoes: [],
-            basesLegais: basesLegais,
-            idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null).Value!;
 
     [Fact(DisplayName = "CA-03: processo sem exigência que determina resultado é trivialmente satisfeito (semântica vazia)")]
     public void TodasResolvidas_SemExigenciaQueDeterminaResultado_RetornaTrue()

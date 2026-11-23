@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -24,7 +25,7 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
 {
     /// <summary>
     /// Os dados da exigência que mudam de um teste para outro; o que não é dito é uma exigência geral
-    /// e obrigatória do documento de identidade, sem condições, bases legais, idade nem tamanho, com qualquer formato.
+    /// e obrigatória do documento de identidade, sem condições, bases legais, prazo de emissão, validade nem tamanho, com qualquer formato.
     /// </summary>
     internal sealed record ExigenciaParaProjetar
     {
@@ -36,7 +37,9 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
 
         internal IReadOnlyList<DocumentoExigidoBaseLegal> BasesLegais { get; init; } = [];
 
-        internal IdadeMaximaEmissao? IdadeMaximaEmissao { get; init; }
+        internal PrazoDeEmissao? PrazoDeEmissao { get; init; }
+
+        internal ValidadeDoDocumento? Validade { get; init; }
 
         internal FormatosPermitidos FormatosPermitidos { get; init; } = FormatosPermitidos.Criar(true, null).Value!;
 
@@ -44,10 +47,12 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
 
         internal DocumentoExigido NaFase(Guid faseId) =>
             DocumentoExigido.Criar(
-                faseId, TipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-                Aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null,
-                condicoes: Condicoes, basesLegais: BasesLegais, idadeMaximaEmissao: IdadeMaximaEmissao,
-                formatosPermitidos: FormatosPermitidos, tamanhoMaximoBytes: TamanhoMaximoBytes).Value!;
+                new CopiaDoTipoDeDocumento(TipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(faseId, null, null),
+                new AplicabilidadeDaExigencia(Aplicabilidade, Condicoes),
+                new IndeferimentoDoDocumento(true, null, BasesLegais),
+                new RequisitosDoDocumento(FormatosPermitidos, TamanhoMaximoBytes, null, PrazoDeEmissao, Validade),
+                null).Value!;
     }
 
     internal static ProcessoSeletivo NovoProcesso() => ApoioDosDocumentosExigidos.NovoProcesso("PS Query");
@@ -105,14 +110,14 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
         };
 
     /// <summary>
-    /// A idade é contada a partir da data de submissão, que não exige fase nem extremo da fase, ao contrário de
-    /// INICIO_FASE e FIM_FASE: a fase de teste não declara fim, e a referência a ela seria recusada por
-    /// <c>IdadeMaximaEmissao.FaseExtremoAusente</c>, o que tem teste próprio.
+    /// Prazo de 90 dias contado da data da apresentação e validade exigida no fim das inscrições: a referência na
+    /// apresentação não exige fase nem data no cronograma, que a fase de teste não declara.
     /// </summary>
-    internal static ExigenciaParaProjetar ExigenciaComIdadeFormatoETamanho() =>
+    internal static ExigenciaParaProjetar ExigenciaComPrazoValidadeFormatoETamanho() =>
         new()
         {
-            IdadeMaximaEmissao = IdadeMaximaEmissao.Criar(90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.DataSubmissao, null, null).Value!,
+            PrazoDeEmissao = new PrazoDeEmissaoBuilder().Referenciado(new DataDeReferenciaBuilder().NaApresentacao().Construir()).Construir(),
+            Validade = new ValidadeDoDocumentoBuilder().ComEfeito(EfeitoNaAnaliseDoDocumento.AceitarComAviso).Construir(),
             FormatosPermitidos = FormatosPermitidos.Criar(qualquer: false, entradas: [("PDF", null)]).Value!,
             TamanhoMaximoBytes = 5_000_000,
         };

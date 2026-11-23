@@ -63,9 +63,12 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
     public IUnitOfWork UnidadeDeTrabalho { get; } = Substitute.For<IUnitOfWork>();
 
     internal static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => DocumentoExigido.Criar(
-        faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-        Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-        [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        new IndeferimentoDoDocumento(false, null, []),
+        new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null),
+        null).Value!;
 
     public Inscricao Rascunho(params string[] dependentes)
     {

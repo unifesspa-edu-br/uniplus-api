@@ -166,10 +166,12 @@ internal static class ProcessoSeletivoPendenciasSeeder
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
+            new IndeferimentoDoDocumento(true, null, [baseLegal]),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidos(
             [RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);

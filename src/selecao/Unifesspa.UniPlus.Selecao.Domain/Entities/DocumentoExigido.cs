@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using System.Linq;
-using System.Text.Json;
 
 using Enums;
 
@@ -22,10 +21,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (<see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>), mesmo padrão de
 /// <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
 /// </summary>
-/// <remarks>
-/// A idade máxima de emissão/formato/tamanho é entregue por task-irmã (PR #900) — não
-/// modelada aqui. A base legal 1:N (<see cref="BasesLegais"/>) chegou na PR #898 (issue #549).
-/// </remarks>
 public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 {
     /// <summary>O tamanho de um código de fato (o mesmo do fato citado por uma condição de gatilho).</summary>
@@ -102,28 +97,12 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// </summary>
     public string? ConsequenciaIndeferimento { get; private set; }
 
-    /// <summary>
-    /// Idade máxima de emissão do ARQUIVO apresentado (Story #554, PR #900) — aviso, não
-    /// bloqueio de presença; a avaliação em runtime é fora de escopo desta Story.
-    /// </summary>
-    public IdadeMaximaEmissao? IdadeMaximaEmissao { get; private set; }
-
-    /// <summary>
-    /// Formatos aceitos para a apresentação (Story #918) — congelado na exigência, não no
-    /// <c>TipoDocumento</c>. Substitui o campo singular <c>FormatoPermitido?</c> (PR #900):
-    /// agora OBRIGATÓRIO — o token <c>QUALQUER</c> substitui o antigo <see langword="null"/>
-    /// "sem restrição".
-    /// </summary>
-    public FormatosPermitidos FormatosPermitidos { get; private set; } = null!;
-
-    /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR #900) — congelado na exigência.</summary>
-    public int? TamanhoMaximoBytes { get; private set; }
-
-    /// <summary>
-    /// O modelo editável que a exigência oferece ao candidato para preencher, assinar e enviar de
-    /// volta (UNI-REQ-0016) — nulo quando a exigência não tem modelo.
-    /// </summary>
-    public ModeloDaExigencia? Modelo { get; private set; }
+    public RequisitosDoDocumento Requisitos { get; private set; } = null!;
+    public PrazoDeEmissao? PrazoDeEmissao => Requisitos.PrazoDeEmissao;
+    public ValidadeDoDocumento? Validade => Requisitos.Validade;
+    public FormatosPermitidos FormatosPermitidos => Requisitos.FormatosPermitidos;
+    public int? TamanhoMaximoBytes => Requisitos.TamanhoMaximoBytes;
+    public ModeloDaExigencia? Modelo => Requisitos.Modelo;
 
     private readonly List<CondicaoGatilho> _condicoes = [];
 
@@ -137,65 +116,51 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
     private DocumentoExigido() { }
 
-    /// <summary>
-    /// Acumula (ADR-0125) as checagens que dependem só de primitivos do payload cru
-    /// (ou de contagens já conhecidas sem I/O) — nenhuma resolve cadastro externo.
-    /// <see cref="Entities.CondicaoGatilho.Criar"/> também é 100% I/O-free, então a contagem
-    /// de condições (<paramref name="quantidadeCondicoes"/>) já é conhecida direto dos itens
-    /// crus do payload, sem esperar a resolução do vocabulário de fatos (que só valida a
-    /// COERÊNCIA de cada condição, não a contagem). Exposta para o handler confirmar a forma
-    /// de TODAS as exigências do payload antes de qualquer I/O.
-    /// </summary>
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int? tamanhoMaximoBytes, int quantidadeCondicoes,
+        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int quantidadeCondicoes,
         FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null)
     {
-        // A finalidade da exigência é a do formulário em que o documento é apresentado: o
-        // vocabulário é o mesmo, e a recusa também.
         List<FieldError> erros = finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [];
+        ValidarAplicabilidade(aplicabilidade, quantidadeCondicoes, erros);
+        ValidarConsequencia(consequenciaIndeferimento, erros);
+        ValidarFatos(fatosComprovados, erros);
+        return erros;
+    }
 
+    private static void ValidarAplicabilidade(Aplicabilidade aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
+    {
         if (aplicabilidade == Aplicabilidade.Nenhuma)
         {
-            erros.Add(new("aplicabilidade", new DomainError(
-                "DocumentoExigido.AplicabilidadeObrigatoria",
+            erros.Add(new("aplicabilidade", new DomainError("DocumentoExigido.AplicabilidadeObrigatoria",
                 "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL.")));
         }
 
-        string? consequenciaNormalizada = NormalizarConsequencia(consequenciaIndeferimento);
-        if (consequenciaNormalizada is not null
-            && !ConsequenciaIndeferimentoCodigo.Validas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
-        {
-            // ADR-0023: nunca ecoar o valor rejeitado na mensagem de erro.
-            erros.Add(new("consequenciaIndeferimento", new DomainError(
-                "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}.")));
-        }
-
-        if (tamanhoMaximoBytes is <= 0)
-        {
-            erros.Add(new("tamanhoMaximoBytes", new DomainError(
-                "DocumentoExigido.TamanhoMaximoBytesInvalido",
-                "O tamanho máximo em bytes, quando presente, deve ser maior que zero.")));
-        }
-
-        if (fatosComprovados is { Count: > 0 }
-            && (fatosComprovados.Any(static f => string.IsNullOrWhiteSpace(f) || f.Trim().Length > FatoComprovadoMaxLength)
-                || fatosComprovados.Select(static f => f.Trim()).Distinct(StringComparer.Ordinal).Count() != fatosComprovados.Count))
-        {
-            erros.Add(new("fatosComprovados", new DomainError(
-                FatosComprovadosInvalidos,
-                $"Os fatos comprovados são códigos de fato não repetidos, de até {FatoComprovadoMaxLength} caracteres.")));
-        }
-
-        // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva.
         if (aplicabilidade == Aplicabilidade.Geral && quantidadeCondicoes > 0)
         {
-            erros.Add(new("condicoes", new DomainError(
-                "DocumentoExigido.GeralComCondicao",
+            erros.Add(new("condicoes", new DomainError("DocumentoExigido.GeralComCondicao",
                 "A exigência é geral e não pode ter condição de aplicação ativa.")));
         }
+    }
 
-        return erros;
+    private static void ValidarConsequencia(string? consequencia, List<FieldError> erros)
+    {
+        string? normalizada = NormalizarConsequencia(consequencia);
+        if (normalizada is not null && !ConsequenciaIndeferimentoCodigo.Validas.Contains(normalizada, StringComparer.Ordinal))
+        {
+            erros.Add(new("consequenciaIndeferimento", new DomainError("DocumentoExigido.ConsequenciaIndeferimentoInvalida",
+                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}.")));
+        }
+    }
+
+    private static void ValidarFatos(IReadOnlyList<string>? fatos, List<FieldError> erros)
+    {
+        if (fatos is { Count: > 0 }
+            && (fatos.Any(static f => string.IsNullOrWhiteSpace(f) || f.Trim().Length > FatoComprovadoMaxLength)
+                || fatos.Select(static f => f.Trim()).Distinct(StringComparer.Ordinal).Count() != fatos.Count))
+        {
+            erros.Add(new("fatosComprovados", new DomainError(FatosComprovadosInvalidos,
+                $"Os fatos comprovados são códigos de fato não repetidos, de até {FatoComprovadoMaxLength} caracteres.")));
+        }
     }
 
     /// <summary>
@@ -207,179 +172,106 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento.Trim();
 
     public static Result<DocumentoExigido> Criar(
-        Guid exigidoNaFaseId,
-        Guid tipoDocumentoOrigemId,
-        string tipoDocumentoCodigo,
-        string tipoDocumentoNome,
-        string tipoDocumentoCategoria,
-        ProtecaoDoDocumento protecao,
-        Aplicabilidade aplicabilidade,
-        bool obrigatorio,
-        string? consequenciaIndeferimento,
-        IReadOnlyList<CondicaoGatilho> condicoes,
-        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
-        IdadeMaximaEmissao? idadeMaximaEmissao,
-        FormatosPermitidos formatosPermitidos,
-        int? tamanhoMaximoBytes,
-        Guid? exigidoNaEtapaId = null,
-        ModeloDaExigencia? modelo = null,
-        FinalidadeFormulario? finalidade = null,
-        IReadOnlyList<string>? fatosComprovados = null)
+        CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento, AplicabilidadeDaExigencia aplicabilidade,
+        IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
     {
-        ArgumentNullException.ThrowIfNull(condicoes);
-        ArgumentNullException.ThrowIfNull(basesLegais);
-        ArgumentNullException.ThrowIfNull(formatosPermitidos);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
-        ExigirProtecao(protecao);
-
-        if (exigidoNaFaseId == Guid.Empty)
-        {
-            throw new ArgumentException("A fase em que o documento é exigido é obrigatória.", nameof(exigidoNaFaseId));
-        }
-
-        if (tipoDocumentoOrigemId == Guid.Empty)
-        {
-            throw new ArgumentException("O id de origem do tipo de documento é obrigatório.", nameof(tipoDocumentoOrigemId));
-        }
-
-        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count, finalidade, fatosComprovados);
+        ExigirPartes(tipo, momento, aplicabilidade, indeferimento, requisitos);
+        ExigirIdentificadores(tipo, momento);
+        List<FieldError> erros = ValidarFormaBasica(aplicabilidade.Tipo, indeferimento.Consequencia,
+            aplicabilidade.Condicoes.Count, momento.Finalidade, fatosComprovados);
+        erros.AddRange(RequisitosDoDocumento.ValidarTamanho(requisitos.TamanhoMaximoBytes));
         if (erros.Count > 0)
         {
             return Result<DocumentoExigido>.ValidationFailure(erros);
         }
 
-        DocumentoExigido documento = new()
-        {
-            ExigidoNaFaseId = exigidoNaFaseId,
-            ExigidoNaEtapaId = exigidoNaEtapaId,
-            Finalidade = finalidade,
-            TipoDocumentoOrigemId = tipoDocumentoOrigemId,
-            TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
-            TipoDocumentoNome = tipoDocumentoNome.Trim(),
-            TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
-            ClassificacaoProtecao = protecao.Classificacao,
-            FinalidadeTratamento = protecao.Finalidade.Trim(),
-            HipoteseLegal = protecao.HipoteseLegal.Trim(),
-            FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []],
-            Aplicabilidade = aplicabilidade,
-            Obrigatorio = obrigatorio,
-            ConsequenciaIndeferimento = NormalizarConsequencia(consequenciaIndeferimento),
-            IdadeMaximaEmissao = idadeMaximaEmissao,
-            FormatosPermitidos = formatosPermitidos,
-            TamanhoMaximoBytes = tamanhoMaximoBytes,
-            Modelo = modelo,
-        };
-
-        // Já confirmada em ValidarFormaBasica — chamada mantida como defesa em
-        // profundidade (nunca deveria disparar de fato a partir daqui).
-        DomainError? coerencia = documento.GarantirCoerenciaAplicabilidade(condicoes.Count > 0);
-        if (coerencia is not null)
-        {
-            return Result<DocumentoExigido>.Failure(coerencia);
-        }
-
-        foreach (CondicaoGatilho condicao in condicoes)
-        {
-            condicao.VincularDocumentoExigido(documento.Id);
-            documento._condicoes.Add(condicao);
-        }
-
-        foreach (DocumentoExigidoBaseLegal baseLegal in basesLegais)
-        {
-            baseLegal.VincularDocumentoExigido(documento.Id);
-            documento._basesLegais.Add(baseLegal);
-        }
-
+        DocumentoExigido documento = new(tipo, momento, aplicabilidade, indeferimento, requisitos, fatosComprovados);
+        documento.VincularPartes(aplicabilidade, indeferimento);
         return Result<DocumentoExigido>.Success(documento);
     }
 
-    /// <summary>
-    /// Reidrata uma exigência a partir de uma <see cref="VersaoConfiguracao"/> congelada,
-    /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
-    /// aceita, por decisão (Story #554, PR #903, CA-09). Como <see cref="EtapaProcesso.Id"/>,
-    /// <c>DocumentoExigido.Id</c> é preservado: é o <c>exigenciaId</c> que o resolvedor de exigências
-    /// documentais usa para correlacionar uma apresentação à exigência certa — sem
-    /// preservá-lo, cada retificação trocaria silenciosamente a identidade de exigências
-    /// inalteradas, e apresentações já vinculadas ao <c>exigenciaId</c> antigo deixariam de
-    /// resolver.
-    /// </summary>
-    /// <remarks>
-    /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já validado
-    /// quando foi congelado — as guardas aqui são a última linha contra erro de
-    /// programação, não revalidação de negócio (essa já rodou em <see cref="Criar"/>,
-    /// quando a exigência foi escrita pela primeira vez).
-    /// </remarks>
     public static DocumentoExigido Reidratar(
-        Guid id,
-        Guid exigidoNaFaseId,
-        Guid tipoDocumentoOrigemId,
-        string tipoDocumentoCodigo,
-        string tipoDocumentoNome,
-        string tipoDocumentoCategoria,
-        ProtecaoDoDocumento protecao,
-        Aplicabilidade aplicabilidade,
-        bool obrigatorio,
-        string? consequenciaIndeferimento,
-        IReadOnlyList<CondicaoGatilho> condicoes,
-        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
-        IdadeMaximaEmissao? idadeMaximaEmissao,
-        FormatosPermitidos formatosPermitidos,
-        int? tamanhoMaximoBytes,
-        Guid? exigidoNaEtapaId = null,
-        ModeloDaExigencia? modelo = null,
-        FinalidadeFormulario? finalidade = null,
-        IReadOnlyList<string>? fatosComprovados = null)
+        Guid id, CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento, AplicabilidadeDaExigencia aplicabilidade,
+        IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
     {
-        ArgumentNullException.ThrowIfNull(condicoes);
-        ArgumentNullException.ThrowIfNull(basesLegais);
-        ArgumentNullException.ThrowIfNull(formatosPermitidos);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
-        ExigirProtecao(protecao);
+        ExigirPartes(tipo, momento, aplicabilidade, indeferimento, requisitos);
         if (id == Guid.Empty)
         {
-            throw new ArgumentException("A exigência reidratada deve declarar o Id congelado no envelope (CA-09).", nameof(id));
+            throw new ArgumentException("A exigência reidratada deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        DocumentoExigido documento = new()
-        {
-            Id = id,
-            ExigidoNaFaseId = exigidoNaFaseId,
-            ExigidoNaEtapaId = exigidoNaEtapaId,
-            Finalidade = finalidade,
-            TipoDocumentoOrigemId = tipoDocumentoOrigemId,
-            TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
-            TipoDocumentoNome = tipoDocumentoNome.Trim(),
-            TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
-            ClassificacaoProtecao = protecao.Classificacao,
-            FinalidadeTratamento = protecao.Finalidade.Trim(),
-            HipoteseLegal = protecao.HipoteseLegal.Trim(),
-            FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []],
-            Aplicabilidade = aplicabilidade,
-            Obrigatorio = obrigatorio,
-            ConsequenciaIndeferimento = consequenciaIndeferimento,
-            IdadeMaximaEmissao = idadeMaximaEmissao,
-            FormatosPermitidos = formatosPermitidos,
-            TamanhoMaximoBytes = tamanhoMaximoBytes,
-            Modelo = modelo,
-        };
-
-        foreach (CondicaoGatilho condicao in condicoes)
-        {
-            condicao.VincularDocumentoExigido(documento.Id);
-            documento._condicoes.Add(condicao);
-        }
-
-        foreach (DocumentoExigidoBaseLegal baseLegal in basesLegais)
-        {
-            baseLegal.VincularDocumentoExigido(documento.Id);
-            documento._basesLegais.Add(baseLegal);
-        }
-
+        DocumentoExigido documento = new(tipo, momento, aplicabilidade, indeferimento, requisitos, fatosComprovados) { Id = id };
+        documento.ConsequenciaIndeferimento = indeferimento.Consequencia;
+        documento.VincularPartes(aplicabilidade, indeferimento);
         return documento;
+    }
+
+    private DocumentoExigido(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento,
+        AplicabilidadeDaExigencia aplicabilidade, IndeferimentoDoDocumento indeferimento,
+        RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
+    {
+        ExigidoNaFaseId = momento.FaseId;
+        ExigidoNaEtapaId = momento.EtapaId;
+        Finalidade = momento.Finalidade;
+        CopiarTipo(tipo);
+        FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []];
+        Aplicabilidade = aplicabilidade.Tipo;
+        Obrigatorio = indeferimento.Obrigatorio;
+        ConsequenciaIndeferimento = NormalizarConsequencia(indeferimento.Consequencia);
+        Requisitos = requisitos;
+    }
+
+    private void CopiarTipo(CopiaDoTipoDeDocumento tipo)
+    {
+        TipoDocumentoOrigemId = tipo.Id;
+        TipoDocumentoCodigo = tipo.Codigo.Trim();
+        TipoDocumentoNome = tipo.Nome.Trim();
+        TipoDocumentoCategoria = tipo.Categoria.Trim();
+        RecongelarProtecao(tipo.Protecao);
+    }
+
+    private void VincularPartes(AplicabilidadeDaExigencia aplicabilidade, IndeferimentoDoDocumento indeferimento)
+    {
+        foreach (CondicaoGatilho condicao in aplicabilidade.Condicoes)
+        {
+            condicao.VincularDocumentoExigido(Id);
+            _condicoes.Add(condicao);
+        }
+
+        foreach (DocumentoExigidoBaseLegal baseLegal in indeferimento.BasesLegais)
+        {
+            baseLegal.VincularDocumentoExigido(Id);
+            _basesLegais.Add(baseLegal);
+        }
+    }
+
+    private static void ExigirPartes(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento,
+        AplicabilidadeDaExigencia aplicabilidade, IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos)
+    {
+        ArgumentNullException.ThrowIfNull(tipo);
+        ArgumentNullException.ThrowIfNull(momento);
+        ArgumentNullException.ThrowIfNull(aplicabilidade);
+        ArgumentNullException.ThrowIfNull(indeferimento);
+        ArgumentNullException.ThrowIfNull(requisitos);
+        ArgumentNullException.ThrowIfNull(aplicabilidade.Condicoes, nameof(aplicabilidade));
+        ArgumentNullException.ThrowIfNull(indeferimento.BasesLegais, nameof(indeferimento));
+        ExigirTipo(tipo);
+    }
+
+    private static void ExigirIdentificadores(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento)
+    {
+        if (momento.FaseId == Guid.Empty || tipo.Id == Guid.Empty)
+        {
+            throw new ArgumentException("A fase e o tipo do documento são obrigatórios.", nameof(momento));
+        }
+    }
+
+    private static void ExigirTipo(CopiaDoTipoDeDocumento tipo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipo.Codigo, nameof(tipo));
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipo.Nome, nameof(tipo));
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipo.Categoria, nameof(tipo));
+        ExigirProtecao(tipo.Protecao);
     }
 
     /// <summary>
@@ -448,103 +340,18 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
             return Ternario.Verdadeiro;
         }
 
-        if (_condicoes.Count == 0)
-        {
-            return Ternario.Falso;
-        }
+        return _condicoes.Count == 0 ? Ternario.Falso : AvaliarCondicoes(fatosResolvidos);
+    }
 
-        // O dado já foi validado quando a exigência foi escrita (CondicaoGatilho.Criar) —
-        // mesmo raciocínio de CondicaoGatilho.ParaCondicaoDnf(), que esta chamada usa por
-        // baixo: reidratar/reavaliar não revalida.
+    private Ternario AvaliarCondicoes(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
+    {
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [.. _condicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
-
         return predicado.Avaliar(fatosResolvidos);
     }
 
-    /// <summary>
-    /// A exigência PODE alcançar candidatos desta modalidade — verificação ESTRUTURAL do
-    /// gatilho, não factual (Story #554, PR #903, achado de revisão P2). Usada pelo gate
-    /// CA-05 (<see cref="Entities.ProcessoSeletivo"/>, coerência entre
-    /// <see cref="ConsequenciaIndeferimento"/> e <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>)
-    /// no lugar de <see cref="AplicavelPara"/>.
-    /// </summary>
-    /// <remarks>
-    /// <see cref="AplicavelPara"/> avalia contra um dicionário de fatos completo — qualquer
-    /// fato ausente vira <see langword="false"/> (<c>PredicadoDnf.Avaliar</c>). No momento da
-    /// publicação, só a modalidade é conhecida (não há candidato real ainda); um gatilho misto
-    /// como <c>FAIXA_ETARIA &gt;= 18 E MODALIDADE = PCD</c> teria a condição de
-    /// <c>FAIXA_ETARIA</c> avaliada como falsa por <see cref="AplicavelPara"/>, reprovando a
-    /// cláusula inteira e escondendo a modalidade PCD do gate — e, pior, um gatilho <b>só</b>
-    /// sobre <c>FAIXA_ETARIA</c> nunca alcançaria NENHUMA modalidade, isentando silenciosamente
-    /// todo gatilho não-modal do CA-05. Aqui as condições sobre outros fatos são IGNORADAS (não
-    /// tratadas como falsas) — só as condições sobre fato cujos valores são modalidades (a de
-    /// concorrência, o grupo da convocação) decidem, por cláusula e por fato; uma cláusula sem
-    /// nenhuma delas é modalidade-agnóstica e alcança qualquer uma.
-    /// </remarks>
-    public bool PodeAlcancarModalidade(string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(modalidadeCodigo);
-        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
-
-        if (Aplicabilidade == Aplicabilidade.Geral)
-        {
-            return true;
-        }
-
-        if (_condicoes.Count == 0)
-        {
-            return false;
-        }
-
-        return _condicoes
-            .GroupBy(static c => c.Clausula)
-            .Any(clausula => ClausulaPodeAlcancar(clausula, modalidadeCodigo, fatosDeModalidade));
-    }
-
-    /// <summary>
-    /// Cada fato de modalidade é uma dimensão própria do candidato — ele concorre numa e pode ser
-    /// convocado noutra —, então as condições sobre fatos diferentes não se confrontam entre si:
-    /// a cláusula alcança a modalidade quando não cita fato de modalidade algum, ou quando as
-    /// condições de algum desses fatos a aceitam. Superestimar o alcance mantém a exigência sob o
-    /// gate; subestimá-lo a isentaria em silêncio.
-    /// </summary>
-    private static bool ClausulaPodeAlcancar(
-        IEnumerable<CondicaoGatilho> clausula, string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
-    {
-        List<IGrouping<string, CondicaoGatilho>> porFatoDeModalidade = [.. clausula
-            .Where(c => fatosDeModalidade.Contem(c.Fato))
-            .GroupBy(static c => c.Fato, StringComparer.Ordinal)];
-
-        return porFatoDeModalidade.Count == 0
-            || porFatoDeModalidade.Any(fato => fato.All(c => CondicaoDeModalidadeSatisfeitaPor(c.ParaCondicaoDnf(), modalidadeCodigo)));
-    }
-
-    /// <summary>
-    /// Story #916: <see cref="Operador.Diferente"/>/<see cref="Operador.NaoEm"/> espelham a
-    /// negação de <see cref="Operador.Igual"/>/<see cref="Operador.Em"/> — sem os dois braços
-    /// novos, um gatilho <c>MODALIDADE DIFERENTE X</c>/<c>NAO_EM [...]</c> seria aceito pelo
-    /// validador (matriz operador × domínio) mas escaparia silenciosamente do gate estrutural
-    /// CA-05 (esta checagem tem switch PRÓPRIO, à parte de <see cref="PredicadoDnf.Avaliar"/> —
-    /// não migra sozinho quando um operador novo é adicionado).
-    /// </summary>
-    private static bool CondicaoDeModalidadeSatisfeitaPor(CondicaoDnf condicao, string modalidadeCodigo) =>
-        condicao.Operador switch
-        {
-            Operador.Igual => condicao.Valor.ValueKind == JsonValueKind.String
-                && string.Equals(condicao.Valor.GetString(), modalidadeCodigo, StringComparison.Ordinal),
-            Operador.Em => condicao.Valor.ValueKind == JsonValueKind.Array
-                && condicao.Valor.EnumerateArray().Any(item =>
-                    item.ValueKind == JsonValueKind.String
-                    && string.Equals(item.GetString(), modalidadeCodigo, StringComparison.Ordinal)),
-            Operador.Diferente => condicao.Valor.ValueKind == JsonValueKind.String
-                && !string.Equals(condicao.Valor.GetString(), modalidadeCodigo, StringComparison.Ordinal),
-            Operador.NaoEm => condicao.Valor.ValueKind == JsonValueKind.Array
-                && !condicao.Valor.EnumerateArray().Any(item =>
-                    item.ValueKind == JsonValueKind.String
-                    && string.Equals(item.GetString(), modalidadeCodigo, StringComparison.Ordinal)),
-            _ => false,
-        };
+    public bool PodeAlcancarModalidade(string modalidadeCodigo, FatosDeModalidade fatosDeModalidade) =>
+        AlcanceDaExigenciaPorModalidade.PodeAlcancar(Aplicabilidade, Condicoes, modalidadeCodigo, fatosDeModalidade);
 
     /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho
@@ -562,17 +369,4 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
         return null;
     }
-}
-
-/// <summary>Códigos de recusa da exigência quanto à fase e ao formulário em que o documento é coletado, inclusive pelo gatilho.</summary>
-public static class DocumentoExigidoErrorCodes
-{
-    public const string FatoNaoColetadoPeloProcesso = "PredicadoDnf.FatoNaoColetadoPeloProcesso";
-    public const string FatoDeFormularioNaoAlcancado = "DocumentoExigido.FatoDeFormularioNaoAlcancado";
-    public const string FatoDeMembroForaDaRepeticao = "DocumentoExigido.FatoDeMembroForaDaRepeticao";
-    public const string FatoResolvidoEmFasePosterior = "DocumentoExigido.FatoResolvidoEmFasePosterior";
-    public const string PontoResolucaoForaDoCronograma = "DocumentoExigido.PontoResolucaoForaDoCronograma";
-    public const string FatoDaIsencaoEmOutraFinalidade = "DocumentoExigido.FatoDaIsencaoEmOutraFinalidade";
-    public const string FinalidadeObrigatoria = "DocumentoExigido.FinalidadeObrigatoria";
-    public const string FaseIncoerenteComFinalidade = "DocumentoExigido.FaseIncoerenteComFinalidade";
 }

@@ -216,17 +216,25 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     private static RegraDeComprovacao RegraDeDocumentoSemGrupo(FaseCronograma fase)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "REGRA_ZETA", "Documento sem grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, false, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
-            finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "REGRA_ZETA", "Documento sem grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null).Value!;
         return RegraDeComprovacao.CriarRegraDeDocumento(documento, 1).Value!;
     }
 
     private static RegraDeComprovacao RegraDeDocumentoComIdentidade(FaseCronograma fase, int idDocumento, int idDaRegra, int ordem, string codigo)
     {
-        DocumentoExigido documento = DocumentoExigido.Reidratar(IdFixo(idDocumento), fase.Id, Guid.CreateVersion7(),
-            codigo, "Documento do grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
-            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao);
+        DocumentoExigido documento = DocumentoExigido.Reidratar(
+            IdFixo(idDocumento),
+            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, "Documento do grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null);
         return RegraDeComprovacao.ReidratarRegraDeDocumento(IdFixo(idDaRegra), ordem, documento, RegraDeComprovacao.QuantidadeMinimaPadrao, null, null);
     }
 

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -34,12 +35,12 @@ internal static class FatoCitadoDeTeste
 
     public static DocumentoExigido ExigenciaComGatilho(Guid faseId, bool citaFatoAusenteDoCatalogo = false) =>
         DocumentoExigido.Criar(
-            faseId, CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: CondicoesDoGatilho(citaFatoAusenteDoCatalogo),
-            basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
-            idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-            tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, CondicoesDoGatilho(citaFatoAusenteDoCatalogo)),
+            new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
+            null).Value!;
 
     /// <summary>O processo conforme que coleta o fato e exige um documento sob o gatilho dele.</summary>
     public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo, bool citaFatoAusenteDoCatalogo = false)

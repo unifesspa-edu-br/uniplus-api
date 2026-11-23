@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Validators;
 
-using System.Text.Json;
-
 using AwesomeAssertions;
 
 using FluentValidation.Results;
@@ -11,30 +9,17 @@ using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>
-/// Cobertura de <see cref="DefinirDocumentosExigidosCommandValidator"/> para a base legal
-/// (Story #554, PR #898, issue #549) — valida apenas a FORMA de cada item; o gate "≥1
-/// RESOLVIDO por exigência que determina resultado" é do domínio, na publicação.
-/// </summary>
-/// <remarks>
-/// FormatosPermitidos (Story #918) não tem cobertura aqui — a interpretação do valor JSON
-/// polimórfico é do HANDLER (<c>DefinirDocumentosExigidosCommandHandlerTests</c>), e a
-/// coerência de negócio é do domínio (<c>FormatosPermitidosTests</c>); esta suíte só cobre a
-/// FORMA validada por FluentValidation, que não inclui mais este campo.
-/// </remarks>
 public sealed class DefinirDocumentosExigidosCommandValidatorTests
 {
-    private static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
-
     private static ItemDocumentoExigidoDeTeste ItemGeral() =>
         ItemDocumentoExigidoDeTeste.Geral(Guid.CreateVersion7(), Guid.CreateVersion7());
 
     private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) =>
         ItemGeral().ComBasesLegais(basesLegais).Construir();
 
-    private static ItemDocumentoExigidoInput ItemComIdade(
-        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, int? tamanhoMaximoBytes = null) =>
-        ItemGeral().ComIdadeMaxima(idadeMaximaEmissao).ComTamanhoMaximo(tamanhoMaximoBytes).Construir();
+    private static ItemDocumentoExigidoInput ItemComRequisitos(
+        PrazoDeEmissaoInput? prazoDeEmissao = null, ValidadeDoDocumentoInput? validade = null, int? tamanhoMaximoBytes = null) =>
+        ItemGeral().ComPrazoDeEmissao(prazoDeEmissao).ComValidade(validade).ComTamanhoMaximo(tamanhoMaximoBytes).Construir();
 
     private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
         ValidarRegra(RegraDeComprovacaoDeTeste.DeDocumento(item).Construir());
@@ -132,65 +117,29 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
             new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "PENDENTE", null)))
             .IsValid.Should().BeTrue();
 
-    // ── Story #554/issue #893 (PR #900) — idade máxima de emissão e tamanho ──
+    [Fact(DisplayName = "Item sem prazo de emissão, validade nem tamanho (formatos QUALQUER) é aceito")]
+    public void Aceita_SemPrazoValidadeNemTamanho() =>
+        Validar(ItemComRequisitos()).IsValid.Should().BeTrue();
 
-    [Fact(DisplayName = "Item sem idade/tamanho (tudo nulo, exceto FormatosPermitidos=QUALQUER) é aceito")]
-    public void Aceita_SemIdadeTamanho() =>
-        Validar(ItemComIdade()).IsValid.Should().BeTrue();
-
-    [Fact(DisplayName = "IdadeMaximaEmissao com Unidade fora do domínio é rejeitada")]
-    public void Rejeita_UnidadeDesconhecida()
+    [Fact(DisplayName = "Prazo de emissão e validade com códigos desconhecidos passam pelo validador: a leitura dos códigos é do domínio")]
+    public void Aceita_CodigosDesconhecidosDoPrazoEDaValidadeParaConferenciaPeloDominio()
     {
-        IdadeMaximaEmissaoInput idade = new(90, "SEMANAS", "DATA_SUBMISSAO", null, null);
+        PrazoDeEmissaoInput prazo = new("quizenal", 0, "SEMANAS", new DataDeReferenciaDoDocumentoInput("hoje", null, null), "ignorar");
+        ValidadeDoDocumentoInput validade = new("talvez", null, "ignorar");
 
-        ValidationResult resultado = Validar(ItemComIdade(idade));
-
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Unidade", StringComparison.Ordinal));
-    }
-
-    [Fact(DisplayName = "IdadeMaximaEmissao com ReferenciaTipo fora do domínio é rejeitada")]
-    public void Rejeita_ReferenciaTipoDesconhecido()
-    {
-        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "DATA_DE_HOJE", null, null);
-
-        ValidationResult resultado = Validar(ItemComIdade(idade));
-
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("ReferenciaTipo", StringComparison.Ordinal));
-    }
-
-    [Fact(DisplayName = "IdadeMaximaEmissao com Valor zero ou negativo é rejeitada")]
-    public void Rejeita_ValorNaoPositivo()
-    {
-        IdadeMaximaEmissaoInput idade = new(0, "DIAS", "DATA_SUBMISSAO", null, null);
-
-        Validar(ItemComIdade(idade)).IsValid.Should().BeFalse();
-    }
-
-    [Theory(DisplayName = "Todas as unidades e tipos de referência válidos são aceitos (forma)")]
-    [InlineData("DIAS", "FIM_INSCRICAO")]
-    [InlineData("MESES", "DATA_SUBMISSAO")]
-    [InlineData("ANOS", "DATA_SUBMISSAO")]
-    public void Aceita_TodasCombinacoesValidasDeIdade(string unidade, string referenciaTipo)
-    {
-        IdadeMaximaEmissaoInput idade = new(90, unidade, referenciaTipo, null, null);
-
-        Validar(ItemComIdade(idade)).IsValid.Should().BeTrue();
+        Validar(ItemComRequisitos(prazo, validade)).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator passa com TamanhoMaximoBytes zero ou negativo — a rejeição é do agregado (DocumentoExigido.Criar, ADR-0125)")]
     public void Aceita_TamanhoMaximoBytesNaoPositivoNoValidator()
     {
-        Validar(ItemComIdade(tamanhoMaximoBytes: 0)).IsValid.Should().BeTrue();
-        Validar(ItemComIdade(tamanhoMaximoBytes: -1)).IsValid.Should().BeTrue();
+        Validar(ItemComRequisitos(tamanhoMaximoBytes: 0)).IsValid.Should().BeTrue();
+        Validar(ItemComRequisitos(tamanhoMaximoBytes: -1)).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "TamanhoMaximoBytes positivo é aceito")]
     public void Aceita_TamanhoMaximoBytesPositivo() =>
-        Validar(ItemComIdade(tamanhoMaximoBytes: 5_000_000)).IsValid.Should().BeTrue();
-
-    // ── Cardinalidade qualificada — RegraDeComprovacaoInformadaValidator, chave da distinção ──
+        Validar(ItemComRequisitos(tamanhoMaximoBytes: 5_000_000)).IsValid.Should().BeTrue();
 
     private static ValidationResult ValidarRegra(RegraDeComprovacaoInformada regraInformada) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(

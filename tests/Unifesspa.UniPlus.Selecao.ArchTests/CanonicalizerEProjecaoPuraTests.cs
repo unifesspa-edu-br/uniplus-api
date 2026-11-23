@@ -52,6 +52,9 @@ public sealed class CanonicalizerEProjecaoPuraTests
         "LeituraDoCertameVagas",
         "LeituraDoCertameCronograma",
         "LeituraDoCertameDocumentos",
+        "LeituraDoCertamePrazoEValidade",
+        "LeituraDoAtendimentoDoCertame",
+        "CronogramaCongelado",
     ];
 
     private static readonly string[] EsperadosNoCanonicalizador =

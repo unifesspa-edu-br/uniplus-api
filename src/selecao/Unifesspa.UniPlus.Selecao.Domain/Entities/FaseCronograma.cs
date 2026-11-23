@@ -32,7 +32,7 @@ using ValueObjects;
 /// Application (ADR-0042). O ciclo recursal fecha dentro da própria fase: o preliminar de um tipo de ato
 /// exige o definitivo do mesmo tipo nela.
 /// </remarks>
-public sealed class FaseCronograma : EntityBase, IParteDoProcesso
+public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFase
 {
     public Guid ProcessoSeletivoId { get; private set; }
 

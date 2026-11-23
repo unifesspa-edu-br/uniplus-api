@@ -241,13 +241,16 @@ public sealed class AvaliadorDaComprovacaoTests
         resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
     }
     private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
-            [.. condicoes.SelectMany(static (c, clausula) => new[]
+        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+        new MomentoDaExigencia(FaseId, null, null),
+        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. condicoes.SelectMany(static (c, clausula) => new[]
             {
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
-            })],
-            [], null, Qualquer, null).Value!;
+            })]),
+        new IndeferimentoDoDocumento(true, "REMOVE_VANTAGEM", []),
+        new RequisitosDoDocumento(Qualquer, null, null, null, null),
+        null).Value!;
     private static Dictionary<string, FatoResolvido> FatoNaoAplicavel(string codigo) =>
         new(StringComparer.Ordinal) { [codigo] = FatoResolvido.NaoAplicavel() };
 
