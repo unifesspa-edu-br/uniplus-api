@@ -68,7 +68,7 @@ public sealed class HashCanonicalComputerAdr0100Tests
         JsonObject payload = new()
         {
             ["etapas"] = new JsonArray(new JsonObject { ["nome"] = "Prova Objetiva", ["peso"] = "1.00" }),
-            ["bonusRegional"] = new JsonObject { ["presente"] = false },
+            ["fada"] = new JsonObject { ["presente"] = false },
         };
 
         byte[] bytes1 = HashCanonicalComputer.ComputeSnapshotBytes(payload.DeepClone().AsObject());

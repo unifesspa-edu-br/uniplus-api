@@ -33,7 +33,7 @@ public sealed class SnapshotPublicadoPersistidoTests
     private static readonly string[] BlocosEsperados =
     [
         "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
-        "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
+        "atendimento", "fada", "criteriosDesempate", "classificacao", "hashesEdital",
         "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
         "cronogramaFases", "identidadesUnidade",
         // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
@@ -176,12 +176,12 @@ public sealed class SnapshotPublicadoPersistidoTests
     {
         // Blocos reais carregam dado de negócio, não o marcador de stub.
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
-        objeto["bonusRegional"]!["presente"]!.GetValue<bool>().Should().BeFalse();
+        objeto["fada"]!["presente"]!.GetValue<bool>().Should().BeFalse();
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
 
         // cascataRemanejamento (Story #575): bloco real, ausência congela `{"presente":false}`,
         // NUNCA o stub `nao_construido` — este fixture não tem nenhuma modalidade SegueCascata
-        // (é a mesma AC institucional de bonusRegional acima).
+        // (é a mesma AC institucional de fada acima).
         objeto["cascataRemanejamento"]!.AsObject().Should().NotContainKey("status");
         objeto["cascataRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
     }

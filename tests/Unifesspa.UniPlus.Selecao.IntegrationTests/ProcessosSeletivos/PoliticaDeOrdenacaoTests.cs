@@ -69,7 +69,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 ///   <item><term><c>documentosExigidos.exigencias</c></term><description>Identidade parcial (fase + tipo) vs. conteúdo — <see cref="DocumentosExigidos_Exigencias_IdentidadeParcialGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>documentosExigidos.exigencias</c> (empate de identidade)</term><description>Conteúdo vs. Id — <see cref="DocumentosExigidos_Exigencias_EmpateDeIdentidade_DesempataPeloConteudo"/></description></item>
 ///   <item><term><c>grafoDependencia.nos</c>/<c>arestas</c>/<c>ordemTopologica</c></term><description>DELEGAÇÃO — ordem derivada por <see cref="Domain.ValueObjects.GrafoDependenciaConjunta"/> e apenas preservada — <see cref="GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente"/></description></item>
-///   <item><term><c>bonusRegional.municipios</c></term><description>CodigoIbge empatado vs. ordem física de entrada — <see cref="BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf"/></description></item>
+///   <item><term><c>fada.municipios</c></term><description>CodigoIbge empatado vs. ordem física de entrada — <see cref="BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf"/></description></item>
 /// </list>
 /// <para>
 /// <b>Fora do escopo desta suíte, por já terem oráculo de sequência exata próprio</b> (chave de

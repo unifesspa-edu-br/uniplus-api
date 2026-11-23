@@ -25,14 +25,14 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     // ── A gramática é FECHADA em todos os níveis ──
 
     /// <summary>
-    /// O caso crítico é o <c>bonusRegional</c>: um leitor que só olhasse <c>presente</c>
+    /// O caso crítico é o <c>fada</c>: um leitor que só olhasse <c>presente</c>
     /// leria <c>{"presente":false,"fator":"1.2000",…}</c> como “sem bônus” e
     /// <b>descartaria o bônus regional do certame</b> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) sem deixar rastro. É o modo
     /// de falha exato que esta story existe para tornar impossível.
     /// </summary>
     [Theory(DisplayName = "Chave desconhecida em QUALQUER nível é recusada — um leitor tolerante perde configuração em silêncio")]
     [InlineData("$")]
-    [InlineData("bonusRegional")]
+    [InlineData("fada")]
     [InlineData("periodo")]
     [InlineData("hashesEdital")]
     [InlineData("atendimento")]
@@ -56,7 +56,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [InlineData("atendimento.condicoes.0")]
     [InlineData("atendimento.recursos.0")]
     [InlineData("atendimento.tiposDeficiencia.0")]
-    [InlineData("bonusRegional.regra")]
+    [InlineData("fada.regra")]
     [InlineData("vagas.0")]
     [InlineData("cascataRemanejamento")]
     [InlineData("cascataRemanejamento.regra")]
@@ -203,7 +203,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     public void Bonus_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["bonusRegional"]!["baseLegalBonusRegionalCodigo"] = codigo);
+            envelope["fada"]!["baseLegalCodigo"] = codigo);
 
         resultado.IsFailure.Should().BeTrue("o código congelado tem de obedecer à gramática que o cadastro impõe");
     }
@@ -215,14 +215,14 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject bonus = envelope["bonusRegional"]!.AsObject();
+            JsonObject bonus = envelope["fada"]!.AsObject();
             if (removerChave)
             {
-                bonus.Remove("baseLegalBonusRegionalCodigo");
+                bonus.Remove("baseLegalCodigo");
             }
             else
             {
-                bonus["baseLegalBonusRegionalCodigo"] = string.Empty;
+                bonus["baseLegalCodigo"] = string.Empty;
             }
         });
 
@@ -257,13 +257,13 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
 
     private static readonly string[] ParametrosDoBonusAlemDoFator =
     [
-        "regra", "teto", "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",
+        "regra", "teto", "baseLegalId", "baseLegalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",
     ];
 
     /// <summary>Sobra `fator` — a forma "ausente" só admite `presente`.</summary>
     private static void DeclararBonusAusenteMantendoOFator(JsonObject envelope)
     {
-        JsonObject bonus = envelope["bonusRegional"]!.AsObject();
+        JsonObject bonus = envelope["fada"]!.AsObject();
         bonus["presente"] = false;
         foreach (string chave in ParametrosDoBonusAlemDoFator)
         {
