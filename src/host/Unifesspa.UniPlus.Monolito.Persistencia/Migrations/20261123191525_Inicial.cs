@@ -160,15 +160,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "bases_legais_do_bonus_regional",
+                name: "bases_legais_do_fada",
                 schema: "configuracao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, comment: "Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL."),
+                    identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false, comment: "Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -179,9 +179,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_bases_legais_do_bonus_regional", x => x.id);
-                    table.CheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
-                });
+                    table.PrimaryKey("pk_bases_legais_do_fada", x => x.id);
+                    table.CheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
+                },
+                comment: "Bases legais do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
             migrationBuilder.CreateTable(
                 name: "calendarios_de_dias_uteis",
@@ -424,7 +425,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO."),
                     origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO."),
                     quantidade_de_valores = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Quantidade de valores: ESCALAR ou MULTIVALORADO."),
-                    fonte_das_opcoes = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos."),
+                    fonte_das_opcoes = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos."),
                     fase_de_disponibilidade = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código da fase em que o valor fica disponível."),
                     fonte_do_valor = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Referência à fonte usada para obter o valor."),
                     formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos."),
@@ -767,7 +768,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de processo ao qual a regra se aplica."),
-                    categoria = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus, Atendimento ou Outros."),
+                    categoria = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), Atendimento ou Outros."),
                     regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código que identifica a regra legal."),
                     condicoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições de aplicação da regra legal, em JSON."),
                     descricao_humana = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição da regra para leitura por pessoas."),
@@ -893,7 +894,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     referencia_temporal_fatos_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada."),
                     referencia_temporal_fatos_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data escolhida quando a referência para apurar os fatos é uma data específica."),
                     referencia_temporal_fatos_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase."),
-                    aplica_bonus_regional = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se o processo aplica o bônus regional; ausente quando ainda não declarado."),
+                    aplica_fada = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado."),
                     numero_de_opcoes_de_curso = table.Column<int>(type: "integer", nullable: true, comment: "Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
@@ -1488,29 +1489,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "municipios_da_base_legal_bonus",
+                name: "municipios_da_base_legal_fada",
                 schema: "configuracao",
                 columns: table => new
                 {
-                    base_legal_bonus_regional_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<int>(type: "integer", nullable: false)
+                    base_legal_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador do município na base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    codigo_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false),
-                    nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false)
+                    codigo_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false, comment: "Código IBGE do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false, comment: "Nome do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false, comment: "Sigla da unidade federativa do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA).")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_municipios_da_base_legal_bonus", x => new { x.base_legal_bonus_regional_id, x.id });
-                    table.CheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
+                    table.PrimaryKey("pk_municipios_da_base_legal_fada", x => new { x.base_legal_id, x.id });
+                    table.CheckConstraint("ck_municipios_da_base_legal_fada_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
                     table.ForeignKey(
-                        name: "fk_municipios_da_base_legal_bonus_base_legal_do_bonus_regional",
-                        column: x => x.base_legal_bonus_regional_id,
+                        name: "fk_municipios_da_base_legal_fada_base_legal_id",
+                        column: x => x.base_legal_id,
                         principalSchema: "configuracao",
-                        principalTable: "bases_legais_do_bonus_regional",
+                        principalTable: "bases_legais_do_fada",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Municípios abrangidos pela base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
             migrationBuilder.CreateTable(
                 name: "dias_nao_uteis",
@@ -2226,39 +2228,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Configurações dos cálculos dos dados de candidatos em um processo.");
 
             migrationBuilder.CreateTable(
-                name: "configuracoes_bonus_regional",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    fator = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: false),
-                    teto = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: true),
-                    fato_elegibilidade_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    base_legal_bonus_regional_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    base_legal_bonus_regional_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_configuracoes_bonus_regional", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_configuracoes_bonus_regional_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "configuracoes_classificacao",
                 schema: "selecao",
                 columns: table => new
@@ -2398,6 +2367,40 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "configuracoes_do_fada",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código da regra do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Hash da regra do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    fator = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: false, comment: "Multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    teto = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: true, comment: "Limite da nota após o Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido."),
+                    fato_elegibilidade_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código do dado que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido."),
+                    base_legal_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração."),
+                    base_legal_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, comment: "Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração."),
+                    tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL; copiado da base legal."),
+                    identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada da base legal."),
+                    descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false, comment: "Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_configuracoes_do_fada", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_configuracoes_do_fada_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Configurações do Fator de Atenuação das Desigualdades de Acesso (FADA) nos processos seletivos.");
 
             migrationBuilder.CreateTable(
                 name: "configuracoes_taxa_inscricao",
@@ -3503,31 +3506,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Regras ordenadas que compõem o cálculo de um dado.");
 
             migrationBuilder.CreateTable(
-                name: "municipios_do_bonus_regional",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    configuracao_bonus_regional_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false),
-                    nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_municipios_do_bonus_regional", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_municipios_do_bonus_regional_configuracao_de_bonus_regional",
-                        column: x => x.configuracao_bonus_regional_id,
-                        principalSchema: "selecao",
-                        principalTable: "configuracoes_bonus_regional",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "grupos_do_quadro_de_pesos",
                 schema: "selecao",
                 columns: table => new
@@ -3667,6 +3645,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "municipios_do_fada",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do município na configuração do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    configuracao_do_fada_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    codigo_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false, comment: "Código IBGE do município do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false, comment: "Nome do município do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false, comment: "Sigla da unidade federativa do município do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_municipios_do_fada", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_municipios_do_fada_configuracao_do_fada_id",
+                        column: x => x.configuracao_do_fada_id,
+                        principalSchema: "selecao",
+                        principalTable: "configuracoes_do_fada",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Municípios da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA), copiados da base legal.");
 
             migrationBuilder.CreateTable(
                 name: "bancas_da_etapa",
@@ -4027,7 +4031,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Orientação adicional exibida junto ao campo, quando houver."),
                     pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a resposta deve ser confirmada pela pessoa candidata."),
                     restricoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Restrições aplicadas à resposta, em JSON."),
-                    origem_valores = table.Column<int>(type: "integer", nullable: false, comment: "Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas."),
+                    origem_valores = table.Column<int>(type: "integer", nullable: false, comment: "Origem das opções: 0 catálogo, 1 processo, 2 municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) ou 3 unidades federativas."),
                     formato = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Formato esperado da resposta, quando especificado."),
                     classificacao_protecao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Classificação de proteção do dado coletado."),
                     hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal que fundamenta o tratamento do dado."),
@@ -5881,17 +5885,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "regra_de_comprovacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_bases_legais_do_bonus_regional_codigo_vivo",
+                name: "ix_bases_legais_do_fada_codigo_vivo",
                 schema: "configuracao",
-                table: "bases_legais_do_bonus_regional",
+                table: "bases_legais_do_fada",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_bases_legais_do_bonus_regional_tipo_instrumento",
+                name: "ix_bases_legais_do_fada_tipo_instrumento",
                 schema: "configuracao",
-                table: "bases_legais_do_bonus_regional",
+                table: "bases_legais_do_fada",
                 column: "tipo_instrumento");
 
             migrationBuilder.CreateIndex(
@@ -6084,13 +6088,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_configuracoes_bonus_regional_processo_seletivo_id",
-                schema: "selecao",
-                table: "configuracoes_bonus_regional",
-                column: "processo_seletivo_id",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_configuracoes_classificacao_processo_seletivo_id",
                 schema: "selecao",
                 table: "configuracoes_classificacao",
@@ -6115,6 +6112,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_configuracoes_divulgacao_processo_seletivo_id",
                 schema: "selecao",
                 table: "configuracoes_divulgacao",
+                column: "processo_seletivo_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_configuracoes_do_fada_processo_seletivo_id",
+                schema: "selecao",
+                table: "configuracoes_do_fada",
                 column: "processo_seletivo_id",
                 unique: true);
 
@@ -6788,10 +6792,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_municipios_do_bonus_regional_configuracao_de_bonus_regional",
+                name: "ix_municipios_do_fada_configuracao_do_fada_id",
                 schema: "selecao",
-                table: "municipios_do_bonus_regional",
-                column: "configuracao_bonus_regional_id");
+                table: "municipios_do_fada",
+                column: "configuracao_do_fada_id");
 
             migrationBuilder.CreateIndex(
                 name: "ux_niveis_atendimento_etapa_rotulo",
@@ -7897,11 +7901,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "municipios_da_base_legal_bonus",
+                name: "municipios_da_base_legal_fada",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "municipios_do_bonus_regional",
+                name: "municipios_do_fada",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8161,11 +8165,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "bases_legais_do_bonus_regional",
+                name: "bases_legais_do_fada",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "configuracoes_bonus_regional",
+                name: "configuracoes_do_fada",
                 schema: "selecao");
 
             migrationBuilder.DropTable(

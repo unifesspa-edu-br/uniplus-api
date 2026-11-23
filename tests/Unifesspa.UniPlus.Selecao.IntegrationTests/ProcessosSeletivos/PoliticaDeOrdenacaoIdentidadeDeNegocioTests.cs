@@ -123,14 +123,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
     /// não deixam o array de <c>municipios</c> à mercê da ordem física de retorno do EF/Postgres
     /// para linhas empatadas — Nome/UF desempatam.
     /// </summary>
-    [Fact(DisplayName = "bonusRegional.municipios: mesmo código IBGE desempata por Nome e UF — não pela ordem física de entrada")]
+    [Fact(DisplayName = "fada.municipios: mesmo código IBGE desempata por Nome e UF — não pela ordem física de entrada")]
     public void BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
     {
         ProcessoSeletivo processo = Montar();
         processo.DefinirBonusRegional(aplica: true, bonus: BonusComMunicipiosDeMesmoCodigoIbgeForaDeOrdem()).IsSuccess.Should().BeTrue();
 
         JsonArray municipiosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
-            ["bonusRegional"]!["municipios"]!.AsArray();
+            ["fada"]!["municipios"]!.AsArray();
 
         municipiosJson.Should().HaveCount(2, "pré-condição: dois municípios sob o mesmo código IBGE");
         municipiosJson.Select(static m => m!["nome"]!.GetValue<string>()).Should().Equal(

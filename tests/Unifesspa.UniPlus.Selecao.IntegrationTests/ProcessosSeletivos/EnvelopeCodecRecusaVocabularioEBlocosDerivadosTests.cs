@@ -34,7 +34,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [InlineData("classificacao.regraArredondamento", "PRECISAO-XPTO")]
     [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-XPTO")]
     [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-OPCOES-RN04")]
-    [InlineData("bonusRegional.regra", "BONUS-XPTO")]
+    [InlineData("fada.regra", "BONUS-XPTO")]
     [InlineData("criteriosDesempate.0.regra", "DESEMPATE-XPTO")]
     [InlineData("classificacao.regrasEliminacao.0.regra", "ELIM-XPTO")]
     [InlineData("cascataRemanejamento.regra", "REMANEJ-XPTO")]

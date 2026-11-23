@@ -26,7 +26,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         "modalidades",
         "ofertas",
         "atendimento",
-        "bonusRegional",
+        "fada",
         "cascataRemanejamento",
         "criteriosDesempate",
         "classificacao",

@@ -36,7 +36,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
         builder.Property(f => f.Restricoes).HasComment("Restrições aplicadas à resposta, em JSON.");
         builder.Property(f => f.Impedimento).HasComment("Regra de impedimento associada à resposta, em JSON, quando houver.");
-        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas.");
+        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) ou 3 unidades federativas.");
         builder.Property(f => f.Formato).HasComment("Formato esperado da resposta, quando especificado.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção do dado coletado.");
         builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal que fundamenta o tratamento do dado.");

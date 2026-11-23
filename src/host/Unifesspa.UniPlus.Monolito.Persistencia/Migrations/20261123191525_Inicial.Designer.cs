@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261123184420_Inicial")]
+    [Migration("20261123191525_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3048,13 +3048,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3081,13 +3083,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("Identificacao")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("identificacao");
+                        .HasColumnName("identificacao")
+                        .HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -3098,7 +3102,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo_instrumento");
+                        .HasColumnName("tipo_instrumento")
+                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3112,19 +3117,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
-                        .HasName("pk_bases_legais_do_bonus_regional");
+                        .HasName("pk_bases_legais_do_fada");
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_bases_legais_do_bonus_regional_codigo_vivo")
+                        .HasDatabaseName("ix_bases_legais_do_fada_codigo_vivo")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("TipoInstrumento")
-                        .HasDatabaseName("ix_bases_legais_do_bonus_regional_tipo_instrumento");
+                        .HasDatabaseName("ix_bases_legais_do_fada_tipo_instrumento");
 
-                    b.ToTable("bases_legais_do_bonus_regional", "configuracao", t =>
+                    b.ToTable("bases_legais_do_fada", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
+                            t.HasComment("Bases legais do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                            t.HasCheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
                         });
                 });
 
@@ -4102,7 +4109,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("fonte_das_opcoes")
-                        .HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+                        .HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
 
                     b.Property<string>("Formato")
                         .HasMaxLength(20)
@@ -11819,17 +11826,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("BaseLegalBonusRegionalCodigo")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("base_legal_bonus_regional_codigo");
+                        .HasColumnName("base_legal_codigo")
+                        .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
 
                     b.Property<Guid>("BaseLegalBonusRegionalId")
                         .HasColumnType("uuid")
-                        .HasColumnName("base_legal_bonus_regional_id");
+                        .HasColumnName("base_legal_id")
+                        .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11840,38 +11850,45 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração.");
 
                     b.Property<string>("FatoElegibilidadeCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_elegibilidade_codigo");
+                        .HasColumnName("fato_elegibilidade_codigo")
+                        .HasComment("Código do dado que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
 
                     b.Property<decimal>("Fator")
                         .HasPrecision(6, 4)
                         .HasColumnType("numeric(6,4)")
-                        .HasColumnName("fator");
+                        .HasColumnName("fator")
+                        .HasComment("Multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("Identificacao")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("identificacao");
+                        .HasColumnName("identificacao")
+                        .HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada da base legal.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<decimal?>("Teto")
                         .HasPrecision(6, 4)
                         .HasColumnType("numeric(6,4)")
-                        .HasColumnName("teto");
+                        .HasColumnName("teto")
+                        .HasComment("Limite da nota após o Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
 
                     b.Property<string>("TipoInstrumento")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo_instrumento");
+                        .HasColumnName("tipo_instrumento")
+                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL; copiado da base legal.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11879,30 +11896,36 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_configuracoes_bonus_regional");
+                        .HasName("pk_configuracoes_do_fada");
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_configuracoes_bonus_regional_processo_seletivo_id");
+                        .HasDatabaseName("ix_configuracoes_do_fada_processo_seletivo_id");
 
-                    b.ToTable("configuracoes_bonus_regional", "selecao");
+                    b.ToTable("configuracoes_do_fada", "selecao", t =>
+                        {
+                            t.HasComment("Configurações do Fator de Atenuação das Desigualdades de Acesso (FADA) nos processos seletivos.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegionalMunicipio", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do município na configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("CodigoIbge")
                         .IsRequired()
                         .HasMaxLength(7)
                         .HasColumnType("character varying(7)")
-                        .HasColumnName("codigo_ibge");
+                        .HasColumnName("codigo_ibge")
+                        .HasComment("Código IBGE do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<Guid>("ConfiguracaoBonusRegionalId")
                         .HasColumnType("uuid")
-                        .HasColumnName("configuracao_bonus_regional_id");
+                        .HasColumnName("configuracao_do_fada_id")
+                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11913,13 +11936,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<string>("Uf")
                         .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)")
-                        .HasColumnName("uf");
+                        .HasColumnName("uf")
+                        .HasComment("Sigla da unidade federativa do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11927,12 +11952,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_municipios_do_bonus_regional");
+                        .HasName("pk_municipios_do_fada");
 
                     b.HasIndex("ConfiguracaoBonusRegionalId")
-                        .HasDatabaseName("ix_municipios_do_bonus_regional_configuracao_de_bonus_regional");
+                        .HasDatabaseName("ix_municipios_do_fada_configuracao_do_fada_id");
 
-                    b.ToTable("municipios_do_bonus_regional", "selecao");
+                    b.ToTable("municipios_do_fada", "selecao", t =>
+                        {
+                            t.HasComment("Municípios da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA), copiados da base legal.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>
@@ -13070,7 +13098,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<int>("OrigemValores")
                         .HasColumnType("integer")
                         .HasColumnName("origem_valores")
-                        .HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas.");
+                        .HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) ou 3 unidades federativas.");
 
                     b.Property<bool>("PedirConfirmacao")
                         .HasColumnType("boolean")
@@ -14084,7 +14112,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("categoria")
-                        .HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus, Atendimento ou Outros.");
+                        .HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), Atendimento ou Outros.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14368,8 +14396,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool?>("AplicaBonusRegional")
                         .HasColumnType("boolean")
-                        .HasColumnName("aplica_bonus_regional")
-                        .HasComment("Indica se o processo aplica o bônus regional; ausente quando ainda não declarado.");
+                        .HasColumnName("aplica_fada")
+                        .HasComment("Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -17013,12 +17041,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             b1.Property<Guid>("BaseLegalBonusRegionalId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("base_legal_bonus_regional_id");
+                                .HasColumnName("base_legal_id")
+                                .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("integer")
-                                .HasColumnName("id");
+                                .HasColumnName("id")
+                                .HasComment("Identificador do município na base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
@@ -17026,31 +17056,36 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(7)
                                 .HasColumnType("character varying(7)")
-                                .HasColumnName("codigo_ibge");
+                                .HasColumnName("codigo_ibge")
+                                .HasComment("Código IBGE do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(150)
                                 .HasColumnType("character varying(150)")
-                                .HasColumnName("nome");
+                                .HasColumnName("nome")
+                                .HasComment("Nome do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<string>("Uf")
                                 .IsRequired()
                                 .HasMaxLength(2)
                                 .HasColumnType("character varying(2)")
-                                .HasColumnName("uf");
+                                .HasColumnName("uf")
+                                .HasComment("Sigla da unidade federativa do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.HasKey("BaseLegalBonusRegionalId", "Id")
-                                .HasName("pk_municipios_da_base_legal_bonus");
+                                .HasName("pk_municipios_da_base_legal_fada");
 
-                            b1.ToTable("municipios_da_base_legal_bonus", "configuracao", t =>
+                            b1.ToTable("municipios_da_base_legal_fada", "configuracao", t =>
                                 {
-                                    t.HasCheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
+                                    t.HasComment("Municípios abrangidos pela base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                                    t.HasCheckConstraint("ck_municipios_da_base_legal_fada_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
                                 });
 
                             b1.WithOwner()
                                 .HasForeignKey("BaseLegalBonusRegionalId")
-                                .HasConstraintName("fk_municipios_da_base_legal_bonus_base_legal_do_bonus_regional");
+                                .HasConstraintName("fk_municipios_da_base_legal_fada_base_legal_id");
                         });
 
                     b.Navigation("Municipios");
@@ -19804,7 +19839,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_bonus_regional_processo_seletivo");
+                        .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
                         {
@@ -19816,28 +19851,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_codigo");
+                                .HasColumnName("regra_codigo")
+                                .HasComment("Código da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_hash")
-                                .IsFixedLength();
+                                .IsFixedLength()
+                                .HasComment("Hash da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_versao");
+                                .HasColumnName("regra_versao")
+                                .HasComment("Versão da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.HasKey("ConfiguracaoBonusRegionalId");
 
-                            b1.ToTable("configuracoes_bonus_regional", "selecao");
+                            b1.ToTable("configuracoes_do_fada", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("ConfiguracaoBonusRegionalId")
-                                .HasConstraintName("fk_configuracoes_bonus_regional_configuracoes_bonus_regional_id");
+                                .HasConstraintName("fk_configuracoes_do_fada_configuracoes_do_fada_id");
                         });
 
                     b.Navigation("Regra")
@@ -19851,7 +19889,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoBonusRegionalId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_municipios_do_bonus_regional_configuracao_de_bonus_regional");
+                        .HasConstraintName("fk_municipios_do_fada_configuracao_do_fada_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>

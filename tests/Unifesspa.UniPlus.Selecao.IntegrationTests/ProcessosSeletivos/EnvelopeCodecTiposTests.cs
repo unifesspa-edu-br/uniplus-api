@@ -42,7 +42,7 @@ public sealed class EnvelopeCodecTiposTests
     [InlineData("etapas", "objeto onde deveria haver array")]
     [InlineData("criteriosDesempate", "objeto onde deveria haver array")]
     [InlineData("atendimento", "array onde deveria haver objeto")]
-    [InlineData("bonusRegional", "array onde deveria haver objeto")]
+    [InlineData("fada", "array onde deveria haver objeto")]
     public void TipoErrado_Recusa(string bloco, string _)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>

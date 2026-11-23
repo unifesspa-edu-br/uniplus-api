@@ -99,8 +99,8 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     [InlineData("atendimento.condicoes.0.condicaoCodigo", 51)]
     [InlineData("atendimento.condicoes.0.condicaoNome", 301)]
     [InlineData("atendimento.recursos.0.recursoCodigo", 51)]
-    [InlineData("bonusRegional.municipioConvenio", 201)]
-    [InlineData("bonusRegional.baseLegal", 501)]
+    [InlineData("fada.municipioConvenio", 201)]
+    [InlineData("fada.baseLegal", 501)]
     [InlineData("distribuicao.0.referenciaDemografica.censoReferencia", 21)]
     public void TextoAlemDoLimiteDaColuna_Recusa(string caminho, int comprimento)
     {
@@ -119,8 +119,8 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     [InlineData("etapas.0.peso", "123456789012345.6789")]
     [InlineData("etapas.0.notaMinima", "123456789012345.6789")]
     // numeric(6,4) — o bônus comporta no máximo 99.9999.
-    [InlineData("bonusRegional.fator", "100.0000")]
-    [InlineData("bonusRegional.teto", "12345.6789")]
+    [InlineData("fada.fator", "100.0000")]
+    [InlineData("fada.teto", "12345.6789")]
     public void DecimalAlemDaPrecisaoDaColuna_Recusa(string caminho, string valor)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope => Definir(envelope, caminho, valor));

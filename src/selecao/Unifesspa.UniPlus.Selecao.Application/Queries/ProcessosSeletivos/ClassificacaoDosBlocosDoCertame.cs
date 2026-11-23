@@ -59,7 +59,7 @@ public static class ClassificacaoDosBlocosDoCertame
     {
         "classificacao",
         "criteriosDesempate",
-        "bonusRegional",
+        "fada",
         "cascataRemanejamento",
         "distribuicao",
         "modalidades",

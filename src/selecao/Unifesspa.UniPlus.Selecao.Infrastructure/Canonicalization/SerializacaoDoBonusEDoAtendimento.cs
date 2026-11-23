@@ -93,8 +93,8 @@ internal static class SerializacaoDoBonusEDoAtendimento
 
     private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoBonusRegional bonus)
     {
-        json["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId;
-        json["baseLegalBonusRegionalCodigo"] = HashCanonicalComputer.NormalizeNfc(bonus.BaseLegalBonusRegionalCodigo);
+        json["baseLegalId"] = bonus.BaseLegalBonusRegionalId;
+        json["baseLegalCodigo"] = HashCanonicalComputer.NormalizeNfc(bonus.BaseLegalBonusRegionalCodigo);
         json["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento);
         json["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao);
         json["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao);

@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Persistence;
 /// </summary>
 public static class RestricoesDoBanco
 {
-    public const string BaseLegalBonusRegionalCodigoVivo = "ix_bases_legais_do_bonus_regional_codigo_vivo";
+    public const string BaseLegalBonusRegionalCodigoVivo = "ix_bases_legais_do_fada_codigo_vivo";
 
     public const string CalendarioDeDiasUteisVigenteUnico = "ex_calendarios_de_dias_uteis_vigente_unico";
 

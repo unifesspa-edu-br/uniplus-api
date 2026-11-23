@@ -65,10 +65,11 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConversion(IdentificadorLegivelConverter)
             .HasMaxLength(FormatoKebab.ComprimentoMaximo)
             .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
-        // Declaração de que o processo aplica ou não o bônus regional: nula = ainda não declarado,
+        // Declaração de que o processo aplica ou não o Fator de Atenuação das Desigualdades de Acesso (FADA): nula = ainda não declarado,
         // o que bloqueia a publicação.
         builder.Property(p => p.AplicaBonusRegional)
-            .HasComment("Indica se o processo aplica o bônus regional; ausente quando ainda não declarado.");
+            .HasColumnName("aplica_fada")
+            .HasComment("Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado.");
         // Quantos cursos o candidato escolhe na inscrição: nulo = ainda não declarado, o que bloqueia
         // a publicação. O intervalo é invariante do domínio e fica espelhado no banco.
         builder.Property(p => p.NumeroDeOpcoesDeCurso)
@@ -202,7 +203,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasOne(p => p.BonusRegional)
             .WithOne()
             .HasForeignKey<ConfiguracaoBonusRegional>(b => b.ProcessoSeletivoId)
-            .HasConstraintName("fk_configuracoes_bonus_regional_processo_seletivo")
+            .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Divulgação pública (UNI-REQ-0050, issue #563) — 1:1, mesmo padrão de BonusRegional

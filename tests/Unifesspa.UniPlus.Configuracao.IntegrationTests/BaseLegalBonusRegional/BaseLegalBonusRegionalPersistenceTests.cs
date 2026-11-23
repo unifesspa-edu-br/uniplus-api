@@ -75,7 +75,7 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string gravado = await ctx.Database
-            .SqlQuery<string>($"SELECT tipo_instrumento AS \"Value\" FROM configuracao.bases_legais_do_bonus_regional WHERE id = {baseLegal.Id}")
+            .SqlQuery<string>($"SELECT tipo_instrumento AS \"Value\" FROM configuracao.bases_legais_do_fada WHERE id = {baseLegal.Id}")
             .SingleAsync();
         gravado.Should().Be("PORTARIA");
     }
@@ -87,7 +87,7 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
 
         ICheckConstraint restricao = ctx.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Domain.Entities.BaseLegalBonusRegional))!
             .GetCheckConstraints()
-            .Single(static c => c.Name == "ck_bases_legais_do_bonus_regional_tipo_instrumento");
+            .Single(static c => c.Name == "ck_bases_legais_do_fada_tipo_instrumento");
         restricao.Sql.Should().Be("tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
     }
 
@@ -100,11 +100,11 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
         await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
 
         Func<Task> atualizar = async () => await ctx.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.bases_legais_do_bonus_regional SET tipo_instrumento = 'MEDIDA_PROVISORIA' WHERE id = {baseLegal.Id}");
+            $"UPDATE configuracao.bases_legais_do_fada SET tipo_instrumento = 'MEDIDA_PROVISORIA' WHERE id = {baseLegal.Id}");
 
         PostgresException violacao = (await atualizar.Should().ThrowAsync<PostgresException>()).Which;
         await transacao.RollbackAsync();
-        violacao.ConstraintName.Should().Be("ck_bases_legais_do_bonus_regional_tipo_instrumento");
+        violacao.ConstraintName.Should().Be("ck_bases_legais_do_fada_tipo_instrumento");
     }
 
     // O código é único entre as bases legais vivas e o banco do teste é compartilhado: cada teste cadastra um ato próprio.

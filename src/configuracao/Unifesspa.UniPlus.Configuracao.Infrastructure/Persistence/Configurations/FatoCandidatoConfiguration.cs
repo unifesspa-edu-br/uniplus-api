@@ -70,7 +70,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.Dominio).HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
         builder.Property(f => f.Origem).HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
         builder.Property(f => f.Cardinalidade).HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
-        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
         builder.Property(f => f.Formato).HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
         builder.Property(f => f.Escopo).HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
