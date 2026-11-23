@@ -82,9 +82,9 @@ public sealed class DefinicaoDoProcessoTests
         processo.DefinirFormulario(
             FinalidadeFormulario.Habilitacao, null, null,
             [
-                EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-                EtapaFormulario.Criar("FAMILIA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Família", null, null).Value!,
-                EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("FAMILIA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Família", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).IsSuccess.Should().BeTrue();
         return processo;
     }

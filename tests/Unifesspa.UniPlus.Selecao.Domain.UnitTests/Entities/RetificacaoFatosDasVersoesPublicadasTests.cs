@@ -356,8 +356,8 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     /// <summary>As etapas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>
     private static IReadOnlyList<EtapaFormulario> EtapasDaHabilitacao(string exibicaoDaSegunda) =>
     [
-        EtapaFormulario.Criar(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-        EtapaFormulario.Criar("RENDA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
-        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 }

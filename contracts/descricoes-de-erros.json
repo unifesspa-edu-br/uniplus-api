@@ -25288,6 +25288,36 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.prova_presencial.cidade_de_prova_sem_prova_presencial",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "O formulário pede a cidade de prova, mas o processo não tem prova presencial."
+      ],
+      "comoResolver": [
+        "Retire o campo de cidade de prova ou declare a prova presencial."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.inscricao_sem_cidade_de_prova",
+      "requisitos": [
+        "UNI-REQ-0407"
+      ],
+      "oQueAconteceu": [
+        "O processo tem prova presencial, mas o formulário de inscrição não pede a cidade de prova a todo candidato."
+      ],
+      "comoResolver": [
+        "Inclua no formulário um campo obrigatório de cidade de prova, sem condições de exibição."
+      ],
+      "ondeAparece": [
+        "Publicação e retificação do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.prova_presencial.municipio_nao_conferido_no_geo",
       "requisitos": [
         "UNI-REQ-0407"

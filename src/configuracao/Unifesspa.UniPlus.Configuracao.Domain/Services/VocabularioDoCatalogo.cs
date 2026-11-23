@@ -117,7 +117,7 @@ public static class VocabularioDoCatalogo
             FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
             FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
             FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
-                or FonteValoresFato.TiposDeficiencia
+                or FonteValoresFato.TiposDeficiencia or FonteValoresFato.MunicipiosProvaPresencial
                 => DominioDeValores.PorFormato(static _ => true),
             _ => null,
         };

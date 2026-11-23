@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -104,6 +105,11 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         }
     }
 
+    /// <summary>Indica se o item é solicitado a todo candidato que responde o formulário.</summary>
+    internal bool PedeATodoCandidato(FatoColetado item) =>
+        item.Finalidade == Finalidade && item.GrupoColetadoId is null && item.SemPrecondicao && item.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre
+        && !_etapas.Any(e => string.Equals(e.Codigo, item.EtapaCodigo, StringComparison.Ordinal) && e.Exibicao is not null);
+
     /// <summary>As etapas na forma que a estrutura do formulário confere.</summary>
     public IReadOnlyList<EtapaEstrutura> Estrutura => [.. _etapas.Select(static e => e.Estrutura)];
 
@@ -113,11 +119,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         FaseId = outro.FaseId;
         Titulo = outro.Titulo;
         _etapas.Clear();
-        foreach (EtapaFormulario etapa in outro._etapas)
-        {
-            etapa.VincularFormulario(Id);
-            _etapas.Add(etapa);
-        }
+        AdicionarEtapas(outro._etapas);
     }
 
     /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
@@ -174,27 +176,29 @@ public sealed class EtapaFormulario : EntityBase
     public IEnumerable<CondicaoDnf> Condicoes => (Exibicao?.Clausulas ?? []).SelectMany(static c => c.Condicoes);
 
     public static Result<EtapaFormulario> Criar(
-        string codigo, int ordem, TipoEtapaFormulario tipo, BlocoSistema bloco, string titulo, string? descricao, string? aviso,
-        PredicadoDnf? exibicao = null)
+        EtapaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao = null)
     {
-        List<FieldError> erros = FormaDaEtapa.Conferir(codigo, ordem, tipo, titulo, descricao, aviso, exibicao is not null);
-        if (erros.Count > 0)
-        {
-            return Result<EtapaFormulario>.ValidationFailure(erros);
-        }
+        ArgumentNullException.ThrowIfNull(estrutura);
 
-        return Result<EtapaFormulario>.Success(new EtapaFormulario
+        List<FieldError> erros = FormaDaEtapa.Conferir(
+            estrutura.Codigo, estrutura.Ordem, estrutura.Tipo, titulo, descricao, aviso, exibicao is not null);
+        return erros.Count > 0
+            ? Result<EtapaFormulario>.ValidationFailure(erros)
+            : Result<EtapaFormulario>.Success(Montar(estrutura, titulo, descricao, aviso, exibicao));
+    }
+
+    private static EtapaFormulario Montar(
+        EtapaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao) => new()
         {
-            Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
-            Ordem = ordem,
-            Tipo = tipo,
-            Bloco = bloco,
+            Codigo = (estrutura.Codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
+            Ordem = estrutura.Ordem,
+            Tipo = estrutura.Tipo,
+            Bloco = estrutura.Bloco,
             Titulo = (titulo ?? string.Empty).Trim(),
             Descricao = FormaDoItem.TextoOpcional(descricao),
             Aviso = FormaDoItem.TextoOpcional(aviso),
             Exibicao = exibicao,
-        });
-    }
+        };
 
     internal void VincularFormulario(Guid formularioProcessoId) => FormularioProcessoId = formularioProcessoId;
 }

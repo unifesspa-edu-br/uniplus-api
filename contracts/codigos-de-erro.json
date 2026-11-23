@@ -7592,6 +7592,16 @@
       "titulo": "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo"
     },
     {
+      "codigo": "uniplus.selecao.prova_presencial.cidade_de_prova_sem_prova_presencial",
+      "status": 422,
+      "titulo": "Cidade de prova sem prova presencial"
+    },
+    {
+      "codigo": "uniplus.selecao.prova_presencial.inscricao_sem_cidade_de_prova",
+      "status": 422,
+      "titulo": "Cidade de prova ausente no formulário"
+    },
+    {
       "codigo": "uniplus.selecao.prova_presencial.municipio_nao_conferido_no_geo",
       "status": 422,
       "titulo": "Município de prova não encontrado no Geo"

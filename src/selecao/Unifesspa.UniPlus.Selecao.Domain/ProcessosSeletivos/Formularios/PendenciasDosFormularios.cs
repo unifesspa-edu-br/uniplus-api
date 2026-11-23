@@ -56,11 +56,7 @@ public static class PendenciasDosFormularios
             return null;
         }
 
-        HashSet<string> coletados = new(
-            configuracao.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
-                    && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
-                .Select(static f => f.FatoCodigo),
-            StringComparer.Ordinal);
+        HashSet<string> coletados = FatosColetadosNaSecaoDosDadosBasicos(configuracao);
         int faltam = ConjuntoBasicoDaInscricao.Fatos.Count(f => !coletados.Contains(f));
         return faltam == 0
             ? null
@@ -68,6 +64,12 @@ public static class PendenciasDosFormularios
                 FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico,
                 $"O formulário de inscrição não coleta {faltam} dos dados básicos do candidato. Grave de novo o formulário e, depois, os itens dele: a gravação repõe a seção dos dados básicos.");
     }
+
+    private static HashSet<string> FatosColetadosNaSecaoDosDadosBasicos(ConfiguracaoDeclarada configuracao) => new(
+        configuracao.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+                && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
+            .Select(static f => f.FatoCodigo),
+        StringComparer.Ordinal);
 
     /// <summary>
     /// Com inscrição própria e classificação baseada em ENEM, o formulário de inscrição pede a todo
@@ -86,9 +88,7 @@ public static class PendenciasDosFormularios
 
         FatoColetado? edicao = configuracao.Coleta.Itens.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao
             && string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
-        bool secaoCondicional = edicao?.EtapaCodigo is { } secao
-            && formulario.Etapas.Any(e => string.Equals(e.Codigo, secao, StringComparison.Ordinal) && e.Exibicao is not null);
-        return edicao is { SemPrecondicao: true, Obrigatoriedade.Tipo: TipoObrigatoriedade.Sempre } && !secaoCondicional
+        return edicao is not null && formulario.PedeATodoCandidato(edicao)
             ? null
             : new DomainError(
                 FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem,
@@ -116,24 +116,17 @@ public static class PendenciasDosFormularios
     /// Todo formulário tem a fase que a finalidade pede e que continua no cronograma — a definição
     /// confere quando a fase é informada, e o cronograma pode ter mudado depois.
     /// </summary>
-    internal static DomainError? PendenciaDaFaseDosFormularios(ConfiguracaoDeclarada configuracao)
-    {
-        foreach (FormularioProcesso formulario in configuracao.Coleta.Formularios.OrderBy(static f => f.Finalidade))
-        {
-            if (formulario.FaseId is not { } fase)
-            {
-                return new DomainError(FormularioProcessoErrorCodes.SemFase,
-                    $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.");
-            }
+    internal static DomainError? PendenciaDaFaseDosFormularios(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.Formularios.OrderBy(static f => f.Finalidade)
+            .Select(formulario => RecusaDaFaseFaltanteOuForaDaRegra(configuracao, formulario))
+            .FirstOrDefault(static recusa => recusa is not null);
 
-            if (RegrasDosFormularios.RecusaDaFaseDoFormulario(configuracao, formulario.Finalidade, fase) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
-    }
+    private static DomainError? RecusaDaFaseFaltanteOuForaDaRegra(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario) =>
+        formulario.FaseId is not { } fase
+            ? new DomainError(
+                FormularioProcessoErrorCodes.SemFase,
+                $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.")
+            : RegrasDosFormularios.RecusaDaFaseDoFormulario(configuracao, formulario.Finalidade, fase);
 
     /// <summary>Formulário de isenção só em processo que cobra taxa de inscrição (UNI-REQ-0144).</summary>
     internal static DomainError? PendenciaDaIsencaoSemTaxa(ConfiguracaoDeclarada configuracao) =>

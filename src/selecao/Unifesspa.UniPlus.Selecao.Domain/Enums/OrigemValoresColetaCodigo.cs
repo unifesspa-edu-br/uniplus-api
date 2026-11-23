@@ -11,6 +11,7 @@ public static class OrigemValoresColetaCodigo
     public const string OpcoesDoProcesso = "PROCESSO";
     public const string MunicipiosDoBonus = "MUNICIPIOS_BONUS";
     public const string UnidadesFederativas = "GEO_UF";
+    public const string MunicipiosDaProvaPresencial = "MUNICIPIOS_PROVA_PRESENCIAL";
 
     public static string ToCodigo(this OrigemValoresColeta origem) => origem switch
     {
@@ -18,6 +19,7 @@ public static class OrigemValoresColetaCodigo
         OrigemValoresColeta.OpcoesDoProcesso => OpcoesDoProcesso,
         OrigemValoresColeta.MunicipiosDoBonus => MunicipiosDoBonus,
         OrigemValoresColeta.UnidadesFederativas => UnidadesFederativas,
+        OrigemValoresColeta.MunicipiosDaProvaPresencial => MunicipiosDaProvaPresencial,
         _ => throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem dos valores desconhecida."),
     };
 }

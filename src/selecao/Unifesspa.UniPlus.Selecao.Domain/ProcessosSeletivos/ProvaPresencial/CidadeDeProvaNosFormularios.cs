@@ -1,49 +1,49 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A cidade de prova nos formulários do processo (UNI-REQ-0407, ADR-0171): com prova presencial, algum
-/// formulário da inscrição a pede a todo candidato, e a escolha só aceita município declarado; sem prova
-/// presencial, ou ainda por declarar, nenhum formulário a pede. Quem chama diz quais campos coletam a
-/// cidade de prova, pela origem dos valores, sem que a regra nomeie o fato.
+/// Confere a coleta da cidade de prova nos formulários do processo: com prova presencial e formulário de
+/// inscrição, algum item da origem "municípios da prova presencial" é pedido a todo candidato; sem prova
+/// presencial, nenhum formulário a coleta; com a prova ainda por declarar, não há o que conferir.
 /// </summary>
 public static class CidadeDeProvaNosFormularios
 {
     private const string CampoDosFormularios = "formularios";
 
-    public static IReadOnlyList<FieldError> Conferir(
-        DeclaracaoDaProvaPresencial? declaracao,
-        IReadOnlyList<FormularioDeclarado> formularios,
-        IEnumerable<FaseCronograma> cronograma,
-        IReadOnlyList<CampoDoFormulario> camposDaCidadeDeProva)
+    public static IReadOnlyList<FieldError> Conferir(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(formularios);
-        ArgumentNullException.ThrowIfNull(cronograma);
-        ArgumentNullException.ThrowIfNull(camposDaCidadeDeProva);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return declaracao is { TemProvaPresencial: true }
-            ? ConferirComProva(formularios, cronograma, camposDaCidadeDeProva)
-            : ConferirSemProva(camposDaCidadeDeProva);
+        DomainError? recusa = configuracao.ProvaPresencial switch
+        {
+            { TemProvaPresencial: true } => InscricaoSemCidadeDeProva(configuracao),
+            { TemProvaPresencial: false } => CidadeDeProvaSemProvaPresencial(configuracao),
+            _ => null,
+        };
+        return recusa is null ? [] : [new FieldError(CampoDosFormularios, recusa)];
     }
 
-    private static List<FieldError> ConferirComProva(
-        IReadOnlyList<FormularioDeclarado> formularios, IEnumerable<FaseCronograma> cronograma, IReadOnlyList<CampoDoFormulario> campos)
-    {
-        HashSet<CodigoDoFormulario> daInscricao = [.. FormulariosDaInscricao.De(formularios, cronograma).Select(static formulario => formulario.Codigo)];
-        return campos.Any(campo => campo.PedidoATodoCandidato && daInscricao.Contains(campo.Formulario))
-            ? []
-            : [new FieldError(CampoDosFormularios, new DomainError(
+    private static DomainError? InscricaoSemCidadeDeProva(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is { } inscricao
+            && !CamposDaCidadeDeProva(configuracao).Any(inscricao.PedeATodoCandidato)
+            ? new DomainError(
                 ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva,
-                "O processo tem prova presencial, e o formulário de inscrição não pede a cidade de prova a todo candidato: o campo é obrigatório sempre, sem exibição condicional, fora de grupo e numa seção que não se esconde."))];
-    }
+                "O formulário de inscrição deve pedir a cidade de prova a todo candidato.")
+            : null;
 
-    private static List<FieldError> ConferirSemProva(IReadOnlyList<CampoDoFormulario> campos) =>
-        campos.Count == 0
-            ? []
-            : [new FieldError(CampoDosFormularios, new DomainError(
+    private static DomainError? CidadeDeProvaSemProvaPresencial(ConfiguracaoDeclarada configuracao) =>
+        CamposDaCidadeDeProva(configuracao).Any()
+            ? new DomainError(
                 ProvaPresencialErrorCodes.CidadeDeProvaSemProvaPresencial,
-                "Um formulário pede a cidade de prova, mas o processo não declara prova presencial: retire o campo ou declare a prova presencial."))];
+                "O formulário pede a cidade de prova, mas o processo não tem prova presencial.")
+            : null;
+
+    private static IEnumerable<FatoColetado> CamposDaCidadeDeProva(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.Itens.Concat(configuracao.Coleta.GruposColetados.SelectMany(static grupo => grupo.Subitens))
+            .Where(static item => item.OrigemValores == OrigemValoresColeta.MunicipiosDaProvaPresencial);
 }

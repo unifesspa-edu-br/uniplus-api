@@ -102,8 +102,8 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         IReadOnlyList<EtapaFormulario> etapas =
         [
             FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar("REVALIDACAO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Revalidação", null, null, estrangeiro).Value!,
-            EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("REVALIDACAO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Revalidação", null, null, estrangeiro).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
         return etapas;
     }

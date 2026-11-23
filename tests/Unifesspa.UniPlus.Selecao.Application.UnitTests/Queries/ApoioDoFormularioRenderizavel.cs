@@ -148,9 +148,9 @@ internal static class ApoioDoFormularioRenderizavel
             finalidade, faseId, null,
             [
                 .. comComprovacao
-                    ? [EtapaFormulario.Criar("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null).Value!]
+                    ? [EtapaFormulario.Criar(new EtapaEstrutura("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!]
                     : Array.Empty<EtapaFormulario>(),
-                EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
     internal static Task<Result<FormularioRenderizavelDto>> HandleAsync(

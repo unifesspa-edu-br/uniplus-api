@@ -81,7 +81,7 @@ public sealed class VocabularioDoCatalogoTests
     {
         Dictionary<string, DominioDeValores> dominios = VocabularioDoCatalogo.DominiosDinamicos(CatalogoDeFontes());
 
-        dominios.Keys.Should().Equal("GEO_UF", "GEO_MUNICIPIO", "PROCESSO", "MODALIDADE", "MUNICIPIOS_BONUS", "TIPOS_DEFICIENCIA");
+        dominios.Keys.Should().Equal("GEO_UF", "GEO_MUNICIPIO", "PROCESSO", "MODALIDADE", "MUNICIPIOS_BONUS", "TIPOS_DEFICIENCIA", "MUNICIPIOS_PROVA_PRESENCIAL");
         dominios["GEO_UF"].Valores.Should().BeEquivalentTo(ReferenciaCidadeGeo.Ufs);
         dominios["GEO_UF"].Contem("XX").Should().BeFalse();
         dominios["GEO_MUNICIPIO"].Valores.Should().BeNull();
@@ -93,6 +93,7 @@ public sealed class VocabularioDoCatalogoTests
     [InlineData("MODALIDADE")]
     [InlineData("MUNICIPIOS_BONUS")]
     [InlineData("TIPOS_DEFICIENCIA")]
+    [InlineData("MUNICIPIOS_PROVA_PRESENCIAL")]
     public void DominiosDinamicos_FonteForaDoCatalogo_AdmiteQualquerCodigo(string fato)
     {
         DominioDeValores dominio = VocabularioDoCatalogo.DominiosDinamicos(CatalogoDeFontes())[fato];
@@ -281,6 +282,7 @@ public sealed class VocabularioDoCatalogoTests
         Fato("MODALIDADE", DominioFato.Categorico, FonteValoresFato.Modalidade),
         Fato("MUNICIPIOS_BONUS", DominioFato.Categorico, FonteValoresFato.MunicipiosBonus),
         Fato("TIPOS_DEFICIENCIA", DominioFato.Categorico, FonteValoresFato.TiposDeficiencia),
+        Fato("MUNICIPIOS_PROVA_PRESENCIAL", DominioFato.Categorico, FonteValoresFato.MunicipiosProvaPresencial),
         Fato("BOOLEANO"),
     ];
 

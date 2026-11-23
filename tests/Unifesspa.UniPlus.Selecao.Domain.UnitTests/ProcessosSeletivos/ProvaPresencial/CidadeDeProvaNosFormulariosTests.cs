@@ -2,112 +2,74 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.ProvaPre
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
-using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>
-/// A cidade de prova nos formulários do processo (UNI-REQ-0407): com prova presencial, algum formulário
-/// da inscrição a pede a todo candidato; sem prova presencial, nenhum formulário a pede.
-/// </summary>
 public sealed class CidadeDeProvaNosFormulariosTests
 {
-    private static readonly FaseCronograma Inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
-    private static readonly FaseCronograma Habilitacao = FaseDeTeste.Criar(2, "HABILITACAO");
-
-    private static DeclaracaoDaProvaPresencial Declaracao(bool temProvaPresencial) => DeclaracaoDaProvaPresencial.Declarar(
-        temProvaPresencial, temProvaPresencial ? [new MunicipioDeProvaInformado("1504208", "PA")] : [], 100).Value!;
-
-    private static FormularioDeclarado Formulario(string codigo, FaseCronograma fase, bool obrigatorio) =>
-        new(CodigoDoFormulario.Criar(codigo).Value!, fase.Id, obrigatorio);
-
-    private static CampoDoFormulario Campo(FormularioDeclarado formulario, bool pedidoATodoCandidato = true) => new(
-        formulario.Codigo, ObrigatorioSempre: pedidoATodoCandidato, SemPrecondicao: true, ForaDeGrupo: true, EmSecaoSempreVisivel: true);
-
-    private static IReadOnlyList<Unifesspa.UniPlus.Kernel.Results.FieldError> Conferir(
-        DeclaracaoDaProvaPresencial? declaracao, IReadOnlyList<FormularioDeclarado> formularios, params CampoDoFormulario[] campos) =>
-        CidadeDeProvaNosFormularios.Conferir(declaracao, formularios, [Inscricao, Habilitacao], campos);
-
-    [Fact(DisplayName = "Com prova presencial, o campo pedido a todo candidato no formulário da inscrição é aceito")]
-    public void ComProva_CampoNoFormularioDaInscricao_Aceita()
+    [Theory]
+    [InlineData(true, true, null)]
+    [InlineData(true, false, ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva)]
+    [InlineData(false, true, ProvaPresencialErrorCodes.CidadeDeProvaSemProvaPresencial)]
+    [InlineData(false, false, null)]
+    public void Conferir_DeclaracaoECampo_AvaliaCoerencia(bool temProva, bool temCampo, string? codigo)
     {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-
-        Conferir(Declaracao(true), [dados], Campo(dados)).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Com prova presencial e dois formulários da inscrição, o campo em um deles basta")]
-    public void ComProva_CampoEmUmDosFormulariosDaInscricao_Aceita()
-    {
-        FormularioDeclarado dados = Formulario("DADOS", Inscricao, obrigatorio: true);
-        FormularioDeclarado complementares = Formulario("DADOS_COMPLEMENTARES", Inscricao, obrigatorio: true);
-
-        Conferir(Declaracao(true), [dados, complementares], Campo(complementares)).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Com prova presencial e sem o campo, a falta é recusada nos formulários")]
-    public void ComProva_SemCampo_Recusa()
-    {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-
-        Conferir(Declaracao(true), [dados]).Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        CidadeDeProvaBuilder builder = new CidadeDeProvaBuilder().ComDeclaracao(temProva);
+        if (temCampo)
         {
-            Field = "formularios",
-            Error = new { Code = ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva },
-        });
+            builder.ComCampo(Obrigatoriedade.Sempre);
+        }
+        ProcessoSeletivo processo = builder.Construir();
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Select(e => e.Error.Code)
+            .Should().Equal(codigo is null ? [] : [codigo]);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Single(i => i.Codigo == "cidade_de_prova_nos_formularios").Ok.Should().Be(codigo is null);
     }
 
-    [Theory(DisplayName = "O campo fora do formulário da inscrição não é a cidade de prova de todo candidato")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ComProva_CampoForaDoFormularioDaInscricao_Recusa(bool formularioObrigatorio)
+    [Fact]
+    public void Conferir_ProvaPorDeclarar_NaoRecusaCampo()
     {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-        FormularioDeclarado outro = Formulario("OUTRO", formularioObrigatorio ? Habilitacao : Inscricao, formularioObrigatorio);
+        ProcessoSeletivo processo = new CidadeDeProvaBuilder().ComCampo(Obrigatoriedade.Sempre).Construir();
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Should().BeEmpty();
+    }
 
-        Conferir(Declaracao(true), [dados, outro], Campo(outro)).Should().ContainSingle().Which.Error.Code
+    [Fact]
+    public void Conferir_CampoOpcional_Recusa()
+    {
+        ProcessoSeletivo processo = new CidadeDeProvaBuilder().ComDeclaracao(true).ComCampo(Obrigatoriedade.Nunca).Construir();
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Should().ContainSingle().Which.Error.Code
             .Should().Be(ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva);
     }
 
-    [Fact(DisplayName = "O campo condicional, em grupo ou em seção que se esconde não é pedido a todo candidato")]
-    public void ComProva_CampoNaoPedidoATodoCandidato_Recusa()
+    [Fact]
+    public void Conferir_CampoComExibicaoCondicional_Recusa()
     {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-        CampoDoFormulario[] camposParciais =
-        [
-            Campo(dados) with { ObrigatorioSempre = false },
-            Campo(dados) with { SemPrecondicao = false },
-            Campo(dados) with { ForaDeGrupo = false },
-            Campo(dados) with { EmSecaoSempreVisivel = false },
-        ];
-
-        foreach (CampoDoFormulario campo in camposParciais)
-        {
-            Conferir(Declaracao(true), [dados], campo).Should().ContainSingle().Which.Error.Code
-                .Should().Be(ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva);
-        }
+        PredicadoDnf seCasado = ExibicaoDeTeste.Quando("ESTADO_CIVIL", Operador.Igual, "CASADO");
+        ProcessoSeletivo processo = new CidadeDeProvaBuilder().ComDeclaracao(true).ComCampo(Obrigatoriedade.Sempre, seCasado).Construir();
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Should().ContainSingle().Which.Error.Code
+            .Should().Be(ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva);
     }
 
-    [Theory(DisplayName = "Sem prova presencial, ou por declarar, nenhum formulário pode pedir a cidade de prova")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SemProva_ComCampo_Recusa(bool porDeclarar)
+    [Fact]
+    public void Conferir_ProvaSemFormularioDeInscricao_NaoRecusa()
     {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-
-        Conferir(porDeclarar ? null : Declaracao(false), [dados], Campo(dados)).Should().ContainSingle().Which.Should().BeEquivalentTo(new
-        {
-            Field = "formularios",
-            Error = new { Code = ProvaPresencialErrorCodes.CidadeDeProvaSemProvaPresencial },
-        });
+        ProcessoSeletivo processo = new CidadeDeProvaBuilder(comFormularioDeInscricao: false).ComDeclaracao(true).Construir();
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Sem prova presencial e sem o campo, nada a recusar")]
-    public void SemProva_SemCampo_Aceita()
+    [Fact]
+    public void Causas_ProvaPresencial_MunicipioNoGeoVemAntesDaCidadeDeProva()
     {
-        FormularioDeclarado dados = Formulario("INSCRICAO", Inscricao, obrigatorio: true);
-
-        Conferir(Declaracao(false), [dados]).Should().BeEmpty();
+        ProcessoSeletivo processo = new CidadeDeProvaBuilder().ComDeclaracao(true).Construir();
+        string[] esperados = [ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo, ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva];
+        CausasQueImpedemCongelar.De(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Select(e => e.Error.Code)
+            .Where(esperados.Contains).Should().Equal(esperados);
     }
 }

@@ -51,12 +51,12 @@ internal static class ApoioFormulariosPorFinalidade
     internal static IReadOnlyList<EtapaFormulario> EtapasComExibicao(string? citado) =>
     [
         FormularioDeTeste.Etapas()[0],
-        EtapaFormulario.Criar("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-        EtapaFormulario.Criar("RENDA", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda", null, null,
+        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Renda", null, null,
             citado is null
                 ? null
                 : PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!).Value!,
-        EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 
     internal static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>

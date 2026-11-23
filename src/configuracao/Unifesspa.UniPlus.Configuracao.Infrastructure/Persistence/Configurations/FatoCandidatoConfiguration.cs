@@ -38,6 +38,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int CodigoDeContratoMaxLength = 20;
+    private const int FonteValoresMaxLength = 30;
     private const int PontoResolucaoMaxLength = 50;
     private const int BindingMaxLength = 200;
 
@@ -70,7 +71,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.Dominio).HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
         builder.Property(f => f.Origem).HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
         builder.Property(f => f.Cardinalidade).HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
-        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), MUNICIPIOS_PROVA_PRESENCIAL, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
         builder.Property(f => f.Formato).HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
         builder.Property(f => f.Escopo).HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
@@ -133,7 +134,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         // numérico ficam com NULL, que o EF encapsula sem chamar o converter.
         builder.Property(f => f.FonteValores).HasColumnName("fonte_das_opcoes")
             .HasConversion(FonteValoresConverter)
-            .HasMaxLength(CodigoDeContratoMaxLength);
+            .HasMaxLength(FonteValoresMaxLength);
 
         // formato (ADR-0136): anulável — só o fato de domínio texto tem formato.
         builder.Property(f => f.Formato)
@@ -276,7 +277,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             item.Escopo,
             item.ClassificacaoProtecao,
             item.FinalidadeTratamento,
-            FatoCandidatoSeed.HipoteseLegal,
+            item.HipoteseLegal,
             SemeadoPeloSistema = true,
             Ativo = true,
             RegrasPadrao = item.RegrasPadrao ?? (IReadOnlyList<RegraDerivacao>)[],

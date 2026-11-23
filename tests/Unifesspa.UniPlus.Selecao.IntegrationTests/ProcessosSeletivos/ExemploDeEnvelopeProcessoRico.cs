@@ -274,9 +274,9 @@ internal static class ExemploDeEnvelopeProcessoRico
             FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
             [
                 FormularioDeTeste.Etapas()[0],
-                EtapaFormulario.Criar(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-                EtapaFormulario.Criar("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Pertencimento", null, null, corPreta).Value!,
-                EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Pertencimento", null, null, corPreta).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).IsSuccess.Should().BeTrue();
     }
 
