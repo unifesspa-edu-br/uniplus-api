@@ -20,7 +20,7 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
         TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa("Prova Objetiva", CaraterEtapa.Ambas, tipo, Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa("Prova Objetiva", CaraterEtapa.Ambas, tipo, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null,
                 RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;

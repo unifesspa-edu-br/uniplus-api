@@ -29,7 +29,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
         TipoEtapa: TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva",
             admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-        Ordem: null,
+        Ordem: 1,
         FaseCodigo: null);
 
     private static DeclaracaoDaAvaliacaoDaEtapa Avaliacao() => new(

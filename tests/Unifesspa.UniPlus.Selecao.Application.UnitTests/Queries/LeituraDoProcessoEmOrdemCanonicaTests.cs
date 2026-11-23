@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class LeituraDoProcessoEmOrdemCanonicaTests
 {
-    private static EtapaProcesso Etapa(string nome, int? ordem)
+    private static EtapaProcesso Etapa(string nome, int ordem)
     {
         TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
@@ -39,11 +39,11 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoId).Value!;
 
-    [Fact(DisplayName = "A etapa sem ordem declarada sai depois das que têm ordem, e as sem ordem saem pelo nome")]
-    public void ProjetarEtapas_EtapasComESemOrdem_SaemNaOrdemCanonica()
+    [Fact(DisplayName = "As etapas saem pela ordem declarada")]
+    public void ProjetarEtapas_EtapasForaDeOrdem_SaemNaOrdemDeclarada()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([Etapa("Zeta", null), Etapa("Beta", 2), Etapa("Alfa", null), Etapa("Gama", 1)]).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([Etapa("Zeta", 4), Etapa("Beta", 2), Etapa("Alfa", 3), Etapa("Gama", 1)]).IsSuccess.Should().BeTrue();
 
         ProjecaoDaEtapaDoProcesso.ProjetarEtapas(processo).Select(static e => e.Identificacao.Nome).Should().Equal("Gama", "Beta", "Alfa", "Zeta");
     }

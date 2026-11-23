@@ -293,8 +293,8 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
     [Fact(DisplayName = "O início da etapa que já começou não muda; o da etapa que não começou muda livremente")]
     public void Etapa_InicioDaEtapaIniciada_NaoMuda()
     {
-        EtapaProcesso iniciada = EtapaComJanela("Prova objetiva", Passado);
-        EtapaProcesso porComecar = EtapaComJanela("Prova discursiva", Instante.AddDays(5));
+        EtapaProcesso iniciada = EtapaComJanela("Prova objetiva", Passado, 2);
+        EtapaProcesso porComecar = EtapaComJanela("Prova discursiva", Instante.AddDays(5), 1);
         FasesIniciadas iniciadas = new([], etapas: [new EtapaIniciada(iniciada.Id, iniciada.Nome, NaVersaoVigente: true)]);
         AndamentoDasFases andamento = new([], [iniciada, porComecar], Fatos(iniciadas));
 
@@ -304,12 +304,14 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         ConferenciaDosPrazosDaRetificacao.Conferir([], [CopiaComInicio(iniciada, Passado), porComecar], andamento).Should().BeEmpty();
     }
 
-    // A retificação preserva o Id da etapa; a cópia reproduz a proposta com o mesmo Id e o início trocado.
     private static EtapaProcesso CopiaComInicio(EtapaProcesso etapa, DateTimeOffset inicio)
     {
-        EtapaProcesso copia = EtapaComJanela(etapa.Nome, inicio);
-        typeof(EtapaProcesso).BaseType!.GetProperty(nameof(EtapaProcesso.Id))!.SetValue(copia, etapa.Id);
-
+        EtapaProcesso copia = EtapaProcesso.Reidratar(
+            etapa.Id,
+            new IdentificacaoDaEtapa(etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Ordem, etapa.FaseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima,
+                etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, etapa.EscalaDeAtendimento), []);
+        copia.DefinirJanelaEParecer(inicio, inicio.AddDays(3), false).IsSuccess.Should().BeTrue();
         return copia;
     }
 }

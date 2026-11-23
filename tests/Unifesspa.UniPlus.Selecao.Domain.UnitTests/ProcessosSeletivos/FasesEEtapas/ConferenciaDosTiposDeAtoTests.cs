@@ -72,7 +72,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
         IReadOnlyList<FieldError> recusas = ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(cronograma, etapas, Catalogo);
 
         Causas(recusas).Should().Equal(("etapas[0].produtos[0].atoCodigo", "ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez"));
-        recusas.Single().Error.Message.Should().Be("O tipo de ato 'Edital' só pode ser publicado uma vez por processo e está declarado na fase 'RESULTADO' e na etapa 'Redação' (ordem não definida).");
+        recusas.Single().Error.Message.Should().Be("O tipo de ato 'Edital' só pode ser publicado uma vez por processo e está declarado na fase 'RESULTADO' e na etapa 'Redação' (ordem 1).");
     }
 
     [Fact(DisplayName = "O tipo único declarado duas vezes no mesmo lugar cita a contagem, e declarado uma vez não é recusado")]

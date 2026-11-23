@@ -90,7 +90,7 @@ internal static class ProjecaoDosProdutosPrevistos
             [.. configuracaoPublicada.Cronograma.CronogramaFases.OrderBy(static f => f.Ordem).Select(f => Fase(f, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))],
             [.. configuracaoPublicada.Avaliacao.Etapas
                 .Where(static e => e.FaseCodigo is null)
-                .OrderBy(static e => e.Ordem ?? int.MaxValue)
+                .OrderBy(static e => e.Ordem)
                 .ThenBy(static e => e.Nome, StringComparer.Ordinal)
                 .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
     }
@@ -105,7 +105,7 @@ internal static class ProjecaoDosProdutosPrevistos
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(fase.Id, fase.Codigo, fase.Ordem,
         Produtos([.. fase.Produtos.Select(p => DeclaradoDaFase(fase, p))], configuracaoPublicada, cadeias, tiposVigentes, projetarAto),
         [.. configuracaoPublicada.Avaliacao.Etapas.Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
-            .OrderBy(static e => e.Ordem ?? int.MaxValue).ThenBy(static e => e.Nome, StringComparer.Ordinal)
+            .OrderBy(static e => e.Ordem).ThenBy(static e => e.Nome, StringComparer.Ordinal)
             .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
 
     /// <summary>

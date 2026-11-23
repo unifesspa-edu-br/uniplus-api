@@ -36,7 +36,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // ao reconfigurar o agregado tracked). Convenção do repo.
         builder.Property(e => e.Id).ValueGeneratedNever().HasComment("Identificador da etapa.");
         builder.Property(e => e.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a etapa pertence.");
-        builder.Property(e => e.Ordem).HasComment("Posição da etapa no processo, quando definida.");
+        builder.Property(e => e.Ordem).IsRequired().HasComment("Posição da etapa no processo, a partir de um.");
 
         builder.Property(e => e.Nome).HasMaxLength(EtapaProcesso.NomeMaxLength).IsRequired().HasComment("Nome da etapa no processo seletivo.");
         builder.Property(e => e.Carater).HasConversion<int>().IsRequired()
@@ -146,12 +146,12 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
             nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
             nivel.Property(n => n.Fracao).HasPrecision(5, 4).IsRequired().HasComment("Fração da pontuação do item atribuída ao nível.");
-            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Rotulo)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_rotulo");
+            // A unicidade da ordem e do rótulo é adiada pelo script de restrições para permitir trocas.
+            nivel.Property(n => n.Ordem).IsRequired().HasComment("Posição do nível na escala, a partir de um.");
         });
         builder.Navigation(e => e.EscalaDeAtendimento).HasField("_escalaDeAtendimento").UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Ordem única por processo quando informada (colunas nulas não
-        // colidem em unique index no Postgres).
+        // Cada posição da etapa é única no processo.
         builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Ordem }).IsUnique();
     }
     private static string CodigosNumericos<TEnum>() where TEnum : struct, Enum =>

@@ -23,22 +23,20 @@ public static class OrdemCanonicaDaConfiguracao
         return fases.OrderBy(static fase => fase.Ordem).ThenBy(static fase => fase.Id);
     }
 
-    /// <summary>A posição da etapa no documento: a ordem declarada, e a etapa sem ordem vem depois de todas.</summary>
+    /// <summary>A posição da etapa no documento.</summary>
     public static int ChaveDaEtapa(EtapaProcesso etapa)
     {
         ArgumentNullException.ThrowIfNull(etapa);
 
-        return etapa.Ordem ?? int.MaxValue;
+        return etapa.Ordem;
     }
 
-    /// <summary>As etapas pela chave da ordem e, no empate, pelo nome e pela identidade.</summary>
+    /// <summary>As etapas pela ordem declarada.</summary>
     public static IOrderedEnumerable<EtapaProcesso> Etapas(IEnumerable<EtapaProcesso> etapas)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        return etapas.OrderBy(ChaveDaEtapa)
-            .ThenBy(static etapa => HashCanonicalComputer.NormalizeNfc(etapa.Nome), StringComparer.Ordinal)
-            .ThenBy(static etapa => etapa.Id);
+        return etapas.OrderBy(ChaveDaEtapa);
     }
 
     /// <summary>Os atos que a fase publica, pelo código do ato e pelo papel.</summary>

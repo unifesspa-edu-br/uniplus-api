@@ -23,7 +23,7 @@ public sealed class EtapasDoProcessoTests
     [Fact(DisplayName = "Conjunto de etapas conformes não tem causa de conjunto, e o conjunto vazio é válido")]
     public void Conferir_EtapasConformes_SemCausas()
     {
-        Conferir(new ModeloDeEtapa("A").Declarar(), new ModeloDeEtapa("B").Declarar()).Should().BeEmpty();
+        Conferir(new ModeloDeEtapa("A").Declarar(), (new ModeloDeEtapa("B") with { Ordem = 2 }).Declarar()).Should().BeEmpty();
         Conferir().Should().BeEmpty();
     }
 
@@ -34,8 +34,8 @@ public sealed class EtapasDoProcessoTests
 
         Conferir(
             (new ModeloDeEtapa("A") with { Id = id }).Declarar(),
-            (new ModeloDeEtapa("B") with { Id = id }).Declarar(),
-            (new ModeloDeEtapa("C") with { Id = id }).Declarar())
+            (new ModeloDeEtapa("B") with { Id = id, Ordem = 2 }).Declarar(),
+            (new ModeloDeEtapa("C") with { Id = id, Ordem = 3 }).Declarar())
             .Should().Equal(("etapas[1].id", "ProcessoSeletivo.IdEtapaDuplicado"), ("etapas[2].id", "ProcessoSeletivo.IdEtapaDuplicado"));
     }
 
@@ -63,14 +63,14 @@ public sealed class EtapasDoProcessoTests
     [Fact(DisplayName = "Duas etapas do ENEM, uma sem peso: a duplicidade vem primeiro e depois a que não compõe a nota")]
     public void Conferir_DuasEtapasDoEnemUmaSemPeso_DuplicadaEDepoisNaoCompoe()
     {
-        Conferir(DoEnem("ENEM 1").Declarar(), (DoEnem("ENEM 2") with { Peso = null }).Declarar())
+        Conferir(DoEnem("ENEM 1").Declarar(), (DoEnem("ENEM 2") with { Peso = null, Ordem = 2 }).Declarar())
             .Should().Equal(("etapas[1]", "ProcessoSeletivo.EtapaNotaEnemDuplicada"), ("etapas[1].peso", "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota"));
     }
 
     [Fact(DisplayName = "ENEM sem peso e com banca acusa as duas causas")]
     public void Conferir_EnemSemPesoEComBanca_AcusaAsDuas()
     {
-        Conferir((DoEnem() with { Peso = null, Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.CorrecaoDeRedacoes)] }).Declarar(), new ModeloDeEtapa("Prova").Declarar())
+        Conferir((DoEnem() with { Peso = null, Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.CorrecaoDeRedacoes)] }).Declarar(), (new ModeloDeEtapa("Prova") with { Ordem = 2 }).Declarar())
             .Should().Equal(("etapas[0].peso", "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota"), ("etapas[0].bancas", "ProcessoSeletivo.EtapaNotaEnemComBanca"));
     }
 
@@ -131,14 +131,14 @@ public sealed class EtapasDoProcessoTests
     [Fact(DisplayName = "ENEM com caráter recusado não é acusado de não compor: o dado recusado corta a regra")]
     public void Conferir_EnemComCaraterRecusado_CortaANaoCompoe()
     {
-        Conferir((DoEnem() with { Carater = CaraterEtapa.Nenhum }).Declarar(), new ModeloDeEtapa("Prova").Declarar()).Should().BeEmpty();
+        Conferir((DoEnem() with { Carater = CaraterEtapa.Nenhum }).Declarar(), (new ModeloDeEtapa("Prova") with { Ordem = 2 }).Declarar()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Nenhuma etapa compondo a nota é recusado no conjunto, e etapa com dado cortado suspende a regra")]
     public void Conferir_NenhumaComponeNota_RecusaNoConjunto()
     {
         EtapaDeclarada eliminatoria = new ModeloDeEtapa("Triagem").SemNota().Declarar();
-        EtapaDeclarada comCaraterRecusado = (new ModeloDeEtapa("Prova") with { Carater = CaraterEtapa.Nenhum }).Declarar();
+        EtapaDeclarada comCaraterRecusado = (new ModeloDeEtapa("Prova") with { Carater = CaraterEtapa.Nenhum, Ordem = 2 }).Declarar();
 
         Conferir(eliminatoria).Should().Equal(("etapas", "ProcessoSeletivo.NenhumaEtapaComponeNota"));
         Conferir(eliminatoria, comCaraterRecusado).Should().BeEmpty();

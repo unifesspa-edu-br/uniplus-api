@@ -22290,10 +22290,7 @@
             "$ref": "#/components/schemas/TipoEtapaSnapshotDto"
           },
           "ordem": {
-            "type": [
-              "null",
-              "integer"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "faseCodigo": {
@@ -23008,7 +23005,8 @@
         "required": [
           "id",
           "rotulo",
-          "pontuacaoMaxima"
+          "pontuacaoMaxima",
+          "ordem"
         ],
         "type": "object",
         "properties": {
@@ -23022,6 +23020,10 @@
           "pontuacaoMaxima": {
             "type": "number",
             "format": "double"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -24146,7 +24148,8 @@
       "NivelDeAtendimentoDto": {
         "required": [
           "rotulo",
-          "fracao"
+          "fracao",
+          "ordem"
         ],
         "type": "object",
         "properties": {
@@ -24156,6 +24159,10 @@
           "fracao": {
             "type": "number",
             "format": "double"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

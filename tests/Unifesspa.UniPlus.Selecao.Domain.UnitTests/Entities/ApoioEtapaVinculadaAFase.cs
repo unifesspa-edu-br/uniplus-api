@@ -38,8 +38,8 @@ internal static class ApoioEtapaVinculadaAFase
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
-    internal static EtapaProcesso Etapa(string nome, string? faseCodigo) => EtapaProcesso.Criar(
-        new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: faseCodigo),
+    internal static EtapaProcesso Etapa(string nome, string? faseCodigo, int ordem = 1) => EtapaProcesso.Criar(
+        new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: ordem, FaseCodigo: faseCodigo),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     internal static DateTimeOffset Instante(string iso) =>
@@ -63,9 +63,9 @@ internal static class ApoioEtapaVinculadaAFase
     /// válido — o outro a etapa herda da fase.
     /// </summary>
     internal static EtapaProcesso EtapaComJanela(
-        string nome, string? faseCodigo, DateTimeOffset? inicio, DateTimeOffset? fim)
+        string nome, string? faseCodigo, DateTimeOffset? inicio, DateTimeOffset? fim, int ordem = 1)
     {
-        EtapaProcesso etapa = Etapa(nome, faseCodigo);
+        EtapaProcesso etapa = Etapa(nome, faseCodigo, ordem);
         etapa.DefinirJanelaEParecer(inicio, fim, emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
         return etapa;
     }

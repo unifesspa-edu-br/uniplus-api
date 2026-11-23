@@ -72,7 +72,7 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
         processo.DefinirCronogramaFases([Fase(1, "HABILITACAO")], []).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirEtapas(
-            [Etapa("Preenchimento do cadastro acadêmico", "HABILITACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO"), Etapa("Envio dos comprovantes da cota de renda", "HABILITACAO")]);
+            [Etapa("Preenchimento do cadastro acadêmico", "HABILITACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO", 2), Etapa("Envio dos comprovantes da cota de renda", "HABILITACAO", 3)]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.EtapasDaFase("HABILITACAO").Should().HaveCount(3);
@@ -88,7 +88,7 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(
-            [Etapa("Prova objetiva", "AVALIACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO")]).IsSuccess.Should().BeTrue();
+            [Etapa("Prova objetiva", "AVALIACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO", 2)]).IsSuccess.Should().BeTrue();
 
         processo.EtapasDaFase("AVALIACAO").Single().Nome.Should().Be("Prova objetiva");
         processo.EtapasDaFase("HABILITACAO").Single().Nome.Should().Be("Envio dos documentos pessoais");

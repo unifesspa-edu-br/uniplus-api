@@ -86,10 +86,10 @@ internal static class FaseDaRetificacaoDeTeste
 
     internal static IdentidadeDoItemDoEdital Item(FaseCronograma fase, ProdutoDaFase produto) => IdentidadeDoItemDoEdital.DaFase(fase, produto);
 
-    internal static EtapaProcesso EtapaComJanela(string nome, DateTimeOffset inicio, string? faseCodigo = null)
+    internal static EtapaProcesso EtapaComJanela(string nome, DateTimeOffset inicio, int ordem)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: faseCodigo),
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirJanelaEParecer(inicio, inicio.AddDays(3), emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
 
@@ -99,10 +99,10 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A etapa de identidade fixa, com peso e produtos: a mesma etapa em versões diferentes tem o mesmo <c>Id</c>.</summary>
     internal static EtapaProcesso EtapaComPeso(Guid id, string nome, decimal peso, string faseCodigo, params ProdutoDaEtapa[] produtos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoDaEtapaDeTeste, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: faseCodigo),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        typeof(EtapaProcesso).GetProperty(nameof(EtapaProcesso.Id))!.SetValue(etapa, id);
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+            id,
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoDaEtapaDeTeste, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null), itens: []);
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
 
         return etapa;

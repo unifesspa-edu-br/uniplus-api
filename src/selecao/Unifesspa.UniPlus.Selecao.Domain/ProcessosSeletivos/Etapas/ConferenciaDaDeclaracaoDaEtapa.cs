@@ -32,7 +32,7 @@ public static class ConferenciaDaDeclaracaoDaEtapa
         decimal? notaMinimaAceita = erros.Exists(static e => e.Field == "notaMinima") ? null : avaliacao.NotaMinima;
         erros.AddRange(EscalaDoLancamento.Validar(notaMinimaAceita, avaliacao.NotaMaxima, avaliacao.PassoDoLancamento));
         erros.AddRange(ValidarOrdem(ordem));
-        erros.AddRange(ItemDeAvaliacao.Validar(itens, avaliacao.PassoDoLancamento));
+        erros.AddRange(ConferenciaDosItensDeAvaliacao.Recusas(itens, avaliacao.PassoDoLancamento));
         erros.AddRange(NiveisDeAtendimento.Validar(avaliacao.EscalaDeAtendimento));
 
         return erros;
@@ -125,8 +125,8 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     }
 
     private static List<FieldError> ValidarOrdem(int? ordem) =>
-        ordem is <= 0
+        ordem is null or <= 0
             ? [new("ordem", new DomainError(
-                "EtapaProcesso.OrdemInvalida", "A posição da etapa na lista deve ser maior que zero."))]
+                "EtapaProcesso.OrdemInvalida", "A ordem da etapa é obrigatória e deve ser maior que zero."))]
             : [];
 }

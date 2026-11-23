@@ -96,8 +96,6 @@ internal static class ConformidadeDaAvaliacaoDasEtapas
             ? string.Empty
             : $" ({rotulo}: {string.Join("; ", etapas
                 .OrderBy(static etapa => etapa.Ordem ?? int.MaxValue)
-                .ThenBy(static etapa => etapa.Nome, StringComparer.Ordinal)
-                .ThenBy(static etapa => etapa.Id)
                 .Select(static etapa => $"\"{CaracteresInvisiveis.ParaEco(etapa.Nome, TextoCongelado.TamanhoMaximoEcoado)}\""))})";
 
     private static bool ForaDoEnem(EtapaDeclarada etapa) => !etapa.NotaVemDoEnem;

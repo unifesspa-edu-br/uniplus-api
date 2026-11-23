@@ -75,14 +75,14 @@ public sealed class ItensDaEscalaDasEtapasTests
         Item("etapa_com_nota_sem_nota_maxima", citacoes, etapa).Ok.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Itens de etapas reprovadas saem em ordem estável: ordem, nome e identificador")]
+    [Fact(DisplayName = "Itens de etapas reprovadas saem em ordem declarada")]
     public void Itens_EtapasReprovadas_SaemEmOrdemEstavel()
     {
         EtapaDeclarada tardia = (new ModeloDeEtapa("Zeta") with { NotaMaxima = null, Ordem = 2 }).Declarar();
         EtapaDeclarada precoce = (new ModeloDeEtapa("Beta") with { NotaMaxima = null, Ordem = 1 }).Declarar();
-        EtapaDeclarada semOrdem = (new ModeloDeEtapa("Alfa") with { NotaMaxima = null }).Declarar();
+        EtapaDeclarada ultima = (new ModeloDeEtapa("Alfa") with { NotaMaxima = null, Ordem = 3 }).Declarar();
 
-        Item("etapa_com_nota_sem_nota_maxima", tardia, semOrdem, precoce).Mensagem
+        Item("etapa_com_nota_sem_nota_maxima", tardia, ultima, precoce).Mensagem
             .Should().EndWith("(etapas: \"Beta\"; \"Zeta\"; \"Alfa\")");
     }
 }

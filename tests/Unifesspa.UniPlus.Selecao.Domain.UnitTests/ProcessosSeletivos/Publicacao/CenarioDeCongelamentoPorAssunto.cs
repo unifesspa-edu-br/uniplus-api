@@ -138,7 +138,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         [NomeDoAssunto.Declaracoes] = new(static c => ProcessoCarregadoDoBanco.Fase(c._processo, FaseComJanelaInvertida())),
         [NomeDoAssunto.ReferenciasDeRegra] = new(static c => c._regraAusente = true),
         [NomeDoAssunto.Conjunto] = new(static c => ProcessoCarregadoDoBanco.Etapa(
-            c._processo, EtapaDeProva("Outra prova", c._processo.Etapas.First().Ordem ?? 1, c._processo.Etapas.First().FaseCodigo))),
+            c._processo, EtapaDeProva("Outra prova", c._processo.Etapas.First().Ordem, c._processo.Etapas.First().FaseCodigo))),
         [NomeDoAssunto.Completude] = new(static c => ProcessoCarregadoDoBanco.Etapa(c._processo, EtapaDeProva("Prova sem fase", 60, null))),
         [NomeDoAssunto.Recursos] = new(static c => ProcessoCarregadoDoBanco.ComTipoDeDecisao(c.FaseDoRecurso(), TipoMotivoDeDecisao.Classificacao)),
         [NomeDoAssunto.Bancas] = new(static c => ProcessoCarregadoDoBanco.SemBancasRequeridas(c.FaseDoRecurso())),

@@ -34,7 +34,7 @@ public sealed class PreliminaresDaMateriaTests
     private static EtapaProcesso Etapa(params ProdutoDaEtapa[] produtos)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDaEtapa(), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDaEtapa(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
 
