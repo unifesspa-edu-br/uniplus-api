@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// localidade, a unidade administradora e o documento do edital, como o envelope congelado os guarda.
 /// </summary>
 internal sealed record IdentidadeDoCertame(
+    string Nome,
     string IdentificadorLegivel,
     TipoCatalogadoCertameDto TipoProcesso,
     PeriodoInscricaoCertameDto Periodo,
@@ -20,19 +21,26 @@ internal sealed record IdentidadeDoCertame(
 {
     /// <summary>Lê a identidade do envelope, parando na primeira parte que não se deixa ler.</summary>
     internal static Result<IdentidadeDoCertame> Ler(JsonObject envelope, AtoDaDivulgacao ato) =>
+        LerNome(envelope).Encadear(nome =>
         LerIdentificadorLegivel(envelope).Encadear(identificadorLegivel =>
             LerTipoDoProcesso(envelope).Encadear(tipoProcesso =>
             LerPeriodo(envelope).Encadear(periodo =>
             LerLocalidade(envelope).Encadear(localidade =>
             LerUnidadeAdministradora(envelope).Encadear(unidade =>
             LerDocumentoDoEdital(envelope, ato).Compor(documentoDoEdital => new IdentidadeDoCertame(
-                identificadorLegivel, tipoProcesso, periodo, localidade, unidade, documentoDoEdital)))))));
+                nome, identificadorLegivel, tipoProcesso, periodo, localidade, unidade, documentoDoEdital))))))));
 
     /// <remarks>
     /// Obrigatório na projeção, embora o bloco admita nulo no envelope: publicação e sucessão de
     /// versão recusam a ausência, então uma versão divulgável sempre o traz. A regra do cadastro é
     /// reaplicada ao valor lido porque é ele que a leitura pública usa como chave de busca.
     /// </remarks>
+    private static Result<string> LerNome(JsonObject envelope) =>
+        PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("nome"), out string nome)
+        && !string.IsNullOrWhiteSpace(nome) && nome.Length <= 300
+            ? Result<string>.Success(nome)
+            : ProjecaoDoCertamePublicado.Recusar<string>("nome do processo");
+
     private static Result<string> LerIdentificadorLegivel(JsonObject envelope) =>
         PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
         && Domain.ValueObjects.IdentificadorLegivel.Criar(identificadorLegivel).IsSuccess

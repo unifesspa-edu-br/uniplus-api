@@ -12,6 +12,7 @@ internal static class PartesDoContratoDoCertame
 
     internal static IReadOnlyList<(string Bloco, string Parte)> NaOrdemDaLeitura { get; } =
     [
+        ("nome", "nome do processo"),
         ("identificadorLegivel", "identificador legível"),
         ("tipoProcesso", "tipo do processo"),
         ("periodo", "período de inscrição"),

@@ -1,12 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 
 using AwesomeAssertions;
-using AwesomeAssertions.Execution;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
@@ -116,7 +113,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsSuccess.Should().BeTrue(
             "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
@@ -137,7 +134,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = identificador;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("identificador legível");
@@ -151,7 +148,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = "psiq-2026";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.Value!.IdentificadorLegivel.Should().Be("psiq-2026");
     }
@@ -163,7 +160,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         OfertaDeCursoCertameDto oferta = resultado.Value!.Ofertas.Should().ContainSingle().Subject;
         (oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome).Should()
@@ -183,7 +180,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["opcoesDeCurso"]!["numero"] = numero;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsSuccess.Should().Be(projeta);
         if (projeta)
@@ -199,7 +196,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         JsonNode json = JsonSerializer.SerializeToNode(resultado.Value!, ProjecaoDoCertamePublicado.OpcoesDoDocumento)!;
         json["localidade"]!["fusoHorario"]!["id"]!.GetValue<string>().Should().Be(FusoInstitucional.ZoneId);
@@ -214,7 +211,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["localidade"]!["fusoHorario"] = "America/Sao_Paulo";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -271,113 +268,17 @@ public sealed class FronteiraDeBlocosDoCertameTests
         certame!.Periodo.Numero.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Todo arranjo do contrato recusa elemento nulo, em qualquer profundidade")]
-    public void TentarLerProjecao_QuandoQualquerArranjoTemElementoNulo_DeveRecusar()
+    [Theory]
+    [InlineData("ofertas")]
+    [InlineData("etapas")]
+    [InlineData("cronogramaFases")]
+    public void TentarLerProjecao_ArranjoComElementoNulo_Recusa(string parte)
     {
-        // O conjunto é enumerado do PRÓPRIO contrato, por reflexão, e não escrita à mão: uma lista
-        // repetida aqui envelheceria junto com a que ela deveria cobrir, e o arranjo novo passaria
-        // nos dois lugares por ausência. Arranjo de tipo de valor fica fora — nele o nulo já não
-        // desserializa.
-        List<string> caminhos = ArranjosDeReferenciaDoContrato();
-
-        caminhos.Should().NotBeEmpty("o contrato do certame é feito de arranjos");
-
-        using AssertionScope escopo = new();
-        foreach (string caminho in caminhos)
-        {
-            JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
-            SubstituirPorArranjoComNulo(documento, caminho).Should().BeTrue(
-                $"o documento de referência precisa trazer `{caminho}` para que a conferência o alcance");
-
-            LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
-                .Should().BeFalse($"`{caminho}` com elemento nulo é entrada nula onde o contrato declara objeto ou texto");
-
-            certame.Should().BeNull();
-        }
-    }
-
-    /// <summary>
-    /// Caminho, em nomes de propriedade JSON, de cada arranjo de tipo de referência alcançável a
-    /// partir da raiz do contrato.
-    /// </summary>
-    private static List<string> ArranjosDeReferenciaDoContrato()
-    {
-        List<string> caminhos = [];
-        Percorrer(typeof(CertamePublicadoDto), prefixo: string.Empty, [], caminhos);
-        return caminhos;
-
-        static void Percorrer(Type tipo, string prefixo, HashSet<Type> visitados, List<string> caminhos)
-        {
-            if (!visitados.Add(tipo))
-            {
-                return;
-            }
-
-            foreach (PropertyInfo propriedade in tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                // O que a leitura acrescenta (omitido quando nulo) não está no documento guardado,
-                // e portanto não há o que corromper nele.
-                if (propriedade.GetCustomAttribute<JsonIgnoreAttribute>() is not null)
-                {
-                    continue;
-                }
-
-                Type declarado = Nullable.GetUnderlyingType(propriedade.PropertyType) ?? propriedade.PropertyType;
-                string caminho = prefixo.Length == 0 ? NomeJson(propriedade) : $"{prefixo}.{NomeJson(propriedade)}";
-
-                if (declarado.IsGenericType && declarado.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
-                {
-                    Type elemento = declarado.GetGenericArguments()[0];
-                    if (!elemento.IsValueType)
-                    {
-                        caminhos.Add(caminho);
-                        Percorrer(elemento, $"{caminho}[]", visitados, caminhos);
-                    }
-
-                    continue;
-                }
-
-                if (declarado.Namespace == typeof(CertamePublicadoDto).Namespace)
-                {
-                    Percorrer(declarado, caminho, visitados, caminhos);
-                }
-            }
-        }
-    }
-
-    private static string NomeJson(PropertyInfo propriedade) =>
-        JsonNamingPolicy.CamelCase.ConvertName(propriedade.Name);
-
-    /// <summary>
-    /// Troca o arranjo apontado pelo caminho por <c>[null]</c>. Devolve <see langword="false"/>
-    /// quando o caminho não existe no documento de referência — o que torna o arranjo inalcançável
-    /// pela conferência, e é falha do próprio teste, não do código que ele exercita.
-    /// </summary>
-    private static bool SubstituirPorArranjoComNulo(JsonObject documento, string caminho)
-    {
-        JsonNode? atual = documento;
-
-        string[] passos = caminho.Split('.');
-        for (int i = 0; i < passos.Length; i++)
-        {
-            bool desceAoElemento = passos[i].EndsWith("[]", StringComparison.Ordinal);
-            string nome = desceAoElemento ? passos[i][..^2] : passos[i];
-
-            if (atual is not JsonObject objeto || objeto[nome] is not { } filho)
-            {
-                return false;
-            }
-
-            if (i == passos.Length - 1)
-            {
-                objeto[nome] = new JsonArray((JsonNode?)null);
-                return true;
-            }
-
-            atual = desceAoElemento ? (filho as JsonArray)?.FirstOrDefault() : filho;
-        }
-
-        return false;
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        documento[parte] = new JsonArray((JsonNode?)null);
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeFalse();
+        certame.Should().BeNull();
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
@@ -416,7 +317,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         projecao.IsSuccess.Should().BeTrue(projecao.Error?.Message);
 

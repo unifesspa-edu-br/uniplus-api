@@ -30,7 +30,7 @@ internal static class ProjecaoDoCertameDeTeste
     internal static Uri EnderecoNoAcervo(string chave) => new($"https://acervo.teste/{chave}");
 
     internal static Result<CertamePublicadoDto> Projetar(JsonObject envelope) =>
-        ProjecaoDoCertamePublicado.Projetar(ProcessoSeletivoId, Ato, Nome, HashDaConfiguracao, envelope, EnderecoNoAcervo);
+        ProjecaoDoCertamePublicado.Projetar(ProcessoSeletivoId, Ato, HashDaConfiguracao, envelope, EnderecoNoAcervo);
 
     internal static CertamePublicadoDto Projetado() => Projetado(Envelope());
 

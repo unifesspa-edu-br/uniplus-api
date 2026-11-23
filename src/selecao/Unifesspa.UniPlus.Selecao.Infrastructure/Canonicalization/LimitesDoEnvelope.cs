@@ -33,6 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class LimitesDoEnvelope
 {
     // Texto — comprimento máximo (varchar).
+    public const int NomeDoProcesso = DocumentoDoRascunho.NomeMaxLength;
     public const int EtapaNome = 300;
     public const int TipoEtapaCodigo = 64;
     public const int TipoEtapaNome = 200;

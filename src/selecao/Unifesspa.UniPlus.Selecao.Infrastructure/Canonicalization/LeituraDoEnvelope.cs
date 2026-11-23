@@ -56,6 +56,7 @@ internal static class LeituraDoEnvelope
 
     private static BlocosDaConfiguracao LerConfiguracao(LeitorEnvelope leitor, JsonObject payload)
     {
+        LeituraDoEdital.LerNome(leitor, payload);
         LeituraDoEdital.LerTipoProcesso(leitor, payload);
 
         DadosEdital? dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
