@@ -38,12 +38,12 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         PassoDoLancamento: 0.5m,
         FormaDeAvaliacao: FormaDeAvaliacao.Humana,
         RegraConsolidacao: ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", HashDaRegra),
-        EscalaDeAtendimento: [new NivelDeAtendimento("Atende", 1m), new NivelDeAtendimento("Atende em parte", 0.5m)]);
+        EscalaDeAtendimento: [NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atende").Value, "Atende", 1m), NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_parcial").Value, "Atende em parte", 0.5m)]);
 
     private static ItemDeAvaliacao[] Itens() =>
     [
-        ItemDeAvaliacao.Reidratar(ItemDeRedacaoId, "Redação", 60m),
-        ItemDeAvaliacao.Reidratar(ItemDeOralidadeId, "Oralidade", 40m),
+        ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_redacao").Value, ItemDeRedacaoId, "Redação", 60m),
+        ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_oralidade").Value, ItemDeOralidadeId, "Oralidade", 40m),
     ];
 
     private static EtapaProcesso EtapaCompleta()
@@ -130,10 +130,10 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
             RegraConsolidacao: new ReferenciaRegraDto(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", HashDaRegra),
             ItensDeAvaliacao:
             [
-                new ItemDeAvaliacaoDto(ItemDeRedacaoId, "Redação", 60m, 1),
-                new ItemDeAvaliacaoDto(ItemDeOralidadeId, "Oralidade", 40m, 2),
+                new ItemDeAvaliacaoDto(ItemDeRedacaoId, "Redação", 60m, 1, "item_redacao"),
+                new ItemDeAvaliacaoDto(ItemDeOralidadeId, "Oralidade", 40m, 2, "item_oralidade"),
             ],
-            EscalaDeAtendimento: [new NivelDeAtendimentoDto("Atende", 1m, 1), new NivelDeAtendimentoDto("Atende em parte", 0.5m, 2)]));
+            EscalaDeAtendimento: [new NivelDeAtendimentoDto("Atende", 1m, 1, "nivel_atende"), new NivelDeAtendimentoDto("Atende em parte", 0.5m, 2, "nivel_parcial")]));
     }
 
     [Fact(DisplayName = "A janela projeta o início e o fim, cada um no seu campo")]

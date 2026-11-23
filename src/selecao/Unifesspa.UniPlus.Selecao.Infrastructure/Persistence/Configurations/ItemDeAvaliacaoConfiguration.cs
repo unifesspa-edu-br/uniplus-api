@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Mapeamento de <see cref="ItemDeAvaliacao"/> — filha de <see cref="EtapaProcesso"/>.</summary>
 public sealed class ItemDeAvaliacaoConfiguration : IEntityTypeConfiguration<ItemDeAvaliacao>
@@ -26,6 +27,10 @@ public sealed class ItemDeAvaliacaoConfiguration : IEntityTypeConfiguration<Item
         });
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id).ValueGeneratedNever().HasComment("Identificador do item de avaliação.");
+        builder.Property(i => i.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Chave local estável do item na etapa.");
+        builder.HasIndex(i => new { i.EtapaProcessoId, i.Chave }).IsUnique().HasDatabaseName("ux_itens_avaliacao_etapa_chave");
         builder.Property(i => i.EtapaProcessoId).HasComment("Etapa à qual o item pertence.");
         // A unicidade da ordem é adiada pelo script de restrições para permitir reordenação.
         builder.Property(i => i.Ordem).IsRequired().HasComment("Posição do item na etapa, a partir de um.");

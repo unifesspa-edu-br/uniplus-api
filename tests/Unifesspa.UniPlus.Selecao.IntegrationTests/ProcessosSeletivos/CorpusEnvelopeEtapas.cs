@@ -46,8 +46,8 @@ internal static class CorpusEnvelopeEtapas
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3.5000m, NotaMinima: 40.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: [
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_matematica").Value, ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_linguagens").Value, ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
             ]);
 
     // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
@@ -159,8 +159,8 @@ internal static class CorpusEnvelopeEtapas
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
             itens: [
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_primeiro_acesso").Value, ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_dominio").Value, ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
             ]);
         etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.Heteroidentificacao.Codigo()]).IsSuccess.Should().BeTrue();
@@ -176,8 +176,8 @@ internal static class CorpusEnvelopeEtapas
             new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
             itens: [
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
-                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_coesao").Value, ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
+                ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_argumentacao").Value, ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
             ]);
         etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(4, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         return etapa;

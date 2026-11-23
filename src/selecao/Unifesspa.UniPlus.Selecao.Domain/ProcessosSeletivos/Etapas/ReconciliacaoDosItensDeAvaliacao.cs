@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -14,10 +15,23 @@ internal static class ReconciliacaoDosItensDeAvaliacao
         IEnumerable<ItemDeAvaliacao> vivos, IReadOnlyList<ItemDeAvaliacaoDeclarado>? declarados)
     {
         List<ItemDeAvaliacao> restantes = [.. vivos];
+        IReadOnlyList<ItemDeAvaliacaoDeclarado> lista = declarados ?? [];
+        ChavesEmUso chaves = new();
+        foreach (ItemDeAvaliacao existente in restantes.Where(item => lista.Any(declarado => declarado.Id == item.Id)))
+        {
+            chaves.Adicionar(existente.Chave);
+        }
 
-        return [.. (declarados ?? []).Select(declarado =>
+        return [.. lista.Select(declarado =>
             ReaproveitarPeloId(restantes, declarado.Id, declarado.Rotulo, declarado.PontuacaoMaxima)
-                ?? ItemDeAvaliacao.Criar(declarado))];
+                ?? Criar(declarado, chaves))];
+    }
+
+    private static ItemDeAvaliacao Criar(ItemDeAvaliacaoDeclarado declarado, ChavesEmUso chaves)
+    {
+        ChaveLocal chave = FormacaoDeChaveLocal.Formar("item", declarado.Rotulo, chaves);
+        chaves.Adicionar(chave);
+        return ItemDeAvaliacao.Criar(chave, declarado);
     }
 
     internal static List<ItemDeAvaliacao> ReporCongelados(

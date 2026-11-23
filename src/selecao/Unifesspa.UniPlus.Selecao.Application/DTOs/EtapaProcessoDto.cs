@@ -95,10 +95,10 @@ public sealed record PublicacoesDaEtapaDto(
     IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisao);
 
 /// <summary>Projeção de leitura de <c>ItemDeAvaliacao</c>.</summary>
-public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima, int Ordem);
+public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima, int Ordem, string Chave);
 
 /// <summary>Projeção de leitura de um nível da escala de atendimento.</summary>
-public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao, int Ordem);
+public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao, int Ordem, string Chave);
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a etapa, para a banca continuar sendo a mesma.</param>

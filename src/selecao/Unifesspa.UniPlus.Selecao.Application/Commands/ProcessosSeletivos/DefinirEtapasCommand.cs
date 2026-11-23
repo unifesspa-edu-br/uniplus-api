@@ -121,7 +121,8 @@ public sealed record EtapaProcessoInput(
 public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal PontuacaoMaxima);
 
 /// <summary>Um nível da escala de atendimento: o rótulo e a fração da pontuação do item que ele vale.</summary>
-public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao);
+/// <param name="Chave">Informe a chave do nível que permanece.</param>
+public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao, string? Chave = null);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
 /// <param name="TipoBancaId">Id do tipo de banca vivo no cadastro de Configuração.</param>
