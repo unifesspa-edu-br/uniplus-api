@@ -78,6 +78,7 @@ public sealed record UnidadeResponsavelDto(Guid OrigemId, string Sigla, string N
 /// <param name="Publicacoes">O que a fase publica e decide, e o recurso que admite.</param>
 public sealed record FaseCronogramaDto(
     Guid Id,
+    string Chave,
     string Codigo,
     FaseCanonicaCongeladaDto FaseCanonica,
     CronogramaDaFaseDto Cronograma,
