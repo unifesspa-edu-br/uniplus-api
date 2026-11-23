@@ -49,8 +49,8 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Corpu
 /// </remarks>
 internal static class CorpusEnvelope
 {
-    internal static readonly EnvelopeCodec Codec = new();
-    internal static readonly RegistroCodecsEnvelope Registro = new();
+    internal static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
+    internal static readonly EnvelopeCodec Registro = new();
 
     internal const string HashDocumento = "1111111111111111111111111111111111111111111111111111111111111111";
 

@@ -21,7 +21,7 @@ public sealed class EnvelopeLidoPredicadosTests
             Condicao(7, "FATO_A", "valorA"), Condicao(7, "FATO_B", "valorB"),
             Condicao(4, "FATO_C", "valorC"), Condicao(9, "FATO_D", "valorD"),
         ]);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         IReadOnlyCollection<CondicaoGatilho> condicoes = lido.Configuracao.Exigencias.DocumentosExigidos.Single().Condicoes;
@@ -35,7 +35,7 @@ public sealed class EnvelopeLidoPredicadosTests
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         RegraAvaliada regra = RegraCustomizada();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo,
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo,
             conformidade: new ResultadoConformidade([regra], [])));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
@@ -53,7 +53,7 @@ public sealed class EnvelopeLidoPredicadosTests
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(DeclaracaoDeMaioridade(fase), 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!)
             .IsSuccess.Should().BeTrue();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Cronograma.CronogramaFases.Single().Id.Should().Be(fase.Id);

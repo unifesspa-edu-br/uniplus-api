@@ -18286,23 +18286,7 @@
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. O processo foi congelado por uma versão do formato que o sistema não lê mais, e nada que se edite na tela muda isso: a leitura desse processo depende da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo, antes de a operação em curso (por exemplo, retificar ou conferir os fatos coletados) prosseguir"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.envelope_codec.versao_nao_reidratavel",
-      "requisitos": [
-        "UNI-REQ-0019"
-      ],
-      "oQueAconteceu": [
-        "O sistema conhece a versão do formato da configuração publicada, mas não consegue lê-la por completo. A mensagem informa o motivo. A leitura é recusada para evitar apresentar uma configuração parcial, diferente da publicada.",
-        "Diferentemente de [`versao_desconhecida`](/erros/uniplus.selecao.envelope_codec.versao_desconhecida), aqui a versão existe no registro do sistema; o que falta é a capacidade de reconstruí-la."
-      ],
-      "comoResolver": [
-        "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido e o motivo que a mensagem traz. O sistema conhece a versão do formato em que o processo foi congelado, mas não sabe reconstruí-la por inteiro, e nada que se edite na tela muda isso: a leitura desse processo depende da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
-      ],
-      "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo, antes de a operação em curso prosseguir"
+        "Leitura da configuração congelada de um processo seletivo, antes de a operação em curso (por exemplo, retificar ou conferir os dados coletados) prosseguir"
       ]
     },
     {

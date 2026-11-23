@@ -19,7 +19,7 @@ public sealed class EnvelopeLidoCulturaEIdentificadorTests
             CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
             CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator.Should().Be(",");
             ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-            SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+            SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
             FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         }
         finally
@@ -33,7 +33,7 @@ public sealed class EnvelopeLidoCulturaEIdentificadorTests
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         IdentificadoresDeTeste.Retirar(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["identificadorLegivel"].Should().BeNull();
         processo.DefinirIdentificadorLegivel(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdentificadorLegivel.Criar("processo-com-identificador").Value).IsSuccess.Should().BeTrue();
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);

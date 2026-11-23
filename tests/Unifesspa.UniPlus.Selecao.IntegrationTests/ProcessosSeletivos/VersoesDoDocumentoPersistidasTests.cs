@@ -103,7 +103,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
 
     private static DocumentoCongelado Congelar(ProcessoSeletivo processo, RetificacaoDoEdital? retificacao = null)
     {
-        SnapshotCanonico snapshot = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
+        SnapshotCanonico snapshot = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
         return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, CorpusEnvelope.HashDocumento);
     }
 

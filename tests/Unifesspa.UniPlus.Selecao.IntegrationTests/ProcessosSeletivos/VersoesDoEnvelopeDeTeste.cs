@@ -24,10 +24,10 @@ internal static class VersoesDoEnvelopeDeTeste
     }
 
     public static byte[] BytesDoCorpus() =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico())).Bytes;
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico())).Bytes;
 
     public static byte[] BytesComRetificacaoDe(Guid atoRetificadoId, string motivo) =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(
             CorpusEnvelopeProcessoRico.ProcessoRico(),
             new RetificacaoDoEdital(atoRetificadoId, motivo))).Bytes;
 
@@ -41,13 +41,13 @@ internal static class VersoesDoEnvelopeDeTeste
     }
 
     public static VersaoConfiguracao VersaoComSchema(string schemaVersion) =>
-        AbrirVersaoDoCorpus(schemaVersion, CorpusEnvelope.Codec.AlgoritmoHash, CorpusEnvelope.HashDocumento);
+        AbrirVersaoDoCorpus(schemaVersion, PerfilCanonicoV1.Instancia.Algoritmo, CorpusEnvelope.HashDocumento);
 
     public static VersaoConfiguracao VersaoComAlgoritmoDeHash(string algoritmoHash) =>
-        AbrirVersaoDoCorpus(CorpusEnvelope.Codec.SchemaVersion, algoritmoHash, CorpusEnvelope.HashDocumento);
+        AbrirVersaoDoCorpus(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, algoritmoHash, CorpusEnvelope.HashDocumento);
 
     public static VersaoConfiguracao VersaoComHashDoAtoCriador(string atoCriadorHash) =>
-        AbrirVersaoDoCorpus(CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash, atoCriadorHash);
+        AbrirVersaoDoCorpus(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, atoCriadorHash);
 
     public static Result<EnvelopeReidratado> ReidratarComoAbertura(byte[] bytes) =>
         CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));

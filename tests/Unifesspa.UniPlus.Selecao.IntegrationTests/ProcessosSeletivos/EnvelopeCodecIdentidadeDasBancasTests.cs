@@ -96,10 +96,10 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
         BancaDaEtapa primeira = objetiva.Bancas.First();
         objetiva.DefinirBancas([.. objetiva.Bancas.Select(ComOMesmoId), OutraDoMesmoTipo(primeira)]);
         BancaDaEtapa segunda = objetiva.Bancas.Single(b => b.Id != primeira.Id && b.Tipo.Codigo == primeira.Tipo.Codigo);
-        byte[] naOrdemDeChegada = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] naOrdemDeChegada = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         objetiva.DefinirBancas([ComOMesmoId(segunda), .. objetiva.Bancas.Where(b => b.Id != segunda.Id).Select(ComOMesmoId)]);
-        byte[] comAsDoMesmoTipoTrocadas = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] comAsDoMesmoTipoTrocadas = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         segunda.PosicaoNoTipo.Should().Be(1);
         comAsDoMesmoTipoTrocadas.Should().NotEqual(naOrdemDeChegada);
@@ -112,7 +112,7 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
     }
 
     private static byte[] Codificar(int variante, bool permutar = false) =>
-        CorpusEnvelope.Codec.Codificar(
+        CorpusEnvelope.Canonicalizador.Canonicalizar(
             CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(variante: variante, permutar: permutar))).Bytes;
 
     private static BancaDaEtapa ComOMesmoId(BancaDaEtapa banca) =>

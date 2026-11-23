@@ -33,7 +33,7 @@ public sealed class EnvelopeCodecRecusaExigenciasDocumentaisTests
     {
         VersaoConfiguracao versao = ProcessoComDuasExigenciasDeTeste.PublicarComEnvelopeAdulterado(DuplicarOIdDaPrimeiraExigencia);
 
-        Result<EnvelopeReidratado> resultado = new RegistroCodecsEnvelope().Reidratar(versao);
+        Result<EnvelopeReidratado> resultado = new EnvelopeCodec().Reidratar(versao);
 
         resultado.IsFailure.Should().BeTrue(
             "exigenciaId duplicado só é alcançável por adulteração — um encoder real nunca o produz — e a " +

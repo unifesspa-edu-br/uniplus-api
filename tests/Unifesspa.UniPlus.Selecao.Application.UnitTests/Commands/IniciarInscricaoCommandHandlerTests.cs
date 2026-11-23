@@ -252,7 +252,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
     private static IRegistroCodecsEnvelope CodecsQueLem(VersaoConfiguracao versao, EnvelopeReidratado envelope)
     {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        codecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        codecs.LeAVersao("0.0.22").Returns(true);
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
 
         return codecs;

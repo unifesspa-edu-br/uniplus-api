@@ -170,7 +170,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     [Fact(DisplayName = "Envelope que coleta a edição do ENEM com classificação sem ENEM é recusado pela regra da publicação")]
     public void EdicaoDoEnemSemClassificacaoEnem_Recusa()
     {
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
+        byte[] bytes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
 
         Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(bytes);
 

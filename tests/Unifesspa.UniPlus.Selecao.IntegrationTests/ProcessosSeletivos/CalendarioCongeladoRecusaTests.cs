@@ -30,7 +30,7 @@ public sealed class CalendarioCongeladoRecusaTests
     private static Result<EnvelopeReidratado> ReidratarComBlocoAdulterado(Action<JsonObject> adulterar)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
@@ -119,7 +119,7 @@ public sealed class CalendarioCongeladoRecusaTests
     private static Result<EnvelopeReidratado> ReidratarSemCalendarioComRecursoSoNa(string ondeSobra)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
@@ -162,7 +162,7 @@ public sealed class CalendarioCongeladoRecusaTests
     public void EnvelopeIntegro_Reidrata()
     {
         ProcessoSeletivo processo = ProcessoPublicado();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
@@ -208,7 +208,7 @@ public sealed class CalendarioCongeladoRecusaTests
     public void TextoDecomposto_Recusado(string campo, string decomposto)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();

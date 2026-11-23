@@ -14,7 +14,7 @@ public sealed class EnvelopeLidoFidelidadeTests
     public void Reidratar_ConfiguracaoRica_ReproduzTodosOsBytes(bool comRegras)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegras);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, versao, congelado);
@@ -23,7 +23,7 @@ public sealed class EnvelopeLidoFidelidadeTests
     public void Reidratar_DecimaisDasConfiguracoes_PreservaValores()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado envelope = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);

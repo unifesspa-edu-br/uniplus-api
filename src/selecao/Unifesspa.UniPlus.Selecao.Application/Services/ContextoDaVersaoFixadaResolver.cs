@@ -118,7 +118,7 @@ public sealed class ContextoDaVersaoFixadaResolver(
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        return registroCodecs.SabeLer(versao.SchemaVersion)
+        return registroCodecs.LeAVersao(versao.SchemaVersion)
             ? registroCodecs.Reidratar(versao)
             : Result<EnvelopeReidratado>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,

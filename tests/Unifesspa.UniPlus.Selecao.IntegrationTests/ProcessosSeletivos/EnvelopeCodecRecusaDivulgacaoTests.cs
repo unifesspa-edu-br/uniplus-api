@@ -49,7 +49,7 @@ public sealed class EnvelopeCodecRecusaDivulgacaoTests
     /// <b>O código esperado é <see cref="ErrosCodecEnvelope.IntegridadeViolada"/>, não
     /// <see cref="ErrosCodecEnvelope.EnvelopeMalformado"/></b> — e essa é a prova em si, não um
     /// acidente de teste. Decomposição Unicode genuína em QUALQUER string do envelope já é
-    /// recusada por <c>RegistroCodecsEnvelope.VerificarFormaCanonica</c>, o gate universal que
+    /// recusada por <c>EnvelopeCodec.Parsear</c>, o gate universal que
     /// roda ANTES do decoder específico da versão: reserializar o payload inteiro pelo perfil
     /// canônico aplica NFC a toda string de negócio, produz bytes diferentes dos que chegaram, e
     /// o gate recusa por integridade — o decoder nem chega a rodar. O guard de forma canônica

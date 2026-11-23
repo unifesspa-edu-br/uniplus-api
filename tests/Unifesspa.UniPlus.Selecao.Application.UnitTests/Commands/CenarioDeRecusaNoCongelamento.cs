@@ -54,7 +54,7 @@ internal sealed class CenarioDeRecusaNoCongelamento
         [DefeitoDoCongelamento.Documento] = static c => c.Servicos.ComDocumentos(Substitute.For<IDocumentoAPublicarRepository>()),
         [DefeitoDoCongelamento.TipoDeAto] = static c => c.TipoDeAtoQueNaoCongela(),
         [DefeitoDoCongelamento.ProtecaoPendente] = static c => c.Servicos.ComTiposDocumento(TiposDeDocumentoComExigenciaPendente()),
-        [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = static c => c.Servicos.Codecs.Capacidades.Returns([]),
+        [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = static c => c.Servicos.Codecs.LeAVersao(Arg.Any<string>()).Returns(false),
         [DefeitoDoCongelamento.UnidadeExcluida] = static c => c.Servicos.ComUnidades(ResolvedorDeUnidadeDeTeste.Com()),
         [DefeitoDoCongelamento.Cronograma] = static c => c.Processo.DefinirEtapas([]).IsSuccess.Should().BeTrue(),
         [DefeitoDoCongelamento.TiposDeAtoCongelados] = static c => c.CatalogoSemOsTiposDeclarados(),

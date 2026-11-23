@@ -29,7 +29,7 @@ public sealed class EnvelopeCodecCopiaDoTipoDeBancaTests
     {
         ProcessoSeletivo original = CorpusEnvelopeProcessoRico.ProcessoRico();
 
-        Result<EnvelopeReidratado> lido = VersoesDoEnvelopeDeTeste.ReidratarComoAbertura(CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(original)).Bytes);
+        Result<EnvelopeReidratado> lido = VersoesDoEnvelopeDeTeste.ReidratarComoAbertura(CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(original)).Bytes);
 
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         lido.Value!.Configuracao.Cronograma.CronogramaFases.SelectMany(static f => f.BancasRequeridas).Select(static b => (b.Id, b.Tipo))
@@ -130,11 +130,11 @@ public sealed class EnvelopeCodecCopiaDoTipoDeBancaTests
     public void CopiaDeOutroTipo_FazParteDoConteudoCongelado()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] antes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         TrocarACopiaDaPrimeiraBancaDaEtapa(processo.Etapas.Single(static e => e.Nome == "Prova Objetiva"));
 
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes.Should().NotEqual(antes);
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes.Should().NotEqual(antes);
     }
 
     private static void TrocarACopiaDaPrimeiraBancaDaEtapa(EtapaProcesso etapa)

@@ -47,7 +47,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         ArgumentNullException.ThrowIfNull(caminho);
 
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, caminho, valorNovo);
@@ -69,7 +69,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     public void IdDoRecursoDaEtapa_NaoEntraNosBytes()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] antes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         IReadOnlyList<RecursoDaEtapa> originais = [.. objetiva.Recursos];
@@ -78,7 +78,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         objetiva.Recursos.Select(r => r.Id)
             .Should().NotIntersectWith(originais.Select(r => r.Id), "pré-condição: as janelas reconstruídas têm identidade nova");
 
-        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         depois.Should().Equal(antes, "a mesma janela recursal, numa linha nova, é a mesma publicação");
     }
@@ -96,14 +96,14 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] antes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
         RedeclararComOIdLido(objetiva);
 
         ConferirQueALinhaNaoGirouDeId(objetiva, idsOriginais);
-        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         depois.Should().Equal(antes, "a mesma configuração de banca é a mesma publicação");
     }
 
@@ -111,7 +111,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     public void RedeclararABancaDaEtapaSemOId_RecriaALinhaEMudaOsBytes()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] antes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
@@ -120,7 +120,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
         objetiva.Bancas.Select(b => b.Id).Should().NotIntersectWith(idsOriginais.Values,
             "sem o id, a banca declarada é outra");
-        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         depois.Should().NotEqual(antes, "o id da banca faz parte do conteúdo congelado");
     }
 
@@ -145,7 +145,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Golden rica — a fixture é o envelope do corpus")]
     public void GoldenRica_EOEnvelopeDoCorpus()
     {
-        SnapshotCanonico atual = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico()));
+        SnapshotCanonico atual = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico()));
 
         byte[]? esperado = LerFixtureRica();
         if (esperado is null || !atual.Bytes.SequenceEqual(esperado))

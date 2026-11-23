@@ -94,7 +94,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     }
 
     private static SnapshotCanonico Codificar(ProcessoSeletivo processo) =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
     private static JsonObject FaseNoEnvelope(JsonObject envelope, string codigo) =>
         envelope["cronogramaFases"]!["fases"]!.AsArray().Single(fase => fase!["codigo"]!.GetValue<string>() == codigo)!.AsObject();

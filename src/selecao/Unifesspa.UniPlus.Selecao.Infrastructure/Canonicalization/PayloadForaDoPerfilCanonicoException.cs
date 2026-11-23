@@ -12,7 +12,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// <para>
 /// É erro de programação no caminho de <b>emissão</b> (o gate de publicação já deveria ter
 /// recusado a configuração antes de canonicalizar) e envelope malformado no caminho de
-/// <b>leitura</b> — onde <see cref="RegistroCodecsEnvelope"/> a converte em recusa nomeada, em
+/// <b>leitura</b> — onde <see cref="EnvelopeCodec"/> a converte em recusa nomeada, em
 /// vez de deixar escapar como falha não tratada.
 /// </para>
 /// </remarks>

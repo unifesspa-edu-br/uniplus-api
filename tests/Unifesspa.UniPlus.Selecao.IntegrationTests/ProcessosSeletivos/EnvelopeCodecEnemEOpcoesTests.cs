@@ -36,7 +36,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     public void Decoder_NaoPerdeCampo_BaseadoEmEnem()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, "classificacao.baseadoEmEnem", "True");
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
@@ -53,20 +53,18 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope)
     {
         processo.DefinirClassificacao(envelope.Configuracao.Avaliacao.Classificacao!).IsSuccess.Should().BeTrue();
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
+        SnapshotCanonico recodificado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.DadosDeCatalogo));
-        recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
-        return recodificado.Value!.Bytes;
+        return recodificado.Bytes;
     }
 
     [Fact(DisplayName = "O decoder lê baseadoEmEnem falso do envelope sem ENEM, sem assumir verdadeiro")]
     public void Decoder_LeBaseadoEmEnemFalso()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
@@ -94,7 +92,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoMinimo(Classificacao(QuadroPesoAreaEnemDeTeste.Resolucao), etapaDeNotaDoEnem: true);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!]).IsSuccess.Should().BeTrue();
         EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
         Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue();
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Avaliacao.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue();
@@ -106,7 +104,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         DefinirOpcoesDeTeste(processo);
         EntradaCanonicalizacao entrada = EntradaComOpcoesDeTeste(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
         processo.DefinirItens([]).IsSuccess.Should().BeTrue();
         EnvelopeReidratado lido = Conferir(processo, entrada, congelado);
         lido.Configuracao.Coleta.OpcoesDeclaradas.Where(o => o.FatoCodigo == "FATO_OPCAO_DE_TESTE")
@@ -115,7 +113,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
     private static EnvelopeReidratado Conferir(ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico? congelado = null)
     {
-        SnapshotCanonico snapshot = congelado ?? CorpusEnvelope.Codec.Codificar(entrada);
+        SnapshotCanonico snapshot = congelado ?? CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
         return FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, snapshot.Bytes), snapshot);
     }
 

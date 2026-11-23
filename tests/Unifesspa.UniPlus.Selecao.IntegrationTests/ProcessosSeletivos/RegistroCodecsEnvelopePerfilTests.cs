@@ -8,238 +8,91 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
 
-/// <summary>
-/// Os gates da reidratação perguntam ao <b>perfil da versão</b>, e não a um serializador global.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Enquanto houver um só perfil, as duas coisas coincidem — e é justamente por coincidirem que
-/// a diferença não aparece em teste nenhum das suítes existentes. No dia do primeiro perfil
-/// novo, um gate que ainda perguntasse ao global recusaria como "fora da forma canônica" um
-/// envelope perfeitamente válido, ou aceitaria como canônico um que não é.
-/// </para>
-/// <para>
-/// O registro é montado aqui com codecs próprios, pelo construtor interno. Não é atalho de
-/// teste: é a única maneira de exercitar um perfil <b>diferente</b> antes de existir um.
-/// </para>
-/// </remarks>
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.AdulteracaoDeEnvelopeDeTeste;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.VersoesDoEnvelopeDeTeste;
+
+/// <summary>Confere a integridade e a forma dos bytes congelados.</summary>
 public sealed class RegistroCodecsEnvelopePerfilTests
 {
-    private const string VersaoDeTeste = "9.9";
-
     /// <summary>
-    /// Perfil que serializa <b>indentado</b>. Os bytes que ele produz nunca coincidem com os do
-    /// perfil v1 para o mesmo payload — que é exatamente o que o torna um detector.
+    /// Bytes adulterados decodificam e recodificam IDENTICAMENTE — o round-trip passaria
+    /// sem que eles correspondessem mais ao HashConfiguracao. É o hash, não o round-trip,
+    /// que prova que os bytes são os que o ato congelou.
     /// </summary>
-    private sealed class PerfilIndentado : IPerfilCanonico
+    [Fact(DisplayName = "Bytes adulterados não produzem o hash persistido — recusa antes de qualquer parse")]
+    public void IntegridadeViolada_Recusa()
     {
-        public string Algoritmo => "canonical-json-indentado/sha256@teste";
+        (VersaoConfiguracao versao, byte[] bytes) = VersaoRica();
 
-        public byte[] Serializar(JsonObject payload)
-        {
-            ArgumentNullException.ThrowIfNull(payload);
-            return Encoding.UTF8.GetBytes(payload.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-        }
+        // A versão continua declarando o hash ORIGINAL — é o cenário de quem trocou os
+        // bytes na coluna sem poder recomputar o hash da linha forense.
+        VersaoConfiguracao comprometida = ComBytes(versao, ComPeriodoAdulterado(bytes));
 
-        public string HashHex(byte[] bytes) => PerfilCanonicoV1.Instancia.HashHex(bytes);
-    }
-
-    /// <summary>
-    /// Perfil que recusa <c>null</c> <b>em qualquer profundidade</b> — a estrita que a versão
-    /// seguinte do envelope terá. A recursão importa: um perfil que só olhasse a raiz deixaria
-    /// passar o <c>null</c> aninhado, que é onde ele de fato aparece num envelope.
-    /// </summary>
-    private sealed class PerfilQueRecusaNulo : IPerfilCanonico
-    {
-        public string Algoritmo => "canonical-json-sem-nulo/sha256@teste";
-
-        public byte[] Serializar(JsonObject payload)
-        {
-            ArgumentNullException.ThrowIfNull(payload);
-            RecusarNulo(payload, "$");
-            return PerfilCanonicoV1.Instancia.Serializar(payload);
-        }
-
-        public string HashHex(byte[] bytes) => PerfilCanonicoV1.Instancia.HashHex(bytes);
-
-        private static void RecusarNulo(JsonNode no, string caminho)
-        {
-            switch (no)
-            {
-                case JsonObject objeto:
-                    foreach (KeyValuePair<string, JsonNode?> par in objeto)
-                    {
-                        Descer(par.Value, $"{caminho}.{par.Key}");
-                    }
-
-                    break;
-
-                case JsonArray array:
-                    for (int i = 0; i < array.Count; i++)
-                    {
-                        Descer(array[i], $"{caminho}[{i}]");
-                    }
-
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        private static void Descer(JsonNode? filho, string caminho)
-        {
-            if (filho is null)
-            {
-                throw new PayloadForaDoPerfilCanonicoException(
-                    $"'{caminho}' é null, e null não é representável neste perfil — a ausência do dado se declara antes de canonicalizar.");
-            }
-
-            RecusarNulo(filho, caminho);
-        }
-    }
-
-    private sealed class CodecDeTeste(IPerfilCanonico perfil) : IEnvelopeCodec
-    {
-        public string SchemaVersion => VersaoDeTeste;
-
-        public IPerfilCanonico Perfil { get; } = perfil;
-
-        public string AlgoritmoHash => Perfil.Algoritmo;
-
-        public bool TemEncoder => true;
-
-        public bool TemDecoder => true;
-
-        public string? MotivoDaRecusa => null;
-
-        public SnapshotCanonico Codificar(EntradaCanonicalizacao entrada) =>
-            new(Perfil.Serializar(PayloadQualquer()), SchemaVersion, AlgoritmoHash);
-
-        /// <summary>Chegar aqui já significa que os gates passaram — é o que os testes observam.</summary>
-        public Result<EnvelopeReidratado> Decodificar(VersaoConfiguracao versao) =>
-            Result<EnvelopeReidratado>.Failure(new DomainError(
-                "SELECAO_CODEC_DE_TESTE_ALCANCADO", "Os gates do registro deixaram passar."));
-    }
-
-    private static JsonObject PayloadQualquer() => new() { ["a"] = 1 };
-
-    private static VersaoConfiguracao VersaoCom(IPerfilCanonico perfil, byte[] bytes) =>
-        VersaoConfiguracao.Abrir(
-            processoSeletivoId: Guid.CreateVersion7(), new DocumentoCongelado(bytes, VersaoDeTeste, perfil.Algoritmo, new string('a', 64)),
-            atoCriadorId: Guid.CreateVersion7(), atorUsuarioContaId: "user-conta-1", instante: DateTimeOffset.UnixEpoch);
-
-    private static RegistroCodecsEnvelope RegistroCom(IPerfilCanonico perfil) =>
-        new([new CodecDeTeste(perfil)], VersaoDeTeste);
-
-    /// <summary>
-    /// Os bytes indentados <b>não</b> são canônicos sob o perfil v1 — mas são sob o perfil desta
-    /// versão. Um gate preso ao serializador global recusaria aqui; o gate correto deixa passar
-    /// e falha adiante, no decoder.
-    /// </summary>
-    [Fact(DisplayName = "Gate de forma — bytes canônicos sob o perfil DA VERSÃO passam, mesmo não sendo canônicos sob o v1")]
-    public void GateDeForma_UsaOPerfilDaVersao()
-    {
-        PerfilIndentado perfil = new();
-        byte[] bytes = perfil.Serializar(PayloadQualquer());
-
-        bytes.Should().NotEqual(PerfilCanonicoV1.Instancia.Serializar(PayloadQualquer()),
-            "o teste não prova nada se os dois perfis produzirem os mesmos bytes");
-
-        Result<EnvelopeReidratado> resultado = RegistroCom(perfil).Reidratar(VersaoCom(perfil, bytes));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("SELECAO_CODEC_DE_TESTE_ALCANCADO",
-            "os três gates — algoritmo, hash e forma — têm de ter passado para a execução chegar ao decoder");
-    }
-
-    /// <summary>O contrário: bytes canônicos sob o v1, mas não sob o perfil declarado pela versão.</summary>
-    [Fact(DisplayName = "Gate de forma — bytes canônicos sob o v1 são recusados quando a versão declara outro perfil")]
-    public void GateDeForma_RecusaBytesDeOutroPerfil()
-    {
-        PerfilIndentado perfil = new();
-        byte[] bytesV1 = PerfilCanonicoV1.Instancia.Serializar(PayloadQualquer());
-
-        Result<EnvelopeReidratado> resultado = RegistroCom(perfil).Reidratar(VersaoCom(perfil, bytesV1));
+        Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(comprometida);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
     }
 
     /// <summary>
-    /// O que um perfil estrito recusa vira <b>recusa nomeada</b>, não falha não tratada — quem
-    /// grava a coluna à mão consegue produzir exatamente o payload que ele não representa.
+    /// Este é o caso de quem adultera E recomputa o hash. O hash bate — mas os bytes não
+    /// estão na forma canônica (ADR-0100), e um envelope canônico é o que o encoder
+    /// produz. Reserializar o que se leu tem de reproduzir os bytes; se não reproduz, o
+    /// que está na coluna não é um envelope canônico, ainda que o hash seja coerente.
     /// </summary>
-    [Theory(DisplayName = "Gate de forma — payload que o perfil recusa vira envelope malformado, não exceção")]
-    [InlineData("""{"a":null}""")]
-    [InlineData("""{"a":{"b":null}}""")]
-    [InlineData("""{"a":[1,null]}""")]
-    public void GateDeForma_PayloadRecusadoPeloPerfil_ViraRecusaNomeada(string json)
+    [Fact(DisplayName = "Bytes não-canônicos (chaves fora de ordem) são recusados, mesmo com o hash batendo")]
+    public void BytesNaoCanonicos_Recusa()
     {
-        PerfilQueRecusaNulo perfil = new();
-        byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(JsonNode.Parse(json)!.AsObject());
+        byte[] bytes = BytesDoCorpus();
+        byte[] naoCanonicos = ComChavesDoTopoEmOrdemInversa(bytes);
+        naoCanonicos.Should().NotEqual(bytes, "pré-condição: a reordenação tem de produzir bytes distintos");
 
-        Result<EnvelopeReidratado> resultado = RegistroCom(perfil).Reidratar(VersaoCom(perfil, comNulo));
+        Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(naoCanonicos);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain(perfil.Algoritmo);
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
     }
 
     /// <summary>
-    /// O mesmo contrato no <b>outro</b> caminho: <c>Decodificar</c> é público e chamável sem
-    /// passar pelo registro, e o parse que ele usa reserializa por conta própria. Um
-    /// tratamento que existisse só no registro deixaria escapar uma falha não tratada por
-    /// esta porta.
+    /// Um envelope com <c>"presente"</c> duas vezes tem <b>duas leituras possíveis</b>, e o
+    /// hash cobre as duas igualmente. Aceitar a última seria escolher em silêncio.
     /// </summary>
-    [Fact(DisplayName = "Parse compartilhado — payload recusado pelo perfil vira envelope malformado, não exceção")]
-    public void ParseCompartilhado_PayloadRecusadoPeloPerfil_ViraRecusaNomeada()
+    [Fact(DisplayName = "Chave JSON duplicada é recusada — não vale 'a última ganha'")]
+    public void ChaveDuplicada_Recusa()
     {
-        PerfilQueRecusaNulo perfil = new();
-        byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(JsonNode.Parse("""{"a":{"b":null}}""")!.AsObject());
+        string json = Encoding.UTF8.GetString(BytesDoCorpus());
+        string duplicado = json.Replace("\"presente\":true", "\"presente\":true,\"presente\":false", StringComparison.Ordinal);
+        duplicado.Should().NotBe(json, "pré-condição: a duplicação tem de ter sido aplicada");
 
-        Result<JsonObject> resultado = EnvelopeCodec.Parsear(perfil, comNulo);
+        Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(Encoding.UTF8.GetBytes(duplicado));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain(perfil.Algoritmo);
+        resultado.Error!.Code.Should().BeOneOf(
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            ErrosCodecEnvelope.IntegridadeViolada);
     }
 
-    /// <summary>O parse também usa o perfil recebido para julgar a forma, não um global.</summary>
-    [Fact(DisplayName = "Parse compartilhado — a forma canônica é julgada pelo perfil recebido")]
-    public void ParseCompartilhado_UsaOPerfilRecebido()
+    private static byte[] ComPeriodoAdulterado(byte[] bytes)
     {
-        PerfilIndentado perfil = new();
+        JsonObject adulterado = EnvelopeDosBytes(bytes);
+        adulterado["periodo"]!["numero"] = "666/2026";
 
-        EnvelopeCodec.Parsear(perfil, perfil.Serializar(PayloadQualquer()))
-            .IsSuccess.Should().BeTrue("os bytes são canônicos sob o perfil que julga");
-
-        Result<JsonObject> recusado = EnvelopeCodec.Parsear(
-            perfil, PerfilCanonicoV1.Instancia.Serializar(PayloadQualquer()));
-
-        recusado.IsFailure.Should().BeTrue();
-        recusado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
+        return PerfilCanonicoV1.Instancia.Serializar(adulterado);
     }
 
-    [Fact(DisplayName = "Registro — versão repetida entre codecs é recusada na construção")]
-    public void Registro_RecusaVersaoRepetida()
+    /// <summary>O encoder emite as chaves do topo em ordem ordinal; aqui elas saem na ordem inversa.</summary>
+    private static byte[] ComChavesDoTopoEmOrdemInversa(byte[] bytes)
     {
-        Action montar = () => _ = new RegistroCodecsEnvelope(
-            [new CodecDeTeste(new PerfilIndentado()), new CodecDeTeste(new PerfilIndentado())], VersaoDeTeste);
+        JsonObject foraDeOrdem = [];
+        foreach (KeyValuePair<string, JsonNode?> par in EnvelopeDosBytes(bytes).Reverse().ToList())
+        {
+            foraDeOrdem[par.Key] = par.Value?.DeepClone();
+        }
 
-        montar.Should().Throw<ArgumentException>();
-    }
-
-    [Fact(DisplayName = "Registro — versão de emissão corrente sem codec é recusada na construção")]
-    public void Registro_RecusaCorrenteSemCodec()
-    {
-        Action montar = () => _ = new RegistroCodecsEnvelope([new CodecDeTeste(new PerfilIndentado())], "8.8");
-
-        montar.Should().Throw<ArgumentException>();
+        return Encoding.UTF8.GetBytes(foraDeOrdem.ToJsonString());
     }
 }

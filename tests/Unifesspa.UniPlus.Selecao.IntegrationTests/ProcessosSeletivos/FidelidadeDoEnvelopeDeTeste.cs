@@ -16,32 +16,30 @@ internal static class FidelidadeDoEnvelopeDeTeste
     {
         EnvelopeReidratado envelope = ApoioDoEnvelopeCodec.Reidratado(versao);
         ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
-        SnapshotCanonico recodificado = Recodificar(lido, versao, envelope);
+        SnapshotCanonico recodificado = Recodificar(lido, envelope);
         recodificado.Bytes.Should().Equal(congelado.Bytes);
         recodificado.SchemaVersion.Should().Be(congelado.SchemaVersion);
         recodificado.AlgoritmoHash.Should().Be(congelado.AlgoritmoHash);
         return envelope;
     }
 
-    internal static SnapshotCanonico Recodificar(ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    internal static SnapshotCanonico Recodificar(ProcessoSeletivo processo, EnvelopeReidratado envelope)
     {
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
+        SnapshotCanonico recodificado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
                 envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo));
-        recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
-        return recodificado.Value!;
+        return recodificado;
     }
 
     internal static void ConferirMutacao(string caminho, string valor, bool ordena)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico original = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico original = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         byte[] alterados = Alterar(original, caminho, valor);
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, alterados);
         EnvelopeReidratado envelope = ApoioDoEnvelopeCodec.Reidratado(versao);
         ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
-        byte[] recodificados = Recodificar(lido, versao, envelope).Bytes;
+        byte[] recodificados = Recodificar(lido, envelope).Bytes;
         recodificados.Should().NotEqual(original.Bytes);
         if (!ordena)
         {

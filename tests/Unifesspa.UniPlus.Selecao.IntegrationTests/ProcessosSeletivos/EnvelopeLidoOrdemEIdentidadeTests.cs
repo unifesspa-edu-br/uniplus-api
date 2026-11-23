@@ -24,7 +24,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
         RegraAvaliada segunda = Regra("REGRA-B", "aaaaaaaa-0000-7000-8000-000000000001", null);
         primeira.RegraId.CompareTo(segunda.RegraId).Should().BePositive();
         ResultadoConformidade conformidade = new([segunda, primeira], []);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ApoioDoEnvelopeCodec.Envelope(congelado)["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
             .Select(r => r!["regraCodigo"]!.GetValue<string>()).Should().Equal("REGRA-A", "REGRA-B");
@@ -35,7 +35,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
     public void Reidratar_Etapas_ConservaOsIdsDoJson()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Avaliacao.Etapas.Select(e => e.Id).Should().Equal(ApoioDoEnvelopeCodec.Envelope(congelado)["etapas"]!.AsArray()
             .Select(e => Guid.Parse(e!["id"]!.GetValue<string>(), CultureInfo.InvariantCulture)));
@@ -67,7 +67,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
 
     private static Result<EnvelopeReidratado> ReidratarComIdsNovos(ProcessoSeletivo processo)
     {
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] bytes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         JsonObject alterado = VersoesDoEnvelopeDeTeste.EnvelopeDosBytes(bytes);
         foreach (JsonNode? etapa in alterado["etapas"]!.AsArray())
         {

@@ -35,7 +35,7 @@ internal static class ApoioDoEnvelopeCodecTipos
     internal static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] originais = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();

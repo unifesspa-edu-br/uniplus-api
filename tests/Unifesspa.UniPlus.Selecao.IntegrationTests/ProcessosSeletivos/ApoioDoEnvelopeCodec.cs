@@ -129,7 +129,7 @@ internal static class ApoioDoEnvelopeCodec
     internal static EnvelopeReidratado ReidratarMutado(Action<JsonObject> mutar)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         mutar(mutado);
@@ -159,12 +159,10 @@ internal static class ApoioDoEnvelopeCodec
 
     private static SnapshotCanonico Recodificado(ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope)
     {
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
+        SnapshotCanonico recodificado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade, DadosDeCatalogo: envelope.DadosDeCatalogo));
-        recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
-        return recodificado.Value!;
+        return recodificado;
     }
 
     private static JsonNode PaiDoCampo(JsonObject objetoPrincipal, string[] partes)

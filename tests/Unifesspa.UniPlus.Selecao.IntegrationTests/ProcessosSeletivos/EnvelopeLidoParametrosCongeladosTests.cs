@@ -23,13 +23,10 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         MetadadoFatoCongelado metadado = new("COR_RACA", "CATEGORICO", "DECLARADO", "ESCALAR", "INSCRICAO",
             "CAMPO_FORMULARIO:COR_RACA", ["VALOR_CONGELADO"], null);
         EntradaCanonicalizacao entrada = EntradaComMetadado(processo, metadado);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].Should().BeEquivalentTo(metadado);
-        typeof(EnvelopeCodec).GetConstructors().Should().OnlyContain(c => c.GetParameters().Length == 0);
-        typeof(RegistroCodecsEnvelope).GetConstructors().SelectMany(c => c.GetParameters())
-            .Should().NotContain(p => p.ParameterType.Name == "IFatoCandidatoReader");
     }
 
     [Fact]
@@ -38,7 +35,7 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         const string FusoCongelado = "America/Manaus";
         FusoCongelado.Should().NotBe(FusoInstitucional.ZoneId);
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo) with { FusoHorario = FusoCongelado });
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo) with { FusoHorario = FusoCongelado });
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.FusoHorario.Should().Be(FusoCongelado);
@@ -54,7 +51,7 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
             ["CONDICAO_ATENDIMENTO"] = [new("LACTANTE", "Lactante", 0), new(AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1)],
         };
         EntradaCanonicalizacao entrada = EntradaComValores(processo, valores);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ConferirValores(lido.DadosDeCatalogo.ValoresSelecionaveisCongelados!);

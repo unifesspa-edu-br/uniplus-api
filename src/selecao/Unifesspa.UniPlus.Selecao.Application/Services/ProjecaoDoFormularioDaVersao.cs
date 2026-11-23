@@ -80,7 +80,7 @@ public static class ProjecaoDoFormularioDaVersao
 
     private static Result<JsonObject> LerEnvelope(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
     {
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
+        if (!registroCodecs.LeAVersao(versao.SchemaVersion))
         {
             return Result<JsonObject>.Failure(VersaoDoEnvelopeNaoReconhecida(versao));
         }

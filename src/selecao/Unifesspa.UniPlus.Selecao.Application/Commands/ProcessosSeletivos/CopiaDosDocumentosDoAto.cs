@@ -88,7 +88,7 @@ public sealed class CopiaDosDocumentosDoAto(
 
     private JsonObject LerEnvelopeOuFalhar(VersaoConfiguracao versao)
     {
-        if (registroCodecs.SabeLer(versao.SchemaVersion) && EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope))
+        if (registroCodecs.LeAVersao(versao.SchemaVersion) && EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope))
         {
             return envelope;
         }

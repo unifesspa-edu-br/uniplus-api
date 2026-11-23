@@ -17,7 +17,7 @@ public sealed class EnvelopeLidoDivulgacaoPersistenciaTests(ProcessoSeletivoDbFi
     public async Task Reidratar_PadraoMinimizadoSemLinhaPersistida_ReproduzOsBytes()
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS divulgação padrão");
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(versao);
         lido.Configuracao.DivulgacaoETaxa.ConfiguracaoDivulgacao.Should().BeNull();
@@ -50,6 +50,6 @@ public sealed class EnvelopeLidoDivulgacaoPersistenciaTests(ProcessoSeletivoDbFi
         (await db.Set<ConfiguracaoDivulgacao>().AnyAsync(c => c.Id == linha)).Should().BeFalse();
         ProcessoSeletivo processo = (await ProcessoSeletivoRepositoryDeTeste.Criar(db).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
         processo.ConfiguracaoDivulgacao.Should().BeNull();
-        FidelidadeDoEnvelopeDeTeste.Recodificar(processo, versao, envelope).Bytes.Should().Equal(congelado.Bytes);
+        FidelidadeDoEnvelopeDeTeste.Recodificar(processo, envelope).Bytes.Should().Equal(congelado.Bytes);
     }
 }
