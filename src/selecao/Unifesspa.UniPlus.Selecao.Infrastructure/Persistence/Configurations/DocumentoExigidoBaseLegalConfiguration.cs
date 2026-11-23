@@ -31,13 +31,16 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("documentos_exigidos_base_legal");
+        builder.ToTable("documentos_exigidos_base_legal", tabela => tabela.HasComment("Bases legais das exigências de documentos."));
         builder.HasKey(b => b.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // DocumentoExigido/CondicaoGatilho.
-        builder.Property(b => b.Id).ValueGeneratedNever();
+        builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da base legal da exigência.");
+        builder.Property(b => b.DocumentoExigidoId).HasComment("Exigência de documento à qual a base legal pertence.");
+        builder.Property(b => b.CreatedAt).HasComment("Data e hora em que a base legal foi criada.");
+        builder.Property(b => b.UpdatedAt).HasComment("Data e hora da última alteração da base legal.");
 
-        builder.Property(b => b.Referencia).HasMaxLength(ReferenciaMaxLength).IsRequired();
+        builder.Property(b => b.Referencia).HasMaxLength(ReferenciaMaxLength).IsRequired().HasComment("Referência da base legal da exigência.");
 
         // Mesmo mapeamento canônico de ReferenciaTipoCodigo usado no wire —
         // nunca enum.ToString() cru: a coluna carrega o mesmo token FEDERAL/ESTADUAL/.../
@@ -45,14 +48,14 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
         builder.Property(b => b.Abrangencia)
             .HasConversion(AbrangenciaConverter)
             .HasMaxLength(AbrangenciaCodigoMaxLength)
-            .IsRequired();
+            .IsRequired().HasComment("Abrangência da base legal.");
 
         builder.Property(b => b.Situacao)
             .HasConversion(StatusConverter)
             .HasMaxLength(StatusCodigoMaxLength)
-            .IsRequired();
+            .IsRequired().HasComment("Situação da base legal.");
 
-        builder.Property(b => b.Observacao).HasMaxLength(ObservacaoMaxLength);
+        builder.Property(b => b.Observacao).HasMaxLength(ObservacaoMaxLength).HasComment("Observação sobre a base legal, quando informada.");
     }
 
     private static readonly ValueConverter<TipoAbrangencia, string> AbrangenciaConverter =

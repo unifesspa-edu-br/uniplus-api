@@ -166,12 +166,13 @@ internal static class ProcessoSeletivoPendenciasSeeder
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
-            new IndeferimentoDoDocumento(true, null, [baseLegal]),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_certidao_reservista").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
+                new IndeferimentoDoDocumento(true, null, [baseLegal]),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null)).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidos(
             [RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);

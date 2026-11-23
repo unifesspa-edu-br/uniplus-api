@@ -105,13 +105,14 @@ internal static class ProcessosDoPainelDeConformidade
     public static ProcessoSeletivo QueExigeODocumento(string nome, TipoDocumentoView tipo, IReadOnlyList<string>? fatosComprovados = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(nome, out Guid faseId);
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            fatosComprovados).Value!;
+        DocumentoExigido exigencia = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(fatosComprovados)
+            .Criar().Value!;
         Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
 

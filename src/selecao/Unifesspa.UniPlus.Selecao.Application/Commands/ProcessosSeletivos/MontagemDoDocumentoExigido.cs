@@ -31,7 +31,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
             : Result<Partes>.Success(new(tipo.Value!, condicoes.Value!, restricoes.Value!));
     }
 
-    public static Result<DocumentoExigido> Criar(ItemDocumentoExigidoInput documento, Partes partes)
+    public Result<DocumentoExigido> Criar(ItemDocumentoExigidoInput documento, Partes partes)
     {
         Result<IReadOnlyList<DocumentoExigidoBaseLegal>> bases = BasesLegais(documento);
         return bases.IsFailure ? Result<DocumentoExigido>.ValidationFailure(bases.Errors)
@@ -69,17 +69,18 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
             static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b)),
             static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Situacao(b), b.Observacao).Value!);
 
-    private static Result<DocumentoExigido> CriarDocumento(
+    private Result<DocumentoExigido> CriarDocumento(
         ItemDocumentoExigidoInput documentoInformado, Partes partes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
         TipoDocumentoView tipo = partes.Tipo;
         EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
-        return DocumentoExigido.Criar(
+        DocumentoExigidoDeclarado declarado = new(
             new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
             new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade())),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
             new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.Consequencia(), basesLegais),
             new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),
             documentoInformado.FatosComprovados);
+        return contexto.Reconhecimento.Criar(documentoInformado.Chave, tipo.Codigo, declarado);
     }
 }

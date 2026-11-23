@@ -46,13 +46,14 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
         internal int? TamanhoMaximoBytes { get; init; }
 
         internal DocumentoExigido NaFase(Guid faseId) =>
-            DocumentoExigido.Criar(
-                new CopiaDoTipoDeDocumento(TipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, null),
-                new AplicabilidadeDaExigencia(Aplicabilidade, Condicoes),
-                new IndeferimentoDoDocumento(true, null, BasesLegais),
-                new RequisitosDoDocumento(FormatosPermitidos, TamanhoMaximoBytes, null, PrazoDeEmissao, Validade),
-                null).Value!;
+            new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(TipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade, Condicoes))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, BasesLegais))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos, TamanhoMaximoBytes, null, PrazoDeEmissao, Validade))
+            .ComFatos(null)
+            .Criar().Value!;
     }
 
     internal static ProcessoSeletivo NovoProcesso() => ApoioDosDocumentosExigidos.NovoProcesso("PS Query");

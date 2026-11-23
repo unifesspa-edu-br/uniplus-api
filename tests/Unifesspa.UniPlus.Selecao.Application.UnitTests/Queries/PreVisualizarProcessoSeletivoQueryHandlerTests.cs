@@ -304,13 +304,14 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
     ];
 
-    private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes),
-        new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-        null).Value!;
+    private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static CondicaoGatilho Condicao(int clausula, string fato, Operador operador, object valor) =>
         CondicaoGatilho.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;

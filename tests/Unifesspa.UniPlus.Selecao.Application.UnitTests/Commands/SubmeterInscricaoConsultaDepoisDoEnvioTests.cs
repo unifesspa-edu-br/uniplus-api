@@ -87,13 +87,14 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
     }
 
     private static DocumentoExigido DocumentoCondicional(Guid fase, string codigo, string fato, JsonElement valor) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!]),
-            new IndeferimentoDoDocumento(false, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) ExigenciaRegional(ProcessoSeletivo processo)
     {

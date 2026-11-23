@@ -57,10 +57,10 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
-            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
-            .HasComment("Chave local estável da fase no processo seletivo.");
+            .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Chave })
-            .IsUnique().HasDatabaseName("ux_fases_cronograma_processo_chave");
+            .IsUnique().HasDatabaseName("ux_fases_cronograma_processo_chave_local");
         builder.Property(f => f.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a fase pertence.");
         builder.Property(f => f.AgrupaEtapas).HasComment("Indica se a fase agrupa etapas de avaliação.");
         builder.Property(f => f.PermiteComplementacao).HasComment("Indica se a fase permite complementar informações.");

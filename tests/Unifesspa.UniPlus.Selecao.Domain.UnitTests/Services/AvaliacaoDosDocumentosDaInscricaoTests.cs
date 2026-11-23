@@ -199,13 +199,14 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         Avaliar(configuracao, Respostas()).Documentos.Itens.ToDictionary(static d => d.Documento.Id, static d => d.Grupos);
 
     private static DocumentoExigido Geral() =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(FaseDaInscricao.Id, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(Qualquer, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(FaseDaInscricao.Id, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Enviados(params DocumentoExigido[] documentos) =>
         documentos.ToDictionary(static d => d.Id, static _ => (IReadOnlyList<ApresentacaoDocumento>)[new(Guid.CreateVersion7())]);
@@ -382,13 +383,14 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             .Construir();
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)]),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(Qualquer, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, FaseCronograma fase) =>
         FormularioProcesso.Criar(

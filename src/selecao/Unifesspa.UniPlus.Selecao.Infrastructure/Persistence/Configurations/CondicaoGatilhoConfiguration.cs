@@ -38,7 +38,9 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
         builder.HasKey(c => c.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // DocumentoExigido/FaseCronograma.
-        builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.Property(c => c.Id).ValueGeneratedNever().HasComment("Identificador da condição da exigência.");
+        builder.Property(c => c.CreatedAt).HasComment("Data e hora em que a condição foi criada.");
+        builder.Property(c => c.UpdatedAt).HasComment("Data e hora da última alteração da condição.");
 
         builder.Property(c => c.Clausula).HasColumnName("alternativa").IsRequired();
         builder.Property(c => c.Fato).HasColumnName("codigo_do_dado").HasMaxLength(FatoMaxLength).IsRequired();

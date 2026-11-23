@@ -35,13 +35,14 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
     {
         _inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.KevinCarvalho, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         _inscricoes.ObterPorIdAsync(_inscricao.Id, Arg.Any<CancellationToken>()).Returns(_inscricao);
-        _laudo = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null),
-            null).Value!;
+        _laudo = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
         _storage.GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://armazenamento.exemplo/leitura");
     }

@@ -25,13 +25,13 @@ public sealed class DocumentoExigidoTests
         IReadOnlyList<CondicaoGatilho>? condicoes = null,
         IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null,
         int? tamanhoMaximoBytes = null) =>
-        DocumentoExigido.Criar(
+        DocumentoExigido.Criar(ChaveLocal.Criar("exigencia_teste").Value, new DocumentoExigidoDeclarado(
             new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
             new AplicabilidadeDaExigencia(aplicabilidade, condicoes ?? []),
             new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais ?? []),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes, null, null, null),
-            null);
+            null));
 
     private static CondicaoGatilho CondicaoQualquer() => CondicaoGatilho.Criar(
         0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
@@ -43,12 +43,15 @@ public sealed class DocumentoExigidoTests
     public void Reidratar_IdentificadoresVaziosEConsequenciaOriginal_PreservaOsValores(string? consequencia)
     {
         Guid id = Guid.CreateVersion7();
-        DocumentoExigido documento = DocumentoExigido.Reidratar(
-            id, new CopiaDoTipoDeDocumento(Guid.Empty, "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.Empty, null, null), new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+        DocumentoExigido documento = DocumentoExigido.Reidratar(ChaveLocal.Criar("exigencia_teste").Value, id, new DocumentoExigidoDeclarado(
+            new CopiaDoTipoDeDocumento(Guid.Empty, "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.Empty, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(false, consequencia, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null), null);
+            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
+            null));
 
+        documento.Chave.Valor.Should().Be("exigencia_teste");
         documento.Id.Should().Be(id);
         documento.ExigidoNaFaseId.Should().Be(Guid.Empty);
         documento.TipoDocumentoOrigemId.Should().Be(Guid.Empty);
@@ -67,7 +70,7 @@ public sealed class DocumentoExigidoTests
     [Fact(DisplayName = "GERAL/CONDICIONAL válidos são aceitos")]
     public void Criar_ValoresValidos_Aceita()
     {
-        Exigencia(Aplicabilidade.Geral).IsSuccess.Should().BeTrue();
+        Exigencia(Aplicabilidade.Geral).Value!.Chave.Valor.Should().Be("exigencia_teste");
         Exigencia(Aplicabilidade.Condicional).IsSuccess.Should().BeTrue();
     }
 

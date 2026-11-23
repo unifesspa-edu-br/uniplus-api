@@ -47,13 +47,14 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
     {
         FaseCronograma fase = _cenario.FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
         _cenario.DeclararAtendimentoEspecializado();
-        DocumentoExigido daHabilitacao = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(_cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        DocumentoExigido daHabilitacao = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(_cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
         _cenario.Processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(daHabilitacao, 0).Value!]).IsSuccess.Should().BeTrue();
         return fase;
     }
@@ -91,6 +92,28 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         DeveTerSoOsDocumentosDaHabilitacaoEOsDaInscricao();
         LaudoCopiadoDeveValerNaFaseDaInscricao(fase);
     }
+
+    [Fact]
+    public async Task Handle_ExigenciaMantidaDoMesmoTipo_PreservaChaveEFormaOutra()
+    {
+        _cenario.FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
+        _cenario.DeclararAtendimentoEspecializado();
+        DocumentoExigido mantida = ExigenciaMantida();
+        _cenario.Processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(mantida, 0).Value!]).IsSuccess.Should().BeTrue();
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(DocumentoDoModelo("LAUDO_MEDICO", "PCD")));
+
+        resultado.IsSuccess.Should().BeTrue(MotivosDaRecusa(resultado));
+        _cenario.Processo.DocumentosExigidos.Select(static documento => documento.Chave.Valor)
+            .Should().BeEquivalentTo("exigencia_laudo_medico", "exigencia_laudo_medico_2");
+        _cenario.Processo.DocumentosExigidos.Should().Contain(documento => documento.Id == mantida.Id && documento.Chave == mantida.Chave);
+    }
+
+    private DocumentoExigido ExigenciaMantida() => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+        .ComChave(ChaveLocal.Criar("exigencia_laudo_medico").Value)
+        .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+        .NaFase(_cenario.Processo.CronogramaFases.Single(static fase => fase.Codigo == "RESULTADO_FINAL").Id)
+        .Construir();
 
     [Fact(DisplayName = "A situação pendente da base legal é copiada para o processo")]
     public async Task Handle_BaseLegalPendente_CopiaSituacao()

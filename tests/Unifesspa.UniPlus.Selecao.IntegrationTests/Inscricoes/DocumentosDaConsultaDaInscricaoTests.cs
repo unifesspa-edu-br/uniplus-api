@@ -134,10 +134,11 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
 
     private static DocumentoExigido Exigencia(Guid fase, string tipo, (string Fato, JsonElement Valor)[] gatilho) =>
         DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, $"Documento {tipo}", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(gatilho.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, [.. gatilho.Select(static g => CondicaoGatilho.Criar(0, g.Fato, Operador.Igual, g.Valor).Value!)]),
-            new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipo.ToLowerInvariant()).Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, $"Documento {tipo}", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(gatilho.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, [.. gatilho.Select(static g => CondicaoGatilho.Criar(0, g.Fato, Operador.Igual, g.Valor).Value!)]),
+                new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null)).Value!;
 }

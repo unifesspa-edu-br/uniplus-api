@@ -108,13 +108,14 @@ internal static class ApoioDaIdentidadeDeNegocio
 
     internal static DocumentoExigido ExigenciaDeTeste(Guid id, Guid faseId, Guid tipoDocumentoOrigemId, string tipoDocumentoNome) =>
         DocumentoExigido.Reidratar(
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(tipoDocumentoNome == "Alfa Documento" ? "exigencia_alfa" : "exigencia_zeta").Value!,
             id,
-            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
-            null);
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
+                null));
 
     internal static IReadOnlyList<string> NomesDasExigenciasNoEnvelope(FaseCronograma fase, params RegraDeComprovacao[] regrasSemGrupo)
     {

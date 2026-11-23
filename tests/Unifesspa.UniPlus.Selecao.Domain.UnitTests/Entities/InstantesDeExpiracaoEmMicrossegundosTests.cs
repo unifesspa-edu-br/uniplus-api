@@ -21,13 +21,14 @@ public sealed class InstantesDeExpiracaoEmMicrossegundosTests
 
     private static RelogioFixo Relogio => new(AgoraComSetimaCasa);
 
-    private static DocumentoExigido Exigencia() => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(false, null, []),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-        null).Value!;
+    private static DocumentoExigido Exigencia() => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static ArquivoDaApresentacao ArquivoPendente() => ArquivoDaApresentacao.IniciarPendente(
         Guid.CreateVersion7(), Guid.CreateVersion7(), Exigencia(), "application/pdf", 1024, Relogio, PrazoComResto).Value!;

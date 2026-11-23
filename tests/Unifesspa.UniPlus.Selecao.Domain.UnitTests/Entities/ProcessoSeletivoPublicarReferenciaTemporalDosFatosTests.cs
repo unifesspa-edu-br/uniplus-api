@@ -185,13 +185,14 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         CondicaoGatilho condicao = CondicaoGatilho.Criar(
             0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
-        return DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(exigidoNaFaseId, null, finalidade),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
-            new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-            null).Value!;
+        return new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
     }
 
     /// <summary>Acrescenta ao cronograma conforme uma segunda fase NA_EXECUCAO (sem janela) — a única forma de ter uma fase sem Fim, já que NO_EDITAL exige janela (CA-07).</summary>

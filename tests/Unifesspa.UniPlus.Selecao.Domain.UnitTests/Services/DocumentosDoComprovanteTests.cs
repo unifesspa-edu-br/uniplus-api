@@ -15,13 +15,14 @@ public sealed class DocumentosDoComprovanteTests
 
     private static DocumentoExigido Documento(
         string nome, string? consequencia = null, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Fase, null, finalidade),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(obrigatorio, consequencia, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Fase, null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static DocumentosDaInscricao Avaliacao(params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens) =>
         new([.. itens.Select(static i => new DocumentoAvaliado(i.Documento, i.Situacao, null, i.Ocorrencia, [], null))],

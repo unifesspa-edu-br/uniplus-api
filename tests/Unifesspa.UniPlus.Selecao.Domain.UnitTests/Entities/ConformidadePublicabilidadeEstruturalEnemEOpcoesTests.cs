@@ -310,11 +310,12 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         resultado.Error.Message.Should().Contain(trechoDaMensagem);
     }
 
-    private static DocumentoExigido ExigenciaCondicionalPelaOpcao(Guid faseId, string opcao) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_2024", "Comprovante 2024", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(opcao)).Value!]),
-        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-        null).Value!;
+    private static DocumentoExigido ExigenciaCondicionalPelaOpcao(Guid faseId, string opcao) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_2024", "Comprovante 2024", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(opcao)).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 }

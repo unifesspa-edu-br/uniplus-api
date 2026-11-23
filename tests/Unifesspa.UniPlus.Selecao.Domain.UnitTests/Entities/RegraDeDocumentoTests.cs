@@ -14,13 +14,14 @@ public sealed class RegraDeDocumentoTests
     private static DocumentoExigido Documento(
         Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
         FinalidadeFormulario? finalidade = null) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, finalidade),
-            new AplicabilidadeDaExigencia(aplicabilidade, []),
-            new IndeferimentoDoDocumento(obrigatorio, consequencia, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static BaseLegalDaComprovacao BaseLegalResolvida() =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;

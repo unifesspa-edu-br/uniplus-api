@@ -22,9 +22,9 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
         builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
         builder.Property(b => b.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
-            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
-            .HasComment("Chave local estável da banca no processo seletivo.");
-        builder.HasIndex("ProcessoSeletivoId", nameof(BancaDaEtapa.Chave)).IsUnique();
+            .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
+        builder.HasIndex("ProcessoSeletivoId", nameof(BancaDaEtapa.Chave)).IsUnique().HasDatabaseName("ux_bancas_da_etapa_processo_chave_local");
         builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da banca.");
         builder.Property(b => b.EtapaProcessoId).HasComment("Identificador da etapa à qual a banca pertence.");
         builder.OwnsOne(b => b.Tipo, tipo => tipo.ConfigurarTipoDeBancaCopiado());

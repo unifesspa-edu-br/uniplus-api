@@ -171,12 +171,13 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     private static RegraDeComprovacao RegraDeDocumento(FaseCronograma fase, FormatosPermitidos formatosAceitos, IReadOnlyList<string>? ocorrenciasEsperadas)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(formatosAceitos),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_rg").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(formatosAceitos),
+                null)).Value!;
 
         return ocorrenciasEsperadas is not null
             ? RegraDeComprovacao.CriarRegraDeDocumento(

@@ -238,16 +238,17 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
             pendentes.Select(id => (documentoId, id, StatusResolucaoExigencia.PendenteDeComprovacao))
                 .Append((documentoId, satisfeito, StatusResolucaoExigencia.Cumprida)));
     }
-    private static DocumentoExigido DeclaracaoDeIsento() => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(FaseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
+    private static DocumentoExigido DeclaracaoDeIsento() => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(FaseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
                 CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
-            ]),
-        new IndeferimentoDoDocumento(false, "ELIMINA", []),
-        new RequisitosDoDocumento(Qualquer, null, null, null, null),
-        null).Value!;
+            ]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA", []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
     private static RegraDeComprovacao GrupoFamiliar(params DocumentoExigido[] documentos) => RegraDeComprovacao.CriarGrupo(
         FormaDeComprovacao.TodosOsItens, 0, null, null, [], [.. documentos.Select(static (d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
 

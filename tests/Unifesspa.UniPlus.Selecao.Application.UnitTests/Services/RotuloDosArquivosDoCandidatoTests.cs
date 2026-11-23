@@ -24,13 +24,14 @@ public sealed class RotuloDosArquivosDoCandidatoTests
     private readonly DocumentoExigido _certidao = Exigencia("CERTIDAO");
 
     private static DocumentoExigido Exigencia(string codigo) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private ArquivoDaApresentacao Enviar(DocumentoExigido exigencia, string? ocorrencia, int minuto, string hash)
     {
