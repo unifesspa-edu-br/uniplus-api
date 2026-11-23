@@ -24,6 +24,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         UnidadeDoDocumentoDoRascunho unidades,
         BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
         IUnitOfWork unitOfWork,
+        ResolucaoDosModelosCitados resolucao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -31,6 +32,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(bloqueio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(resolucao);
 
         Result<SubstituicaoPreparada> preparada = await PrepararAsync(command, preparacao, unidades, bloqueio, cancellationToken).ConfigureAwait(false);
         if (preparada.IsFailure)
@@ -38,7 +40,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
             return Result<RascunhoSalvoDto>.ValidationFailure(preparada.Errors);
         }
 
-        return await SubstituirAsync(preparada.Value!, command.Precondicao, unidades, unitOfWork, cancellationToken).ConfigureAwait(false);
+        return await SubstituirAsync(preparada.Value!, command.Precondicao, unidades, unitOfWork, resolucao, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<SubstituicaoPreparada>> PrepararAsync(
@@ -75,6 +77,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         PrecondicaoIfMatch precondicao,
         UnidadeDoDocumentoDoRascunho unidades,
         IUnitOfWork unitOfWork,
+        ResolucaoDosModelosCitados resolucao,
         CancellationToken cancellationToken)
     {
         RascunhoDeProcessoSeletivo rascunho = preparada.Rascunho;
@@ -86,7 +89,8 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<RascunhoSalvoDto>.Success(new RascunhoSalvoDto(rascunho.Id, rascunho.Revisao, [], rascunho.ETag));
+        IReadOnlyList<FieldError> diagnosticos = await resolucao.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        return Result<RascunhoSalvoDto>.Success(RascunhoSalvoDto.DoRascunho(rascunho, diagnosticos));
     }
 
     /// <summary>O que a substituição leva até a gravação: o rascunho bloqueado e conferido, o documento novo e a unidade que ele nomeia.</summary>

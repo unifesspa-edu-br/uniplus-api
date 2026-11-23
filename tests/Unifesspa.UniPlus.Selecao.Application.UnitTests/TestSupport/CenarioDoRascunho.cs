@@ -28,6 +28,7 @@ internal sealed class CenarioDoRascunho
     public static readonly UnidadeView Cga = Unidade("CGA", "CGA", "Centro de Gestão Acadêmica");
 
     private readonly HashSet<Guid> _unidadesPermitidas = [];
+    private readonly Dictionary<Guid, int> _decisoes = [];
 
     public CenarioDoRascunho()
     {
@@ -60,6 +61,10 @@ internal sealed class CenarioDoRascunho
 
     public IDocumentoAPublicarRepository Documentos { get; } = Substitute.For<IDocumentoAPublicarRepository>();
 
+    public IModeloDeDocumentoRepository Modelos { get; } = Substitute.For<IModeloDeDocumentoRepository>();
+
+    public ResolucaoDosModelosCitados Resolucao => new(Modelos);
+
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     public PreparacaoDoDocumentoDoRascunho Preparacao =>
@@ -70,7 +75,7 @@ internal sealed class CenarioDoRascunho
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
     public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]));
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao);
 
     public CenarioDoRascunho PodeConfigurarEm(UnidadeView unidade)
     {
@@ -84,11 +89,7 @@ internal sealed class CenarioDoRascunho
         return this;
     }
 
-    public int DecisoesSobreAUnidade(UnidadeView unidade) =>
-        Verificador.ReceivedCalls().Count(chamada =>
-            chamada.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.ExigirAsync)
-            && chamada.GetArguments()[1] is ResourceContext { UnidadeProprietariaId: { } id }
-            && id == unidade.Id);
+    public int DecisoesSobreAUnidade(UnidadeView unidade) => _decisoes.GetValueOrDefault(unidade.Id);
 
     public RascunhoDeProcessoSeletivo ExisteUmRascunhoNaRevisao1(UnidadeView unidade, string? documento = null)
     {
@@ -104,10 +105,16 @@ internal sealed class CenarioDoRascunho
 
     public static PrecondicaoIfMatch Precondicao(RascunhoDeProcessoSeletivo rascunho) => PrecondicaoIfMatch.DeTags([rascunho.ETag]);
 
-    private ResultadoDoAcesso Decidir(ResourceContext? resource) =>
-        resource is { UnidadeProprietariaId: { } unidade } && _unidadesPermitidas.Contains(unidade)
-            ? ResultadoDoAcesso.Permitido
-            : ResultadoDoAcesso.Negado;
+    private ResultadoDoAcesso Decidir(ResourceContext? resource)
+    {
+        if (resource is not { UnidadeProprietariaId: { } unidade })
+        {
+            return ResultadoDoAcesso.Negado;
+        }
+
+        _decisoes[unidade] = _decisoes.GetValueOrDefault(unidade) + 1;
+        return _unidadesPermitidas.Contains(unidade) ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado;
+    }
 
     private static UnidadeView Unidade(string sigla, string codigo, string nome) =>
         new(Guid.CreateVersion7(), sigla, codigo, codigo.ToUpperInvariant(), nome, null, "ADMINISTRATIVA", false, null);

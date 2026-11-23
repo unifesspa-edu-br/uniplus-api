@@ -25,6 +25,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
         UnidadeDoDocumentoDoRascunho unidades,
         IRascunhoDeProcessoSeletivoRepository rascunhos,
         IUnitOfWork unitOfWork,
+        ResolucaoDosModelosCitados resolucao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -32,6 +33,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(rascunhos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(resolucao);
 
         Result<RascunhoDeProcessoSeletivo> rascunho = await NovoRascunhoAsync(command, preparacao, unidades, cancellationToken).ConfigureAwait(false);
         if (rascunho.IsFailure)
@@ -39,8 +41,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
             return Result<RascunhoSalvoDto>.ValidationFailure(rascunho.Errors);
         }
 
-        await rascunhos.AdicionarAsync(rascunho.Value!, cancellationToken).ConfigureAwait(false);
-        return await GravarAsync(rascunho.Value!, unitOfWork, cancellationToken).ConfigureAwait(false);
+        return await GravarAsync(rascunho.Value!, rascunhos, unitOfWork, resolucao, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<RascunhoDeProcessoSeletivo>> NovoRascunhoAsync(
@@ -62,20 +63,33 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
     }
 
     private static async Task<Result<RascunhoSalvoDto>> GravarAsync(
-        RascunhoDeProcessoSeletivo rascunho, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        RascunhoDeProcessoSeletivo rascunho, IRascunhoDeProcessoSeletivoRepository rascunhos,
+        IUnitOfWork unitOfWork, ResolucaoDosModelosCitados resolucao, CancellationToken cancellationToken)
+    {
+        await rascunhos.AdicionarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        Result gravacao = await SalvarRecusandoConflitoAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+        if (gravacao.IsFailure)
+        {
+            return Result<RascunhoSalvoDto>.ValidationFailure(gravacao.Errors);
+        }
+
+        IReadOnlyList<FieldError> diagnosticos = await resolucao.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        return Result<RascunhoSalvoDto>.Success(RascunhoSalvoDto.DoRascunho(rascunho, diagnosticos));
+    }
+
+    private static async Task<Result> SalvarRecusandoConflitoAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<RascunhoSalvoDto>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.ConflitoDeConcorrencia,
                 "O rascunho foi alterado concorrentemente. Tente novamente."));
         }
-
-        return Result<RascunhoSalvoDto>.Success(new RascunhoSalvoDto(rascunho.Id, rascunho.Revisao, [], rascunho.ETag));
     }
 }

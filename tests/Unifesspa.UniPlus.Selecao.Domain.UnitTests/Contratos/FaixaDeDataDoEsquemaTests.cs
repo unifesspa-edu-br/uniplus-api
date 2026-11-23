@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -54,7 +55,7 @@ public sealed class FaixaDeDataDoEsquemaTests
         DescricaoDoDocumentoDoRascunho descricao = new(
             new EsquemaDoDocumentoDaConfiguracao(),
             [new DescricaoDeUnidades(unidades), new DescricaoDeTiposDeProcesso(Substitute.For<ITipoProcessoReader>())]);
-        ExportacaoDoRascunho exportacao = new(unidades, descricao);
+        ExportacaoDoRascunho exportacao = new(unidades, descricao, new ResolucaoDosModelosCitados(Substitute.For<IModeloDeDocumentoRepository>()));
         return await exportacao.ExportarAsync(rascunho, CancellationToken.None);
     }
 

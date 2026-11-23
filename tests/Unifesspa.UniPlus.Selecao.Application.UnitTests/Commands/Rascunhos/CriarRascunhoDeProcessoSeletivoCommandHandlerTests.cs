@@ -23,6 +23,7 @@ public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
             _cenario.UnidadesDoDocumento,
             _cenario.Rascunhos,
             _cenario.UnitOfWork,
+            _cenario.Resolucao,
             CancellationToken.None);
 
     private async Task NadaFoiGravado()
@@ -145,7 +146,7 @@ public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
     public async Task ArgumentosNulos_Lancam()
     {
         Func<Task> semComando = () => CriarRascunhoDeProcessoSeletivoCommandHandler.Handle(
-            null!, _cenario.Preparacao, _cenario.UnidadesDoDocumento, _cenario.Rascunhos, _cenario.UnitOfWork, CancellationToken.None);
+            null!, _cenario.Preparacao, _cenario.UnidadesDoDocumento, _cenario.Rascunhos, _cenario.UnitOfWork, _cenario.Resolucao, CancellationToken.None);
 
         await semComando.Should().ThrowAsync<ArgumentNullException>();
     }

@@ -74,7 +74,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// O <c>id</c>, a <c>versao</c> e o <c>publicadoEm</c> da raiz e todo campo marcado <c>readOnly</c> no esquema são
     /// ignorados. Toda parte que o esquema exige com <c>chave</c> a traz: a chave é escolhida por quem cria a parte, e o
     /// sistema não a atribui. A parte sem <c>chave</c> recusa o salvamento (422), no ponteiro da chave que falta. O
-    /// diagnóstico das regras de negócio ainda não é calculado: <c>diagnosticos</c> vem vazio.
+    /// diagnóstico aponta modelos citados que não foram enviados ao rascunho ou ainda não foram confirmados.
     /// <para>
     /// A resposta não devolve o documento salvo. Os campos somente de leitura da revisão salva obtêm-se relendo a revisão por
     /// <c>GET /rascunhos-de-processos-seletivos/{id}</c> (o <c>Location</c> da resposta). Se o <c>ETag</c> do GET for o

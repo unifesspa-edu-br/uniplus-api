@@ -34,31 +34,51 @@ public static class SelecaoApplicationServiceRegistration
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
-        AddDefinicaoDoCronogramaDeFases(services);
-        AddResolucaoDasDistribuicoesDeVagas(services);
+        AddConfiguracaoDoProcesso(services);
         AddConferenciaDaObrigatoriedadeLegal(services);
-        AddPublicacao(services);
-        AddAvaliacaoDaConformidade(services);
-        AddAcessoAoCampoEAoDocumentoDaInscricao(services);
-        AddSalvamentoDoRascunho(services);
-        AddRotinaPeriodicaEPortaDePermissao(services);
-        AddRascunhoDoProcessoSeletivo(services);
-        AddIndicadoresDoProcesso(services);
+        AddPublicacaoDoProcesso(services);
+        AddInscricao(services);
+        AddRemocaoDeArquivosPendentesVencidos(services);
+        AddPortaDePermissao(services);
 
         return services;
     }
 
     // A descrição dos rascunhos recebe só as portas por construtor, e a consulta dos indicadores a recebe pronta.
-    private static void AddIndicadoresDoProcesso(IServiceCollection services) =>
+    private static void AddDescricaoDosRascunhos(IServiceCollection services) =>
         services.AddScoped<DescricaoDosRascunhos>();
 
-    private static void AddRotinaPeriodicaEPortaDePermissao(IServiceCollection services)
-    {
-        // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
+    private static void AddRemocaoDeArquivosPendentesVencidos(IServiceCollection services) =>
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
 
-        // A porta lida do catálogo do módulo, para o projetor saber qual permissão atende a cada par.
+    private static void AddPortaDePermissao(IServiceCollection services) =>
         services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();
+
+    private static void AddConfiguracaoDoProcesso(IServiceCollection services)
+    {
+        AddDefinicaoDoCronogramaDeFases(services);
+        AddResolucaoDasDistribuicoesDeVagas(services);
+        AddRascunhoDoProcessoSeletivo(services);
+    }
+
+    private static void AddPublicacaoDoProcesso(IServiceCollection services)
+    {
+        services.AddScoped<IProjecaoDaVersaoPublicada, ProjecaoDaVersaoPublicada>();
+        services.AddScoped<LeituraDoInstanteDoComando>();
+        services.AddScoped<ConferenciaDoProcessoDivulgado>();
+        services.AddScoped<PublicacaoDoAtoDoProcesso>();
+        AddPreparacaoDosAtos(services);
+        services.AddScoped<EnderecosDosDocumentosDoAto>();
+        AddCongelamentoDaVersao(services);
+        AddCopiaAoAcervo(services);
+        AddAvaliacaoDaConformidade(services);
+    }
+
+    private static void AddInscricao(IServiceCollection services)
+    {
+        AddAcessoAoCampoEAoDocumentoDaInscricao(services);
+        AddSalvamentoDoRascunho(services);
+        AddDescricaoDosRascunhos(services);
     }
 
     // O resolvedor guarda só as portas dos cadastros por construtor; o comando que grava a distribuição e a query que a
@@ -110,25 +130,18 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<UnidadeDoDocumentoDoRascunho>();
         services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
         services.AddScoped<BloqueioCompartilhadoDoProcessoSeletivo>();
+        services.AddScoped<ResolucaoDosModelosCitados>();
+        AddExportacaoDoRascunho(services);
+    }
+
+    private static void AddExportacaoDoRascunho(IServiceCollection services)
+    {
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeUnidades>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeProcesso>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDocumento>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeMotivosDeDecisao>();
         services.AddScoped<DescricaoDoDocumentoDoRascunho>();
         services.AddScoped<ExportacaoDoRascunho>();
-    }
-
-    // Todo comando que decide num instante (publicação da versão, do ato avulso e do item do edital, leitura do documento) lê o relógio uma só vez por LeituraDoInstanteDoComando.
-    private static void AddPublicacao(IServiceCollection services)
-    {
-        services.AddScoped<IProjecaoDaVersaoPublicada, ProjecaoDaVersaoPublicada>();
-        services.AddScoped<LeituraDoInstanteDoComando>();
-        services.AddScoped<ConferenciaDoProcessoDivulgado>();
-        services.AddScoped<PublicacaoDoAtoDoProcesso>();
-        AddPreparacaoDosAtos(services);
-        services.AddScoped<EnderecosDosDocumentosDoAto>();
-        AddCongelamentoDaVersao(services);
-        AddCopiaAoAcervo(services);
     }
 
     private static void AddPreparacaoDosAtos(IServiceCollection services)
