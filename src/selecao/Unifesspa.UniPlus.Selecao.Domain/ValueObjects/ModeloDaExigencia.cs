@@ -15,6 +15,17 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record ModeloDaExigencia(Guid ModeloId, string NomeArquivo, FormatoDeDocumento Formato, string HashSha256)
 {
+    /// <summary>Resolve o modelo entre os enviados ao dono e recusa o que não foi confirmado.</summary>
+    public static Result<ModeloDaExigencia> DoCitado(Guid modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoDono)
+    {
+        ArgumentNullException.ThrowIfNull(modelosDoDono);
+        return modelosDoDono.TryGetValue(modeloId, out ModeloDeDocumento? modelo)
+            ? Do(modelo)
+            : Result<ModeloDaExigencia>.Failure(new DomainError(
+                ModeloDaExigenciaErrorCodes.ModeloNaoEncontrado,
+                "O modelo de documento citado não foi enviado para este processo."));
+    }
+
     /// <summary>A cópia do modelo; recusa o que ainda não foi confirmado.</summary>
     public static Result<ModeloDaExigencia> Do(ModeloDeDocumento modelo)
     {

@@ -37,17 +37,10 @@ internal sealed record EscritaDasRestricoesDoDocumento(
             return Result<ModeloDaExigencia?>.Success(null);
         }
 
-        Result<ModeloDaExigencia> citado = ModeloCitado(id, modelosDoProcesso);
+        Result<ModeloDaExigencia> citado = ModeloDaExigencia.DoCitado(id, modelosDoProcesso);
         return citado.IsFailure
             ? Result<ModeloDaExigencia?>.ValidationFailure(citado.Errors)
             : Result<ModeloDaExigencia?>.Success(citado.Value);
     }
 
-    // O modelo citado pela regra, copiado por valor. Recusa o modelo que não é deste processo — a mesma recusa
-    // do inexistente — e o que ainda não foi confirmado.
-    private static Result<ModeloDaExigencia> ModeloCitado(Guid modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso) =>
-        modelosDoProcesso.TryGetValue(modeloId, out ModeloDeDocumento? modelo)
-            ? ModeloDaExigencia.Do(modelo)
-            : Result<ModeloDaExigencia>.Failure(new DomainError(
-                "DocumentoExigido.ModeloNaoEncontrado", $"O modelo de documento {modeloId} não existe neste Processo Seletivo."));
 }

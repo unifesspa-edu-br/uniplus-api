@@ -39,7 +39,7 @@ internal static class ErrosDosDocumentosExigidos
         new(ProcessoSeletivoErrorCodes.TipoDocumentoComProtecaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_documento_com_protecao_pendente", "Tipo de documento do processo aguarda a aprovação da proteção de dados")),
         new(ProcessoSeletivoErrorCodes.FatoComProtecaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente", "Fato do processo aguarda a aprovação da proteção de dados")),
         new(ProcessoSeletivoErrorCodes.TipoDocumentoDoVinculoNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
-        new("DocumentoExigido.ModeloNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.modelo_nao_encontrado", "O modelo de documento citado não existe neste processo")),
+        new(ModeloDaExigenciaErrorCodes.ModeloNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.modelo_nao_encontrado", "O modelo de documento citado não existe neste processo")),
         new("DocumentoExigido.PontoResolucaoForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma", "A fase em que o fato citado na condição de aplicação é conhecido não pertence ao cronograma deste processo")),
     ];
 
