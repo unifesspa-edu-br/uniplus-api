@@ -79,14 +79,14 @@ internal static class CenariosDeDefinirEtapas
         ITipoEtapaReader? tipoEtapaReader = null,
         CadastrosDeApoioDeDefinirEtapas? cadastros = null)
     {
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapasCommandHandler.Handle(
+        Result resultado = await DefinirEtapasCommandHandler.Handle(
             command,
             repository,
             (cadastros ?? new CadastrosDeApoioDeDefinirEtapas()).Definicao(tipoEtapaReader ?? ReaderPadrao(), repository),
             unitOfWork,
             TimeProvider.System,
             CancellationToken.None);
-        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
+        return resultado;
     }
 
     /// <summary>A definição das etapas sobre o repositório e a escolha de motivos dados, com os cadastros que resolvem os dois tipos de etapa.</summary>
@@ -110,7 +110,7 @@ internal static class CenariosDeDefinirEtapas
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-    /// <summary>A etapa que o operador envia no payload, sem produtos, bancas nem recursos.</summary>
+    /// <summary>A etapa que o operador envia no corpo da requisição, sem produtos, bancas nem recursos.</summary>
     internal static EtapaProcessoInput EtapaInput(
         string nome, CaraterEtapa carater, Guid tipoEtapaOrigemId, decimal? peso, decimal? notaMinima, int ordem, Guid? id = null) =>
         new(nome, carater, tipoEtapaOrigemId, peso, notaMinima, ordem, id, Produtos: [], Bancas: [], Recursos: []);
@@ -144,11 +144,11 @@ internal static class CenariosDeDefinirEtapas
         new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: tipo, Ordem: ordem, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-    /// <summary>Certame recém-criado que já tem as etapas dadas; recusa do agregado aqui é fixture inválida, não cenário.</summary>
+    /// <summary>Certame recém-criado que já tem as etapas dadas; recusa do agregado aqui é ambienteDeTeste inválida, não cenário.</summary>
     internal static ProcessoSeletivo ProcessoComAsEtapas(params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue("as etapas da fixture têm de ser aceitas pelo agregado");
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue("as etapas da ambienteDeTeste têm de ser aceitas pelo agregado");
 
         return processo;
     }

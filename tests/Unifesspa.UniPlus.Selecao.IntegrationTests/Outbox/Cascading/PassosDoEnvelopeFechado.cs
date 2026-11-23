@@ -115,9 +115,9 @@ internal static class PassosDoEnvelopeFechado
     // Passo 2 — cronograma e etapas (ordem de §4.2 do plano: etapas antes de tudo que as referencia).
     internal static async Task DeclararEtapasAsync(Cenario c)
     {
-        await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.OK, "PUT cronograma-fases", "/cronograma-fases");
+        await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
         await EscolherOMotivoDaHomologacaoAsync(c);
-        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.OK, "PUT etapas", "/etapas");
+        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
         c.ObjetivaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Prova Objetiva").Id;
@@ -135,7 +135,7 @@ internal static class PassosDoEnvelopeFechado
         await ExecutarPassoAsync(() => c.Ctx.PutMotivoNaFaseAsync(faseId, motivoId), HttpStatusCode.NoContent, "PUT motivo na fase", "/fases/{fase}/motivos-de-decisao/{motivo}");
     }
 
-    // Passos 3, 4 e 4b — atendimento especializado (listas vazias: o checklist só exige AtendimentoEspecializado
+    // Passos 3, 4 e 4b — atendimento especializado (listas vazias: o lista de conferência só exige AtendimentoEspecializado
     // não nulo), distribuição de vagas (uma oferta Lei 12.711, as 8 modalidades federais + AC) e
     // número de opções de curso, conferido contra a única oferta da distribuição.
     internal static async Task DeclararAtendimentoEVagasAsync(Cenario c)
@@ -189,7 +189,7 @@ internal static class PassosDoEnvelopeFechado
     }
 
     // Passos 10 a 13 — derivação (egresso de escola pública quando COR_RACA=PRETA), cascata de
-    // remanejamento (matriz 8×7, fallback AC: a cascata exige cobrir as 8 modalidades da distribuição),
+    // remanejamento (matriz 8×7, uso de AC como alternativa: a cascata exige cobrir as 8 modalidades da distribuição),
     // documentos exigidos (vazio satisfaz vacuamente a base legal das exigências) e divulgação.
     internal static async Task DeclararRegrasEDocumentosAsync(Cenario c)
     {
@@ -201,9 +201,9 @@ internal static class PassosDoEnvelopeFechado
             HttpStatusCode.NoContent, "PUT divulgacao", "/divulgacao");
     }
 
-    // Passo 14 — GET /conformidade: projeção HTTP do checklist, não gate independente. A publicação
+    // Passo 14 — GET /conformidade: projeção HTTP do lista de conferência, não conferência independente. A publicação
     // do passo 15 só devolve 204 porque todos os gates já estão satisfeitos, então o corpus rico
-    // continua com todos os itens ok: a ampliação do checklist não pode criar falso vermelho aqui.
+    // continua com todos os itens ok: a ampliação do lista de conferência não pode criar falso vermelho aqui.
     internal static async Task ConferirChecklistVerdeAsync(Cenario c)
     {
         HttpResponseMessage resposta = await ExecutarPassoAsync(() => c.Ctx.ObterConformidadeAsync(), HttpStatusCode.OK, "GET conformidade", "/conformidade");
@@ -212,11 +212,11 @@ internal static class PassosDoEnvelopeFechado
         conformidade.ProcessoSeletivoId.Should().Be(
             c.Ctx.ProcessoId, "a coleção compartilha o Postgres com outros processos conformes — sem amarrar o ID, uma regressão no handler que ignorasse a rota devolveria a conformidade de outro processo");
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
-        conformidade.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
+        conformidade.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems("cada item do lista de conferência aparece uma única vez");
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
         conformidade.Itens.Select(i => i.Codigo).Should().BeEquivalentTo(
             ItensEsperadosDoChecklist,
-            "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
+            "o conjunto exato de itens que este corpus produz — remover um item do lista de conferência, ou acrescentar um item indevido marcado ok, muda este conjunto");
     }
 
     // Passo 15 — publicar. A publicação em si é 204; o ato ainda NÃO existe em Publicações neste

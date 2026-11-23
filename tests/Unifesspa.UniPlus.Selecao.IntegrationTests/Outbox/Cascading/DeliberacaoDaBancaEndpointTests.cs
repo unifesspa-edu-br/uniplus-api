@@ -11,14 +11,14 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 [Collection(CascadingCollection.Name)]
-public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture fixture)
+public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture ambienteDeTeste)
 {
     [Fact(DisplayName = "A banca recusa modo desconhecido sem repetir o valor e aceita o modo válido")]
     public async Task DefinirEtapas_ModoDeDeliberacao_ValidaCodigoSemRepetirValor()
     {
-        (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(fixture.Factory, nameof(DeliberacaoDaBancaEndpointTests));
-        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(fixture.Factory, Guid.CreateVersion7().ToString("N")[..8]);
-        using HttpClient client = fixture.Factory.CreateClient();
+        (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(ambienteDeTeste.Factory, nameof(DeliberacaoDaBancaEndpointTests));
+        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(ambienteDeTeste.Factory, Guid.CreateVersion7().ToString("N")[..8]);
+        using HttpClient client = ambienteDeTeste.Factory.CreateClient();
         JsonArray etapas = Etapas(catalogos.TipoBancaId);
         JsonNode regra = etapas[1]!["bancas"]![0]!["regraDeDeliberacao"]!;
         regra["modo"] = "colegiado";
@@ -26,7 +26,7 @@ public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture fixture)
         await ConferirRecusaAsync(invalida);
         regra["modo"] = "colegiadaComVotacao";
         using HttpResponseMessage valida = await EnviarAsync(client, processoId, etapas);
-        valida.StatusCode.Should().Be(HttpStatusCode.OK, await valida.Content.ReadAsStringAsync());
+        valida.StatusCode.Should().Be(HttpStatusCode.NoContent, await valida.Content.ReadAsStringAsync());
     }
 
     private static JsonArray Etapas(Guid tipoBancaId)

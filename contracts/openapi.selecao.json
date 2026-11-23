@@ -6723,34 +6723,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/EtapaProcessoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/EtapaProcessoDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/EtapaProcessoDto"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -9213,34 +9187,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaseCronogramaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaseCronogramaDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaseCronogramaDto"
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -16100,7 +16048,7 @@
       },
       "DocumentoDaConfiguracao": {
         "title": "Documento de configura\u00E7\u00E3o do processo seletivo",
-        "description": "Formato port\u00E1vel da configura\u00E7\u00E3o de um processo seletivo, na vers\u00E3o 1. Serve ao rascunho salvo pela tela e \u00E0 importa\u00E7\u00E3o e exporta\u00E7\u00E3o de um processo, inclusive o preparado fora do sistema. O esquema descreve s\u00F3 a forma: tipo, formato, enumera\u00E7\u00F5es, limites de tamanho e o que \u00E9 estruturalmente obrigat\u00F3rio. As regras de neg\u00F3cio (o que torna a configura\u00E7\u00E3o public\u00E1vel) s\u00E3o do dom\u00EDnio e n\u00E3o se repetem aqui; por isso um rascunho incompleto \u00E9 v\u00E1lido. Campo ainda n\u00E3o preenchido \u00E9 campo ausente, nunca texto no lugar de n\u00FAmero ou de data. Cat\u00E1logos e unidades s\u00E3o citados pelo c\u00F3digo est\u00E1vel, nunca pelo identificador interno do banco. Os identificadores s\u00F3 de leitura do processo e das partes s\u00E3o ignorados na importa\u00E7\u00E3o. As refer\u00EAncias entre partes do documento usam a chave local da parte referenciada, definida no pr\u00F3prio documento e \u00FAnica nele.",
+        "description": "Formato port\u00E1vel da configura\u00E7\u00E3o de um processo seletivo, na vers\u00E3o 1. Serve ao rascunho salvo pela tela e \u00E0 importa\u00E7\u00E3o e exporta\u00E7\u00E3o de um processo, inclusive o preparado fora do sistema. O esquema descreve s\u00F3 a forma: tipo, formato, enumera\u00E7\u00F5es, limites de tamanho e o que \u00E9 estruturalmente obrigat\u00F3rio. As regras de neg\u00F3cio (o que torna a configura\u00E7\u00E3o public\u00E1vel) s\u00E3o do dom\u00EDnio e n\u00E3o se repetem aqui; por isso um rascunho incompleto \u00E9 v\u00E1lido. Campo ainda n\u00E3o preenchido \u00E9 campo ausente, nunca texto no lugar de n\u00FAmero ou de data. Cat\u00E1logos e unidades s\u00E3o citados pelo c\u00F3digo est\u00E1vel, nunca pelo identificador interno do banco. Os identificadores s\u00F3 de leitura do processo e das partes s\u00E3o ignorados na importa\u00E7\u00E3o. As refer\u00EAncias entre partes do documento usam a chave local da parte referenciada, definida no pr\u00F3prio documento e \u00FAnica no escopo da parte. O sistema n\u00E3o atribui chave \u00E0 parte importada sem ela.",
         "type": "object",
         "additionalProperties": false,
         "required": [

@@ -22,12 +22,12 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
     private readonly CascadingFixture _fixture;
     private readonly ChamadasDosMotivosDeTeste _chamadas;
 
-    public MotivosDosLugaresQueSaemEndpointTests(CascadingFixture fixture)
+    public MotivosDosLugaresQueSaemEndpointTests(CascadingFixture ambienteDeTeste)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        ArgumentNullException.ThrowIfNull(ambienteDeTeste);
 
-        _fixture = fixture;
-        _chamadas = new ChamadasDosMotivosDeTeste(fixture, "TEST_MLQ");
+        _fixture = ambienteDeTeste;
+        _chamadas = new ChamadasDosMotivosDeTeste(ambienteDeTeste, "TEST_MLQ");
     }
 
     public Task InitializeAsync() => TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
@@ -43,11 +43,11 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
         (await _chamadas.IncluirAsync(LugaresDoProcessoDeTeste.RotaDaEtapa(processoId, etapa, motivo.Id))).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using HttpResponseMessage comId = await SubstituirEtapaAsync(processoId, etapa);
-        comId.StatusCode.Should().Be(HttpStatusCode.OK, await comId.Content.ReadAsStringAsync());
+        comId.StatusCode.Should().Be(HttpStatusCode.NoContent, await comId.Content.ReadAsStringAsync());
         (await _chamadas.LerAsync(processoId)).Should().ContainSingle("a etapa devolvida com o id é a mesma, e leva o motivo consigo");
 
         using HttpResponseMessage semId = await SubstituirEtapaAsync(processoId, id: null);
-        semId.StatusCode.Should().Be(HttpStatusCode.OK, await semId.Content.ReadAsStringAsync());
+        semId.StatusCode.Should().Be(HttpStatusCode.NoContent, await semId.Content.ReadAsStringAsync());
         (await _chamadas.LerAsync(processoId)).Should().BeEmpty("a etapa nova nasce sem motivo, e o da etapa que saiu foi junto");
     }
 
@@ -63,7 +63,7 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
 
         using HttpResponseMessage substituido = await SubstituirCronogramaAsync(processoId);
 
-        substituido.StatusCode.Should().Be(HttpStatusCode.OK, await substituido.Content.ReadAsStringAsync());
+        substituido.StatusCode.Should().Be(HttpStatusCode.NoContent, await substituido.Content.ReadAsStringAsync());
         (await _chamadas.LerAsync(processoId)).Should().BeEmpty("a fase saiu, e a etapa dela com ela");
     }
 

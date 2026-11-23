@@ -6,8 +6,6 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 public static class DefinirEtapasCommandHandler
 {
@@ -20,7 +18,7 @@ public static class DefinirEtapasCommandHandler
     /// só serializa handlers concorrentes porque roda enrolado nela, e <c>[NonTransactional]</c> o
     /// desabilitaria.
     /// </remarks>
-    public static async Task<Result<IReadOnlyList<EtapaProcessoDto>>> Handle(
+    public static async Task<Result> Handle(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDasEtapas definicao,
@@ -36,7 +34,7 @@ public static class DefinirEtapasCommandHandler
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
-            ? Result<IReadOnlyList<EtapaProcessoDto>>.Failure(obtido.Error!)
+            ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
@@ -57,7 +55,7 @@ public static class DefinirEtapasCommandHandler
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    private static async Task<Result<IReadOnlyList<EtapaProcessoDto>>> DefinirEGravarAsync(
+    private static async Task<Result> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirEtapasCommand command,
         DefinicaoDasEtapas definicao,
@@ -69,10 +67,10 @@ public static class DefinirEtapasCommandHandler
         if (definida.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<IReadOnlyList<EtapaProcessoDto>>.ValidationFailure(definida.Errors);
+            return Result.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<IReadOnlyList<EtapaProcessoDto>>.Success(ProjecaoDaEtapaDoProcesso.ProjetarEtapas(processo));
+        return Result.Success();
     }
 }

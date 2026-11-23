@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <param name="TipoEtapaOrigemId">
 /// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda
 /// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
-/// snapshot-copy independente do rótulo editorial (<paramref name="Nome"/>).
+/// cópia congelada independente do rótulo editorial (<paramref name="Nome"/>).
 /// </param>
 /// <remarks>
 /// <para>
@@ -64,14 +64,14 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <para>
 /// O que ele NÃO cobre é a construção em C#: o default deixa o compilador aceitar, em
 /// silêncio, uma instância sem as coleções, apesar de o tipo delas ser não-anulável. Quem
-/// construir o record em código — teste, fixture, qualquer chamador futuro — precisa declarar
+/// construir o record em código — teste, ambienteDeTeste, qualquer chamador futuro — precisa declarar
 /// as três explicitamente; nenhum diagnóstico avisa se esquecer, e o handler desreferencia.
 /// </para>
 /// <para>
 /// <c>NotaMaxima</c> e <c>PassoDoLancamento</c> são opcionais e, de propósito, sem
 /// <c>[JsonRequired]</c>. Como a gravação substitui a etapa, um cliente que omite os campos
 /// apaga a escala em silêncio; isso é aceito até a tela do editor passar a enviá-los. Para a
-/// nota máxima a perda aparece no gate da publicação, que a exige da etapa com nota; para o
+/// nota máxima a perda aparece no conferência da publicação, que a exige da etapa com nota; para o
 /// passo não aparece em lugar nenhum, porque ele nunca é obrigatório. Ficam no fim da lista
 /// posicional para não deslocar quem constrói o record por posição.
 /// </para>
@@ -79,7 +79,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <c>FormaDeAvaliacao</c> (<c>OBJETIVA</c> ou <c>HUMANA</c>) e a regra de consolidação seguem a
 /// mesma política dos dois campos anteriores: omitidos, são apagados, e a falta só é cobrada na
 /// publicação. A regra é declarada por código e versão do catálogo; o hash nunca vem do
-/// payload.
+/// corpo da requisição.
 /// </para>
 /// <para>
 /// <c>ItensDeAvaliacao</c> e <c>EscalaDeAtendimento</c> seguem a mesma política: omitidos, são
@@ -173,4 +173,4 @@ public sealed record ProdutoDaEtapaInput(string AtoCodigo, string? Papel);
 /// </summary>
 public sealed record DefinirEtapasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result<IReadOnlyList<EtapaProcessoDto>>>;
+    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result>;

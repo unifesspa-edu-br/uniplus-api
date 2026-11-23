@@ -79,7 +79,7 @@ internal sealed class CenarioDoCronogramaDeFases
     }
 
     /// <summary>
-    /// Cadastra a fase canônica no cadastro de Configuração e devolve a entrada de fase do payload que a
+    /// Cadastra a fase canônica no cadastro de Configuração e devolve a entrada de fase do corpo da requisição que a
     /// referencia.
     /// </summary>
     public FaseCronogramaInput CadastrarFase(FaseCanonicaView fase)
@@ -173,9 +173,9 @@ internal sealed class CenarioDoCronogramaDeFases
 
     private async Task<Result> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio)
     {
-        Result<IReadOnlyList<FaseCronogramaDto>> resultado = await DefinirCronogramaFasesCommandHandler.Handle(
+        Result resultado = await DefinirCronogramaFasesCommandHandler.Handle(
             command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
-        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
+        return resultado;
     }
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(

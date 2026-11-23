@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PublicacaoPeloEndpointDeTeste;
 
 [Collection(CascadingCollection.Name)]
-public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
+public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture ambienteDeTeste)
 {
     [Theory]
     [InlineData("produtos")]
@@ -60,23 +60,23 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
     }
 
     [Fact]
-    public async Task Definir_ProcessoComClassificacaoImportadaEAListaVazia_200ComListaVazia()
+    public async Task Definir_ProcessoComClassificacaoImportadaEAListaVazia_204SemCorpo()
     {
         Guid processoId = await SemearProcessoSemEtapasAsync();
-        using HttpClient client = fixture.Factory.CreateClient();
+        using HttpClient client = ambienteDeTeste.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(new JsonArray()));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await resposta.Content.ReadAsStringAsync()).Should().Be("[]");
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await resposta.Content.ReadAsStringAsync()).Should().BeEmpty();
     }
 
     [Fact]
     public async Task Definir_Publicado_422ComMutacaoBloqueada()
     {
-        await TiposDeAtoSeeder.SemearAsync(fixture.Factory.Services);
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(fixture.Factory, nameof(Definir_Publicado_422ComMutacaoBloqueada));
-        using HttpClient client = fixture.Factory.CreateClient();
+        await TiposDeAtoSeeder.SemearAsync(ambienteDeTeste.Factory.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(ambienteDeTeste.Factory, nameof(Definir_Publicado_422ComMutacaoBloqueada));
+        using HttpClient client = ambienteDeTeste.Factory.CreateClient();
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(Array.Empty<object>()));
         await ExigirErroAsync(resposta, HttpStatusCode.UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
@@ -92,7 +92,7 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
 
     private async Task<Guid> SemearProcessoSemEtapasAsync()
     {
-        await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope scope = ambienteDeTeste.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = ApoioDoProcessoConformeSemeado.ProcessoBaseConforme(db, "PSR 2027");
         await db.ProcessosSeletivos.AddAsync(processo);
@@ -102,8 +102,8 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
 
     private async Task<(HttpClient Client, Guid ProcessoId)> PrepararAsync()
     {
-        (Guid processoId, _) = await SemearProcessoAsync(fixture.Factory, nameof(DefinirEtapasContratoEndpointTests));
-        return (fixture.Factory.CreateClient(), processoId);
+        (Guid processoId, _) = await SemearProcessoAsync(ambienteDeTeste.Factory, nameof(DefinirEtapasContratoEndpointTests));
+        return (ambienteDeTeste.Factory.CreateClient(), processoId);
     }
 
     private static JsonObject Etapa() => new()

@@ -63,7 +63,7 @@ public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
 /// </summary>
 /// <param name="TipoBancaId">
 /// Id do <c>TipoBanca</c> vivo no cadastro de Configuração. O handler o resolve e congela
-/// o par identidade-e-código por valor (snapshot-copy, ADR-0061).
+/// o par identidade-e-código por valor (cópia congelada, ADR-0061).
 /// </param>
 /// <param name="CategoriasDocumentoIds">
 /// Os candidatos atendidos: as categorias de documento que esta banca julga, referenciadas
@@ -87,7 +87,7 @@ public sealed record BancaRequeridaInput(
 /// Entrada de uma fase do cronograma, usada por
 /// <see cref="DefinirCronogramaFasesCommand"/>. O handler resolve
 /// <see cref="FaseCanonicaId"/> e <see cref="BancasRequeridas"/> contra o módulo
-/// Configuração e congela os atributos vigentes por valor (snapshot-copy,
+/// Configuração e congela os atributos vigentes por valor (cópia congelada,
 /// ADR-0061) — o cliente não os declara diretamente.
 /// </summary>
 /// <param name="Produtos">Tudo o que a fase publica, com o papel de cada publicação.</param>
@@ -98,7 +98,7 @@ public sealed record BancaRequeridaInput(
 /// <param name="UnidadeResponsavelId">
 /// Id da unidade da Unifesspa que responde pela fase. Opcional no rascunho; a publicação e
 /// a retificação a exigem. O handler a resolve pela porta <c>IResolvedorDaUnidadeResponsavel</c> e congela id, sigla
-/// e nome por valor (snapshot-copy, ADR-0061).
+/// e nome por valor (cópia congelada, ADR-0061).
 /// </param>
 /// <param name="TiposDeDecisao">
 /// Os tipos de decisão que a fase declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum. A
@@ -139,4 +139,4 @@ public sealed record FaseCronogramaInput(
 /// </summary>
 public sealed record DefinirCronogramaFasesCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result<IReadOnlyList<FaseCronogramaDto>>>;
+    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result>;
