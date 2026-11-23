@@ -206,6 +206,12 @@ exige o seu próprio avanço.
 
 > **Nota (2026-11-20) — o limite da E2.1 é a produção, e a versão avança uma vez por entrega.** A emenda às ADRs 0109 e 0110 feita pela [ADR-0137](0137-formularios-por-finalidade-e-modelos-por-tipo-de-processo.md), mantida pela [ADR-0171](0171-formularios-do-processo-ligados-as-fases.md), levou o limite acima, "primeiro certame publicado em qualquer ambiente, inclusive homologação", para a primeira publicação **em produção**: os processos de homologação são descartáveis e são recriados quando a forma muda. Decide-se agora como a versão avança até lá: cada entrega que muda a forma do envelope (o conjunto de mudanças que chega junto à `main`) avança a `schema_version` **uma vez só**, junto com a sua última mudança de forma; as mudanças de forma anteriores da mesma entrega só regeneram a golden fixture, como no fechamento da forma `0.0.6` acima. As formas intermediárias não são implantadas sozinhas, e a D1 continua cumprida. A partir da primeira publicação em produção, cada mudança de forma exige o seu próprio avanço.
 
+> **Nota (2026-11-23) — envelope único, sem avanço de versão, até a primeira publicação em produção.** Decisão do líder técnico (23/11/2026). Até a primeira publicação em produção, que é o limite da ADR-0137, há um envelope só: o atual, identificado por `0.0.57`, editado no lugar. O número não muda a cada mudança de forma nem a cada entrega. Até esse limite não se aplicam o avanço da `schema_version` a cada mudança de forma (D1), o trem coordenado da E2.1 e a nota de 20/11 ("a versão avança uma vez por entrega"). Cada mudança de forma edita o envelope atual e gera de novo os envelopes de referência dos testes. O leitor lê só o envelope atual; os leitores de formas anteriores são removidos, sem compatibilidade com elas. Os processos de homologação são descartáveis e são criados de novo quando a forma muda (ADR-0137).
+>
+> A partir da primeira publicação em produção, a versão publicada não muda mais: ela fica com os seus bytes, o seu hash e a sua versão, a D1 volta a valer, e a primeira mudança de forma depois dela avança a versão e preserva a leitura da versão anterior (ADR-0110, D1 e E2.2). O número da 1.0.0 e quando ela sai são decisão do líder técnico.
+>
+> O envelope atual traz, em cada objeto que grava valor de enum pelo código, o subobjeto `contexto`, com o rótulo de cada um desses valores, como foto do momento da publicação; o `contexto` entra nos bytes e no resumo da versão, e o leitor decide só pelo código (ADR-0176, emenda 3; ADR-0172, emenda de 23/11).
+
 ### E2.2 — Cai a fixture por versão; permanece a prova de fidelidade da forma corrente
 
 Cai a parte da D2 que manda manter uma golden fixture por `schema_version`. Enquanto vigora
@@ -315,3 +321,35 @@ Os valores migrados para o catálogo da ADR-0176 são escritos pelo código decl
 ## Emenda — aprovação das referências
 
 Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).
+
+## Emenda 6 (2026-11-23) — motivos de decisão e prova presencial
+
+Decisão do líder técnico (23/11/2026). O envelope atual ganha dois blocos, que entram nos bytes e no resumo da versão. O leitor exige as duas chaves.
+
+### E6.1 — Os blocos
+
+- **`motivosDeDecisao`**: os motivos de decisão do processo em vigor na versão, cada um com o lugar (`faseChave` ou `etapaChave`), `tipoDeDecisaoCodigo`, `codigo`, `descricao`, `subclassificacao`, `sentido`, `versaoDoEditalDeEntrada` e `justificativaDaInclusao`. O rótulo do sentido vai no `contexto` (ADR-0176, emenda 3). O motivo retirado numa retificação não aparece na versão em que saiu nem nas seguintes. Lista vazia quando o processo não escolheu motivo.
+- **`provaPresencial`**: `temProvaPresencial` e `municipios`, cada um com `codigoIbge`, `uf` e `nome`. O nome é o que o Geo devolveu na conferência da publicação ou da retificação. Ele é campo comum do bloco, e não vai no `contexto`, porque não é rótulo de valor de enum. Sem prova presencial, `municipios` é a lista vazia. Os municípios são as cidades em que o candidato pode fazer a prova, e não o local exato: o endereço e a sala saem no ensalamento e na distribuição dos candidatos (UNI-REQ-0042), fora deste bloco.
+
+Os dois blocos estão sempre presentes, como manda a D4 ("todo bloco canônico está presente", item 10 da ADR-0100).
+
+### E6.2 — Ordem e identidade
+
+- Os municípios seguem a posição declarada, gravada na coluna `posicao`. A posição tem sentido de negócio (a ordem em que o edital lista os municípios), e reordenar muda o envelope e o hash.
+- Os motivos ordenam pela chave natural, em ordem ordinal: o código do tipo de decisão, o código do motivo (em NFC) e o lugar, primeiro o tipo do lugar (fase ou etapa) e depois a chave dele. A chave natural é única no processo e decide a ordem sozinha.
+- Nenhum dos dois blocos guarda o identificador da linha (E4.1). A escolha da cidade de prova cita o município pelo código do IBGE. A decisão sobre o candidato cita o motivo pela chave natural, que não muda entre versões, porque a chave do lugar é formada uma vez e não muda mais (ADR-0172, emenda de 23/11).
+
+### E6.3 — Exposição
+
+- `provaPresencial` é público: a lista dos municípios é parte pública do edital (UNI-REQ-0407).
+- `motivosDeDecisao` é interno: a justificativa da inclusão não é apresentada ao candidato (UNI-REQ-0124).
+
+A classificação de cada bloco é registrada em `ClassificacaoDosBlocosDoCertame`, como para os blocos existentes.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo. A exportação da versão publicada lê os dois blocos do documento congelado, nunca das tabelas.
+
+## Emenda 7 (2026-11-23) — o nome do processo no documento congelado
+
+O documento congelado guarda, na raiz, o `nome` do processo seletivo, com o mesmo nome da `v1` (`identificacao.nome`). É obrigatório, tem de 1 a 300 caracteres e é gravado em NFC; o leitor exige a chave. É lido do próprio processo ao congelar, na publicação e na retificação, e entra nos bytes e no resumo criptográfico. A página pública, a busca e a exportação da versão publicada tiram o nome do documento congelado, nunca do processo gravado no banco. A D1 e a nota de 23/11 sobre a versão não mudam: o envelope continua em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o nome do processo muda o resumo da versão.

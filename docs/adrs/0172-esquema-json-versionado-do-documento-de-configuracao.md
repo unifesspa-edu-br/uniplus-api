@@ -38,7 +38,7 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 - **Forma:** os esquemas ficam em `contracts/selecao/configuracao/vN/`, um arquivo por assunto, com `$id` absoluto e `$ref` relativo e só local. O arquivo `documento` é a raiz; as definições compartilhadas ficam em arquivos próprios. O esquema descreve a forma (tipo, formato, enumeração, tamanho, obrigatoriedade e restrições estruturais entre campos vizinhos); a regra de negócio é do domínio, e por isso um rascunho incompleto é um documento válido.
 - **Identidade:** catálogos e unidades são citados pelo código estável, nunca por identificador do banco, e os campos de código de catálogo recusam a forma de identificador único (UUID). Fase, etapa, item de avaliação, nível de atendimento, banca e exigência têm chave local única no respectivo escopo, usada pelas referências; a parte identificada por códigos de catálogo mantém a identidade natural. A pessoa é citada pelo identificador da conta dela no Uni+, texto opaco, nunca por dado pessoal; o esquema não distingue um identificador de conta de outro texto, e a recusa do código que não é conta do cadastro é do domínio. O nome vem do cadastro na emissão.
 - **Só leitura:** o descritivo que acompanha o código (nomes, siglas, rótulos dos valores de enum, dados do arquivo do modelo e identificadores) e o que é derivado ficam marcados `readOnly`; no documento congelado, o descritivo registra os valores da publicação; a importação os ignora, e o leitor do documento congelado ignora os descritivos de contexto: a referência é o código ou a chave, e o servidor recalcula o derivado.
-- **Resolução:** a importação resolve cada código citado uma vez, contra o cadastro vivo, e dali decide o identificador do snapshot. Código que não existe é recusado apontando a posição no documento. Na retificação, código igual ao já congelado herda a cópia congelada.
+- **Resolução:** a importação e o salvamento do rascunho resolvem cada código citado uma vez, contra o cadastro vivo, e dali decidem o identificador do snapshot. Código que não existe é apontado como diagnóstico ao salvar, na posição do documento, e recusado na publicação e na retificação. Na retificação, código igual ao já congelado herda a cópia congelada.
 - **Evolução:** a compatibilidade é para trás dentro da versão: documento válido na `v1` continua válido. Entram na versão a propriedade opcional nova, o valor novo de enumeração e o limite relaxado. Criam a versão seguinte (outra pasta, outro `$id`, outro `versaoFormato`) remover ou renomear propriedade, tornar propriedade obrigatória, estreitar tipo, formato, limite ou enumeração e mudar o significado de um campo.
 - **Congelamento:** a versão congela na primeira tag que a publica, e a cópia dos arquivos passa a `publicadas/vN/`. Dali em diante um teste compara o esquema atual com cada cópia publicada e recusa a mudança incompatível que o comparador reconhece; o que ele não examina fica para a revisão.
 - **Registro:** o esquema é registrado no registro de esquemas com regra de compatibilidade desligada, porque a versão atual do registro recusa a segunda versão de um esquema 2020-12 sob regra de compatibilidade; a garantia vive no teste acima.
@@ -93,7 +93,8 @@ Todas as mudanças abaixo são feitas na própria `v1`, pelo mesmo motivo das em
 Quem forma a chave:
 
 - No documento importado, a chave vem no documento; o sistema não atribui chave a parte que chega sem ela.
-- Nas gravações por dimensão (`PUT`), o servidor forma a chave uma vez, quando a parte é criada, e ela não muda mais: mudar o texto, a ordem ou os dados da parte não muda a chave. O pedido de gravação aceita a chave como opcional; quando ela vem, é usada.
+- Nas gravações por dimensão (`PUT`), o servidor forma a chave uma vez, quando a parte é criada, e ela não muda mais: mudar o texto, a ordem ou os dados da parte não muda a chave. A parte já gravada é reconhecida pela identidade que o pedido traz: o tipo de fase na fase; o id na etapa, no item e na banca; a chave, opcional, no nível e na exigência. A parte reconhecida mantém a chave; as demais recebem a chave formada pelo servidor.
+- No documento do rascunho (criação e substituição integral), a chave vem no documento, como na importação: a tela forma a chave da parte nova pela regra abaixo, uma vez, ao criar a parte, e a guarda; a API guarda a chave como veio e recusa a parte sem chave (422, no ponteiro da chave que falta).
 
 Regra de formação, a mesma no servidor e na tela:
 
@@ -102,7 +103,7 @@ Regra de formação, a mesma no servidor e na tela:
 3. O texto vai sem acento e em minúsculas; tudo o que não é letra de `a` a `z` ou dígito vira `_`, sem `_` repetido nem nas pontas.
 4. Se o texto já é o prefixo ou começa por prefixo e `_`, o prefixo não se repete (`BANCA_HETEROIDENTIFICACAO` forma `banca_heteroidentificacao`); começar pelas mesmas letras sem o `_` não conta (`BANCARIA` forma `banca_bancaria`).
 5. Se o texto fica vazio depois da limpeza, a chave é só o prefixo (`item`).
-6. Se a chave já existe, recebe o menor sufixo livre `_2`, `_3`…. Conta-se o conjunto das partes do mesmo tipo e escopo (fases, etapas e exigências no processo; itens e níveis na etapa; bancas da fase e da etapa juntas no documento inteiro) e toda referência `*Chave` presente no documento, inclusive a que cita parte já excluída.
+6. Se a chave já existe, recebe o menor sufixo livre `_2`, `_3`…. Conta-se o conjunto das partes do mesmo tipo e escopo (fases, etapas e exigências no processo; itens e níveis na etapa; bancas da fase e da etapa juntas no documento inteiro) e toda referência `*Chave` presente no documento, inclusive a que cita parte já excluída. Na gravação por dimensão, as chaves em uso são as das partes reconhecidas do mesmo escopo; nas bancas, são as das fases e das etapas de todo o documento. As referências por chave só existem no documento de troca.
 7. Acima de 64 caracteres, corta na última palavra inteira que cabe em 64 caracteres, contando o sufixo.
 8. O formato final é `^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$`, com até 64 caracteres.
 
@@ -123,9 +124,9 @@ Onde ficam:
 
 Regras comuns:
 
-- No documento congelado, esses campos registram os valores do momento da publicação: entram nos bytes e no resumo criptográfico da versão, e a mudança posterior do cadastro ou do rótulo não muda a versão publicada (ADR-0061).
-- A exportação da versão publicada deve converter o documento congelado para a `v1`, sem ler cadastro vivo, com os campos só de leitura da publicação. A exportação do rascunho traz esses campos dos cadastros vivos no momento da exportação. A adequação integral do documento congelado à `v1` e a validação dos três envelopes de referência e da exportação contra o esquema são trabalho posterior.
-- A configuração usa o código ou a chave como referência. O leitor do documento congelado ignora os descritivos de contexto e conserva os identificadores necessários à reconstituição; a importação ignora os campos só de leitura.
+- No documento congelado, esses campos registram os valores que o processo guarda na publicação: entram nos bytes e no resumo criptográfico da versão, e a mudança posterior do cadastro ou do rótulo não muda a versão publicada (ADR-0061).
+- A exportação da versão publicada deve converter o documento congelado para a `v1`, sem ler cadastro vivo, com os campos só de leitura da publicação. A exportação do rascunho traz esses campos dos cadastros vivos no momento da exportação. O documento congelado e a `v1` usam os mesmos nomes; um teste valida contra a `v1` os três envelopes de referência dos testes, depois de convertidos para o formato `v1`, e a exportação. O teste acompanha o mesmo conjunto de mudanças.
+- A configuração usa o código ou a chave como referência. O leitor do documento congelado ignora o contexto de rótulos; os nomes copiados ao salvar (tipo de fase, categoria julgada, modelo de origem, tipo de ato) são lidos e conferidos. O leitor conserva os identificadores necessários à reconstituição; a importação ignora os campos só de leitura.
 - A retificação compara pelo que se grava: diferença só em campo só de leitura não é mudança.
 
 **4. Nomes da `v1`.** Os nomes abaixo são os definitivos, os mesmos do documento congelado:
@@ -138,15 +139,23 @@ Regras comuns:
 | `cronograma.schema.json`, fase | `faseCanonicaCodigo` | `tipoFaseCodigo` |
 | `etapas.schema.json` | `regraConsolidacao` | `regraDeApuracaoDaAvaliacao` |
 | `restricao-de-valor.schema.json`, limite de data | `ancora` | `referenciaDaData` |
-| `restricao-de-valor.schema.json` | `fatos` | `dados` |
+| `restricao-de-valor.schema.json` | `fatos` | `codigosDosDados` |
 | `cascata-de-remanejamento.schema.json` | `fallbackCodigo` | `destinoFinalCodigo` |
 | `exigencias.schema.json` | `fatosComprovados` | `dadosComprovados` |
-| `coleta.schema.json` e `item-do-formulario.schema.json` | `fatoCodigo` | `dadoCodigo` |
+| `exigencias.schema.json` | `condicaoGatilho` | `condicoes` |
+| `coleta.schema.json` e `item-do-formulario.schema.json` | `fatoCodigo` | `codigoDoDado` |
+| `coleta.schema.json` | `regrasDerivacao` | `calculosDosDados` |
+| `formulario.schema.json` | `etapas` | `paginas` |
+| `formulario.schema.json` e `item-do-formulario.schema.json` | `etapaCodigo` | `paginaCodigo` |
+| `item-do-formulario.schema.json` | `precondicao` | `exibicao` |
 | `coleta.schema.json` | `referenciaTemporalFatos` | `referenciaTemporalDosDados` |
-| `bonus-regional.schema.json` | `fatoElegibilidadeCodigo` | `dadoDeElegibilidadeCodigo` |
-| `predicado.schema.json` | `fato` | `dado` |
+| `documento.schema.json` | `bonusRegional` | `fada` |
+| arquivo do esquema | `bonus-regional.schema.json` | `fada.schema.json` |
+| `fada.schema.json` | `fatoElegibilidadeCodigo` | `codigoDoDadoDeElegibilidade` |
+| `fada.schema.json` | `baseLegalBonusRegionalCodigo` | `baseLegalCodigo` |
+| `predicado.schema.json` | `fato` | `codigoDoDado` |
 
-O documento congelado e a resposta da versão vigente devem usar os mesmos nomes, inclusive os nomes "dado" (por exemplo, `dadosColetados` e `dadoCodigo`); nenhum nome fora do padrão fica em nenhum dos três. O `tipoFaseOrigemId` é do documento congelado (identificador da cópia do tipo de fase); a `v1` cita o tipo de fase pelo código (`tipoFaseCodigo`) e não leva o identificador. Esses nomes são os adotados na `v1`. A descrição do campo de referência da fase em `coleta.schema.json` também sai do verbo "ancora" ("fase do cronograma que serve de referência").
+O documento congelado e a resposta da versão vigente usam os mesmos nomes, inclusive os nomes "dado" (por exemplo, `dadosDosFormularios`, `calculosDosDados`, `dadosCalculados` e `codigoDoDado`); nenhum nome fora do padrão fica em nenhum dos três. FADA é o Fator de Atenuação das Desigualdades de Acesso; no documento congelado, o bloco é `fada`, e `baseLegalBonusRegionalId` passa a `baseLegalId`, ao lado de `baseLegalCodigo`. Os títulos e as descrições de `fada.schema.json` usam o nome por extenso, sem "bônus". O `nome` do processo fica na raiz do documento congelado e é `identificacao.nome` na `v1` (ADR-0109, emenda 7). O `tipoFaseOrigemId` é do documento congelado (identificador da cópia do tipo de fase); a `v1` cita o tipo de fase pelo código (`tipoFaseCodigo`) e não leva o identificador. Esses nomes são os adotados na `v1`. A descrição do campo de referência da fase em `coleta.schema.json` também sai do verbo "ancora" ("fase do cronograma que serve de referência").
 
 **5. Prazo de emissão da exigência.** Em `exigencias.schema.json`, `idadeMaximaEmissao` (na exigência e em `$defs`) sai e entram `prazoDeEmissao` e `validade`, com a forma definida para o prazo de emissão: escolha (`semPrazo` ou `comPrazo`), valor, unidade, referência (com `faseChave` para início ou fim de fase) e efeito fora do prazo. O documento que ainda traz `idadeMaximaEmissao` é recusado como propriedade desconhecida, com o caminho.
 
@@ -166,7 +175,9 @@ Campos só de leitura novos, pela regra do item 3:
 
 Os caminhos dos erros dos motivos acompanham o nome novo (`motivosDeDecisao[i]`). O limite de municípios continua fora do esquema: é configuração da API, com o padrão de 100 municípios (UNI-REQ-0407). A importação do resultado fica como está nesta emenda; a mudança dela está retida para decisão posterior.
 
-**Confirmação:** o teste de contrato deve conferir que o exemplo publicado valida com os nomes definitivos e com `prazoDeEmissao` e `validade`; que a chave formada segue a regra (com a mesma tabela de exemplos nos testes do servidor e da tela) e o padrão (aceita `etapa_prova_objetiva_2`; recusa `prova-objetiva`, `Etapa`, `1etapa`, `etapa__x`, `etapa_` e 65 caracteres); e que os campos só de leitura vêm no documento congelado e na exportação, têm os descritivos ignorados pelo leitor e os campos só de leitura ignorados pela importação, e a retificação que difere só neles não é mudança. A validação dos três envelopes de referência convertidos e da exportação da versão publicada contra a `v1` acompanha a adequação integral do documento congelado.
+**7. Código de cadastro inexistente no rascunho.** No documento do rascunho, ao salvar e ao importar, o código de cadastro que não existe (tipo de etapa, tipo de banca, tipo de documento e os demais catálogos citados) não recusa o salvamento: é apontado como diagnóstico, na posição do documento, e o rascunho é salvo (200). A recusa (422) vem só na publicação e na retificação. A forma do documento continua recusando o salvamento inteiro (422), como a uniplus-api#2523 descreve.
+
+**Confirmação:** o teste de contrato deve conferir que o exemplo publicado valida com os nomes definitivos e com `prazoDeEmissao` e `validade`; que a chave formada segue a regra (com a mesma tabela de exemplos nos testes do servidor e da tela) e o padrão (aceita `etapa_prova_objetiva_2`; recusa `prova-objetiva`, `Etapa`, `1etapa`, `etapa__x`, `etapa_` e 65 caracteres); e que os campos só de leitura vêm no documento congelado e na exportação, têm os descritivos ignorados pelo leitor e os campos só de leitura ignorados pela importação, e a retificação que difere só neles não é mudança. O teste deve validar contra a `v1` os três envelopes de referência convertidos e a exportação da versão publicada, no mesmo conjunto de mudanças.
 
 ## Consequências
 
