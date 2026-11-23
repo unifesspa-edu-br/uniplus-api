@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -47,6 +48,10 @@ internal sealed class CenarioDoRascunho
 
     public ITipoProcessoReader Tipos { get; } = Substitute.For<ITipoProcessoReader>();
 
+    public ITipoDocumentoReader TiposDeDocumento { get; } = Substitute.For<ITipoDocumentoReader>();
+
+    public IMotivoDeDecisaoRepository Motivos { get; } = Substitute.For<IMotivoDeDecisaoRepository>();
+
     public IVerificadorDeAcesso Verificador { get; } = Substitute.For<IVerificadorDeAcesso>();
 
     public IRascunhoDeProcessoSeletivoRepository Rascunhos { get; } = Substitute.For<IRascunhoDeProcessoSeletivoRepository>();
@@ -64,7 +69,8 @@ internal sealed class CenarioDoRascunho
 
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
-    public ExportacaoDoRascunho Exportacao => new(Unidades, Tipos);
+    public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]));
 
     public CenarioDoRascunho PodeConfigurarEm(UnidadeView unidade)
     {

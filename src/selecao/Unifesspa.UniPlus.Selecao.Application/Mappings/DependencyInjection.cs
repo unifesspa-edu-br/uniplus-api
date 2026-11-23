@@ -9,6 +9,7 @@ using Services.AcessoPelaBanca;
 using Services.DocumentoDaConfiguracao;
 using Services.InscricaoAdministrativa;
 using Services.Rascunhos;
+using Services.Rascunhos.Descricoes;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
@@ -103,6 +104,11 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<UnidadeDoDocumentoDoRascunho>();
         services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
         services.AddScoped<BloqueioDoDonoDoDocumentoAPublicar>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeUnidades>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeProcesso>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDocumento>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeMotivosDeDecisao>();
+        services.AddScoped<DescricaoDoDocumentoDoRascunho>();
         services.AddScoped<ExportacaoDoRascunho>();
     }
 

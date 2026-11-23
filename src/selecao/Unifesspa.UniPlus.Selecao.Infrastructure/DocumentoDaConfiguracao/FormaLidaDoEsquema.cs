@@ -32,9 +32,11 @@ internal sealed class FormaLidaDoEsquema
     private FormaDoNo Montar(IEnumerable<TrechoDoEsquema> partida)
     {
         IReadOnlyList<TrechoDoEsquema> trechos = Expandir(partida);
+        string[] localizacoes = [.. trechos.Select(static trecho => trecho.Localizacao)];
         return _montados.GetOrAdd(
-            string.Join('|', trechos.Select(static trecho => trecho.Localizacao)),
+            string.Join('|', localizacoes),
             _ => new FormaDoNo(
+                localizacoes,
                 trechos.Any(static trecho => trecho.DeclaraVerdadeiro("readOnly")),
                 ParteDe(trechos),
                 () => PropriedadesDe(trechos),

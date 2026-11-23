@@ -17,6 +17,16 @@ public interface ITipoDocumentoReader
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Os tipos de documento vivos (não soft-deleted) dos <paramref name="codigos"/>, numa só
+    /// leitura, ordenados por <c>Codigo</c> ascendente. O código sem tipo vivo — fora do
+    /// formato, sem cadastro ou removido — não aparece no resultado, e um código repetido no lote
+    /// devolve o tipo uma só vez. Os códigos são aparados antes da comparação ordinal.
+    /// </summary>
+    Task<IReadOnlyList<TipoDocumentoView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Obtém um tipo de documento pelo <paramref name="id"/>, ou
     /// <see langword="null"/> se inexistente / soft-deleted.
     /// </summary>

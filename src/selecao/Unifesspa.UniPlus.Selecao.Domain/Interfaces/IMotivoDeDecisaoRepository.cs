@@ -9,6 +9,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>Repositório do cadastro único de motivos de decisão (UNI-REQ-0283).</summary>
 public interface IMotivoDeDecisaoRepository : IRepository<MotivoDeDecisao>
 {
+    Task<IReadOnlyList<MotivoDeDecisao>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<(string Codigo, string? Complemento)> codigos, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Lista motivos paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089), com filtro
     /// opcional por tipo, por subclassificação e por situação. Ordenação estável por <c>Id</c>.

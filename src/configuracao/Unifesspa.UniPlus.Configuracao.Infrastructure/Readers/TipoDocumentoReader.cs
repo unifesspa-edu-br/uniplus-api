@@ -17,10 +17,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// leitura viva; o congelamento por valor no consumidor (ADR-0061) dispensa
 /// releitura quente (mesmo padrão do <c>PesoAreaEnemReader</c>).
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class TipoDocumentoReader : ITipoDocumentoReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -55,28 +51,47 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
         return entidade is null ? null : ParaView(entidade);
     }
 
+    public async Task<IReadOnlyList<TipoDocumentoView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoTipoDocumento> codigosDoLote = CodigosValidos(codigos);
+        List<TipoDocumento> entidades = await _dbContext.TiposDocumento
+            .AsNoTracking()
+            .Where(tipo => codigosDoLote.Contains(tipo.Codigo))
+            .OrderBy(tipo => tipo.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
+    // Valores inválidos não podem estar gravados e o conversor os recusaria na consulta.
+    private static List<CodigoTipoDocumento> CodigosValidos(IReadOnlyCollection<string> codigos) =>
+    [.. codigos
+        .Where(CodigoTipoDocumento.EhValido)
+        .Select(codigo => CodigoTipoDocumento.Criar(codigo).Value!)
+        .Distinct()];
+
+    // O código tem formato fechado (CodigoTipoDocumento): só letras maiúsculas, dígitos e sublinhado, o que dispensa
+    // normalização Unicode. Um código fora do formato não pode estar gravado, então a busca responde "não encontrado" sem
+    // consultar o banco, em vez de estourar no conversor ao traduzir um valor que o value object recusaria.
     public async Task<TipoDocumentoView?> ObterVivoPorCodigoAsync(
         string codigo,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // O código tem formato fechado (CodigoTipoDocumento): só letras maiúsculas,
-        // dígitos e sublinhado, o que dispensa normalização Unicode — não há caractere
-        // componível no conjunto. Um código fora do formato não pode estar gravado, então
-        // a busca responde "não encontrado" sem consultar o banco, em vez de estourar no
-        // conversor ao traduzir um valor que o value object recusaria.
-        Result<CodigoTipoDocumento> codigoResult = CodigoTipoDocumento.Criar(codigo);
-        if (codigoResult.IsFailure || codigoResult.Value is null)
+        if (CodigoTipoDocumento.Criar(codigo).Value is not { } codigoDoTipo)
         {
             return null;
         }
 
-        CodigoTipoDocumento codigoVo = codigoResult.Value;
-
         TipoDocumento? entidade = await _dbContext.TiposDocumento
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Codigo == codigoVo, cancellationToken)
+            .FirstOrDefaultAsync(t => t.Codigo == codigoDoTipo, cancellationToken)
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);

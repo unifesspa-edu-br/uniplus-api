@@ -174,6 +174,7 @@ public sealed class NormalizacaoDoDocumentoTests
         FormaDoNo forma = FormaDeTeste.Objeto(new()
         {
             ["copia"] = new FormaDoNo(
+                localizacoes: [],
                 somenteLeitura: true,
                 parte: null,
                 () => new Dictionary<string, FormaDoNo>(),

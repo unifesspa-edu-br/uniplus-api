@@ -11,19 +11,25 @@ public sealed class FormaDoNo
     private readonly Lazy<FormaDoNo?> _itens;
 
     public FormaDoNo(
+        IReadOnlyList<string> localizacoes,
         bool somenteLeitura,
         ParteComChave? parte,
         Func<IReadOnlyDictionary<string, FormaDoNo>> propriedades,
         Func<FormaDoNo?> itens)
     {
+        ArgumentNullException.ThrowIfNull(localizacoes);
         ArgumentNullException.ThrowIfNull(propriedades);
         ArgumentNullException.ThrowIfNull(itens);
 
+        Localizacoes = localizacoes;
         SomenteLeitura = somenteLeitura;
         Parte = parte;
         _propriedades = new Lazy<IReadOnlyDictionary<string, FormaDoNo>>(propriedades);
         _itens = new Lazy<FormaDoNo?>(itens);
     }
+
+    /// <summary>Os pontos do esquema que formam o nó, na ordem em que são expandidos.</summary>
+    public IReadOnlyList<string> Localizacoes { get; }
 
     /// <summary>Verdadeiro quando o esquema marca o ponto como só de leitura: a importação o ignora.</summary>
     public bool SomenteLeitura { get; }

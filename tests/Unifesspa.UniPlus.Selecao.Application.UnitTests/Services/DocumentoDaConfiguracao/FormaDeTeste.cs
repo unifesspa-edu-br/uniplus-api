@@ -6,13 +6,13 @@ using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 internal static class FormaDeTeste
 {
     public static FormaDoNo Valor(bool somenteLeitura = false) =>
-        new(somenteLeitura, parte: null, static () => new Dictionary<string, FormaDoNo>(), static () => null);
+        new([], somenteLeitura, parte: null, static () => new Dictionary<string, FormaDoNo>(), static () => null);
 
     public static FormaDoNo Objeto(Dictionary<string, FormaDoNo> propriedades, ParteComChave? parte = null) =>
-        new(somenteLeitura: false, parte, () => propriedades, static () => null);
+        new([], somenteLeitura: false, parte, () => propriedades, static () => null);
 
     public static FormaDoNo Lista(FormaDoNo itens) =>
-        new(somenteLeitura: false, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
+        new([], somenteLeitura: false, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
 
     /// <summary>
     /// O documento de teste: raiz com <c>id</c> só de leitura; <c>etapas</c> com chave no documento, cada uma com <c>itens</c> de
@@ -24,9 +24,43 @@ internal static class FormaDeTeste
         ["id"] = Valor(somenteLeitura: true),
         ["nome"] = Valor(),
         ["etapas"] = Lista(Etapa()),
-        ["cronograma"] = Objeto(new() { ["fases"] = Lista(ParteComChaveNoDocumento("fase")) }),
+        ["cronograma"] = Objeto(new() { ["fases"] = Lista(Fase()) }),
         ["identificacao"] = Identificacao(),
+        ["motivosDeDecisao"] = Lista(Motivo()),
+        ["provaPresencial"] = Objeto(new() { ["municipios"] = Lista(Objeto(new() { ["codigoIbge"] = Valor(), ["nome"] = Valor(true), ["uf"] = Valor() })) }),
+        ["documentosExigidos"] = Objeto(new() { ["exigencias"] = Lista(Exigencia()) }),
     });
+
+    private static FormaDoNo Motivo() => Objeto(new()
+    {
+        ["tipoDeDecisaoCodigo"] = Valor(),
+        ["codigo"] = Valor(),
+        ["descricao"] = Valor(true),
+        ["subclassificacao"] = Valor(true),
+        ["sentido"] = Valor(true),
+        ["sentidoRotulo"] = Valor(true),
+        ["versaoDoEditalDeEntrada"] = Valor(true),
+    });
+
+    private static FormaDoNo Exigencia() => Objeto(new()
+    {
+        ["chave"] = Valor(),
+        ["tipoDocumentoCodigo"] = Valor(),
+        ["tipoDocumentoNome"] = Valor(somenteLeitura: true),
+        ["tipoDocumentoCategoria"] = Valor(somenteLeitura: true),
+        ["classificacaoProtecao"] = Valor(somenteLeitura: true),
+        ["finalidadeTratamento"] = Valor(somenteLeitura: true),
+        ["hipoteseLegal"] = Valor(somenteLeitura: true),
+        ["fatosComprovados"] = Valor(somenteLeitura: true),
+    });
+
+    private static FormaDoNo Fase() => Objeto(new()
+    {
+        ["chave"] = Valor(),
+        ["unidadeResponsavelCodigo"] = Valor(),
+        ["unidadeResponsavelNome"] = Valor(somenteLeitura: true),
+        ["unidadeResponsavelSigla"] = Valor(somenteLeitura: true),
+    }, new ParteComChave("fase", EscopoDaChave.Documento));
 
     private static FormaDoNo Identificacao() => Objeto(new()
     {
