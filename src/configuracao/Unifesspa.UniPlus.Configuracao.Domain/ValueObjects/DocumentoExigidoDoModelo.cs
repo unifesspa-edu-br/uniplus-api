@@ -5,17 +5,17 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// Um documento do conjunto padrão que o modelo exige do processo (UNI-REQ-0026): o tipo do catálogo e
 /// a fase canônica pelos códigos, que o processo resolve ao aplicar o modelo, as condições sobre fatos
-/// que o tornam exigido (ausentes, vale para todo candidato) e a consequência de o candidato não o
-/// apresentar. É sempre do formulário da finalidade do próprio modelo. Com <paramref name="PorOpcao"/>,
+/// que o tornam exigido (ausentes, vale para todo candidato) e o indeferimento, que diz se é obrigatório,
+/// a consequência de o candidato não o apresentar e as bases legais, e os requisitos, que dizem o prazo de
+/// emissão e a validade escolhidos para ele. É sempre do formulário da finalidade do próprio modelo. Com <paramref name="PorOpcao"/>,
 /// o processo recebe uma exigência por opção ofertada, cada uma condicionada à declaração dela.
 /// </summary>
 public sealed record DocumentoExigidoDoModelo(
     string FaseCodigo,
     string TipoDocumentoCodigo,
-    bool Obrigatorio,
     PredicadoDnf? Quando,
-    string ConsequenciaIndeferimento,
-    IReadOnlyList<BaseLegalDoDocumentoDoModelo> BasesLegais,
+    IndeferimentoDoDocumentoDoModelo Indeferimento,
+    RequisitosDoDocumentoDoModelo Requisitos,
     ExigenciaPorOpcao? PorOpcao = null)
 {
     /// <summary>Os fatos que as condições do documento citam, inclusive o das opções que o multiplicam.</summary>

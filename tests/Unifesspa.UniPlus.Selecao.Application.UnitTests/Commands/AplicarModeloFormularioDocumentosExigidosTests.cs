@@ -36,9 +36,16 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
 
     private static DocumentoExigidoDoModeloInput LaudoPorOpcaoDeAtendimentoExcetoLactante() =>
         new(
-            "INSCRICAO", "LAUDO_MEDICO", true,
-            [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", [],
-            new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
+            "INSCRICAO", "LAUDO_MEDICO",
+            [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
+            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []),
+            PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
+
+    private static DocumentoExigidoDoModeloInput LaudoQueDependeDeUmFatoDerivado() =>
+        new(
+            "INSCRICAO", "LAUDO_MEDICO",
+            [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]],
+            new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
 
     private static string MotivosDaRecusa(Result<AplicacaoDeModeloDto> resultado) =>
         string.Join("; ", resultado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}"));
@@ -122,7 +129,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.DeclararAtendimentoEspecializado();
         DocumentoExigidoDoModeloInput documento = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with
         {
-            BasesLegais = [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)],
+            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)]),
         };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(documento));
@@ -137,14 +144,10 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.FaseDoCronograma("INSCRICAO");
         _cenario.DeclararAtendimentoEspecializado();
 
-        DocumentoExigidoDoModeloInput documento = new(
-            "INSCRICAO", "LAUDO_MEDICO", false,
-            [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", []);
-
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
             FinalidadeFormulario.Inscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("QUILOMBOLA", 101)],
-            documentos: [documento]));
+            documentos: ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(LaudoQueDependeDeUmFatoDerivado())));
 
         resultado.IsSuccess.Should().BeTrue(MotivosDaRecusa(resultado));
         resultado.Value!.DerivacoesCopiadas.Should().Contain("FLAG");
@@ -170,7 +173,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
 
         List<DocumentoExigidoDoModeloInput> copias = [.. SelecaoDosDocumentosDoModelo.PorOpcaoOfertada(laudo, ofertados)];
 
-        copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Obrigatorio);
+        copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Indeferimento!.Obrigatorio);
         copias.Select(static c => string.Join(" e ", c.Quando!.Single().Select(static k => $"{k.Fato}={k.Valor.GetRawText()}"))).Should().BeEquivalentTo(
         [
             "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"PCD\"",
@@ -190,7 +193,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "modelo.documentosExigidos[0].faseCodigo",
+            Field = "modelo.conjuntoDeDocumentos.documentosExigidos[0].faseCodigo",
             Error = new { Code = AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente },
         });
         await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());

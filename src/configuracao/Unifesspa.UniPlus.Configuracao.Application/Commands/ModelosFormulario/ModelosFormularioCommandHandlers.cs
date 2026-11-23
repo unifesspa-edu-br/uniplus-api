@@ -42,9 +42,9 @@ public static class CriarModeloFormularioCommandHandler
     {
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(command.Finalidade);
         DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
-        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+        (ConteudoLido conteudo, IReadOnlyList<FieldError> recusasDaLeitura, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
             command.Conteudo, finalidade, descritivo.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);
-        if (conteudo.Erros.Count > 0)
+        if (recusasDaLeitura.Count > 0)
         {
             erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo, finalidade));
             return Result<ModeloFormulario>.ValidationFailure(erros);
@@ -88,9 +88,9 @@ public static class AtualizarModeloFormularioCommandHandler
         AtualizarModeloFormularioCommand command, ModeloFormulario modelo, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
         DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
-        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+        (ConteudoLido conteudo, IReadOnlyList<FieldError> recusasDaLeitura, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
             command.Conteudo, modelo.Finalidade, descritivo.TipoProcessoCodigo, ModeloGravado.De(modelo), cancellationToken).ConfigureAwait(false);
-        if (conteudo.Erros.Count > 0)
+        if (recusasDaLeitura.Count > 0)
         {
             erros.AddRange(ModeloFormulario.ConferirDescritivo(descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo));
             return Result.ValidationFailure(erros);

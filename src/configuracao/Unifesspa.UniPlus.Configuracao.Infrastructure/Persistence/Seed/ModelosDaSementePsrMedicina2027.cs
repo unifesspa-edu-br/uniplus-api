@@ -69,7 +69,7 @@ internal static class ModelosDaSementePsrMedicina2027
         [Termo(Termos[0], 1), Termo(Termos[1], 2)],
         [],
         [],
-        comProva ? DocumentosDoAtendimentoEspecializado() : []);
+        new ConjuntoDeDocumentosDoModelo(comProva ? DocumentosDoAtendimentoEspecializado() : [], []));
 
     /// <summary>
     /// O conteúdo da habilitação. Pressuposto aceita só fato Declarado, e MODALIDADE_CONVOCACAO
@@ -235,15 +235,19 @@ internal static class ModelosDaSementePsrMedicina2027
     /// administrador cadastrar depois também pede o laudo.
     /// </summary>
     private static DocumentoExigidoDoModelo LaudoMedicoDeCadaCondicao() =>
-        new("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: true, SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true)]), RemoveVantagem,
-            BasesLegaisDoLaudo(), new ExigenciaPorOpcao(CondicaoAtendimento, [Lactante, PessoaIdosa]));
+        new("INSCRICAO", "LAUDO_MEDICO", SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true)]),
+            new IndeferimentoDoDocumentoDoModelo(Obrigatorio: true, RemoveVantagem, BasesLegaisDoLaudo()),
+            RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
+            new ExigenciaPorOpcao(CondicaoAtendimento, [Lactante, PessoaIdosa]));
 
     private static DocumentoExigidoDoModelo CertidaoDeNascimentoDaLactante() =>
-        new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: true,
+        new("INSCRICAO", "CERTIDAO_NASCIMENTO",
             SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true), Condicao(CondicaoAtendimento, Operador.Igual, Lactante)]),
-            RemoveVantagem, [new("Lei nº 13.872/2019, art. 2º, § 2º", Federal, Resolvido, ReferenciaDeConcurso)]);
+            new IndeferimentoDoDocumentoDoModelo(
+                Obrigatorio: true, RemoveVantagem, [new("Lei nº 13.872/2019, art. 2º, § 2º", Federal, Resolvido, ReferenciaDeConcurso)]),
+            RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
 
-    private static BaseLegalDoDocumentoDoModelo[] BasesLegaisDoLaudo() =>
+    private static BaseLegalDoModelo[] BasesLegaisDoLaudo() =>
     [
         new("Lei nº 13.146/2015 (Lei Brasileira de Inclusão)", Federal, Resolvido, null),
         new("Decreto nº 9.508/2018, na redação do Decreto nº 9.546/2018", Federal, Resolvido, ReferenciaDeConcurso),

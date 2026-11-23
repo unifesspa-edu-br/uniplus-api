@@ -39,62 +39,101 @@ public sealed class ConteudoLidoTests
     public void Ler_RecusaEmTodasAsPartes_ListaAsRecusasNaOrdemDaLeitura()
     {
         ConteudoDoModeloInput entrada = new(
-            "Habilitação", EtapasRecusadas(), ItensRecusados(), TermosRecusados(), ["CERTIFICADO", ElementoNulo<string>()], GruposRecusados(), DocumentosRecusados());
+            "Habilitação", EtapasRecusadas(), ItensRecusados(), TermosRecusados(), ["CERTIFICADO", ElementoNulo<string>()], GruposRecusados(),
+            ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(DocumentosRecusados()));
 
-        ConteudoLido lido = ConteudoLido.Ler(entrada, Formatos);
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(entrada);
 
-        lido.Erros.Select(static e => (e.Field!, e.Error.Code, e.Error.Message)).Should().Equal(RecusasEsperadas());
-        lido.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo("Habilitação", [], [], [], ["CERTIFICADO", string.Empty], [], []), PorMembros);
+        leitura.Recusas.Select(static e => (e.Field!, e.Error.Code, e.Error.Message)).Should().Equal(RecusasEsperadas());
+        lido.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo("Habilitação", [], [], [], ["CERTIFICADO", string.Empty], [], ConjuntoDeDocumentosDoModelo.Nenhum), PorMembros);
     }
 
     [Fact(DisplayName = "A entrada válida em toda parte vira o conteúdo do modelo, sem recusa, com o formato do fato vindo do catálogo")]
     public void Ler_EntradaValidaEmTodasAsPartes_ProduzOConteudoEsperado()
     {
         ConteudoDoModeloInput entrada = new(
-            "Habilitação", [EtapaValida()], [ItemValido()], [TermoValido()], ["CERTIFICADO"], [GrupoValido()], [DocumentoValido()]);
+            "Habilitação", [EtapaValida()], [ItemValido()], [TermoValido()], ["CERTIFICADO"], [GrupoValido()], ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(DocumentoValido()));
 
-        ConteudoLido lido = ConteudoLido.Ler(entrada, Formatos);
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(entrada);
 
-        lido.Erros.Should().BeEmpty();
+        leitura.Recusas.Should().BeEmpty();
         lido.ParaConteudo().Should().BeEquivalentTo(
-            new ConteudoDoModelo("Habilitação", [EtapaEsperada()], [ItemEsperado()], [TermoEsperado()], ["CERTIFICADO"], [GrupoEsperado()], [DocumentoEsperado()]),
+            new ConteudoDoModelo("Habilitação", [EtapaEsperada()], [ItemEsperado()], [TermoEsperado()], ["CERTIFICADO"], [GrupoEsperado()], new ConjuntoDeDocumentosDoModelo([DocumentoEsperado()], [])),
             PorMembros);
     }
 
     [Fact(DisplayName = "A parte lida guarda a posição dela na entrada; a nula e a recusada ficam de fora")]
     public void Ler_PartesLidasEEntreRecusadas_GuardamAPosicaoNaEntrada()
     {
-        ConteudoLido lido = ConteudoLido.Ler(ComPartesRecusadasNoMeio(), Formatos);
+        ConteudoLido lido = new LeituraDoConteudo(Formatos).Ler(ComPartesRecusadasNoMeio());
 
         lido.Etapas.Select(static e => e.Indice).Should().Equal(0, 3);
         lido.Itens.Select(static i => i.Indice).Should().Equal(0, 2);
         lido.Termos.Select(static t => t.Indice).Should().Equal(1);
         lido.Grupos.Select(static g => g.Indice).Should().Equal(0, 2);
-        lido.Documentos.Select(static d => d.Indice).Should().Equal(0, 3);
+        lido.Documentos.DocumentosExigidos.Select(static d => d.Indice).Should().Equal(0, 3);
     }
 
     [Fact(DisplayName = "A entrada ausente ou com as listas ausentes é lida como conteúdo vazio, sem recusa")]
     public void Ler_EntradaOuListasAusentes_ConteudoVazioSemRecusa()
     {
-        ConteudoLido semEntrada = ConteudoLido.Ler(null, Formatos);
-        ConteudoLido semListas = ConteudoLido.Ler(new ConteudoDoModeloInput(null, null, null, null, null), Formatos);
+        LeituraDoConteudo leituraSemEntrada = new(Formatos);
+        LeituraDoConteudo leituraSemListas = new(Formatos);
+        ConteudoLido semEntrada = leituraSemEntrada.Ler(null);
+        ConteudoLido semListas = leituraSemListas.Ler(new ConteudoDoModeloInput(null, null, null, null, null));
 
-        semEntrada.Erros.Should().BeEmpty();
-        semListas.Erros.Should().BeEmpty();
-        semEntrada.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo(null, [], [], [], [], [], []), PorMembros);
-        semListas.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo(null, [], [], [], [], [], []), PorMembros);
+        leituraSemEntrada.Recusas.Should().BeEmpty();
+        leituraSemListas.Recusas.Should().BeEmpty();
+        semEntrada.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo(null, [], [], [], [], [], ConjuntoDeDocumentosDoModelo.Nenhum), PorMembros);
+        semListas.ParaConteudo().Should().BeEquivalentTo(new ConteudoDoModelo(null, [], [], [], [], [], ConjuntoDeDocumentosDoModelo.Nenhum), PorMembros);
     }
 
     [Fact(DisplayName = "O documento sem bases legais e com a exigência por opção sem exceções é lido sem recusa, com as duas listas vazias")]
     public void Ler_DocumentoSemBasesLegaisNemExcecoes_LeSemRecusa()
     {
-        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { BasesLegais = null, PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", null), PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
 
-        ConteudoLido lido = ConteudoLido.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, [documento]), Formatos);
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
 
-        lido.Erros.Should().BeEmpty();
-        lido.Documentos.Single().Documento.BasesLegais.Should().BeEmpty();
-        lido.Documentos.Single().Documento.PorOpcao!.Exceto.Should().BeEmpty();
+        leitura.Recusas.Should().BeEmpty();
+        lido.Documentos.DocumentosExigidos.Single().Documento.Indeferimento.BasesLegais.Should().BeEmpty();
+        lido.Documentos.DocumentosExigidos.Single().Documento.PorOpcao!.Exceto.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Os requisitos do documento são lidos com a fase de cada referência pelo código")]
+    public void Ler_DocumentoComRequisitos_GuardaOsRequisitosDeclarados()
+    {
+        RequisitosDoDocumentoDoModeloInput requisitos = RequisitosDoDocumentoDoModeloBuilder.AindaNaoEscolhidos()
+            .ComPrazoDe(90, "DIAS", RequisitosDoDocumentoDoModeloBuilder.NoInicioDaFase("HABILITACAO")).Construir();
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Requisitos = requisitos };
+
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
+
+        leitura.Recusas.Should().BeEmpty();
+        lido.Documentos.DocumentosExigidos.Single().Documento.Requisitos.PrazoDeEmissao!.Referencia!.FaseCodigo.Should().Be("HABILITACAO");
+        lido.Documentos.DocumentosExigidos.Single().Documento.Requisitos.Validade.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O código desconhecido dos requisitos é recusado no caminho do documento, depois do indeferimento e antes da exigência por opção")]
+    public void Ler_DocumentoComRequisitoDesconhecido_RecusaNoCaminhoDoDocumento()
+    {
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with
+        {
+            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, string.Empty, []),
+            Requisitos = RequisitosDoDocumentoDoModeloBuilder.AindaNaoEscolhidos().ComEscolhaDePrazo("naoExiste").Construir(),
+            PorOpcao = new ExigenciaPorOpcaoInput(string.Empty, []),
+        };
+
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
+
+        leitura.Recusas.Select(static e => e.Field).Should().Equal(
+            "conjuntoDeDocumentos.documentosExigidos[0].indeferimento.consequencia", "conjuntoDeDocumentos.documentosExigidos[0].requisitos.prazoDeEmissao.escolha", "conjuntoDeDocumentos.documentosExigidos[0].porOpcao.fatoCodigo");
+        lido.Documentos.DocumentosExigidos.Should().BeEmpty();
     }
 
     private static ConteudoDoModeloInput ComPartesRecusadasNoMeio() => new(
@@ -104,7 +143,8 @@ public sealed class ConteudoLidoTests
         [ElementoNulo<TermoExigidoInput>(), TermoValido()],
         [],
         [GrupoValido(), GrupoValido() with { Regras = new ExibicaoEObrigatoriedadeInput(null, new ObrigatoriedadeInput("TALVEZ")) }, GrupoValido()],
-        [DocumentoValido(), ElementoNulo<DocumentoExigidoDoModeloInput>(), DocumentoValido() with { FaseCodigo = string.Empty }, DocumentoValido()]);
+        ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(
+            DocumentoValido(), ElementoNulo<DocumentoExigidoDoModeloInput>(), DocumentoValido() with { FaseCodigo = string.Empty }, DocumentoValido()));
 
     private static EquivalencyOptions<ConteudoDoModelo> PorMembros(EquivalencyOptions<ConteudoDoModelo> opcoes) => opcoes
         .ComparingRecordsByMembers()
@@ -185,19 +225,19 @@ public sealed class ConteudoLidoTests
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
     [
         ElementoNulo<DocumentoExigidoDoModeloInput>(),
-        new(string.Empty, " ", true, PredicadoSemCondicao, string.Empty, [ElementoNulo<BaseLegalDoModeloInput>()], new ExigenciaPorOpcaoInput(string.Empty, [" "])),
+        new(string.Empty, " ", PredicadoSemCondicao, new IndeferimentoDoDocumentoDoModeloInput(true, string.Empty, [ElementoNulo<BaseLegalDoModeloInput>()]), PorOpcao: new ExigenciaPorOpcaoInput(string.Empty, [" "])),
     ];
 
     private static Recusa[] RecusasDosDocumentos() =>
     [
-        Malformada("documentosExigidos[0]", EntradaNula),
-        ClausulaVazia("documentosExigidos[1].quando"),
-        Malformada("documentosExigidos[1].basesLegais", EntradaNula),
-        Malformada("documentosExigidos[1].faseCodigo", "O documento exigido do modelo precisa informar a fase."),
-        Malformada("documentosExigidos[1].tipoDocumentoCodigo", "O documento exigido do modelo precisa informar o tipo de documento."),
-        Malformada("documentosExigidos[1].consequenciaIndeferimento", "O documento exigido do modelo precisa informar a consequência do indeferimento."),
-        Malformada("documentosExigidos[1].porOpcao.fatoCodigo", "A exigência por opção precisa informar o fato cujas opções a multiplicam."),
-        Malformada("documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[0]", EntradaNula),
+        ClausulaVazia("conjuntoDeDocumentos.documentosExigidos[1].quando"),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].indeferimento.basesLegais", EntradaNula),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].faseCodigo", "O documento exigido do modelo precisa informar a fase."),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].tipoDocumentoCodigo", "O documento exigido do modelo precisa informar o tipo de documento."),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].indeferimento.consequencia", "O documento exigido do modelo precisa informar a consequência do indeferimento."),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.fatoCodigo", "A exigência por opção precisa informar o fato cujas opções a multiplicam."),
+        Malformada("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
     ];
 
     private static EtapaFormularioInput EtapaValida() =>
@@ -245,12 +285,15 @@ public sealed class ConteudoLidoTests
                 "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
-        new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO"), "REMOVE_VANTAGEM",
-            [new BaseLegalDoModeloInput("Lei 12.711/2012", "TODOS", "VIGENTE", null)], new ExigenciaPorOpcaoInput("CONDICAO", ["OUTRA", "TERCEIRA"]));
+        new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei 12.711/2012", "TODOS", "VIGENTE", null)]),
+            PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
     private static DocumentoExigidoDoModelo DocumentoEsperado() =>
-        new("INSCRICAO", "LAUDO_MEDICO", true, Predicado("CERTIFICADO"), "REMOVE_VANTAGEM",
-            [new BaseLegalDoDocumentoDoModelo("Lei 12.711/2012", "TODOS", "VIGENTE", null)], new ExigenciaPorOpcao("CONDICAO", ["OUTRA", "TERCEIRA"]));
+        new("INSCRICAO", "LAUDO_MEDICO", Predicado("CERTIFICADO"),
+            new IndeferimentoDoDocumentoDoModelo(true, "REMOVE_VANTAGEM", [new BaseLegalDoModelo("Lei 12.711/2012", "TODOS", "VIGENTE", null)]),
+            RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
+            new ExigenciaPorOpcao("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
     private static EntradaDoFatoColetadoDeTeste Item(string fato, int ordem) => EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem);
 

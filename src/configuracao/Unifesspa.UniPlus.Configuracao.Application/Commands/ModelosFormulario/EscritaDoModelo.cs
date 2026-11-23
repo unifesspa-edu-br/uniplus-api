@@ -18,13 +18,13 @@ internal sealed class EscritaDoModelo(
     IFatoCandidatoRepository fatoRepository, ITermoConsentimentoReader termoReader, ITipoProcessoReader tipoProcessoReader)
 {
     /// <summary>
-    /// O conteúdo lido e as recusas da leitura e do catálogo, acumuladas (ADR-0125). O modelo de
+    /// O conteúdo lido, as recusas da leitura e as recusas acumuladas da leitura e do catálogo (ADR-0125). O modelo de
     /// inscrição coleta o conjunto básico na seção reservada, como o formulário do processo: o item
     /// básico omitido entra como está gravado no modelo, e o enviado tem de ser igual a ele. O tipo
     /// de processo é conferido só quando muda: desativar o tipo recusa vínculo novo, e o modelo que
     /// já o usava continua com ele.
     /// </summary>
-    public async Task<(ConteudoLido Conteudo, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
+    public async Task<(ConteudoLido Conteudo, IReadOnlyList<FieldError> RecusasDaLeitura, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
         ConteudoDoModeloInput? entrada,
         FinalidadeFormulario finalidade,
         string? tipoProcessoCodigo,
@@ -34,25 +34,27 @@ internal sealed class EscritaDoModelo(
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         CatalogoDoModelo catalogo = CatalogoDoModelo.De(fatos);
         (ConteudoDoModeloInput? mesclada, List<FieldError> daSecao) = ConjuntoBasicoDoModelo.ComASecaoDosDadosBasicos(entrada, finalidade, gravado.Conteudo);
-        ConteudoLido conteudo = ConteudoLido.Ler(mesclada, catalogo.Formatos);
+        LeituraDoConteudo leitura = new(catalogo.Formatos);
+        ConteudoLido conteudo = leitura.Ler(mesclada);
 
-        List<FieldError> erros = await ConferirNoCatalogoAsync(conteudo, catalogo, daSecao, gravado.Vinculos, cancellationToken).ConfigureAwait(false);
+        List<FieldError> erros = await ConferirNoCatalogoAsync(
+            conteudo, catalogo, [.. daSecao, .. leitura.Recusas], gravado.Vinculos, cancellationToken).ConfigureAwait(false);
         if (await TipoDeProcessoNovoInexistenteAsync(tipoProcessoCodigo, gravado.TipoProcessoCodigo, cancellationToken).ConfigureAwait(false) is { } inexistente)
         {
             erros.Add(inexistente);
         }
 
-        return (conteudo, catalogo, erros);
+        return (conteudo, leitura.Recusas, catalogo, erros);
     }
 
     private async Task<List<FieldError>> ConferirNoCatalogoAsync(
-        ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> daSecao, VinculosDoModelo existentes, CancellationToken cancellationToken)
+        ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> daLeitura, VinculosDoModelo existentes, CancellationToken cancellationToken)
     {
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoReader
             .ListarVersoesAsync([.. conteudo.Termos.Select(static t => t.Termo.VersaoId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
         return [.. ConferenciaDoConteudoDoModelo.NoConteudo(
-            daSecao.Concat(conteudo.Erros).Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
+            daLeitura.Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
     }
 
     private async Task<FieldError?> TipoDeProcessoNovoInexistenteAsync(

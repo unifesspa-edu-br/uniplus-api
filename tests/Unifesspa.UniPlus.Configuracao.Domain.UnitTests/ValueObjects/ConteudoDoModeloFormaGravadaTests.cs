@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.ValueObjects;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -46,15 +47,15 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         {
             Termos = [Termo($"TERMO{CComCedilhaDecomposto} ")],
             Pressupostos = [$" PRESSUPOSTO{CComCedilhaDecomposto}"],
-            DocumentosExigidos = [Documento($" TIPO{CComCedilhaDecomposto}") with { FaseCodigo = $"FASE{CComCedilhaDecomposto}" }],
+            ConjuntoDeDocumentos = Conjunto(Documento($" TIPO{CComCedilhaDecomposto}") with { FaseCodigo = $"FASE{CComCedilhaDecomposto}" }),
         };
 
         ConteudoDoModelo gravado = conteudo.NaFormaGravada();
 
         gravado.Termos.Single().Codigo.Should().Be($"TERMO{CComCedilha}");
         gravado.Pressupostos.Should().Equal($"PRESSUPOSTO{CComCedilha}");
-        gravado.Documentos.Single().TipoDocumentoCodigo.Should().Be($"TIPO{CComCedilha}");
-        gravado.Documentos.Single().FaseCodigo.Should().Be($"FASE{CComCedilha}");
+        gravado.Documentos.DocumentosExigidos.Single().TipoDocumentoCodigo.Should().Be($"TIPO{CComCedilha}");
+        gravado.Documentos.DocumentosExigidos.Single().FaseCodigo.Should().Be($"FASE{CComCedilha}");
     }
 
     [Fact(DisplayName = "O fato e os valores da exigência por opção do documento ficam aparados e em NFC")]
@@ -62,13 +63,46 @@ public sealed class ConteudoDoModeloFormaGravadaTests
     {
         ConteudoDoModelo conteudo = Vazio with
         {
-            DocumentosExigidos = [Documento("LAUDO", porOpcao: new($" MODALIDADE{CComCedilhaDecomposto}", [$" AC{CComCedilhaDecomposto} "]))],
+            ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", porOpcao: new($" MODALIDADE{CComCedilhaDecomposto}", [$" AC{CComCedilhaDecomposto} "]))),
         };
 
-        ExigenciaPorOpcao porOpcao = conteudo.NaFormaGravada().Documentos.Single().PorOpcao!;
+        ExigenciaPorOpcao porOpcao = conteudo.NaFormaGravada().Documentos.DocumentosExigidos.Single().PorOpcao!;
 
         porOpcao.FatoCodigo.Should().Be($"MODALIDADE{CComCedilha}");
         porOpcao.Exceto.Should().Equal($"AC{CComCedilha}");
+    }
+
+    [Fact(DisplayName = "A fase da referência do prazo de emissão e da validade fica aparada e em NFC")]
+    public void NaFormaGravada_FaseDasReferenciasDosRequisitosAparadaEmNfc()
+    {
+        ConteudoDoModelo conteudo = Vazio with
+        {
+            ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", requisitos: RequisitosAPartirDasFases($" FASE{CComCedilhaDecomposto}", $"OUTRA{CComCedilhaDecomposto} "))),
+        };
+
+        RequisitosDoDocumentoDoModelo requisitos = conteudo.NaFormaGravada().Documentos.DocumentosExigidos.Single().Requisitos;
+
+        requisitos.PrazoDeEmissao!.Referencia!.FaseCodigo.Should().Be($"FASE{CComCedilha}");
+        requisitos.Validade!.Referencia!.FaseCodigo.Should().Be($"OUTRA{CComCedilha}");
+    }
+
+    [Fact(DisplayName = "Os requisitos ainda não escolhidos e a referência sem fase ficam como estão na forma gravada")]
+    public void NaFormaGravada_RequisitosAusentesOuSemFase_FicamComoEstao()
+    {
+        RequisitosDoDocumentoDoModelo semFase = new(
+            new PrazoDeEmissaoDoModelo(
+                EscolhaDoPrazoDeEmissao.ComPrazo, 1, UnidadeDoPrazoDeEmissao.Anos,
+                new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.FimDasInscricoes, null, null), EfeitoNaAnaliseDoDocumento.AceitarComAviso),
+            null);
+        ConteudoDoModelo conteudo = Vazio with
+        {
+            ConjuntoDeDocumentos = Conjunto(Documento("LAUDO"), Documento("RG", requisitos: semFase)),
+        };
+
+        IReadOnlyList<DocumentoExigidoDoModelo> documentos = conteudo.NaFormaGravada().Documentos.DocumentosExigidos;
+
+        documentos[0].Requisitos.Should().Be(RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
+        documentos[1].Requisitos.Should().Be(semFase);
     }
 
     [Fact(DisplayName = "Rótulo, título de etapa e texto opcional ficam aparados, e o texto opcional em branco fica ausente")]
@@ -85,6 +119,24 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         gravado.Itens.Single().Formato.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Os documentos de um grupo ficam na forma gravada, nas mesmas posições, e o grupo mantém a quantidade e o indeferimento")]
+    public void NaFormaGravada_DocumentosDeGrupo_CodigosEmNfc()
+    {
+        IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento = new("REMOVE_VANTAGEM", []);
+        DocumentoExigidoDoModelo comCodigosDecompostos = Documento($" TIPO{CComCedilhaDecomposto}") with { FaseCodigo = $"FASE{CComCedilhaDecomposto}" };
+        ConteudoDoModelo conteudo = Vazio with
+        {
+            ConjuntoDeDocumentos = ConjuntoComGrupos(GrupoDeDocumentos(2, Documento("RG"), comCodigosDecompostos) with { Indeferimento = indeferimento }),
+        };
+
+        GrupoDeDocumentosDoModelo grupo = conteudo.NaFormaGravada().Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
+
+        grupo.QuantidadeMinima.Should().Be(2);
+        grupo.Indeferimento.Should().Be(indeferimento);
+        grupo.Documentos.Select(static d => d.TipoDocumentoCodigo).Should().Equal("RG", $"TIPO{CComCedilha}");
+        grupo.Documentos[1].FaseCodigo.Should().Be($"FASE{CComCedilha}");
+    }
+
     [Fact(DisplayName = "A parte ausente do conteúdo fica como vazia, inclusive o rótulo do campo")]
     public void NaFormaGravada_PartesAusentesViramVazias()
     {
@@ -96,7 +148,8 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         gravado.Termos.Should().BeEmpty();
         gravado.Pressupostos.Should().BeEmpty();
         gravado.Grupos.Should().BeEmpty();
-        gravado.Documentos.Should().BeEmpty();
+        gravado.Documentos.DocumentosExigidos.Should().BeEmpty();
+        gravado.Documentos.GruposDeDocumentos.Should().BeEmpty();
         gravado.Itens.Single().Should().Match<ItemDoModelo>(static i => i.Apresentacao.Rotulo.Length == 0);
     }
 
@@ -163,8 +216,8 @@ public sealed class ConteudoDoModeloFormaGravadaTests
     [Fact(DisplayName = "Os documentos exigidos ausentes ficam como lista vazia, e os informados são mantidos")]
     public void EmOrdem_Documentos()
     {
-        (Vazio with { DocumentosExigidos = null }).EmOrdem().DocumentosExigidos.Should().BeEmpty();
-        (Vazio with { DocumentosExigidos = [Documento("LAUDO")] }).EmOrdem().Documentos.Should().ContainSingle();
+        (Vazio with { ConjuntoDeDocumentos = null }).EmOrdem().Documentos.DocumentosExigidos.Should().BeEmpty();
+        (Vazio with { ConjuntoDeDocumentos = Conjunto(Documento("LAUDO")) }).EmOrdem().Documentos.DocumentosExigidos.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Ordenar devolve um conteúdo novo e não muda o original")]

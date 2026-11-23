@@ -64,14 +64,39 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
     {
         ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with
         {
-            DocumentosExigidos = [Documento("RG", Quando("CERTIFICADO")), Documento("LAUDO_MEDICO", Quando("OUTRO_FATO"))],
+            ConjuntoDeDocumentos = Conjunto(Documento("RG", Quando("CERTIFICADO")), Documento("LAUDO_MEDICO", Quando("OUTRO_FATO"))),
         };
 
         FieldError recusa = Conferir(conteudo).Should().ContainSingle().Subject;
 
-        recusa.Field.Should().Be("conteudo.documentosExigidos[1].quando[0][0].fato");
+        recusa.Field.Should().Be("conteudo.conjuntoDeDocumentos.documentosExigidos[1].quando[0][0].fato");
         recusa.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
         recusa.Error.Message.Should().Be("O documento exigido usa um dado que o modelo não coleta, não calcula e não recebe de outro formulário.");
+    }
+
+    [Fact(DisplayName = "O documento de um grupo que cita fato que o modelo não coleta é recusado no caminho do grupo, e o que cita o coletado passa")]
+    public void DocumentoDeGrupo_CitaFatoDesconhecido_RecusaNoCaminhoDoGrupo()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with
+        {
+            ConjuntoDeDocumentos = ConjuntoComGrupos(GrupoDeDocumentos(1, Documento("RG", Quando("CERTIFICADO")), Documento("LAUDO_MEDICO", Quando("OUTRO_FATO")))),
+        };
+
+        FieldError recusa = Conferir(conteudo).Should().ContainSingle().Subject;
+
+        recusa.Field.Should().Be("conteudo.conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[1].quando[0][0].fato");
+        recusa.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
+    }
+
+    [Fact(DisplayName = "O documento de um grupo multiplicado por opção de fato que o modelo não coleta é recusado no fato das opções")]
+    public void DocumentoDeGrupo_PorOpcaoDeFatoDesconhecido_RecusaNoFatoDasOpcoes()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with
+        {
+            ConjuntoDeDocumentos = ConjuntoComGrupos(GrupoDeDocumentos(1, Documento("LAUDO_MEDICO", porOpcao: new("OUTRO_FATO", [])))),
+        };
+
+        Conferir(conteudo).Should().ContainSingle().Which.Field.Should().Be("conteudo.conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[0].porOpcao.fatoCodigo");
     }
 
     [Fact(DisplayName = "A recusa aponta a referência desconhecida entre várias condições")]
@@ -84,11 +109,11 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
             (1, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, valor).Value!),
             (1, CondicaoDnf.Criar("OUTRO_FATO", Operador.Igual, valor).Value!),
         ]).Value!;
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { DocumentosExigidos = [Documento("RG", condicao)] };
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { ConjuntoDeDocumentos = Conjunto(Documento("RG", condicao)) };
 
         FieldError recusa = Conferir(conteudo).Should().ContainSingle().Subject;
 
-        recusa.Field.Should().Be("conteudo.documentosExigidos[0].quando[1][1].fato");
+        recusa.Field.Should().Be("conteudo.conjuntoDeDocumentos.documentosExigidos[0].quando[1][1].fato");
         recusa.Error.Message.Should().NotContain("OUTRO_FATO");
     }
 
@@ -98,7 +123,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with
         {
             Termos = [Termo("LGPD", 0, Quando("OUTRO_FATO"))],
-            DocumentosExigidos = [Documento("LAUDO_MEDICO", Quando("OUTRO_FATO"))],
+            ConjuntoDeDocumentos = Conjunto(Documento("LAUDO_MEDICO", Quando("OUTRO_FATO"))),
         };
 
         Conferir(conteudo).Should().ContainSingle().Which.Error.Message.Should().NotContain("documento exigido");

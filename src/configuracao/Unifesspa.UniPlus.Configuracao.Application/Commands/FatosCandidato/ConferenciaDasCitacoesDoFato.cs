@@ -25,36 +25,53 @@ internal static class ConferenciaDasCitacoesDoFato
         IReadOnlyList<Modalidade> modalidades)
     {
         List<FieldError> erros = [];
+        ConferirAgregados(erros, codigo, antes, depois);
+        ConferirRegrasPadrao(erros, codigo, antes, depois);
+        ConferirModelos(erros, codigo, antes, depois, modelos);
+        ConferirModalidades(erros, codigo, antes, depois, modalidades);
+        return erros;
+    }
+
+    private static void ConferirAgregados(List<FieldError> erros, string codigo, CatalogoDeFatos antes, CatalogoDeFatos depois)
+    {
         FatoCandidato alterado = depois.Fatos.First(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
+        FatoCandidato membroAntes = antes.Fatos.First(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
 
-        foreach (FatoCandidato outro in depois.Fatos.Where(f => !string.Equals(f.Codigo, codigo, StringComparison.Ordinal)))
+        foreach (FatoCandidato agregado in depois.Fatos.Where(f => !string.Equals(f.Codigo, codigo, StringComparison.Ordinal) && f.FatoDeMembroAgregado == codigo))
         {
-            if (outro.FatoDeMembroAgregado == codigo)
-            {
-                FatoCandidato membroAntes = antes.Fatos.First(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
-                string[] novos = Novas(
-                    outro.MotivosPelosQuaisDeixaDeAgregar(alterado, depois),
-                    outro.MotivosPelosQuaisDeixaDeAgregar(membroAntes, antes));
-                Recusar(erros, "agregados", outro.Codigo, FatoCandidatoErrorCodes.AlteracaoQuebraAgregadoDoFato,
-                    $"O agregado '{outro.Codigo}' deixaria de valer", novos);
-            }
-            else if (outro.RegrasPadrao.Any(r => r.FatosCitados.Contains(codigo, StringComparer.Ordinal)))
-            {
-                string[] novas = Novas(
-                    ValidadorRegrasPadrao.Validar(outro, outro.RegrasPadrao, depois).Errors,
-                    ValidadorRegrasPadrao.Validar(outro, outro.RegrasPadrao, antes).Errors);
-                Recusar(erros, "regrasPadrao", outro.Codigo, FatoCandidatoErrorCodes.AlteracaoQuebraRegraPadraoDeOutroFato,
-                    $"As regras padrão de '{outro.Codigo}' deixariam de valer", novas);
-            }
+            string[] novos = Novas(
+                agregado.MotivosPelosQuaisDeixaDeAgregar(alterado, depois),
+                agregado.MotivosPelosQuaisDeixaDeAgregar(membroAntes, antes));
+            Recusar(erros, "agregados", agregado.Codigo, FatoCandidatoErrorCodes.AlteracaoQuebraAgregadoDoFato,
+                $"O agregado '{agregado.Codigo}' deixaria de valer", novos);
         }
+    }
 
+    private static void ConferirRegrasPadrao(List<FieldError> erros, string codigo, CatalogoDeFatos antes, CatalogoDeFatos depois)
+    {
+        foreach (FatoCandidato outro in depois.Fatos.Where(f => !string.Equals(f.Codigo, codigo, StringComparison.Ordinal)
+            && f.RegrasPadrao.Any(r => r.FatosCitados.Contains(codigo, StringComparer.Ordinal))))
+        {
+            string[] novas = Novas(
+                ValidadorRegrasPadrao.Validar(outro, outro.RegrasPadrao, depois).Errors,
+                ValidadorRegrasPadrao.Validar(outro, outro.RegrasPadrao, antes).Errors);
+            Recusar(erros, "regrasPadrao", outro.Codigo, FatoCandidatoErrorCodes.AlteracaoQuebraRegraPadraoDeOutroFato,
+                $"As regras padrão de '{outro.Codigo}' deixariam de valer", novas);
+        }
+    }
+
+    private static void ConferirModelos(List<FieldError> erros, string codigo, CatalogoDeFatos antes, CatalogoDeFatos depois, IReadOnlyList<ModeloFormulario> modelos)
+    {
         foreach (ModeloFormulario modelo in modelos.Where(m => ConferenciaDoModelo.Vinculos(m.Conteudo).Fatos.Contains(codigo)))
         {
             string[] novas = Novas(ErrosDoModelo(modelo, depois), ErrosDoModelo(modelo, antes));
             Recusar(erros, "modelos", modelo.Codigo, FatoCandidatoErrorCodes.AlteracaoQuebraModeloDeFormulario,
                 $"O modelo de formulário '{modelo.Codigo}' deixaria de valer", novas);
         }
+    }
 
+    private static void ConferirModalidades(List<FieldError> erros, string codigo, CatalogoDeFatos antes, CatalogoDeFatos depois, IReadOnlyList<Modalidade> modalidades)
+    {
         foreach (Modalidade modalidade in modalidades.Where(m => m.RegraDeAplicabilidade.FatosCitados.Contains(codigo, StringComparer.Ordinal)))
         {
             string[] novas = Novas(
@@ -63,16 +80,15 @@ internal static class ConferenciaDasCitacoesDoFato
             Recusar(erros, "modalidades", modalidade.Codigo.Valor, FatoCandidatoErrorCodes.AlteracaoQuebraRegraDeAplicabilidade,
                 $"A regra de aplicabilidade da modalidade '{modalidade.Codigo.Valor}' deixaria de valer", novas);
         }
-
-        return erros;
     }
 
     /// <summary>O conteúdo gravado do modelo contra o catálogo, com o que ele já vincula tolerado.</summary>
     private static List<FieldError> ErrosDoModelo(ModeloFormulario modelo, CatalogoDeFatos fatos)
     {
         CatalogoDoModelo catalogo = CatalogoDoModelo.De([.. fatos.Fatos]);
-        ConteudoLido lido = ConteudoLido.Ler(modelo.ToView().Conteudo, catalogo.Formatos);
-        return [.. lido.Erros, .. ConferenciaDoModelo.Conferir(lido, catalogo, new Dictionary<Guid, Contracts.VersaoTermoConsentimentoView>(), ConferenciaDoModelo.VinculosGravados(modelo.Conteudo))];
+        LeituraDoConteudo leitura = new(catalogo.Formatos);
+        ConteudoLido lido = leitura.Ler(modelo.ToView().Conteudo);
+        return [.. leitura.Recusas, .. ConferenciaDoModelo.Conferir(lido, catalogo, new Dictionary<Guid, Contracts.VersaoTermoConsentimentoView>(), ConferenciaDoModelo.VinculosGravados(modelo.Conteudo))];
     }
 
     private static string[] Novas(IEnumerable<FieldError> depois, IEnumerable<FieldError> antes) =>

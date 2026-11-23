@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -37,7 +38,8 @@ internal static class ConteudoDoModeloJson
         ["termos"] = new JsonArray([.. conteudo.Termos.Select(TermoParaJson)]),
         ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static pressuposto => (JsonNode)pressuposto)]),
         ["grupos"] = new JsonArray([.. conteudo.Grupos.Select(GrupoParaJson)]),
-        ["documentosExigidos"] = new JsonArray([.. conteudo.Documentos.Select(DocumentoParaJson)]),
+        ["documentosExigidos"] = new JsonArray([.. conteudo.Documentos.DocumentosExigidos.Select(DocumentoParaJson)]),
+        ["gruposDeDocumentos"] = new JsonArray([.. conteudo.Documentos.GruposDeDocumentos.Select(GrupoDeDocumentosParaJson)]),
     }.ToJsonString();
 
     private static JsonObject EtapaParaJson(EtapaDoModelo etapa) => new()
@@ -92,18 +94,51 @@ internal static class ConteudoDoModeloJson
         ["subitens"] = new JsonArray([.. grupo.Subitens.Select(CampoParaJson)]),
     };
 
+    private static JsonObject GrupoDeDocumentosParaJson(GrupoDeDocumentosDoModelo grupo) => new()
+    {
+        ["quantidadeMinima"] = grupo.QuantidadeMinima,
+        ["consequenciaIndeferimento"] = grupo.Indeferimento?.Consequencia,
+        ["basesLegais"] = new JsonArray([.. (grupo.Indeferimento?.BasesLegais ?? []).Select(BaseLegalParaJson)]),
+        ["documentos"] = new JsonArray([.. grupo.Documentos.Select(DocumentoParaJson)]),
+    };
+
     private static JsonObject DocumentoParaJson(DocumentoExigidoDoModelo documento) => new()
     {
         ["faseCodigo"] = documento.FaseCodigo,
         ["tipoDocumentoCodigo"] = documento.TipoDocumentoCodigo,
-        ["obrigatorio"] = documento.Obrigatorio,
+        ["obrigatorio"] = documento.Indeferimento.Obrigatorio,
         ["quando"] = PredicadoOpcionalParaJson(documento.Quando),
-        ["consequenciaIndeferimento"] = documento.ConsequenciaIndeferimento,
-        ["basesLegais"] = new JsonArray([.. documento.BasesLegais.Select(BaseLegalParaJson)]),
+        ["consequenciaIndeferimento"] = documento.Indeferimento.Consequencia,
+        ["basesLegais"] = new JsonArray([.. documento.Indeferimento.BasesLegais.Select(BaseLegalParaJson)]),
+        ["prazoDeEmissao"] = PrazoParaJson(documento.Requisitos.PrazoDeEmissao),
+        ["validade"] = ValidadeParaJson(documento.Requisitos.Validade),
         ["porOpcao"] = PorOpcaoParaJson(documento.PorOpcao),
     };
 
-    private static JsonObject BaseLegalParaJson(BaseLegalDoDocumentoDoModelo baseLegal) => new()
+    private static JsonObject? PrazoParaJson(PrazoDeEmissaoDoModelo? prazo) => prazo is null ? null : new()
+    {
+        ["escolha"] = prazo.Escolha.Codigo(),
+        ["valor"] = prazo.Valor,
+        ["unidade"] = prazo.Unidade?.Codigo(),
+        ["referencia"] = ReferenciaParaJson(prazo.Referencia),
+        ["efeitoForaDoPrazo"] = prazo.EfeitoForaDoPrazo?.Codigo(),
+    };
+
+    private static JsonObject? ValidadeParaJson(ValidadeDoDocumentoDoModelo? validade) => validade is null ? null : new()
+    {
+        ["escolha"] = validade.Escolha.Codigo(),
+        ["referencia"] = ReferenciaParaJson(validade.Referencia),
+        ["efeitoDoVencimento"] = validade.EfeitoDoVencimento?.Codigo(),
+    };
+
+    private static JsonObject? ReferenciaParaJson(DataDeReferenciaDoDocumentoDoModelo? referencia) => referencia is null ? null : new()
+    {
+        ["tipo"] = referencia.Tipo.Codigo(),
+        ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["faseCodigo"] = referencia.FaseCodigo,
+    };
+
+    private static JsonObject BaseLegalParaJson(BaseLegalDoModelo baseLegal) => new()
     {
         ["referencia"] = baseLegal.Referencia,
         ["abrangencia"] = baseLegal.Abrangencia,
@@ -138,7 +173,7 @@ internal static class ConteudoDoModeloJson
             [.. elementoPrincipal.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
             [.. elementoPrincipal.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
             [.. elementoPrincipal.GetProperty("grupos").EnumerateArray().Select(GrupoDeJson)],
-            DocumentosDeJson(elementoPrincipal));
+            new ConjuntoDeDocumentosDoModelo(DocumentosDeJson(elementoPrincipal), GruposDeDocumentosDeJson(elementoPrincipal)));
     }
 
     private static EtapaDoModelo EtapaDeJson(JsonElement etapa) => new(
@@ -195,16 +230,65 @@ internal static class ConteudoDoModeloJson
             ? [.. documentos.EnumerateArray().Select(DocumentoDeJson)]
             : [];
 
+    // Chave ausente é "nenhum grupo".
+    private static IReadOnlyList<GrupoDeDocumentosDoModelo> GruposDeDocumentosDeJson(JsonElement elementoPrincipal) =>
+        elementoPrincipal.TryGetProperty("gruposDeDocumentos", out JsonElement grupos)
+            ? [.. grupos.EnumerateArray().Select(GrupoDeDocumentosDeJson)]
+            : [];
+
+    private static GrupoDeDocumentosDoModelo GrupoDeDocumentosDeJson(JsonElement grupo) => new(
+        InteiroOuNulo(grupo.GetProperty("quantidadeMinima")),
+        Texto(grupo, "consequenciaIndeferimento") is { } consequencia
+            ? new IndeferimentoDoGrupoDeDocumentosDoModelo(consequencia, [.. grupo.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)])
+            : null,
+        [.. grupo.GetProperty("documentos").EnumerateArray().Select(DocumentoDeJson)]);
+
     private static DocumentoExigidoDoModelo DocumentoDeJson(JsonElement documento) => new(
         documento.GetProperty("faseCodigo").GetString()!,
         documento.GetProperty("tipoDocumentoCodigo").GetString()!,
-        documento.GetProperty("obrigatorio").GetBoolean(),
         Predicado(documento, "quando"),
-        documento.GetProperty("consequenciaIndeferimento").GetString()!,
-        [.. documento.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)],
+        new IndeferimentoDoDocumentoDoModelo(
+            documento.GetProperty("obrigatorio").GetBoolean(),
+            documento.GetProperty("consequenciaIndeferimento").GetString()!,
+            [.. documento.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)]),
+        new RequisitosDoDocumentoDoModelo(PrazoDeJson(documento), ValidadeDeJson(documento)),
         PorOpcaoDeJson(documento));
 
-    private static BaseLegalDoDocumentoDoModelo BaseLegalDeJson(JsonElement baseLegal) => new(
+    // Chave ausente ou nula é "ainda não escolhido".
+    private static PrazoDeEmissaoDoModelo? PrazoDeJson(JsonElement documento) =>
+        Objeto(documento, "prazoDeEmissao") is { } prazo
+            ? new PrazoDeEmissaoDoModelo(
+                CatalogoDe<EscolhaDoPrazoDeEmissao>.Obter(prazo.GetProperty("escolha").GetString()!),
+                InteiroOuNulo(prazo.GetProperty("valor")),
+                CodigoOpcional<UnidadeDoPrazoDeEmissao>(prazo, "unidade"),
+                ReferenciaDeJson(prazo),
+                CodigoOpcional<EfeitoNaAnaliseDoDocumento>(prazo, "efeitoForaDoPrazo"))
+            : null;
+
+    private static ValidadeDoDocumentoDoModelo? ValidadeDeJson(JsonElement documento) =>
+        Objeto(documento, "validade") is { } validade
+            ? new ValidadeDoDocumentoDoModelo(
+                CatalogoDe<EscolhaDaValidade>.Obter(validade.GetProperty("escolha").GetString()!),
+                ReferenciaDeJson(validade),
+                CodigoOpcional<EfeitoNaAnaliseDoDocumento>(validade, "efeitoDoVencimento"))
+            : null;
+
+    private static DataDeReferenciaDoDocumentoDoModelo? ReferenciaDeJson(JsonElement pai) =>
+        Objeto(pai, "referencia") is { } referencia
+            ? new DataDeReferenciaDoDocumentoDoModelo(
+                CatalogoDe<TipoDaDataDeReferencia>.Obter(referencia.GetProperty("tipo").GetString()!),
+                Texto(referencia, "faseCodigo"),
+                Texto(referencia, "data") is { } data ? DateOnly.ParseExact(data, "yyyy-MM-dd", CultureInfo.InvariantCulture) : null)
+            : null;
+
+    private static TEnum? CodigoOpcional<TEnum>(JsonElement objeto, string chave)
+        where TEnum : struct, Enum =>
+        Texto(objeto, chave) is { } codigo ? CatalogoDe<TEnum>.Obter(codigo) : null;
+
+    private static JsonElement? Objeto(JsonElement pai, string chave) =>
+        pai.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.Object ? valor : null;
+
+    private static BaseLegalDoModelo BaseLegalDeJson(JsonElement baseLegal) => new(
         baseLegal.GetProperty("referencia").GetString()!,
         baseLegal.GetProperty("abrangencia").GetString()!,
         baseLegal.GetProperty("situacao").GetString()!,

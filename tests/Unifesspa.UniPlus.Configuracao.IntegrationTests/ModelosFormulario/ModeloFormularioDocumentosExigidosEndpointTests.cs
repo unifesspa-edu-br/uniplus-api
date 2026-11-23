@@ -33,14 +33,44 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
         JsonObject documento = Documento();
-        documento["basesLegais"] = JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO"}]""");
-        modelo["conteudo"]!["documentosExigidos"] = new JsonArray(documento);
+        documento["indeferimento"]!["basesLegais"] = JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO"}]""");
+        modelo["conteudo"]!["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray(documento));
 
         Guid id = await CriarAsync(client, modelo);
-        JsonObject baseLegal = (await ObterAsync(client, id))["conteudo"]!["documentosExigidos"]![0]!["basesLegais"]![0]!.AsObject();
+        JsonObject baseLegal = (await ObterAsync(client, id))["conteudo"]!["conjuntoDeDocumentos"]!["documentosExigidos"]![0]!["indeferimento"]!["basesLegais"]![0]!.AsObject();
 
         baseLegal["situacao"]!.GetValue<string>().Should().Be("RESOLVIDO");
         baseLegal.ContainsKey("status").Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O prazo de emissão escolhido é gravado e devolvido com código e rótulo, e a validade não escolhida volta nula")]
+    public async Task Criar_PrazoDeEmissaoEscolhido_DevolveCodigoERotulo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
+        JsonObject documento = Documento();
+        documento["requisitos"] = RequisitosComPrazo("COM_PRAZO");
+        modelo["conteudo"]!["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray(documento));
+
+        Guid id = await CriarAsync(client, modelo);
+        JsonNode requisitos = (await ObterAsync(client, id))["conteudo"]!["conjuntoDeDocumentos"]!["documentosExigidos"]![0]!["requisitos"]!;
+
+        requisitos["prazoDeEmissao"]!["escolha"]!["codigo"]!.GetValue<string>().Should().Be("COM_PRAZO");
+        requisitos["prazoDeEmissao"]!["escolha"]!["rotulo"]!.GetValue<string>().Should().NotBeNullOrWhiteSpace();
+        requisitos["prazoDeEmissao"]!["referencia"]!["faseCodigo"]!.GetValue<string>().Should().Be("HABILITACAO");
+        requisitos["validade"].Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O código de prazo de emissão desconhecido é recusado no campo dele, na posição do documento")]
+    public async Task Criar_CodigoDeRequisitoDesconhecido_RecusaNoCampoDoRequisito()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonObject documento = Documento();
+        documento["requisitos"] = RequisitosComPrazo("naoExiste");
+
+        IReadOnlyList<(string?, string?)> recusas = await RecusasDoCadastroAsync(client, [documento]);
+
+        recusas.Select(static r => r.Item1).Should().Contain("conteudo.conjuntoDeDocumentos.documentosExigidos[0].requisitos.prazoDeEmissao.escolha");
     }
 
     [Fact(DisplayName = "A recusa do catálogo aponta a posição do documento na entrada, com um documento sem fase antes dele")]
@@ -52,7 +82,7 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         IReadOnlyList<(string?, string?)> recusas = await RecusasDoCadastroAsync(client, documentos);
 
         recusas.Select(static r => r.Item1).Should().Contain(
-            ["conteudo.documentosExigidos[0].faseCodigo", "conteudo.documentosExigidos[1].quando"]);
+            ["conteudo.conjuntoDeDocumentos.documentosExigidos[0].faseCodigo", "conteudo.conjuntoDeDocumentos.documentosExigidos[1].quando"]);
     }
 
     [Fact(DisplayName = "A recusa da exigência por opção aponta a posição do documento na entrada, com um documento nulo antes dele")]
@@ -63,7 +93,7 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
 
         IReadOnlyList<(string?, string?)> recusas = await RecusasDoCadastroAsync(client, documentos);
 
-        recusas.Select(static r => r.Item1).Should().Contain("conteudo.documentosExigidos[1].porOpcao.fatoCodigo");
+        recusas.Select(static r => r.Item1).Should().Contain("conteudo.conjuntoDeDocumentos.documentosExigidos[1].porOpcao.fatoCodigo");
     }
 
     [Fact(DisplayName = "Sem documento malformado a recusa aponta a posição do documento na entrada")]
@@ -74,8 +104,37 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
 
         IReadOnlyList<(string?, string?)> recusas = await RecusasDoCadastroAsync(client, documentos);
 
-        recusas.Select(static r => r.Item1).Should().Contain("conteudo.documentosExigidos[1].quando")
-            .And.NotContain("conteudo.documentosExigidos[0].quando");
+        recusas.Select(static r => r.Item1).Should().Contain("conteudo.conjuntoDeDocumentos.documentosExigidos[1].quando")
+            .And.NotContain("conteudo.conjuntoDeDocumentos.documentosExigidos[0].quando");
+    }
+
+    [Fact(DisplayName = "O grupo de documentos é gravado e devolvido com a quantidade, o indeferimento e os documentos dele")]
+    public async Task Criar_GrupoDeDocumentos_GravaEDevolveOGrupo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
+        modelo["conteudo"]!["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray(), new JsonArray(GrupoDeDocumentos()));
+
+        Guid id = await CriarAsync(client, modelo);
+        JsonNode devolvido = (await ObterAsync(client, id))["conteudo"]!["conjuntoDeDocumentos"]!["gruposDeDocumentos"]![0]!;
+
+        devolvido["quantidadeMinima"]!.GetValue<int>().Should().Be(1);
+        devolvido["indeferimento"]!["consequencia"]!.GetValue<string>().Should().Be("INDEFERE");
+        devolvido["documentos"]!.AsArray().Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "O documento de um grupo com fato fora do catálogo é recusado no caminho do documento do grupo")]
+    public async Task Criar_DocumentoDeGrupoForaDoCatalogo_RecusaNoCaminhoDoGrupo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
+        JsonObject grupo = new() { ["quantidadeMinima"] = null, ["indeferimento"] = null, ["documentos"] = new JsonArray(Documento(quando: CondicaoForaDoCatalogo())) };
+        modelo["conteudo"]!["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray(), new JsonArray(grupo));
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, modelo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CamposRecusadosAsync(resposta)).Should().Contain("conteudo.conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[0].quando");
     }
 
     [Fact(DisplayName = "A edição recusa com a posição do documento na entrada, com um documento sem fase antes dele")]
@@ -84,18 +143,18 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
         JsonObject conteudo = (await ObterAsync(client, id))["conteudo"]!.AsObject();
-        conteudo["documentosExigidos"] = new JsonArray(Documento(faseCodigo: ""), Documento(quando: CondicaoForaDoCatalogo()));
+        conteudo["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray(Documento(faseCodigo: ""), Documento(quando: CondicaoForaDoCatalogo())));
 
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Habilitação", conteudo));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await CamposRecusadosAsync(resposta)).Should().Contain("conteudo.documentosExigidos[1].quando");
+        (await CamposRecusadosAsync(resposta)).Should().Contain("conteudo.conjuntoDeDocumentos.documentosExigidos[1].quando");
     }
 
     private static async Task<IReadOnlyList<(string?, string?)>> RecusasDoCadastroAsync(HttpClient client, IEnumerable<JsonNode?> documentos)
     {
         JsonObject modelo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!.AsObject();
-        modelo["conteudo"]!["documentosExigidos"] = new JsonArray([.. documentos]);
+        modelo["conteudo"]!["conjuntoDeDocumentos"] = ConjuntoCom(new JsonArray([.. documentos]));
 
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, modelo);
 
@@ -111,15 +170,35 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         return [.. problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())];
     }
 
+    private static JsonObject GrupoDeDocumentos() => new()
+    {
+        ["quantidadeMinima"] = 1,
+        ["indeferimento"] = new JsonObject { ["consequencia"] = "INDEFERE", ["basesLegais"] = new JsonArray() },
+        ["documentos"] = new JsonArray(Documento()),
+    };
+
+    private static JsonObject ConjuntoCom(JsonArray documentos, JsonArray? grupos = null) =>
+        new() { ["documentosExigidos"] = documentos, ["gruposDeDocumentos"] = grupos ?? new JsonArray() };
+
     private static JsonObject Documento(string? faseCodigo = "HABILITACAO", JsonNode? quando = null, string? porOpcaoDoFato = null) => new()
     {
         ["faseCodigo"] = faseCodigo,
         ["tipoDocumentoCodigo"] = "COMPROVANTE_RESIDENCIA",
-        ["obrigatorio"] = true,
         ["quando"] = quando,
-        ["consequenciaIndeferimento"] = "INDEFERE",
-        ["basesLegais"] = new JsonArray(),
+        ["indeferimento"] = new JsonObject { ["obrigatorio"] = true, ["consequencia"] = "INDEFERE", ["basesLegais"] = new JsonArray() },
         ["porOpcao"] = porOpcaoDoFato is null ? null : new JsonObject { ["fatoCodigo"] = porOpcaoDoFato, ["exceto"] = new JsonArray() },
+    };
+
+    private static JsonObject RequisitosComPrazo(string escolha) => new()
+    {
+        ["prazoDeEmissao"] = new JsonObject
+        {
+            ["escolha"] = escolha,
+            ["valor"] = 90,
+            ["unidade"] = "DIAS",
+            ["referencia"] = new JsonObject { ["tipo"] = "INICIO_DA_FASE", ["faseCodigo"] = "HABILITACAO" },
+            ["efeitoForaDoPrazo"] = "RECUSAR_DOCUMENTO",
+        },
     };
 
     private static JsonArray CondicaoForaDoCatalogo() =>

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -86,22 +87,40 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         PredicadoDnf quando = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
         DocumentoExigidoDoModelo documento = new(
-            "INSCRICAO", tipo, false, quando, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]);
+            "INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]),
+            RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
 
-        return Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { DocumentosExigidos = [documento] });
+        return Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(documento) });
     }
+
+    private static Result<ModeloFormulario> CriarComRequisitos(RequisitosDoDocumentoDoModelo requisitos) =>
+        Criar(
+            FinalidadeFormulario.Habilitacao,
+            Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(ConteudosDoModeloDeTeste.Documento("LAUDO", requisitos: requisitos)) });
+
+    [Fact(DisplayName = "Caractere nulo no código da fase da referência do prazo de emissão é recusado no caminho dela")]
+    public void DocumentoComCaractereNulo_NaFaseDoPrazoDeEmissao_Recusa() =>
+        DeveRecusarTextoNaoGravavelEm(
+            CriarComRequisitos(ConteudosDoModeloDeTeste.RequisitosAPartirDasFases("FASE\0", "FASE")),
+            "conteudo.conjuntoDeDocumentos.documentosExigidos[0].requisitos.prazoDeEmissao.referencia.faseCodigo");
+
+    [Fact(DisplayName = "Caractere nulo no código da fase da referência da validade é recusado no caminho dela")]
+    public void DocumentoComCaractereNulo_NaFaseDaValidade_Recusa() =>
+        DeveRecusarTextoNaoGravavelEm(
+            CriarComRequisitos(ConteudosDoModeloDeTeste.RequisitosAPartirDasFases("FASE", "FASE\0")),
+            "conteudo.conjuntoDeDocumentos.documentosExigidos[0].requisitos.validade.referencia.faseCodigo");
 
     [Fact(DisplayName = "Caractere nulo no código do tipo do documento exigido do conjunto padrão é recusado")]
     public void DocumentoComCaractereNulo_NoCodigoDoTipo_Recusa() =>
-        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO\0", "A", "x"), "conteudo.documentosExigidos[0].tipoDocumentoCodigo");
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO\0", "A", "x"), "conteudo.conjuntoDeDocumentos.documentosExigidos[0].tipoDocumentoCodigo");
 
     [Fact(DisplayName = "Caractere nulo no valor da condição do documento exigido é recusado")]
     public void DocumentoComCaractereNulo_NaCondicao_Recusa() =>
-        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A\0", "x"), "conteudo.documentosExigidos[0].quando");
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A\0", "x"), "conteudo.conjuntoDeDocumentos.documentosExigidos[0].quando");
 
     [Fact(DisplayName = "Caractere nulo na base legal do documento exigido é recusado")]
     public void DocumentoComCaractereNulo_NaBaseLegal_Recusa() =>
-        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A", "x\0"), "conteudo.documentosExigidos[0].basesLegais[0].observacao");
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A", "x\0"), "conteudo.conjuntoDeDocumentos.documentosExigidos[0].indeferimento.basesLegais[0].observacao");
 
     [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
     public void CodigoComSurrogateSemPar_Recusa()

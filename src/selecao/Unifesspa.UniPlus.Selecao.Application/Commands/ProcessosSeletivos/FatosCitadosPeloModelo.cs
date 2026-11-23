@@ -12,7 +12,7 @@ internal static class FatosCitadosPeloModelo
 {
     public static string[] Todos(ConteudoDoModeloInput conteudo, FormularioSelecionado formulario, TermosSelecionados termos)
     {
-        IReadOnlyList<DocumentoExigidoDoModeloInput> documentos = conteudo.DocumentosExigidos ?? [];
+        IEnumerable<DocumentoExigidoDoModeloInput> documentos = (conteudo.ConjuntoDeDocumentos?.TodosOsDocumentos() ?? []).Select(static c => c.Documento);
         return [.. DasPartes(formulario.Itens.Entradas, formulario.Grupos.Entradas, conteudo.Etapas ?? [], termos.Entradas)
             .Concat(documentos.SelectMany(static d => Do(d.Quando)))
             .Concat(documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>())

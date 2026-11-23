@@ -147,16 +147,35 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     {
         DocumentoExigidoDoModelo documento = Documento(ComNulo, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)), new(ComNulo, [ComNulo])) with
         {
-            BasesLegais = [new("Edital", "INTERNA_EDITAL", "PENDENTE", ComNulo)],
+            Indeferimento = new(false, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", ComNulo)]),
         };
 
-        CamposRecusados(Vazio with { DocumentosExigidos = [documento] }).Should().Equal(
-            "documentosExigidos[0].tipoDocumentoCodigo",
-            "documentosExigidos[0].quando",
-            "documentosExigidos[0].porOpcao.fatoCodigo",
-            "documentosExigidos[0].porOpcao.exceto[0]",
-            "documentosExigidos[0].basesLegais[0].observacao");
+        CamposRecusados(Vazio with { ConjuntoDeDocumentos = Conjunto(documento) }).Should().Equal(
+            "conjuntoDeDocumentos.documentosExigidos[0].tipoDocumentoCodigo",
+            "conjuntoDeDocumentos.documentosExigidos[0].quando",
+            "conjuntoDeDocumentos.documentosExigidos[0].porOpcao.fatoCodigo",
+            "conjuntoDeDocumentos.documentosExigidos[0].porOpcao.exceto[0]",
+            "conjuntoDeDocumentos.documentosExigidos[0].indeferimento.basesLegais[0].observacao");
     }
+
+    [Fact(DisplayName = "O documento de um grupo é recusado no caminho do grupo, e o indeferimento do grupo na consequência e na base legal")]
+    public void GrupoDeDocumentos_CadaTexto_RecusaNoCaminhoDoGrupo()
+    {
+        GrupoDeDocumentosDoModelo grupo = GrupoDeDocumentos(1, Documento("RG"), Documento(ComNulo, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)))) with
+        {
+            Indeferimento = new(ComNulo, [new("Edital", "INTERNA_EDITAL", "PENDENTE", ComNulo)]),
+        };
+
+        CamposRecusados(Vazio with { ConjuntoDeDocumentos = ConjuntoComGrupos(grupo) }).Should().Equal(
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[1].tipoDocumentoCodigo",
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[1].quando",
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequencia",
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.basesLegais[0].observacao");
+    }
+
+    [Fact(DisplayName = "O grupo sem indeferimento não tem texto de indeferimento a recusar")]
+    public void GrupoDeDocumentos_SemIndeferimento_SemRecusa() =>
+        CamposRecusados(Vazio with { ConjuntoDeDocumentos = ConjuntoComGrupos(GrupoDeDocumentos(null, Documento("RG"))) }).Should().BeEmpty();
 
     private static ConteudoDoModelo ConteudoComRegraNaoGravavelEmCadaParte()
     {
@@ -167,7 +186,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
         TermoDoModelo termo = Termo("LGPD", exibicao: ruim).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
 
-        return Vazio with { Etapas = [Etapa(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], DocumentosExigidos = [Documento("LAUDO", ruim)] };
+        return Vazio with { Etapas = [Etapa(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", ruim)) };
     }
 
     [Fact(DisplayName = "O texto ruim de toda regra de cada parte é recusado no caminho dela, e as partes seguem a ordem do conteúdo")]
@@ -181,7 +200,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
             "grupos[0].regras.obrigatoriedade.predicado",
             "termos[0].regras.exibicao",
             "termos[0].regras.obrigatoriedade.predicado",
-            "documentosExigidos[0].quando");
+            "conjuntoDeDocumentos.documentosExigidos[0].quando");
 
     [Fact(DisplayName = "O pressuposto com caractere nulo é recusado na posição dele")]
     public void Pressuposto_Recusa() =>

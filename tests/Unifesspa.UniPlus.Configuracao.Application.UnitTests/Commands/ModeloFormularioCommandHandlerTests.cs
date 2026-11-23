@@ -143,12 +143,12 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     {
         ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0)) with
         {
-            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", false, Quando("NAO_EXISTE", true), "REMOVE_VANTAGEM", [])],
+            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("NAO_EXISTE", true), new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []))),
         };
 
         Result<Guid> resultado = await CriarAsync(conteudo);
 
-        resultado.Errors.Should().Contain(static e => e.Field == "conteudo.documentosExigidos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
+        resultado.Errors.Should().Contain(static e => e.Field == "conteudo.conjuntoDeDocumentos.documentosExigidos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
     }
 
     [Theory(DisplayName = "O documento só se multiplica pelas opções de fato cujas opções o processo declara")]
@@ -166,7 +166,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         }
         else
         {
-            resultado.Errors.Should().Contain(e => e.Field == "conteudo.documentosExigidos[0].porOpcao.fatoCodigo" && e.Error.Code == recusa);
+            resultado.Errors.Should().Contain(e => e.Field == "conteudo.conjuntoDeDocumentos.documentosExigidos[0].porOpcao.fatoCodigo" && e.Error.Code == recusa);
         }
     }
 
@@ -242,7 +242,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, condicao]);
         return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
         {
-            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO", true), "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput(fato, []))],
+            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO", true), new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []), PorOpcao: new ExigenciaPorOpcaoInput(fato, []))),
         };
 
     }

@@ -46,6 +46,8 @@
     <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
     <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
+    <Compile Include="../Shared/Cenarios/RequisitosDoDocumentoDoModeloBuilder.cs" Link="Cenarios/RequisitosDoDocumentoDoModeloBuilder.cs" />
+    <Compile Include="../Shared/Cenarios/ConjuntoDeDocumentosDoModeloBuilder.cs" Link="Cenarios/ConjuntoDeDocumentosDoModeloBuilder.cs" />
     <Compile Include="../Shared/CriterioDesempateDeTeste.cs" Link="CriterioDesempateDeTeste.cs" />
     <Compile Include="../Shared/ItemDocumentoExigidoDeTeste.cs" Link="ItemDocumentoExigidoDeTeste.cs" />
     <Compile Include="../Shared/RegraDeComprovacaoDeTeste.cs" Link="RegraDeComprovacaoDeTeste.cs" />
