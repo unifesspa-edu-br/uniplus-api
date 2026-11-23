@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 
 using System.IO;
 
-using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// O arquivo versionado que guarda a classificação de proteção de cada coluna do modelo (ADR-0153): o
@@ -10,13 +9,11 @@ using Unifesspa.UniPlus.TestSupport;
 /// </summary>
 internal static class ArquivoDaClassificacaoDeProtecao
 {
-    private const string CaminhoDoArquivo = "tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/ClassificacaoDeProtecaoDoModelo.txt";
+    private const string CaminhoDoArquivo = "Conferencias/ClassificacaoDeProtecaoDoModelo.txt";
 
-    internal static string Caminho() => Path.Join(LocalizadorDaSolucao.Locate(), CaminhoDoArquivo);
+    internal static string Caminho() => Path.Join(AppContext.BaseDirectory, CaminhoDoArquivo);
 
     internal static string LerTexto() => File.ReadAllText(Caminho()).ReplaceLineEndings("\n");
 
     internal static string[] LerLinhas() => File.ReadAllLines(Caminho());
-
-    internal static void Regravar(string conteudo) => File.WriteAllText(Caminho(), conteudo);
 }

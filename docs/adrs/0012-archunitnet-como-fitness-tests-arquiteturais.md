@@ -47,8 +47,8 @@ A equipe não tem experiência prévia com nenhuma das duas — curva de aprendi
 `Directory.Packages.props` declara o pacote com pinning exato (não range flutuante):
 
 ```xml
-<PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.3" />
-<PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
+<PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.5" />
+<PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.13.5" />
 ```
 
 > **Nota sobre nomenclatura:** o publisher prefixa o package id com `TngTech.`, mas a namespace C# dentro dos assemblies é `ArchUnitNET.*` (sem prefixo). `<PackageReference>` usa `TngTech.ArchUnitNET`; `using ArchUnitNET.Fluent;` no código.
@@ -126,3 +126,9 @@ Política de upgrade:
 ## Emenda (2026-11-22) — conferência das dependências
 
 Os projetos de arquitetura existem onde há regras que precisam de conferência própria. A direção de camadas garantida pelas referências dos projetos não é repetida nesses testes.
+
+## Emenda (2026-11-22) — estrutura e descoberta
+
+A conferência de estrutura usa ArchUnitNET 0.13.5 nos projetos de arquitetura, com uma carga da arquitetura por projeto. Registros, ações e atributos oferecidos pelo produto são obtidos do contêiner e da descrição de ações do host no projeto de contratos. Os arquivos de referência são copiados pelo MSBuild para a saída dos testes; divergências produzem resultados separados para aprovação explícita.
+
+As conferências abrangidas por esta emenda não usam reflexão escrita à mão, apoio criado apenas para conferir, regex ou análise de código-fonte, nem proíbem palavras em nomes. Regras que a biblioteca não expressa são repensadas ou retiradas, com a garantia substituta registrada. O host fica restrito ao projeto de contratos; a carga compartilhada evita trabalho repetido nos projetos de arquitetura.

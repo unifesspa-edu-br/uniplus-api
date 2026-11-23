@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures;
 public sealed class ContratoOpenApiGravadoTests : IDisposable
 {
     private const string Especificacao = """{"openapi":"3.1.0"}""";
-    private const string EspecificacaoNormalizada = "{\n  \"openapi\": \"3.1.0\"\n}\n";
 
     private readonly string _diretorio = Path.Join(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
@@ -25,7 +24,7 @@ public sealed class ContratoOpenApiGravadoTests : IDisposable
         string contrato = await GravarContratoAsync("""{ "openapi": "3.1.0" }""");
         using HttpClient client = ClienteQueServe(Especificacao);
 
-        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato, regerar: false);
+        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato);
 
         await conferir.Should().NotThrowAsync();
     }
@@ -36,9 +35,10 @@ public sealed class ContratoOpenApiGravadoTests : IDisposable
         string contrato = await GravarContratoAsync("""{"openapi":"3.0.0"}""");
         using HttpClient client = ClienteQueServe(Especificacao);
 
-        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato, regerar: false);
+        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato);
 
-        await conferir.Should().ThrowAsync<Xunit.Sdk.XunitException>().WithMessage("*contrato OpenAPI mudou*");
+        await conferir.Should().ThrowAsync<Xunit.Sdk.XunitException>().WithMessage("*resultado obtido:*cp \"*\" \"contracts/openapi.json\"*");
+        (await File.ReadAllTextAsync(contrato)).Should().Be("""{"openapi":"3.0.0"}""");
     }
 
     [Fact(DisplayName = "Contrato gravado ausente falha com a mensagem de que ele precisa existir no repositório")]
@@ -47,20 +47,21 @@ public sealed class ContratoOpenApiGravadoTests : IDisposable
         string contrato = Path.Join(_diretorio, "ausente.json");
         using HttpClient client = ClienteQueServe(Especificacao);
 
-        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato, regerar: false);
+        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato);
 
-        await conferir.Should().ThrowAsync<Xunit.Sdk.XunitException>().WithMessage("*precisa existir no repositório*");
+        await conferir.Should().ThrowAsync<Xunit.Sdk.XunitException>().WithMessage("*ausente*resultado obtido:*");
     }
 
-    [Fact(DisplayName = "Regerar cria o diretório e grava a especificação normalizada com quebra de linha final")]
-    public async Task ConferirContraOCaminho_Regerar_CriaODiretorioEGravaAEspecificacaoNormalizada()
+    [Fact(DisplayName = "Contrato inválido falha com o caminho do resultado e preserva o arquivo")]
+    public async Task ConferirContraOCaminho_ContratoInvalido_FalhaEPreservaContrato()
     {
-        string contrato = Path.Join(_diretorio, "contracts", "openapi.json");
+        string contrato = await GravarContratoAsync("{");
         using HttpClient client = ClienteQueServe(Especificacao);
 
-        await ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato, regerar: true);
+        Func<Task> conferir = () => ContratoOpenApiGravado.ConferirContraOCaminhoAsync(client, "/openapi.json", contrato);
 
-        (await File.ReadAllTextAsync(contrato)).Should().Be(EspecificacaoNormalizada);
+        await conferir.Should().ThrowAsync<Xunit.Sdk.XunitException>().WithMessage("*inválido*resultado obtido:*");
+        (await File.ReadAllTextAsync(contrato)).Should().Be("{");
     }
 
     [Fact(DisplayName = "Contrato gravado informado com caminho absoluto é recusado")]
@@ -71,7 +72,7 @@ public sealed class ContratoOpenApiGravadoTests : IDisposable
 
         Func<Task> conferir = () => ContratoOpenApiGravado.ConferirAsync(client, "/openapi.json", absoluto);
 
-        await conferir.Should().ThrowAsync<ArgumentException>().WithParameterName("caminhoRelativo");
+        await conferir.Should().ThrowAsync<ArgumentException>().WithParameterName("caminhoRelativoDoContrato");
     }
 
     private static HttpClient ClienteQueServe(string corpo) =>

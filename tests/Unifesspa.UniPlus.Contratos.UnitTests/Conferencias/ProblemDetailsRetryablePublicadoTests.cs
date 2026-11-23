@@ -31,7 +31,7 @@ public sealed class ProblemDetailsRetryablePublicadoTests
 
         ausencias.Should().BeEmpty(
             because: "sem a declaração no baseline o sinal existe na resposta e não existe no contrato — "
-                + "regerar com `UPDATE_OPENAPI_BASELINE=1 dotnet test "
+                + "conferir com `dotnet test "
                 + "tests/Unifesspa.UniPlus.<modulo>.IntegrationTests --filter \"FullyQualifiedName~SpecRuntime\"` "
                 + "no módulo stale e conferir o diff em contracts/.");
     }

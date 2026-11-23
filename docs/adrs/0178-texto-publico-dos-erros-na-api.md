@@ -52,3 +52,7 @@ conteúdo de `contracts/descricoes-de-erros.json`.
 ## Emenda (2026-11-22) — projeto de testes
 
 `DescricoesDeErrosPublicadasTests` é executado em `Unifesspa.UniPlus.Contratos.UnitTests`.
+
+## Emenda — aprovação das referências
+
+Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).

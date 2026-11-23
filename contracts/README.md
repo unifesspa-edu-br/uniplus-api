@@ -35,21 +35,9 @@ Endpoint runtime: `GET /openapi/{modulo}.json`.
 
 A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifesspa.UniPlus.{Selecao,Ingresso,OrganizacaoInstitucional,Autorizacao,Configuracao,Publicacoes,Portal}.IntegrationTests/OpenApiEndpointTests.cs`) compara o spec emitido em runtime com o baseline committed nesta pasta. **Qualquer mudança no contrato faz o teste falhar** — clientes externos (frontend, integradores, `uniplus-developers`) ficam protegidos contra breaking changes acidentais.
 
-### Como regerar o baseline
+### Como aprovar uma mudança
 
-```bash
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Ingresso.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Autorizacao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Configuracao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Publicacoes.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Portal.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
-```
-
-Os arquivos `contracts/openapi.*.json` correspondentes são reescritos. Mudou um arquivo de `selecao/configuracao/v1`, o `documento.schema.json` ou um `$ref`: regerar o baseline do Seleção (primeira linha acima), porque o esquema é publicado nele como componentes, e conferir o `Infrastructure.Core.UnitTests` (`DocumentoDaConfiguracaoNaOpenApiTests`). Depois de regerar, rodar o Spectral (`npx --yes @stoplight/spectral-cli@6.15.0 lint --ruleset tools/spectral/.spectral.yaml --fail-severity=error contracts/openapi.selecao.json`). **Revise o diff** (`git diff contracts/`) e só commit se a mudança for intencional. PRs que mudam controllers sem regerar o baseline falham CI.
-
-> **Nota sobre `NormalizeJson`**: o teste de drift canonicaliza apenas indentação/whitespace (via `JsonSerializer.Serialize` com `WriteIndented = true`); não reordena chaves. Se uma atualização do `Microsoft.OpenApi` reordenar campos no spec emitido (ex.: `schema.type` antes ou depois de `schema.pattern`), o teste falha como drift legítimo até a baseline ser regerada — comportamento correto, não falso positivo.
+Execute o teste `SpecRuntime` do projeto de integração do módulo e siga o [procedimento de aprovação](../CONTRIBUTING.md#aprovação-de-referências-de-teste). O teste compara o documento emitido à referência copiada para a saída. Se houver divergência, informa o arquivo obtido para revisão. Mudanças nos esquemas compartilhados exigem conferir o contrato de Seleção. Execute também o Spectral sobre o contrato aprovado.
 
 ## Códigos de erro
 
@@ -71,22 +59,18 @@ O código de erro vai no corpo `application/problem+json` (ADR-0023), e não é 
 
 ### De onde vem
 
-O arquivo é gerado em memória pelo teste `CodigosDeErroPublicadosTests` (`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`), que reúne:
+O arquivo é gerado em memória pelo teste `CodigosDeErroPublicadosTests` (`tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/`), que reúne:
 
-1. todas as `IDomainErrorRegistration` dos módulos e do compartilhado (Seleção, Ingresso, Configuração, Organização Institucional, Publicações, Autorização, Discentes, Portal e `Infrastructure.Core`), descobertas por tipo nos assemblies do produto;
+1. todas as `IDomainErrorRegistration` dos módulos e do compartilhado (Seleção, Ingresso, Configuração, Organização Institucional, Publicações, Autorização, Discentes, Portal e `Infrastructure.Core`), obtidas dos contêineres dos hosts;
 2. as definições da fronteira HTTP (`ErrosDaFronteiraHttp`), de quem o `GlobalExceptionMiddleware`, o `AuthenticationProblemDetailsWriter`, o `VendorMediaTypeAttribute` e a recusa de contrato do controller de obrigatoriedades legais leem status, código e título. Um erro novo emitido fora dos registros nasce ali, e não como literal no emissor.
 
 Uma exceção do conteúdo: `uniplus.contract.id_path_body_divergente` vai hoje no campo `type` da resposta 400, e não na extensão `code` que a ADR-0023 exige. Está na lista porque é o identificador estável que o controller emite; o cliente só o lê em `type` até a resposta ganhar o `code`.
 
 O mesmo código declarado em mais de um registro com o mesmo status e título entra uma vez; com status ou título diferentes, a geração falha e aponta o código e os registros.
 
-### Como regerar
+### Como aprovar
 
-```bash
-UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests --filter "FullyQualifiedName~CodigosDeErroPublicados"
-```
-
-O teste falha, sem regerar, quando o arquivo diverge do código: código novo sem entrada, entrada sem código correspondente, ou status e título diferentes. A mensagem aponta o código e repete o comando acima. **Revise o diff** (`git diff contracts/codigos-de-erro.json`): todo código novo exige a descrição pública no mesmo PR.
+Execute `dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests --filter CodigosDeErroPublicados` e siga o procedimento de aprovação acima. Cada código novo exige uma descrição pública no mesmo PR.
 
 ### Descrições públicas
 
@@ -102,12 +86,7 @@ Escreva ou atualize a descrição no mesmo PR que muda o código, conforme a
 [ADR-0178](../docs/adrs/0178-texto-publico-dos-erros-na-api.md). Use linguagem
 voltada a quem recebe o erro. O teste confere pares de códigos, formato,
 seções, requisitos e ausência de exemplos com CPF, e-mail ou sequências de
-11 ou mais algarismos. A variável abaixo reordena e reformata as descrições
-existentes. Código sem descrição continua a reprovar o teste.
-
-```bash
-UPDATE_DESCRICOES_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTests --filter "FullyQualifiedName~DescricoesDeErrosPublicadas"
-```
+11 ou mais algarismos. Execute `dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests --filter DescricoesDeErrosPublicadas`. Quando o conteúdo for válido, o teste fornece a formatação canônica para revisão. Códigos sem descrição exigem texto escrito pelo autor.
 
 ## Spectral house-style
 
@@ -117,7 +96,7 @@ UPDATE_DESCRICOES_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTes
 
 Itens originalmente listados em #290 que ficam para próximos PRs (mantém este reviewable):
 
-- ~~`contracts/shared.openapi.json` declarando ProblemDetails, Cursor, `_links`, paginação envelopes via `$ref`.~~ Resolvido por [ADR-0035](../docs/adrs/0035-shared-schemas-cross-module-fitness-test.md): Microsoft.AspNetCore.OpenApi 10 não suporta `$ref` cross-document, e Redocly post-process é desproporcional para 3 schemas duplicados. Em vez disso, `OpenApiSharedSchemasInSyncTests` (`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`) faz fitness check byte-a-byte dos schemas com mesmo nome em baselines diferentes. Reavaliar quando ≥10 schemas compartilhados, terceiro módulo, ou portal `uniplus-developers` demandar multi-file.
+- ~~`contracts/shared.openapi.json` declarando ProblemDetails, Cursor, `_links`, paginação envelopes via `$ref`.~~ Resolvido por [ADR-0035](../docs/adrs/0035-shared-schemas-cross-module-fitness-test.md): Microsoft.AspNetCore.OpenApi 10 não suporta `$ref` cross-document, e Redocly post-process é desproporcional para 3 schemas duplicados. Em vez disso, `OpenApiSharedSchemasInSyncTests` (`tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/`) faz fitness check byte-a-byte dos schemas com mesmo nome em baselines diferentes. Reavaliar quando ≥10 schemas compartilhados, terceiro módulo, ou portal `uniplus-developers` demandar multi-file.
 - `contracts/postman/uniplus-api.postman_collection.json` com cenários smoke (criar processo seletivo com Idempotency-Key, listar com cursor, 406 vendor MIME inexistente, 422 validation).
 - Newman em CI rodando contra a API em container — exige docker-compose com Postgres/Kafka/MinIO/Keycloak.
 

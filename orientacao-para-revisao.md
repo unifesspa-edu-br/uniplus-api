@@ -6,7 +6,7 @@ Atualizado em 13/11/2026.
 
 ## Regra
 
-Teste de arquitetura usa **regras declarativas do ArchUnitNET** (`TngTech.ArchUnitNET`): dependência entre tipos, chamada de membro (`CallAny`/`NotCallAny`), namespace, assembly, atributo e herança. A **reflexão sobre metadados de tipos, membros e atributos** entra só onde o ArchUnitNET não alcança. Exemplos: parâmetros do `Handle` e `AuthorizeAttribute.Roles`. O modelo efetivo do EF Core e o esquema do banco devem ser conferidos em testes de integração.
+Teste de arquitetura usa **regras declarativas do ArchUnitNET** (`TngTech.ArchUnitNET`): dependência entre tipos, chamada de membro (`CallAny`/`NotCallAny`), namespace, assembly, atributo e herança. Quando o ArchUnitNET não expressa uma regra, ela é repensada como teste de comportamento ou fica para revisão. O modelo efetivo do EF Core é conferido por suas fábricas públicas.
 
 Não são aceitos:
 
@@ -30,7 +30,7 @@ Antes de escolher outra técnica, nesta ordem:
 
 Os detectores que liam C# como texto, filtravam tipos com `Regex.IsMatch` ou liam IL manualmente foram retirados dos projetos `*ArchTests`. As garantias ainda sem substituto automático constam da [issue #2423](https://github.com/unifesspa-edu-br/uniplus-api/issues/2423). A remoção não significa que essas propriedades estejam comprovadas: até cada substituição ser implementada e executada, elas são critérios de revisão do PR.
 
-Continuam válidos os testes que leem **dados** versionados (JSON e retratos), inspecionam o modelo efetivo do EF Core ou usam reflexão de metadados. O deslocamento dos testes de dados para projetos apropriados também está na issue #2423.
+Continuam válidos os testes que leem **dados** versionados (JSON e referências aprovadas), inspecionam o modelo efetivo do EF Core ou consultam os registros e ações do host. O deslocamento dos testes de dados para projetos apropriados também está na issue #2423.
 
 Substitutos já escritos nesta worktree:
 
@@ -52,7 +52,7 @@ A compilação dos projetos afetados passou. Na sessão TEST, os projetos `Unife
 | Migration não sobrescreve proteção aprovada | Teste de integração com migração entre duas versões e valor aprovado previamente |
 | Consultas com várias coleções usam `SplitQuery` | Padrão no `SelecaoDbContext`, teste da opção efetiva e manutenção do teste SQL da consulta crítica |
 | Chamadas proibidas de relógio estático e carregamento de leitura em comandos | Avaliar regras ArchUnitNET de membro com canários; quando não couber, teste de comportamento ou revisão |
-| Completude dos códigos de `DomainError` emitidos | Catálogo tipado antes de teste de completude; mapeamentos e status por reflexão permanecem testados |
+| Completude dos códigos de `DomainError` emitidos | Catálogo tipado antes de teste de completude; mapeamentos e status dos registros do host permanecem testados |
 | Restrições de autorização, publicação, layout INEP, fixture de container e portões de conformidade | Avaliar cada uma por desenho, comportamento e ArchUnitNET; registrar o que permanecer revisão |
 
 ## Conferido na revisão

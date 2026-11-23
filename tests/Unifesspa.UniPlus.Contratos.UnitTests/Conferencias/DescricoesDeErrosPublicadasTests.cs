@@ -4,60 +4,43 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport.CodigosDeErro;
 using Unifesspa.UniPlus.TestSupport;
 
 public sealed class DescricoesDeErrosPublicadasTests
 {
-    internal const string VariavelDeReformatacao = "UPDATE_DESCRICOES_DE_ERRO_BASELINE";
-    private const string ArquivoDeDescricoes = "contracts/descricoes-de-erros.json";
-    private const string ArquivoDeCodigos = "contracts/codigos-de-erro.json";
-
     [Fact(DisplayName = "Cada código publicado tem uma descrição pública válida")]
     public void DescricoesConferemComOsCodigosDeErro()
     {
-        string diretorioDaSolucao = LocalizadorDaSolucao.Locate();
-        string caminho = Path.Join(diretorioDaSolucao, ArquivoDeDescricoes);
-        string[] codigos = [.. DocumentoDoCatalogoDeErros.Ler(File.ReadAllText(Path.Join(diretorioDaSolucao, ArquivoDeCodigos)))
+        string pasta = Path.Join(AppContext.BaseDirectory, "contracts");
+        string caminho = Path.Join(pasta, "descricoes-de-erros.json");
+        string[] codigos = [.. DocumentoDoCatalogoDeErros.Ler(File.ReadAllText(Path.Join(pasta, "codigos-de-erro.json")))
             .Codigos.Select(static entrada => entrada.Codigo)];
-        bool reformatar = Environment.GetEnvironmentVariable(VariavelDeReformatacao) == "1";
-
-        File.Exists(caminho).Should().BeTrue("o contrato de descrições deve existir");
-        string[] divergencias = ConferirArquivo(caminho, codigos, reformatar);
+        File.Exists(caminho).Should().BeTrue("o contrato de descrições deve existir e ser escrito pelo autor");
+        string[] divergencias = ConferirConteudo(File.ReadAllText(caminho), codigos);
         divergencias.Should().BeEmpty(string.Join('\n', divergencias));
     }
 
-    internal static string[] ConferirArquivo(string caminho, string[] codigos, bool reformatar)
-    {
-        string conteudo = File.ReadAllText(caminho);
-        return ConferirConteudo(conteudo, codigos, reformatar ? canonico => File.WriteAllText(caminho, canonico) : null);
-    }
-
-    internal static string[] ConferirConteudo(string conteudo, string[] codigos, Action<string>? gravarCanonico)
+    internal static string[] ConferirConteudo(string conteudo, string[] codigos)
     {
         try
         {
             DocumentoDeDescricoesDeErros documento = DocumentoDeDescricoesDeErros.Ler(conteudo);
-            return
-            [
-                .. ConferenciaDasDescricoesDeErros.Conferir(documento, codigos),
-                .. ConferirFormato(conteudo, documento.SerializarEmOrdem(), gravarCanonico),
-            ];
+            string[] falhas = ConferenciaDasDescricoesDeErros.Conferir(documento, codigos);
+            if (falhas.Length != 0)
+                return falhas;
+            return ConferirFormato(conteudo, documento.SerializarEmOrdem());
         }
         catch (JsonException)
         {
             return ["descricoes-de-erros.json: JSON inválido ou campo fora do formato."];
         }
     }
-
-    private static string[] ConferirFormato(string conteudo, string canonico, Action<string>? gravarCanonico)
+    private static string[] ConferirFormato(string conteudo, string canonico)
     {
         if (string.Equals(conteudo, canonico, StringComparison.Ordinal))
             return [];
-        if (gravarCanonico is null)
-            return [$"descricoes-de-erros.json: ordem ou formatação fora do padrão. Use {VariavelDeReformatacao}=1."];
-        gravarCanonico(canonico);
-        return [];
+        string resultado = ResultadoDeConferencia.Gravar("descricoes-de-erros.json", canonico);
+        return [$"descricoes-de-erros.json: ordem ou formatação fora do padrão; {ResultadoDeConferencia.Mensagem(resultado, "contracts/descricoes-de-erros.json")}"];
     }
 }

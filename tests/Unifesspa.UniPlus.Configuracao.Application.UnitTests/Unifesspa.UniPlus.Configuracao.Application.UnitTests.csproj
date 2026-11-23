@@ -25,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 
@@ -41,6 +40,10 @@
     <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
     <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../seeds/seed-calendario-dias-uteis.json" Link="seeds/seed-calendario-dias-uteis.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

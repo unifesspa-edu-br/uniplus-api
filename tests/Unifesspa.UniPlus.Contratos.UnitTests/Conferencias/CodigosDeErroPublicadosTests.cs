@@ -23,7 +23,6 @@ using Unifesspa.UniPlus.TestSupport;
 /// </summary>
 public sealed class CodigosDeErroPublicadosTests
 {
-    private const string AtualizarArquivoEnvVar = "UPDATE_CODIGOS_DE_ERRO_BASELINE";
     private const string ArquivoPublicado = "contracts/codigos-de-erro.json";
 
     private static readonly Lazy<DocumentoDoCatalogoDeErros> Gerado = new(() =>
@@ -32,16 +31,30 @@ public sealed class CodigosDeErroPublicadosTests
     [Fact(DisplayName = "O arquivo de códigos de erro bate com os códigos que a API emite")]
     public void ArquivoPublicadoBateComOsCodigosEmitidos()
     {
-        string caminho = Path.Join(LocalizadorDaSolucao.Locate(), ArquivoPublicado);
+        string caminho = Path.Join(AppContext.BaseDirectory, ArquivoPublicado);
         string gerado = Gerado.Value.Serializar();
-        RegerarSeSolicitado(caminho, gerado);
 
-        string publicado = LerPublicado(caminho);
-        IReadOnlyList<string> divergencias = DivergenciasDoCatalogoDeErros.Comparar(
-            DocumentoDoCatalogoDeErros.Ler(publicado).Codigos, Gerado.Value.Codigos);
+        string? publicado = File.Exists(caminho) ? File.ReadAllText(caminho).ReplaceLineEndings("\n") : null;
+        if (!string.Equals(publicado, gerado, StringComparison.Ordinal))
+        {
+            string resultado = ResultadoDeConferencia.Gravar(Path.GetFileName(caminho), gerado);
+            IReadOnlyList<string> divergencias = CompararPublicado(publicado);
+            publicado.Should().Be(gerado, $"{string.Join('\n', divergencias)}\n{ResultadoDeConferencia.Mensagem(resultado, ArquivoPublicado)}");
+        }
+    }
 
-        divergencias.Should().BeEmpty(ComoRegerar(divergencias));
-        publicado.Should().Be(gerado, $"as entradas conferem, mas o arquivo não é o que o gerador produz (versão do formato, ordem ou formatação). {ComoRegerar([])}");
+    private static IReadOnlyList<string> CompararPublicado(string? publicado)
+    {
+        if (publicado is null)
+            return ["O catálogo publicado está ausente."];
+        try
+        {
+            return DivergenciasDoCatalogoDeErros.Comparar(DocumentoDoCatalogoDeErros.Ler(publicado).Codigos, Gerado.Value.Codigos);
+        }
+        catch (JsonException)
+        {
+            return ["O catálogo publicado contém JSON inválido ou campos fora do formato."];
+        }
     }
 
     [Fact(DisplayName = "Todo código de erro da API começa com o prefixo uniplus.")]
@@ -80,32 +93,4 @@ public sealed class CodigosDeErroPublicadosTests
             .Distinct(),
     ];
 
-    private static void RegerarSeSolicitado(string caminho, string gerado)
-    {
-        if (Environment.GetEnvironmentVariable(AtualizarArquivoEnvVar) == "1")
-        {
-            File.WriteAllText(caminho, gerado);
-        }
-    }
-
-    private static string LerPublicado(string caminho)
-    {
-        File.Exists(caminho).Should().BeTrue($"o arquivo {ArquivoPublicado} não existe. {ComoRegerar([])}");
-
-        try
-        {
-            string conteudo = File.ReadAllText(caminho).ReplaceLineEndings("\n");
-            _ = DocumentoDoCatalogoDeErros.Ler(conteudo);
-            return conteudo;
-        }
-        catch (JsonException erro)
-        {
-            throw new InvalidOperationException($"O arquivo {ArquivoPublicado} não é um JSON válido do catálogo ({erro.Message}). {ComoRegerar([])}", erro);
-        }
-    }
-
-    private static string ComoRegerar(IReadOnlyList<string> divergencias) =>
-        string.Join('\n', divergencias)
-        + $"\nPara regerar: {AtualizarArquivoEnvVar}=1 dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests "
-        + "--filter \"FullyQualifiedName~CodigosDeErroPublicados\" e confira o diff de contracts/codigos-de-erro.json.";
 }

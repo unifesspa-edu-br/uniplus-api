@@ -1,8 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using System.Globalization;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -144,33 +142,24 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
     // ── Golden fixture RICA: o decoder é ancorado num artefato congelado ──
 
-    [Fact(DisplayName = "Golden rica — a fixture é o envelope do corpus (regeneração explícita via UPDATE_ENVELOPE_FIXTURE=1)")]
+    [Fact(DisplayName = "Golden rica — a fixture é o envelope do corpus")]
     public void GoldenRica_EOEnvelopeDoCorpus()
     {
         SnapshotCanonico atual = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico()));
 
-        if (Environment.GetEnvironmentVariable("UPDATE_ENVELOPE_FIXTURE") == "1")
+        byte[]? esperado = LerFixtureRica();
+        if (esperado is null || !atual.Bytes.SequenceEqual(esperado))
         {
-            string destino = CaminhoNoFonte();
-            Directory.CreateDirectory(Path.GetDirectoryName(destino)!);
-            File.WriteAllBytes(destino, atual.Bytes);
+            string resultado = Unifesspa.UniPlus.TestSupport.ResultadoDeConferencia.Gravar("envelope-rico.json", atual.Bytes);
+            throw new Xunit.Sdk.XunitException($"O envelope está ausente ou mudou; {Unifesspa.UniPlus.TestSupport.ResultadoDeConferencia.Mensagem(resultado, "tests/Unifesspa.UniPlus.Selecao.IntegrationTests/ProcessosSeletivos/Fixtures/envelope-rico.json")}");
         }
-
-        atual.Bytes.Should().Equal(LerFixtureRica(),
-            "o envelope do corpus mudou sem que a fixture fosse regenerada. Se a mudança é intencional, rode " +
-            "UPDATE_ENVELOPE_FIXTURE=1 e leve o diff da fixture para a revisão — que é todo o ponto dela.");
     }
 
-    private static byte[] LerFixtureRica() => File.ReadAllBytes(Path.Join(
-        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
-        "ProcessosSeletivos",
-        "Fixtures",
-        "envelope-rico.json"));
-
-    private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
-        Path.GetDirectoryName(origem)!,
-        "Fixtures",
-        "envelope-rico.json");
+    private static byte[]? LerFixtureRica()
+    {
+        string caminho = Path.Join(AppContext.BaseDirectory, "ProcessosSeletivos", "Fixtures", "envelope-rico.json");
+        return File.Exists(caminho) ? File.ReadAllBytes(caminho) : null;
+    }
 
     // ── Round-trip com exigência documental rica (Story #554, PR #903; Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) ──
 }

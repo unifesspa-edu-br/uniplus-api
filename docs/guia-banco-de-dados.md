@@ -454,7 +454,7 @@ Procedimentos de cluster (SSH, `psql` no host, troubleshooting) vivem no reposit
 Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa ser substituído por uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), a mudança de schema é **uma mudança de modelo só**: a FK `<nome>_id uuid` substitui a coluna `<nome>_<enum>` (`int`), e a migration `Inicial` é gerada de novo. Não há etapas de migration preparatória nem constraint `NOT NULL` posterior, porque não há dado a migrar.
 
 - A entidade nasce com `Codigo` strongly-typed (substitui o enum), `Descricao` e audit fields; o enum legado é removido na mesma mudança.
-- DTOs e schemas OpenAPI são regerados — a baseline `contracts/openapi.<modulo>.json` muda (`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`).
+- DTOs e schemas OpenAPI são regerados — a baseline `contracts/openapi.<modulo>.json` muda (veja o procedimento de aprovação de referências no CONTRIBUTING.md).
 - **O caminho da carga depende da natureza do dado**, per [ADR-0062](adrs/0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) Emenda 2. Promoção de enum para entidade cai quase sempre no primeiro caso, porque o que era enum é vocabulário:
 
 | Natureza | Caminho | Autor |

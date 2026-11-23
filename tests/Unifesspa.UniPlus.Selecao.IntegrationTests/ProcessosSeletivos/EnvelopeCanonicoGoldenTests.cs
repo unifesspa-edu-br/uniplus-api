@@ -58,13 +58,12 @@ public sealed class EnvelopeCanonicoGoldenTests
         string versao = CanonicalizarReferencia().SchemaVersion;
         string caminho = CaminhoDaVersaoDeclarada();
 
-        File.Exists(caminho).Should().BeTrue(
-            $"a versão congelada nas golden fixtures é declarada em '{caminho}'");
-
-        File.ReadAllText(caminho).Trim().Should().Be(versao,
-            $"a schema_version corrente é '{versao}' e as fixtures ao lado congelam a forma dela. " +
-            "Bumpar a versão sem regenerar as fixtures e atualizar esta declaração deixaria o " +
-            "envelope declarando uma forma e congelando outra.");
+        string? declarada = File.Exists(caminho) ? File.ReadAllText(caminho).Trim() : null;
+        if (!string.Equals(declarada, versao, StringComparison.Ordinal))
+        {
+            string resultado = Unifesspa.UniPlus.TestSupport.ResultadoDeConferencia.Gravar("schema-version.txt", versao + "\n");
+            declarada.Should().Be(versao, $"a versão do envelope mudou; {MensagemDeAprovacao(resultado, "schema-version.txt")}");
+        }
     }
 
     // ── CA-04 — a fixture compara byte a byte ──
@@ -75,11 +74,9 @@ public sealed class EnvelopeCanonicoGoldenTests
         SnapshotCanonico canonico = CanonicalizarReferencia();
         string atual = NormalizarIds(canonico.Bytes);
 
-        RegenerarSeSolicitado(atual, CaminhoDaFixtureNoFonte());
+        ConferirFixture(atual, "envelope.json", LerFixture());
 
-        atual.Should().Be(LerFixture(),
-            "o envelope mudou de forma sem que a golden fixture fosse atualizada. Se a mudança é intencional, " +
-            "rode UPDATE_ENVELOPE_FIXTURE=1 e leve o diff da fixture para a revisão — que é todo o ponto dela.");
+
     }
 
     /// <summary>
@@ -94,11 +91,23 @@ public sealed class EnvelopeCanonicoGoldenTests
         SnapshotCanonico canonico = CanonicalizarReferenciaComCascata();
         string atual = NormalizarIds(canonico.Bytes);
 
-        RegenerarSeSolicitado(atual, CaminhoDaFixtureCascataNoFonte());
+        ConferirFixture(atual, "envelope-cascata.json", LerFixtureCascata());
 
-        atual.Should().Be(LerFixtureCascata(),
-            "o envelope com cascata presente mudou de forma sem que a golden fixture fosse atualizada.");
+
     }
+
+    private static void ConferirFixture(string atual, string nome, string? esperado)
+    {
+        if (!string.Equals(atual, esperado, StringComparison.Ordinal))
+        {
+            string resultado = Unifesspa.UniPlus.TestSupport.ResultadoDeConferencia.Gravar(nome, atual + "\n");
+            atual.Should().Be(esperado, $"o envelope mudou; {MensagemDeAprovacao(resultado, nome)}");
+        }
+    }
+
+    private static string MensagemDeAprovacao(string resultado, string nome) =>
+        Unifesspa.UniPlus.TestSupport.ResultadoDeConferencia.Mensagem(resultado,
+            $"tests/Unifesspa.UniPlus.Selecao.IntegrationTests/ProcessosSeletivos/Fixtures/{nome}");
 
     // ── CA-04 (canários) — a fixture PROTEGE de fato ──
 
