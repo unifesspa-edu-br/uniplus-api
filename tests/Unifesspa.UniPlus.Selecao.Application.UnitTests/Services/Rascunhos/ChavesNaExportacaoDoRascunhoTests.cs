@@ -11,8 +11,8 @@ public sealed class ChavesNaExportacaoDoRascunhoTests
 {
     private const string Documento = """
             { "identificacao": { "nome": "Processo de exemplo" },
-              "cronograma": { "fases": [{ "chave": "fase_inscricao" }] },
-              "etapas": [{ "chave": "etapa_prova", "itensDeAvaliacao": [{ "chave": "item_redacao" }],
+              "cronograma": { "fases": [{ "chave": "fase_inscricao", "bancasRequeridas": [{ "chave": "banca_fase" }] }] },
+              "etapas": [{ "chave": "etapa_prova", "bancas": [{ "chave": "banca_etapa" }], "itensDeAvaliacao": [{ "chave": "item_redacao" }],
                 "escalaDeAtendimento": [{ "chave": "nivel_atende" }] }] }
             """;
 
@@ -24,6 +24,8 @@ public sealed class ChavesNaExportacaoDoRascunhoTests
 
         JsonObject exportado = await cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
 
+        exportado["cronograma"]!["fases"]![0]!["bancasRequeridas"]![0]!["chave"]!.GetValue<string>().Should().Be("banca_fase");
+        exportado["etapas"]![0]!["bancas"]![0]!["chave"]!.GetValue<string>().Should().Be("banca_etapa");
         exportado["cronograma"]!["fases"]![0]!["chave"]!.GetValue<string>().Should().Be("fase_inscricao");
         exportado["etapas"]![0]!["chave"]!.GetValue<string>().Should().Be("etapa_prova");
         exportado["etapas"]![0]!["itensDeAvaliacao"]![0]!["chave"]!.GetValue<string>().Should().Be("item_redacao");

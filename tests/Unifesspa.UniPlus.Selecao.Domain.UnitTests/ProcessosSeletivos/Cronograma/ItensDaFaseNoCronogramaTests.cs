@@ -15,7 +15,7 @@ using static ModeloDeFase;
 public sealed class ItensDaFaseNoCronogramaTests
 {
     private static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 

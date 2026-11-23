@@ -36,7 +36,7 @@ public sealed class SuspensaoDoMinimoDasBancasPorParteRecusadaTests
     private static FaseCronograma FaseComBancaDeRecursos(string codigo, int ordem, int integrantes = 2) =>
         (new ModeloDeFase(codigo, ordem) with
         {
-            Bancas = [BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: integrantes, quorum: 2))],
+            Bancas = [BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: integrantes, quorum: 2))],
         }).Adotada();
 
     private static EtapaProcesso EtapaComRecurso(string nome, int ordem, string codigoDaFase) =>

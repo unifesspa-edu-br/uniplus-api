@@ -61,6 +61,10 @@ internal static class LeituraDoEnvelope
 
         DadosEdital? dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
         BlocosDaConfiguracao configuracao = LerConfiguracaoDoProcesso(leitor, payload, dados, hashDocumento);
+        ChavesNoEnvelope.ExigirUnicas(leitor,
+            configuracao.Etapas.SelectMany(static etapa => etapa.Bancas.Select(static banca => banca.Chave))
+                .Concat(configuracao.CronogramaFases.SelectMany(static fase => fase.BancasRequeridas.Select(static banca => banca.Chave))),
+            "$.bancas");
         LeituraDoEdital.LerIdentidadesUnidade(leitor, payload);
         return configuracao;
     }

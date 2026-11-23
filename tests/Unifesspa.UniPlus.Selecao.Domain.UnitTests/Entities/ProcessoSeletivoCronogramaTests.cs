@@ -173,7 +173,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     public void Redefinir_ComAPropriaFaseJaGravada_PreservaBancasRequeridas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        BancaRequerida banca = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
         FaseCronograma heteroidentificacao = new ModeloDeFase("HETEROIDENTIFICACAO", 1) { Bancas = [banca] }.Criar();
         processo.DefinirCronogramaFases([heteroidentificacao], []).IsSuccess.Should().BeTrue();
 

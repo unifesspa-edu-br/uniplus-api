@@ -50,13 +50,13 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// <c>GET</c> vem do endpoint agregado
     /// (<see cref="ProcessoSeletivoController.ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
     /// do recurso — não há rota aninhada própria de leitura. A fase mantém a chave pelo tipo de origem; cada banca
-    /// mantém a identidade quando o cliente devolve o seu id. A chave da fase nova
-    /// vem na releitura pelo GET. A fase que sai leva junto as etapas dela e os motivos de decisão pendentes; motivo já publicado recusa
+    /// mantém a identidade quando o cliente devolve o seu id. As chaves da fase e da banca novas
+    /// vêm na releitura pelo GET. A fase que sai leva junto as etapas dela e os motivos de decisão pendentes; motivo já publicado recusa
     /// com 422.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
-    [EndpointDescription("Para preservar a chave da fase, devolva o tipo de cada fase que permanece. A chave da fase nova vem na releitura pelo GET.")]
+    [EndpointDescription("Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

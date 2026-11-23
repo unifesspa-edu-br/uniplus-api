@@ -220,12 +220,12 @@ internal static class LeituraDoCronograma
 
     private static (BancaRequerida, BancaLida)? LerBancaRequerida(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, [.. TipoDeBancaNoEnvelope.Chaves, "id", "posicaoNoTipo", "regraDeDeliberacao", "candidatosAtendidos"]);
+        leitor.ExigirChaves(item, path, [.. TipoDeBancaNoEnvelope.Chaves, "id", "chave", "posicaoNoTipo", "regraDeDeliberacao", "candidatosAtendidos"]);
         BancaLida? lida = BancaLida.Ler(leitor, item, path);
         IReadOnlyList<CategoriaJulgada> atendidos = lida is null ? [] : LeituraDosPrazosDeRecurso.LerCandidatosAtendidos(leitor, item, path);
 
         return leitor.Falhou || lida is null
             ? null
-            : (BancaRequerida.ReconstruirDosDadosSalvos(lida.Id, lida.Tipo, atendidos, lida.Regra), lida);
+            : (BancaRequerida.ReconstruirDosDadosSalvos(lida.Chave, lida.Id, lida.Tipo, atendidos, lida.Regra), lida);
     }
 }

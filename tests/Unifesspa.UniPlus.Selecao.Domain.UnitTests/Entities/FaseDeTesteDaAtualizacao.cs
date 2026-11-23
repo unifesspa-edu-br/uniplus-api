@@ -54,7 +54,7 @@ internal static class FaseDeTesteDaAtualizacao
         produtoAncoraId).Value!;
 
     internal static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
@@ -62,7 +62,7 @@ internal static class FaseDeTesteDaAtualizacao
         BancaQueSubstitui(viva.Id, Guid.CreateVersion7(), viva.Tipo.Codigo, [.. viva.CandidatosAtendidos.Select(static c => c.Codigo)]);
 
     internal static BancaRequerida BancaQueSubstitui(Guid idDaViva, Guid origemDoTipo, TipoDeBanca tipo, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
             idDaBancaQueSubstitui: idDaViva);

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -25,7 +26,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
     public void PonteiroDaFase_TemAPosicaoDaFaseNoEnvelope()
     {
         FaseCronograma[] fases = [Fase("RECURSO", 3), Fase("INSCRICAO", 1), Fase("RESULTADO", 2)];
-        ProcessoSeletivo processo = Montar(cronogramaFases: fases, etapas: [Etapa("Prova", "INSCRICAO")]);
+        ProcessoSeletivo processo = Montar(cronogramaFases: fases, etapas: [Etapa("Prova", "INSCRICAO", 1)]);
         JsonArray fasesDoEnvelope = Envelope(processo)["cronogramaFases"]!["fases"]!.AsArray();
 
         foreach (FaseCronograma fase in OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases))
@@ -41,7 +42,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
     [Fact(DisplayName = "O ponteiro da etapa tem a posição que a etapa ocupa no envelope congelado, com as etapas declaradas fora de ordem")]
     public void PonteiroDaEtapa_TemAPosicaoDaEtapaNoEnvelope()
     {
-        EtapaProcesso[] etapas = [Etapa("Redação", "INSCRICAO"), Etapa("Análise documental", "INSCRICAO"), Etapa("Prova", "INSCRICAO")];
+        EtapaProcesso[] etapas = [Etapa("Redação", "INSCRICAO", 3), Etapa("Análise documental", "INSCRICAO", 1), Etapa("Prova", "INSCRICAO", 2)];
         ProcessoSeletivo processo = Montar(etapas: etapas, cronogramaFases: [Fase("INSCRICAO", 1)]);
         JsonArray etapasDoEnvelope = Envelope(processo)["etapas"]!.AsArray();
 
@@ -57,7 +58,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
     private static JsonObject Envelope(ProcessoSeletivo processo) =>
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)));
 
-    private static FaseCronograma Fase(string codigo, int ordem) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+    private static FaseCronograma Fase(string codigo, int ordem) => FaseCronograma.Criar(FormacaoDeChaveLocal.Formar("fase", codigo, new ChavesEmUso()),
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
@@ -65,10 +66,10 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static EtapaProcesso Etapa(string nome, string faseCodigo) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+    private static EtapaProcesso Etapa(string nome, string faseCodigo, int ordem) => EtapaProcesso.Criar(FormacaoDeChaveLocal.Formar("etapa", nome, new ChavesEmUso()),
         new IdentificacaoDaEtapa(
             Nome: nome, Carater: CaraterEtapa.Classificatoria,
             TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            Ordem: null, FaseCodigo: faseCodigo),
+            Ordem: ordem, FaseCodigo: faseCodigo),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 }

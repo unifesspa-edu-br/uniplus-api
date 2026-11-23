@@ -196,7 +196,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         IEnumerable<TipoMotivoDeDecisao>? tipos = null,
         bool exigeDuasOuMais = false,
         bool encerraNaPrimeira = false) =>
-        Fase(bancas: [BancaRequerida.Criar(
+        Fase(bancas: [BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(
                 TipoDeBanca.AnaliseDocumental, papel, TipoDeBancaA, null, exigeDuasOuMais, encerraNaPrimeira, tipos ?? [TipoMotivoDeDecisao.Classificacao]),
             [],
@@ -235,5 +235,5 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)))]);
 
     private static BancaRequerida Banca(Guid origem, TipoDeBanca tipo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? candidatosAtendidos = null) =>
-        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origem), candidatosAtendidos ?? [], regra);
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(tipo, origem), candidatosAtendidos ?? [], regra);
 }

@@ -88,7 +88,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     [Fact(DisplayName = "Banca de análise de recursos com candidatos atendidos declarados é recusada")]
     public void BancaDeRecursosComCandidatosDeclarados_Recusa()
     {
-        BancaRequerida comCandidatosDeclarados = BancaRequerida.Criar(
+        BancaRequerida comCandidatosDeclarados = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(Tipo),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(comCandidatosDeclarados));
@@ -104,7 +104,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo))]);
 
         DomainError? pendencia = Pendencia(processo);
 
@@ -115,7 +115,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     [Fact(DisplayName = "Banca da fase sem regra de deliberação é recusada")]
     public void BancaDaFaseSemRegra_Recusa()
     {
-        BancaRequerida semRegra = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Tipo), []);
+        BancaRequerida semRegra = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Tipo), []);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(bancas: [semRegra]));
 
         Pendencia(processo)!.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");

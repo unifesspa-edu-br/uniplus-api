@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DeclaracaoDasBancasDaEtapaTests
@@ -277,10 +278,10 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     }
 
     private static DeclaracaoDasBancasDaEtapa DeclaracaoSemOCadastro() => new(new LeituraMemoizada<Guid, TipoBancaView>(
-        (_, _) => Task.FromResult<TipoBancaView?>(null)));
+        (_, _) => Task.FromResult<TipoBancaView?>(null)), new ChavesDasBancasDoProcesso());
 
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
-        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos, TipoDeSegundaInstancia }.FirstOrDefault(tipo => tipo.Id == tipoId))));
+        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos, TipoDeSegundaInstancia }.FirstOrDefault(tipo => tipo.Id == tipoId))), new ChavesDasBancasDoProcesso());
 
     private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra, Guid? id = null) => new(tipo.Id, regra, id);
 

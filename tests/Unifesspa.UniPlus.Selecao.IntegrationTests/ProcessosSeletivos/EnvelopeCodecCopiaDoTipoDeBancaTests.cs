@@ -143,6 +143,6 @@ public sealed class EnvelopeCodecCopiaDoTipoDeBancaTests
         TipoDeBancaCopiado c = primeira.Tipo;
         TipoDeBancaCopiado outra = new(Guid.CreateVersion7(), c.Codigo, c.Nome, c.Papel, !c.ExigeDuasOuMaisBancas, c.EncerraRecursoNaPrimeiraInstancia, c.TiposDeDecisaoJulgados);
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(outra, primeira.RegraDeDeliberacao, primeira.Id), .. etapa.Bancas.Skip(1)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, outra, primeira.RegraDeDeliberacao, primeira.Id), .. etapa.Bancas.Skip(1)]);
     }
 }

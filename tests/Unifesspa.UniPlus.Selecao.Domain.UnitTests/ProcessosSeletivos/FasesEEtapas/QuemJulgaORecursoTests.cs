@@ -107,7 +107,7 @@ public sealed class QuemJulgaORecursoTests
     public void RecursoDaEtapa_SoBancaDeImportacao_NinguemJulga()
     {
         ModeloDeEtapa etapa = EtapaComRecurso(
-            "Redação", Fase, DaNota, false, BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.Regra()));
+            "Redação", Fase, DaNota, false, BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.Regra()));
 
         Itens(FaseSemRecurso(), etapa).Single().Nivel.Should().Be(Nivel.Ninguem);
     }

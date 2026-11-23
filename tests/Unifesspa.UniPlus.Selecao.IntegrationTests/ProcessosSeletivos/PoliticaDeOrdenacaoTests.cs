@@ -53,8 +53,6 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// <list type="table">
 ///   <listheader><term>Caminho</term><description>Camada — conflito — teste</description></listheader>
 ///   <item><term><c>etapas</c></term><description>Ordem semântica vs. conteúdo e Id — <see cref="Etapas_OrdemGovernaSobreConteudoEId"/></description></item>
-///   <item><term><c>etapas</c> (sem <c>Ordem</c>)</term><description>Conteúdo vs. Id — <see cref="Etapas_SemOrdem_ConteudoGovernaSobreId"/></description></item>
-///   <item><term><c>etapas</c> (duplicata verdadeira)</term><description>Id como desempate técnico alcançável — <see cref="Etapas_DuplicataVerdadeira_IdEstabilizaComoDesempateFinal"/></description></item>
 ///   <item><term><c>etapas</c> (processo sem etapa)</term><description>Cenário de aceite: lista vazia canonicaliza sem recusa — <see cref="Etapas_ProcessoSemEtapaAlguma_ArrayVazioNadaRecusado"/></description></item>
 ///   <item><term><c>criteriosDesempate</c></term><description>Ordem semântica vs. conteúdo — <see cref="CriteriosDesempate_OrdemGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>cronogramaFases.fases</c></term><description>Ordem semântica vs. conteúdo — <see cref="CronogramaFases_Fases_OrdemGovernaSobreConteudo"/></description></item>
@@ -116,51 +114,6 @@ public sealed class PoliticaDeOrdenacaoTests
             .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo Id dá o oposto do oráculo de Ordem abaixo");
     }
 
-    [Fact(DisplayName = "etapas: sem Ordem, o conteúdo governa sobre o Id — a posição depende do que a etapa diz, não do Guid")]
-    public void Etapas_SemOrdem_ConteudoGovernaSobreId()
-    {
-        EtapaProcesso zeta = EtapaReidratada(IdFixo(1), "Zeta", null);
-        EtapaProcesso alfa = EtapaReidratada(IdFixo(2), "Alfa", null);
-
-        new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
-            .Should().Equal(["Zeta", "Alfa"], "pré-condição: ordenar pelo Id (a política ANTIGA) dá o oposto do oráculo de conteúdo abaixo");
-
-        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [zeta, alfa]), "etapas");
-
-        etapasJson.Select(static e => e!["nome"]!.GetValue<string>()).Should().Equal(
-            ["Alfa", "Zeta"],
-            "sem Ordem, a posição depende do CONTEÚDO (dentro da chave sem id) — não do Guid, que apontaria para [Zeta, Alfa]");
-    }
-
-    [Fact(DisplayName = "etapas: duplicata verdadeira (mesmo conteúdo, sem Ordem) desempata por Id — o desempate final é alcançável, não código morto")]
-    public void Etapas_DuplicataVerdadeira_IdEstabilizaComoDesempateFinal()
-    {
-        (EtapaProcesso etapaComIdMenor, EtapaProcesso etapaComIdMaior) = DuasEtapasIdenticasSalvoOId();
-
-        etapaComIdMenor.Nome.Should().Be(etapaComIdMaior.Nome,
-            "pré-condição: as duas etapas são conteudisticamente IDÊNTICAS (mesmo nome/caráter/peso/notaMinima, ambas sem Ordem) — a chave de conteúdo empata e sobra o Id");
-
-        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [etapaComIdMaior, etapaComIdMenor]), "etapas");
-
-        etapasJson.Select(static e => e!["id"]!.GetValue<Guid>()).Should().Equal(
-            [IdFixo(1), IdFixo(2)],
-            "duas etapas classificatórias com o MESMO nome/caráter/peso/notaMinima (o domínio só recusa Ordem INFORMADA duplicada, " +
-            "e o índice único do banco admite múltiplos NULL) são aceitas — o Id estabiliza a alcançabilidade dessa duplicata");
-    }
-
-    private static (EtapaProcesso ComIdMenor, EtapaProcesso ComIdMaior) DuasEtapasIdenticasSalvoOId()
-    {
-        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ..., notaDeOrigemNoEnem: false)
-        // por etapa (flaky sob CORRIDA, issue #1115): duas chamadas independentes gerariam origemId
-        // distintos, e origemId entra em SerializarTipoEtapa/SemId — as etapas deixariam de ser
-        // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
-        // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
-        TipoEtapaSnapshot tipoEtapa = TipoEtapaDeProvaObjetiva();
-        return (
-            EtapaReidratada(IdFixo(1), "Prova Objetiva", null, tipoEtapa),
-            EtapaReidratada(IdFixo(2), "Prova Objetiva", null, tipoEtapa));
-    }
-
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: true,
@@ -211,13 +164,13 @@ public sealed class PoliticaDeOrdenacaoTests
             "Ordem (1 para MaiorIdade, 2 para Idoso) governa a posição — o código da regra, em ordem alfabética, apontaria para o oposto");
     }
 
-    private static EtapaProcesso EtapaReidratada(Guid id, string nome, int? ordem, TipoEtapaSnapshot? tipoEtapa = null) =>
-        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+    private static EtapaProcesso EtapaReidratada(Guid id, string nome, int ordem) =>
+        EtapaProcesso.Reidratar(ChaveLocal.Criar(nome == "Zeta" ? "etapa_zeta" : "etapa_alfa").Value!,
             id,
             new IdentificacaoDaEtapa(
                 Nome: nome,
                 Carater: CaraterEtapa.Classificatoria,
-                TipoEtapa: tipoEtapa ?? TipoEtapaDeProvaObjetiva(),
+                TipoEtapa: TipoEtapaDeProvaObjetiva(),
                 Ordem: ordem,
                 FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),

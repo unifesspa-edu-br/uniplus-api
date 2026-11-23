@@ -26,6 +26,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
 {
+    public ChaveLocal Chave { get; private set; }
+
     public Guid FaseCronogramaId { get; private set; }
 
     /// <summary>
@@ -57,14 +59,16 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
     private BancaRequerida() { }
 
     public static BancaRequerida Criar(
+        ChaveLocal chave,
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao = null,
         Guid? idDaBancaQueSubstitui = null) =>
-        Montar(Guid.CreateVersion7(), tipo, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
+        Montar(chave, Guid.CreateVersion7(), tipo, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
 
     /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
     public static BancaRequerida ReconstruirDosDadosSalvos(
+        ChaveLocal chave,
         Guid id,
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
@@ -75,10 +79,11 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
             throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return Montar(id, tipo, candidatosAtendidos, regraDeDeliberacao, id);
+        return Montar(chave, id, tipo, candidatosAtendidos, regraDeDeliberacao, id);
     }
 
     private static BancaRequerida Montar(
+        ChaveLocal chave,
         Guid id,
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
@@ -91,6 +96,7 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
         BancaRequerida banca = new()
         {
             Id = id,
+            Chave = chave,
             Tipo = tipo,
             RegraDeDeliberacao = regraDeDeliberacao,
             IdDaBancaQueSubstitui = idDaBancaQueSubstitui,

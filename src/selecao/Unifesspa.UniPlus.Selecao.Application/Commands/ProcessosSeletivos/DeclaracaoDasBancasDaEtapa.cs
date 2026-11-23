@@ -6,6 +6,7 @@ using Domain.ProcessosSeletivos.Bancas;
 using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -14,7 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// Declara as bancas de uma etapa e acumula as violações da regra de deliberação de todas elas. A banca nova ou que troca de
 /// tipo copia o tipo de banca do cadastro; a que continua com o mesmo tipo mantém a cópia que já tem, sem ler o cadastro.
 /// </summary>
-internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBancaView> tiposDeBanca)
+internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBancaView> tiposDeBanca, ChavesDasBancasDoProcesso chaves)
 {
     public async Task<Result> DeclararAsync(EtapaProcesso etapa, EtapaProcessoInput input, CancellationToken cancellationToken)
     {
@@ -56,7 +57,7 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"{EtapaDeclarada.ListaDasBancas}[{posicao}]");
         return regra.IsFailure
             ? Result<BancaDaEtapa>.ValidationFailure(regra.Errors)
-            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo, regra.Value, declarada.Id));
+            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(gravadas.FirstOrDefault(banca => banca.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo()), tipo, regra.Value, declarada.Id));
     }
 
     private async Task<TipoDeBancaCopiado?> TipoAsync(

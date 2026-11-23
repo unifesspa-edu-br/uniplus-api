@@ -55,7 +55,7 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
         ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelProdutoFase.Preliminar);
         ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar);
         etapa.DefinirProdutos([resultado, gabarito]).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista)), BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista)), BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental))]);
         etapa.DefinirRecursos([AoAto(resultado.Id), AoAto(gabarito.Id)]).IsSuccess.Should().BeTrue();
 
         EtapaProcessoDto dto = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(etapa);

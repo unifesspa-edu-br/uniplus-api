@@ -68,6 +68,7 @@ internal static class ProjecaoDaFaseDoCronograma
 
     private static BancaRequeridaDto ProjetarBancaRequerida(BancaRequerida banca) => new(
         banca.Id,
+        banca.Chave.Valor,
         banca.Tipo.OrigemId,
         CodigoComRotulo<TipoDeBanca>.De(banca.Tipo.Codigo),
         banca.PosicaoNoTipo,

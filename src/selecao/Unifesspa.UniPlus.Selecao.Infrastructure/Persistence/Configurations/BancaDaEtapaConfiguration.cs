@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Mapeamento de <see cref="BancaDaEtapa"/> — filha de <see cref="EtapaProcesso"/>.</summary>
 public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDaEtapa>
@@ -18,11 +19,18 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
 
         builder.ToTable("bancas_da_etapa");
         builder.HasKey(b => b.Id);
-        builder.Property(b => b.Id).ValueGeneratedNever();
+        builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
+        builder.Property(b => b.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Chave local estável da banca no processo seletivo.");
+        builder.HasIndex("ProcessoSeletivoId", nameof(BancaDaEtapa.Chave)).IsUnique();
+        builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da banca.");
+        builder.Property(b => b.EtapaProcessoId).HasComment("Identificador da etapa à qual a banca pertence.");
         builder.OwnsOne(b => b.Tipo, tipo => tipo.ConfigurarTipoDeBancaCopiado());
         builder.Navigation(b => b.Tipo).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
-        builder.Property(b => b.PosicaoNoTipo).IsRequired();
+        builder.Property(b => b.PosicaoNoTipo).IsRequired().HasComment("Posição da banca entre as bancas do mesmo tipo.");
 
         // A unicidade do par código e posição, e o índice que atende à busca por lugar e tipo, são a restrição adiada do
         // script de posição única das bancas.

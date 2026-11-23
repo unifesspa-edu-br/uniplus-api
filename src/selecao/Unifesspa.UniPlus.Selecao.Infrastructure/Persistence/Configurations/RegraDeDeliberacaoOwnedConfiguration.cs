@@ -21,14 +21,14 @@ internal static class RegraDeDeliberacaoOwnedConfiguration
 
         regra.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        regra.Property(r => r.Modo).HasColumnName("regra_deliberacao_modo").IsRequired();
-        regra.Property(r => r.Integrantes).HasColumnName("regra_deliberacao_integrantes").IsRequired();
-        regra.Property(r => r.Suplentes).HasColumnName("regra_deliberacao_suplentes").IsRequired();
-        regra.Property(r => r.Quorum).HasColumnName("regra_deliberacao_quorum");
-        regra.Property(r => r.Criterio).HasColumnName("regra_deliberacao_criterio");
-        regra.Property(r => r.Desempate).HasColumnName("regra_deliberacao_desempate");
-        regra.Property(r => r.Encerramento).HasColumnName("regra_deliberacao_encerramento");
-        regra.Property(r => r.SemUnanimidade).HasColumnName("regra_deliberacao_sem_unanimidade");
+        regra.Property(r => r.Modo).HasColumnName("regra_deliberacao_modo").IsRequired().HasComment("Modo de deliberação da banca.");
+        regra.Property(r => r.Integrantes).HasColumnName("regra_deliberacao_integrantes").IsRequired().HasComment("Quantidade de integrantes da banca.");
+        regra.Property(r => r.Suplentes).HasColumnName("regra_deliberacao_suplentes").IsRequired().HasComment("Quantidade de suplentes da banca.");
+        regra.Property(r => r.Quorum).HasColumnName("regra_deliberacao_quorum").HasComment("Quantidade mínima de integrantes para deliberar.");
+        regra.Property(r => r.Criterio).HasColumnName("regra_deliberacao_criterio").HasComment("Critério da deliberação.");
+        regra.Property(r => r.Desempate).HasColumnName("regra_deliberacao_desempate").HasComment("Regra de desempate da deliberação.");
+        regra.Property(r => r.Encerramento).HasColumnName("regra_deliberacao_encerramento").HasComment("Regra de encerramento da deliberação.");
+        regra.Property(r => r.SemUnanimidade).HasColumnName("regra_deliberacao_sem_unanimidade").HasComment("Regra aplicada quando não há unanimidade.");
 
         return regra;
     }

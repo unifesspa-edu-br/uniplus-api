@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -102,7 +103,7 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
     }
 
     private static BancaRequerida BancaComCandidatosAtendidos(Guid tipoBanca, string categoriaCodigo) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(FormacaoDeChaveLocal.Formar("banca", categoriaCodigo, new ChavesEmUso()),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoBanca),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)]);
 

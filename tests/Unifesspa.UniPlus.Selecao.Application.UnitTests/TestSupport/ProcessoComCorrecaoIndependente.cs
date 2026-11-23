@@ -52,7 +52,7 @@ internal static class ProcessoComCorrecaoIndependente
     /// <summary>Uma etapa de correção independente e outra de avaliação única, julgadas pela banca de recursos da fase.</summary>
     public static ProcessoSeletivo ComBancaDaFase(int integrantes, int quorum = 2)
     {
-        BancaRequerida banca = BancaRequerida.Criar(
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes, quorum));
 
         ProcessoSeletivo processo = ComEtapas(
@@ -60,7 +60,7 @@ internal static class ProcessoComCorrecaoIndependente
             Entrevista("Redação", 1, CorrecaoIndependente), Entrevista("Entrevista", 2, AvaliacaoUnica));
         foreach (EtapaProcesso etapa in processo.Etapas)
         {
-            etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())]);
+            etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())]);
         }
 
         return processo;

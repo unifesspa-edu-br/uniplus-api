@@ -48,7 +48,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     private static RegraDeDeliberacao AtoIndividualSemVotacao() =>
         RegraDeDeliberacao.Criar(new DeclaracaoDaDeliberacao(ModoDeDeliberacao.AtoIndividual.Codigo(), 1, 0, new(null, null, null, null, null))).Value!;
 
-    private static BancaDaEtapa AvaliadoraSemVotacao() => BancaDaEtapa.Criar(Entrevista, AtoIndividualSemVotacao());
+    private static BancaDaEtapa AvaliadoraSemVotacao() => BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Entrevista, AtoIndividualSemVotacao());
 
     private static ModeloDeEtapa DaRegraLida(ModeloDeEtapa etapa, ReferenciaRegra? regra = null) =>
         etapa with { Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = regra ?? RegraLida, Passo = 0.5m };
@@ -90,7 +90,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de 2ª instância da fase, sem etapa que ela julgue, tem como mínimo o quórum e não é cobrada dos corretores")]
     public void BancaDeSegundaInstanciaDaFase_SemEtapaJulgada_MinimoEOQuorum()
     {
-        BancaRequerida pequena = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaRequerida pequena = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         ModeloDeFase fase = FaseComRecurso(Fase, DaNota, true, pequena);
         ModeloDeEtapa etapa = DaRegraLida(EtapaNaFase(Fase));
 
@@ -100,7 +100,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de 2ª instância da etapa tem como mínimo o quórum, e não os corretores da etapa")]
     public void BancaDeSegundaInstanciaDaEtapa_MinimoEOQuorum_NaoRecusa()
     {
-        BancaDaEtapa pequena = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaDaEtapa pequena = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true, pequena));
 
         Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa).Should().BeEmpty();
@@ -109,7 +109,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de 2ª instância da etapa, cuja regra de consolidação o catálogo não confirmou, não é recusada por regra não resolvida")]
     public void BancaDeSegundaInstanciaDaEtapa_RegraNaoResolvida_NaoRecusa()
     {
-        BancaDaEtapa banca = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra());
+        BancaDaEtapa banca = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra());
         ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true, banca), RegraForaDoCatalogo);
 
         Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa).Should().BeEmpty();
@@ -118,8 +118,8 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "Na fase com a banca dedicada à 1ª instância e a de 2ª instância, só a de 1ª instância é cobrada dos corretores da etapa que ela julga")]
     public void FaseComAsDuasBancas_SoADePrimeiraInstanciaEJulgaAEtapa()
     {
-        BancaRequerida primeira = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
-        BancaRequerida segunda = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaRequerida primeira = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaRequerida segunda = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         ModeloDeFase fase = new ModeloDeFase(Fase, 1) with { Bancas = [primeira, segunda] };
         ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true));
 
@@ -139,7 +139,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de recursos da fase, com papel que julga recurso, decide por ato individual sem votação e é recusada citando o papel")]
     public void BancaDeRecursosDaFase_AtoIndividualSemVotacao_RecusaCitandoOPapel()
     {
-        BancaRequerida banca = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], AtoIndividualSemVotacao());
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], AtoIndividualSemVotacao());
         ModeloDeFase fase = FaseComRecurso(Fase, DaNota, false, banca);
 
         FieldError recusa = Deliberacao(fase).Should().ContainSingle().Subject;
@@ -152,7 +152,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de 2ª instância da fase, com papel que julga recurso, decide por ato individual sem votação e é recusada citando o papel")]
     public void BancaDeSegundaInstanciaDaFase_AtoIndividualSemVotacao_RecusaCitandoOPapel()
     {
-        BancaRequerida banca = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], AtoIndividualSemVotacao());
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], AtoIndividualSemVotacao());
         ModeloDeFase fase = FaseComRecurso(Fase, DaNota, true, banca);
 
         FieldError recusa = Deliberacao(fase).Should().ContainSingle().Subject;
@@ -167,7 +167,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A banca de 2ª instância da etapa, com papel que julga recurso, decide por ato individual sem votação e é recusada citando a posição da etapa")]
     public void BancaDeSegundaInstanciaDaEtapa_AtoIndividualSemVotacao_RecusaCitandoOPapel()
     {
-        BancaDaEtapa banca = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), AtoIndividualSemVotacao());
+        BancaDaEtapa banca = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), AtoIndividualSemVotacao());
         ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, true, banca);
 
         FieldError recusa = Deliberacao(new ModeloDeFase(Fase, 1), etapa).Should().ContainSingle().Subject;
@@ -191,7 +191,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "Com duas avaliadoras do item, as duas são cobradas do mínimo de integrantes")]
     public void DuasAvaliadoras_AsDuasSaoCobradasDoMinimo()
     {
-        BancaDaEtapa pequena = BancaDaEtapa.Criar(Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaDaEtapa pequena = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, pequena, pequena));
 
         Causas(Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa)).Should().Equal(
@@ -227,7 +227,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A avaliadora que julga o recurso e tem menos integrantes que os corretores da etapa é recusada na posição dela")]
     public void Avaliadora_QueJulga_AbaixoDoMinimoDosCorretores_Recusa()
     {
-        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, BancaDaEtapa.Criar(Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
+        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
 
         FieldError recusa = Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa).Should().ContainSingle().Subject;
 
@@ -239,7 +239,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "A avaliadora dispensada pela banca de recursos da fase, ou a de recurso da fase, não entra no mínimo de integrantes")]
     public void Avaliadora_QueNaoJulgaEtapaNenhuma_NaoEntraNoMinimo()
     {
-        BancaDaEtapa pequena = BancaDaEtapa.Criar(Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaDaEtapa pequena = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         ModeloDeFase comDedicada = new ModeloDeFase(Fase, 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] };
         ModeloDeEtapa dispensada = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, pequena));
         ModeloDeEtapa semRecursoProprio = DaRegraLida(EtapaNaFase(Fase) with { Bancas = [pequena] });
@@ -263,7 +263,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
     [Fact(DisplayName = "Com a lista dos recursos da etapa recusada na leitura, o mínimo da avaliadora não é conferido, e o item do painel fica pendente")]
     public void Avaliadora_ComRecursosRecusadosNaLeitura_NaoConfereOMinimo()
     {
-        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, BancaDaEtapa.Criar(Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
+        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, false, BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Entrevista, BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
         (CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) = ComRecursosRecusados(etapa);
 
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, TresCorretores).Should().BeEmpty();
@@ -278,7 +278,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         TipoDeBancaCopiado queEncerra = AvaliadoraComMarcas(TipoDeBanca.Heteroidentificacao, true, true, TipoMotivoDeDecisao.Heteroidentificacao);
         ModeloDeFase fase = FaseComRecurso(
             Fase, [Procedimento(TipoMotivoDeDecisao.Heteroidentificacao), Procedimento(TipoMotivoDeDecisao.HomologacaoDasInscricoes)], true);
-        BancaDaEtapa avaliadoraQueEncerra = BancaDaEtapa.Criar(queEncerra, AtoIndividualSemVotacao());
+        BancaDaEtapa avaliadoraQueEncerra = BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, queEncerra, AtoIndividualSemVotacao());
         ModeloDeEtapa daHeteroidentificacao = EtapaComRecurso("Heteroidentificação", Fase, [Procedimento(TipoMotivoDeDecisao.Heteroidentificacao)], false, avaliadoraQueEncerra);
         ModeloDeEtapa daEntrevista = EtapaComRecurso("Entrevista", Fase, DaNota, false, NaEtapa(Entrevista));
         ModeloDeEtapa primeira = DaRegraLida(daHeteroidentificacao with { Ordem = 1 });

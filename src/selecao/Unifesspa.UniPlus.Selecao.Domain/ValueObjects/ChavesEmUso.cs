@@ -1,6 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
-
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ChavesEmUso
 {

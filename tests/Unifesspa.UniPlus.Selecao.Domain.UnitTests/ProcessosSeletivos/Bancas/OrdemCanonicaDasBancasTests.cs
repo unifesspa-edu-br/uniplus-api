@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -18,10 +19,10 @@ public sealed class OrdemCanonicaDasBancasTests
     private static readonly Guid IdMaior = new("00000000-0000-4000-8000-000000000002");
 
     private static BancaDaEtapa NovaBancaDaEtapa(TipoDeBanca tipo) =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo));
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(tipo));
 
     private static BancaRequerida NovaBancaDaFase(TipoDeBanca tipo, Guid origem) =>
-        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origem), []);
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(tipo, origem), []);
 
     [Fact(DisplayName = "As bancas da etapa saem pelo código do tipo e, dentro dele, pela posição")]
     public void BancasDaEtapa_CodigoEPosicao()
@@ -37,8 +38,8 @@ public sealed class OrdemCanonicaDasBancasTests
     [Fact(DisplayName = "O id da banca da etapa não decide a ordem: com o id em ordem inversa à da posição, a ordem segue a posição")]
     public void BancasDaEtapa_IdEmOrdemInversaAPosicao_SeguePosicao()
     {
-        BancaDaEtapa idMenor = BancaDaEtapa.ReconstruirDosDadosSalvos(IdMenor, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()));
-        BancaDaEtapa idMaior = BancaDaEtapa.ReconstruirDosDadosSalvos(IdMaior, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()));
+        BancaDaEtapa idMenor = BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, IdMenor, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()));
+        BancaDaEtapa idMaior = BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, IdMaior, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()));
 
         ReconciliacaoDasBancas.Reconciliar<BancaDaEtapa>([], [idMaior, idMenor]);
 
@@ -60,8 +61,8 @@ public sealed class OrdemCanonicaDasBancasTests
     [Fact(DisplayName = "O id da banca da fase não decide a ordem: com o id em ordem inversa à da posição, a ordem segue a posição")]
     public void BancasDaFase_IdEmOrdemInversaAPosicao_SeguePosicao()
     {
-        BancaRequerida idMenor = BancaRequerida.ReconstruirDosDadosSalvos(IdMenor, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
-        BancaRequerida idMaior = BancaRequerida.ReconstruirDosDadosSalvos(IdMaior, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
+        BancaRequerida idMenor = BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, IdMenor, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
+        BancaRequerida idMaior = BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, IdMaior, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
 
         ReconciliacaoDasBancas.Reconciliar<BancaRequerida>([], [idMaior, idMenor]);
 
@@ -78,8 +79,8 @@ public sealed class OrdemCanonicaDasBancasTests
 
         ReconciliacaoDasBancas.Reconciliar(
             gravadas,
-            [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: segunda.Id),
-             BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: primeira.Id)]);
+            [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: segunda.Id),
+             BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: primeira.Id)]);
 
         OrdemCanonicaDaConfiguracao.BancasDaEtapa(gravadas).Select(static b => b.Id).Should().Equal(ids[1], ids[0]);
     }

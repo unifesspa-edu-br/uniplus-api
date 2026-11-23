@@ -40,7 +40,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
     private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()];
 
     /// <summary>A fase que coleta a inscrição, agrupa as etapas e publica o resultado que homologa as inscrições.</summary>
-    internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+    internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao),
@@ -179,7 +179,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
     private static void DefinirEtapas(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
         Result etapasResult = processo.DefinirEtapas([
-            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_prova_objetiva").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
             .. opcoes.EtapasAdicionais,

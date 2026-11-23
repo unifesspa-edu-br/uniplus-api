@@ -33,7 +33,8 @@ internal sealed class FasesEmMontagem
 {
     private readonly CadastrosDasFases _cadastros;
     private readonly IReadOnlyCollection<FaseCronograma> _fasesGravadas;
-    private readonly MontagemDasBancasDaFase _bancas;
+    private MontagemDasBancasDaFase _bancas = null!;
+    private readonly ProcessoSeletivo _processo;
     private readonly MontagemDosProdutosDaFase _produtos;
     private readonly MontagemDaRegraDeRecursoDaFase _regraDeRecurso;
     private readonly MontagemDaRegraDeHomologacao _regraDeHomologacao;
@@ -44,8 +45,8 @@ internal sealed class FasesEmMontagem
     public FasesEmMontagem(ProcessoSeletivo processo, CadastrosDasFases cadastros, AtosConsultadosNaEdicao atos)
     {
         _cadastros = cadastros;
+        _processo = processo;
         _fasesGravadas = processo.CronogramaFases;
-        _bancas = new MontagemDasBancasDaFase(cadastros);
         _produtos = new MontagemDosProdutosDaFase(atos);
         _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(
             cadastros.Regras, atos, AncorasJaDeclaradas(processo), processo.Etapas.Any(static e => e.DeclaraNotaDoEnem));
@@ -56,7 +57,7 @@ internal sealed class FasesEmMontagem
         IReadOnlyList<FaseCronogramaInput> fases, CancellationToken cancellationToken)
     {
         ReservarChaves(fases);
-
+        _bancas = new MontagemDasBancasDaFase(_cadastros, ChavesDasBancasNaEdicao.DasFases(_processo, fases));
         for (int indice = 0; indice < fases.Count; indice++)
         {
             Result interrupcao = await MontarFaseAsync(fases[indice], indice, cancellationToken).ConfigureAwait(false);

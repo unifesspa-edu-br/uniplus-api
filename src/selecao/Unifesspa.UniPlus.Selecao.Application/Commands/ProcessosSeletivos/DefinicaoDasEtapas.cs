@@ -118,7 +118,7 @@ public sealed class DefinicaoDasEtapas(
     private static DeclaracaoDosFilhosDasEtapas DeclaracaoDosFilhos(EdicaoDasEtapas edicao, List<EtapaProcesso> etapas) =>
         new(
             new DeclaracaoDosProdutosDaEtapa(edicao.Atos),
-            new DeclaracaoDasBancasDaEtapa(edicao.Cadastros.TiposDeBanca),
+            new DeclaracaoDasBancasDaEtapa(edicao.Cadastros.TiposDeBanca, ChavesDasBancasNaEdicao.DasEtapas(edicao.Processo, edicao.Command.Etapas)),
             new DeclaracaoDosRecursosDaEtapa(edicao.Atos, edicao.Cadastros.Regras, etapas.Exists(static e => e.DeclaraNotaDoEnem)));
 
     private sealed record EdicaoDasEtapas(

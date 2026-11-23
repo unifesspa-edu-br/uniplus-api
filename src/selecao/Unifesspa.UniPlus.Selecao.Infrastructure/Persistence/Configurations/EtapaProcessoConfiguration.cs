@@ -93,7 +93,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(e => e.Bancas).WithOne()
-            .HasForeignKey(b => b.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey("EtapaProcessoId", "ProcessoSeletivoId")
+            .HasPrincipalKey(nameof(EtapaProcesso.Id), nameof(EtapaProcesso.ProcessoSeletivoId))
+            .HasConstraintName("fk_bancas_da_etapa_etapa")
+            .OnDelete(DeleteBehavior.Cascade);
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.Bancas))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 

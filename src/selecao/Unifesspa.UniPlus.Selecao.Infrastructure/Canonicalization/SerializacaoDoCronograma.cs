@@ -108,6 +108,7 @@ internal static class SerializacaoDoCronograma
         JsonObject item = new()
         {
             ["id"] = banca.Id,
+            ["chave"] = banca.Chave.Valor,
             ["posicaoNoTipo"] = banca.PosicaoNoTipo,
             ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
             ["candidatosAtendidos"] = SerializarCandidatosAtendidos(banca),

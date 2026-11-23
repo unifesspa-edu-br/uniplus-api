@@ -66,7 +66,7 @@ public sealed class DeclaracaoDasEntidadesTests
     // A criação recusa os candidatos atendidos na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
     private static FaseCronograma FaseReidratadaComCandidatosAtendidosEmBancaDeRecursos()
     {
-        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(TipoDaBanca),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
 

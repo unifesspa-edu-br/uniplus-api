@@ -11202,7 +11202,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da banca.");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave")
+                        .HasComment("Chave local estável da banca no processo seletivo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11211,11 +11219,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("etapa_processo_id");
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("Identificador da etapa à qual a banca pertence.");
 
                     b.Property<int>("PosicaoNoTipo")
                         .HasColumnType("integer")
-                        .HasColumnName("posicao_no_tipo");
+                        .HasColumnName("posicao_no_tipo")
+                        .HasComment("Posição da banca entre as bancas do mesmo tipo.");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Processo seletivo ao qual a banca pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11225,8 +11240,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_bancas_da_etapa");
 
-                    b.HasIndex("EtapaProcessoId")
-                        .HasDatabaseName("ix_bancas_da_etapa_etapa_processo_id");
+                    b.HasIndex("EtapaProcessoId", "ProcessoSeletivoId")
+                        .HasDatabaseName("ix_bancas_da_etapa_etapa_processo_id_processo_seletivo_id");
+
+                    b.HasIndex("ProcessoSeletivoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ix_bancas_da_etapa_processo_seletivo_id_chave");
 
                     b.ToTable("bancas_da_etapa", "selecao");
                 });
@@ -11235,7 +11254,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da banca.");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave")
+                        .HasComment("Chave local estável da banca no processo seletivo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11244,11 +11271,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fase_cronograma_id");
+                        .HasColumnName("fase_cronograma_id")
+                        .HasComment("Identificador da fase à qual a banca pertence.");
 
                     b.Property<int>("PosicaoNoTipo")
                         .HasColumnType("integer")
-                        .HasColumnName("posicao_no_tipo");
+                        .HasColumnName("posicao_no_tipo")
+                        .HasComment("Posição da banca entre as bancas do mesmo tipo.");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Processo seletivo ao qual a banca pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11258,8 +11292,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_bancas_requeridas");
 
-                    b.HasIndex("FaseCronogramaId")
-                        .HasDatabaseName("ix_bancas_requeridas_fase_cronograma_id");
+                    b.HasIndex("FaseCronogramaId", "ProcessoSeletivoId")
+                        .HasDatabaseName("ix_bancas_requeridas_fase_cronograma_id_processo_seletivo_id");
+
+                    b.HasIndex("ProcessoSeletivoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ix_bancas_requeridas_processo_seletivo_id_chave");
 
                     b.ToTable("bancas_requeridas", "selecao");
                 });
@@ -12754,6 +12792,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("carater")
                         .HasComment("Finalidade da etapa na avaliação. Códigos: 0 (Nenhum), 1 (Classificatoria), 2 (Eliminatoria), 3 (Ambas).");
 
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave")
+                        .HasComment("Chave local estável da etapa no processo seletivo.");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
@@ -12806,10 +12851,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("nota_minima")
                         .HasComment("Nota mínima exigida na etapa, quando definida.");
 
-                    b.Property<int?>("Ordem")
+                    b.Property<int>("Ordem")
                         .HasColumnType("integer")
                         .HasColumnName("ordem")
-                        .HasComment("Posição da etapa no processo, quando definida.");
+                        .HasComment("Posição da etapa no processo, a partir de um.");
 
                     b.Property<decimal?>("PassoDoLancamento")
                         .HasPrecision(18, 4)
@@ -12844,6 +12889,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_etapas_processo");
 
+                    b.HasAlternateKey("Id", "ProcessoSeletivoId")
+                        .HasName("ak_etapas_processo_id_processo_seletivo_id");
+
+                    b.HasIndex("ProcessoSeletivoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ux_etapas_processo_processo_chave");
+
                     b.HasIndex("ProcessoSeletivoId", "Ordem")
                         .IsUnique()
                         .HasDatabaseName("ix_etapas_processo_processo_seletivo_id_ordem");
@@ -12877,6 +12929,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("agrupa_etapas")
                         .HasComment("Indica se a fase agrupa etapas de avaliação.");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave")
+                        .HasComment("Chave local estável da fase no processo seletivo.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -12991,6 +13050,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_fases_cronograma");
+
+                    b.HasAlternateKey("Id", "ProcessoSeletivoId")
+                        .HasName("ak_fases_cronograma_id_processo_seletivo_id");
+
+                    b.HasIndex("ProcessoSeletivoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fases_cronograma_processo_chave");
 
                     b.HasIndex("ProcessoSeletivoId", "FaseCanonicaOrigemId")
                         .IsUnique()
@@ -13477,7 +13543,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do item de avaliação.");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave")
+                        .HasComment("Chave local estável do item na etapa.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13486,7 +13560,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("etapa_processo_id");
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("Etapa à qual o item pertence.");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem")
+                        .HasComment("Posição do item na etapa, a partir de um.");
 
                     b.Property<decimal>("PontuacaoMaxima")
                         .HasPrecision(18, 4)
@@ -13498,7 +13578,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("rotulo");
+                        .HasColumnName("rotulo")
+                        .HasComment("Rótulo do critério de avaliação.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13510,6 +13591,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("EtapaProcessoId")
                         .HasDatabaseName("ix_itens_de_avaliacao_da_etapa_etapa_processo_id");
+
+                    b.HasIndex("EtapaProcessoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ux_itens_avaliacao_etapa_chave");
 
                     b.ToTable("itens_de_avaliacao_da_etapa", "selecao", t =>
                         {
@@ -19549,10 +19634,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)
                         .WithMany("Bancas")
-                        .HasForeignKey("EtapaProcessoId")
+                        .HasForeignKey("EtapaProcessoId", "ProcessoSeletivoId")
+                        .HasPrincipalKey("Id", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_bancas_da_etapa_etapa_processo_etapa_processo_id");
+                        .HasConstraintName("fk_bancas_da_etapa_etapas_processo_etapa_processo_id_processo_");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
                         {
@@ -19562,36 +19648,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("Criterio")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_criterio");
+                                .HasColumnName("regra_deliberacao_criterio")
+                                .HasComment("Critério da deliberação.");
 
                             b1.Property<string>("Desempate")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_desempate");
+                                .HasColumnName("regra_deliberacao_desempate")
+                                .HasComment("Regra de desempate da deliberação.");
 
                             b1.Property<string>("Encerramento")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_encerramento");
+                                .HasColumnName("regra_deliberacao_encerramento")
+                                .HasComment("Regra de encerramento da deliberação.");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_integrantes");
+                                .HasColumnName("regra_deliberacao_integrantes")
+                                .HasComment("Quantidade de integrantes da banca.");
 
                             b1.Property<string>("Modo")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_modo");
+                                .HasColumnName("regra_deliberacao_modo")
+                                .HasComment("Modo de deliberação da banca.");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_quorum");
+                                .HasColumnName("regra_deliberacao_quorum")
+                                .HasComment("Quantidade mínima de integrantes para deliberar.");
 
                             b1.Property<string>("SemUnanimidade")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_sem_unanimidade");
+                                .HasColumnName("regra_deliberacao_sem_unanimidade")
+                                .HasComment("Regra aplicada quando não há unanimidade.");
 
                             b1.Property<int>("Suplentes")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_suplentes");
+                                .HasColumnName("regra_deliberacao_suplentes")
+                                .HasComment("Quantidade de suplentes da banca.");
 
                             b1.HasKey("BancaDaEtapaId");
 
@@ -19612,31 +19706,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
-                                .HasColumnName("codigo");
+                                .HasColumnName("codigo")
+                                .HasComment("Código do tipo de banca copiado do cadastro.");
 
                             b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
                                 .HasColumnType("boolean")
-                                .HasColumnName("encerra_recurso_na_primeira_instancia");
+                                .HasColumnName("encerra_recurso_na_primeira_instancia")
+                                .HasComment("Indica se o tipo encerra o recurso na primeira instância.");
 
                             b1.Property<bool>("ExigeDuasOuMaisBancas")
                                 .HasColumnType("boolean")
-                                .HasColumnName("exige_duas_ou_mais_bancas");
+                                .HasColumnName("exige_duas_ou_mais_bancas")
+                                .HasComment("Indica se o tipo exige duas ou mais bancas.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
-                                .HasColumnName("nome");
+                                .HasColumnName("nome")
+                                .HasComment("Nome do tipo de banca copiado do cadastro.");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tipo_banca_origem_id");
+                                .HasColumnName("tipo_banca_origem_id")
+                                .HasComment("Identificador do tipo de banca no cadastro.");
 
                             b1.Property<string>("Papel")
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
-                                .HasColumnName("papel");
+                                .HasColumnName("papel")
+                                .HasComment("Papel do tipo de banca copiado do cadastro.");
 
                             b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
                                 .IsRequired()
@@ -19665,10 +19765,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", null)
                         .WithMany("BancasRequeridas")
-                        .HasForeignKey("FaseCronogramaId")
+                        .HasForeignKey("FaseCronogramaId", "ProcessoSeletivoId")
+                        .HasPrincipalKey("Id", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_bancas_requeridas_fase_cronograma_fase_cronograma_id");
+                        .HasConstraintName("fk_bancas_requeridas_fases_cronograma_fase_cronograma_id_proce");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
                         {
@@ -19678,36 +19779,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("Criterio")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_criterio");
+                                .HasColumnName("regra_deliberacao_criterio")
+                                .HasComment("Critério da deliberação.");
 
                             b1.Property<string>("Desempate")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_desempate");
+                                .HasColumnName("regra_deliberacao_desempate")
+                                .HasComment("Regra de desempate da deliberação.");
 
                             b1.Property<string>("Encerramento")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_encerramento");
+                                .HasColumnName("regra_deliberacao_encerramento")
+                                .HasComment("Regra de encerramento da deliberação.");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_integrantes");
+                                .HasColumnName("regra_deliberacao_integrantes")
+                                .HasComment("Quantidade de integrantes da banca.");
 
                             b1.Property<string>("Modo")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_modo");
+                                .HasColumnName("regra_deliberacao_modo")
+                                .HasComment("Modo de deliberação da banca.");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_quorum");
+                                .HasColumnName("regra_deliberacao_quorum")
+                                .HasComment("Quantidade mínima de integrantes para deliberar.");
 
                             b1.Property<string>("SemUnanimidade")
                                 .HasColumnType("text")
-                                .HasColumnName("regra_deliberacao_sem_unanimidade");
+                                .HasColumnName("regra_deliberacao_sem_unanimidade")
+                                .HasComment("Regra aplicada quando não há unanimidade.");
 
                             b1.Property<int>("Suplentes")
                                 .HasColumnType("integer")
-                                .HasColumnName("regra_deliberacao_suplentes");
+                                .HasColumnName("regra_deliberacao_suplentes")
+                                .HasComment("Quantidade de suplentes da banca.");
 
                             b1.HasKey("BancaRequeridaId");
 
@@ -19728,31 +19837,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
-                                .HasColumnName("codigo");
+                                .HasColumnName("codigo")
+                                .HasComment("Código do tipo de banca copiado do cadastro.");
 
                             b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
                                 .HasColumnType("boolean")
-                                .HasColumnName("encerra_recurso_na_primeira_instancia");
+                                .HasColumnName("encerra_recurso_na_primeira_instancia")
+                                .HasComment("Indica se o tipo encerra o recurso na primeira instância.");
 
                             b1.Property<bool>("ExigeDuasOuMaisBancas")
                                 .HasColumnType("boolean")
-                                .HasColumnName("exige_duas_ou_mais_bancas");
+                                .HasColumnName("exige_duas_ou_mais_bancas")
+                                .HasComment("Indica se o tipo exige duas ou mais bancas.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
-                                .HasColumnName("nome");
+                                .HasColumnName("nome")
+                                .HasComment("Nome do tipo de banca copiado do cadastro.");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tipo_banca_origem_id");
+                                .HasColumnName("tipo_banca_origem_id")
+                                .HasComment("Identificador do tipo de banca no cadastro.");
 
                             b1.Property<string>("Papel")
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
-                                .HasColumnName("papel");
+                                .HasColumnName("papel")
+                                .HasComment("Papel do tipo de banca copiado do cadastro.");
 
                             b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
                                 .IsRequired()
@@ -20717,6 +20832,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
+                            b1.Property<string>("Chave")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("chave")
+                                .HasComment("Chave local estável do nível na etapa.");
+
                             b1.Property<Guid>("EtapaProcessoId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("etapa_processo_id")
@@ -20728,6 +20850,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("fracao")
                                 .HasComment("Fração da pontuação do item atribuída ao nível.");
 
+                            b1.Property<int>("Ordem")
+                                .HasColumnType("integer")
+                                .HasColumnName("ordem")
+                                .HasComment("Posição do nível na escala, a partir de um.");
+
                             b1.Property<string>("Rotulo")
                                 .IsRequired()
                                 .HasMaxLength(100)
@@ -20738,9 +20865,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.HasKey("Id")
                                 .HasName("pk_niveis_de_atendimento_da_etapa");
 
-                            b1.HasIndex("EtapaProcessoId", "Rotulo")
+                            b1.HasIndex("EtapaProcessoId", "Chave")
                                 .IsUnique()
-                                .HasDatabaseName("ux_niveis_atendimento_etapa_rotulo");
+                                .HasDatabaseName("ux_niveis_atendimento_etapa_chave");
 
                             b1.ToTable("niveis_de_atendimento_da_etapa", "selecao", t =>
                                 {

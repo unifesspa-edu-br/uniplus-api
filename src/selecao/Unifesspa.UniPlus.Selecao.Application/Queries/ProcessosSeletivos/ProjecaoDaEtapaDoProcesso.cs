@@ -62,6 +62,7 @@ internal static class ProjecaoDaEtapaDoProcesso
 
     private static BancaDaEtapaDto ProjetarBancaDaEtapa(BancaDaEtapa banca) => new(
         banca.Id,
+        banca.Chave.Valor,
         banca.Tipo.OrigemId,
         CodigoComRotulo<TipoDeBanca>.De(banca.Tipo.Codigo),
         banca.PosicaoNoTipo,

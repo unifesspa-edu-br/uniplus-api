@@ -108,7 +108,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas([BancasDeTeste.DeRecursosDaFase()], redacao);
-        redacao.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(integrantes: 2, quorum: 2))]);
+        redacao.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(integrantes: 2, quorum: 2))]);
 
         Pendencia(processo, Corretores((CorrecaoIndependente, 3))).Should().BeNull();
     }
@@ -232,12 +232,12 @@ public sealed class BancasDoProcessoTests
     public void Redefinir_ComOId_ReaproveitaALinhaEAlinhaOsDadosDeclarados()
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(3, 2))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(3, 2))]);
         Guid linha = etapa.Bancas.Single().Id;
         Guid outraOrigem = Guid.CreateVersion7();
 
         etapa.DefinirBancas(
-            [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, outraOrigem), "Novo"), BancasDeTeste.Regra(5, 4), idDaBancaQueSubstitui: linha)]);
+            [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, outraOrigem), "Novo"), BancasDeTeste.Regra(5, 4), idDaBancaQueSubstitui: linha)]);
 
         BancaDaEtapa banca = etapa.Bancas.Single();
         banca.Id.Should().Be(linha);

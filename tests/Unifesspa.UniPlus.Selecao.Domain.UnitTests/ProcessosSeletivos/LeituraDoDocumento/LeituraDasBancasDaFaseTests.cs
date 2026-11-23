@@ -23,9 +23,10 @@ public sealed class LeituraDasBancasDaFaseTests
     [Fact(DisplayName = "A banca com tipo e categorias do cadastro entra na fase com o tipo e os candidatos atendidos")]
     public void Banca_ComCadastros_EntraNaFase()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", ["IDENTIDADE"]))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "ANALISE_RECURSOS", ["IDENTIDADE"]))));
 
         BancaRequerida banca = lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Single();
+        banca.Chave.Valor.Should().Be("banca_recursos");
         banca.Tipo.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos);
         banca.Tipo.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia, "a banca guarda a cópia do tipo que o cadastro tinha ao ser lida");
         banca.CandidatosAtendidos.Should().ContainSingle();
@@ -35,7 +36,7 @@ public sealed class LeituraDasBancasDaFaseTests
     [Fact(DisplayName = "A banca de tipo que o cadastro não tem fica de fora e aponta o campo do tipo na banca, sem o texto digitado")]
     public void Banca_TipoInexistente_ApontaOCampo()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "TIPO-DIGITADO", [], null))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "TIPO-DIGITADO", [], null))));
 
         lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Should().BeEmpty();
         PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/bancasRequeridas/0/tipoBancaCodigo", FaseCronogramaErrorCodes.TipoBancaNaoEncontrado));
@@ -45,7 +46,7 @@ public sealed class LeituraDasBancasDaFaseTests
     [Fact(DisplayName = "A categoria que o cadastro não tem aponta a posição dela nos candidatos atendidos da banca")]
     public void Banca_CategoriaInexistente_ApontaAPosicaoDaCategoria()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", ["IDENTIDADE", "CATEGORIA-DIGITADA"], null))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "ANALISE_RECURSOS", ["IDENTIDADE", "CATEGORIA-DIGITADA"], null))));
 
         PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/bancasRequeridas/0/categoriasDocumentoCodigos/1", FaseCronogramaErrorCodes.CategoriaDocumentoNaoEncontrada));
     }
@@ -53,7 +54,7 @@ public sealed class LeituraDasBancasDaFaseTests
     [Fact(DisplayName = "Tipo e categoria inexistentes na mesma banca acumulam as duas causas")]
     public void Banca_TipoECategoriaInexistentes_Acumulam()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "TIPO-DIGITADO", ["CATEGORIA-DIGITADA"], null))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "TIPO-DIGITADO", ["CATEGORIA-DIGITADA"], null))));
 
         PartesRecusadas(lidos).Select(static parte => parte.Codigo).Should().Equal(
             FaseCronogramaErrorCodes.TipoBancaNaoEncontrado, FaseCronogramaErrorCodes.CategoriaDocumentoNaoEncontrada);
@@ -64,7 +65,7 @@ public sealed class LeituraDasBancasDaFaseTests
     {
         DeclaracaoDaDeliberacao invalida = new(ModoDeDeliberacao.ColegiadaComVotacao.Codigo(), 0, 0, new(0, CriterioDeVotacao.MaioriaSimples.Codigo(), null, EncerramentoDaVotacao.PresidenciaNoQuorum.Codigo(), null));
 
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", [], invalida))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "ANALISE_RECURSOS", [], invalida))));
 
         lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Should().BeEmpty();
         PartesRecusadas(lidos).Should().NotBeEmpty().And.OnlyContain(parte => parte.Ponteiro!.StartsWith("/cronograma/fases/0/bancasRequeridas/0/regraDeDeliberacao", StringComparison.Ordinal));
@@ -74,11 +75,11 @@ public sealed class LeituraDasBancasDaFaseTests
     public void Banca_Recusada_SuspendeAListaEMantemAVizinha()
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(
-            Banca(0, "banca-ruim", "TIPO-DIGITADO", [], null),
-            Banca(1, "banca-boa", "ANALISE_RECURSOS", [], null))));
+            Banca(0, "banca_ruim", "TIPO-DIGITADO", [], null),
+            Banca(1, "banca_boa", "ANALISE_RECURSOS", [], null))));
 
         lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Should().ContainSingle();
         Cronograma(lidos).Fases.Single().ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas).Should().BeTrue();
-        lidos.Origem.PartesRecusadas.Single().Chave.Should().Be("banca-ruim");
+        lidos.Origem.PartesRecusadas.Single().Chave.Should().Be("banca_ruim");
     }
 }

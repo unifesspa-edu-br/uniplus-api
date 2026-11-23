@@ -46,9 +46,9 @@ public sealed class IdentificacaoDosItensDaCausaTests
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(HeteroidentificacaoDoTipo)),
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(HeteroidentificacaoDoTipo)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
         ]);
 
         return (processo.Declaracao(), fase, etapa);

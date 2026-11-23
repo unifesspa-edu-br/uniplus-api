@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core de <see cref="BancaRequerida"/> (Story #851) — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
@@ -19,11 +20,18 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
 
         builder.ToTable("bancas_requeridas");
         builder.HasKey(b => b.Id);
-        builder.Property(b => b.Id).ValueGeneratedNever();
+        builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
+        builder.Property(b => b.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Chave local estável da banca no processo seletivo.");
+        builder.HasIndex("ProcessoSeletivoId", nameof(BancaRequerida.Chave)).IsUnique();
+        builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da banca.");
+        builder.Property(b => b.FaseCronogramaId).HasComment("Identificador da fase à qual a banca pertence.");
 
         builder.OwnsOne(b => b.Tipo, tipo => tipo.ConfigurarTipoDeBancaCopiado());
         builder.Navigation(b => b.Tipo).IsRequired();
-        builder.Property(b => b.PosicaoNoTipo).IsRequired();
+        builder.Property(b => b.PosicaoNoTipo).IsRequired().HasComment("Posição da banca entre as bancas do mesmo tipo.");
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
 
         builder.HasMany(b => b.CandidatosAtendidos)

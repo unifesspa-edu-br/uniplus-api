@@ -18,7 +18,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
              ("HaVagasOfertadas", "Derivada das quantidades de vagas declaradas nas ofertas.")]),
 
         [typeof(BancaDaEtapa)] = (
-            ["Tipo", "PosicaoNoTipo", "RegraDeDeliberacao"],
+            ["Chave", "Tipo", "PosicaoNoTipo", "RegraDeDeliberacao"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(RecursoDaEtapa)] = (
@@ -44,7 +44,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(EtapaProcesso)] = (
-            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "ItensDeAvaliacao", "EscalaDeAtendimento", "Ordem", "FaseCodigo", "Produtos",
+            ["Chave", "Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "ItensDeAvaliacao", "EscalaDeAtendimento", "Ordem", "FaseCodigo", "Produtos",
              "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos", "TiposDeDecisao"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
@@ -56,10 +56,10 @@ internal static class ManifestoDeEtapasVagasEClassificacao
 
         // O id do item ENTRA no envelope, como o da etapa: o lançamento e o recurso apontam para ele.
         [typeof(ItemDeAvaliacao)] = (
-            ["Rotulo", "PontuacaoMaxima"],
+            ["Chave", "Ordem", "Rotulo", "PontuacaoMaxima"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
-        [typeof(NivelDeAtendimento)] = (["Rotulo", "Fracao"], []),
+        [typeof(NivelDeAtendimento)] = (["Chave", "Ordem", "Rotulo", "Fracao"], []),
 
         [typeof(AtendimentoEspecializado)] = (
             ["Condicoes", "Recursos", "TiposDeficiencia"],

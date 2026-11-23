@@ -123,7 +123,7 @@ public sealed class HashEstavelEntreGravacoesTests
         EtapaProcesso etapa = processo.Etapas.Single();
 
         etapa.DefinirProdutos(ProdutosDaEtapaCompleta()).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaOrigem), idDaBancaQueSubstitui: etapa.Bancas.SingleOrDefault()?.Id)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaOrigem), idDaBancaQueSubstitui: etapa.Bancas.SingleOrDefault()?.Id)]);
         etapa.DefinirRecursos(JanelasEmOrdemInversaDoDocumento(etapa)).IsSuccess.Should().BeTrue();
     }
 
@@ -191,7 +191,7 @@ public sealed class HashEstavelEntreGravacoesTests
         bancasRequeridas: [BancaDeHomologacaoComIdentidadeFixa()]).Value!;
 
     // A banca com a mesma identidade em toda instância: o hash só se mantém entre gravações se a identidade da banca se mantém.
-    private static BancaRequerida BancaDeHomologacaoComIdentidadeFixa() => BancaRequerida.ReconstruirDosDadosSalvos(
+    private static BancaRequerida BancaDeHomologacaoComIdentidadeFixa() => BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value,
         new Guid("bbbb0000-0000-4000-8000-0000000000a1"),
         TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes, new Guid("5555eeee-0000-4000-8000-0000000000a1")),
         [],

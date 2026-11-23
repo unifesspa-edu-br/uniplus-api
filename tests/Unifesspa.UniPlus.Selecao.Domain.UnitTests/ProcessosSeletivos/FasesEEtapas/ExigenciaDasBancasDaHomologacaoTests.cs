@@ -208,9 +208,9 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
     [Fact(DisplayName = "A banca de importação é reconhecida pelo papel que a cópia guarda, e não pelo código do tipo")]
     public void BancaDeImportacao_EReconhecidaPeloPapel_NaoPeloCodigo()
     {
-        BancaRequerida codigoDeImportacaoComOutroPapel = BancaRequerida.Criar(
+        BancaRequerida codigoDeImportacaoComOutroPapel = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(TipoDeBanca.ImportacaoDasNotasDoInep, PapelDaBanca.AvaliaOMerito), [], BancasDeTeste.Regra());
-        BancaRequerida outroCodigoComPapelDeImportacao = BancaRequerida.Criar(
+        BancaRequerida outroCodigoComPapelDeImportacao = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(TipoDeBanca.CorrecaoDeRedacoes, PapelDaBanca.ImportaAsNotasDoInep), [], BancasDeTeste.Regra());
 
         Causas(Notas(OrigemCandidatos.InscricaoPropria, Fases(Homologa(codigoDeImportacaoComOutroPapel)), ComNotaDoEnem)).Should().ContainSingle();

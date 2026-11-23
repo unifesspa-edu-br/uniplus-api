@@ -15,7 +15,7 @@ public sealed class BancaDaEtapaTests
     private static readonly Guid Origem = Guid.CreateVersion7();
 
     private static BancaDaEtapa Banca(Guid? origem = null, string nome = "Banca", RegraDeDeliberacao? regra = null, Guid? substitui = null) =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, origem ?? Origem), nome), regra, substitui);
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, origem ?? Origem), nome), regra, substitui);
 
     private static void Substituir(BancaDaEtapa viva, BancaDaEtapa declarada) =>
         ReconciliacaoDasBancas.Reconciliar([viva], [declarada]);
@@ -65,7 +65,7 @@ public sealed class BancaDaEtapaTests
         Guid id = Guid.CreateVersion7();
         TipoDeBancaCopiado tipo = TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista);
 
-        BancaDaEtapa banca = BancaDaEtapa.ReconstruirDosDadosSalvos(id, tipo);
+        BancaDaEtapa banca = BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, id, tipo);
 
         banca.Id.Should().Be(id);
         banca.Tipo.Should().Be(tipo);
@@ -74,7 +74,7 @@ public sealed class BancaDaEtapaTests
     [Fact(DisplayName = "A banca reconstruída sem o Id congelado é erro de programação")]
     public void ReconstruirDosDadosSalvos_IdVazio_Lanca()
     {
-        Action reconstruir = () => BancaDaEtapa.ReconstruirDosDadosSalvos(Guid.Empty, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista));
+        Action reconstruir = () => BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, Guid.Empty, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista));
 
         reconstruir.Should().Throw<ArgumentException>();
     }

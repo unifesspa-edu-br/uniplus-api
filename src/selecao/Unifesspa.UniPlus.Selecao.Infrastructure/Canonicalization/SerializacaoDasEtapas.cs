@@ -121,6 +121,7 @@ internal static class SerializacaoDasEtapas
         JsonObject item = new()
         {
             ["id"] = JsonValue.Create(banca.Id),
+            ["chave"] = banca.Chave.Valor,
             ["posicaoNoTipo"] = JsonValue.Create(banca.PosicaoNoTipo),
             ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
         };

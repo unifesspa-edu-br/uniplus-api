@@ -56,9 +56,9 @@ internal static class RecursosParaQuemJulga
         TipoDeBanca codigo, bool exigeDuasOuMaisBancas, bool encerraRecursoNaPrimeiraInstancia, params TipoMotivoDeDecisao[] julga) =>
         new(Guid.CreateVersion7(), codigo, codigo.Rotulo(), PapelDaBanca.AvaliaOMerito, exigeDuasOuMaisBancas, encerraRecursoNaPrimeiraInstancia, julga);
 
-    internal static BancaRequerida NaFase(TipoDeBancaCopiado tipo) => BancaRequerida.Criar(tipo, [], BancasDeTeste.Regra());
+    internal static BancaRequerida NaFase(TipoDeBancaCopiado tipo) => BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, tipo, [], BancasDeTeste.Regra());
 
-    internal static BancaDaEtapa NaEtapa(TipoDeBancaCopiado tipo) => BancaDaEtapa.Criar(tipo, BancasDeTeste.Regra());
+    internal static BancaDaEtapa NaEtapa(TipoDeBancaCopiado tipo) => BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, tipo, BancasDeTeste.Regra());
 
     private static ParametrosDeclaradosDoRecurso Parametros(bool instanciaSuperior) => instanciaSuperior
         ? ParametrosDoRecursoDeTeste.ComInstanciaSuperior()

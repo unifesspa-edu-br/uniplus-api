@@ -102,6 +102,7 @@ public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao, int Or
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a etapa, para a banca continuar sendo a mesma.</param>
+/// <param name="Chave">Chave local permanente da banca no documento.</param>
 /// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na etapa, a partir de 1.</param>
 /// <param name="Codigo">O código do tipo de banca, com o rótulo que a tela mostra.</param>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
@@ -112,6 +113,7 @@ public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao, int Or
 /// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
 public sealed record BancaDaEtapaDto(
     Guid Id,
+    string Chave,
     Guid TipoBancaOrigemId,
     CodigoComRotulo<TipoDeBanca> Codigo,
     int PosicaoNoTipo,
