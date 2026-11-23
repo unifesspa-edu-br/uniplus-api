@@ -1,6 +1,6 @@
 ---
-status: "proposed"
-date: "2026-11-16"
+status: "accepted"
+date: "2026-11-23"
 decision-makers:
   - "Tech Lead"
 consulted:
@@ -36,8 +36,8 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 **Escolhida:** "Esquema JSON 2020-12 versionado no repositório, dividido por assunto, com referências por código e por chave local", porque separa o contrato de troca do envelope de publicação e o torna verificável por teste.
 
 - **Forma:** os esquemas ficam em `contracts/selecao/configuracao/vN/`, um arquivo por assunto, com `$id` absoluto e `$ref` relativo e só local. O arquivo `documento` é a raiz; as definições compartilhadas ficam em arquivos próprios. O esquema descreve a forma (tipo, formato, enumeração, tamanho, obrigatoriedade e restrições estruturais entre campos vizinhos); a regra de negócio é do domínio, e por isso um rascunho incompleto é um documento válido.
-- **Identidade:** catálogos e unidades são citados pelo código estável, nunca por identificador do banco, e os campos de código de catálogo recusam a forma de identificador único (UUID). As partes que o usuário edita (fase, etapa, item de avaliação, banca, exigência) têm chave local única no documento, que é o que as outras partes citam; a parte identificada por códigos de catálogo mantém a identidade natural. A pessoa é citada pelo identificador da conta dela no Uni+, texto opaco, nunca por dado pessoal; o esquema não distingue um identificador de conta de outro texto, e a recusa do código que não é conta do cadastro é do domínio. O nome vem do cadastro na emissão.
-- **Só leitura:** o descritivo que a exportação traz ao lado do código (nomes, siglas) e o que é derivado ficam marcados `readOnly`, e a importação os ignora: a referência é o código, e o servidor recalcula o derivado.
+- **Identidade:** catálogos e unidades são citados pelo código estável, nunca por identificador do banco, e os campos de código de catálogo recusam a forma de identificador único (UUID). Fase, etapa, item de avaliação, nível de atendimento, banca e exigência têm chave local única no respectivo escopo, usada pelas referências; a parte identificada por códigos de catálogo mantém a identidade natural. A pessoa é citada pelo identificador da conta dela no Uni+, texto opaco, nunca por dado pessoal; o esquema não distingue um identificador de conta de outro texto, e a recusa do código que não é conta do cadastro é do domínio. O nome vem do cadastro na emissão.
+- **Só leitura:** o descritivo que acompanha o código (nomes, siglas, rótulos dos valores de enum, dados do arquivo do modelo e identificadores) e o que é derivado ficam marcados `readOnly`; no documento congelado, o descritivo registra os valores da publicação; a importação os ignora, e o leitor do documento congelado ignora os descritivos de contexto: a referência é o código ou a chave, e o servidor recalcula o derivado.
 - **Resolução:** a importação resolve cada código citado uma vez, contra o cadastro vivo, e dali decide o identificador do snapshot. Código que não existe é recusado apontando a posição no documento. Na retificação, código igual ao já congelado herda a cópia congelada.
 - **Evolução:** a compatibilidade é para trás dentro da versão: documento válido na `v1` continua válido. Entram na versão a propriedade opcional nova, o valor novo de enumeração e o limite relaxado. Criam a versão seguinte (outra pasta, outro `$id`, outro `versaoFormato`) remover ou renomear propriedade, tornar propriedade obrigatória, estreitar tipo, formato, limite ou enumeração e mudar o significado de um campo.
 - **Congelamento:** a versão congela na primeira tag que a publica, e a cópia dos arquivos passa a `publicadas/vN/`. Dali em diante um teste compara o esquema atual com cada cópia publicada e recusa a mudança incompatível que o comparador reconhece; o que ele não examina fica para a revisão.
@@ -82,7 +82,91 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 >
 > Cada fase publica o próprio resultado definitivo, e o ciclo de recurso fecha dentro dela, como decide a [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md). Sai da fase do cronograma a propriedade `faseConcluinteChave`, e a fase que ainda a traz é recusada como propriedade desconhecida, com o caminho. A mudança é feita na própria `v1` pelo mesmo motivo da emenda anterior: a `v1` ainda não congelou. A exigência de que a fase com resultado preliminar publique também o definitivo é do domínio, conferida na publicação; o esquema não a expressa.
 >
-> **Confirmação:** o teste de contrato confere que o exemplo publicado valida sem a propriedade e que a fase que a traz é recusada.
+> **Confirmação:** o teste de contrato deve conferir que o exemplo publicado valida sem a propriedade e que a fase que a traz é recusada.
+
+## Emenda (2026-11-23) — chave, campos só de leitura e nomes da `v1`, dentro da `v1`
+
+Todas as mudanças abaixo são feitas na própria `v1`, pelo mesmo motivo das emendas de 20/11: a `v1` ainda não congelou, não existe a pasta `publicadas/` e nenhuma etiqueta a contém. A partir da primeira etiqueta, vale a regra de evolução.
+
+**1. Chave local.** As partes com chave são fase, etapa, item de avaliação, nível de atendimento, banca (da fase e da etapa, única no documento inteiro) e exigência de documento. Formulário, modelo, publicação prevista, procedimento de recurso e regra de comprovação ficam sem chave; a identificação do formulário segue a ADR-0171. O documento de troca não traz número de ordem: a ordem é a posição na lista (emenda de 17/11).
+
+Quem forma a chave:
+
+- No documento importado, a chave vem no documento; o sistema não atribui chave a parte que chega sem ela.
+- Nas gravações por dimensão (`PUT`), o servidor forma a chave uma vez, quando a parte é criada, e ela não muda mais: mudar o texto, a ordem ou os dados da parte não muda a chave. O pedido de gravação aceita a chave como opcional; quando ela vem, é usada.
+
+Regra de formação, a mesma no servidor e na tela:
+
+1. A chave é o prefixo da parte (`fase`, `etapa`, `item`, `nivel`, `banca`, `exigencia`), `_` e um texto.
+2. O texto é o código do catálogo (tipo de fase, tipo de etapa, tipo de banca, tipo de documento); no item de avaliação e no nível de atendimento, é o rótulo.
+3. O texto vai sem acento e em minúsculas; tudo o que não é letra de `a` a `z` ou dígito vira `_`, sem `_` repetido nem nas pontas.
+4. Se o texto já é o prefixo ou começa por prefixo e `_`, o prefixo não se repete (`BANCA_HETEROIDENTIFICACAO` forma `banca_heteroidentificacao`); começar pelas mesmas letras sem o `_` não conta (`BANCARIA` forma `banca_bancaria`).
+5. Se o texto fica vazio depois da limpeza, a chave é só o prefixo (`item`).
+6. Se a chave já existe, recebe o menor sufixo livre `_2`, `_3`…. Conta-se o conjunto das partes do mesmo tipo e escopo (fases, etapas e exigências no processo; itens e níveis na etapa; bancas da fase e da etapa juntas no documento inteiro) e toda referência `*Chave` presente no documento, inclusive a que cita parte já excluída.
+7. Acima de 64 caracteres, corta na última palavra inteira que cabe em 64 caracteres, contando o sufixo.
+8. O formato final é `^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$`, com até 64 caracteres.
+
+**2. Identificadores.** A exportação traz `id` só de leitura do processo, das fases, etapas, itens de avaliação, bancas e exigências. A importação os ignora e cria novos identificadores; as referências entre partes usam as chaves. O nível de atendimento não declara `id` no documento de troca.
+
+**3. Campos só de leitura de contexto.** O documento da configuração e o documento congelado da versão publicada trazem, ao lado de cada referência, campos só de leitura que dão contexto a quem lê:
+
+- de cada valor de enum, o rótulo (ADR-0176);
+- da unidade, o nome e a sigla ao lado do código;
+- o nome do tipo de fase, da categoria julgada, do tipo de etapa, do tipo de banca, do tipo de documento, do modelo de formulário de origem e do tipo de ato, ao lado do código;
+- na exigência, os dados do arquivo do modelo de documento;
+- os identificadores (`id`) do processo e das partes indicadas no item 2.
+
+Onde ficam:
+
+- Na `v1`, cada campo só de leitura é uma propriedade solta, declarada ao lado do campo que descreve, com `readOnly`, no padrão de `unidadeResponsavelNome`; o rótulo do valor de enum é `{campo}Rotulo`.
+- No documento congelado, os rótulos dos valores de enum ficam no subobjeto `contexto` do objeto que grava o valor (ADR-0176).
+
+Regras comuns:
+
+- No documento congelado, esses campos registram os valores do momento da publicação: entram nos bytes e no resumo criptográfico da versão, e a mudança posterior do cadastro ou do rótulo não muda a versão publicada (ADR-0061).
+- A exportação da versão publicada deve converter o documento congelado para a `v1`, sem ler cadastro vivo, com os campos só de leitura da publicação. A exportação do rascunho traz esses campos dos cadastros vivos no momento da exportação. A adequação integral do documento congelado à `v1` e a validação dos três envelopes de referência e da exportação contra o esquema são trabalho posterior.
+- A configuração usa o código ou a chave como referência. O leitor do documento congelado ignora os descritivos de contexto e conserva os identificadores necessários à reconstituição; a importação ignora os campos só de leitura.
+- A retificação compara pelo que se grava: diferença só em campo só de leitura não é mudança.
+
+**4. Nomes da `v1`.** Os nomes abaixo são os definitivos, os mesmos do documento congelado:
+
+| Arquivo e propriedade da `v1` | Nome anterior | Nome definitivo |
+|---|---|---|
+| `etapas.schema.json`, recurso da etapa | `ancora` | `eventoInicialDoPrazo` |
+| `cronograma.schema.json` e `etapas.schema.json` | `produtos` | `publicacoesPrevistas` |
+| `comuns.schema.json`, publicação que inicia o prazo do recurso | `atoAncoraCodigo` | `publicacaoDeReferenciaAtoCodigo` |
+| `cronograma.schema.json`, fase | `faseCanonicaCodigo` | `tipoFaseCodigo` |
+| `etapas.schema.json` | `regraConsolidacao` | `regraDeApuracaoDaAvaliacao` |
+| `restricao-de-valor.schema.json`, limite de data | `ancora` | `referenciaDaData` |
+| `restricao-de-valor.schema.json` | `fatos` | `dados` |
+| `cascata-de-remanejamento.schema.json` | `fallbackCodigo` | `destinoFinalCodigo` |
+| `exigencias.schema.json` | `fatosComprovados` | `dadosComprovados` |
+| `coleta.schema.json` e `item-do-formulario.schema.json` | `fatoCodigo` | `dadoCodigo` |
+| `coleta.schema.json` | `referenciaTemporalFatos` | `referenciaTemporalDosDados` |
+| `bonus-regional.schema.json` | `fatoElegibilidadeCodigo` | `dadoDeElegibilidadeCodigo` |
+| `predicado.schema.json` | `fato` | `dado` |
+
+O documento congelado e a resposta da versão vigente devem usar os mesmos nomes, inclusive os nomes "dado" (por exemplo, `dadosColetados` e `dadoCodigo`); nenhum nome fora do padrão fica em nenhum dos três. O `tipoFaseOrigemId` é do documento congelado (identificador da cópia do tipo de fase); a `v1` cita o tipo de fase pelo código (`tipoFaseCodigo`) e não leva o identificador. Esses nomes são os adotados na `v1`. A descrição do campo de referência da fase em `coleta.schema.json` também sai do verbo "ancora" ("fase do cronograma que serve de referência").
+
+**5. Prazo de emissão da exigência.** Em `exigencias.schema.json`, `idadeMaximaEmissao` (na exigência e em `$defs`) sai e entram `prazoDeEmissao` e `validade`, com a forma definida para o prazo de emissão: escolha (`semPrazo` ou `comPrazo`), valor, unidade, referência (com `faseChave` para início ou fim de fase) e efeito fora do prazo. O documento que ainda traz `idadeMaximaEmissao` é recusado como propriedade desconhecida, com o caminho.
+
+**6. Motivos de decisão e prova presencial.** A `v1` declara as duas partes; elas devem ter os mesmos nomes do documento congelado (ADR-0109):
+
+| Arquivo e propriedade da `v1` | Nome anterior | Nome definitivo |
+|---|---|---|
+| `documento.schema.json` | `motivos` | `motivosDeDecisao` |
+| `motivo.schema.json` | `tipoCodigo` | `tipoDeDecisaoCodigo` |
+
+Os demais nomes ficam como estão (`faseChave`, `etapaChave`, `codigo`, `descricao`, `subclassificacao`, `sentido`, `justificativaDaInclusao`, `versaoDoEditalDeEntrada`, `temProvaPresencial`, `municipios`, `codigoIbge` e `uf`).
+
+Campos só de leitura novos, pela regra do item 3:
+
+- no município de prova, `nome`, o nome do município no Geo;
+- no motivo, `sentidoRotulo`.
+
+Os caminhos dos erros dos motivos acompanham o nome novo (`motivosDeDecisao[i]`). O limite de municípios continua fora do esquema: é configuração da API, com o padrão de 100 municípios (UNI-REQ-0407). A importação do resultado fica como está nesta emenda; a mudança dela está retida para decisão posterior.
+
+**Confirmação:** o teste de contrato deve conferir que o exemplo publicado valida com os nomes definitivos e com `prazoDeEmissao` e `validade`; que a chave formada segue a regra (com a mesma tabela de exemplos nos testes do servidor e da tela) e o padrão (aceita `etapa_prova_objetiva_2`; recusa `prova-objetiva`, `Etapa`, `1etapa`, `etapa__x`, `etapa_` e 65 caracteres); e que os campos só de leitura vêm no documento congelado e na exportação, têm os descritivos ignorados pelo leitor e os campos só de leitura ignorados pela importação, e a retificação que difere só neles não é mudança. A validação dos três envelopes de referência convertidos e da exportação da versão publicada contra a `v1` acompanha a adequação integral do documento congelado.
 
 ## Consequências
 
@@ -90,7 +174,7 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 
 - Quem importa, exporta ou escreve o documento valida contra um contrato público, sem a API.
 - Mudança incompatível é detectada por teste antes de chegar à publicação.
-- O documento não carrega identificador interno do banco nem dado pessoal; o único identificador dele é o do próprio processo, só de leitura e ignorado na importação.
+- O documento não carrega dado pessoal. Os identificadores só de leitura do processo e das partes que os declaram vêm na exportação e são ignorados na importação.
 
 ### Negativas
 
