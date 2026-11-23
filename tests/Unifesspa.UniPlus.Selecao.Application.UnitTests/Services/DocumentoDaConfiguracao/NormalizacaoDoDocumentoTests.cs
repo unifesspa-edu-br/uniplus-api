@@ -65,9 +65,9 @@ public sealed class NormalizacaoDoDocumentoTests
     [Fact(DisplayName = "A chave escrita é conservada como veio, em qualquer posição da lista")]
     public void ChaveEscrita_EConservadaComoVeio()
     {
-        const string Texto = """{ "etapas": [ { "chave": "segunda" }, { "chave": "primeira" }, { "chave": "etapa-1" } ] }""";
+        const string Texto = """{ "etapas": [ { "chave": "segunda" }, { "chave": "primeira" }, { "chave": "etapa_1" } ] }""";
 
-        Chaves(Normalizar(Texto), "etapas").Should().Equal("segunda", "primeira", "etapa-1");
+        Chaves(Normalizar(Texto), "etapas").Should().Equal("segunda", "primeira", "etapa_1");
     }
 
     [Fact(DisplayName = "Ausente não é vazio: chave vazia ou nula, lista vazia e texto vazio ficam como vieram")]
@@ -163,9 +163,9 @@ public sealed class NormalizacaoDoDocumentoTests
     [Fact(DisplayName = "A mensagem da chave repetida não repete o texto digitado")]
     public void ChaveRepetida_MensagemNaoRepeteATexto()
     {
-        _ = Normalizar("""{ "etapas": [ { "chave": "SEGREDO-1" }, { "chave": "SEGREDO-1" } ] }""", out IReadOnlyList<FieldError> repetidas);
+        _ = Normalizar("""{ "etapas": [ { "chave": "etapa_reservada_1" }, { "chave": "etapa_reservada_1" } ] }""", out IReadOnlyList<FieldError> repetidas);
 
-        repetidas.Select(static causa => causa.Error.Message).Should().NotContain(static mensagem => mensagem.Contains("SEGREDO", StringComparison.Ordinal));
+        repetidas.Select(static causa => causa.Error.Message).Should().NotContain(static mensagem => mensagem.Contains("etapa_reservada_1", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "O que está dentro de um campo só de leitura não conta para a repetição")]

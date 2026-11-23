@@ -33,7 +33,7 @@ public sealed class EsquemaDoDocumentoDaConfiguracaoTests
     [Fact(DisplayName = "O campo que o esquema não declara é recusado no ponteiro do próprio campo")]
     public void CampoDesconhecido_ApontaOProprioCampo() =>
         AvaliarComCabecalho("""
-            "invento": 1, "etapas": [ { "chave": "etapa-1", "outroInvento": true } ]
+            "invento": 1, "etapas": [ { "chave": "etapa_1", "outroInvento": true } ]
             """).Select(Resumo).Should().BeEquivalentTo(
         [
             ("/invento", DocumentoDaConfiguracaoErrorCodes.CampoDesconhecido),

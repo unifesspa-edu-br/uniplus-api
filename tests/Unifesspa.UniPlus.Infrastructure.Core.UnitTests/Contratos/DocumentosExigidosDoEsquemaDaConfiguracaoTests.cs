@@ -15,8 +15,8 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     private const string Exigencias = "exigencias.schema.json";
 
     private const string ExigenciaCompleta = """
-        { "chave": "comprovante-de-renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
-          "faseChave": "inscricao", "etapaChave": "prova-objetiva", "finalidade": "ISENCAO_TAXA",
+        { "chave": "exigencia_comprovante_renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
+          "faseChave": "inscricao", "etapaChave": "etapa_prova_objetiva", "finalidade": "ISENCAO_TAXA",
           "aplicabilidade": "Condicional", "obrigatorio": true, "consequenciaIndeferimento": "PENDENCIA_REENVIO",
           "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
@@ -73,7 +73,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
         const string definicao = "regras-de-comprovacao.schema.json";
         JsonNode grupo = Documento("""
             { "forma": "QUANTIDADE_MINIMA_DE_ITENS", "quantidadeMinima": 1, "itens": [
-              { "forma": "DOCUMENTO", "exigenciaChave": "comprovante-de-renda", "criterioDeDistincao": "COMPETENCIA_MENSAL", "dataReferencia": "2027-01-10" },
+              { "forma": "DOCUMENTO", "exigenciaChave": "exigencia_comprovante_renda", "criterioDeDistincao": "COMPETENCIA_MENSAL", "dataReferencia": "2027-01-10" },
               { "forma": "TODOS_OS_ITENS", "itens": [ { "forma": "DOCUMENTO", "exigenciaChave": "declaracao" } ] } ] }
             """);
 
@@ -88,7 +88,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Documento($$"""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-              "documentosExigidos": { "exigencias": [ {{ExigenciaCompleta}} ], "regrasDeComprovacao": [ { "forma": "DOCUMENTO", "exigenciaChave": "comprovante-de-renda" } ] } }
+              "documentosExigidos": { "exigencias": [ {{ExigenciaCompleta}} ], "regrasDeComprovacao": [ { "forma": "DOCUMENTO", "exigenciaChave": "exigencia_comprovante_renda" } ] } }
             """);
         CaminhosComErro(documento).Should().BeEmpty();
 

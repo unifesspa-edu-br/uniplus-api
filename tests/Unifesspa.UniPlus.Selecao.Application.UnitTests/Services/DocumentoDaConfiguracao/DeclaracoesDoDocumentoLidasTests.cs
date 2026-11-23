@@ -54,7 +54,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
               "procedimentosDeRecurso": [
                 { "tipoDeDecisao": "ANALISE_DOCUMENTAL", "regra": { "codigo": "PROCEDIMENTO-CONFERENCIA", "versao": "v1" } },
                 { "tipoDeDecisao": "NOTA_DA_ETAPA", "alvo": { "areaDoEnem": "REDACAO" }, "regra": { "codigo": "PROCEDIMENTO-RECALCULO", "versao": "v1" } },
-                { "tipoDeDecisao": "NOTA_DA_ETAPA", "alvo": { "itemDeAvaliacaoChave": "item-de-prova" } }
+                { "tipoDeDecisao": "NOTA_DA_ETAPA", "alvo": { "itemDeAvaliacaoChave": "item_de_prova" } }
               ]
             }
           } ] }
@@ -201,7 +201,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         procedimentos.Should().Equal(
             new ProcedimentoNoDocumento(0, TipoMotivoDeDecisao.AnaliseDocumental, null, new("PROCEDIMENTO-CONFERENCIA", "v1")),
             new ProcedimentoNoDocumento(1, TipoMotivoDeDecisao.NotaDaEtapa, new(null, "REDACAO"), new("PROCEDIMENTO-RECALCULO", "v1")),
-            new ProcedimentoNoDocumento(2, TipoMotivoDeDecisao.NotaDaEtapa, new("item-de-prova", null), new(null, null)));
+            new ProcedimentoNoDocumento(2, TipoMotivoDeDecisao.NotaDaEtapa, new("item_de_prova", null), new(null, null)));
     }
 
     [Fact(DisplayName = "O código de tipo de decisão que o vocabulário não conhece fica ausente no procedimento, para o domínio recusar, sem exceção")]

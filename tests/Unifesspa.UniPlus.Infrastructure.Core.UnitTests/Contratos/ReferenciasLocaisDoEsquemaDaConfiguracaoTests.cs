@@ -6,10 +6,6 @@ using AwesomeAssertions;
 
 using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoDaConfiguracao;
 
-/// <summary>
-/// As partes do documento se referenciam pela chave local, o item não tem identidade própria e o id e a versão vivem só na
-/// raiz; a etapa e o recurso seguem as regras de chave e de âncora.
-/// </summary>
 public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
 {
     [Fact(DisplayName = "A fase não declara a fase que conclui o ciclo de recurso: o exemplo valida sem a propriedade e a fase que a traz é recusada")]
@@ -50,7 +46,7 @@ public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "A etapa só com a chave valida, como num rascunho")]
     public void EtapaSoComAChave_Valida()
     {
-        JsonNode rascunho = Documento("""{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "etapas": [ { "chave": "prova-objetiva" } ] }""");
+        JsonNode rascunho = Documento("""{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "etapas": [ { "chave": "etapa_prova_objetiva" } ] }""");
 
         CaminhosComErro(rascunho).Should().BeEmpty();
     }
@@ -96,15 +92,6 @@ public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
         documento["id"] = "processo-exemplo";
         documento["versao"] = 0;
         CaminhosComErro(documento).Should().Contain(["/id", "/versao"]);
-    }
-
-    [Fact(DisplayName = "O item não tem id: a propriedade id num item é recusada")]
-    public void IdNoItem_Recusa()
-    {
-        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
-        documento["cronograma"]!["fases"]![0]!["id"] = "3f2a9c1e-5b7d-4e8a-9c3f-1a2b3c4d5e6f";
-
-        CaminhosComErro(documento).Should().Contain("/cronograma/fases/0/id");
     }
 
     [Fact(DisplayName = "O recurso da etapa aceita a âncora de ciência individual e recusa o que não é âncora")]

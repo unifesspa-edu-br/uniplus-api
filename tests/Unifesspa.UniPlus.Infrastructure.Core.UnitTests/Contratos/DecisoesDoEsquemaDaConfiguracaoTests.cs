@@ -41,8 +41,8 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "Os assinantes da fase são contas em ordem e a conta repetida é recusada")]
     public void Assinantes_ContasEmOrdem_RepetidaRecusa()
     {
-        JsonNode valida = Documento("""{ "chave": "resultado-final", "tipoFaseCodigo": "RESULTADO_FINAL", "assinantes": ["0196b3c2-7d4e-7a51-9c2f-3e8b5a1d6f40", "conta-2"] }""");
-        JsonNode repetida = Documento("""{ "chave": "resultado-final", "tipoFaseCodigo": "RESULTADO_FINAL", "assinantes": ["conta-1", "conta-1"] }""");
+        JsonNode valida = Documento("""{ "chave": "fase_resultado_final", "tipoFaseCodigo": "RESULTADO_FINAL", "assinantes": ["0196b3c2-7d4e-7a51-9c2f-3e8b5a1d6f40", "conta-2"] }""");
+        JsonNode repetida = Documento("""{ "chave": "fase_resultado_final", "tipoFaseCodigo": "RESULTADO_FINAL", "assinantes": ["conta-1", "conta-1"] }""");
 
         CaminhosComErro(valida, $"{Cronograma}#/$defs/fase").Should().BeEmpty();
         CaminhosComErro(repetida, $"{Cronograma}#/$defs/fase").Should().Contain("/assinantes");
@@ -68,7 +68,7 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
             { "faseChave": "homologacao", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA_ACIMA_DO_LIMITE", "descricao": "Renda acima do limite",
               "sentido": "DESFAVORAVEL", "justificativaDaInclusao": "Motivo previsto no edital retificado", "versaoDoEditalDeEntrada": 2 }
             """);
-        JsonNode naEtapa = Documento("""{ "etapaChave": "prova-objetiva", "tipoCodigo": "CLASSIFICACAO", "codigo": "NOTA_ZERADA" }""");
+        JsonNode naEtapa = Documento("""{ "etapaChave": "etapa_prova_objetiva", "tipoCodigo": "CLASSIFICACAO", "codigo": "NOTA_ZERADA" }""");
 
         CaminhosComErro(naFase, Motivo).Should().BeEmpty();
         CaminhosComErro(naEtapa, Motivo).Should().BeEmpty();

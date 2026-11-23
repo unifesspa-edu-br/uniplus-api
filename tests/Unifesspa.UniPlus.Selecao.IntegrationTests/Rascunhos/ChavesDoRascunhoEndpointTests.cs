@@ -25,7 +25,7 @@ using static ClienteDoRascunhoDeTeste;
 public sealed class ChavesDoRascunhoEndpointTests : IAsyncLifetime
 {
     private const string Leandro = "leandro.viana";
-    private const string Prova = """{ "chave": "prova-objetiva", "nome": "Prova objetiva" }""";
+    private const string Prova = """{ "chave": "etapa_prova_objetiva", "nome": "Prova objetiva" }""";
     private const string Redacao = """{ "chave": "redacao", "nome": "Redação" }""";
 
     private readonly CascadingFixture _fixture;
@@ -47,11 +47,11 @@ public sealed class ChavesDoRascunhoEndpointTests : IAsyncLifetime
         await _cliente.ConcederAsync(Leandro, UnidadesDeTeste.Ceps.OrigemId);
 
         (Guid id, string eTagDoSalvar) = await CriarAsync($"{Prova}, {Redacao}");
-        (await ChavesDasEtapasNaReleituraAsync(id, eTagDoSalvar)).Should().Equal(("prova-objetiva", "Prova objetiva"), ("redacao", "Redação"));
+        (await ChavesDasEtapasNaReleituraAsync(id, eTagDoSalvar)).Should().Equal(("etapa_prova_objetiva", "Prova objetiva"), ("redacao", "Redação"));
 
         await SubstituirAsync(id, eTagDoSalvar, $"{Redacao}, {Prova}");
 
-        (await ChavesDasEtapasNaReleituraAsync(id, "\"2\"")).Should().Equal(("redacao", "Redação"), ("prova-objetiva", "Prova objetiva"));
+        (await ChavesDasEtapasNaReleituraAsync(id, "\"2\"")).Should().Equal(("redacao", "Redação"), ("etapa_prova_objetiva", "Prova objetiva"));
     }
 
     [Fact(DisplayName = "A parte sem chave recusa a criação com 422, no ponteiro da chave que falta, e nenhum rascunho é criado")]
