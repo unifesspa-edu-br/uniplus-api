@@ -95,6 +95,6 @@ public sealed class InstantesDaProjecaoDoCertameTests
 
     private static Result<CertamePublicadoDto> Projetar(JsonObject envelope) =>
         ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), new AtoDaDivulgacao(Guid.CreateVersion7(), 2026, "EDITAL"), "Certame de teste", new string('a', 64),
+            Guid.CreateVersion7(), new AtoDaDivulgacao(Guid.CreateVersion7(), 2026, "EDITAL"), new string('a', 64),
             envelope, chave => new Uri($"https://acervo.teste/{chave}"));
 }

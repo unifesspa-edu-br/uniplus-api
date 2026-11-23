@@ -34,40 +34,46 @@ public sealed class MontagemDaDivulgacao(ICertameDivulgadoRepository certames, I
             return Result.Failure(projecao.Error!);
         }
 
-        CertamePublicadoDto certame = projecao.Value!;
+        await RegistrarDivulgacaoAsync(processo.Id, versao, ato, projecao.Value!, cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
+
+    private async Task RegistrarDivulgacaoAsync(
+        Guid processoId, VersaoConfiguracao versao, AtoDoProcesso ato, CertamePublicadoDto certame, CancellationToken cancellationToken)
+    {
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-
-        // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
-        FacetasDoCertameDivulgado facetas = new(
-            certame.IdentificadorLegivel,
-            certame.Nome,
-            certame.Periodo.Numero,
-            certame.ModalidadesOfertadas,
-            certame.Periodo.Inicio,
-            certame.Periodo.Fim);
-
-        CertameDivulgado? divulgado = await certames.ObterParaMutacaoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
+        CertameDivulgado? divulgado = await certames.ObterParaMutacaoAsync(processoId, cancellationToken).ConfigureAwait(false);
         if (divulgado is null)
         {
-            divulgado = CertameDivulgado.Criar(
-                processo.Id, versao.NumeroVersao, versao.AtoCriadorId, versao.HashConfiguracao,
-                ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
-            await certames.AdicionarAsync(divulgado, cancellationToken).ConfigureAwait(false);
+            divulgado = await CriarERegistrarAsync(processoId, versao, Facetas(certame), documento, cancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
             divulgado.Avancar(
                 versao.NumeroVersao, versao.AtoCriadorId, versao.HashConfiguracao,
-                ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
+                ProjecaoDoCertamePublicado.Versao, Facetas(certame), documento, versao.VigenteAPartirDe);
         }
-
         divulgado.AbrirEntradaDoAto(ato.Id, versao.NumeroVersao);
-        return Result.Success();
+    }
+
+    private static FacetasDoCertameDivulgado Facetas(CertamePublicadoDto certame) => new(
+        certame.IdentificadorLegivel, certame.Nome, certame.Periodo.Numero,
+        certame.ModalidadesOfertadas, certame.Periodo.Inicio, certame.Periodo.Fim);
+
+    private async Task<CertameDivulgado> CriarERegistrarAsync(
+        Guid processoId, VersaoConfiguracao versao, FacetasDoCertameDivulgado facetas, string documento, CancellationToken cancellationToken)
+    {
+        CertameDivulgado divulgado = CertameDivulgado.Criar(
+            processoId, versao.NumeroVersao, versao.AtoCriadorId, versao.HashConfiguracao,
+            ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
+        await certames.AdicionarAsync(divulgado, cancellationToken).ConfigureAwait(false);
+        return divulgado;
     }
 
     private Result<CertamePublicadoDto> Projetar(ProcessoSeletivo processo, VersaoConfiguracao versao, AtoDoProcesso ato) =>
         EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope)
             ? ProjecaoDoCertamePublicado.Projetar(
-                processo.Id, AtoDaDivulgacao.De(ato), processo.Nome, versao.HashConfiguracao, envelope, endereco.De)
+                processo.Id, AtoDaDivulgacao.De(ato), versao.HashConfiguracao, envelope, endereco.De)
             : ProjecaoDoCertamePublicado.Recusar<CertamePublicadoDto>("configuração congelada");
 }

@@ -76,7 +76,6 @@ internal static class ProjecaoDoCertamePublicado
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
         AtoDaDivulgacao ato,
-        string nome,
         string hashConfiguracao,
         JsonObject envelope,
         Func<string, Uri> enderecoNoAcervo)
@@ -88,7 +87,7 @@ internal static class ProjecaoDoCertamePublicado
             OfertaDoCertame.Ler(envelope).Encadear(oferta =>
             ParticipacaoNoCertame.Ler(envelope, acervo).Encadear(participacao =>
             LerRetificacao(envelope).Compor(retificacao => new CertamePublicadoDto(
-                processoSeletivoId, identidade.IdentificadorLegivel, ato.Id, nome, Versao, hashConfiguracao,
+                processoSeletivoId, identidade.IdentificadorLegivel, ato.Id, identidade.Nome, Versao, hashConfiguracao,
                 identidade.TipoProcesso, identidade.Periodo, identidade.Localidade, identidade.Unidade,
                 identidade.DocumentoDoEdital.NoContratoPublico(enderecoNoAcervo),
                 oferta.Ofertas, oferta.OpcoesDeCurso, oferta.Modalidades, oferta.Vagas,

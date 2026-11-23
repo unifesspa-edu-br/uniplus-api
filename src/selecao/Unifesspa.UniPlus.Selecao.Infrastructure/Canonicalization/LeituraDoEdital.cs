@@ -21,6 +21,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDoEdital
 {
+    internal static void LerNome(LeitorEnvelope leitor, JsonObject payload) =>
+        leitor.TextoNaoVazio(payload, "nome", "$", LimitesDoEnvelope.NomeDoProcesso);
+
     /// <summary>
     /// Lê e fecha a forma do tipo autocontido. O agregado vivo já carrega a
     /// mesma cópia por valor e a recanonicalização posterior prova a paridade;

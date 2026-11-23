@@ -16,6 +16,15 @@ internal static class RegrasDaCriacao
         IdentificadorLegivel identificadorLegivel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ConferirNome(nome);
+        ConferirTipoEOrigem(tipoProcesso, origemCandidatos);
+        ConferirUnidade(unidadeAdministradoraOrigemId, unidadeAdministradora);
+        ArgumentNullException.ThrowIfNull(localidade);
+        ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivel.Valor, nameof(identificadorLegivel));
+    }
+
+    private static void ConferirTipoEOrigem(TipoProcessoSnapshot tipoProcesso, OrigemCandidatos origemCandidatos)
+    {
         if (tipoProcesso is null)
         {
             throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipoProcesso));
@@ -25,14 +34,23 @@ internal static class RegrasDaCriacao
         {
             throw new ArgumentException("Origem dos candidatos é obrigatória.", nameof(origemCandidatos));
         }
+    }
 
+    private static void ConferirUnidade(Guid unidadeAdministradoraOrigemId, UnidadeAdministradoraSnapshot unidadeAdministradora)
+    {
         if (unidadeAdministradoraOrigemId == Guid.Empty)
         {
             throw new ArgumentException("Unidade administradora é obrigatória.", nameof(unidadeAdministradoraOrigemId));
         }
 
         ArgumentNullException.ThrowIfNull(unidadeAdministradora);
-        ArgumentNullException.ThrowIfNull(localidade);
-        ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivel.Valor, nameof(identificadorLegivel));
+    }
+
+    private static void ConferirNome(string nome)
+    {
+        if (nome.Trim().Length > DocumentoDoRascunho.NomeMaxLength)
+        {
+            throw new ArgumentException("O nome do processo seletivo não pode passar de 300 caracteres.", nameof(nome));
+        }
     }
 }

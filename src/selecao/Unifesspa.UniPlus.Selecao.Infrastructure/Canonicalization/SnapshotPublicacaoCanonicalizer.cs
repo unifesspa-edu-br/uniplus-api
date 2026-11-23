@@ -63,6 +63,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         JsonObject payload = [];
         ProjetarEdital(payload, entrada);
+        ProjetarRetificacao(payload, entrada.Retificacao);
         ProjetarVagas(payload, entrada.Processo);
         ProjetarClassificacao(payload, entrada.Processo);
         ProjetarExigenciasEFormularios(payload, entrada);
@@ -87,13 +88,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["periodo"] = SerializarPeriodo(entrada.Dados);
         payload["hashesEdital"] = SerializacaoDoEdital.SerializarHashesEdital(entrada.Dados, entrada.HashDocumento);
         payload["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor;
+        payload["nome"] = HashCanonicalComputer.NormalizeNfc(processo.Nome);
         payload["dadosCitadosSemPergunta"] = SerializacaoDoEdital.SerializarApresentacaoDosPressupostos(entrada.DadosDeCatalogo.ApresentacaoDosPressupostos);
         payload["tiposDeAto"] = SerializacaoDoEdital.SerializarTiposDeAto(entrada.DadosDeCatalogo.TiposDeAtoCongelados);
         payload["localidade"] = SerializacaoDoEdital.SerializarLocalidade(processo, entrada.FusoHorario);
         payload["algoritmoContagemPrazo"] = SerializacaoDoEdital.SerializarAlgoritmoContagemPrazo(processo);
         payload["calendarioDiasUteis"] = SerializacaoDoEdital.SerializarCalendarioDiasUteis(entrada.DadosDeCatalogo.CalendarioDiasUteis);
         payload["identidadesUnidade"] = SerializacaoDoEdital.SerializarIdentidadesUnidade(processo);
-        ProjetarRetificacao(payload, entrada.Retificacao);
     }
 
     private static void ProjetarRetificacao(JsonObject payload, RetificacaoDoEdital? retificacao)

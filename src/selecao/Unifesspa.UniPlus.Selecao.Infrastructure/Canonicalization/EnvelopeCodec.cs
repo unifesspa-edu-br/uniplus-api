@@ -50,6 +50,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         "algoritmoContagemPrazo",
         "calendarioDiasUteis",
         "identificadorLegivel",
+        "nome",
         "dadosCitadosSemPergunta",
         "tiposDeAto",
         "dadosCalculados",

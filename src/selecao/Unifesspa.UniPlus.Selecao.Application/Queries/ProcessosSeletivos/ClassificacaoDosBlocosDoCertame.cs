@@ -33,6 +33,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "tipoProcesso",
         "periodo",
         "identificadorLegivel",
+        "nome",
         "localidade",
         "identidadesUnidade",
         "hashesEdital",
