@@ -182,6 +182,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         await _context.VersoesConfiguracao.AddAsync(versao, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<VersaoConfiguracao?> ObterVersaoPorNumeroAsync(Guid processoId, int numero, CancellationToken cancellationToken = default) =>
+        await _context.VersoesConfiguracao.AsNoTracking()
+            .FirstOrDefaultAsync(versao => versao.ProcessoSeletivoId == processoId && versao.NumeroVersao == numero, cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<VersaoConfiguracao?> ObterVersaoAtualAsync(
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default)

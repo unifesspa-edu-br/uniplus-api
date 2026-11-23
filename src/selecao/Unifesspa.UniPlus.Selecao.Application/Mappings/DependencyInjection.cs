@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Services;
 using Services.AcessoPelaBanca;
 using Services.DocumentoDaConfiguracao;
+using Services.ExportacaoDaVersaoPublicada;
 using Services.InscricaoAdministrativa;
 using Services.Rascunhos;
 using Services.Rascunhos.Descricoes;
@@ -115,6 +116,7 @@ public static class SelecaoApplicationServiceRegistration
     // Todo comando que decide num instante (publicação da versão, do ato avulso e do item do edital, leitura do documento) lê o relógio uma só vez por LeituraDoInstanteDoComando.
     private static void AddPublicacao(IServiceCollection services)
     {
+        services.AddScoped<IProjecaoDaVersaoPublicada, ProjecaoDaVersaoPublicada>();
         services.AddScoped<LeituraDoInstanteDoComando>();
         services.AddScoped<ConferenciaDoProcessoDivulgado>();
         services.AddScoped<PublicacaoDoAtoDoProcesso>();

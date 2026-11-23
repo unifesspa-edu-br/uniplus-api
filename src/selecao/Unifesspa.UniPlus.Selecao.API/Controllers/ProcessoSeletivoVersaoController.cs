@@ -11,8 +11,11 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
 /// <summary>
 /// Leitura do snapshot congelado vigente do processo seletivo.
@@ -67,4 +70,27 @@ public sealed class ProcessoSeletivoVersaoController : ControllerBase
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
+    /// <summary>Exporta a configuração de uma versão publicada do processo seletivo.</summary>
+    [HttpGet("{id:guid}/configuracao")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
+    [VendorMediaType(Resource = "configuracao-de-processo-seletivo", Versions = [1])]
+    [RespostaJson(EsquemaPublicadoDoDocumento.Componente)]
+    [EmiteETag(Descricao = "O resumo da configuração congelada da versão.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ExportarConfiguracao(Guid id, [FromQuery] int? versao, CancellationToken cancellationToken)
+    {
+        Result<VersaoPublicadaExportadaDto> resultado = await _queryBus.Send(new ExportarVersaoPublicadaQuery(id, versao), cancellationToken).ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+        Response.Headers.ETag = resultado.Value!.ETag;
+        return Ok(resultado.Value.Documento);
+    }
+
 }

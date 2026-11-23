@@ -35,40 +35,12 @@ public static class ObterSnapshotVigenteQueryHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        // ADR-0075/0068: o instante é sempre explícito no seletor; quando o
-        // cliente o omite, o default vem do TimeProvider injetado — nunca de um
-        // relógio lido dentro do repositório por trás do contrato.
-        //
-        // O "agora" é o relógio como ele está, sem correção. Se o host regredir
-        // para antes da vigência da versão corrente, a consulta corrente aflora
-        // Snapshot.VigenteAusente até o relógio se recuperar — e não uma versão
-        // que ainda não vigora. Um "agora" artificialmente monotônico daria uma
-        // configuração como vigente contra um presente que o próprio sistema não
-        // reconhece, mascarando o relógio errado em vez de expô-lo (ADR-0076).
         DateTimeOffset instante = query.Instante ?? timeProvider.GetUtcNow();
-
-        VersaoConfiguracao? versao = await processoSeletivoRepository
-            .ObterVersaoVigenteAsync(query.ProcessoSeletivoId, instante, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (versao is null)
-        {
-            // Só quando não há vigente distingue 404 de 422 — o caminho comum
-            // (existe configuração vigente) não paga essa consulta.
-            bool existe = await processoSeletivoRepository
-                .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
-                .ConfigureAwait(false);
-
-            return existe
-                ? Result<SnapshotVigenteDto>.Failure(new DomainError(
-                    "Snapshot.VigenteAusente",
-                    $"Nenhuma publicação vigente para o instante {instante:O}."))
-                : Result<SnapshotVigenteDto>.Failure(new DomainError(
-                    "ProcessoSeletivo.NaoEncontrado",
-                    $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
-        }
-
-        return Result<SnapshotVigenteDto>.Success(Projetar(versao));
+        Result<VersaoConfiguracao> resultado = await SelecaoDaVersaoVigente.ObterAsync(
+            query.ProcessoSeletivoId, instante, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? Result<SnapshotVigenteDto>.Failure(resultado.Error!)
+            : Result<SnapshotVigenteDto>.Success(Projetar(resultado.Value!));
     }
 
     /// <summary>

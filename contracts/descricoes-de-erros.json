@@ -25171,6 +25171,19 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.versao_nao_encontrada",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A versão solicitada não existe neste processo seletivo."
+      ],
+      "comoResolver": [
+        "Confira o número da versão publicada e repita a consulta."
+      ],
+      "ondeAparece": [
+        "Exportação da configuração publicada do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.produto_da_etapa.ato_nao_encontrado_no_catalogo",
       "requisitos": [],
       "oQueAconteceu": [

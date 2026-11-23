@@ -89,6 +89,8 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// <see cref="ProcessoSeletivo.Retificar"/>, que sucede a cadeia a partir
     /// dela. Leitura <c>AsNoTracking</c>.
     /// </summary>
+    Task<VersaoConfiguracao?> ObterVersaoPorNumeroAsync(Guid processoId, int numero, CancellationToken cancellationToken = default);
+
     Task<VersaoConfiguracao?> ObterVersaoAtualAsync(
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default);
