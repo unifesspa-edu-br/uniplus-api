@@ -16100,7 +16100,7 @@
       },
       "DocumentoDaConfiguracao": {
         "title": "Documento de configura\u00E7\u00E3o do processo seletivo",
-        "description": "Formato port\u00E1vel da configura\u00E7\u00E3o de um processo seletivo, na vers\u00E3o 1. Serve ao rascunho salvo pela tela e \u00E0 importa\u00E7\u00E3o e exporta\u00E7\u00E3o de um processo, inclusive o preparado fora do sistema. O esquema descreve s\u00F3 a forma: tipo, formato, enumera\u00E7\u00F5es, limites de tamanho e o que \u00E9 estruturalmente obrigat\u00F3rio. As regras de neg\u00F3cio (o que torna a configura\u00E7\u00E3o public\u00E1vel) s\u00E3o do dom\u00EDnio e n\u00E3o se repetem aqui; por isso um rascunho incompleto \u00E9 v\u00E1lido. Campo ainda n\u00E3o preenchido \u00E9 campo ausente, nunca texto no lugar de n\u00FAmero ou de data. Cat\u00E1logos e unidades s\u00E3o citados pelo c\u00F3digo est\u00E1vel, nunca pelo identificador interno do banco. As refer\u00EAncias entre partes do documento usam a chave local da parte referenciada, definida no pr\u00F3prio documento e \u00FAnica nele.",
+        "description": "Formato port\u00E1vel da configura\u00E7\u00E3o de um processo seletivo, na vers\u00E3o 1. Serve ao rascunho salvo pela tela e \u00E0 importa\u00E7\u00E3o e exporta\u00E7\u00E3o de um processo, inclusive o preparado fora do sistema. O esquema descreve s\u00F3 a forma: tipo, formato, enumera\u00E7\u00F5es, limites de tamanho e o que \u00E9 estruturalmente obrigat\u00F3rio. As regras de neg\u00F3cio (o que torna a configura\u00E7\u00E3o public\u00E1vel) s\u00E3o do dom\u00EDnio e n\u00E3o se repetem aqui; por isso um rascunho incompleto \u00E9 v\u00E1lido. Campo ainda n\u00E3o preenchido \u00E9 campo ausente, nunca texto no lugar de n\u00FAmero ou de data. Cat\u00E1logos e unidades s\u00E3o citados pelo c\u00F3digo est\u00E1vel, nunca pelo identificador interno do banco. Os identificadores s\u00F3 de leitura do processo e das partes s\u00E3o ignorados na importa\u00E7\u00E3o. As refer\u00EAncias entre partes do documento usam a chave local da parte referenciada, definida no pr\u00F3prio documento e \u00FAnica nele.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -16186,7 +16186,7 @@
           },
           "etapas": {
             "title": "Etapas",
-            "description": "Etapas de avalia\u00E7\u00E3o do processo. A chave de cada etapa \u00E9 \u00FAnica no documento e \u00E9 a que as outras partes usam para cit\u00E1-la. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem prova.",
+            "description": "Etapas de avalia\u00E7\u00E3o do processo. A chave de cada etapa \u00E9 \u00FAnica no documento e \u00E9 a que as outras partes usam para cit\u00E1-la. A posi\u00E7\u00E3o na lista define a ordem das etapas. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem prova.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapas"
@@ -16385,9 +16385,16 @@
           "tipoBancaCodigo"
         ],
         "properties": {
+          "id": {
+            "title": "Identificador interno da parte",
+            "description": "Identificador interno da parte, s\u00F3 de leitura; a importa\u00E7\u00E3o o ignora e cria um novo; nunca \u00E9 refer\u00EAncia entre partes.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
           "chave": {
             "title": "Chave da banca",
-            "description": "Chave local da banca, \u00FAnica no documento. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a banca, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local da banca, \u00FAnica no documento. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "tipoBancaCodigo": {
@@ -16873,9 +16880,9 @@
       },
       "DocumentoDaConfiguracaoComunsChave": {
         "title": "Chave local",
-        "description": "Identificador local de uma parte do documento, que as outras partes usam para se referir a ela; as refer\u00EAncias a uma parte (por exemplo a chave da fase ou da etapa) t\u00EAm este mesmo formato. \u00C9 \u00FAnico entre as partes do mesmo tipo no documento ou, quando a parte pertence a outra (os itens de uma etapa), dentro da parte que a cont\u00E9m. Letras min\u00FAsculas, n\u00FAmeros e h\u00EDfens, come\u00E7ando por letra.",
+        "description": "Identificador local de uma parte do documento, que as outras partes usam para se referir a ela; as refer\u00EAncias a uma parte (por exemplo a chave da fase ou da etapa) t\u00EAm este mesmo formato. \u00C9 \u00FAnico entre as partes do mesmo tipo no documento ou, quando a parte pertence a outra (os itens de uma etapa), dentro da parte que a cont\u00E9m. Letras min\u00FAsculas, n\u00FAmeros e sublinhados, come\u00E7ando por letra. Quem escreve o documento escolhe a chave; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte. Ela n\u00E3o muda ao renomear nem ao reordenar.",
         "type": "string",
-        "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]\u002B)*$",
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]\u002B)*$",
         "minLength": 1,
         "maxLength": 64
       },
@@ -17334,9 +17341,16 @@
           "tipoFaseCodigo"
         ],
         "properties": {
+          "id": {
+            "title": "Identificador interno da parte",
+            "description": "Identificador interno da parte, s\u00F3 de leitura; a importa\u00E7\u00E3o o ignora e cria um novo; nunca \u00E9 refer\u00EAncia entre partes.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
           "chave": {
             "title": "Chave da fase",
-            "description": "Chave local da fase, \u00FAnica no documento. Outras partes a usam para citar esta fase. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a fase, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local da fase, \u00FAnica no documento. Outras partes a usam para citar esta fase. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "tipoFaseCodigo": {
@@ -18177,9 +18191,16 @@
           "chave"
         ],
         "properties": {
+          "id": {
+            "title": "Identificador interno da parte",
+            "description": "Identificador interno da parte, s\u00F3 de leitura; a importa\u00E7\u00E3o o ignora e cria um novo; nunca \u00E9 refer\u00EAncia entre partes.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
           "chave": {
             "title": "Chave da etapa",
-            "description": "Chave local da etapa, \u00FAnica no documento. Desempate, elimina\u00E7\u00E3o e exig\u00EAncias a usam para citar esta etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a etapa, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local da etapa, \u00FAnica no documento. Desempate, elimina\u00E7\u00E3o e exig\u00EAncias a usam para citar esta etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "nome": {
@@ -18256,12 +18277,6 @@
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapasNivelDeAtendimento"
             }
           },
-          "ordem": {
-            "title": "Ordem",
-            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o da etapa, a partir de 1.",
-            "type": "integer",
-            "minimum": 1
-          },
           "faseChave": {
             "title": "Fase da etapa",
             "description": "Chave local da fase do cronograma que cont\u00E9m a etapa.",
@@ -18322,9 +18337,16 @@
           "chave"
         ],
         "properties": {
+          "id": {
+            "title": "Identificador interno da parte",
+            "description": "Identificador interno da parte, s\u00F3 de leitura; a importa\u00E7\u00E3o o ignora e cria um novo; nunca \u00E9 refer\u00EAncia entre partes.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
           "chave": {
             "title": "Chave do item",
-            "description": "Chave local do item, \u00FAnica na etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria o item, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local do item, \u00FAnica na etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "rotulo": {
@@ -18353,7 +18375,7 @@
         "properties": {
           "chave": {
             "title": "Chave do n\u00EDvel",
-            "description": "Chave local do n\u00EDvel, \u00FAnica na escala. \u00C9 a identidade do n\u00EDvel entre vers\u00F5es e nas refer\u00EAncias internas: o r\u00F3tulo \u00E9 texto edit\u00E1vel, e corrigir a grafia n\u00E3o pode virar retirada e inclus\u00E3o. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria o n\u00EDvel, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local do n\u00EDvel, \u00FAnica na escala. \u00C9 a identidade do n\u00EDvel entre vers\u00F5es e nas refer\u00EAncias internas: o r\u00F3tulo \u00E9 texto edit\u00E1vel, e corrigir a grafia n\u00E3o pode virar retirada e inclus\u00E3o. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "rotulo": {
@@ -18457,9 +18479,16 @@
           "chave"
         ],
         "properties": {
+          "id": {
+            "title": "Identificador interno da parte",
+            "description": "Identificador interno da parte, s\u00F3 de leitura; a importa\u00E7\u00E3o o ignora e cria um novo; nunca \u00E9 refer\u00EAncia entre partes.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
           "chave": {
             "title": "Chave da exig\u00EAncia",
-            "description": "Chave local da exig\u00EAncia, \u00FAnica no documento. As regras de comprova\u00E7\u00E3o a utilizam. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a exig\u00EAncia, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "description": "Chave local da exig\u00EAncia, \u00FAnica no documento. As regras de comprova\u00E7\u00E3o a utilizam. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem escreve o documento; na grava\u00E7\u00E3o pela tela, o sistema a atribui uma vez ao criar a parte, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "tipoDocumentoCodigo": {

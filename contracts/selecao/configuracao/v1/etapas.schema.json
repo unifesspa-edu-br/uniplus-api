@@ -9,9 +9,16 @@
     "chave"
   ],
   "properties": {
+    "id": {
+      "title": "Identificador interno da parte",
+      "description": "Identificador interno da parte, só de leitura; a importação o ignora e cria um novo; nunca é referência entre partes.",
+      "type": "string",
+      "format": "uuid",
+      "readOnly": true
+    },
     "chave": {
       "title": "Chave da etapa",
-      "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa. É obrigatória: é escolhida por quem cria a etapa, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+      "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa. É obrigatória: é escolhida por quem escreve o documento; na gravação pela tela, o sistema a atribui uma vez ao criar a parte, e ela não muda ao renomear nem ao reordenar.",
       "$ref": "comuns.schema.json#/$defs/chave"
     },
     "nome": {
@@ -87,12 +94,6 @@
       "items": {
         "$ref": "#/$defs/nivelDeAtendimento"
       }
-    },
-    "ordem": {
-      "title": "Ordem",
-      "description": "Posição de apresentação da etapa, a partir de 1.",
-      "type": "integer",
-      "minimum": 1
     },
     "faseChave": {
       "title": "Fase da etapa",
@@ -175,9 +176,16 @@
         "chave"
       ],
       "properties": {
+        "id": {
+          "title": "Identificador interno da parte",
+          "description": "Identificador interno da parte, só de leitura; a importação o ignora e cria um novo; nunca é referência entre partes.",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
         "chave": {
           "title": "Chave do item",
-          "description": "Chave local do item, única na etapa. É obrigatória: é escolhida por quem cria o item, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "description": "Chave local do item, única na etapa. É obrigatória: é escolhida por quem escreve o documento; na gravação pela tela, o sistema a atribui uma vez ao criar a parte, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "rotulo": {
@@ -206,7 +214,7 @@
       "properties": {
         "chave": {
           "title": "Chave do nível",
-          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão. É obrigatória: é escolhida por quem cria o nível, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão. É obrigatória: é escolhida por quem escreve o documento; na gravação pela tela, o sistema a atribui uma vez ao criar a parte, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "rotulo": {

@@ -58,7 +58,7 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
     public void BancaSemTipo_ERecusadaNoPonteiroDoTipo()
     {
         Result<DocumentoLido> resultado = Ler("""
-            "etapas": [ { "chave": "prova", "bancas": [ { "chave": "banca-da-prova" } ] } ]
+            "etapas": [ { "chave": "prova", "bancas": [ { "chave": "banca_da_prova" } ] } ]
             """);
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(

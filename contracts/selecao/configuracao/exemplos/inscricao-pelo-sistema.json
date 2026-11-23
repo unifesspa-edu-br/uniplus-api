@@ -62,7 +62,7 @@
   "formularios": [
     {
       "finalidade": "INSCRICAO",
-      "faseChave": "inscricao",
+      "faseChave": "fase_inscricao",
       "titulo": "Formulário de inscrição",
       "paginas": [
         {
@@ -228,7 +228,7 @@
   "cronograma": {
     "fases": [
       {
-        "chave": "inscricao",
+        "chave": "fase_inscricao",
         "tipoFaseCodigo": "INSCRICAO",
         "inicio": "2027-01-10T03:00:00Z",
         "fim": "2027-01-20T02:59:59Z",
@@ -237,7 +237,7 @@
         "unidadeResponsavelSigla": "CEPS"
       },
       {
-        "chave": "avaliacao",
+        "chave": "fase_avaliacao",
         "tipoFaseCodigo": "AVALIACAO",
         "inicio": "2027-01-25T11:00:00Z",
         "fim": "2027-01-25T16:00:00Z",
@@ -246,7 +246,7 @@
         "unidadeResponsavelSigla": "CEPS"
       },
       {
-        "chave": "resultado-final",
+        "chave": "fase_resultado_final",
         "tipoFaseCodigo": "RESULTADO_FINAL",
         "inicio": "2027-02-01T03:00:00Z",
         "fim": "2027-02-15T14:00:00Z",
@@ -265,7 +265,7 @@
         ],
         "bancasRequeridas": [
           {
-            "chave": "banca-analise-de-recursos",
+            "chave": "banca_analise_recursos",
             "tipoBancaCodigo": "BANCA_ANALISE_RECURSOS",
             "categoriasDocumentoCodigos": [],
             "regraDeDeliberacao": {
@@ -315,7 +315,7 @@
   },
   "etapas": [
     {
-      "chave": "prova-objetiva",
+      "chave": "etapa_prova_objetiva",
       "nome": "Prova Objetiva",
       "carater": "ambas",
       "tipoEtapaCodigo": "PROVA_OBJETIVA",
@@ -330,35 +330,34 @@
       },
       "itensDeAvaliacao": [
         {
-          "chave": "argumentacao",
+          "chave": "item_argumentacao",
           "rotulo": "Argumentação",
           "pontuacaoMaxima": 60
         },
         {
-          "chave": "coesao",
+          "chave": "item_coesao",
           "rotulo": "Coesão",
           "pontuacaoMaxima": 40
         }
       ],
       "escalaDeAtendimento": [
         {
-          "chave": "atende-plenamente",
+          "chave": "nivel_atende_plenamente",
           "rotulo": "Atende plenamente",
           "fracao": 1
         },
         {
-          "chave": "atende-parcialmente",
+          "chave": "nivel_atende_parcialmente",
           "rotulo": "Atende parcialmente",
           "fracao": 0.5
         },
         {
-          "chave": "nao-atende",
+          "chave": "nivel_nao_atende",
           "rotulo": "Não atende",
           "fracao": 0
         }
       ],
-      "ordem": 1,
-      "faseChave": "avaliacao",
+      "faseChave": "fase_avaliacao",
       "emiteParecerIndividual": false,
       "publicacoesPrevistas": [
         {
@@ -372,7 +371,7 @@
       ],
       "bancas": [
         {
-          "chave": "banca-correcao-redacoes",
+          "chave": "banca_correcao_redacoes",
           "tipoBancaCodigo": "BANCA_CORRECAO_REDACOES",
           "regraDeDeliberacao": {
             "modo": "atoIndividual",
@@ -397,7 +396,7 @@
             {
               "tipoDeDecisao": "CLASSIFICACAO",
               "alvo": {
-                "itemDeAvaliacaoChave": "argumentacao"
+                "itemDeAvaliacaoChave": "item_argumentacao"
               },
               "regra": {
                 "codigo": "PROCEDIMENTO-RECURSO-RECORRECAO",
@@ -453,10 +452,10 @@
   "documentosExigidos": {
     "exigencias": [
       {
-        "chave": "documento-de-identificacao",
+        "chave": "exigencia_documento_identificacao",
         "tipoDocumentoCodigo": "DOCUMENTO_IDENTIFICACAO",
         "tipoDocumentoNome": "Documento de identificação",
-        "faseChave": "inscricao",
+        "faseChave": "fase_inscricao",
         "finalidade": "INSCRICAO",
         "aplicabilidade": "Geral",
         "obrigatorio": true,
@@ -467,10 +466,10 @@
         "tamanhoMaximoBytes": 5242880
       },
       {
-        "chave": "comprovante-de-renda",
+        "chave": "exigencia_comprovante_renda",
         "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
         "tipoDocumentoNome": "Comprovante de renda",
-        "faseChave": "inscricao",
+        "faseChave": "fase_inscricao",
         "finalidade": "ISENCAO_TAXA",
         "aplicabilidade": "Condicional",
         "obrigatorio": true,
@@ -506,11 +505,11 @@
         "forma": "TODOS_OS_ITENS",
         "itens": [
           {
-            "exigenciaChave": "documento-de-identificacao",
+            "exigenciaChave": "exigencia_documento_identificacao",
             "forma": "DOCUMENTO"
           },
           {
-            "exigenciaChave": "comprovante-de-renda",
+            "exigenciaChave": "exigencia_comprovante_renda",
             "consequencia": "REMOVE_VANTAGEM",
             "forma": "DOCUMENTO"
           }
@@ -541,7 +540,7 @@
           "versao": "v1"
         },
         "parametros": {
-          "etapaChave": "prova-objetiva",
+          "etapaChave": "etapa_prova_objetiva",
           "notaMinima": 30
         }
       },
@@ -551,7 +550,7 @@
           "versao": "v1"
         },
         "parametros": {
-          "etapaChave": "prova-objetiva"
+          "etapaChave": "etapa_prova_objetiva"
         }
       }
     ],
@@ -563,7 +562,7 @@
           "versao": "v1"
         },
         "parametros": {
-          "etapaChave": "prova-objetiva"
+          "etapaChave": "etapa_prova_objetiva"
         }
       },
       {
@@ -614,7 +613,7 @@
   },
   "motivosDeDecisao": [
     {
-      "faseChave": "inscricao",
+      "faseChave": "fase_inscricao",
       "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES",
       "codigo": "INSCRICAO_INCOMPLETA",
       "descricao": "Inscrição enviada sem os dados obrigatórios",
@@ -622,7 +621,7 @@
       "versaoDoEditalDeEntrada": 1
     },
     {
-      "etapaChave": "prova-objetiva",
+      "etapaChave": "etapa_prova_objetiva",
       "tipoCodigo": "CLASSIFICACAO",
       "codigo": "NOTA_ABAIXO_DO_MINIMO",
       "descricao": "Nota abaixo do mínimo da etapa",

@@ -20,13 +20,13 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
           "regraArredondamento": { "codigo": "PRECISAO-ARREDONDAR-CIMA", "versao": "v1" }, "casasArredondamento": 2,
           "escalaNotaFinal": 1000, "regraOrdemAlocacao": { "codigo": "ORDEM-POR-NOTA", "versao": "v1" }, "baseadoEmEnem": false,
           "regrasEliminacao": [
-            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva", "notaMinima": 30.5 } },
+            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "etapa_prova_objetiva", "notaMinima": 30.5 } },
             { "regra": { "codigo": "ELIM-CORTE-EM-AREA", "versao": "v1" }, "parametros": { "areaCodigo": "REDACAO", "minimo": 400 } },
-            { "regra": { "codigo": "ELIM-AUSENCIA-NA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva" } },
+            { "regra": { "codigo": "ELIM-AUSENCIA-NA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "etapa_prova_objetiva" } },
             { "regra": { "codigo": "ELIM-ZERO-EM-AREA", "versao": "v1" }, "parametros": {} },
             { "regra": { "codigo": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM", "versao": "v1" }, "parametros": {} } ],
           "criteriosDeDesempate": [
-            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva" } },
+            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "etapa_prova_objetiva" } },
             { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "v1" }, "parametros": { "idadeMinima": 60 } },
             { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "parametros": { "codigoDoDado": "UF", "operador": "EM", "valor": ["PA"] } },
             { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-AREA-ENEM", "versao": "v1" }, "parametros": { "areas": [ "MATEMATICA", "REDACAO" ] } },

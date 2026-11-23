@@ -12,7 +12,7 @@
   "cronograma": {
     "fases": [
       {
-        "chave": "resultado-final",
+        "chave": "fase_resultado_final",
         "tipoFaseCodigo": "RESULTADO_FINAL",
         "inicio": "2027-03-01T03:00:00Z",
         "fim": "2027-03-01T14:00:00Z",
@@ -36,7 +36,7 @@
         "leiauteVersao": "v1"
       }
     ],
-    "primeiraFaseDepoisDaImportacaoChave": "resultado-final"
+    "primeiraFaseDepoisDaImportacaoChave": "fase_resultado_final"
   },
   "classificacao": {
     "baseadoEmEnem": true

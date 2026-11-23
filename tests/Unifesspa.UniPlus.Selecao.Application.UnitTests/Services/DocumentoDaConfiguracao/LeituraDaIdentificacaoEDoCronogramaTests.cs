@@ -26,7 +26,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
           "cronograma": { "fases": [
             { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
             { "chave": "recurso", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },
-            { "chave": "recurso-externo", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA" }
+            { "chave": "fase_recurso_externo", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA" }
           ] }
         }
         """;

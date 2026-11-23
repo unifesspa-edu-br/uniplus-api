@@ -81,7 +81,7 @@ public sealed record EtapasDoProcesso
 
     public IReadOnlyList<FieldError> RecusasDasDeclaracoes() =>
     [
-        .. Etapas.SelectMany(static (etapa, posicao) => etapa.Recusas.Select(recusa => NaEtapa(posicao, recusa.Field, recusa.Error))),
+        .. Etapas.SelectMany(static (etapa, posicao) => etapa.Recusas.Select(recusa => NaEtapa(posicao, recusa.Error.Code == "EtapaProcesso.OrdemInvalida" ? null : recusa.Field, recusa.Error))),
     ];
 
     /// <summary>As recusas das declarações cujo código de erro está entre os pedidos.</summary>

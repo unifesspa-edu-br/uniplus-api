@@ -57,7 +57,7 @@ public sealed class EtapasDoProcessoTests
             (new ModeloDeEtapa("B") with { Ordem = 1 }).Declarar(),
             (new ModeloDeEtapa("C") with { Ordem = 0 }).Declarar(),
             (new ModeloDeEtapa("D") with { Ordem = 0 }).Declarar())
-            .Should().Equal(("etapas[1].ordem", "ProcessoSeletivo.OrdemEtapaDuplicada"));
+            .Should().Equal(("etapas[1]", "ProcessoSeletivo.OrdemEtapaDuplicada"));
     }
 
     [Fact(DisplayName = "Duas etapas do ENEM, uma sem peso: a duplicidade vem primeiro e depois a que não compõe a nota")]

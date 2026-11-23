@@ -24,7 +24,7 @@ internal static class ConjuntoDasEtapas
 
     internal static DomainError OrdemDuplicada() => new(
         "ProcessoSeletivo.OrdemEtapaDuplicada",
-        "Cada etapa deve ter uma ordem única dentro do processo.");
+        "Cada etapa deve ocupar uma posição única na lista.");
 
     internal static DomainError NenhumaEtapaComponeNota() => new(
         "ProcessoSeletivo.NenhumaEtapaComponeNota",
@@ -58,7 +58,7 @@ internal static class ConjuntoDasEtapas
         {
             if (etapas[posicao].Ordem is { } ordem && !etapas[posicao].Recusado(DadoDaEtapa.Ordem) && !vistas.Add(ordem))
             {
-                yield return EtapasDoProcesso.NaEtapa(posicao, "ordem", OrdemDuplicada());
+                yield return EtapasDoProcesso.NaEtapa(posicao, null, OrdemDuplicada());
             }
         }
     }

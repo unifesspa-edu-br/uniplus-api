@@ -26,9 +26,16 @@
         "tipoFaseCodigo"
       ],
       "properties": {
+        "id": {
+          "title": "Identificador interno da parte",
+          "description": "Identificador interno da parte, só de leitura; a importação o ignora e cria um novo; nunca é referência entre partes.",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
         "chave": {
           "title": "Chave da fase",
-          "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase. É obrigatória: é escolhida por quem cria a fase, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase. É obrigatória: é escolhida por quem escreve o documento; na gravação pela tela, o sistema a atribui uma vez ao criar a parte, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "tipoFaseCodigo": {

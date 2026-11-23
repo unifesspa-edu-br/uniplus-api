@@ -18,14 +18,14 @@ public sealed class CodigosCitadosNoDocumentoTests
     private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "horas"), false, PrazoDeclarado.Ausente, "semEfeitoSuspensivo", null);
 
     private static FaseNoDocumento Fase(int posicao, string faseCanonica, string? unidade = null) =>
-        new(posicao, $"fase-{posicao}", new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);
+        new(posicao, $"fase_{posicao}", new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);
 
     private static FaseNoDocumento ComProdutos(FaseNoDocumento fase, params string[] atos) =>
         fase with { Publicacoes = fase.Publicacoes with { Produtos = [.. atos.Select(static (ato, posicao) => new ProdutoNoDocumento(posicao, ato, null))] } };
 
     private static FaseNoDocumento ComBancas(FaseNoDocumento fase, params BancaNoDocumento[] bancas) => fase with { Bancas = bancas };
 
-    private static BancaNoDocumento Banca(int posicao, string tipo, params string[] categorias) => new(posicao, $"banca-{posicao}", tipo, categorias, null);
+    private static BancaNoDocumento Banca(int posicao, string tipo, params string[] categorias) => new(posicao, $"banca_{posicao}", tipo, categorias, null);
 
     private static FaseNoDocumento ComRegraDeRecurso(FaseNoDocumento fase, ReferenciaDeRegraNoDocumento regra, params ProcedimentoNoDocumento[] procedimentos) =>
         fase with { RegraDeRecurso = new(regra, null, Prazo, procedimentos) };

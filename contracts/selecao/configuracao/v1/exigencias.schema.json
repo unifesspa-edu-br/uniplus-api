@@ -33,9 +33,16 @@
         "chave"
       ],
       "properties": {
+        "id": {
+          "title": "Identificador interno da parte",
+          "description": "Identificador interno da parte, só de leitura; a importação o ignora e cria um novo; nunca é referência entre partes.",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
         "chave": {
           "title": "Chave da exigência",
-          "description": "Chave local da exigência, única no documento. As regras de comprovação a utilizam. É obrigatória: é escolhida por quem cria a exigência, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "description": "Chave local da exigência, única no documento. As regras de comprovação a utilizam. É obrigatória: é escolhida por quem escreve o documento; na gravação pela tela, o sistema a atribui uma vez ao criar a parte, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "tipoDocumentoCodigo": {

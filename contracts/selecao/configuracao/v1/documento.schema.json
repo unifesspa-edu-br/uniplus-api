@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/documento.schema.json",
   "title": "Documento de configuração do processo seletivo",
-  "description": "Formato portável da configuração de um processo seletivo, na versão 1. Serve ao rascunho salvo pela tela e à importação e exportação de um processo, inclusive o preparado fora do sistema. O esquema descreve só a forma: tipo, formato, enumerações, limites de tamanho e o que é estruturalmente obrigatório. As regras de negócio (o que torna a configuração publicável) são do domínio e não se repetem aqui; por isso um rascunho incompleto é válido. Campo ainda não preenchido é campo ausente, nunca texto no lugar de número ou de data. Catálogos e unidades são citados pelo código estável, nunca pelo identificador interno do banco. As referências entre partes do documento usam a chave local da parte referenciada, definida no próprio documento e única nele.",
+  "description": "Formato portável da configuração de um processo seletivo, na versão 1. Serve ao rascunho salvo pela tela e à importação e exportação de um processo, inclusive o preparado fora do sistema. O esquema descreve só a forma: tipo, formato, enumerações, limites de tamanho e o que é estruturalmente obrigatório. As regras de negócio (o que torna a configuração publicável) são do domínio e não se repetem aqui; por isso um rascunho incompleto é válido. Campo ainda não preenchido é campo ausente, nunca texto no lugar de número ou de data. Catálogos e unidades são citados pelo código estável, nunca pelo identificador interno do banco. Os identificadores só de leitura do processo e das partes são ignorados na importação. As referências entre partes do documento usam a chave local da parte referenciada, definida no próprio documento e única nele.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -88,7 +88,7 @@
     },
     "etapas": {
       "title": "Etapas",
-      "description": "Etapas de avaliação do processo. A chave de cada etapa é única no documento e é a que as outras partes usam para citá-la. Lista vazia ou ausente é válida: há processos sem prova.",
+      "description": "Etapas de avaliação do processo. A chave de cada etapa é única no documento e é a que as outras partes usam para citá-la. A posição na lista define a ordem das etapas. Lista vazia ou ausente é válida: há processos sem prova.",
       "type": "array",
       "items": {
         "$ref": "etapas.schema.json"

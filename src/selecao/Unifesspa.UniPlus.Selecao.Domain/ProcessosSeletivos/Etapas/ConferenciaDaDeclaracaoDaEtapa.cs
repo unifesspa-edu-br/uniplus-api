@@ -127,6 +127,6 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     private static List<FieldError> ValidarOrdem(int? ordem) =>
         ordem is <= 0
             ? [new("ordem", new DomainError(
-                "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero."))]
+                "EtapaProcesso.OrdemInvalida", "A posição da etapa na lista deve ser maior que zero."))]
             : [];
 }
