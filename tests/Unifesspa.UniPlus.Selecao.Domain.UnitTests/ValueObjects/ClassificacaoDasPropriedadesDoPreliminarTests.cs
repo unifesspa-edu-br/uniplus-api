@@ -25,6 +25,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.ProcessoSeletivoId)] = NaoEntra("Vínculo com o processo, igual em toda versão."),
         [nameof(FaseCronograma.Ordem)] = NaoEntra("Posição na linha do tempo: o que muda o preliminar é o prazo e a unidade, não o número da posição."),
         [nameof(FaseCronograma.FaseCanonicaOrigemId)] = NaoEntra("É a identidade da fase entre versões."),
+        [nameof(FaseCronograma.TipoFaseNome)] = NaoEntra("É cópia do nome do tipo de fase, só para leitura: trocar o nome não troca a fase."),
         [nameof(FaseCronograma.NoMesmoMomentoDaAnterior)] = NaoEntra("Muda o momento da fase, e a retificação confere o momento à parte, pela marca e pelas fases que vêm antes."),
         [nameof(FaseCronograma.Codigo)] = Entra("O código vem do conjunto canônico e diz qual fase ela é: trocá-lo troca a fase."),
         [nameof(FaseCronograma.UnidadeResponsavelOrigemId)] = Entra("A unidade que responde pela fase define quem decide o preliminar."),

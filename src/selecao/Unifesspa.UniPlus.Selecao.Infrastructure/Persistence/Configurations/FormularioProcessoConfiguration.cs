@@ -28,6 +28,8 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
         builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
+        builder.Property(f => f.ModeloOrigemNome).HasColumnName("modelo_origem_nome").HasMaxLength(FormularioProcesso.ModeloOrigemNomeMaxLength)
+            .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
         builder.Ignore(f => f.Estrutura);
 
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade })

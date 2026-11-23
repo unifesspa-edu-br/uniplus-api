@@ -14,6 +14,8 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal Guid OrigemId { get; init; } = Guid.CreateVersion7();
 
+    internal string Nome { get; init; } = "Fase de avaliação";
+
     internal DateTimeOffset? Inicio { get; init; }
 
     internal DateTimeOffset? Fim { get; init; }
@@ -61,7 +63,8 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
     internal FaseCronograma Criar() => FaseCronograma.Criar(Origem(), Decisoes(), Publicacoes(), Bancas).Value!;
 
     internal OrigemCanonicaDaFase Origem() => new(
-        OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao);
+        OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao)
+    { Nome = Nome };
 
     internal DecisoesDeCronogramaDaFase Decisoes() =>
         new(Ordem, Inicio, Fim, ComUnidade ? UnidadeResponsavel : null) { NoMesmoMomentoDaAnterior = NoMesmoMomentoDaAnterior };

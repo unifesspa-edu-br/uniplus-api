@@ -17,4 +17,7 @@ public sealed record CopiaDeModeloDeFormulario(
     IReadOnlyList<TermoExigidoFormulario> Termos,
     IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesNovas,
     Guid ModeloId,
-    string ModeloCodigo);
+    string ModeloCodigo)
+{
+    public string ModeloNome { get; init; } = string.Empty;
+}
