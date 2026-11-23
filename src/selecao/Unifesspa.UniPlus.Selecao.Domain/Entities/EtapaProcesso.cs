@@ -66,14 +66,14 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     public ReferenciaRegra? RegraConsolidacao { get; private set; }
 
     /// <summary>
-    /// Os níveis entre os quais a banca escolhe em cada item, do de maior fração ao de menor; ausente
+    /// Os níveis entre os quais a banca escolhe em cada item, em ordem de apresentação; ausente
     /// quando a etapa lança nota digitada.
     /// </summary>
-    public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento => NiveisDeAtendimento.EmOrdemCanonica(_escalaDeAtendimento);
+    public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento => _escalaDeAtendimento.Count == 0 ? null : [.. _escalaDeAtendimento.OrderBy(static nivel => nivel.Ordem)];
 
     private readonly List<NivelDeAtendimento> _escalaDeAtendimento = [];
 
-    public int? Ordem { get; private set; }
+    public int Ordem { get; private set; }
 
     /// <summary>Início da janela própria da etapa, em UTC; ausente quando ela herda a da fase.</summary>
     public DateTimeOffset? Inicio { get; private set; }
@@ -93,11 +93,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>Os tipos de decisão que a etapa declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
     public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
 
-    /// <summary>Os itens em que a nota da etapa se divide, em ordem canônica: pelo conteúdo, nunca pelo id.</summary>
-    public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao
-        .OrderBy(static i => HashCanonicalComputer.NormalizeNfc(i.Rotulo), StringComparer.Ordinal)
-        .ThenBy(static i => i.PontuacaoMaxima)
-        .ThenBy(static i => i.Id)];
+    /// <summary>Os itens em que a nota da etapa se divide, em ordem de apresentação.</summary>
+    public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao.OrderBy(static item => item.Ordem)];
 
     /// <summary>As bancas que a etapa requer (0..*), em ordem canônica: a posição de cada uma é a que as recusas apontam em <c>bancas[p]</c>.</summary>
     public IReadOnlyCollection<BancaDaEtapa> Bancas => [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)];
@@ -221,7 +218,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         Nome = normalizada.Nome;
         Carater = normalizada.Carater;
         TipoEtapa = normalizada.TipoEtapa;
-        Ordem = normalizada.Ordem;
+        Ordem = normalizada.Ordem ?? throw new ArgumentException("A ordem da etapa é obrigatória.", nameof(identificacao));
         FaseCodigo = normalizada.FaseCodigo;
     }
 
@@ -233,7 +230,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         PassoDoLancamento = avaliacao.PassoDoLancamento;
         FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
         RegraConsolidacao = avaliacao.RegraConsolidacao;
-        FilhasDoAgregado.Substituir(_escalaDeAtendimento, NiveisDeAtendimento.EmOrdemCanonica(avaliacao.EscalaDeAtendimento) ?? []);
+        FilhasDoAgregado.Substituir(_escalaDeAtendimento, (avaliacao.EscalaDeAtendimento ?? [])
+            .Select(static (nivel, posicao) => nivel! with { Rotulo = nivel.Rotulo.Trim(), Ordem = posicao + 1 }));
     }
 
     private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, AvaliacaoDeclaradaDaEtapa avaliacao)
@@ -385,6 +383,14 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     private void SubstituirRecursos(IEnumerable<RecursoDaEtapa> recursos) =>
         FilhasDoAgregado.Substituir(_recursos, recursos, recurso => recurso.VincularEtapa(Id));
 
-    private void SubstituirItens(IEnumerable<ItemDeAvaliacao> itens) =>
-        FilhasDoAgregado.Substituir(_itensDeAvaliacao, itens, item => item.VincularEtapa(Id));
+    private void SubstituirItens(IEnumerable<ItemDeAvaliacao> itens)
+    {
+        List<ItemDeAvaliacao> ordenados = [.. itens];
+        for (int posicao = 0; posicao < ordenados.Count; posicao++)
+        {
+            ordenados[posicao].DefinirOrdem(posicao + 1);
+        }
+
+        FilhasDoAgregado.Substituir(_itensDeAvaliacao, ordenados, item => item.VincularEtapa(Id));
+    }
 }

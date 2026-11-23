@@ -8,4 +8,6 @@ public sealed record NivelDeAtendimento(string Rotulo, decimal Fracao)
 {
     /// <summary>Largura máxima do rótulo do nível.</summary>
     public const int RotuloMaxLength = 100;
+
+    public int Ordem { get; init; }
 }

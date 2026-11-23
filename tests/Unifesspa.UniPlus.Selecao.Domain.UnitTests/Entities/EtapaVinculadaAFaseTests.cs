@@ -176,22 +176,15 @@ public sealed class EtapaVinculadaAFaseTests
     public void CadaEtapaEhConferidaContraAPropriaFase()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirCronogramaFases(
-            [
-                Fase(1, "HABILITACAO", Instante("2027-03-01T00:00:00Z"), Instante("2027-03-10T00:00:00Z")),
-                Fase(2, "AVALIACAO", Instante("2027-04-01T00:00:00Z"), Instante("2027-04-10T00:00:00Z")),
-            ],
-            []).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([
+            Fase(1, "HABILITACAO", Instante("2027-03-01T00:00:00Z"), Instante("2027-03-10T00:00:00Z")),
+            Fase(2, "AVALIACAO", Instante("2027-04-01T00:00:00Z"), Instante("2027-04-10T00:00:00Z")),
+        ], []).IsSuccess.Should().BeTrue();
 
-        // A primeira cabe na fase dela; a segunda cabe na janela da PRIMEIRA fase e não na
-        // sua. Conferir toda etapa contra a fase de abertura declararia as duas conformes.
-        Result resultado = processo.DefinirEtapas(
-            [
-                EtapaComJanela("Análise documental", "HABILITACAO",
-                    Instante("2027-03-02T08:00:00Z"), Instante("2027-03-09T18:00:00Z")),
-                EtapaComJanela("Prova objetiva", "AVALIACAO",
-                    Instante("2027-03-05T08:00:00Z"), Instante("2027-03-06T18:00:00Z")),
-            ]);
+        Result resultado = processo.DefinirEtapas([
+            EtapaComJanela("Análise documental", "HABILITACAO", Instante("2027-03-02T08:00:00Z"), Instante("2027-03-09T18:00:00Z")),
+            EtapaComJanela("Prova objetiva", "AVALIACAO", Instante("2027-03-05T08:00:00Z"), Instante("2027-03-06T18:00:00Z"), 2),
+        ]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComecaAntesDaFase");

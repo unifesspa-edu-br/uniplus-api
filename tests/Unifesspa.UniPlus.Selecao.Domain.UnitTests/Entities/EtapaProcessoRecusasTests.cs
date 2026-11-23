@@ -25,7 +25,7 @@ public sealed class EtapaProcessoRecusasTests
         public bool DoEnem { get; init; }
         public decimal? Peso { get; init; }
         public decimal? NotaMinima { get; init; }
-        public int? Ordem { get; init; }
+        public int? Ordem { get; init; } = 1;
         public decimal? NotaMaxima { get; init; }
         public decimal? Passo { get; init; }
         public FormaDeAvaliacao? Forma { get; init; }
@@ -51,7 +51,7 @@ public sealed class EtapaProcessoRecusasTests
     private static Result Atualizar(EntradaDaEtapa e)
     {
         EtapaProcesso existente = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Etapa existente", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Etapa existente", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         return existente.AtualizarDados(
             new IdentificacaoDaEtapa(Nome: e.Nome, Carater: e.Carater, TipoEtapa: Tipo(e.DoEnem), Ordem: e.Ordem, FaseCodigo: null),

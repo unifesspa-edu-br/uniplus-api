@@ -130,10 +130,10 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
             RegraConsolidacao: new ReferenciaRegraDto(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", HashDaRegra),
             ItensDeAvaliacao:
             [
-                new ItemDeAvaliacaoDto(ItemDeRedacaoId, "Redação", 60m),
-                new ItemDeAvaliacaoDto(ItemDeOralidadeId, "Oralidade", 40m),
+                new ItemDeAvaliacaoDto(ItemDeRedacaoId, "Redação", 60m, 1),
+                new ItemDeAvaliacaoDto(ItemDeOralidadeId, "Oralidade", 40m, 2),
             ],
-            EscalaDeAtendimento: [new NivelDeAtendimentoDto("Atende", 1m), new NivelDeAtendimentoDto("Atende em parte", 0.5m)]));
+            EscalaDeAtendimento: [new NivelDeAtendimentoDto("Atende", 1m, 1), new NivelDeAtendimentoDto("Atende em parte", 0.5m, 2)]));
     }
 
     [Fact(DisplayName = "A janela projeta o início e o fim, cada um no seu campo")]

@@ -45,10 +45,10 @@ internal static class CorpusEnvelopeEtapas
             EtapaId(1, variante),
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3.5000m, NotaMinima: 40.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
-            itens: Ordem([
+            itens: [
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
-            ], permutar));
+            ]);
 
     // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
     // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -158,10 +158,10 @@ internal static class CorpusEnvelopeEtapas
             EtapaId(3, variante),
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
-            itens: Ordem([
+            itens: [
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
-            ], permutar));
+            ]);
         etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.Heteroidentificacao.Codigo()]).IsSuccess.Should().BeTrue();
         return etapa;
@@ -174,19 +174,19 @@ internal static class CorpusEnvelopeEtapas
         EtapaProcesso etapa = EtapaProcesso.Reidratar(
             EtapaId(4, variante),
             new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa(permutar)),
-            itens: Ordem([
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
+            itens: [
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
-            ], permutar));
+            ]);
         etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(4, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         return etapa;
     }
 
-    internal static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa(bool permutar) =>
-        Ordem([
+    internal static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa() =>
+        [
             new NivelDeAtendimento("Atendeu parcialmente", 0.5000m),
             new NivelDeAtendimento("Atendeu", 1.0000m),
             new NivelDeAtendimento("Não atendeu", 0.0000m),
-        ], permutar);
+        ];
 }

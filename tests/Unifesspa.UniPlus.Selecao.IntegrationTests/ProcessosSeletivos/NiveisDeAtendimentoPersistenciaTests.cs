@@ -20,12 +20,12 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
         Guid etapaId = await GravarEtapaAsync([new("Parcial", 0.5m), new("Completo", 1m)]);
         await using UniPlusDbContext troca = fixture.CreateDbContext();
         EtapaProcesso etapa = await troca.Set<EtapaProcesso>().Include(e => e.ItensDeAvaliacao).SingleAsync(e => e.Id == etapaId);
-        etapa.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal("Completo", "Parcial");
+        etapa.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal("Parcial", "Completo");
         AtualizarNiveis(etapa);
         await troca.SaveChangesAsync();
         await using UniPlusDbContext leitura = fixture.CreateDbContext();
         EtapaProcesso relida = await leitura.Set<EtapaProcesso>().SingleAsync(e => e.Id == etapaId);
-        relida.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal("Completo", "Não atende");
+        relida.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal("Não atende", "Completo");
     }
 
     [Fact]
@@ -44,14 +44,14 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
     [InlineData("Inválido", -0.1, "ck_niveis_atendimento_fracao_entre_0_e_1")]
     [InlineData("Inválido", 1.2, "ck_niveis_atendimento_fracao_entre_0_e_1")]
     [InlineData("   ", 0.5, "ck_niveis_atendimento_rotulo_preenchido")]
-    [InlineData("Completo", 0.5, "ux_niveis_atendimento_etapa_rotulo")]
+    [InlineData("Completo", 0.5, "uq_niveis_atendimento_etapa_rotulo")]
     public async Task InserirNivel_ComDadosInvalidos_BancoRecusa(string rotulo, decimal fracao, string restricao)
     {
         Guid etapaId = await GravarEtapaAsync([new("Completo", 1m)]);
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
         Func<Task> inserir = () => contexto.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO selecao.niveis_de_atendimento_da_etapa (etapa_processo_id, rotulo, fracao)
-            VALUES ({etapaId}, {rotulo}, {fracao})
+            INSERT INTO selecao.niveis_de_atendimento_da_etapa (etapa_processo_id, rotulo, fracao, ordem)
+            VALUES ({etapaId}, {rotulo}, {fracao}, 2)
             """);
         (await inserir.Should().ThrowAsync<PostgresException>()).Which.ConstraintName.Should().Be(restricao);
     }
@@ -98,7 +98,7 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
     private async Task<Guid> GravarFaseAsync()
     {
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
-        ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso([new("Completo", 1m)]);
+        ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso([new("Completo", 1m)], [new(null, "Item", 10m)]);
         FaseCronograma fase = FaseCronogramaBuilder.Criar();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         contexto.Set<ProcessoSeletivo>().Add(processo);
@@ -109,7 +109,7 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
     private async Task<Guid> GravarEtapaAsync(IReadOnlyList<NivelDeAtendimento> niveis)
     {
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
-        ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso(niveis);
+        ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso(niveis, [new(null, "Item", 10m)]);
         contexto.Set<ProcessoSeletivo>().Add(processo);
         await contexto.SaveChangesAsync();
         return processo.Etapas.Single().Id;

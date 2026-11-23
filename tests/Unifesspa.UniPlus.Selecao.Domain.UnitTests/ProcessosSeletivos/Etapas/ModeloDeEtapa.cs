@@ -14,7 +14,7 @@ internal sealed record ModeloDeEtapa(string Nome)
 {
     internal Guid Id { get; init; } = Guid.CreateVersion7();
 
-    internal int? Ordem { get; init; }
+    internal int? Ordem { get; init; } = 1;
 
     internal string? FaseCodigo { get; init; }
 

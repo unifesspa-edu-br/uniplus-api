@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -9,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -62,8 +61,9 @@ public sealed class MotivosNoCongelamentoTests
     private static (MotivoDeDecisao Origem, MotivoDeDecisaoDoProcesso Escolhido) EscolherNaPrimeiraFase(CenarioDeRecusaNoCongelamento cenario)
     {
         ProcessoSeletivo processo = cenario.Processo;
-        typeof(FaseCronograma).GetField("_tiposDeDecisao", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .GetValue(processo.CronogramaFases.First()).Should().BeAssignableTo<List<TipoMotivoDeDecisao>>().Subject.Add(TipoMotivoDeDecisao.IsencaoDaTaxa);
+        FaseCronograma primeira = processo.CronogramaFases.First();
+        FaseCronograma alterada = FaseComTiposDeDecisaoBuilder.Reconstituir(primeira, [.. primeira.TiposDeDecisao.Select(static tipo => tipo.Codigo()), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]);
+        processo.DefinirCronogramaFases([alterada, .. processo.CronogramaFases.Skip(1)], []).IsSuccess.Should().BeTrue();
         MotivoDeDecisao origem = Motivo();
 
         return (origem, Escolhido(processo, LugarDaPrimeiraFase(processo), origem));

@@ -130,9 +130,9 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_Substitui()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, null, 3m, null)]);
+        processo.DefinirEtapas([EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 3m, null)]);
 
-        processo.DefinirEtapas([EtapaDeProva("Entrevista", CaraterEtapa.Ambas, null, 1m, null)]);
+        processo.DefinirEtapas([EtapaDeProva("Entrevista", CaraterEtapa.Ambas, 1, 1m, null)]);
 
         processo.Etapas.Should().HaveCount(1);
         processo.Etapas.Single().Nome.Should().Be("Entrevista");

@@ -6,75 +6,60 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.Cenarios;
 
-using Xunit;
-
-/// <summary>
-/// Os itens de avaliação e a escala de atendimento da etapa contra o Postgres real: a identidade
-/// do item sobrevive à regravação, e a escala volta da coluna jsonb na ordem canônica.
-/// </summary>
+/// <summary>Confere a persistência dos itens de avaliação de uma etapa.</summary>
 public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     : IClassFixture<ProcessoSeletivoDbFixture>
 {
-    private static TipoEtapaSnapshot Tipo() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ENTREVISTA", "Entrevista", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-
-    private static EtapaProcesso Entrevista(TipoEtapaSnapshot tipo, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens, IReadOnlyList<NivelDeAtendimento>? escala) =>
-        EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: escala),
-            itens).Value!;
-
-    [Fact(DisplayName = "Os itens e a escala gravados voltam com o mesmo id, e a regravação com o id troca o rótulo na mesma linha")]
-    public async Task ItensEEscala_SobrevivemAoBancoEARegravacaoPreservaOId()
+    [Fact]
+    public async Task GravarEtapa_DevolveItensComOMesmoIdNaOrdemDeclarada()
     {
-        Guid etapaId;
-        TipoEtapaSnapshot tipo = Tipo();
+        EtapaProcesso etapa = await GravarAsync();
+        await using UniPlusDbContext contexto = fixture.CreateDbContext();
+        EtapaProcesso relida = await Carregar(contexto, etapa.Id);
+        relida.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.Ordem)).Should().Equal(
+            etapa.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.Ordem)));
+    }
 
-        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-                $"Certame de itens {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
-                UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-                LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-            EtapaProcesso etapa = Entrevista(
-                tipo,
-                [new(null, "Clareza", 4m), new(null, "Domínio", 6m)],
-                [new("Não atendeu", 0m), new("Atendeu", 1m), new("Atendeu parcialmente", 0.5m)]);
-            processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
-
-            escrita.ProcessosSeletivos.Add(processo);
-            await escrita.SaveChangesAsync();
-            etapaId = etapa.Id;
-        }
-
-        Guid idDaClareza;
-        await using (UniPlusDbContext regravacao = fixture.CreateDbContext())
-        {
-            EtapaProcesso etapa = await Carregar(regravacao, etapaId);
-            etapa.EscalaDeAtendimento!.Select(static n => (n.Rotulo, n.Fracao)).Should().Equal(
-                ("Atendeu", 1m), ("Atendeu parcialmente", 0.5m), ("Não atendeu", 0m));
-            idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
-
-            etapa.AtualizarDados(
-                new IdentificacaoDaEtapa(Nome: etapa.Nome, Carater: etapa.Carater, TipoEtapa: etapa.TipoEtapa, Ordem: etapa.Ordem, FaseCodigo: etapa.FaseCodigo),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: etapa.Peso, NotaMinima: etapa.NotaMinima, NotaMaxima: etapa.NotaMaxima, PassoDoLancamento: etapa.PassoDoLancamento, FormaDeAvaliacao: etapa.FormaDeAvaliacao, RegraConsolidacao: etapa.RegraConsolidacao, EscalaDeAtendimento: etapa.EscalaDeAtendimento),
-                [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)]).IsSuccess.Should().BeTrue();
-            await regravacao.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
-        EtapaProcesso relida = await Carregar(conferencia, etapaId);
-
-        relida.ItensDeAvaliacao.Should().HaveCount(2)
-            .And.Contain(i => i.Id == idDaClareza && i.Rotulo == "Objetividade")
+    [Fact]
+    public async Task RegravarItemComId_TrocaORotuloNaMesmaLinha()
+    {
+        EtapaProcesso gravada = await GravarAsync();
+        Guid idDaClareza = gravada.ItensDeAvaliacao.Single(i => i.Rotulo == "Clareza").Id;
+        await using UniPlusDbContext contexto = fixture.CreateDbContext();
+        EtapaProcesso etapa = await Carregar(contexto, gravada.Id);
+        EtapaDeAtendimentoBuilder.RedeclararItens(etapa, [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)]);
+        await contexto.SaveChangesAsync();
+        await using UniPlusDbContext leitura = fixture.CreateDbContext();
+        EtapaProcesso relida = await Carregar(leitura, etapa.Id);
+        relida.ItensDeAvaliacao.Should().Contain(i => i.Id == idDaClareza && i.Rotulo == "Objetividade")
             .And.Contain(i => i.Rotulo == "Postura");
-        (await conferencia.Set<ItemDeAvaliacao>().CountAsync(i => i.EtapaProcessoId == etapaId))
-            .Should().Be(2, "o item que saiu da lista não deixa linha órfã");
+    }
+
+    [Fact]
+    public async Task RegravarSemUmItem_ApagaALinhaDoItemRetirado()
+    {
+        EtapaProcesso gravada = await GravarAsync();
+        Guid idDoDominio = gravada.ItensDeAvaliacao.Single(i => i.Rotulo == "Domínio").Id;
+        Guid idDaClareza = gravada.ItensDeAvaliacao.Single(i => i.Rotulo == "Clareza").Id;
+        await using UniPlusDbContext contexto = fixture.CreateDbContext();
+        EtapaProcesso etapa = await Carregar(contexto, gravada.Id);
+        EtapaDeAtendimentoBuilder.RedeclararItens(etapa, [new(idDaClareza, "Clareza", 4m), new(null, "Postura", 6m)]);
+        await contexto.SaveChangesAsync();
+        await using UniPlusDbContext leitura = fixture.CreateDbContext();
+        EtapaProcesso relida = await Carregar(leitura, etapa.Id);
+        relida.ItensDeAvaliacao.Should().HaveCount(2).And.NotContain(i => i.Id == idDoDominio);
+    }
+
+    private async Task<EtapaProcesso> GravarAsync()
+    {
+        await using UniPlusDbContext contexto = fixture.CreateDbContext();
+        ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso(
+            [new("Parcial", 0.5m), new("Completo", 1m)], [new(null, "Clareza", 4m), new(null, "Domínio", 6m)]);
+        contexto.Set<ProcessoSeletivo>().Add(processo);
+        await contexto.SaveChangesAsync();
+        return processo.Etapas.Single();
     }
 
     private static Task<EtapaProcesso> Carregar(UniPlusDbContext contexto, Guid etapaId) =>

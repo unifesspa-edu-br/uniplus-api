@@ -33,7 +33,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         decimal? passo = null,
         bool doEnem = false) =>
         EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(doEnem), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(doEnem), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: passo, FormaDeAvaliacao: forma, RegraConsolidacao: null, EscalaDeAtendimento: escala),
             itens);
 
@@ -42,13 +42,47 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
     private static string[] Codigos(Result<EtapaProcesso> resultado) =>
         [.. resultado.Errors.Select(static e => e.Error.Code)];
 
-    [Fact(DisplayName = "Os itens e a escala válidos são gravados, e a escala sai do nível que mais vale ao que menos vale")]
+    [Fact(DisplayName = "Os itens e a escala válidos são gravados, e a escala mantém a ordem declarada")]
     public void Criar_ItensEEscalaValidos_Grava()
     {
         EtapaProcesso etapa = Criar([Item("Clareza", 4m), Item("Domínio do tema", 6m)], EscalaCompleta.Reverse().ToArray()).Value!;
 
-        etapa.ItensDeAvaliacao.Select(static i => i.Rotulo).Should().Equal("Clareza", "Domínio do tema");
-        etapa.EscalaDeAtendimento!.Select(static n => n.Fracao).Should().Equal(1m, 0.5m, 0m);
+        etapa.ItensDeAvaliacao.Select(static i => (i.Rotulo, i.Ordem)).Should().Equal(("Clareza", 1), ("Domínio do tema", 2));
+        etapa.EscalaDeAtendimento!.Select(static n => (n.Fracao, n.Ordem)).Should().Equal((0m, 1), (0.5m, 2), (1m, 3));
+    }
+
+    [Fact(DisplayName = "A ordem recebida nos níveis é ignorada e substituída pela posição")]
+    public void Criar_NiveisComOrdemInformada_UsaPosicao()
+    {
+        NivelDeAtendimento[] niveis = [new("Parcial", 0.5m) { Ordem = 9 }, new("Completo", 1m) { Ordem = 4 }];
+        EtapaProcesso etapa = Criar([Item("Critério", 10m)], niveis).Value!;
+
+        etapa.EscalaDeAtendimento!.Select(static nivel => (nivel.Rotulo, nivel.Ordem))
+            .Should().Equal(("Parcial", 1), ("Completo", 2));
+    }
+
+    [Fact(DisplayName = "A lista vazia não produz itens nem escala")]
+    public void Criar_ListasVazias_NaoProduzItensOuEscala()
+    {
+        EtapaProcesso etapa = Criar([], []).Value!;
+
+        etapa.ItensDeAvaliacao.Should().BeEmpty();
+        etapa.EscalaDeAtendimento.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Reordenar itens não altera a entrada do resultado preliminar")]
+    public void AtualizarDados_ItensReordenados_NaoAlteraEntradaDoPreliminar()
+    {
+        EtapaProcesso etapa = Criar([Item("A", 4m), Item("B", 6m)]).Value!;
+        EntradaDoPreliminar anterior = etapa.EntradaDoPreliminar();
+        ItemDeAvaliacao[] itens = [.. etapa.ItensDeAvaliacao];
+        etapa.AtualizarDados(
+            new IdentificacaoDaEtapa(etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Ordem, etapa.FaseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, null),
+            [Item("B", 6m, itens[1].Id), Item("A", 4m, itens[0].Id)]).IsSuccess.Should().BeTrue();
+
+        etapa.ItensDeAvaliacao.Select(static item => (item.Rotulo, item.Ordem)).Should().Equal(("B", 1), ("A", 2));
+        etapa.EntradaDoPreliminar().Should().Be(anterior);
     }
 
     [Fact(DisplayName = "O rótulo do item é obrigatório")]
@@ -164,7 +198,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Guid idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
 
         etapa.AtualizarDados(
-            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
             [Item("Objetividade", 5m, idDaClareza), Item("Domínio", 5m)]).IsSuccess.Should().BeTrue();
 
@@ -180,7 +214,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Guid desconhecido = Guid.CreateVersion7();
 
         etapa.AtualizarDados(
-            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
             [Item("Postura", 5m), Item("Fluência", 5m, desconhecido)]).IsSuccess.Should().BeTrue();
 
@@ -194,7 +228,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         EtapaProcesso etapa = Criar([Item("Clareza", 10m)]).Value!;
 
         etapa.AtualizarDados(
-            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
             [Item("", 10m)]).IsFailure.Should().BeTrue();
 

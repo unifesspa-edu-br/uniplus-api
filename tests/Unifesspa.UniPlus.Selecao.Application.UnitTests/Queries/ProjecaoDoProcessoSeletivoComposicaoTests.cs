@@ -22,7 +22,7 @@ public sealed class ProjecaoDoProcessoSeletivoComposicaoTests
     private static readonly Guid OfertaDeDireitoId = new("01a0d640-0000-7000-8000-000000000b02");
     private static readonly Guid OfertaDeAgronomiaId = new("01a0d640-0000-7000-8000-000000000b03");
 
-    [Fact(DisplayName = "As etapas saem todas, cada uma uma vez, pela ordem declarada; a que não declara ordem sai por último")]
+    [Fact(DisplayName = "As etapas saem todas, cada uma uma vez, pela ordem declarada")]
     public void Projetar_VariasEtapas_TodasUmaVezNaOrdemDeclarada()
     {
         ProcessoSeletivoDto dto = ProjecaoDoProcessoSeletivo.Projetar(ProcessoComListasForaDeOrdem());
@@ -55,7 +55,7 @@ public sealed class ProjecaoDoProcessoSeletivoComposicaoTests
     private static ProcessoSeletivo ProcessoComListasForaDeOrdem()
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("Processo seletivo de composição", OrigemCandidatos.InscricaoPropria);
-        processo.DefinirEtapas([Etapa("Entrevista", 3), Etapa("Análise de histórico", null), Etapa("Prova objetiva", 1), Etapa("Prova discursiva", 2)])
+        processo.DefinirEtapas([Etapa("Entrevista", 3), Etapa("Análise de histórico", 4), Etapa("Prova objetiva", 1), Etapa("Prova discursiva", 2)])
             .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([Fase("RESULTADO_FINAL", 3), Fase("INSCRICAO", 1), Fase("HOMOLOGACAO_INSCRICOES", 2)], [])
             .IsSuccess.Should().BeTrue();
@@ -76,7 +76,7 @@ public sealed class ProjecaoDoProcessoSeletivoComposicaoTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static EtapaProcesso Etapa(string nome, int? ordem)
+    private static EtapaProcesso Etapa(string nome, int ordem)
     {
         TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;

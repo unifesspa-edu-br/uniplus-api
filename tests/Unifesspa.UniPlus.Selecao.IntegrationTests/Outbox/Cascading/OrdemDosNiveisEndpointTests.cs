@@ -27,7 +27,7 @@ public sealed class OrdemDosNiveisEndpointTests(CascadingFixture fixture)
         EtapaProcessoDto consultada = (await cenario.Ctx.ObterProcessoAsync()).Etapas.Single(e => e.Id == cenario.RedacaoId);
         await PublicarV1Async(cenario);
         string[] congelados = await LerNiveisCongeladosAsync(cenario);
-        rotulos.Should().Equal("Completo", "Parcial", "Não atende");
+        rotulos.Should().Equal("Não atende", "Completo", "Parcial");
         consultada.Avaliacao.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal(rotulos);
         congelados.Should().Equal(rotulos);
     }

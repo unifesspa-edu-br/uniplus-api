@@ -67,7 +67,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         EtapaProcesso existente = processo.Etapas.First();
         EtapaProcesso repetida = ApoioDeEtapaReidratada.DeProvaObjetiva(
-            Guid.CreateVersion7(), "Outra prova", existente.Ordem ?? 1, existente.FaseCodigo!, 1m);
+            Guid.CreateVersion7(), "Outra prova", existente.Ordem, existente.FaseCodigo!, 1m);
         ProcessoCarregadoDoBanco.Etapa(processo, repetida);
         ProcessoCarregadoDoBanco.Fase(processo, FaseComJanelaInvertida());
 

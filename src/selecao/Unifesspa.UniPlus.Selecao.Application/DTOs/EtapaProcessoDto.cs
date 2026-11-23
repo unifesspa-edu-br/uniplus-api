@@ -30,7 +30,7 @@ public sealed record EtapaProcessoDto(
 /// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
 /// <c>EtapaProcessoInput.TipoEtapaOrigemId</c>.
 /// </param>
-/// <param name="Ordem">A posição da etapa na sequência, ou nulo enquanto não declarada.</param>
+/// <param name="Ordem">A posição da etapa na sequência.</param>
 /// <param name="FaseCodigo">
 /// O código da fase do cronograma onde a etapa acontece; é por código, e não por id, porque o id da fase
 /// não identifica a fase fora do processo.
@@ -39,7 +39,7 @@ public sealed record IdentificacaoDaEtapaDto(
     string Nome,
     CaraterEtapa Carater,
     TipoEtapaSnapshotDto TipoEtapa,
-    int? Ordem,
+    int Ordem,
     string? FaseCodigo);
 
 /// <summary>O peso da etapa na nota final e a escala em que a nota é lançada.</summary>
@@ -91,10 +91,10 @@ public sealed record PublicacoesDaEtapaDto(
     IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisao);
 
 /// <summary>Projeção de leitura de <c>ItemDeAvaliacao</c>.</summary>
-public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima);
+public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima, int Ordem);
 
 /// <summary>Projeção de leitura de um nível da escala de atendimento.</summary>
-public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao);
+public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao, int Ordem);
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a etapa, para a banca continuar sendo a mesma.</param>

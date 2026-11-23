@@ -66,7 +66,7 @@ internal static class ErrosDaEtapaDoProcesso
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CaraterEComposicaoDaNota() =>
     [
-        new("EtapaProcesso.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ordem_invalida", "A ordem da etapa, quando informada, deve ser maior que zero")),
+        new("EtapaProcesso.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ordem_invalida", "A ordem da etapa é obrigatória e deve ser maior que zero")),
         new("EtapaProcesso.PesoSemCaraterQuePontua", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.peso_sem_carater_que_pontua", "Peso só se aplica a etapa cujo caráter compõe a nota final")),
         new("EtapaProcesso.NotaMinimaSemCaraterQueElimina", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_minima_sem_carater_que_elimina", "Nota mínima só se aplica a etapa cujo caráter elimina")),
         new("EtapaProcesso.CaraterNaoAdmitidoPeloTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.carater_nao_admitido_pelo_tipo", "O tipo de etapa não admite o caráter declarado")),
