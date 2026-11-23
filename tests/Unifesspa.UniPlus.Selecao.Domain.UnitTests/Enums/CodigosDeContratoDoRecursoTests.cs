@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Os pares valor e código dos enums da configuração do recurso, escritos aqui de propósito: alterar um código é alterar o
@@ -38,6 +39,15 @@ public sealed class CodigosDeContratoDoRecursoTests
                 [GuardaDaVaga.NaoGuarda] = "naoGuarda",
             });
 
+    [Fact(DisplayName = "Cada tipo de alvo tem o código gravado no contrato")]
+    public void TipoDeAlvo_CodigoDeCadaValor() =>
+        Enum.GetValues<TipoDeAlvoDoProcedimentoDeRecurso>().ToDictionary(static v => v, static v => v.Codigo())
+            .Should().Equal(new Dictionary<TipoDeAlvoDoProcedimentoDeRecurso, string>
+            {
+                [TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao] = "item_avaliacao",
+                [TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem] = "area_enem",
+            });
+
     [Fact(DisplayName = "Todo valor dos enums do recurso tem rótulo")]
     public void Rotulo_DeCadaValor_NaoEstaVazio()
     {
@@ -65,6 +75,9 @@ public sealed class CodigosDeContratoDoRecursoTests
     }
 
     [Fact(DisplayName = "Os códigos de contrato dos enums do domínio da Seleção passam na conferência da subida")]
-    public void ConferirEnumsDe_DominioDaSelecao_Passa() =>
-        FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(UnidadePrazo).Assembly])).Should().NotThrow();
+    public void ConferirEnumsDe_DominioDaSelecao_Passa()
+    {
+        EnumsDeContrato.EhEnumQueDeclaraCodigo(typeof(TipoDeAlvoDoProcedimentoDeRecurso)).Should().BeTrue();
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(TipoDeAlvoDoProcedimentoDeRecurso).Assembly])).Should().NotThrow();
+    }
 }

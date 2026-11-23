@@ -1,9 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>O que um alvo de procedimento de recurso aponta: um item de avaliação da etapa ou uma área do ENEM.</summary>
 public enum TipoDeAlvoDoProcedimentoDeRecurso
 {
+    [CodigoDeContrato("item_avaliacao", "Item de avaliação")]
     ItemDeAvaliacao = 1,
+    [CodigoDeContrato("area_enem", "Área do ENEM")]
     AreaDoEnem = 2,
 }
 

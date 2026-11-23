@@ -50,7 +50,7 @@ internal static class ColunaDosProcedimentosDeRecurso
 
     private static ProcedimentoPersistido Persistido(ProcedimentoDeRecursoDeclarado procedimento) => new(
         procedimento.TipoDeDecisao,
-        procedimento.Alvo is null ? null : (int)procedimento.Alvo.Tipo,
+        procedimento.Alvo?.Tipo,
         procedimento.Alvo?.Valor,
         procedimento.Regra.Codigo,
         procedimento.Regra.Versao,
@@ -61,13 +61,14 @@ internal static class ColunaDosProcedimentosDeRecurso
         Alvo(persistido),
         ReferenciaRegra.De(persistido.RegraCodigo, persistido.RegraVersao, persistido.RegraHash));
 
-    private static AlvoDoProcedimentoDeRecurso? Alvo(ProcedimentoPersistido persistido) => (TipoDeAlvoDoProcedimentoDeRecurso?)persistido.AlvoTipo switch
+    private static AlvoDoProcedimentoDeRecurso? Alvo(ProcedimentoPersistido persistido) => persistido.AlvoTipo switch
     {
         TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao => AlvoDoProcedimentoDeRecurso.DoItem(Guid.ParseExact(persistido.AlvoValor!, "D")),
         TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem => AlvoDoProcedimentoDeRecurso.DaArea(persistido.AlvoValor!),
-        _ => null,
+        null => null,
+        _ => throw new InvalidOperationException("Tipo de alvo do procedimento de recurso desconhecido."),
     };
 
     private sealed record ProcedimentoPersistido(
-        TipoMotivoDeDecisao TipoDeDecisao, int? AlvoTipo, string? AlvoValor, string RegraCodigo, string RegraVersao, string RegraHash);
+        TipoMotivoDeDecisao TipoDeDecisao, TipoDeAlvoDoProcedimentoDeRecurso? AlvoTipo, string? AlvoValor, string RegraCodigo, string RegraVersao, string RegraHash);
 }

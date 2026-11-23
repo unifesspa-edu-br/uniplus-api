@@ -13,9 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class SerializacaoDosProcedimentosDeRecurso
 {
-    internal const string AlvoItemDeAvaliacao = "item_avaliacao";
-    internal const string AlvoAreaDoEnem = "area_enem";
-
     internal static JsonArray Serializar(ProcedimentosDeRecurso procedimentos) =>
         new([.. procedimentos.Itens.Select(static p => (JsonNode)new JsonObject
         {
@@ -28,7 +25,7 @@ internal static class SerializacaoDosProcedimentosDeRecurso
         ? null
         : new JsonObject
         {
-            ["tipo"] = alvo.Tipo == TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao ? AlvoItemDeAvaliacao : AlvoAreaDoEnem,
+            ["tipo"] = alvo.Tipo.Codigo(),
             ["valor"] = alvo.Valor,
         };
 }
