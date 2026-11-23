@@ -25,11 +25,32 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("fatos_coletados");
+        builder.Property(f => f.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
+        builder.Property(f => f.GrupoColetadoId).HasComment("Identificador do grupo repetível ao qual o dado pertence, quando houver.");
+        builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
+        builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
+        builder.Property(f => f.TipoRenderizacao).HasComment("Tipo de campo: NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+        builder.Property(f => f.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
+        builder.Property(f => f.Ajuda).HasComment("Orientação adicional exibida junto ao campo, quando houver.");
+        builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
+        builder.Property(f => f.Restricoes).HasComment("Restrições aplicadas à resposta, em JSON.");
+        builder.Property(f => f.Impedimento).HasComment("Regra de impedimento associada à resposta, em JSON, quando houver.");
+        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas.");
+        builder.Property(f => f.Formato).HasComment("Formato esperado da resposta, quando especificado.");
+        builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção do dado coletado.");
+        builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal que fundamenta o tratamento do dado.");
+        builder.Property(f => f.FinalidadeTratamento).HasComment("Finalidade informada para o tratamento do dado.");
+        builder.Property(f => f.Descricao).HasComment("Descrição do dado solicitado.");
+        builder.Property(f => f.ComponenteExibicao).HasComment("Componente usado para exibir o dado, quando especificado.");
+        builder.Property(f => f.Finalidade).HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
+        builder.Property(f => f.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
+
+        builder.ToTable("dados_dos_formularios", t => t.HasComment("Dados solicitados nos formulários de um processo seletivo."));
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.FatoCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
+        builder.Property(f => f.FatoCodigo).HasColumnName("codigo_do_dado").HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(f => f.Ordem).IsRequired();
         builder.Property(f => f.Rotulo).HasMaxLength(FormaDoItem.RotuloMaxLength).IsRequired();
         builder.Property(f => f.TipoRenderizacao).HasMaxLength(TipoRenderizacaoMaxLength).IsRequired();
@@ -66,7 +87,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         // contra qualquer caminho que não passe pelo agregado.
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.FatoCodigo })
             .IsUnique()
-            .HasDatabaseName("ux_fatos_coletados_processo_fato");
+            .HasDatabaseName("ux_dados_dos_formularios_processo_dado");
 
         // O fato tem um só produtor no processo, item ou campo de grupo. A ordem do item é única no
         // formulário, e a do campo de grupo, dentro do grupo; a ordem que o grupo divide com os
@@ -74,14 +95,15 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade, f.Ordem })
             .IsUnique()
             .HasFilter("grupo_coletado_id IS NULL")
-            .HasDatabaseName("ux_fatos_coletados_processo_finalidade_ordem");
+            .HasDatabaseName("ux_dados_dos_formularios_processo_finalidade_ordem");
         builder.HasIndex(f => new { f.GrupoColetadoId, f.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_fatos_coletados_grupo_ordem");
+            .HasDatabaseName("ux_dados_dos_formularios_grupo_ordem");
 
         builder.HasMany(f => f.Precondicoes)
             .WithOne()
             .HasForeignKey(c => c.FatoColetadoId)
+            .HasConstraintName("fk_condicoes_de_exibicao_do_dado_dado_formulario")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.Precondicoes)

@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Smoke dos endpoints somente-leitura do catálogo <c>fatos_do_candidato</c>
+/// Smoke dos endpoints somente-leitura do catálogo <c>dados_do_candidato</c>
 /// (UNI-REQ-0077, ADR-0111) com Wolverine contra Postgres efêmero: routing, vendor
 /// media type, resolução do leitor cross-módulo via DI ponta-a-ponta, e 404 por
 /// chave natural inexistente.

@@ -57,7 +57,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
             + $"/modelos-de-documento/0199a000-0000-7000-8000-0000000000aa/{new string('a', 64)}.odt"));
 
     private static string ExigenciasDasFases(Guid faseHabilitacao, Guid faseInscricao) => $$"""
-            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+            {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
               {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
               {{Exigencia("Comprovante de inscrição", "Geral", faseInscricao, "INSCRICAO")}},
               {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
@@ -80,7 +80,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
     }
 
     private static string ExigenciaComModeloNaFase(Guid fase) => $$"""
-        {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+        {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
           {{Exigencia("Autodeclaração étnico-racial", "Condicional", fase, "HABILITACAO", Modelo)}}
         ] } }
         """;
@@ -108,7 +108,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
     }
 
     private static string ExigenciasDaFaseCompartilhada(Guid fase) => $$"""
-            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+            {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
               {{Exigencia("Documento de identidade", "Geral", fase, "INSCRICAO")}},
               {{Exigencia("Comprovante de renda", "Geral", fase, "ISENCAO_TAXA")}},
               {{Exigencia("Laudo da banca", "Geral", fase, null)}}
@@ -124,7 +124,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
     public async Task Handle_BlocoDeComprovacaoComFaseOuFinalidadeAusente_Recusa(bool formularioComFase, string faseDaExigencia, string finalidadeDaExigencia)
     {
         string envelope = $$"""
-            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+            {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
               {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
                {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null }
             ] } }

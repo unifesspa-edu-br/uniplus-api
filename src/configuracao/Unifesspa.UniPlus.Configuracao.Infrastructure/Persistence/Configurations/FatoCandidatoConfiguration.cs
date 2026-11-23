@@ -18,12 +18,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core do catálogo de fatos do candidato (<see cref="FatoCandidato"/>) — a tabela
-/// <c>fatos_do_candidato</c> (UNI-REQ-0077, ADR-0111).
+/// <c>dados_do_candidato</c> (UNI-REQ-0077, ADR-0111).
 /// </summary>
 /// <remarks>
 /// <para>
 /// O fato é desativado, nunca apagado, e a entidade deriva de <c>EntityBase</c> puro (sem
-/// soft-delete). Por isso o índice único <c>ux_fatos_do_candidato_codigo</c> é
+/// soft-delete). Por isso o índice único <c>ux_dados_do_candidato_codigo</c> é
 /// <strong>total</strong>: o código é chave natural imutável de uma linha que nunca é removida.
 /// </para>
 /// <para>
@@ -45,7 +45,8 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.ToTable("fatos_do_candidato", ConfigurarChecks);
+        builder.ToTable("dados_do_candidato", ChecksDoFatoCandidato.Configurar);
+        ConfigurarComentarios(builder);
         ConfigurarIdentificacao(builder);
         ConfigurarClassificacaoDoFato(builder);
         ConfigurarProtecaoDeDados(builder);
@@ -57,6 +58,30 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         ConfigurarValoresDeDominio(builder);
         ConfigurarIndice(builder);
         builder.HasData(MaterializarSeed());
+    }
+
+    private static void ConfigurarComentarios(EntityTypeBuilder<FatoCandidato> builder)
+    {
+        builder.Property(f => f.Id).HasComment("Identificador do dado do candidato.");
+        builder.Property(f => f.Codigo).HasComment("Código único do dado, como RENDA_PER_CAPITA.");
+        builder.Property(f => f.Nome).HasComment("Nome apresentado para o dado.");
+        builder.Property(f => f.Descricao).HasComment("Descrição do significado e uso do dado.");
+        builder.Property(f => f.ComponenteExibicao).HasComment("Apresentação sugerida: MOEDA ou SITUACAO; nula quando não definida.");
+        builder.Property(f => f.Dominio).HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
+        builder.Property(f => f.Origem).HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
+        builder.Property(f => f.Cardinalidade).HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
+        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+        builder.Property(f => f.Formato).HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
+        builder.Property(f => f.Escopo).HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
+        builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+        builder.Property(f => f.FinalidadeTratamento).HasComment("Finalidade informada para o tratamento do dado.");
+        builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
+        builder.Property(f => f.SemeadoPeloSistema).HasComment("Indica se o dado foi fornecido pelo sistema.");
+        builder.Property(f => f.Ativo).HasComment("Indica se o dado está disponível para uso.");
+        builder.Property(f => f.PontoResolucao).HasComment("Código da fase em que o valor fica disponível.");
+        builder.Property(f => f.Binding).HasComment("Referência à fonte usada para obter o valor.");
+        builder.Property(f => f.RegrasPadrao).HasComment("Regras de cálculo padrão do dado, em documento JSON.");
+        builder.Property(f => f.Dependencias).HasComment("Códigos dos dados necessários ao cálculo pelo sistema.");
     }
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<FatoCandidato> builder)
@@ -86,7 +111,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             .HasConversion(ComponenteExibicaoConverter)
             .HasMaxLength(CodigoDeContratoMaxLength);
 
-        builder.Property(f => f.Dominio)
+        builder.Property(f => f.Dominio).HasColumnName("tipo")
             .HasConversion(DominioConverter)
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
@@ -96,7 +121,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     {
         builder.Property(f => f.Origem)
             .HasConversion(OrigemConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
-        builder.Property(f => f.Cardinalidade)
+        builder.Property(f => f.Cardinalidade).HasColumnName("quantidade_de_valores")
             .HasConversion(CardinalidadeConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
         builder.Property(f => f.Escopo)
             .HasConversion(EscopoConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
@@ -106,7 +131,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     {
         // fonte_valores (ADR-0136): anulável — só o fato categórico tem fonte; o booleano e o
         // numérico ficam com NULL, que o EF encapsula sem chamar o converter.
-        builder.Property(f => f.FonteValores)
+        builder.Property(f => f.FonteValores).HasColumnName("fonte_das_opcoes")
             .HasConversion(FonteValoresConverter)
             .HasMaxLength(CodigoDeContratoMaxLength);
 
@@ -142,6 +167,19 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     private static void ConfigurarColunasDaAprovacao(OwnedNavigationBuilder<FatoCandidato, AprovacaoDaProtecao> aprovacao)
     {
         AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
+        aprovacao.Property(a => a.Situacao).HasComment("Situação da análise: PENDENTE, SOLICITADA, APROVADA, AJUSTE_RECOMENDADO ou REPROVADA.");
+        aprovacao.Property(a => a.Ciclo).HasComment("Número do ciclo de análise da proteção, iniciado em 1.");
+        aprovacao.Property(a => a.SolicitadaEm).HasComment("Data e hora da solicitação de análise, quando houver.");
+        aprovacao.Property(a => a.SolicitadaPor).HasComment("Identificador de quem solicitou a análise, quando houver.");
+        aprovacao.Property(a => a.DecididaEm).HasComment("Data e hora da decisão, quando houver.");
+        aprovacao.Property(a => a.DecididaPor).HasComment("Identificador de quem decidiu, quando houver.");
+        aprovacao.Property(a => a.ClassificacaoRecomendada).HasComment("Classificação recomendada: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL; nula quando não houver.");
+        aprovacao.Property(a => a.Justificativa).HasComment("Justificativa da decisão, quando informada.");
+        aprovacao.Property(a => a.AceitaEm).HasComment("Data e hora da aceitação, quando houver.");
+        aprovacao.Property(a => a.AceitaPor).HasComment("Identificador de quem aceitou, quando houver.");
+        aprovacao.Property(a => a.ManifestadaEm).HasComment("Data e hora da última manifestação no ciclo, quando houver.");
+        aprovacao.Property(a => a.ManifestacaoDesfavoravelVigente).HasComment("Indica se há manifestação desfavorável vigente.");
+        aprovacao.Property(a => a.ManifestacoesNoCiclo).HasComment("Quantidade de manifestações no ciclo atual.");
         aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false, ManifestacoesNoCiclo = 0 }));
     }
 
@@ -161,8 +199,8 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     // padrão de dominio/origem/cardinalidade (código como valor, não linha viva).
     private static void ConfigurarReferenciasPorValor(EntityTypeBuilder<FatoCandidato> builder)
     {
-        builder.Property(f => f.PontoResolucao).HasMaxLength(PontoResolucaoMaxLength).IsRequired();
-        builder.Property(f => f.Binding).HasMaxLength(BindingMaxLength).IsRequired();
+        builder.Property(f => f.PontoResolucao).HasColumnName("fase_de_disponibilidade").HasMaxLength(PontoResolucaoMaxLength).IsRequired();
+        builder.Property(f => f.Binding).HasColumnName("fonte_do_valor").HasMaxLength(BindingMaxLength).IsRequired();
     }
 
     // Regras padrão do derivado por regra (ADR-0136): lidas e gravadas sempre inteiras, junto do
@@ -194,7 +232,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.HasMany(f => f.ValoresDominioDeclarados)
             .WithOne()
             .HasForeignKey(v => v.FatoCandidatoId)
-            .HasConstraintName("fk_valores_de_dominio_do_fato_fato_do_candidato")
+            .HasConstraintName("fk_opcoes_dos_dados_dados_do_candidato")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.ValoresDominioDeclarados)
@@ -209,65 +247,6 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             .IsUnique()
             .HasDatabaseName(RestricoesDoBanco.FatoDoCandidatoCodigoUnico);
     }
-
-    private static void ConfigurarChecks(TableBuilder<FatoCandidato> table)
-    {
-        ConfigurarChecksDosDominiosFechados(table);
-        ConfigurarChecksDeCoerenciaDoDominio(table);
-        AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(table, "fatos_do_candidato");
-    }
-
-    // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
-    private static void ConfigurarChecksDosDominiosFechados(TableBuilder<FatoCandidato> table)
-    {
-        AdicionarCheckDeCodigos(table, "dominio", DominiosFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "origem", OrigensFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "cardinalidade", CardinalidadesFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "escopo", EscoposFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "classificacao_protecao", ClassificacoesDeProtecao.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "hipotese_legal", HipotesesLegaisTratamento.TokensCanonicos);
-        table.HasCheckConstraint(
-            "ck_fatos_do_candidato_componente_exibicao",
-            $"componente_exibicao IS NULL OR componente_exibicao IN ({CodigosSql(ComponentesDeExibicao.TokensCanonicos)})");
-    }
-
-    private static void ConfigurarChecksDeCoerenciaDoDominio(TableBuilder<FatoCandidato> table)
-    {
-        // Coerência fonte_valores × domínio (invariante da factory, replicada no banco): o
-        // categórico declara uma das fontes; os demais domínios não têm fonte.
-        table.HasCheckConstraint(
-            "ck_fatos_do_candidato_fonte_valores_coerente",
-            $"(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ({CodigosSql(FontesValoresFato.TokensCanonicos)})) "
-            + "OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
-
-        table.HasCheckConstraint(
-            "ck_fatos_do_candidato_formato_coerente",
-            $"(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ({CodigosSql(FormatosTexto.TokensCanonicos)})) "
-            + "OR (dominio <> 'TEXTO' AND formato IS NULL)");
-
-        ConfigurarCheckDaClassificacaoMinimaDoDominio(table);
-    }
-
-    // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory), inclusive
-    // o nome social (ADR-0082, ADR-0153). Só o domínio texto também
-    // aceita `IDENTIFICADOR` — número de documento é sempre texto, nunca data, endereço nem os
-    // demais domínios (ADR-0136, emenda de #1857).
-    private static void ConfigurarCheckDaClassificacaoMinimaDoDominio(TableBuilder<FatoCandidato> table)
-    {
-        table.HasCheckConstraint(
-            "ck_fatos_do_candidato_classificacao_minima_do_dominio",
-            "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') "
-            + "OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
-            + "OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
-    }
-
-    private static void AdicionarCheckDeCodigos(TableBuilder<FatoCandidato> table, string coluna, IReadOnlyList<string> codigos) =>
-        table.HasCheckConstraint(
-            $"ck_fatos_do_candidato_{coluna}",
-            $"{coluna} IN ({CodigosSql(codigos)})");
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 
     /// <summary>
     /// Projeta o seed (<see cref="FatoCandidatoSeed.Itens"/>) para linhas que o

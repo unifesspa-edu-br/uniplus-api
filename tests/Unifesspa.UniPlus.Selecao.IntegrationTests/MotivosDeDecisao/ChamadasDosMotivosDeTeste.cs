@@ -92,7 +92,7 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
         await using AsyncServiceScope escopo = Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string padrao = $"{prefixoDoCodigo}\\_%";
-        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_do_processo WHERE codigo LIKE {padrao} ESCAPE '\\'");
+        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao_do_processo WHERE codigo LIKE {padrao} ESCAPE '\\'");
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE {padrao} ESCAPE '\\'");
     }
 

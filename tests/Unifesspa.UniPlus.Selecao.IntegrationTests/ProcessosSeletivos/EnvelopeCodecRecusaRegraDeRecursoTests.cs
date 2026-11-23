@@ -149,9 +149,9 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
                 .Select(f => f!.AsObject())
                 .Single(f => f["regraRecurso"] is JsonObject);
 
-            comRecurso["produtos"]!.AsArray()[0]!["papel"] = null;
-            comRecurso["regraRecurso"]!["produtoAncoraId"] =
-                comRecurso["produtos"]!.AsArray()[0]!["id"]!.GetValue<string>();
+            comRecurso["publicacoesPrevistas"]!.AsArray()[0]!["papel"] = null;
+            comRecurso["regraRecurso"]!["publicacaoDeReferenciaId"] =
+                comRecurso["publicacoesPrevistas"]!.AsArray()[0]!["id"]!.GetValue<string>();
         });
 
         resultado.IsFailure.Should().BeTrue();
@@ -176,7 +176,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
             "reemissão dá os mesmos bytes — o certame volta com uma janela recursal cujo prazo não corre de " +
             "instante nenhum, e o round-trip aprova porque os bytes conferem");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("ancora");
+        resultado.Error.Message.Should().Contain("eventoInicialDoPrazo");
     }
 
     /// <summary>
@@ -278,7 +278,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         envelope["etapas"]!.AsArray()
             .Select(e => e!.AsObject())
             .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
-            .First(r => r["ancora"]!.GetValue<string>() == "AtoPublicado")["parametros"]!
+            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == "AtoPublicado")["parametros"]!
             .AsObject();
 
     /// <summary>
@@ -300,15 +300,15 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         JsonArray fases = envelope["cronogramaFases"]!["fases"]!.AsArray();
         JsonObject comRecurso = fases.Select(f => f!.AsObject()).Single(f => f["regraRecurso"] is JsonObject);
         JsonObject outra = fases.Select(f => f!.AsObject())
-            .First(f => f["regraRecurso"] is not JsonObject && f["produtos"]!.AsArray().Count > 0);
+            .First(f => f["regraRecurso"] is not JsonObject && f["publicacoesPrevistas"]!.AsArray().Count > 0);
 
-        comRecurso["regraRecurso"]!["produtoAncoraId"] =
-            outra["produtos"]!.AsArray()[0]!["id"]!.GetValue<string>();
+        comRecurso["regraRecurso"]!["publicacaoDeReferenciaId"] =
+            outra["publicacoesPrevistas"]!.AsArray()[0]!["id"]!.GetValue<string>();
     }
 
     private static void TrocarAAncoraDeCienciaPorNenhuma(JsonObject envelope) =>
         envelope["etapas"]!.AsArray()
             .SelectMany(etapa => etapa!["recursos"]!.AsArray())
-            .First(recurso => recurso!["ancora"]!.GetValue<string>() == nameof(AncoraDoRecurso.CienciaIndividual))!
-            ["ancora"] = nameof(AncoraDoRecurso.Nenhuma);
+            .First(recurso => recurso!["eventoInicialDoPrazo"]!.GetValue<string>() == nameof(AncoraDoRecurso.CienciaIndividual))!
+            ["eventoInicialDoPrazo"] = nameof(AncoraDoRecurso.Nenhuma);
 }

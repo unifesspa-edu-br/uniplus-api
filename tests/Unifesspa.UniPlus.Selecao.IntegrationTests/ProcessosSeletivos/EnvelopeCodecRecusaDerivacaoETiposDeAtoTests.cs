@@ -24,7 +24,7 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void VersaoInterpretadorDesconhecida_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
-            envelope => envelope["versaoInterpretador"] = "999");
+            envelope => envelope["versaoDasRegrasDeCalculo"] = "999");
 
         resultado.IsFailure.Should().BeTrue(
             "um snapshot resolvido por uma semântica de motor que este sistema não conhece não pode ser " +
@@ -39,7 +39,7 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
         {
             // Tira uma aresta do grafo congelado: o grafo recomputado das partes reidratadas ainda a
             // terá, então o testemunho não fecha — o congelado deixou de ser cópia verificável.
-            JsonArray arestas = envelope["grafoDependencia"]!["arestas"]!.AsArray();
+            JsonArray arestas = envelope["dependenciasEntreItens"]!["ligacoes"]!.AsArray();
             arestas.RemoveAt(arestas.Count - 1);
         });
 
@@ -52,10 +52,10 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void GrafoNulo_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
-            envelope => envelope["grafoDependencia"] = null);
+            envelope => envelope["dependenciasEntreItens"] = null);
 
         resultado.IsFailure.Should().BeTrue(
-            "uma coluna adulterada com `grafoDependencia: null` e hash recomputado tem de recusar como malformada, " +
+            "uma coluna adulterada com `dependenciasEntreItens: null` e hash recomputado tem de recusar como malformada, " +
             "nunca produzir NullReferenceException");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
@@ -69,9 +69,9 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
         {
             // RENDA é o fato com pré-condição; troca-a por um DNF vazio, que o decoder colapsaria para
             // "sem pré-condição" — uma forma que o encoder jamais emite (a ausência de condição é null).
-            JsonObject renda = envelope["fatosColetados"]!.AsArray()
-                .Single(fato => fato!["fatoCodigo"]!.GetValue<string>() == "RENDA")!.AsObject();
-            renda["precondicao"] = clausulaVazia ? new JsonArray(new JsonArray()) : new JsonArray();
+            JsonObject renda = envelope["dadosDosFormularios"]!.AsArray()
+                .Single(fato => fato!["codigoDoDado"]!.GetValue<string>() == "RENDA")!.AsObject();
+            renda["exibicao"] = clausulaVazia ? new JsonArray(new JsonArray()) : new JsonArray();
         });
 
         resultado.IsFailure.Should().BeTrue(
@@ -94,9 +94,9 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void ModalidadeGravadaComoDerivacao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["regrasDerivacao"]!.AsArray().Add(new JsonObject
+            envelope["calculosDosDados"]!.AsArray().Add(new JsonObject
             {
-                ["codigoFato"] = "MODALIDADE",
+                ["codigoDoDado"] = "MODALIDADE",
                 ["regras"] = new JsonArray(new JsonObject { ["ordem"] = 0, ["contribui"] = "AC", ["quando"] = null }),
             }));
 
@@ -130,20 +130,20 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void FatoDerivadoComClassificacaoForaDoVocabulario_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject()["classificacaoProtecao"] = "SECRETO");
+            envelope["dadosCalculados"]!.AsArray()[0]!.AsObject()["classificacaoProtecao"] = "SECRETO");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     [Theory(DisplayName = "Fato derivado congelado com domínio, cardinalidade ou hipótese legal fora do vocabulário: recusa")]
-    [InlineData("dominio")]
-    [InlineData("cardinalidade")]
+    [InlineData("tipo")]
+    [InlineData("quantidadeDeValores")]
     [InlineData("hipoteseLegal")]
     public void FatoDerivadoComTokenForaDoVocabulario_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject()[chave] = "INVENTADO");
+            envelope["dadosCalculados"]!.AsArray()[0]!.AsObject()[chave] = "INVENTADO");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -153,7 +153,7 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void FatoColetadoComHipoteseLegalForaDoVocabulario_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["hipoteseLegal"] = "INVENTADA");
+            envelope["dadosDosFormularios"]!.AsArray()[0]!.AsObject()["hipoteseLegal"] = "INVENTADA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -163,7 +163,7 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void FatoDerivadoSemHipoteseLegal_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject().Remove("hipoteseLegal"));
+            envelope["dadosCalculados"]!.AsArray()[0]!.AsObject().Remove("hipoteseLegal"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

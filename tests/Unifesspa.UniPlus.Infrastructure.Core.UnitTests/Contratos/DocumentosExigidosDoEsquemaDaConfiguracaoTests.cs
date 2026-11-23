@@ -18,7 +18,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
         { "chave": "comprovante-de-renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
           "faseChave": "inscricao", "etapaChave": "prova-objetiva", "finalidade": "ISENCAO_TAXA",
           "aplicabilidade": "Condicional", "obrigatorio": true, "consequenciaIndeferimento": "PENDENCIA_REENVIO",
-          "condicaoGatilho": [ [ { "fato": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
+          "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
           "idadeMaximaEmissao": { "valor": 90, "unidade": "DIAS", "referenciaTipo": "FIM_INSCRICAO" },
           "formatosPermitidos": { "qualquer": false, "lista": [ { "formato": "PDF", "tamanhoMaximoBytesMax": 5242880 } ] },

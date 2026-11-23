@@ -1,22 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/predicado.schema.json",
-  "title": "Predicado, obrigatoriedade e base legal",
-  "description": "Definições de condição de aplicação compartilhadas pelas partes do documento: a condição, o predicado em forma normal disjuntiva, a obrigatoriedade e a base legal.",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/condicoes.schema.json",
+  "title": "Condições, obrigatoriedade e base legal",
+  "description": "Definições de condição de aplicação compartilhadas pelas partes do documento: a condição, as alternativas de condições, a obrigatoriedade e a base legal.",
   "$defs": {
     "condicao": {
-      "title": "Condição de um predicado",
-      "description": "Um átomo do predicado: o fato, o operador e o valor de comparação. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A existência do fato no vocabulário é regra do domínio, não do esquema.",
+      "title": "Condição de aplicação",
+      "description": "Uma condição: o dado, o operador e o valor de comparação. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A existência do dado no vocabulário é regra do domínio, não do esquema.",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "fato",
+        "codigoDoDado",
         "operador",
         "valor"
       ],
       "properties": {
-        "fato": {
-          "title": "Fato",
+        "codigoDoDado": {
+          "title": "Dado",
           "description": "Código do fato que a condição examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que não seja espaço.",
           "type": "string",
           "minLength": 1,
@@ -93,9 +93,9 @@
         }
       }
     },
-    "predicado": {
-      "title": "Predicado em forma normal disjuntiva",
-      "description": "Lista de cláusulas ligadas por OU; cada cláusula é uma lista de condições ligadas por E. A lista vazia é o predicado sem cláusula, que não é verdadeiro para ninguém: usá-lo como condição de uma regra a torna nunca aplicável.",
+    "condicoesAlternativas": {
+      "title": "Alternativas de condições",
+      "description": "Lista de alternativas ligadas por OU; cada alternativa é uma lista de condições ligadas por E. A lista vazia é a ausência de alternativas, que não é verdadeira para ninguém: usá-lo como condição de uma regra a torna nunca aplicável.",
       "type": "array",
       "items": {
         "type": "array",
@@ -107,7 +107,7 @@
     },
     "obrigatoriedade": {
       "title": "Obrigatoriedade",
-      "description": "Se a exigência vale sempre, nunca, ou só quando o predicado é verdadeiro. O predicado existe somente em QUANDO.",
+      "description": "Se a exigência vale sempre, nunca, ou só quando as condições são verdadeiras. As condições existem somente em QUANDO.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -123,15 +123,15 @@
             "QUANDO"
           ]
         },
-        "predicado": {
-          "title": "Predicado",
+        "quando": {
+          "title": "Condições",
           "description": "Condição em que a obrigatoriedade QUANDO vale; nas outras o campo é nulo ou ausente.",
           "anyOf": [
             {
               "type": "null"
             },
             {
-              "$ref": "#/$defs/predicado"
+              "$ref": "#/$defs/condicoesAlternativas"
             }
           ]
         }
@@ -145,17 +145,17 @@
       },
       "then": {
         "required": [
-          "predicado"
+          "quando"
         ],
         "properties": {
-          "predicado": {
-            "$ref": "#/$defs/predicado"
+          "quando": {
+            "$ref": "#/$defs/condicoesAlternativas"
           }
         }
       },
       "else": {
         "properties": {
-          "predicado": {
+          "quando": {
             "type": "null"
           }
         }

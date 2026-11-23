@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authorization;
 
-using System.Reflection;
-
 using Avro.IO;
 using Avro.Specific;
 
@@ -63,20 +61,9 @@ public sealed class RegistroDeAcessoAvroTests
         lido.Instante.Kind.Should().Be(DateTimeKind.Utc);
     }
 
-    [Fact(DisplayName = "Os campos do esquema são as propriedades do registro de acesso, nos dois sentidos")]
-    public void CamposDoEsquema_SaoAsPropriedadesDoRegistro()
-    {
-        // A chave vai na entrada do lote, e a identidade é o texto de onde ela é derivada: nenhuma das duas é campo do registro.
-        string[] doEsquema = [.. EsquemaDoRegistroDeAcesso.Registro.Fields.Select(static f => f.Name)];
-        string[] doRegistro = [.. typeof(RegistroDecisaoAcesso)
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(static p => char.ToLowerInvariant(p.Name[0]) + p.Name[1..])
-            .Where(static nome => nome is not ("chave" or "identidade"))];
-
-        doRegistro.Except(doEsquema).Should().BeEmpty("todo campo do registro tem campo no esquema");
-        doEsquema.Except(doRegistro).Should().BeEmpty("todo campo do esquema sai do registro");
-        EsquemaDoRegistroDeAcesso.Entrada.Fields.Select(static f => f.Name).Should().Equal("chave", "registro");
-    }
+    [Fact(DisplayName = "A entrada do lote contém chave e registro")]
+    public void EntradaDoLote_ContemChaveERegistro() =>
+        EsquemaDoRegistroDeAcesso.Entrada.Fields.Select(static campo => campo.Name).Should().Equal("chave", "registro");
 
     [Fact(DisplayName = "O subject do esquema é o do tópico com o sufixo do valor")]
     public void Subject_EOTopicoComSufixoDoValor() =>

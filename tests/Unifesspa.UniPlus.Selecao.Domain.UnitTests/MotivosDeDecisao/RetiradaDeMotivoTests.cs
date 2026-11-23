@@ -19,8 +19,8 @@ public sealed class RetiradaDeMotivoTests
     private static MotivoDeDecisao Motivo() =>
         ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.Classificacao, "NOTA_ZERADA", SentidoDoMotivo.Desfavoravel);
 
-    private static Result<MotivoDoProcesso> Retirar(
-        ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhaAtual, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
+    private static Result<MotivoDeDecisaoDoProcesso> Retirar(
+        ProcessoSeletivo processo, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhaAtual, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
         EscolhaDosMotivos.Retirar(processo, escolhaAtual, lugar, origem.Id);
 
     [Theory(DisplayName = "No rascunho, retirar motivo escolhido na fase ou na etapa é aceito e devolve a escolha a remover")]
@@ -31,7 +31,7 @@ public sealed class RetiradaDeMotivoTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         LugarDaDecisao lugar = fase is not null ? ProcessoParaMotivos.LugarDaFase(processo, fase) : ProcessoParaMotivos.LugarDaEtapa(processo, etapa!);
         MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso escolhido = ProcessoParaMotivos.Escolha(processo, lugar, origem, versaoDeEntrada: 1);
+        MotivoDeDecisaoDoProcesso escolhido = ProcessoParaMotivos.Escolha(processo, lugar, origem, versaoDeEntrada: 1);
 
         Retirar(processo, [escolhido], lugar, origem).Value.Should().BeSameAs(escolhido);
     }
@@ -41,8 +41,8 @@ public sealed class RetiradaDeMotivoTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem, versaoDeEntrada: 1);
-        MotivoDoProcesso naEtapa = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), origem, versaoDeEntrada: 1);
+        MotivoDeDecisaoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem, versaoDeEntrada: 1);
+        MotivoDeDecisaoDoProcesso naEtapa = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), origem, versaoDeEntrada: 1);
 
         Retirar(processo, [naFase, naEtapa], naEtapa.Lugar, origem).Value.Should().BeSameAs(naEtapa);
     }
@@ -52,7 +52,7 @@ public sealed class RetiradaDeMotivoTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem, versaoDeEntrada: 1);
+        MotivoDeDecisaoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem, versaoDeEntrada: 1);
 
         Retirar(processo, [naFase], ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), origem)
             .Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.NaoEscolhido);
@@ -89,7 +89,7 @@ public sealed class RetiradaDeMotivoTests
         ProcessoSeletivo publicado = ProcessoParaMotivos.Publicado();
         LugarDaDecisao lugar = ProcessoParaMotivos.LugarDaFase(publicado, Homologacao);
         MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso escolhido = ProcessoParaMotivos.Escolha(publicado, lugar, origem, versaoDeEntrada: 1);
+        MotivoDeDecisaoDoProcesso escolhido = ProcessoParaMotivos.Escolha(publicado, lugar, origem, versaoDeEntrada: 1);
 
         Retirar(publicado, [escolhido], lugar, origem).Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }

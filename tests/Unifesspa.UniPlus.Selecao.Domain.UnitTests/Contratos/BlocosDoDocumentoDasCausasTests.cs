@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 
-using System.Reflection;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -85,7 +84,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
 
         string?[] traduzidos =
         [
-            "/cronograma/fases/1/faseCanonicaCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
+            "/cronograma/fases/1/tipoFaseCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
             "/cronograma/fases/0/bancasRequeridas/0/categoriasDocumentoCodigos", "/etapas/1/faseChave", "/etapas/1/chave",
         ];
         causas.Select(static causa => causa.Field).Should().Contain(traduzidos);
@@ -121,8 +120,8 @@ public sealed class BlocosDoDocumentoDasCausasTests
     [InlineData("formularios[1].grupos[1].subitens[0].fatoCodigo")]
     [InlineData("cronograma.fases")]
     [InlineData("etapas")]
-    [InlineData("motivos")]
-    [InlineData("motivos[2].justificativaDaInclusao")]
+    [InlineData("motivosDeDecisao")]
+    [InlineData("motivosDeDecisao[2].justificativaDaInclusao")]
     [InlineData("formularios")]
     [InlineData("distribuicaoVagas")]
     [InlineData("distribuicaoVagas[1].modalidades")]
@@ -136,8 +135,8 @@ public sealed class BlocosDoDocumentoDasCausasTests
     {
         Esquema.PrimeiroSegmentoAusente("/cronograma/fases/2/faseCanonicaId").Should().Be("/cronograma/fases/2/faseCanonicaId");
         Esquema.PrimeiroSegmentoAusente("/etapas/0/conceito/tipo").Should().Be("/etapas/0/conceito");
-        Esquema.PrimeiroSegmentoAusente("/cronograma/fases/2/faseCanonicaCodigo").Should().BeNull();
-        Esquema.PrimeiroSegmentoAusente("/motivosDeDecisao/0").Should().Be("/motivosDeDecisao");
+        Esquema.PrimeiroSegmentoAusente("/cronograma/fases/2/tipoFaseCodigo").Should().BeNull();
+        Esquema.PrimeiroSegmentoAusente("/motivos/0").Should().Be("/motivos");
         Esquema.PrimeiroSegmentoAusente("/taxaInscricao").Should().Be("/taxaInscricao");
     }
 
@@ -150,9 +149,13 @@ public sealed class BlocosDoDocumentoDasCausasTests
     ];
 
     private static IEnumerable<string> DimensoesConhecidas() =>
-        typeof(DimensaoConformidade).GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(static campo => campo.IsLiteral && campo.FieldType == typeof(string))
-            .Select(static campo => (string)campo.GetRawConstantValue()!);
+    [
+        DimensaoConformidade.Identificacao, DimensaoConformidade.AtendimentoEspecializado,
+        DimensaoConformidade.DistribuicaoVagas, DimensaoConformidade.Classificacao, DimensaoConformidade.Cronograma,
+        DimensaoConformidade.Etapas, DimensaoConformidade.TaxaInscricao, DimensaoConformidade.ExigenciasDocumentais,
+        DimensaoConformidade.CascataRemanejamento, DimensaoConformidade.ColetaDeFatos, DimensaoConformidade.BonusRegional,
+        DimensaoConformidade.Desempate, DimensaoConformidade.ContagemDePrazos,
+    ];
 
     private static HashSet<string> LerBlocosDoEsquema()
     {

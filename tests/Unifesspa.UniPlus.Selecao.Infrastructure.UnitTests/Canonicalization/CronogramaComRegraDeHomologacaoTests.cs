@@ -110,7 +110,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         payload["cronogramaFases"]!["fases"] = new JsonArray(1);
         LeitorEnvelope leitor = new();
 
-        LeituraDoCronograma.LerCronogramaFases(leitor, payload, comId: true);
+        LeituraDoCronograma.LerCronogramaFases(leitor, payload);
 
         leitor.Falhou.Should().BeTrue();
         leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -142,7 +142,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
     private static FaseCronograma LerFase(JsonObject item)
     {
         LeitorEnvelope leitor = new();
-        IReadOnlyList<FaseCronograma> fases = LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item), comId: true);
+        IReadOnlyList<FaseCronograma> fases = LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item));
 
         leitor.Falhou.Should().BeFalse(leitor.Falhou ? leitor.Erro.Message : null);
         return fases.Single();
@@ -151,7 +151,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
     private static LeitorEnvelope Ler(JsonObject item)
     {
         LeitorEnvelope leitor = new();
-        LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item), comId: true);
+        LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item));
         return leitor;
     }
 

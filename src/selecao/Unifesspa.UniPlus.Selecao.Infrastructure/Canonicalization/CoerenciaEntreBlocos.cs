@@ -77,12 +77,12 @@ internal static class CoerenciaEntreBlocos
                 DerivacoesDaOferta.Efetivas(blocos.Coleta.RegrasDerivacao, blocos.Configuracao.Distribuicao),
                 blocos.Coleta.GruposColetados) is { } citacaoInvalida)
         {
-            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}");
+            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {citacaoInvalida.Message}");
         }
 
         return Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
                 [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Configuracao.Classificacao) is { } edicaoSemEnem
-            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {edicaoSemEnem.Message}")
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {edicaoSemEnem.Message}")
             : null;
     }
 
@@ -126,9 +126,9 @@ internal static class CoerenciaEntreBlocos
         if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
         {
             return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
+                $"'dadosDosFormularios' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
         }
         return EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..]
-            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}") : null;
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {primeiro.Error.Message}") : null;
     }
 }

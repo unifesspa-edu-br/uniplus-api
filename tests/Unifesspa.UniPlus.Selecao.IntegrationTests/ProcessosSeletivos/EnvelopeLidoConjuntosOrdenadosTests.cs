@@ -110,7 +110,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             Ocorrencias: Textos(envelope["regrasDeComprovacao"]![0]!["ocorrenciasEsperadas"]!.AsArray(), static o => o),
             Formatos: Textos(envelope["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray(), static f => f["formato"]),
             RegraCodigos: Textos(obrigatoriedades, static r => r["regraCodigo"]),
-            ValoresDominio: Textos(envelope["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray(), static v => v),
+            ValoresDominio: Textos(envelope["documentosExigidos"]!["definicoesDosDados"]![0]!["opcoes"]!.AsArray(), static v => v),
             Codigos: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-MODALIDADES-MINIMAS")["codigos"]!.AsArray(), static c => c),
             Necessidades: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-ATENDIMENTO-DISPONIVEL")["necessidades"]!.AsArray(), static n => n));
     }
@@ -121,7 +121,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
     private static JsonNode ArgumentosDoPredicado(JsonArray obrigatoriedades, string regraCodigo) =>
         obrigatoriedades
             .Single(r => r!["regraCodigo"]!.GetValue<string>() == regraCodigo)!
-            ["predicado"]!["parametros"]!;
+            ["condicoes"]!["parametros"]!;
     private static void ConferirSequenciasDecodificadas(EnvelopeReidratado envelope, SequenciasNoJson noJson)
     {
         envelope.Configuracao.Exigencias.RegrasDeComprovacao.Single().Distincao!.OcorrenciasEsperadas.Should().Equal(

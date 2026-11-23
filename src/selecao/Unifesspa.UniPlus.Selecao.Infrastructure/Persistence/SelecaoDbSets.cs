@@ -51,7 +51,7 @@ public static class SelecaoDbSets
 
         public DbSet<MotivoDeDecisao> MotivosDeDecisao => contexto.Set<MotivoDeDecisao>();
 
-        public DbSet<MotivoDoProcesso> MotivosDoProcesso => contexto.Set<MotivoDoProcesso>();
+        public DbSet<MotivoDeDecisaoDoProcesso> MotivosDeDecisaoDoProcesso => contexto.Set<MotivoDeDecisaoDoProcesso>();
 
         public DbSet<ObrigatoriedadeLegal> ObrigatoriedadesLegais => contexto.Set<ObrigatoriedadeLegal>();
 

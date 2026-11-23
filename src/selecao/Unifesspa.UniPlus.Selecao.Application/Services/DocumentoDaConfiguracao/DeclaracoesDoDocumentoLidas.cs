@@ -38,7 +38,7 @@ internal static class DeclaracoesDoDocumentoLidas
     private static FaseNoDocumento Fase(int posicao, JsonObject fase) => new(
         posicao,
         Texto(fase, "chave")!,
-        new(Texto(fase, "faseCanonicaCodigo")!, Texto(fase, "unidadeResponsavelCodigo")),
+        new(Texto(fase, "tipoFaseCodigo")!, Texto(fase, "unidadeResponsavelCodigo")),
         new(Valor<DateTimeOffset>(fase, "inicio"), Valor<DateTimeOffset>(fase, "fim")),
         Publicacoes(fase),
         [.. Itens(fase, "bancasRequeridas").Select(static item => Banca(item.Posicao, item.Item))],
@@ -48,7 +48,7 @@ internal static class DeclaracoesDoDocumentoLidas
     };
 
     private static PublicacoesNoDocumento Publicacoes(JsonObject fase) => new(
-        [.. Itens(fase, "produtos").Select(static item => Produto(item.Posicao, item.Item))],
+        [.. Itens(fase, "publicacoesPrevistas").Select(static item => Produto(item.Posicao, item.Item))],
         Valor<bool>(fase, "emiteParecerIndividual") ?? false,
         TiposDeDecisao(fase),
         RegraDeHomologacao(Objeto(fase, "regraDeHomologacao")));
@@ -85,7 +85,7 @@ internal static class DeclaracoesDoDocumentoLidas
         ? null
         : new(
             new(Texto(regra, "regraCodigo"), Texto(regra, "regraVersao")),
-            Texto(regra, "atoAncoraCodigo"),
+            Texto(regra, "publicacaoDeReferenciaAtoCodigo"),
             ParametrosDoRecurso(regra),
             [.. Itens(regra, "procedimentosDeRecurso").Select(static item => Procedimento(item.Posicao, item.Item))]);
 

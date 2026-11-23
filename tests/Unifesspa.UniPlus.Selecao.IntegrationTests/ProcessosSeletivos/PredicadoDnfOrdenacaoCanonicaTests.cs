@@ -170,7 +170,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     }
 
     private static JsonNode CondicaoGatilhoDoEnvelope(SnapshotCanonico snapshot) =>
-        ApoioDoEnvelopeCodec.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicaoGatilho"]!;
+        ApoioDoEnvelopeCodec.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicoes"]!;
 
     // ── Teste central: o ordinal do cliente sai do digest ──
 
@@ -184,7 +184,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// as mesmas duas cláusulas da config 1 — {FATO_A, FATO_B} e {FATO_C} — mas com os ordinais 1
     /// e 2 TROCADOS entre elas, e a lista de entrada também em outra ordem.
     /// </summary>
-    [Fact(DisplayName = "condicaoGatilho: trocar os ordinais entre cláusulas inteiras, preservando a partição, produz os MESMOS bytes")]
+    [Fact(DisplayName = "condicoes: trocar os ordinais entre cláusulas inteiras, preservando a partição, produz os MESMOS bytes")]
     public void CondicaoGatilho_TrocaDeOrdinaisEntreClausulas_ProduzMesmosBytes()
     {
         (CondicaoGatilho[] primeira, CondicaoGatilho[] segunda) = CondicoesComOrdinaisTrocados();
@@ -209,7 +209,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// removesse o <c>GroupBy</c> e achatasse tudo num nível só produziria os MESMOS bytes para os
     /// dois — é exatamente isso que este teste reprova.
     /// </summary>
-    [Fact(DisplayName = "condicaoGatilho: agrupamentos DIFERENTES dos mesmos átomos produzem bytes DIFERENTES — a correção não achata as cláusulas")]
+    [Fact(DisplayName = "condicoes: agrupamentos DIFERENTES dos mesmos átomos produzem bytes DIFERENTES — a correção não achata as cláusulas")]
     public void CondicaoGatilho_AgrupamentosDistintosDosMesmosAtomos_ProduzBytesDiferentes()
     {
         (CondicaoGatilho[] primeira, CondicaoGatilho[] segunda) = CondicoesComAgrupamentosDistintos();
@@ -239,7 +239,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// preservado tal como chegou) e este teste, com um só operador coberto, não pegaria isso.
     /// Alternativas deliberadamente fora de ordem alfabética.
     /// </summary>
-    [Theory(DisplayName = "condicaoGatilho: alternativas de pertencimento (EM/NAO_EM) ordenam pela chave de conteúdo — ponto de código consolidado")]
+    [Theory(DisplayName = "condicoes: alternativas de pertencimento (EM/NAO_EM) ordenam pela chave de conteúdo — ponto de código consolidado")]
     [InlineData(Operador.Em)]
     [InlineData(Operador.NaoEm)]
     public void CondicaoGatilho_AlternativasDePertencimento_OrdenamPelaChaveDeConteudo(Operador operador)
@@ -340,7 +340,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
     private static IReadOnlyList<(string Fato, string Valor)> AtomosAchatados(JsonNode gatilho) => [.. gatilho.AsArray()
             .SelectMany(static clausula => clausula!.AsArray())
-            .Select(static atomo => (atomo!["fato"]!.GetValue<string>(), atomo["valor"]!.GetValue<string>()))
+            .Select(static atomo => (atomo!["codigoDoDado"]!.GetValue<string>(), atomo["valor"]!.GetValue<string>()))
             .OrderBy(static atomo => atomo.Item1, StringComparer.Ordinal)];
 
     private static ProcessoSeletivo MontarComDesempate(Operador operador, JsonElement valor)

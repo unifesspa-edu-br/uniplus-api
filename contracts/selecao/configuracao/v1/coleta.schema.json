@@ -6,7 +6,7 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "referenciaTemporalFatos": {
+    "referenciaTemporalDosDados": {
       "title": "Referência temporal dos fatos",
       "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato. A fase citada é a do cronograma deste documento.",
       "type": "object",
@@ -35,7 +35,7 @@
         }
       }
     },
-    "regrasDerivacao": {
+    "calculosDosDados": {
       "title": "Regras de derivação",
       "description": "Regras que derivam o valor de um fato do catálogo a partir de outros fatos. Cada fato derivado aparece uma vez. A derivação da modalidade não entra aqui: vem da oferta.",
       "type": "array",
@@ -43,10 +43,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "fatoCodigo"
+          "codigoDoDado"
         ],
         "properties": {
-          "fatoCodigo": {
+          "codigoDoDado": {
             "title": "Fato derivado",
             "description": "Código do fato derivado no catálogo, de 1 a 60 caracteres.",
             "type": "string",
@@ -85,7 +85,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "predicado.schema.json#/$defs/predicado"
+                      "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
                     }
                   ]
                 }

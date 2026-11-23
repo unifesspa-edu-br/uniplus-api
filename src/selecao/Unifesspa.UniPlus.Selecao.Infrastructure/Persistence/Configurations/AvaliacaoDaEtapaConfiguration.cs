@@ -30,7 +30,7 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
 
         builder.ToTable("avaliacoes_da_etapa", t =>
         {
-            t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Append-only; vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
+            t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
             t.HasCheckConstraint(
                 "ck_avaliacoes_da_etapa_situacao",
                 $"situacao IN ({(int)SituacaoDaAvaliacao.Apurada}, {(int)SituacaoDaAvaliacao.InscritoSemLinha}, {(int)SituacaoDaAvaliacao.EmConflito})");
@@ -40,9 +40,9 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
         });
 
         builder.HasKey(a => a.Id);
-        builder.Property(a => a.Id).ValueGeneratedNever();
+        builder.Property(a => a.Id).ValueGeneratedNever().HasComment("Identificador da avaliação da inscrição na etapa.");
 
-        builder.Property(a => a.LoteId).IsRequired();
+        builder.Property(a => a.LoteId).HasColumnName("importacao_id").IsRequired().HasComment("Identificador da importação que originou a avaliação.");
 
         builder.Property(a => a.EtapaProcessoId)
             .IsRequired()
@@ -72,7 +72,7 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
 
         builder.HasIndex(a => new { a.LoteId, a.InscricaoId, a.OfertaCursoId })
             .IsUnique()
-            .HasDatabaseName("ux_avaliacoes_da_etapa_lote_inscricao_oferta");
+            .HasDatabaseName("ux_avaliacoes_da_etapa_importacao_inscricao_oferta");
 
         builder.HasIndex(a => new { a.InscricaoId, a.EtapaProcessoId })
             .HasDatabaseName("ix_avaliacoes_da_etapa_inscricao_etapa");

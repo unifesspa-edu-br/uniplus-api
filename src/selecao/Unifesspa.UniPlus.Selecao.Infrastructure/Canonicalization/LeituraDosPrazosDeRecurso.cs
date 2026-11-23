@@ -87,9 +87,9 @@ internal static class LeituraDosPrazosDeRecurso
 
     private static RegraRecursoFase? LerRegra(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
-        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "parametros", "procedimentos");
+        leitor.ExigirChaves(bloco, path, "regra", "publicacaoDeReferenciaId", "parametros", "procedimentos");
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
-        Guid ancora = leitor.Identificador(bloco, "produtoAncoraId", path);
+        Guid ancora = leitor.Identificador(bloco, "publicacaoDeReferenciaId", path);
         JsonObject objeto = leitor.Objeto(bloco, "parametros", path);
         return leitor.Falhou ? null : MontarRegra(leitor, bloco, path, regra, ancora, objeto);
     }

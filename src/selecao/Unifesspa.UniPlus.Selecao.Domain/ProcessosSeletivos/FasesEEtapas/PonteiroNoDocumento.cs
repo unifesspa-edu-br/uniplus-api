@@ -28,16 +28,24 @@ public static class PonteiroNoDocumento
     {
         // A ordem da fase, que o documento não tem: a posição da fase na lista é a ordem dela, e a causa fica no trecho da fase.
         ["fases[].ordem"] = "fases[]",
-        ["fases[].faseCanonicaId"] = "fases[].faseCanonicaCodigo",
+        ["fases[].faseCanonicaId"] = "fases[].tipoFaseCodigo",
+        ["fases[].regraRecurso.atoAncoraCodigo"] = "fases[].regraRecurso.publicacaoDeReferenciaAtoCodigo",
         ["fases[].unidadeResponsavel"] = "fases[].unidadeResponsavelCodigo",
         ["fases[].bancasRequeridas[].tipoBancaId"] = "fases[].bancasRequeridas[].tipoBancaCodigo",
         ["fases[].bancasRequeridas[].categoriasDocumentoIds"] = "fases[].bancasRequeridas[].categoriasDocumentoCodigos",
         ["fases[].bancasRequeridas[].categoriasDocumentoIds[]"] = "fases[].bancasRequeridas[].categoriasDocumentoCodigos[]",
         ["etapas[].faseCodigo"] = "etapas[].faseChave",
         ["etapas[].id"] = "etapas[].chave",
+        ["etapas[].regraConsolidacao"] = "etapas[].regraDeApuracaoDaAvaliacao",
+        ["formularios[].itens[].fatoCodigo"] = "formularios[].itens[].codigoDoDado",
+        ["formularios[].grupos[].subitens[].fatoCodigo"] = "formularios[].grupos[].subitens[].codigoDoDado",
     };
 
     // A lista que o documento chama por outro nome: o nome do corpo do pedido vale para a lista e para tudo o que está dentro dela.
+    private const string ProdutosDaFase = "fases[].produtos";
+    private const string ProdutosDaFaseNoDocumento = "fases[].publicacoesPrevistas";
+    private const string ProdutosDaEtapa = "etapas[].produtos";
+    private const string ProdutosDaEtapaNoDocumento = "etapas[].publicacoesPrevistas";
     private const string ProcedimentosDaFase = "fases[]." + FaseDeclarada.ListaDosProcedimentosDeRecurso;
     private const string ProcedimentosDaFaseNoDocumento = "fases[].regraRecurso.procedimentosDeRecurso";
 
@@ -68,10 +76,16 @@ public static class PonteiroNoDocumento
     }
 
     private static string NomeDaListaRenomeada(string semIndices) =>
-        semIndices.StartsWith(ProcedimentosDaFase, StringComparison.Ordinal)
-        && (semIndices.Length == ProcedimentosDaFase.Length || semIndices[ProcedimentosDaFase.Length] is '.' or '[')
-            ? ProcedimentosDaFaseNoDocumento + semIndices[ProcedimentosDaFase.Length..]
-            : semIndices;
+        TraduzirPrefixo(semIndices, ProcedimentosDaFase, ProcedimentosDaFaseNoDocumento)
+        ?? TraduzirPrefixo(semIndices, ProdutosDaFase, ProdutosDaFaseNoDocumento)
+        ?? TraduzirPrefixo(semIndices, ProdutosDaEtapa, ProdutosDaEtapaNoDocumento)
+        ?? semIndices;
+
+    private static string? TraduzirPrefixo(string semIndices, string origem, string destino) =>
+        semIndices.StartsWith(origem, StringComparison.Ordinal)
+        && (semIndices.Length == origem.Length || semIndices[origem.Length] is '.' or '[')
+            ? destino + semIndices[origem.Length..]
+            : null;
 
     private static bool NoConceitoDaEtapa(string semIndices) =>
         semIndices.StartsWith(ConceitoDaEtapa, StringComparison.Ordinal)

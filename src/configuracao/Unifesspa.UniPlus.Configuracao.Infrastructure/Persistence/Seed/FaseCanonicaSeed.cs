@@ -131,7 +131,7 @@ public static class FaseCanonicaSeed
 }
 
 /// <summary>
-/// Definição de uma fase do seed (fonte única), na forma da linha de <c>fases_canonicas</c>,
+/// Definição de uma fase do seed (fonte única), na forma da linha de <c>tipos_de_fase</c>,
 /// com os sinalizadores como colunas planas. Não passa pela factory — seed materializa linhas
 /// diretamente —, e a coerência com as invariantes de domínio é garantida por
 /// teste que submete cada item à <c>FaseCanonica.Criar</c>.

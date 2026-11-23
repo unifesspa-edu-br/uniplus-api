@@ -47,7 +47,7 @@ internal static class SerializacaoDoCronograma
 
     private static void AcrescentarOrigemCanonica(JsonObject item, FaseCronograma fase)
     {
-        item["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId;
+        item["tipoFaseOrigemId"] = fase.FaseCanonicaOrigemId;
         item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
         item["origemData"] = fase.OrigemData.ToString();
         item["agrupaEtapas"] = fase.AgrupaEtapas;
@@ -67,7 +67,7 @@ internal static class SerializacaoDoCronograma
 
     private static void AcrescentarPublicacoes(JsonObject item, FaseCronograma fase)
     {
-        item["produtos"] = SerializarProdutosDaFase(fase);
+        item["publicacoesPrevistas"] = SerializarProdutosDaFase(fase);
         item["emiteParecerIndividual"] = fase.EmiteParecerIndividual;
         item["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null;
         item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(fase.TiposDeDecisao);
@@ -131,7 +131,7 @@ internal static class SerializacaoDoCronograma
     private static JsonObject SerializarRegraRecursoFase(RegraRecursoFase regraRecurso) => new()
     {
         ["regra"] = EscritaCanonica.SerializarReferenciaRegra(regraRecurso.Regra),
-        ["produtoAncoraId"] = regraRecurso.ProdutoAncoraId,
+        ["publicacaoDeReferenciaId"] = regraRecurso.ProdutoAncoraId,
         ["parametros"] = SerializarParametrosRegraPrazoRecurso(regraRecurso.Parametros),
         ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(regraRecurso.Procedimentos),
     };

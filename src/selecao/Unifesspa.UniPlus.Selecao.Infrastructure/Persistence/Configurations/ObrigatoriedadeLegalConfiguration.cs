@@ -48,7 +48,19 @@ internal sealed class ObrigatoriedadeLegalConfiguration
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("obrigatoriedades_legais");
+        builder.Property(o => o.TipoProcessoCodigo).HasComment("Código do tipo de processo ao qual a regra se aplica.");
+        builder.Property(o => o.Categoria).HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus, Atendimento ou Outros.");
+        builder.Property(o => o.RegraCodigo).HasComment("Código que identifica a regra legal.");
+        builder.Property(o => o.Predicado).HasComment("Condições de aplicação da regra legal, em JSON.");
+        builder.Property(o => o.DescricaoHumana).HasComment("Descrição da regra para leitura por pessoas.");
+        builder.Property(o => o.BaseLegal).HasComment("Fundamento legal da regra.");
+        builder.Property(o => o.AtoNormativoUrl).HasComment("Endereço do ato normativo que fundamenta a regra, quando houver.");
+        builder.Property(o => o.PortariaInternaCodigo).HasComment("Código da portaria interna correspondente, quando houver.");
+        builder.Property(o => o.VigenciaInicio).HasComment("Data inicial de vigência da regra.");
+        builder.Property(o => o.VigenciaFim).HasComment("Data final de vigência da regra, quando houver.");
+        builder.Property(o => o.Hash).HasComment("Resumo usado para identificar o conteúdo da regra.");
+
+        builder.ToTable("obrigatoriedades_legais", t => t.HasComment("Regras legais aplicáveis à configuração de processos seletivos."));
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.TipoProcessoCodigo)
@@ -65,6 +77,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
             .IsRequired();
 
         builder.Property(o => o.Predicado)
+            .HasColumnName("condicoes")
             .HasConversion(PredicadoConverter, PredicadoComparer)
             .HasColumnType("jsonb")
             .IsRequired();

@@ -24,7 +24,7 @@ public sealed class CoberturaDosMotivosTests
     public void FundamentoSemCobertura_Recusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
-        MotivoDoProcesso[] escolhidos =
+        MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
@@ -34,7 +34,7 @@ public sealed class CoberturaDosMotivosTests
         FieldError falta = Faltas(processo, escolhidos).Should().ContainSingle().Subject;
 
         falta.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
-        falta.Field.Should().Be("motivos");
+        falta.Field.Should().Be("motivosDeDecisao");
         falta.Error.Message.Should().Be(
             $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.");
     }
@@ -43,7 +43,7 @@ public sealed class CoberturaDosMotivosTests
     public void MotivoDeOutroTipo_NaoCobre()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDoProcesso[] escolhidos =
+        MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.HomologacaoDasInscricoes, "DOCUMENTO_ILEGIVEL", SentidoDoMotivo.Favoravel)),
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CarenciaSocioeconomica, SentidoDoMotivo.Desfavoravel)),
@@ -56,7 +56,7 @@ public sealed class CoberturaDosMotivosTests
     public void CoberturaCompleta_Aceita()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDoProcesso[] escolhidos =
+        MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
@@ -70,7 +70,7 @@ public sealed class CoberturaDosMotivosTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
         ProcessoParaMotivos.DeclararNaFase(processo, "HOMOLOGACAO_INSCRICOES", TipoMotivoDeDecisao.IsencaoDaTaxa);
-        MotivoDoProcesso[] escolhidos =
+        MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
@@ -127,9 +127,9 @@ public sealed class CoberturaDosMotivosTests
         SentidoDoMotivoCodigo.FromCodigo(null).Should().Be(SentidoDoMotivo.Nenhum);
     }
 
-    private static FieldError[] Faltas(ProcessoSeletivo processo, params MotivoDoProcesso[] escolhidos) =>
+    private static FieldError[] Faltas(ProcessoSeletivo processo, params MotivoDeDecisaoDoProcesso[] escolhidos) =>
         [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];
 
-    private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, MotivoDeDecisao origem) =>
+    private static MotivoDeDecisaoDoProcesso Escolher(ProcessoSeletivo processo, MotivoDeDecisao origem) =>
         ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem, versaoDeEntrada: 1);
 }

@@ -17,29 +17,29 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 public static class EscolhaDosMotivos
 {
     /// <summary>Inclui no lugar a cópia do motivo do cadastro, ou devolve a recusa.</summary>
-    public static Result<MotivoDoProcesso> Incluir(InclusaoDeMotivo inclusao)
+    public static Result<MotivoDeDecisaoDoProcesso> Incluir(InclusaoDeMotivo inclusao)
     {
         ArgumentNullException.ThrowIfNull(inclusao);
 
         ProcessoSeletivo processo = inclusao.Processo;
         return (RecusaDoLugarOuDoBloqueio(processo, inclusao.Lugar) ?? RecusaDaOrigem(inclusao)) is { } recusa
-            ? Result<MotivoDoProcesso>.Failure(recusa)
-            : Result<MotivoDoProcesso>.Success(
-                MotivoDoProcesso.Copiar(processo.Id, inclusao.Lugar, inclusao.Origem, VersaoConfiguracao.NumeroDaAbertura, justificativa: null));
+            ? Result<MotivoDeDecisaoDoProcesso>.Failure(recusa)
+            : Result<MotivoDeDecisaoDoProcesso>.Success(
+                MotivoDeDecisaoDoProcesso.Copiar(processo.Id, inclusao.Lugar, inclusao.Origem, VersaoConfiguracao.NumeroDaAbertura, justificativa: null));
     }
 
     /// <summary>Devolve a escolha a retirar do lugar, ou a recusa.</summary>
-    public static Result<MotivoDoProcesso> Retirar(
-        ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhaAtual, LugarDaDecisao lugar, Guid motivoDeDecisaoId)
+    public static Result<MotivoDeDecisaoDoProcesso> Retirar(
+        ProcessoSeletivo processo, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhaAtual, LugarDaDecisao lugar, Guid motivoDeDecisaoId)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(escolhaAtual);
         ArgumentNullException.ThrowIfNull(lugar);
 
-        MotivoDoProcesso? escolhido = escolhaAtual.FirstOrDefault(e => e.Lugar == lugar && e.MotivoDeDecisaoOrigemId == motivoDeDecisaoId);
+        MotivoDeDecisaoDoProcesso? escolhido = escolhaAtual.FirstOrDefault(e => e.Lugar == lugar && e.MotivoDeDecisaoOrigemId == motivoDeDecisaoId);
         return (RecusaDoLugarOuDoBloqueio(processo, lugar) ?? RecusaDeEscolhaAusente(escolhido, motivoDeDecisaoId)) is { } recusa
-            ? Result<MotivoDoProcesso>.Failure(recusa)
-            : Result<MotivoDoProcesso>.Success(escolhido!);
+            ? Result<MotivoDeDecisaoDoProcesso>.Failure(recusa)
+            : Result<MotivoDeDecisaoDoProcesso>.Success(escolhido!);
     }
 
     /// <summary>
@@ -58,8 +58,8 @@ public static class EscolhaDosMotivos
     /// A escolha que sai do processo junto com as fases e etapas que ele deixou de ter desde <paramref name="antes"/>. Só
     /// lê; quem chama remove o devolvido.
     /// </summary>
-    public static IReadOnlyList<MotivoDoProcesso> QueSaemComOsLugares(
-        LugaresDaDecisao antes, ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhaAtual)
+    public static IReadOnlyList<MotivoDeDecisaoDoProcesso> QueSaemComOsLugares(
+        LugaresDaDecisao antes, ProcessoSeletivo processo, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhaAtual)
     {
         ArgumentNullException.ThrowIfNull(antes);
         ArgumentNullException.ThrowIfNull(processo);
@@ -77,7 +77,7 @@ public static class EscolhaDosMotivos
     private static DomainError? RecusaDoLugar(ProcessoSeletivo processo, LugarDaDecisao lugar) =>
         LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas).Contem(lugar) ? null : LugarNaoEncontrado();
 
-    private static DomainError? RecusaDeEscolhaAusente(MotivoDoProcesso? escolhido, Guid motivoDeDecisaoId) =>
+    private static DomainError? RecusaDeEscolhaAusente(MotivoDeDecisaoDoProcesso? escolhido, Guid motivoDeDecisaoId) =>
         escolhido is null
             ? new DomainError(MotivoDeDecisaoErrorCodes.NaoEscolhido, $"O processo não escolheu o motivo de decisão {motivoDeDecisaoId} neste lugar.")
             : null;
@@ -103,5 +103,5 @@ public static class EscolhaDosMotivos
 public sealed record InclusaoDeMotivo(
     ProcessoSeletivo Processo,
     LugarDaDecisao Lugar,
-    IReadOnlyCollection<MotivoDoProcesso> EscolhaAtual,
+    IReadOnlyCollection<MotivoDeDecisaoDoProcesso> EscolhaAtual,
     MotivoDeDecisao Origem);

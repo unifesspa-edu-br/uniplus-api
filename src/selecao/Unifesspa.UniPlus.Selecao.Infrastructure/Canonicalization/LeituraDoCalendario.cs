@@ -55,10 +55,15 @@ internal static class LeituraDoCalendario
             return null;
         }
 
-        leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente", "origemId", "versaoDataset", "diasNaoUteis");
+        return LerCalendarioPresente(leitor, bloco);
+    }
+
+    private static CalendarioDiasUteisCongelado? LerCalendarioPresente(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente", "origemId", "versaoDoCalendario", "diasNaoUteis");
 
         Guid origemId = leitor.Identificador(bloco, "origemId", "calendarioDiasUteis");
-        string versaoDataset = leitor.TextoNaoVazio(bloco, "versaoDataset", "calendarioDiasUteis");
+        string versaoDataset = leitor.TextoNaoVazio(bloco, "versaoDoCalendario", "calendarioDiasUteis");
         JsonArray dias = leitor.Array(bloco, "diasNaoUteis", "calendarioDiasUteis");
         if (leitor.Falhou)
         {
@@ -88,14 +93,7 @@ internal static class LeituraDoCalendario
         List<DiaNaoUtilCongelado> congelados = [];
         for (int i = 0; i < dias.Count; i++)
         {
-            string path = $"calendarioDiasUteis.diasNaoUteis[{i}]";
-            JsonObject item = leitor.ItemObjeto(dias, i, path);
-            if (leitor.Falhou)
-            {
-                return null;
-            }
-
-            DiaNaoUtilCongelado? dia = LerDiaNaoUtil(leitor, item, path);
+            DiaNaoUtilCongelado? dia = LerItemDeDiaNaoUtil(leitor, dias, i);
             if (dia is null)
             {
                 return null;
@@ -105,6 +103,13 @@ internal static class LeituraDoCalendario
         }
 
         return congelados;
+    }
+
+    private static DiaNaoUtilCongelado? LerItemDeDiaNaoUtil(LeitorEnvelope leitor, JsonArray dias, int indice)
+    {
+        string path = $"calendarioDiasUteis.diasNaoUteis[{indice}]";
+        JsonObject item = leitor.ItemObjeto(dias, indice, path);
+        return leitor.Falhou ? null : LerDiaNaoUtil(leitor, item, path);
     }
 
     private static DiaNaoUtilCongelado? LerDiaNaoUtil(LeitorEnvelope leitor, JsonObject item, string path)
@@ -121,6 +126,12 @@ internal static class LeituraDoCalendario
             return null;
         }
 
+        return CriarDiaNaoUtil(leitor, path, data, abrangencia, municipioIbge, municipioNome, uf);
+    }
+
+    private static DiaNaoUtilCongelado? CriarDiaNaoUtil(
+        LeitorEnvelope leitor, string path, DateOnly data, string abrangencia, string? municipioIbge, string? municipioNome, string? uf)
+    {
         Result<DiaNaoUtilCongelado> dia = DiaNaoUtilCongelado.Criar(data, abrangencia, municipioIbge, municipioNome, uf);
         if (dia.IsFailure)
         {
@@ -146,16 +157,28 @@ internal static class LeituraDoCalendario
                 "'calendarioDiasUteis.diasNaoUteis' não está na ordem canônica (data, abrangência, município, UF).");
         }
 
+        return ReidratarCalendario(leitor, origemId, versaoDataset, congelados);
+    }
+
+    private static CalendarioDiasUteisCongelado? ReidratarCalendario(
+        LeitorEnvelope leitor, Guid origemId, string versaoDataset, List<DiaNaoUtilCongelado> congelados)
+    {
         Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(origemId, versaoDataset, congelados);
         if (calendario.IsFailure)
         {
             return leitor.Recusar<CalendarioDiasUteisCongelado?>($"'calendarioDiasUteis' congelado é inválido: {calendario.Error!.Message}");
         }
 
+        return ConferirVersaoDoCalendario(leitor, calendario.Value!, versaoDataset);
+    }
+
+    private static CalendarioDiasUteisCongelado? ConferirVersaoDoCalendario(
+        LeitorEnvelope leitor, CalendarioDiasUteisCongelado calendario, string versaoDataset)
+    {
         // Mesma razão da conferência por dia: a factory apara espaço da versão.
-        return string.Equals(calendario.Value!.VersaoDataset, versaoDataset, StringComparison.Ordinal)
+        return string.Equals(calendario.VersaoDataset, versaoDataset, StringComparison.Ordinal)
             && string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDataset), versaoDataset, StringComparison.Ordinal)
-            ? calendario.Value
+            ? calendario
             : leitor.Recusar<CalendarioDiasUteisCongelado?>(
                 "'calendarioDiasUteis.versaoDataset' não está na forma canônica — espaço em volta do valor "
                 + "ou texto fora da normalização Unicode que o encoder aplica.");
@@ -213,6 +236,11 @@ internal static class LeituraDoCalendario
             return null;
         }
 
+        return LerAlgoritmoDeclarado(leitor, bloco, presente);
+    }
+
+    private static ReferenciaRegra? LerAlgoritmoDeclarado(LeitorEnvelope leitor, JsonObject bloco, bool presente)
+    {
         if (!presente)
         {
             leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente");
@@ -246,6 +274,11 @@ internal static class LeituraDoCalendario
             return (null, null);
         }
 
+        return LerBlocoDaLocalidade(leitor, bloco);
+    }
+
+    private static (LocalidadeRegente? Localidade, string? FusoHorario) LerBlocoDaLocalidade(LeitorEnvelope leitor, JsonObject bloco)
+    {
         leitor.ExigirChaves(bloco, "localidade", "codigoIbge", "nome", "uf", "fusoHorario");
 
         string codigoIbge = leitor.TextoNaoVazio(bloco, "codigoIbge", "localidade");
@@ -257,6 +290,12 @@ internal static class LeituraDoCalendario
             return (null, null);
         }
 
+        return ReidratarLocalidade(leitor, codigoIbge, nome, uf, fusoHorario);
+    }
+
+    private static (LocalidadeRegente? Localidade, string? FusoHorario) ReidratarLocalidade(
+        LeitorEnvelope leitor, string codigoIbge, string nome, string uf, string fusoHorario)
+    {
         Result<LocalidadeRegente> localidade = LocalidadeRegente.Criar(codigoIbge, nome, uf);
         if (localidade.IsFailure)
         {

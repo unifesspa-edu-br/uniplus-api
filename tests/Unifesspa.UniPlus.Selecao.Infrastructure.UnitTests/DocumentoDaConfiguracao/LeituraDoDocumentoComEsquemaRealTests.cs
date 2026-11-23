@@ -134,11 +134,11 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
     public void Fase_SemFaseCanonicaOuComOrdem_ERecusadaNoPonteiroDaFase()
     {
         Result<DocumentoLido> resultado = Ler("""
-            "cronograma": { "fases": [ { "chave": "inscricao" }, { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO_FINAL", "ordem": 2 } ] }
+            "cronograma": { "fases": [ { "chave": "inscricao" }, { "chave": "resultado", "tipoFaseCodigo": "RESULTADO_FINAL", "ordem": 2 } ] }
             """);
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
-            ("/cronograma/fases/0/faseCanonicaCodigo", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente),
+            ("/cronograma/fases/0/tipoFaseCodigo", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente),
             ("/cronograma/fases/1/ordem", DocumentoDaConfiguracaoErrorCodes.CampoDesconhecido));
     }
 

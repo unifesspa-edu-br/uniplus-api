@@ -327,17 +327,17 @@ public static class SementePsrMedicina2027
     }
 
     private static string ComandoDoFato(Guid id, FatoCandidato fato) =>
-        Inserir("fatos_do_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
+        Inserir("dados_do_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
 
     private static (string Coluna, string Valor)[] ColunasDoFato(Guid id, FatoCandidato fato) =>
     [
         ("id", Uuid(id)), ("codigo", Texto(fato.Codigo)), ("nome", Texto(fato.Nome)), ("descricao", Texto(fato.Descricao)),
-        ("dominio", Texto(DominiosFato.ParaTokenCanonico(fato.Dominio))),
+        ("tipo", Texto(DominiosFato.ParaTokenCanonico(fato.Dominio))),
         ("origem", Texto(OrigensFato.ParaTokenCanonico(fato.Origem))),
-        ("cardinalidade", Texto(CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade))),
-        ("fonte_valores", Texto(fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null)),
+        ("quantidade_de_valores", Texto(CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade))),
+        ("fonte_das_opcoes", Texto(fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null)),
         ("formato", Texto(fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null)),
-        ("ponto_resolucao", Texto(fato.PontoResolucao)), ("binding", Texto(fato.Binding)),
+        ("fase_de_disponibilidade", Texto(fato.PontoResolucao)), ("fonte_do_valor", Texto(fato.Binding)),
         ("escopo", Texto(EscoposFato.ParaTokenCanonico(fato.Escopo))),
         ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
         ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
@@ -355,7 +355,7 @@ public static class SementePsrMedicina2027
     ];
 
     private static string ComandoDoValor(Guid id, Guid fatoId, FatoValorDominio valor) =>
-        Inserir("valores_de_dominio_do_fato", "id",
+        Inserir("opcoes_dos_dados", "id",
             ("id", Uuid(id)), ("fato_candidato_id", Uuid(fatoId)), ("codigo", Texto(valor.Codigo)),
             ("descricao", Texto(valor.Descricao)), ("ordem", valor.Ordem.ToString(CultureInfo.InvariantCulture)),
             ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Declaracao.Instante)));

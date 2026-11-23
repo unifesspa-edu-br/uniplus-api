@@ -145,7 +145,7 @@ public sealed class AdocaoDoDocumentoLidoTests
         FaseCronograma segunda = new ModeloDeFase("B", 2).Adotada();
         OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(segunda, 0), (primeira, 1)], OrdemCanonicaDaConfiguracao.Fases, []);
 
-        PonteiroNoDocumento.Converter("fases[0].produtos", origem).Should().Be("/cronograma/fases/1/produtos");
-        PonteiroNoDocumento.Converter("fases[1].produtos", origem).Should().Be("/cronograma/fases/0/produtos");
+        PonteiroNoDocumento.Converter("fases[0].produtos", origem).Should().Be("/cronograma/fases/1/publicacoesPrevistas");
+        PonteiroNoDocumento.Converter("fases[1].produtos", origem).Should().Be("/cronograma/fases/0/publicacoesPrevistas");
     }
 }

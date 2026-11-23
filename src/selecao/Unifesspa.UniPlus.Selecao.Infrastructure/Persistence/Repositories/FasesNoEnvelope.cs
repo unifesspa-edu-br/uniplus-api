@@ -56,7 +56,7 @@ internal static class FasesNoEnvelope
 
     private static FaseDaVersaoPublicada LerFase(JsonObject f, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas) => new(
         GuidDe(f["id"]) ?? Guid.Empty,
-        GuidDe(f["faseCanonicaOrigemId"]) ?? Guid.Empty,
+        GuidDe(f["tipoFaseOrigemId"]) ?? Guid.Empty,
         TextoDe(f["codigo"]) ?? string.Empty,
         GuidDe((f["unidadeResponsavel"] as JsonObject)?["origemId"]),
         new JanelaDeTempo(InstanteDe(f["inicio"]), InstanteDe(f["fim"])),

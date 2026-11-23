@@ -21,8 +21,8 @@ internal static class LeituraDoCronograma
 {
     private static readonly string[] ChavesDaFase =
     [
-        "ordem", "noMesmoMomentoDaAnterior", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
-        "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos",
+        "id", "ordem", "noMesmoMomentoDaAnterior", "tipoFaseOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
+        "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "publicacoesPrevistas",
         "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
 
@@ -32,13 +32,7 @@ internal static class LeituraDoCronograma
     /// (<c>ProcessoSeletivo.OrigemCandidatos</c>), imutável após a criação (nenhum
     /// <c>Definir*</c> o altera), e por isso nada aqui precisa repô-lo.
     /// </summary>
-    /// <param name="comId">
-    /// <see langword="true"/> quando o bloco congela <c>id</c> por fase: a gramática é fechada, então o
-    /// mesmo leitor não aceita as duas formas com uma única lista de chaves. Com <see langword="true"/>, a
-    /// fase reidrata preservando o Id congelado (<see cref="FaseCronograma.Reidratar"/>); com
-    /// <see langword="false"/>, <see cref="FaseCronograma.Criar"/> gera um Id novo.
-    /// </param>
-    internal static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload, bool comId = false)
+    internal static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "cronogramaFases", "$");
         leitor.ExigirChaves(bloco, "cronogramaFases", "origemCandidatos", "fases");
@@ -46,15 +40,15 @@ internal static class LeituraDoCronograma
         leitor.Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
 
         JsonArray array = leitor.Array(bloco, "fases", "cronogramaFases");
-        return leitor.Falhou ? [] : LerFases(leitor, array, comId);
+        return leitor.Falhou ? [] : LerFases(leitor, array);
     }
 
-    private static List<FaseCronograma> LerFases(LeitorEnvelope leitor, JsonArray array, bool comId)
+    private static List<FaseCronograma> LerFases(LeitorEnvelope leitor, JsonArray array)
     {
         List<FaseCronograma> fases = [];
         for (int i = 0; i < array.Count; i++)
         {
-            FaseCronograma? fase = LerFase(leitor, leitor.ItemObjeto(array, i, "cronogramaFases.fases"), $"cronogramaFases.fases[{i}]", comId);
+            FaseCronograma? fase = LerFase(leitor, leitor.ItemObjeto(array, i, "cronogramaFases.fases"), $"cronogramaFases.fases[{i}]");
             if (fase is null)
             {
                 return [];
@@ -66,11 +60,11 @@ internal static class LeituraDoCronograma
         return fases;
     }
 
-    private static FaseCronograma? LerFase(LeitorEnvelope leitor, JsonObject item, string path, bool comId)
+    private static FaseCronograma? LerFase(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, comId ? [.. ChavesDaFase, "id"] : ChavesDaFase);
+        leitor.ExigirChaves(item, path, ChavesDaFase);
 
-        Guid? id = comId ? leitor.Identificador(item, "id", path) : null;
+        Guid id = leitor.Identificador(item, "id", path);
         int ordem = leitor.Inteiro(item, "ordem", path);
         OrigemCanonicaDaFase origem = LerOrigemCanonica(leitor, item, path);
         DecisoesDeCronogramaDaFase decisoes = LerDecisoesSemUnidade(leitor, item, path, ordem);
@@ -82,7 +76,7 @@ internal static class LeituraDoCronograma
     }
 
     private static OrigemCanonicaDaFase LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path) => new(
-        leitor.Identificador(item, "faseCanonicaOrigemId", path),
+        leitor.Identificador(item, "tipoFaseOrigemId", path),
         leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo),
         leitor.Enumeracao<OrigemDataFase>(item, "origemData", path),
         leitor.Booleano(item, "agrupaEtapas", path),
@@ -102,7 +96,7 @@ internal static class LeituraDoCronograma
         LeitorEnvelope leitor,
         JsonObject item,
         string path,
-        Guid? id,
+        Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         bool emiteParecerIndividual)
@@ -123,7 +117,7 @@ internal static class LeituraDoCronograma
 
     private static FaseCronograma? Montar(
         LeitorEnvelope leitor,
-        Guid? id,
+        Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
@@ -144,7 +138,7 @@ internal static class LeituraDoCronograma
     // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
     // envelope incoerente tem de virar recusa nomeada.
     private static Result<FaseCronograma> ConferirEReidratar(
-        Guid? id,
+        Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
@@ -161,13 +155,12 @@ internal static class LeituraDoCronograma
     }
 
     private static Result<FaseCronograma> Reidratar(
-        Guid? id,
+        Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
-        IReadOnlyList<BancaRequerida> bancas) => id is { } congelado
-        ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(congelado, origem, decisoes, publicacoes, bancas))
-        : FaseCronograma.Criar(origem, decisoes, publicacoes, bancas);
+        IReadOnlyList<BancaRequerida> bancas) =>
+        Result<FaseCronograma>.Success(FaseCronograma.Reidratar(id, origem, decisoes, publicacoes, bancas));
 
     /// <summary>
     /// A unidade que responde pela fase, congelada por valor: <c>null</c> enquanto a fase não a
@@ -196,11 +189,11 @@ internal static class LeituraDoCronograma
     /// </summary>
     internal static List<ProdutoDaFase> LerProdutosDaFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
-        JsonArray array = leitor.Array(faseItem, "produtos", pathPai);
+        JsonArray array = leitor.Array(faseItem, "publicacoesPrevistas", pathPai);
         List<ProdutoDaFase> produtos = [];
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            ProdutoDaFase? produto = LerProduto(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.produtos"), $"{pathPai}.produtos[{i}]");
+            ProdutoDaFase? produto = LerProduto(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.publicacoesPrevistas"), $"{pathPai}.publicacoesPrevistas[{i}]");
             if (produto is not null)
             {
                 produtos.Add(produto);

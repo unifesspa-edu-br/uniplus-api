@@ -206,7 +206,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
         await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = "SELECT valor_codigo, valor_rotulo FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id AND fato_codigo = 'NATURALIDADE_MUNICIPIO' AND ocorrencia_id IS NULL";
+        comando.CommandText = "SELECT valor_codigo, valor_rotulo FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id AND codigo_do_dado = 'NATURALIDADE_MUNICIPIO' AND ocorrencia_id IS NULL";
         comando.Parameters.AddWithValue("id", id);
         await using NpgsqlDataReader leitor = await comando.ExecuteReaderAsync();
         (await leitor.ReadAsync()).Should().BeTrue();
@@ -219,7 +219,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
         await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = "SELECT valor_codigo, valor_rotulo, valor_cifrado FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id AND fato_codigo = 'NATURALIDADE_MUNICIPIO'";
+        comando.CommandText = "SELECT valor_codigo, valor_rotulo, valor_cifrado FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id AND codigo_do_dado = 'NATURALIDADE_MUNICIPIO'";
         comando.Parameters.AddWithValue("id", id);
         await using NpgsqlDataReader leitor = await comando.ExecuteReaderAsync();
         (await leitor.ReadAsync()).Should().BeTrue();

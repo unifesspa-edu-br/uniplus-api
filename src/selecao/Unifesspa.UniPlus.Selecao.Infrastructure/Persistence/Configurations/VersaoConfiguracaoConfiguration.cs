@@ -46,6 +46,7 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
             "versoes_configuracao",
             t =>
             {
+                t.HasComment("Versões publicadas da configuração do processo seletivo.");
                 t.HasCheckConstraint(
                     "ck_versoes_configuracao_numero_positivo",
                     "numero_versao > 0");
@@ -80,45 +81,49 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
             });
 
         builder.HasKey(v => v.Id);
+        builder.Property(v => v.Id).HasComment("Identificador da versão da configuração.");
 
-        builder.Property(v => v.ProcessoSeletivoId).IsRequired();
-        builder.Property(v => v.NumeroVersao).IsRequired();
-        builder.Property(v => v.VigenteAPartirDe).IsRequired();
+        builder.Property(v => v.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence a versão.").IsRequired();
+        builder.Property(v => v.NumeroVersao).HasComment("Número sequencial da versão do processo.").IsRequired();
+        builder.Property(v => v.VigenteAPartirDe).HasComment("Data e hora a partir da qual a versão vigora.").IsRequired();
 
-        builder.Property(v => v.SchemaVersion)
+        builder.Property(v => v.SchemaVersion).HasComment("Versão do formato do conteúdo da configuração.")
+            .HasColumnName("versao_do_formato")
             .HasMaxLength(SchemaVersionMaxLength)
             .IsRequired();
 
-        builder.Property(v => v.AlgoritmoHash)
+        builder.Property(v => v.AlgoritmoHash).HasComment("Algoritmo usado para calcular o resumo da configuração.")
             .HasMaxLength(AlgoritmoHashMaxLength)
             .IsRequired();
 
         // Bytes canônicos (ADR-0100 item 6) — base do hash; fonte única de verdade.
-        builder.Property(v => v.ConfiguracaoCongeladaCanonica)
+        builder.Property(v => v.ConfiguracaoCongeladaCanonica).HasComment("Bytes da configuração publicada usados no cálculo do resumo.")
+            .HasColumnName("bytes_da_configuracao")
             .HasColumnType("bytea")
             .IsRequired();
 
         // Derivado por parsing UTF-8 dos bytes canônicos — só consulta SQL
         // (ADR-0100 item 7). O banco não re-serializa nem reordena chaves.
-        builder.Property(v => v.ConfiguracaoCongelada)
+        builder.Property(v => v.ConfiguracaoCongelada).HasComment("Conteúdo da configuração publicada em JSON para consulta.")
+            .HasColumnName("conteudo_da_configuracao")
             .HasColumnType("jsonb")
             .IsRequired();
 
-        builder.Property(v => v.HashConfiguracao)
+        builder.Property(v => v.HashConfiguracao).HasComment("Resumo SHA-256 do conteúdo da configuração.")
             .HasMaxLength(HashLength)
             .IsFixedLength()
             .IsRequired();
 
-        builder.Property(v => v.AtoCriadorId).IsRequired();
+        builder.Property(v => v.AtoCriadorId).HasComment("Identificador do ato que criou a versão.").IsRequired();
 
-        builder.Property(v => v.AtoCriadorHash)
+        builder.Property(v => v.AtoCriadorHash).HasComment("Resumo SHA-256 do ato que criou a versão.")
             .HasMaxLength(HashLength)
             .IsFixedLength()
             .IsRequired();
 
-        builder.Property(v => v.AtoCriadorRetificaId);
+        builder.Property(v => v.AtoCriadorRetificaId).HasComment("Identificador do ato retificado, quando houver.");
 
-        builder.Property(v => v.AtorUsuarioContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
+        builder.Property(v => v.AtorUsuarioContaId).HasComment("Identificador da conta responsável pela publicação.").ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(AtorUsuarioContaIdMaxLength)
             .IsRequired();
 

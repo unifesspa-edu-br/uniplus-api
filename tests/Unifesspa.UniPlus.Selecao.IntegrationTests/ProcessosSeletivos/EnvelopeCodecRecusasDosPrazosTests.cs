@@ -33,7 +33,7 @@ public sealed class EnvelopeCodecRecusasDosPrazosTests
     private static JsonObject Parametros(JsonObject envelope, bool etapa) => etapa
         ? envelope["etapas"]!.AsArray().Select(e => e!.AsObject())
             .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
-            .First(r => r["ancora"]!.GetValue<string>() == "AtoPublicado")["parametros"]!.AsObject()
+            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == "AtoPublicado")["parametros"]!.AsObject()
         : envelope["cronogramaFases"]!["fases"]!.AsArray().Select(f => f!.AsObject())
             .Single(f => f["regraRecurso"] is JsonObject)["regraRecurso"]!["parametros"]!.AsObject();
 }

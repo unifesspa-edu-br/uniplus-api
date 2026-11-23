@@ -32,17 +32,17 @@ internal static class SerializacaoDasExigencias
         {
             ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
             ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
-            ["referenciaTemporalFatos"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
+            ["referenciaTemporalDosDados"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
             {
                 ["tipo"] = referencia.Tipo.ToCodigo(),
                 ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 ["faseId"] = referencia.FaseId,
             }
             : null,
-            ["dataReferenciaFatos"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), fusoHorario) is { } data
+            ["dataDeReferenciaDosDados"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), fusoHorario) is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
-            ["metadadosFatos"] = SerializacaoDosFatos.SerializarMetadadosFatos(metadadosFatosCongelados),
+            ["definicoesDosDados"] = SerializacaoDosFatos.SerializarMetadadosFatos(metadadosFatosCongelados),
         };
 
     internal static JsonArray SerializarRegrasDeComprovacao(ProcessoSeletivo processo) =>
@@ -110,7 +110,7 @@ internal static class SerializacaoDasExigencias
         ["classificacaoProtecao"] = ClassificacoesDeProtecao.ParaTokenCanonico(exigencia.ClassificacaoProtecao),
         ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(exigencia.FinalidadeTratamento),
         ["hipoteseLegal"] = HashCanonicalComputer.NormalizeNfc(exigencia.HipoteseLegal),
-        ["fatosComprovados"] = new JsonArray([.. exigencia.FatosComprovados.Order(StringComparer.Ordinal)
+        ["dadosComprovados"] = new JsonArray([.. exigencia.FatosComprovados.Order(StringComparer.Ordinal)
             .Select(static f => (JsonNode)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(f))!)]),
     };
 
@@ -124,7 +124,7 @@ internal static class SerializacaoDasExigencias
         item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
             ? HashCanonicalComputer.NormalizeNfc(consequencia)
             : null;
-        item["condicaoGatilho"] = SerializarCondicaoGatilho(exigencia.Condicoes);
+        item["condicoes"] = SerializarCondicaoGatilho(exigencia.Condicoes);
         item["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas());
         item["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null;
         item["formatosPermitidos"] = SerializarFormatosPermitidos(exigencia.FormatosPermitidos);
@@ -189,7 +189,7 @@ internal static class SerializacaoDasExigencias
         ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
         ["categoria"] = regra.Categoria.ToString(),
         ["tipoProcessoCodigoAvaliado"] = HashCanonicalComputer.NormalizeNfc(regra.TipoProcessoCodigoAvaliado),
-        ["predicado"] = SerializacaoDosPredicados.SerializarPredicadoObrigatoriedade(regra.Predicado),
+        ["condicoes"] = SerializacaoDosPredicados.SerializarPredicadoObrigatoriedade(regra.Predicado),
         ["aprovada"] = regra.Aprovada,
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(regra.BaseLegal),
         ["atoNormativoUrl"] = regra.AtoNormativoUrl is { } url ? HashCanonicalComputer.NormalizeNfc(url) : null,

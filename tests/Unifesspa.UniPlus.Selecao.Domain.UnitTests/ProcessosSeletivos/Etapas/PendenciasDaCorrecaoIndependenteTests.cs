@@ -101,7 +101,7 @@ public sealed class PendenciasDaCorrecaoIndependenteTests
         processo.DefinirEtapas([Etapa(tipoExige: true)]).IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(
-            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: Com(CorretoresDaRegra.SemNovoCorretor(corretores)), motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: Com(CorretoresDaRegra.SemNovoCorretor(corretores)), motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
         conferida.Errors.Any(static causa => causa.Error.Code == EtapaProcessoErrorCodes.CorrecaoIndependenteComMenosDeDoisCorretores).Should().Be(recusa);
     }

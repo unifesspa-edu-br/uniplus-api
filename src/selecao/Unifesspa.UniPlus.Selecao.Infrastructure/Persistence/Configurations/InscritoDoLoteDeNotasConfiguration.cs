@@ -23,17 +23,17 @@ internal sealed class InscritoDoLoteDeNotasConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("inscritos_do_lote_de_notas", t =>
+        builder.ToTable("inscritos_da_importacao", t =>
         {
-            t.HasComment("A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
-            t.HasCheckConstraint("ck_inscritos_do_lote_de_notas_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
+            t.HasComment("A inscrição com linha válida em um lote de notas e o número de inscrição atribuído pelo INEP. Os registros não são alterados ou excluídos.");
+            t.HasCheckConstraint("ck_inscritos_da_importacao_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
         });
 
         builder.HasKey(i => i.Id);
-        builder.Property(i => i.Id).ValueGeneratedNever();
+        builder.Property(i => i.Id).ValueGeneratedNever().HasComment("Identificador do registro de inscrito na importação.");
 
-        builder.Property(i => i.LoteId).IsRequired();
-        builder.Property(i => i.InscricaoId).IsRequired();
+        builder.Property(i => i.LoteId).HasColumnName("importacao_id").IsRequired().HasComment("Identificador da importação à qual pertence o inscrito.");
+        builder.Property(i => i.InscricaoId).IsRequired().HasComment("Identificador da inscrição com linha válida no arquivo.");
 
         builder.Property(i => i.NumeroDeInscricaoNoEnem)
             .ClassificaComo(ClassificacaoDeProtecao.Identificador)
@@ -43,14 +43,15 @@ internal sealed class InscritoDoLoteDeNotasConfiguration : IEntityTypeConfigurat
 
         // Alvo da chave estrangeira composta do lançamento: não há lançamento de quem não está no lote.
         builder.HasAlternateKey(i => new { i.LoteId, i.InscricaoId })
-            .HasName("ak_inscritos_do_lote_de_notas_lote_inscricao");
+            .HasName("ak_inscritos_da_importacao_importacao_inscricao");
 
         builder.HasOne<InscricaoRecord>()
             .WithMany()
             .HasForeignKey(i => i.InscricaoId)
+            .HasConstraintName("fk_inscritos_da_importacao_inscricao")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(i => i.InscricaoId)
-            .HasDatabaseName("ix_inscritos_do_lote_de_notas_inscricao");
+            .HasDatabaseName("ix_inscritos_da_importacao_inscricao");
     }
 }

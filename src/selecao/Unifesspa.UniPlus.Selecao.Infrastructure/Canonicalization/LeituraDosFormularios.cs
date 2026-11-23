@@ -37,12 +37,17 @@ internal static class LeituraDosFormularios
             return ([], []);
         }
 
+        return LerBlocosDeFormulario(leitor, blocos);
+    }
+
+    private static (IReadOnlyList<FormularioProcesso> Formularios, IReadOnlyList<TermoExigidoFormulario> Termos) LerBlocosDeFormulario(
+        LeitorEnvelope leitor, JsonArray blocos)
+    {
         List<FormularioProcesso> formularios = [];
         List<TermoExigidoFormulario> termos = [];
         for (int f = 0; f < blocos.Count; f++)
         {
-            FormularioProcesso? formulario = LerFormulario(
-                leitor, leitor.ItemObjeto(blocos, f, "formularios"), $"formularios[{f}]", formularios.LastOrDefault()?.Finalidade, termos);
+            FormularioProcesso? formulario = LerItemDeFormulario(leitor, blocos, f, formularios.LastOrDefault()?.Finalidade, termos);
             if (formulario is null)
             {
                 return ([], []);
@@ -54,11 +59,21 @@ internal static class LeituraDosFormularios
         return (formularios, termos);
     }
 
+    private static FormularioProcesso? LerItemDeFormulario(
+        LeitorEnvelope leitor, JsonArray blocos, int indice, FinalidadeFormulario? anterior, List<TermoExigidoFormulario> termos) =>
+        LerFormulario(leitor, leitor.ItemObjeto(blocos, indice, "formularios"), $"formularios[{indice}]", anterior, termos);
+
     private static FormularioProcesso? LerFormulario(
         LeitorEnvelope leitor, JsonObject bloco, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos)
     {
-        leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "modeloOrigem", "etapas", "termos");
+        leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "modeloOrigem", "paginas", "termos");
 
+        return LerDeclaracaoDoFormulario(leitor, bloco, path, finalidadeAnterior, termos);
+    }
+
+    private static FormularioProcesso? LerDeclaracaoDoFormulario(
+        LeitorEnvelope leitor, JsonObject bloco, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos)
+    {
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(bloco, "finalidade", path));
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
@@ -70,19 +85,29 @@ internal static class LeituraDosFormularios
             return null;
         }
 
-        // O encoder emite as finalidades em ordem estritamente crescente, uma vez cada.
-        if (finalidade == FinalidadeFormulario.Nenhuma || finalidade <= finalidadeAnterior)
+        return CriarFormulario(leitor, path, finalidadeAnterior, termos,
+            new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, etapas, itensDeTermo));
+    }
+
+    private sealed record DeclaracaoFormulario(
+        FinalidadeFormulario Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo,
+        IReadOnlyList<EtapaFormulario> Etapas, JsonArray Termos);
+
+    private static FormularioProcesso? CriarFormulario(
+        LeitorEnvelope leitor, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos, DeclaracaoFormulario d)
+    {
+        if (d.Finalidade == FinalidadeFormulario.Nenhuma || d.Finalidade <= finalidadeAnterior)
         {
             return leitor.Recusar<FormularioProcesso?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
         }
 
-        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas, modeloId, modeloCodigo);
+        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(d.Finalidade, d.FaseId, d.Titulo, d.Etapas, d.ModeloId, d.ModeloCodigo);
         if (formulario.IsFailure)
         {
             return leitor.Propagar<FormularioProcesso?>(formulario.Error!);
         }
 
-        return LerTermos(leitor, itensDeTermo, path, finalidade, termos) ? formulario.Value : null;
+        return LerTermos(leitor, d.Termos, path, d.Finalidade, termos) ? formulario.Value : null;
     }
 
     private static bool LerTermos(
@@ -92,23 +117,56 @@ internal static class LeituraDosFormularios
         int? ordemAnterior = null;
         for (int i = 0; i < itensDeTermo.Count; i++)
         {
-            string pathTermo = $"{path}.termos[{i}]";
-            TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itensDeTermo, i, $"{path}.termos"), pathTermo, finalidade);
-            if (leitor.Falhou || termo is null)
+            if (!AdicionarTermo(leitor, itensDeTermo, (path, i), finalidade, termos, (codigos, ordemAnterior), out ordemAnterior))
             {
                 return false;
             }
+        }
 
-            // O encoder emite os termos em ordem estritamente crescente e com código único; outra forma
-            // só vem de um registro publicado adulterado.
-            if (!codigos.Add(termo.Codigo) || termo.Ordem <= ordemAnterior)
-            {
-                leitor.Recusar<object>($"'{pathTermo}' repete código ou quebra a ordem crescente dos termos.");
-                return false;
-            }
+        return true;
+    }
 
-            ordemAnterior = termo.Ordem;
-            termos.Add(termo);
+    private static bool AdicionarTermo(
+        LeitorEnvelope leitor, JsonArray itens, (string Path, int Indice) posicao, FinalidadeFormulario finalidade, List<TermoExigidoFormulario> termos,
+        (HashSet<string> Codigos, int? OrdemAnterior) conferencia, out int? ordemAnterior)
+    {
+        ordemAnterior = conferencia.OrdemAnterior;
+        TermoExigidoFormulario? termo = LerItemDeTermo(leitor, itens, posicao, finalidade);
+        if (termo is null)
+        {
+            return false;
+        }
+
+        if (!ConferirTermo(leitor, $"{posicao.Path}.termos[{posicao.Indice}]", termo, conferencia))
+        {
+            return false;
+        }
+
+        return RegistrarTermo(termos, termo, out ordemAnterior);
+    }
+
+    private static bool RegistrarTermo(List<TermoExigidoFormulario> termos, TermoExigidoFormulario termo, out int? ordemAnterior)
+    {
+        ordemAnterior = termo.Ordem;
+        termos.Add(termo);
+        return true;
+    }
+
+    private static TermoExigidoFormulario? LerItemDeTermo(
+        LeitorEnvelope leitor, JsonArray itens, (string Path, int Indice) posicao, FinalidadeFormulario finalidade)
+    {
+        TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itens, posicao.Indice, $"{posicao.Path}.termos"),
+            $"{posicao.Path}.termos[{posicao.Indice}]", finalidade);
+        return leitor.Falhou ? null : termo;
+    }
+
+    private static bool ConferirTermo(LeitorEnvelope leitor, string path, TermoExigidoFormulario termo,
+        (HashSet<string> Codigos, int? OrdemAnterior) conferencia)
+    {
+        if (!conferencia.Codigos.Add(termo.Codigo) || termo.Ordem <= conferencia.OrdemAnterior)
+        {
+            leitor.Recusar<object>($"'{path}' repete código ou quebra a ordem crescente dos termos.");
+            return false;
         }
 
         return true;
@@ -128,17 +186,22 @@ internal static class LeituraDosFormularios
 
     internal static IReadOnlyList<EtapaFormulario> LerEtapasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
-        JsonArray itens = leitor.Array(bloco, "etapas", path);
+        JsonArray itens = leitor.Array(bloco, "paginas", path);
         if (leitor.Falhou)
         {
             return [];
         }
 
+        return LerPaginas(leitor, itens, path);
+    }
+
+    private static List<EtapaFormulario> LerPaginas(LeitorEnvelope leitor, JsonArray itens, string path)
+    {
         List<EtapaFormulario> etapas = [];
         for (int i = 0; i < itens.Count; i++)
         {
             EtapaFormulario? etapa = LerEtapaDoFormulario(
-                leitor, leitor.ItemObjeto(itens, i, $"{path}.etapas"), $"{path}.etapas[{i}]", etapas.LastOrDefault()?.Ordem);
+                leitor, leitor.ItemObjeto(itens, i, $"{path}.paginas"), $"{path}.paginas[{i}]", etapas.LastOrDefault()?.Ordem);
             if (etapa is null)
             {
                 return [];
@@ -153,35 +216,52 @@ internal static class LeituraDosFormularios
     private static EtapaFormulario? LerEtapaDoFormulario(LeitorEnvelope leitor, JsonObject item, string pathEtapa, int? ordemAnterior)
     {
         leitor.ExigirChaves(item, pathEtapa, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
-        string codigo = leitor.TextoNaoVazio(item, "codigo", pathEtapa, LimitesDoEnvelope.CodigoEtapaFormulario);
-        int ordem = leitor.Inteiro(item, "ordem", pathEtapa);
-        string tipo = leitor.TextoNaoVazio(item, "tipo", pathEtapa);
-        string? blocoDeSistema = leitor.TextoOpcional(item, "bloco", pathEtapa);
-        string titulo = leitor.TextoNaoVazio(item, "titulo", pathEtapa, LimitesDoEnvelope.TituloEtapaFormulario);
-        string? descricao = leitor.TextoOpcional(item, "descricao", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
-        string? aviso = leitor.TextoOpcional(item, "aviso", pathEtapa, LimitesDoEnvelope.TextoEtapaFormulario);
-        IReadOnlyList<LinhaDoPredicado> exibicao = LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", pathEtapa);
+        DeclaracaoEtapa d = LerDeclaracaoDaEtapa(leitor, item, pathEtapa);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(exibicao);
+        return CriarEtapa(leitor, pathEtapa, ordemAnterior, d);
+    }
+
+    private sealed record DeclaracaoEtapa(string Codigo, int Ordem, string Tipo, string? Bloco, string Titulo, string? Descricao,
+        string? Aviso, IReadOnlyList<LinhaDoPredicado> Exibicao);
+
+    private static DeclaracaoEtapa LerDeclaracaoDaEtapa(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+        leitor.Inteiro(item, "ordem", path),
+        leitor.TextoNaoVazio(item, "tipo", path),
+        leitor.TextoOpcional(item, "bloco", path),
+        leitor.TextoNaoVazio(item, "titulo", path, LimitesDoEnvelope.TituloEtapaFormulario),
+        leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.TextoEtapaFormulario),
+        leitor.TextoOpcional(item, "aviso", path, LimitesDoEnvelope.TextoEtapaFormulario),
+        LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path));
+
+    private static EtapaFormulario? CriarEtapa(LeitorEnvelope leitor, string pathEtapa, int? ordemAnterior, DeclaracaoEtapa d)
+    {
+        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
         if (exibicaoLida.IsFailure)
         {
             return leitor.Propagar<EtapaFormulario?>(exibicaoLida.Error!);
         }
 
+        return MontarEtapa(leitor, pathEtapa, ordemAnterior, d, exibicaoLida.Value);
+    }
+
+    private static EtapaFormulario? MontarEtapa(
+        LeitorEnvelope leitor, string pathEtapa, int? ordemAnterior, DeclaracaoEtapa d, PredicadoDnf? exibicao)
+    {
         // O encoder emite as etapas em ordem estritamente crescente; outra forma só vem de envelope
         // adulterado e não reproduziria os bytes.
-        if (ordem <= ordemAnterior)
+        if (d.Ordem <= ordemAnterior)
         {
             return leitor.Recusar<EtapaFormulario?>($"'{pathEtapa}' quebra a ordem crescente das etapas.");
         }
 
         Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-            codigo, ordem, EstruturaFormulario.TipoDoToken(tipo), EstruturaFormulario.BlocoDoToken(blocoDeSistema), titulo, descricao, aviso,
-            exibicaoLida.Value);
+            d.Codigo, d.Ordem, EstruturaFormulario.TipoDoToken(d.Tipo), EstruturaFormulario.BlocoDoToken(d.Bloco), d.Titulo, d.Descricao, d.Aviso,
+            exibicao);
         return etapa.IsFailure ? leitor.Propagar<EtapaFormulario?>(etapa.Error!) : etapa.Value;
     }
 
@@ -200,7 +280,14 @@ internal static class LeituraDosFormularios
             return null;
         }
 
-        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(exibicao);
+        return CriarTermo(leitor, item, path, finalidade, (codigo, ordem, versao, exibicao));
+    }
+
+    private static TermoExigidoFormulario? CriarTermo(
+        LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade,
+        (string Codigo, int Ordem, VersaoTermoEscolhida Versao, IReadOnlyList<LinhaDoPredicado> Exibicao) declaracao)
+    {
+        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(declaracao.Exibicao);
         if (exibicaoLida.IsFailure)
         {
             return leitor.Propagar<TermoExigidoFormulario>(exibicaoLida.Error!);
@@ -212,7 +299,7 @@ internal static class LeituraDosFormularios
         }
 
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
-            codigo, ordem, versao, exibicaoLida.Value, obrigatoriedade, finalidade);
+            declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicaoLida.Value, obrigatoriedade, finalidade);
         return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Error!);
     }
 

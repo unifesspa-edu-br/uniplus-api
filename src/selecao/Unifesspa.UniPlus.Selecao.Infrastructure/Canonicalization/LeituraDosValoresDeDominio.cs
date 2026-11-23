@@ -34,8 +34,8 @@ internal static class LeituraDosValoresDeDominio
     /// </summary>
     internal static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresDominioDeclarados(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
-        string path = $"{pathPai}.valoresDominioDeclarados";
-        if (item["valoresDominioDeclarados"] is not JsonNode node)
+        string path = $"{pathPai}.opcoesDeclaradas";
+        if (item["opcoesDeclaradas"] is not JsonNode node)
         {
             return null;
         }
@@ -52,14 +52,8 @@ internal static class LeituraDosValoresDeDominio
         for (int i = 0; i < array.Count; i++)
         {
             ValorDominioDeclaradoCongelado? valor = LerValorDeclarado(leitor, leitor.ItemObjeto(array, i, path), $"{path}[{i}]", comOrientacao);
-            if (valor is null)
+            if (valor is null || !AdicionarCodigo(leitor, codigos, valor.Codigo, path))
             {
-                return null;
-            }
-
-            if (!codigos.Add(valor.Codigo))
-            {
-                leitor.Recusar<object>($"'{path}': o valor '{valor.Codigo}' aparece mais de uma vez.");
                 return null;
             }
 
@@ -67,6 +61,17 @@ internal static class LeituraDosValoresDeDominio
         }
 
         return valores;
+    }
+
+    private static bool AdicionarCodigo(LeitorEnvelope leitor, HashSet<string> codigos, string codigo, string path)
+    {
+        if (codigos.Add(codigo))
+        {
+            return true;
+        }
+
+        leitor.Recusar<object>($"'{path}': o valor '{codigo}' aparece mais de uma vez.");
+        return false;
     }
 
     private static ValorDominioDeclaradoCongelado? LerValorDeclarado(LeitorEnvelope leitor, JsonObject valorItem, string itemPath, bool comOrientacao)
@@ -99,25 +104,38 @@ internal static class LeituraDosValoresDeDominio
         List<OpcaoDeclaradaFato> opcoes = [];
         foreach (FatoColetado fato in fatos)
         {
-            if (!fato.OpcoesDoProcesso || AtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo))
+            Result resultado = ReconstruirOpcoesDoFato(fato, valoresSelecionaveis, opcoes);
+            if (resultado.IsFailure)
             {
-                continue;
-            }
-
-            foreach (ValorDominioDeclaradoCongelado valor in valoresSelecionaveis.GetValueOrDefault(fato.FatoCodigo) ?? [])
-            {
-                Result<OpcaoDeclaradaFato> opcao = OpcaoDeclaradaFato.Criar(
-                    fato.FatoCodigo, valor.Codigo, valor.Descricao ?? string.Empty, valor.Ordem);
-                if (opcao.IsFailure)
-                {
-                    return Result<IReadOnlyList<OpcaoDeclaradaFato>>.Failure(opcao.Error!);
-                }
-
-                opcoes.Add(opcao.Value!);
+                return Result<IReadOnlyList<OpcaoDeclaradaFato>>.Failure(resultado.Error!);
             }
         }
 
         return Result<IReadOnlyList<OpcaoDeclaradaFato>>.Success(opcoes);
+    }
+
+    private static Result ReconstruirOpcoesDoFato(
+        FatoColetado fato, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores, List<OpcaoDeclaradaFato> opcoes) =>
+        !fato.OpcoesDoProcesso || AtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
+            ? Result.Success()
+            : AdicionarOpcoesDoFato(fato, valores.GetValueOrDefault(fato.FatoCodigo) ?? [], opcoes);
+
+    private static Result AdicionarOpcoesDoFato(
+        FatoColetado fato, IReadOnlyList<ValorDominioDeclaradoCongelado> valores, List<OpcaoDeclaradaFato> opcoes)
+    {
+        foreach (ValorDominioDeclaradoCongelado valor in valores)
+        {
+            Result<OpcaoDeclaradaFato> opcao = OpcaoDeclaradaFato.Criar(
+                fato.FatoCodigo, valor.Codigo, valor.Descricao ?? string.Empty, valor.Ordem);
+            if (opcao.IsFailure)
+            {
+                return Result.Failure(opcao.Error!);
+            }
+
+            opcoes.Add(opcao.Value!);
+        }
+
+        return Result.Success();
     }
 
     /// <summary>
@@ -129,7 +147,7 @@ internal static class LeituraDosValoresDeDominio
     /// ter opção), ou vocabulário pendurado num campo booleano/numérico — é malformado. Cada
     /// item exige <c>ordem</c> não negativa e
     /// <c>valorCodigo</c> sem repetição, mesma disciplina que
-    /// <c>LerValoresDominioDeclarados</c> aplica a <c>valoresDominioDeclarados</c>.
+    /// <c>LerValoresDominioDeclarados</c> aplica a <c>opcoesDeclaradas</c>.
     /// </summary>
     internal static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresSelecionaveis(
         LeitorEnvelope leitor, JsonObject item, string pathPai, TipoRenderizacao tipoRenderizacao)
@@ -144,6 +162,12 @@ internal static class LeituraDosValoresDeDominio
                 : null;
         }
 
+        return LerVocabularioSelecionavel(leitor, node, path, tipoRenderizacao, ehFatoDeSelecao);
+    }
+
+    private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerVocabularioSelecionavel(
+        LeitorEnvelope leitor, JsonNode node, string path, TipoRenderizacao tipoRenderizacao, bool ehFatoDeSelecao)
+    {
         if (node is not JsonArray array)
         {
             return leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>($"'{path}' deveria ser um array ou null.");
@@ -155,6 +179,11 @@ internal static class LeituraDosValoresDeDominio
                 $"'{path}' é um array, mas o tipo de renderização '{tipoRenderizacao}' não é de seleção — a bicondicional exige null.");
         }
 
+        return LerOpcoesDoSeletor(leitor, array, path);
+    }
+
+    private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerOpcoesDoSeletor(LeitorEnvelope leitor, JsonArray array, string path)
+    {
         List<ValorDominioDeclaradoCongelado>? valores = LerValoresDeclarados(leitor, array, path, comOrientacao: true);
 
         // Um seletor publicado sem opção nenhuma não é respondível: o array vazio é malformado.

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authorization;
 
-using System.Reflection;
-
 using Avro.Generic;
 using Avro.IO;
 using Avro.Specific;
@@ -34,9 +32,11 @@ public sealed class RegistroDeAcessoAvroCompletoTests
 
         for (int i = 0; i < origem.Length; i++)
         {
-            foreach (global::Avro.Field campo in EsquemaDoRegistroDeAcesso.Registro.Fields)
+            Dictionary<string, object?> esperados = Esperados(origem[i]);
+            EsquemaDoRegistroDeAcesso.Registro.Fields.Select(static campo => campo.Name).Should().BeEquivalentTo(esperados.Keys);
+            foreach ((string campo, object? valor) in esperados)
             {
-                EmMicrossegundosSeInstante(lidos[i][campo.Name]).Should().Be(Esperado(origem[i], campo.Name), $"o campo {campo.Name} do registro {i}");
+                EmMicrossegundosSeInstante(lidos[i][campo]).Should().Be(valor, $"o campo {campo} do registro {i}");
             }
         }
     }
@@ -60,16 +60,49 @@ public sealed class RegistroDeAcessoAvroCompletoTests
         MicrossegundosDe(lido["instante"]).Should().Be(1_793_534_400_123_456L);
     }
 
-    private static object? Esperado(RegistroDecisaoAcesso origem, string campo) =>
-        Normalizado(typeof(RegistroDecisaoAcesso).GetProperty(char.ToUpperInvariant(campo[0]) + campo[1..], BindingFlags.Public | BindingFlags.Instance)!.GetValue(origem));
+    private static Dictionary<string, object?> Esperados(RegistroDecisaoAcesso origem) =>
+        CamposDoAcesso(origem).Concat(CamposDoResource(origem)).Concat(CamposDoDesfecho(origem))
+            .ToDictionary(static campo => campo.Key, static campo => campo.Value, StringComparer.Ordinal);
 
-    private static object? Normalizado(object? valor) => valor switch
-    {
-        Guid identificador => identificador.ToString("D"),
-        DateTimeOffset instante => (instante.UtcTicks - DateTime.UnixEpoch.Ticks) / 10,
-        ResultadoDoAcesso resultado => ValoresCanonicos.De(resultado),
-        _ => valor,
-    };
+    private static Dictionary<string, object?> CamposDoAcesso(RegistroDecisaoAcesso origem) =>
+        new()
+        {
+            ["instante"] = (origem.Instante.UtcTicks - DateTime.UnixEpoch.Ticks) / 10,
+            ["atorEmissor"] = origem.AtorEmissor,
+            ["atorContaId"] = origem.AtorContaId,
+            ["requestId"] = origem.RequestId,
+            ["execucaoId"] = origem.ExecucaoId.ToString("D"),
+            ["permissao"] = origem.Permissao,
+            ["resourceTipo"] = origem.ResourceTipo,
+            ["sensibilidade"] = origem.Sensibilidade,
+            ["unidadeProprietariaId"] = origem.UnidadeProprietariaId?.ToString("D"),
+        };
+
+    private static Dictionary<string, object?> CamposDoResource(RegistroDecisaoAcesso origem) =>
+        new()
+        {
+            ["processoId"] = origem.ProcessoId?.ToString("D"),
+            ["chamadaId"] = origem.ChamadaId?.ToString("D"),
+            ["resourceId"] = origem.ResourceId?.ToString("D"),
+            ["inscricaoId"] = origem.InscricaoId?.ToString("D"),
+            ["ocorrencia"] = origem.Ocorrencia,
+            ["origem"] = origem.Origem,
+            ["clienteOidc"] = origem.ClienteOidc,
+            ["permitido"] = origem.Permitido,
+            ["motivoNegativa"] = origem.MotivoNegativa,
+        };
+
+    private static Dictionary<string, object?> CamposDoDesfecho(RegistroDecisaoAcesso origem) =>
+        new()
+        {
+            ["fonteGrant"] = origem.FonteGrant,
+            ["grantId"] = origem.GrantId?.ToString("D"),
+            ["perfilId"] = origem.PerfilId?.ToString("D"),
+            ["versaoId"] = origem.VersaoId?.ToString("D"),
+            ["escopoUnidadeId"] = origem.EscopoUnidadeId?.ToString("D"),
+            ["codigoDoDado"] = origem.FatoCodigo,
+            ["resultado"] = ValoresCanonicos.De(origem.Resultado),
+        };
 
     private static object? EmMicrossegundosSeInstante(object? valor) => valor is DateTime ? MicrossegundosDe(valor) : valor;
 

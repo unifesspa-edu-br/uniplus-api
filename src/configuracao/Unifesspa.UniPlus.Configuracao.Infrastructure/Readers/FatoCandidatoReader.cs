@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Implementação de <see cref="IFatoCandidatoReader"/> (ADR-0056, ADR-0111) e de
-/// <see cref="IFatoCandidatoDoCatalogoReader"/>: leitura direta do catálogo <c>fatos_do_candidato</c>
+/// <see cref="IFatoCandidatoDoCatalogoReader"/>: leitura direta do catálogo <c>dados_do_candidato</c>
 /// (<c>AsNoTracking</c>), a mesma para as duas portas. Sem cache — o catálogo é de baixo volume, e o
 /// congelamento por valor no consumidor (ADR-0061) dispensa releitura quente
 /// (mesmo padrão do <c>TipoDocumentoReader</c>).

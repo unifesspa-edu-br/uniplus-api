@@ -35,7 +35,7 @@
       "exclusiveMinimum": 0,
       "maximum": 99.9999
     },
-    "fatoElegibilidadeCodigo": {
+    "codigoDoDadoDeElegibilidade": {
       "title": "Fato de elegibilidade",
       "description": "Código do fato que decide quem recebe o bônus, quando o processo o declara, de 1 a 60 caracteres.",
       "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo",
@@ -125,7 +125,7 @@
       "regra": false,
       "fator": false,
       "teto": false,
-      "fatoElegibilidadeCodigo": false,
+      "codigoDoDadoDeElegibilidade": false,
       "baseLegalBonusRegionalCodigo": false,
       "tipoInstrumento": false,
       "identificacao": false,

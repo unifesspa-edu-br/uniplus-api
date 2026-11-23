@@ -20,7 +20,7 @@ internal static class LeituraDasEtapas
     private static readonly string[] ChavesDaEtapa =
     [
         "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao",
-        "regraConsolidacao", "itensDeAvaliacao", "escalaDeAtendimento", "ordem", "faseCodigo", "produtos",
+        "regraDeApuracaoDaAvaliacao", "itensDeAvaliacao", "escalaDeAtendimento", "ordem", "faseCodigo", "publicacoesPrevistas",
         "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos", "tiposDeDecisao",
     ];
 
@@ -203,7 +203,7 @@ internal static class LeituraDasEtapas
 
     private static EtapaProcesso? DefinirProdutos(LeitorEnvelope leitor, EtapaProcesso etapa, List<ProdutoDaEtapa> produtos, string path) =>
         etapa.DefinirProdutos(produtos).IsFailure
-            ? RecusarEtapa(leitor, $"{path}.produtos", "o mesmo ato aparece duas vezes na etapa.")
+            ? RecusarEtapa(leitor, $"{path}.publicacoesPrevistas", "o mesmo ato aparece duas vezes na etapa.")
             : etapa;
 
     private static EtapaProcesso? DefinirJanelaEParecer(LeitorEnvelope leitor, EtapaProcesso etapa, JsonObject item, string path)
@@ -261,7 +261,7 @@ internal static class LeituraDasEtapas
         decimal? notaMaxima = LerDecimalDaEtapa(leitor, item, "notaMaxima", path);
         decimal? passoDoLancamento = LerDecimalDaEtapa(leitor, item, "passoDoLancamento", path);
         FormaDeAvaliacao? formaDeAvaliacao = leitor.EnumeracaoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", path);
-        ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(item, "regraConsolidacao", path, [.. RegraConsolidacaoCodigo.Rol]);
+        ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(item, "regraDeApuracaoDaAvaliacao", path, [.. RegraConsolidacaoCodigo.Rol]);
         List<ItemDeAvaliacao> itens = LerItensDeAvaliacao(leitor, item, path);
         List<NivelDeAtendimento>? escalaDeAtendimento = LerEscalaDeAtendimento(leitor, item, path);
 
@@ -295,9 +295,9 @@ internal static class LeituraDasEtapas
 
     private static List<ProdutoDaEtapa> LerProdutosDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        JsonArray? array = leitor.Array(item, "produtos", path);
+        JsonArray? array = leitor.Array(item, "publicacoesPrevistas", path);
 
-        return array is null ? [] : LerProdutosDoArray(leitor, array, $"{path}.produtos");
+        return array is null ? [] : LerProdutosDoArray(leitor, array, $"{path}.publicacoesPrevistas");
     }
 
     private static List<ProdutoDaEtapa> LerProdutosDoArray(LeitorEnvelope leitor, JsonArray array, string pathProdutos)

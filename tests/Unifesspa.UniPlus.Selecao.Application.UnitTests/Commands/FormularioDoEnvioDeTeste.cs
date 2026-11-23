@@ -136,7 +136,7 @@ internal static class FormularioDoEnvioDeTeste
     // que FAIXA_ETARIA apura contra esta data, nunca a de hoje.
     internal static VersaoConfiguracao VersaoComDataDeReferenciaFixa() => VersaoConfiguracao.Abrir(
         ProcessoId,
-        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":"2026-12-10"}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
+        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataDeReferenciaDosDados":"2026-12-10"}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
         Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     internal static InscricaoRequest RequestComApelidoETermoAceito(

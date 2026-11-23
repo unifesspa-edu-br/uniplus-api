@@ -3,10 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>Os motivos que cada processo escolheu do cadastro, em cada fase ou etapa (UNI-REQ-0285).</summary>
-public interface IMotivoDoProcessoRepository
+public interface IMotivoDeDecisaoDoProcessoRepository
 {
     /// <summary>A escolha atual do processo, rastreada para mutação: os motivos que ainda não saíram do edital.</summary>
-    Task<IReadOnlyList<MotivoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// A escolha atual, sem rastreamento, cada motivo com o motivo de origem no cadastro (nulo se a linha de origem não
@@ -18,13 +18,13 @@ public interface IMotivoDoProcessoRepository
     /// A escolha que valia na versão do edital de número <paramref name="numeroDaVersao"/>; nulo quando o processo não tem
     /// essa versão publicada.
     /// </summary>
-    Task<IReadOnlyList<MotivoDoProcesso>?> ListarDaVersaoPublicadaAsync(Guid processoSeletivoId, int numeroDaVersao, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>?> ListarDaVersaoPublicadaAsync(Guid processoSeletivoId, int numeroDaVersao, CancellationToken cancellationToken = default);
 
-    Task AdicionarAsync(MotivoDoProcesso motivo, CancellationToken cancellationToken = default);
+    Task AdicionarAsync(MotivoDeDecisaoDoProcesso motivo, CancellationToken cancellationToken = default);
 
     /// <summary>Remove a escolha pendente; a que já consta de versão publicada nunca chega aqui.</summary>
-    void Remover(MotivoDoProcesso motivo);
+    void Remover(MotivoDeDecisaoDoProcesso motivo);
 }
 
 /// <summary>O motivo escolhido pelo processo e o motivo do cadastro de onde veio.</summary>
-public sealed record MotivoEscolhidoComOrigem(MotivoDoProcesso Escolhido, MotivoDeDecisao? Origem);
+public sealed record MotivoEscolhidoComOrigem(MotivoDeDecisaoDoProcesso Escolhido, MotivoDeDecisao? Origem);

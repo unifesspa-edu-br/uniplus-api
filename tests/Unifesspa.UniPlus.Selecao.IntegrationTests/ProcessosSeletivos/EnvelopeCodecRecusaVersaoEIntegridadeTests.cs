@@ -48,7 +48,7 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonArray etapas = envelope["formularios"]![0]!["etapas"]!.AsArray();
+            JsonArray etapas = envelope["formularios"]![0]!["paginas"]!.AsArray();
             JsonNode primeira = etapas[0]!.DeepClone();
             etapas.RemoveAt(0);
             etapas.Add(primeira);

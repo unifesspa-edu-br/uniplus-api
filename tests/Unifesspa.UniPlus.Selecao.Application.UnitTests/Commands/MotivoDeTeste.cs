@@ -21,13 +21,13 @@ internal static class MotivoDeTeste
         LugarDaDecisao.DaFase(processo.CronogramaFases.First().FaseCanonicaOrigemId);
 
     /// <summary>A escolha do motivo no lugar, incluída pelo domínio no processo em rascunho.</summary>
-    internal static MotivoDoProcesso Escolhido(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
+    internal static MotivoDeDecisaoDoProcesso Escolhido(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
         EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(processo, lugar, [], origem)).Value!;
 
     /// <summary>A porta dos motivos escolhidos de um processo que ainda não escolheu nenhum.</summary>
-    internal static IMotivoDoProcessoRepository SemEscolha()
+    internal static IMotivoDeDecisaoDoProcessoRepository SemEscolha()
     {
-        IMotivoDoProcessoRepository repository = Substitute.For<IMotivoDoProcessoRepository>();
+        IMotivoDeDecisaoDoProcessoRepository repository = Substitute.For<IMotivoDeDecisaoDoProcessoRepository>();
         repository.ListarEscolhaAtualAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns([]);
         repository.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns([]);
 

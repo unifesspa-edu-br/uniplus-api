@@ -20,9 +20,9 @@ using static ClienteDoRascunhoDeTeste;
 public sealed class MarcaNoDocumentoDoRascunhoPeloEndpointTests : IAsyncLifetime
 {
     private const string Leandro = "leandro.viana";
-    private const string Inscricao = """{ "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" }""";
-    private const string EnsalamentoNoMesmoMomento = """{ "chave": "ensalamento", "faseCanonicaCodigo": "ENSALAMENTO", "noMesmoMomentoDaAnterior": true }""";
-    private const string EnsalamentoSemAMarca = """{ "chave": "ensalamento", "faseCanonicaCodigo": "ENSALAMENTO" }""";
+    private const string Inscricao = """{ "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO" }""";
+    private const string EnsalamentoNoMesmoMomento = """{ "chave": "ensalamento", "tipoFaseCodigo": "ENSALAMENTO", "noMesmoMomentoDaAnterior": true }""";
+    private const string EnsalamentoSemAMarca = """{ "chave": "ensalamento", "tipoFaseCodigo": "ENSALAMENTO" }""";
 
     private readonly CascadingFixture _fixture;
     private readonly ClienteDoRascunhoDeTeste _cliente;
@@ -72,7 +72,7 @@ public sealed class MarcaNoDocumentoDoRascunhoPeloEndpointTests : IAsyncLifetime
 
         using HttpResponseMessage recusado = await _cliente.EnviarAsync(
             Leandro, HttpMethod.Post, Rota,
-            DocumentoComFases("""{ "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "noMesmoMomentoDaAnterior": "sim" }"""),
+            DocumentoComFases("""{ "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "noMesmoMomentoDaAnterior": "sim" }"""),
             chave: Guid.CreateVersion7().ToString());
 
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableContent, await recusado.Content.ReadAsStringAsync());

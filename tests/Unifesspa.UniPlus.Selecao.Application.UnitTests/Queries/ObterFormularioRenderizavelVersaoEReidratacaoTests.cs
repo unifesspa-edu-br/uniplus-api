@@ -27,18 +27,18 @@ public sealed class ObterFormularioRenderizavelVersaoEReidratacaoTests
 
     private const string EnvelopeFormaCorrente = """
             {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
+              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ], "termos": []}],
-              "gruposColetados": [], "fatosColetados": []
+              "gruposDosFormularios": [], "dadosDosFormularios": []
             }
             """;
 
     private const string EnvelopeComReidratacaoRecusada = """
             {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
-              "gruposColetados": [], "fatosColetados": []
+              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
+              "gruposDosFormularios": [], "dadosDosFormularios": []
             }
             """;
 

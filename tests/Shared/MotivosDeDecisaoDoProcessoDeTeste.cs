@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 /// A escolha só se faz no rascunho; o processo já publicado, que a retificação confere, leva a que foi feita antes da publicação,
 /// mesmo quando a retificação o recarrega do banco: a escolha se guarda pela identidade do processo.
 /// </summary>
-internal static class MotivosDoProcessoDeTeste
+internal static class MotivosDeDecisaoDoProcessoDeTeste
 {
     private static readonly ConcurrentDictionary<Guid, IReadOnlyList<MotivoEscolhidoComOrigem>> EscolhaFeitaNoRascunho = [];
 

@@ -8,10 +8,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class TipoArestaGrafoCodigo
 {
-    public const string Producao = "PRODUCAO";
-    public const string Precondicao = "PRECONDICAO";
-    public const string Derivacao = "DERIVACAO";
-    public const string Gatilho = "GATILHO";
+    public const string Producao = "RESPOSTA_DO_CAMPO";
+    public const string Precondicao = "EXIBICAO";
+    public const string Derivacao = "CALCULO";
+    public const string Gatilho = "CONDICAO_DA_EXIGENCIA";
 
     /// <summary>
     /// Converte a classe de aresta para o código canônico. O <c>switch</c> é exaustivo: uma 5ª

@@ -26,8 +26,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A coincidência entre a conferência de publicação e o item de conformidade da âncora do prazo de
 /// recurso. <c>FaseCronograma.Criar</c> recusa a regra que ancora fora dos produtos
 /// preliminares da própria fase, mas esse estado é <b>materializável</b>: o EF hidrata
-/// <c>regras_recurso_fase</c> e <c>produtos_da_fase</c> direto das linhas, sem passar pela
-/// fábrica, e <c>produto_ancora_id</c> não tem chave estrangeira nem CHECK que o prenda.
+/// <c>recursos_configurados_da_fase</c> e <c>publicacoes_previstas_da_fase</c> direto das linhas, sem passar pela
+/// fábrica, e <c>publicacao_de_referencia_id</c> não tem chave estrangeira nem CHECK que o prenda.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -237,9 +237,9 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     private const string AtualizacaoDaAncoraPorProduto =
         """
-        UPDATE selecao.regras_recurso_fase r
-           SET produto_ancora_id = p.id
-          FROM selecao.fases_cronograma f, selecao.produtos_da_fase p
+        UPDATE selecao.recursos_configurados_da_fase r
+           SET publicacao_de_referencia_id = p.id
+          FROM selecao.fases_cronograma f, selecao.publicacoes_previstas_da_fase p
          WHERE r.fase_cronograma_id = f.id
            AND p.fase_cronograma_id = f.id
            AND p.ato_codigo = @ato
@@ -263,8 +263,8 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
     /// </summary>
     private Task ApontarAncoraParaProdutoInexistenteAsync(Guid processoId) => ExecutarAsync(
         """
-        UPDATE selecao.regras_recurso_fase r
-           SET produto_ancora_id = @forasteiro
+        UPDATE selecao.recursos_configurados_da_fase r
+           SET publicacao_de_referencia_id = @forasteiro
           FROM selecao.fases_cronograma f
          WHERE r.fase_cronograma_id = f.id
            AND f.processo_seletivo_id = @processo

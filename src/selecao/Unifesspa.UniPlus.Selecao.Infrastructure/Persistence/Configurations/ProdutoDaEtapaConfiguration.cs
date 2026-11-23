@@ -21,12 +21,13 @@ public sealed class ProdutoDaEtapaConfiguration : IEntityTypeConfiguration<Produ
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("produtos_da_etapa");
+        builder.ToTable("publicacoes_previstas_da_etapa", tabela => tabela.HasComment("Publicações previstas para uma etapa de avaliação."));
+        builder.Property(p => p.EtapaProcessoId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).ValueGeneratedNever();
+        builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
-        builder.Property(p => p.AtoCodigo).HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasConversion<int>();
+        builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
+        builder.Property(p => p.Papel).HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).").HasConversion<int>();
 
         // O par ato + papel uma única vez por etapa, pela mesma razão dos produtos da fase:
         // a matéria é uma, o papel é que distingue a publicação que abre o ciclo recursal da
@@ -36,6 +37,6 @@ public sealed class ProdutoDaEtapaConfiguration : IEntityTypeConfiguration<Produ
         builder.HasIndex(p => new { p.EtapaProcessoId, p.AtoCodigo, p.Papel })
             .IsUnique()
             .AreNullsDistinct(false)
-            .HasDatabaseName("ux_produtos_da_etapa_ato");
+            .HasDatabaseName("ux_publicacoes_previstas_da_etapa_ato");
     }
 }

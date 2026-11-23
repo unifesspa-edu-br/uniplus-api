@@ -30,6 +30,36 @@ public sealed class SnapshotPublicadoPersistidoTests
 {
     private readonly CenarioDeRetificacaoPersistida _cenario;
 
+    private static readonly string[] BlocosEsperados =
+    [
+        "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
+        "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
+        "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
+        "cronogramaFases", "identidadesUnidade",
+        // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
+        // interpretador e conjunto de modalidades ofertadas.
+        "dadosDosFormularios", "calculosDosDados", "dependenciasEntreItens", "versaoDasRegrasDeCalculo", "modalidadesOfertadas",
+        // Issue #1112: taxa de inscrição e fundamentos de isenção — 25º bloco.
+        "taxaInscricao",
+        // UNI-REQ-0111: município que rege a contagem dos prazos e fuso aplicado — 26º bloco.
+        "localidade",
+        // UNI-REQ-0112: convenção de contagem declarada pelo certame — 27º bloco.
+        "algoritmoContagemPrazo",
+        // UNI-REQ-0080: calendário de dias úteis copiado por valor — 28º bloco.
+        "calendarioDiasUteis",
+        // Identificador legível: o endereço público do certame, congelado com a versão — 29º bloco.
+        "identificadorLegivel",
+        // Grupos repetíveis dos formulários (UNI-REQ-0146) — 30º bloco.
+        "gruposDosFormularios",
+        // Rótulo e tipo do catálogo dos fatos que as regras citam e nenhum formulário pergunta — 31º bloco.
+        "dadosCitadosSemPergunta",
+        // Quantos cursos o candidato escolhe na inscrição, dimensão do processo — 32º bloco.
+        "opcoesDeCurso",
+        // A classificação, congelada, de cada tipo de ato que o cronograma declara — 33º bloco.
+        "tiposDeAto",
+        "dadosCalculados",
+    ];
+
     public SnapshotPublicadoPersistidoTests(ProcessoSeletivoDbFixture fixture)
     {
         _cenario = new CenarioDeRetificacaoPersistida(fixture);
@@ -62,37 +92,12 @@ public sealed class SnapshotPublicadoPersistidoTests
 
         JsonNode payload = JsonNode.Parse(versao.ConfiguracaoCongelada)!;
 
-        string[] blocosEsperados =
-        [
-            "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
-            "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
-            "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
-            "cronogramaFases", "identidadesUnidade",
-            // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
-            // interpretador e conjunto de modalidades ofertadas.
-            "fatosColetados", "regrasDerivacao", "grafoDependencia", "versaoInterpretador", "modalidadesOfertadas",
-            // Issue #1112: taxa de inscrição e fundamentos de isenção — 25º bloco.
-            "taxaInscricao",
-            // UNI-REQ-0111: município que rege a contagem dos prazos e fuso aplicado — 26º bloco.
-            "localidade",
-            // UNI-REQ-0112: convenção de contagem declarada pelo certame — 27º bloco.
-            "algoritmoContagemPrazo",
-            // UNI-REQ-0080: calendário de dias úteis copiado por valor — 28º bloco.
-            "calendarioDiasUteis",
-            // Identificador legível: o endereço público do certame, congelado com a versão — 29º bloco.
-            "identificadorLegivel",
-            // Grupos repetíveis dos formulários (UNI-REQ-0146) — 30º bloco.
-            "gruposColetados",
-            // Rótulo e tipo do catálogo dos fatos que as regras citam e nenhum formulário pergunta — 31º bloco.
-            "apresentacaoDosPressupostos",
-            // Quantos cursos o candidato escolhe na inscrição, dimensão do processo — 32º bloco.
-            "opcoesDeCurso",
-            // A classificação, congelada, de cada tipo de ato que o cronograma declara — 33º bloco.
-            "tiposDeAto",
-            "fatosDerivados",
-        ];
-        JsonObject objeto = payload.AsObject();
-        foreach (string bloco in blocosEsperados)
+        ConferirBlocosCanonicos(payload.AsObject());
+    }
+
+    private static void ConferirBlocosCanonicos(JsonObject objeto)
+    {
+        foreach (string bloco in BlocosEsperados)
         {
             objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no envelope");
         }
@@ -102,23 +107,34 @@ public sealed class SnapshotPublicadoPersistidoTests
         // reprovaria uma chave espúria), mas também "não sobra nenhuma outra". A lista literal
         // FICA: este é o teste de contrato da abertura, e derivá-la do próprio objeto o
         // tornaria tautológico — passaria com qualquer conjunto de chaves.
-        objeto.Select(static kvp => kvp.Key).Should().BeEquivalentTo(blocosEsperados,
+        objeto.Select(static kvp => kvp.Key).Should().BeEquivalentTo(BlocosEsperados,
             "o envelope de abertura tem exatamente os blocos canônicos listados acima — nem mais, nem menos");
 
-        string[] stubs = [.. objeto
-            .Where(static kvp => kvp.Value is JsonObject bloco
-                && bloco.TryGetPropertyValue("status", out JsonNode? status)
-                && status?.GetValue<string>() == "nao_construido")
-            .Select(static kvp => kvp.Key)
-            .Order(StringComparer.Ordinal)];
+        ConferirBlocosReais(objeto);
+    }
 
-        stubs.Should().BeEmpty(
-            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real, e " +
-            "issue #1112 acrescentou 'taxaInscricao' já como bloco real. Os 25 blocos são todos reais " +
-            "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 promoveu " +
-            "vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu identidadesUnidade; Story #559 " +
-            "promoveu formulario; os demais sempre foram reais)");
+    private const string MotivoDosBlocosReais =
+        "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real, e " +
+        "issue #1112 acrescentou 'taxaInscricao' já como bloco real. Os 25 blocos são todos reais " +
+        "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 promoveu " +
+        "vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu identidadesUnidade; Story #559 " +
+        "promoveu formulario; os demais sempre foram reais)";
 
+    private static void ConferirBlocosReais(JsonObject objeto)
+    {
+        BlocosSemConstrucao(objeto).Should().BeEmpty(MotivoDosBlocosReais);
+        ConferirConteudoDosBlocos(objeto);
+    }
+
+    private static string[] BlocosSemConstrucao(JsonObject objeto) => [.. objeto
+        .Where(static kvp => kvp.Value is JsonObject bloco
+            && bloco.TryGetPropertyValue("status", out JsonNode? status)
+            && status?.GetValue<string>() == "nao_construido")
+        .Select(static kvp => kvp.Key)
+        .Order(StringComparer.Ordinal)];
+
+    private static void ConferirConteudoDosBlocos(JsonObject objeto)
+    {
         // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
         // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
@@ -130,9 +146,19 @@ public sealed class SnapshotPublicadoPersistidoTests
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
         objeto["vagas"]!.AsArray().Should().NotBeEmpty("issue #848: o quadro de vagas é sempre materializado junto da configuração");
         objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
+        ConferirIdentidadesDaUnidade(objeto);
+        ConferirDivulgacaoEDocumentos(objeto);
+    }
+
+    private static void ConferirIdentidadesDaUnidade(JsonObject objeto)
+    {
         // issue #849: identidadesUnidade é bloco real desde a criação — nunca stub na raiz.
         objeto["identidadesUnidade"]!.AsObject().Should().NotContainKey("status");
         objeto["identidadesUnidade"]!.AsObject()["administradora"]!.AsObject().Should().ContainKey("sigla");
+    }
+
+    private static void ConferirDivulgacaoEDocumentos(JsonObject objeto)
+    {
         // issue #563: divulgacao é bloco real — o default minimizado (só o número de inscrição),
         // porque este teste não configura divulgação nenhuma.
         objeto["divulgacao"]!.AsObject().Should().NotContainKey("status");
@@ -143,6 +169,11 @@ public sealed class SnapshotPublicadoPersistidoTests
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(
             "nenhuma ObrigatoriedadeLegal vigente foi cadastrada para este processo neste teste");
 
+        ConferirDadosDosBlocos(objeto);
+    }
+
+    private static void ConferirDadosDosBlocos(JsonObject objeto)
+    {
         // Blocos reais carregam dado de negócio, não o marcador de stub.
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
         objeto["bonusRegional"]!["presente"]!.GetValue<bool>().Should().BeFalse();

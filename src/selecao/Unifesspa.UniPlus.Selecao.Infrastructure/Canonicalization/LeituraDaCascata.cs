@@ -32,16 +32,27 @@ internal static class LeituraDaCascata
             return null;
         }
 
-        leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente", "regra", "fallbackCodigo", "ordens");
+        return LerCascataPresente(leitor, bloco);
+    }
+
+    private static ConfiguracaoCascataRemanejamento? LerCascataPresente(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente", "regra", "destinoFinalCodigo", "ordens");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", "cascataRemanejamento", RegraRemanejamentoCodigo.Cascata);
-        string fallbackCodigo = leitor.Texto(bloco, "fallbackCodigo", "cascataRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
+        string fallbackCodigo = leitor.Texto(bloco, "destinoFinalCodigo", "cascataRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
         JsonArray ordens = leitor.Array(bloco, "ordens", "cascataRemanejamento");
         if (leitor.Falhou)
         {
             return null;
         }
 
+        return ConstruirCascata(leitor, regra, fallbackCodigo, ordens);
+    }
+
+    private static ConfiguracaoCascataRemanejamento? ConstruirCascata(
+        LeitorEnvelope leitor, ReferenciaRegra regra, string fallbackCodigo, JsonArray ordens)
+    {
         List<DestinoRemanejamento>? destinos = LerDestinos(leitor, ordens);
         if (destinos is null || leitor.Falhou)
         {
@@ -57,32 +68,39 @@ internal static class LeituraDaCascata
         List<DestinoRemanejamento> destinos = [];
         for (int i = 0; i < ordens.Count; i++)
         {
-            string pathOrigem = $"cascataRemanejamento.ordens[{i}]";
-            JsonObject itemOrigem = leitor.ItemObjeto(ordens, i, "cascataRemanejamento.ordens");
-            leitor.ExigirChaves(itemOrigem, pathOrigem, "origem", "destinos");
-
-            string origem = leitor.Texto(itemOrigem, "origem", pathOrigem, LimitesDoEnvelope.ModalidadeCodigo);
-
-            // O comprimento do código de destino é responsabilidade da factory de DestinoRemanejamento.
-            IReadOnlyList<string> destinosDaOrigem = leitor.Textos(itemOrigem, "destinos", pathOrigem);
-            if (leitor.Falhou)
+            if (!AdicionarDestinos(leitor, ordens, i, destinos))
             {
                 return null;
-            }
-
-            for (int j = 0; j < destinosDaOrigem.Count; j++)
-            {
-                Result<DestinoRemanejamento> destino = DestinoRemanejamento.Criar(origem, j + 1, destinosDaOrigem[j]);
-                if (destino.IsFailure)
-                {
-                    leitor.Propagar<DestinoRemanejamento>(destino.Error!);
-                    return null;
-                }
-
-                destinos.Add(destino.Value!);
             }
         }
 
         return destinos;
+    }
+
+    private static bool AdicionarDestinos(LeitorEnvelope leitor, JsonArray ordens, int indice, List<DestinoRemanejamento> destinos)
+    {
+        string path = $"cascataRemanejamento.ordens[{indice}]";
+        JsonObject item = leitor.ItemObjeto(ordens, indice, "cascataRemanejamento.ordens");
+        leitor.ExigirChaves(item, path, "origem", "destinos");
+        string origem = leitor.Texto(item, "origem", path, LimitesDoEnvelope.ModalidadeCodigo);
+        IReadOnlyList<string> codigos = leitor.Textos(item, "destinos", path);
+        return !leitor.Falhou && AdicionarCodigos(leitor, origem, codigos, destinos);
+    }
+
+    private static bool AdicionarCodigos(LeitorEnvelope leitor, string origem, IReadOnlyList<string> codigos, List<DestinoRemanejamento> destinos)
+    {
+        for (int i = 0; i < codigos.Count; i++)
+        {
+            Result<DestinoRemanejamento> destino = DestinoRemanejamento.Criar(origem, i + 1, codigos[i]);
+            if (destino.IsFailure)
+            {
+                leitor.Propagar<DestinoRemanejamento>(destino.Error!);
+                return false;
+            }
+
+            destinos.Add(destino.Value!);
+        }
+
+        return true;
     }
 }

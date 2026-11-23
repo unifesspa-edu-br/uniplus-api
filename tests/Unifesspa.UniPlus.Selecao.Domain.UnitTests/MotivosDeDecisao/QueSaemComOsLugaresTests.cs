@@ -18,21 +18,21 @@ public sealed class QueSaemComOsLugaresTests
     private static MotivoDeDecisao Motivo(string codigo = "NOTA_ZERADA") =>
         ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.Classificacao, codigo, SentidoDoMotivo.Desfavoravel);
 
-    private static MotivoDoProcesso Na(ProcessoSeletivo processo, string etapa) =>
+    private static MotivoDeDecisaoDoProcesso Na(ProcessoSeletivo processo, string etapa) =>
         ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, etapa), Motivo(), versaoDeEntrada: 1);
 
     private static void SaiAEtapa(ProcessoSeletivo processo, string nome) =>
         processo.DefinirEtapas([.. processo.Etapas.Where(e => e.Nome != nome)]).IsSuccess.Should().BeTrue();
 
-    private static IReadOnlyList<MotivoDoProcesso> QueSaem(LugaresDaDecisao antes, ProcessoSeletivo processo, params MotivoDoProcesso[] escolha) =>
+    private static IReadOnlyList<MotivoDeDecisaoDoProcesso> QueSaem(LugaresDaDecisao antes, ProcessoSeletivo processo, params MotivoDeDecisaoDoProcesso[] escolha) =>
         EscolhaDosMotivos.QueSaemComOsLugares(antes, processo, escolha);
 
     [Fact(DisplayName = "No rascunho, a etapa que sai leva só os motivos escolhidos nela")]
     public void Rascunho_EtapaQueSai_LevaOsMotivosDela()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDoProcesso daQueSai = Na(processo, Discursiva);
-        MotivoDoProcesso daQueFica = Na(processo, Objetiva);
+        MotivoDeDecisaoDoProcesso daQueSai = Na(processo, Discursiva);
+        MotivoDeDecisaoDoProcesso daQueFica = Na(processo, Objetiva);
         LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         SaiAEtapa(processo, Discursiva);
 
@@ -43,7 +43,7 @@ public sealed class QueSaemComOsLugaresTests
     public void Rascunho_EtapaQueContinua_NaoLevaNada()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDoProcesso escolhido = Na(processo, Objetiva);
+        MotivoDeDecisaoDoProcesso escolhido = Na(processo, Objetiva);
         LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         SaiAEtapa(processo, Discursiva);
 
@@ -55,8 +55,8 @@ public sealed class QueSaemComOsLugaresTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         LugarDaDecisao daFase = ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO");
-        MotivoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, daFase, Motivo(), 1);
-        MotivoDoProcesso naEtapa = Na(processo, Objetiva);
+        MotivoDeDecisaoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, daFase, Motivo(), 1);
+        MotivoDeDecisaoDoProcesso naEtapa = Na(processo, Objetiva);
         LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         processo.DefinirCronogramaFases([processo.CronogramaFases.Last()], []).IsSuccess.Should().BeTrue();
         SaiAEtapa(processo, Objetiva);

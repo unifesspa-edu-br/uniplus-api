@@ -82,7 +82,7 @@ internal static class DivulgacaoDeTeste
     /// </summary>
     public static VersaoConfiguracao VersaoSemReferenciaTemporal(Guid processoId) => VersaoConfiguracao.Abrir(
         processoId,
-        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
+        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataDeReferenciaDosDados":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
         Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>A versão é a fixada pela inscrição e a divulgada pelo certame.</summary>

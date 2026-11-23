@@ -226,7 +226,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         IResolvedorDaUnidadeResponsavel? unidades = null,
         ITipoDocumentoReader? tipos = null) =>
         ServicosDoHandler(mocks, calendarioReader, unitOfWork, unidades, tipos)
-            .ComMotivosDoProcesso(processo)
+            .ComMotivosDeDecisaoDoProcesso(processo)
             .PublicarAsync(ComandoDeAbertura(processo, documento));
 
     private static ServicosDoCongelamentoDeTeste ServicosDoHandler(

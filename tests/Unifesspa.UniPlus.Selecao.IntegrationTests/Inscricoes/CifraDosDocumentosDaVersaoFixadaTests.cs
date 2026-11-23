@@ -89,9 +89,9 @@ public sealed class CifraDosDocumentosDaVersaoFixadaTests
         await conexao.OpenAsync();
         await using NpgsqlCommand command = conexao.CreateCommand();
         command.CommandText = """
-            SELECT r.fato_codigo, r.valor_texto, r.valor_cifrado
+            SELECT r.codigo_do_dado, r.valor_texto, r.valor_cifrado
             FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
-            WHERE i.id = @id AND r.fato_codigo IN ('RG_NUMERO', 'RG_NUMERO_MEMBRO')
+            WHERE i.id = @id AND r.codigo_do_dado IN ('RG_NUMERO', 'RG_NUMERO_MEMBRO')
             """;
         command.Parameters.AddWithValue("id", inscricaoId);
         (await ConferirLinhasCifradasAsync(command)).Should().Be(2);

@@ -271,9 +271,9 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
     private static void ConferirPonteirosDasEtapas(ConfiguracaoDeclarada configuracao, (string Campo, ReferenciaRegra Regra)[] referencias)
     {
         referencias.Select(item => PonteiroNoDocumento.Converter(item.Campo, configuracao.Origem)).Should().Equal(
-            "/etapas/0/regraConsolidacao", "/etapas/0/recursos/0/regraCodigo",
+            "/etapas/0/regraDeApuracaoDaAvaliacao", "/etapas/0/recursos/0/regraCodigo",
             "/etapas/0/recursos/0/procedimentosDeRecurso/0/regra", "/etapas/0/recursos/0/procedimentosDeRecurso/1/regra",
-            "/etapas/1/regraConsolidacao", "/etapas/1/recursos/0/regraCodigo",
+            "/etapas/1/regraDeApuracaoDaAvaliacao", "/etapas/1/recursos/0/regraCodigo",
             "/etapas/1/recursos/0/procedimentosDeRecurso/0/regra", "/etapas/1/recursos/0/procedimentosDeRecurso/1/regra");
     }
 

@@ -33,7 +33,7 @@ public sealed class CategoriaJulgadaConfiguration : IEntityTypeConfiguration<Cat
 
         // A mesma categoria declarada uma única vez por banca. A rejeição no domínio é
         // check-then-act não-atômico, e esta constraint é a defesa atômica — mesmo padrão
-        // de ux_produtos_da_fase_ato. A banca que continua declarada mantém a linha da categoria
+        // de ux_publicacoes_previstas_da_fase_ato. A banca que continua declarada mantém a linha da categoria
         // de mesmo código, então nenhuma reposição reocupa o mesmo par.
         builder.HasIndex(c => new { c.BancaRequeridaId, c.Codigo })
             .IsUnique()

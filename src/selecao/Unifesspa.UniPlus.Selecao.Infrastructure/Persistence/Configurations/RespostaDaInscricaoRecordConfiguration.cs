@@ -21,6 +21,18 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Sensivel);
 
+        builder.Property(r => r.InscricaoId).HasComment("Identificador da inscrição à qual pertence.");
+        builder.Property(r => r.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
+        builder.Property(r => r.Posicao).HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
+        builder.Property(r => r.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(r => r.Origem).HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
+        builder.Property(r => r.Tipo).HasComment("Tipo do valor: 1 booleano, 2 número, 3 código, 4 texto, 5 data ou 7 município.");
+        builder.Property(r => r.ValorBooleano).HasComment("Resposta booleana, quando aplicável.");
+        builder.Property(r => r.ValorNumero).HasComment("Resposta numérica, quando aplicável.");
+        builder.Property(r => r.ValorCodigo).HasComment("Código da opção ou município respondido, quando aplicável.");
+        builder.Property(r => r.ValorTexto).HasComment("Resposta em texto livre, quando aplicável.");
+        builder.Property(r => r.ValorData).HasComment("Resposta de data, quando aplicável.");
+
         builder.ToTable("respostas_da_inscricao", t =>
         {
             t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou derivado de outra resposta.");
@@ -44,7 +56,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.OcorrenciaId).ClassificaComo(ClassificacaoDeProtecao.Interno);
         builder.Property(r => r.Posicao).ClassificaComo(ClassificacaoDeProtecao.Interno);
 
-        builder.Property(r => r.FatoCodigo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
+        builder.Property(r => r.FatoCodigo).HasColumnName("codigo_do_dado").ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
@@ -76,15 +88,15 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         // A classificação e a habilitação filtram candidatos por fato e valor; texto livre não é filtro.
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorCodigo })
             .HasFilter("valor_codigo IS NOT NULL")
-            .HasDatabaseName("ix_respostas_da_inscricao_fato_codigo");
+            .HasDatabaseName("ix_respostas_da_inscricao_dado_codigo");
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorBooleano })
             .HasFilter("valor_booleano IS NOT NULL")
-            .HasDatabaseName("ix_respostas_da_inscricao_fato_booleano");
+            .HasDatabaseName("ix_respostas_da_inscricao_dado_booleano");
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorNumero })
             .HasFilter("valor_numero IS NOT NULL")
-            .HasDatabaseName("ix_respostas_da_inscricao_fato_numero");
+            .HasDatabaseName("ix_respostas_da_inscricao_dado_numero");
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorData })
             .HasFilter("valor_data IS NOT NULL")
-            .HasDatabaseName("ix_respostas_da_inscricao_fato_data");
+            .HasDatabaseName("ix_respostas_da_inscricao_dado_data");
     }
 }

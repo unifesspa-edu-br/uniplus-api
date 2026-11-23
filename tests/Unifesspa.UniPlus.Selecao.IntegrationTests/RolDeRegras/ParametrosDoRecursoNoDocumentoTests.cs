@@ -77,7 +77,7 @@ public sealed class ParametrosDoRecursoNoDocumentoTests
         {
             documento["cronograma"] = new JsonObject
             {
-                ["fases"] = new JsonArray(new JsonObject { ["chave"] = "inscricao", ["faseCanonicaCodigo"] = "INSCRICAO", ["regraRecurso"] = recurso }),
+                ["fases"] = new JsonArray(new JsonObject { ["chave"] = "inscricao", ["tipoFaseCodigo"] = "INSCRICAO", ["regraRecurso"] = recurso }),
             };
         }
         else

@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Application.Commands.MotivosDoProcesso;
+using Application.Commands.MotivosDeDecisaoDoProcesso;
 using Application.Commands.ProcessosSeletivos;
 using Application.DTOs;
-using Application.Queries.MotivosDoProcesso;
+using Application.Queries.MotivosDeDecisaoDoProcesso;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,13 +55,13 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/motivos-de-decisao")]
     [VendorMediaType(Resource = "motivo-do-processo", Versions = [1])]
-    [ProducesResponseType(typeof(IReadOnlyList<MotivoDoProcessoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<MotivoDeDecisaoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Listar(Guid id, [FromQuery(Name = "versao")] int? versao, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<MotivoDoProcessoDto>> motivos = await _queryBus
-            .Send(new ListarMotivosDoProcessoQuery(id, versao), cancellationToken)
+        Result<IReadOnlyList<MotivoDeDecisaoDoProcessoDto>> motivos = await _queryBus
+            .Send(new ListarMotivosDeDecisaoDoProcessoQuery(id, versao), cancellationToken)
             .ConfigureAwait(false);
         return motivos.IsFailure ? motivos.ToActionResult(_mapper) : Ok(motivos.Value);
     }
@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
         if (lugar is null)
             return Result.Failure(EscolhaDosMotivos.LugarNaoEncontrado()).ToActionResult(_mapper);
 
-        Result resultado = await _commandBus.Send(new IncluirMotivoNoProcessoCommand(id, lugar, motivoDeDecisaoId), cancellationToken);
+        Result resultado = await _commandBus.Send(new IncluirMotivoDeDecisaoNoProcessoCommand(id, lugar, motivoDeDecisaoId), cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
@@ -137,7 +137,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
         if (lugar is null)
             return Result.Failure(EscolhaDosMotivos.LugarNaoEncontrado()).ToActionResult(_mapper);
 
-        Result resultado = await _commandBus.Send(new RetirarMotivoDoProcessoCommand(id, lugar, motivoDeDecisaoId), cancellationToken);
+        Result resultado = await _commandBus.Send(new RetirarMotivoDeDecisaoDoProcessoCommand(id, lugar, motivoDeDecisaoId), cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 }

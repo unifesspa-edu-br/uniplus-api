@@ -28,7 +28,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoes : IExigenciaDeMotivos
             .Select(static fase => TipoNaoDeclarado(fase.Fase, fase.Posicao));
     }
 
-    public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(lugares);
@@ -62,7 +62,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoes : IExigenciaDeMotivos
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
             $"A fase '{fase.Codigo}' tem regra de homologação das inscrições, mas não declara o tipo de decisão de homologação das inscrições."));
 
-    private static IEnumerable<FieldError> FaltasDasCondicoes(FaseDeclarada fase, int posicao, RegraDeHomologacaoDasInscricoes regra, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    private static IEnumerable<FieldError> FaltasDasCondicoes(FaseDeclarada fase, int posicao, RegraDeHomologacaoDasInscricoes regra, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos)
     {
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(fase.OrigemId);
 
@@ -75,14 +75,14 @@ public sealed class ExigenciaDaHomologacaoDasInscricoes : IExigenciaDeMotivos
             new DomainError(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, Mensagem(fase, lugar, codigo, escolhidos)));
     }
 
-    private static string Mensagem(FaseDeclarada fase, LugarDaDecisao lugar, string? codigo, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    private static string Mensagem(FaseDeclarada fase, LugarDaDecisao lugar, string? codigo, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos)
     {
         if (codigo is null)
         {
             return $"A condição da fase '{fase.Codigo}' não informa motivo desfavorável.";
         }
 
-        MotivoDoProcesso? motivo = escolhidos.FirstOrDefault(m => m.Lugar == lugar && string.Equals(m.Codigo.Valor, codigo, StringComparison.Ordinal));
+        MotivoDeDecisaoDoProcesso? motivo = escolhidos.FirstOrDefault(m => m.Lugar == lugar && string.Equals(m.Codigo.Valor, codigo, StringComparison.Ordinal));
         string causa = motivo is null ? "não foi escolhido na fase" : motivo.Tipo != Tipo ? "é de outro tipo de decisão" : "é favorável";
         return $"O motivo da condição da fase '{fase.Codigo}' {causa}.";
     }

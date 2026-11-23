@@ -23,7 +23,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 /// </summary>
 public sealed class MotivosDosLugaresQueSaemTests
 {
-    private readonly IMotivoDoProcessoRepository _motivos = SemEscolha();
+    private readonly IMotivoDeDecisaoDoProcessoRepository _motivos = SemEscolha();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static EtapaProcessoInput EtapaNova(string nome) => new(
@@ -32,7 +32,7 @@ public sealed class MotivosDosLugaresQueSaemTests
     [Fact(DisplayName = "A etapa substituída sem id sai do rascunho com os motivos escolhidos nela")]
     public async Task Etapas_EtapaQueSai_LevaOsMotivosPendentes()
     {
-        (ProcessoSeletivo processo, MotivoDoProcesso escolhido) = await ProcessoComUmaEtapaEUmMotivoAsync();
+        (ProcessoSeletivo processo, MotivoDeDecisaoDoProcesso escolhido) = await ProcessoComUmaEtapaEUmMotivoAsync();
 
         Result resultado = await SubstituirEtapas(processo, EtapaNova("Redação"));
 
@@ -49,7 +49,7 @@ public sealed class MotivosDosLugaresQueSaemTests
         Result resultado = await SubstituirEtapas(processo, EtapaNova("Prova Objetiva") with { Id = processo.Etapas.Single().Id });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        _motivos.DidNotReceive().Remover(Arg.Any<MotivoDoProcesso>());
+        _motivos.DidNotReceive().Remover(Arg.Any<MotivoDeDecisaoDoProcesso>());
     }
 
     [Fact(DisplayName = "Sem motivo nos lugares que saem, a retirada não remove nada")]
@@ -60,21 +60,21 @@ public sealed class MotivosDosLugaresQueSaemTests
 
         await new MotivosDosLugaresQueSaem(_motivos).RetirarAsync(processo, antes, CancellationToken.None);
 
-        _motivos.DidNotReceive().Remover(Arg.Any<MotivoDoProcesso>());
+        _motivos.DidNotReceive().Remover(Arg.Any<MotivoDeDecisaoDoProcesso>());
     }
 
-    private async Task<(ProcessoSeletivo Processo, MotivoDoProcesso Escolhido)> ProcessoComUmaEtapaEUmMotivoAsync()
+    private async Task<(ProcessoSeletivo Processo, MotivoDeDecisaoDoProcesso Escolhido)> ProcessoComUmaEtapaEUmMotivoAsync()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         (await SubstituirEtapas(processo, EtapaNova("Prova Objetiva"))).IsSuccess.Should().BeTrue();
-        MotivoDoProcesso escolhido = Escolhido(processo, LugarDaDecisao.DaEtapa(processo.Etapas.Single().Id), Motivo());
+        MotivoDeDecisaoDoProcesso escolhido = Escolhido(processo, LugarDaDecisao.DaEtapa(processo.Etapas.Single().Id), Motivo());
         Escolher(processo, escolhido);
         _unitOfWork.ClearReceivedCalls();
 
         return (processo, escolhido);
     }
 
-    private void Escolher(ProcessoSeletivo processo, MotivoDoProcesso escolhido) =>
+    private void Escolher(ProcessoSeletivo processo, MotivoDeDecisaoDoProcesso escolhido) =>
         _motivos.ListarEscolhaAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns([escolhido]);
 
     private async Task<Result> SubstituirEtapas(ProcessoSeletivo processo, EtapaProcessoInput etapa)

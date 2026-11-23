@@ -68,8 +68,8 @@ public sealed partial class ListasDasFasesTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
 
         // Na ordem canônica o definitivo vem antes do preliminar: a posição 0 da declaração é a 2 do documento, e a 1 é a 0.
-        PonteiroNoDocumento.Converter("fases[0].produtos[0]", lidos.Origem).Should().Be("/cronograma/fases/0/produtos/2");
-        PonteiroNoDocumento.Converter("fases[0].produtos[1]", lidos.Origem).Should().Be("/cronograma/fases/0/produtos/0");
+        PonteiroNoDocumento.Converter("fases[0].produtos[0]", lidos.Origem).Should().Be("/cronograma/fases/0/publicacoesPrevistas/2");
+        PonteiroNoDocumento.Converter("fases[0].produtos[1]", lidos.Origem).Should().Be("/cronograma/fases/0/publicacoesPrevistas/0");
     }
 
     [Fact(DisplayName = "A lista sem item aceito não registra origem, e a posição canônica é a enviada")]
@@ -79,6 +79,6 @@ public sealed partial class ListasDasFasesTests
 
         IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
 
-        PonteiroNoDocumento.Converter("fases[0].produtos[0]", lidos.Origem).Should().Be("/cronograma/fases/0/produtos/0");
+        PonteiroNoDocumento.Converter("fases[0].produtos[0]", lidos.Origem).Should().Be("/cronograma/fases/0/publicacoesPrevistas/0");
     }
 }

@@ -23,11 +23,11 @@ public static class RestricoesDoBanco
 
     public const string OfertaDeCursoCodigoVivo = "ix_ofertas_de_curso_codigo_vivo";
 
-    public const string FaseCanonicaCodigoVivo = "ix_fases_canonicas_codigo_vivo";
+    public const string FaseCanonicaCodigoVivo = "ix_tipos_de_fase_codigo_vivo";
 
-    public const string FatoDoCandidatoCodigoUnico = "ux_fatos_do_candidato_codigo";
+    public const string FatoDoCandidatoCodigoUnico = "ux_dados_do_candidato_codigo";
 
-    public const string ValorDeDominioDoFatoCodigoUnico = "ux_valores_de_dominio_do_fato_fato_codigo";
+    public const string ValorDeDominioDoFatoCodigoUnico = "ux_opcoes_dos_dados_fato_codigo";
 
     public const string ManifestacaoDaProtecaoInicialDoAutorUnica = "ux_manifestacoes_da_protecao_inicial_do_autor";
 
@@ -45,11 +45,11 @@ public static class RestricoesDoBanco
 
     public const string ReferenciaDemograficaCensoVivo = "ix_referencias_demograficas_censo_vivo";
 
-    public const string TipoDeConceitoValorCodigoUnico = "ix_valores_tipo_conceito_codigo";
+    public const string TipoDeConceitoValorCodigoUnico = "ix_opcoes_do_tipo_de_conceito_codigo";
 
-    public const string TipoDeConceitoValorRotuloUnico = "ix_valores_tipo_conceito_rotulo";
+    public const string TipoDeConceitoValorRotuloUnico = "ix_opcoes_do_tipo_de_conceito_rotulo";
 
-    public const string TipoDeConceitoValorPosicaoUnica = "ix_valores_tipo_conceito_posicao";
+    public const string TipoDeConceitoValorPosicaoUnica = "ix_opcoes_do_tipo_de_conceito_posicao";
 
     public const string TipoDeEtapaConceitoAdmitidoChave = "pk_tipos_etapa_conceitos";
 

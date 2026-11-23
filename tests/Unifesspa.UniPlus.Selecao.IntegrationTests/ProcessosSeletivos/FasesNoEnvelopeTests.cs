@@ -111,7 +111,7 @@ public sealed class FasesNoEnvelopeTests
         new()
         {
             ["id"] = Guid.CreateVersion7(),
-            ["faseCanonicaOrigemId"] = Guid.CreateVersion7(),
+            ["tipoFaseOrigemId"] = Guid.CreateVersion7(),
             ["codigo"] = "AVALIACAO",
             ["inicio"] = inicio,
             ["fim"] = fim,

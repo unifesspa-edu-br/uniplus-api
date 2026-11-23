@@ -219,7 +219,7 @@
     "condicaoDoDesempate": {
       "title": "Condição do desempate",
       "description": "Fato, operador e valor que o desempate por predicado avalia.",
-      "$ref": "predicado.schema.json#/$defs/condicao"
+      "$ref": "condicoes.schema.json#/$defs/condicao"
     }
   }
 }

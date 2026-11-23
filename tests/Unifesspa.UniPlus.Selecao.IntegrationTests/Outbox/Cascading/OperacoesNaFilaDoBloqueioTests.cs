@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProcesso;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 /// <summary>
@@ -54,7 +54,7 @@ public sealed class OperacoesNaFilaDoBloqueioTests
 
         (await descartar.Should().ThrowAsync<TimeoutException>()).Which.Message.Should()
             .Contain("1 de 1 operações seguem ativas")
-            .And.Contain($"{nameof(IncluirMotivoNoProcessoCommand)} (1)")
+            .And.Contain($"{nameof(IncluirMotivoDeDecisaoNoProcessoCommand)} (1)")
             .And.Contain("execução seguinte dela não é confiável");
     }
 
@@ -65,7 +65,7 @@ public sealed class OperacoesNaFilaDoBloqueioTests
         controle.HostDescartado.Should().BeFalse("o host não é descartado sob operação ativa");
     }
 
-    private static IncluirMotivoNoProcessoCommand ComandoDeInclusao() =>
+    private static IncluirMotivoDeDecisaoNoProcessoCommand ComandoDeInclusao() =>
         new(Guid.CreateVersion7(), LugarDaDecisao.DaFase(Guid.CreateVersion7()), Guid.CreateVersion7());
 
     private static async Task<Result> EsperarOCancelamentoAsync(object comando, CancellationToken cancelamento)

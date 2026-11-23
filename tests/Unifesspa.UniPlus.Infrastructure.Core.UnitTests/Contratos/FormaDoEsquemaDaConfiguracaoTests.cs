@@ -89,7 +89,7 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
     [Theory(DisplayName = "Identificador interno do banco no lugar do código do catálogo é recusado")]
     [InlineData("/identificacao/tipoProcessoCodigo")]
     [InlineData("/identificacao/unidadeAdministradoraCodigo")]
-    [InlineData("/cronograma/fases/0/faseCanonicaCodigo")]
+    [InlineData("/cronograma/fases/0/tipoFaseCodigo")]
     [InlineData("/cronograma/fases/0/unidadeResponsavelCodigo")]
     [InlineData("/etapas/0/tipoEtapaCodigo")]
     [InlineData("/etapas/0/bancas/0/tipoBancaCodigo")]

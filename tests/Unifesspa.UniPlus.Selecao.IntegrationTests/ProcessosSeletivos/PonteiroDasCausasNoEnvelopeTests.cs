@@ -34,7 +34,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
             string ponteiro = PonteiroNoDocumento.Converter($"fases[{posicao}].unidadeResponsavel", OrigemNoDocumento.Identidade)!;
 
             ponteiro.Should().Be($"/cronograma/fases/{posicao}/unidadeResponsavelCodigo");
-            fasesDoEnvelope[posicao]!["faseCanonicaOrigemId"]!.GetValue<Guid>().Should().Be(fase.FaseCanonicaOrigemId);
+            fasesDoEnvelope[posicao]!["tipoFaseOrigemId"]!.GetValue<Guid>().Should().Be(fase.FaseCanonicaOrigemId);
         }
     }
 

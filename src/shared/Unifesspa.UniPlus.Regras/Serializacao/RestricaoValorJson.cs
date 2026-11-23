@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// A forma JSON de guardar as restrições de valor de um item: uma lista de objetos com
 /// <c>tipo</c> e os campos do tipo — <c>minimo</c>/<c>maximo</c> nas faixas numéricas e de tamanho,
-/// <c>dataMinima</c>/<c>dataMaxima</c> (<c>{ancora, data, anos, dias}</c>) na faixa de data,
+/// <c>dataMinima</c>/<c>dataMaxima</c> (<c>{referenciaDaData, data, anos, dias}</c>) na faixa de data,
 /// <c>entradas</c> (<c>{quando, valores}</c>) nas opções permitidas e <c>fatos</c> nas opções formadas
 /// pelas respostas. A leitura remonta por <see cref="RestricoesDeValor"/>, então conteúdo gravado que
 /// viola as invariantes é recusado.
@@ -72,10 +72,10 @@ public static class RestricaoValorJson
         null => null,
         { Ancora: AncoraDoLimiteDeData.DataFixa } => new JsonObject
         {
-            ["ancora"] = AncoraDataFixa,
+            ["referenciaDaData"] = AncoraDataFixa,
             ["data"] = DiaDoCalendario.Escrever(limite.Data!.Value),
         },
-        _ => new JsonObject { ["ancora"] = AncoraEnvio, ["anos"] = limite.Anos, ["dias"] = limite.Dias },
+        _ => new JsonObject { ["referenciaDaData"] = AncoraEnvio, ["anos"] = limite.Anos, ["dias"] = limite.Dias },
     };
 
     public static JsonArray ParaJson(IEnumerable<RestricaoValor> restricoes)
@@ -88,38 +88,48 @@ public static class RestricaoValorJson
     {
         ArgumentNullException.ThrowIfNull(restricao);
         JsonObject json = new() { ["tipo"] = ParaToken(restricao.Tipo) };
-        switch (restricao)
-        {
-            case Formularios.FaixaNumerica faixa:
-                json["minimo"] = faixa.Minimo;
-                json["maximo"] = faixa.Maximo;
-                break;
-            case Formularios.TamanhoTexto tamanho:
-                json["minimo"] = tamanho.Minimo;
-                json["maximo"] = tamanho.Maximo;
-                break;
-            case Formularios.OpcoesPermitidas opcoes:
-                json["entradas"] = new JsonArray([.. opcoes.Entradas.Select(static e => (JsonNode)new JsonObject
-                {
-                    ["quando"] = e.Quando is { } quando ? PredicadoDnfJson.ParaJson(quando) : null,
-                    ["valores"] = new JsonArray([.. e.Valores.Order(StringComparer.Ordinal).Select(static v => (JsonNode)v)]),
-                })]);
-                break;
-            case Formularios.OpcoesDasRespostas respostas:
-                json["fatos"] = new JsonArray([.. respostas.Fatos.Select(static f => (JsonNode)f)]);
-                break;
-            case Formularios.MunicipiosDaUf daUf:
-                json["fatos"] = new JsonArray(daUf.FatoUf);
-                break;
-            case Formularios.FaixaDeData faixaDeData:
-                json["dataMinima"] = ParaJson(faixaDeData.Minima);
-                json["dataMaxima"] = ParaJson(faixaDeData.Maxima);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma JSON.");
-        }
+        PreencherFormaJson(json, restricao);
 
         return json;
+    }
+
+    private static void PreencherFormaJson(JsonObject json, RestricaoValor restricao)
+    {
+        switch (restricao)
+        {
+            case Formularios.FaixaNumerica faixa: PreencherFaixa(json, faixa); break;
+            case Formularios.TamanhoTexto tamanho: PreencherTamanho(json, tamanho); break;
+            case Formularios.OpcoesPermitidas opcoes: PreencherOpcoes(json, opcoes); break;
+            case Formularios.OpcoesDasRespostas respostas: json["fatos"] = new JsonArray([.. respostas.Fatos.Select(static f => (JsonNode)f)]); break;
+            case Formularios.MunicipiosDaUf daUf: json["fatos"] = new JsonArray(daUf.FatoUf); break;
+            case Formularios.FaixaDeData faixa: PreencherFaixaDeData(json, faixa); break;
+            default: throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma JSON.");
+        }
+    }
+
+    private static void PreencherFaixa(JsonObject json, Formularios.FaixaNumerica faixa)
+    {
+        json["minimo"] = faixa.Minimo;
+        json["maximo"] = faixa.Maximo;
+    }
+
+    private static void PreencherTamanho(JsonObject json, Formularios.TamanhoTexto tamanho)
+    {
+        json["minimo"] = tamanho.Minimo;
+        json["maximo"] = tamanho.Maximo;
+    }
+
+    private static void PreencherOpcoes(JsonObject json, Formularios.OpcoesPermitidas opcoes) =>
+        json["entradas"] = new JsonArray([.. opcoes.Entradas.Select(static e => (JsonNode)new JsonObject
+        {
+            ["quando"] = e.Quando is { } quando ? PredicadoDnfJson.ParaJson(quando) : null,
+            ["valores"] = new JsonArray([.. e.Valores.Order(StringComparer.Ordinal).Select(static v => (JsonNode)v)]),
+        })]);
+
+    private static void PreencherFaixaDeData(JsonObject json, Formularios.FaixaDeData faixa)
+    {
+        json["dataMinima"] = ParaJson(faixa.Minima);
+        json["dataMaxima"] = ParaJson(faixa.Maxima);
     }
 
     public static Result<IReadOnlyList<RestricaoValor>> ListaDeJson(JsonElement json)
@@ -129,6 +139,11 @@ public static class RestricaoValorJson
             return Result<IReadOnlyList<RestricaoValor>>.Failure(Erro("As restrições de valor são uma lista."));
         }
 
+        return LerListaDeRestricoes(json);
+    }
+
+    private static Result<IReadOnlyList<RestricaoValor>> LerListaDeRestricoes(JsonElement json)
+    {
         List<RestricaoValor> restricoes = [];
         foreach (JsonElement item in json.EnumerateArray())
         {
@@ -152,26 +167,34 @@ public static class RestricaoValorJson
             return Falha("Cada restrição de valor tem um tipo.");
         }
 
-        return TipoDoToken(tipo.GetString()) switch
-        {
-            TipoRestricaoValor.FaixaNumerica => LerLimites(json, out decimal? minimo, out decimal? maximo)
-                ? RestricoesDeValor.Faixa(minimo, maximo)
-                : Falha("A faixa numérica tem mínimo e máximo numéricos ou nulos."),
-            TipoRestricaoValor.TamanhoTexto => LerLimites(json, out decimal? minimo, out decimal? maximo)
-                    && Inteiro(minimo, out int? min) && Inteiro(maximo, out int? max)
-                ? RestricoesDeValor.Tamanho(min, max)
-                : Falha("O tamanho de texto tem mínimo e máximo inteiros ou nulos."),
-            TipoRestricaoValor.OpcoesPermitidas => LerOpcoes(json),
-            TipoRestricaoValor.OpcoesDasRespostas => Textos(json, "fatos") is { } fatos
-                ? RestricoesDeValor.DasRespostas(fatos)
-                : Falha("As opções formadas pelas respostas têm a lista de fatos."),
-            TipoRestricaoValor.MunicipiosDaUf => Textos(json, "fatos") is { } fatosDaUf
-                ? RestricoesDeValor.DaUf(fatosDaUf)
-                : Falha("Os municípios da UF têm a lista com o fato da UF."),
-            TipoRestricaoValor.FaixaDeData => LerFaixaDeData(json),
-            _ => Falha("O tipo da restrição de valor não é reconhecido."),
-        };
+        return LerRestricaoTipada(json, TipoDoToken(tipo.GetString()));
     }
+
+    private static Result<RestricaoValor> LerRestricaoTipada(JsonElement json, TipoRestricaoValor tipo) => tipo switch
+    {
+        TipoRestricaoValor.FaixaNumerica => LerFaixaNumerica(json),
+        TipoRestricaoValor.TamanhoTexto => LerTamanhoTexto(json),
+        TipoRestricaoValor.OpcoesPermitidas => LerOpcoes(json),
+        TipoRestricaoValor.OpcoesDasRespostas => Textos(json, "fatos") is { } fatos
+            ? RestricoesDeValor.DasRespostas(fatos)
+            : Falha("As opções formadas pelas respostas têm a lista de fatos."),
+        TipoRestricaoValor.MunicipiosDaUf => Textos(json, "fatos") is { } fatosDaUf
+            ? RestricoesDeValor.DaUf(fatosDaUf)
+            : Falha("Os municípios da UF têm a lista com o fato da UF."),
+        TipoRestricaoValor.FaixaDeData => LerFaixaDeData(json),
+        _ => Falha("O tipo da restrição de valor não é reconhecido."),
+    };
+
+    private static Result<RestricaoValor> LerFaixaNumerica(JsonElement json) =>
+        LerLimites(json, out decimal? minimo, out decimal? maximo)
+            ? RestricoesDeValor.Faixa(minimo, maximo)
+            : Falha("A faixa numérica tem mínimo e máximo numéricos ou nulos.");
+
+    private static Result<RestricaoValor> LerTamanhoTexto(JsonElement json) =>
+        LerLimites(json, out decimal? minimo, out decimal? maximo)
+            && Inteiro(minimo, out int? min) && Inteiro(maximo, out int? max)
+            ? RestricoesDeValor.Tamanho(min, max)
+            : Falha("O tamanho de texto tem mínimo e máximo inteiros ou nulos.");
 
     /// <summary>Um limite decimal que é inteiro, para os limites de tamanho de texto.</summary>
     public static bool Inteiro(decimal? valor, out int? inteiro)
@@ -198,30 +221,48 @@ public static class RestricaoValorJson
             return Falha("As opções permitidas têm a lista de entradas.");
         }
 
+        return LerEntradasDeOpcoes(entradas);
+    }
+
+    private static Result<RestricaoValor> LerEntradasDeOpcoes(JsonElement entradas)
+    {
         List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = [];
         foreach (JsonElement entrada in entradas.EnumerateArray())
         {
-            if (entrada.ValueKind != JsonValueKind.Object || Textos(entrada, "valores") is not { } valores)
+            Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lida = LerEntradaDeOpcoes(entrada);
+            if (lida.IsFailure)
             {
-                return Falha("Cada entrada das opções permitidas tem a lista de valores.");
+                return Result<RestricaoValor>.Failure(lida.Error!);
             }
 
-            PredicadoDnf? quando = null;
-            if (entrada.TryGetProperty("quando", out JsonElement predicado) && predicado.ValueKind != JsonValueKind.Null)
-            {
-                Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(predicado);
-                if (lido.IsFailure)
-                {
-                    return Result<RestricaoValor>.Failure(lido.Error!);
-                }
-
-                quando = lido.Value;
-            }
-
-            lidas.Add((quando, valores));
+            lidas.Add(lida.Value);
         }
 
         return RestricoesDeValor.Opcoes(lidas);
+    }
+
+    private static Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> LerEntradaDeOpcoes(JsonElement entrada)
+    {
+        if (entrada.ValueKind != JsonValueKind.Object || Textos(entrada, "valores") is not { } valores)
+        {
+            return Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Failure(Erro("Cada entrada das opções permitidas tem a lista de valores."));
+        }
+
+        Result<PredicadoDnf?> quando = LerPredicadoDaEntrada(entrada);
+        return quando.IsFailure
+            ? Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Failure(quando.Error!)
+            : Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Success((quando.Value, valores));
+    }
+
+    private static Result<PredicadoDnf?> LerPredicadoDaEntrada(JsonElement entrada)
+    {
+        if (!entrada.TryGetProperty("quando", out JsonElement predicado) || predicado.ValueKind == JsonValueKind.Null)
+        {
+            return Result<PredicadoDnf?>.Success(null);
+        }
+
+        Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(predicado);
+        return lido.IsFailure ? Result<PredicadoDnf?>.Failure(lido.Error!) : Result<PredicadoDnf?>.Success(lido.Value);
     }
 
     private static Result<RestricaoValor> LerFaixaDeData(JsonElement json)
@@ -244,8 +285,13 @@ public static class RestricaoValorJson
             return Result<LimiteDeData?>.Success(null);
         }
 
+        return LerLimiteDeData(limite, chave);
+    }
+
+    private static Result<LimiteDeData?> LerLimiteDeData(JsonElement limite, string chave)
+    {
         if (limite.ValueKind != JsonValueKind.Object
-            || !Texto(limite, "ancora", out string? ancora)
+            || !Texto(limite, "referenciaDaData", out string? ancora)
             || !Texto(limite, "data", out string? data)
             || !InteiroOpcional(limite, "anos", out int? anos)
             || !InteiroOpcional(limite, "dias", out int? dias))
@@ -253,6 +299,11 @@ public static class RestricaoValorJson
             return Result<LimiteDeData?>.Failure(Erro($"O limite '{chave}' da faixa de data tem a âncora e a data ou o deslocamento."));
         }
 
+        return ConstruirLimiteDeData(chave, ancora, data, anos, dias);
+    }
+
+    private static Result<LimiteDeData?> ConstruirLimiteDeData(string chave, string? ancora, string? data, int? anos, int? dias)
+    {
         DateOnly? dia = DiaDoCalendario.Ler(data);
         if (data is not null && dia is null)
         {

@@ -18,7 +18,6 @@ public static class ConferenciaDosMotivosDaRetificacao
 {
     public const int JustificativaMaxLength = 1000;
 
-    private const string MotivosNoDocumento = "motivos";
 
     private static readonly DomainError JustificativaObrigatoria = new(
         MotivoDeDecisaoErrorCodes.JustificativaObrigatoria,
@@ -59,14 +58,14 @@ public static class ConferenciaDosMotivosDaRetificacao
     private static (LugarDaDecisao Lugar, Guid OrigemId) Identidade(MotivoDoDocumento motivo) => (motivo.Lugar, motivo.OrigemId);
 
     private static FieldError Retirada(MotivoDoDocumento motivo) => new(
-        MotivosNoDocumento,
+        MotivosEscolhidos.CampoDosMotivos,
         new DomainError(
             MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao,
             $"O motivo {motivo.Codigo} já consta do edital publicado e não pode ser retirado; a retificação só inclui motivos."));
 
     private static FieldError? Inclusao(MotivoDoDocumento motivo, int posicao, AndamentoDasFases andamento)
     {
-        string item = $"{MotivosNoDocumento}[{posicao}]";
+        string item = $"{MotivosEscolhidos.CampoDosMotivos}[{posicao}]";
 
         return RecusaDaJustificativa(motivo.Justificativa) is { } daJustificativa
             ? new FieldError($"{item}.justificativaDaInclusao", daJustificativa)

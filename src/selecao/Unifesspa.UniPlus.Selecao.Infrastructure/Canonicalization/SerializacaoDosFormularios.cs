@@ -32,29 +32,32 @@ internal static class SerializacaoDosFormularios
             ["finalidade"] = EstruturaFormulario.ParaToken(formulario.Finalidade),
             ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
             ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
-            ["modeloOrigem"] = formulario.ModeloOrigemId is { } modelo
-                ? new JsonObject
-                {
-                    ["id"] = JsonValue.Create(modelo),
-                    ["codigo"] = formulario.ModeloOrigemCodigo is { } codigo ? HashCanonicalComputer.NormalizeNfc(codigo) : null,
-                }
-                : null,
-            ["etapas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(static e => (JsonNode)new JsonObject
-            {
-                ["codigo"] = HashCanonicalComputer.NormalizeNfc(e.Codigo),
-                ["ordem"] = e.Ordem,
-                ["tipo"] = EstruturaFormulario.ParaToken(e.Tipo),
-                ["bloco"] = EstruturaFormulario.ParaToken(e.Bloco),
-                ["titulo"] = HashCanonicalComputer.NormalizeNfc(e.Titulo),
-                ["descricao"] = e.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
-                ["aviso"] = e.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
-                ["exibicao"] = e.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
-            })]),
+            ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
+            ["paginas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(SerializarEtapa)]),
             ["termos"] = new JsonArray([.. processo.TermosExigidos
                 .Where(t => t.Finalidade == formulario.Finalidade)
                 .OrderBy(static t => t.Ordem)
                 .Select(SerializarTermoExigido)]),
         })]);
+
+    private static JsonObject? SerializarModeloDeOrigem(FormularioProcesso formulario) =>
+        formulario.ModeloOrigemId is { } modelo ? new JsonObject
+        {
+            ["id"] = JsonValue.Create(modelo),
+            ["codigo"] = formulario.ModeloOrigemCodigo is { } codigo ? HashCanonicalComputer.NormalizeNfc(codigo) : null,
+        } : null;
+
+    private static JsonNode SerializarEtapa(EtapaFormulario etapa) => new JsonObject
+    {
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.Codigo),
+        ["ordem"] = etapa.Ordem,
+        ["tipo"] = EstruturaFormulario.ParaToken(etapa.Tipo),
+        ["bloco"] = EstruturaFormulario.ParaToken(etapa.Bloco),
+        ["titulo"] = HashCanonicalComputer.NormalizeNfc(etapa.Titulo),
+        ["descricao"] = etapa.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+        ["aviso"] = etapa.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
+        ["exibicao"] = etapa.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
+    };
 
     private static JsonNode SerializarTermoExigido(TermoExigidoFormulario termo) => new JsonObject
     {
@@ -76,7 +79,7 @@ internal static class SerializacaoDosFormularios
     internal static JsonObject SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) => new()
     {
         ["tipo"] = PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
-        ["predicado"] = obrigatoriedade.Predicado is { } predicado ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(predicado)) : null,
+        ["quando"] = obrigatoriedade.Predicado is { } predicado ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(predicado)) : null,
     };
 
     internal static JsonObject SerializarImpedimento(Impedimento impedimento) => new()
@@ -100,12 +103,12 @@ internal static class SerializacaoDosFormularios
         FaixaNumerica faixa => new JsonObject { ["minimo"] = LimiteDaFaixa(faixa.Minimo), ["maximo"] = LimiteDaFaixa(faixa.Maximo) },
         TamanhoTexto tamanho => new JsonObject { ["minimo"] = tamanho.Minimo, ["maximo"] = tamanho.Maximo },
         OpcoesPermitidas opcoes => new JsonObject { ["entradas"] = SerializarEntradasPermitidas(opcoes) },
-        OpcoesDasRespostas respostas => new JsonObject { ["fatos"] = EscritaCanonica.CodigosEmOrdem(respostas.Fatos) },
-        MunicipiosDaUf daUf => new JsonObject { ["fatos"] = EscritaCanonica.CodigosEmOrdem([daUf.FatoUf]) },
+        OpcoesDasRespostas respostas => new JsonObject { ["codigosDosDados"] = EscritaCanonica.CodigosEmOrdem(respostas.Fatos) },
+        MunicipiosDaUf daUf => new JsonObject { ["codigosDosDados"] = EscritaCanonica.CodigosEmOrdem([daUf.FatoUf]) },
         FaixaDeData faixaDeData => new JsonObject
         {
-            ["dataMinima"] = SerializarLimiteDeData(faixaDeData.Minima),
-            ["dataMaxima"] = SerializarLimiteDeData(faixaDeData.Maxima),
+            ["dataMinima"] = RestricaoValorJson.ParaJson(faixaDeData.Minima),
+            ["dataMaxima"] = RestricaoValorJson.ParaJson(faixaDeData.Maxima),
         },
         _ => throw new InvalidOperationException($"Restrição de valor sem forma canônica: {restricao.Tipo}."),
     };
@@ -116,17 +119,6 @@ internal static class SerializacaoDosFormularios
             ["quando"] = e.Quando is { } quando ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(quando)) : null,
             ["valores"] = EscritaCanonica.CodigosEmOrdem(e.Valores),
         }));
-
-    private static JsonObject? SerializarLimiteDeData(LimiteDeData? limite) => limite switch
-    {
-        null => null,
-        { Ancora: AncoraDoLimiteDeData.DataFixa } => new JsonObject
-        {
-            ["ancora"] = RestricaoValorJson.AncoraDataFixa,
-            ["data"] = limite.Data!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        },
-        _ => new JsonObject { ["ancora"] = RestricaoValorJson.AncoraEnvio, ["anos"] = limite.Anos, ["dias"] = limite.Dias },
-    };
 
     private static string? LimiteDaFaixa(decimal? limite) =>
         limite is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, FormaDoItem.CasasDecimaisDaFaixa) : null;

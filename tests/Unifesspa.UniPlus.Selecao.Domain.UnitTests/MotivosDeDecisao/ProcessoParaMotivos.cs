@@ -102,8 +102,8 @@ internal static class ProcessoParaMotivos
         LugarDaDecisao.DaEtapa(processo.Etapas.Single(e => e.Nome == nomeDaEtapa).Id);
 
     /// <summary>A escolha do motivo no lugar, entrando na versão do edital informada.</summary>
-    internal static MotivoDoProcesso Escolha(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem, int versaoDeEntrada) =>
-        MotivoDoProcesso.Copiar(processo.Id, lugar, origem, versaoDeEntrada, justificativa: null);
+    internal static MotivoDeDecisaoDoProcesso Escolha(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem, int versaoDeEntrada) =>
+        MotivoDeDecisaoDoProcesso.Copiar(processo.Id, lugar, origem, versaoDeEntrada, justificativa: null);
 
     internal static MotivoDeDecisao Motivo(TipoMotivoDeDecisao tipo, string codigo, SentidoDoMotivo sentido, string? subclassificacao = null) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, "Descrição do motivo " + codigo, subclassificacao, sentido)).Value!;

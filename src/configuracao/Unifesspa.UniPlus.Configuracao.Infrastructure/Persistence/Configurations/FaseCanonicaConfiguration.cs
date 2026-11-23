@@ -31,8 +31,17 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.ToTable("fases_canonicas", ConfigurarChecks);
+        builder.ToTable("tipos_de_fase", ConfigurarChecks);
         builder.HasKey(f => f.Id);
+        builder.Property(f => f.Id).HasComment("Identificador do tipo de fase.");
+        builder.Property(f => f.Codigo).HasComment("Código único do tipo de fase.");
+        builder.Property(f => f.Nome).HasComment("Nome do tipo de fase.");
+        builder.Property(f => f.Descricao).HasComment("Descrição do propósito da fase, quando informada.");
+        builder.Property(f => f.BaseLegal).HasComment("Fundamento legal da fase, quando informado.");
+        builder.Property(f => f.OrigemData).HasComment("Origem das datas: NO_EDITAL ou NA_EXECUCAO.");
+        builder.Property(f => f.UnidadeSugeridaOrigemId).HasComment("Identificador da unidade sugerida, quando houver.");
+        builder.Property(f => f.UnidadeSugeridaSigla).HasComment("Sigla da unidade sugerida, quando houver.");
+        builder.Property(f => f.UnidadeSugeridaNome).HasComment("Nome da unidade sugerida, quando houver.");
         ConfigurarIdentificacao(builder);
         ConfigurarSinalizadores(builder);
         ConfigurarOrigemDaData(builder);
@@ -110,6 +119,10 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             .HasColumnName("coleta_inscricao").IsRequired().HasDefaultValue(false);
         sinalizadores.Property(s => s.ColetaSolicitacaoIsencao)
             .HasColumnName("coleta_solicitacao_isencao").IsRequired().HasDefaultValue(false);
+        sinalizadores.Property(s => s.AgrupaEtapas).HasComment("Indica se a fase agrupa etapas de avaliação.");
+        sinalizadores.Property(s => s.PermiteComplementacao).HasComment("Indica se a fase permite complementação.");
+        sinalizadores.Property(s => s.ColetaInscricao).HasComment("Indica se a fase coleta inscrições.");
+        sinalizadores.Property(s => s.ColetaSolicitacaoIsencao).HasComment("Indica se a fase coleta solicitações de isenção.");
         sinalizadores.HasData(SinalizadoresDoSeed());
     }
 
@@ -151,6 +164,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
     private static void ConfigurarChecks(TableBuilder<FaseCanonica> table)
     {
+        table.HasComment("Tipos de fase disponíveis para organizar o cronograma de seleção.");
         ConfigurarChecksDoCodigoEDaOrigemDaData(table);
         ConfigurarChecksDosSinalizadoresDaAvaliacao(table);
         ConfigurarChecksDosSinalizadoresDaIsencao(table);
@@ -161,15 +175,15 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private static void ConfigurarChecksDoCodigoEDaOrigemDaData(TableBuilder<FaseCanonica> table)
     {
         table.HasCheckConstraint(
-            "ck_fases_canonicas_codigo_formato",
+            "ck_tipos_de_fase_codigo_formato",
             "codigo ~ '^[A-Z_]+$'");
 
         table.HasCheckConstraint(
-            "ck_fases_canonicas_codigo_canonico",
+            "ck_tipos_de_fase_codigo_canonico",
             $"codigo IN ({CodigosSql(FaseCanonicaCatalogo.Codigos)})");
 
         table.HasCheckConstraint(
-            "ck_fases_canonicas_origem_data",
+            "ck_tipos_de_fase_origem_data",
             $"origem_data IN ({SqlDosCodigosDeContrato.Lista<OrigemDataFase>()})");
     }
 
@@ -178,11 +192,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private static void ConfigurarChecksDosSinalizadoresDaAvaliacao(TableBuilder<FaseCanonica> table)
     {
         table.HasCheckConstraint(
-            "ck_fases_canonicas_agrupa_etapas",
+            "ck_tipos_de_fase_agrupa_etapas",
             $"agrupa_etapas = false OR codigo = '{FaseCanonicaCatalogo.CodigoAvaliacao}'");
 
         table.HasCheckConstraint(
-            "ck_fases_canonicas_complementacao",
+            "ck_tipos_de_fase_complementacao",
             $"permite_complementacao = false OR codigo IN ({CodigosSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
     }
 
@@ -191,11 +205,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private static void ConfigurarChecksDosSinalizadoresDaIsencao(TableBuilder<FaseCanonica> table)
     {
         table.HasCheckConstraint(
-            "ck_fases_canonicas_solicitacao_isencao",
+            "ck_tipos_de_fase_solicitacao_isencao",
             $"coleta_solicitacao_isencao = (codigo = '{FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}')");
 
         table.HasCheckConstraint(
-            "ck_fases_canonicas_inscricao_e_isencao_exclusivas",
+            "ck_tipos_de_fase_inscricao_e_isencao_exclusivas",
             "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
     }
 

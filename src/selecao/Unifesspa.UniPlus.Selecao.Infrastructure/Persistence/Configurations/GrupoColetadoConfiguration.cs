@@ -22,7 +22,19 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("grupos_coletados");
+        builder.Property(g => g.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
+        builder.Property(g => g.Finalidade).HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
+        builder.Property(g => g.Codigo).HasComment("Código que identifica o item no processo.");
+        builder.Property(g => g.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
+        builder.Property(g => g.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
+        builder.Property(g => g.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
+        builder.Property(g => g.Minimo).HasComment("Quantidade mínima de ocorrências do grupo.");
+        builder.Property(g => g.Maximo).HasComment("Quantidade máxima de ocorrências do grupo, quando limitada.");
+        builder.Property(g => g.IncluiCandidato).HasComment("Indica se o grupo inclui a própria pessoa candidata.");
+        builder.Property(g => g.Exibicao).HasComment("Condições para exibir o grupo, em JSON, quando houver.");
+        builder.Property(g => g.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
+
+        builder.ToTable("grupos_dos_formularios", t => t.HasComment("Grupos repetíveis de dados solicitados nos formulários."));
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).ValueGeneratedNever();
 
@@ -51,11 +63,12 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         // itens do formulário é invariante do agregado, conferida em DefinirFatosColetados.
         builder.HasIndex(g => new { g.ProcessoSeletivoId, g.Codigo })
             .IsUnique()
-            .HasDatabaseName("ux_grupos_coletados_processo_codigo");
+            .HasDatabaseName("ux_grupos_dos_formularios_processo_codigo");
 
         builder.HasMany(g => g.Subitens)
             .WithOne()
             .HasForeignKey(f => f.GrupoColetadoId)
+            .HasConstraintName("fk_dados_dos_formularios_grupo_formulario")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(g => g.Subitens)

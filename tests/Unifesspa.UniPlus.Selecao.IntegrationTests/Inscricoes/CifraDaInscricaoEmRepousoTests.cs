@@ -30,7 +30,7 @@ public sealed class CifraDaInscricaoEmRepousoTests
     private const string RespostaDoDocumento = """
         SELECT r.valor_texto, r.valor_cifrado
         FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
-        WHERE i.id = @id AND r.fato_codigo = 'RG_NUMERO'
+        WHERE i.id = @id AND r.codigo_do_dado = 'RG_NUMERO'
         """;
 
     private const string RespostaDoCpf = """
@@ -38,11 +38,11 @@ public sealed class CifraDaInscricaoEmRepousoTests
                (SELECT count(*) FROM information_schema.columns
                 WHERE table_schema = 'selecao' AND table_name = 'inscricoes' AND column_name LIKE 'cpf%') AS colunas_do_cpf
         FROM selecao.respostas_da_inscricao r
-        WHERE r.inscricao_id = @id AND r.fato_codigo = 'CPF'
+        WHERE r.inscricao_id = @id AND r.codigo_do_dado = 'CPF'
         """;
 
     private const string RespostasDaInscricao =
-        "SELECT fato_codigo, valor_codigo, valor_cifrado FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id";
+        "SELECT codigo_do_dado, valor_codigo, valor_cifrado FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id";
 
     private const string ComprovanteCru =
         "SELECT respostas::text, sensiveis_cifrados FROM selecao.comprovantes_inscricao WHERE inscricao_id = @id";
@@ -165,5 +165,5 @@ public sealed class CifraDaInscricaoEmRepousoTests
     }
 
     private static (string Fato, object? Codigo, byte[]? Cifrado) LinhaDaResposta(NpgsqlDataReader leitor) =>
-        ((string)leitor["fato_codigo"], leitor["valor_codigo"] is DBNull ? null : leitor["valor_codigo"], leitor["valor_cifrado"] as byte[]);
+        ((string)leitor["codigo_do_dado"], leitor["valor_codigo"] is DBNull ? null : leitor["valor_codigo"], leitor["valor_cifrado"] as byte[]);
 }

@@ -6,10 +6,10 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "fatoCodigo"
+    "codigoDoDado"
   ],
   "properties": {
-    "fatoCodigo": {
+    "codigoDoDado": {
       "title": "Fato",
       "description": "Código do fato no catálogo, de 1 a 60 caracteres. Cada fato é coletado por um só formulário do processo.",
       "type": "string",
@@ -17,7 +17,7 @@
       "maxLength": 60,
       "pattern": "\\S"
     },
-    "etapaCodigo": {
+    "paginaCodigo": {
       "title": "Etapa",
       "description": "Código da etapa do tipo SECAO, do mesmo formulário, em que o item aparece. Nulo ou ausente em subitem de grupo.",
       "anyOf": [
@@ -55,9 +55,9 @@
     "obrigatoriedade": {
       "title": "Obrigatoriedade",
       "description": "Se a resposta é obrigatória sempre, nunca ou só sob uma condição.",
-      "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+      "$ref": "condicoes.schema.json#/$defs/obrigatoriedade"
     },
-    "precondicao": {
+    "exibicao": {
       "title": "Precondição",
       "description": "Condição para o fato ser coletado. Nula ou ausente: é sempre coletado. A lista vazia nunca é verdadeira.",
       "anyOf": [
@@ -65,7 +65,7 @@
           "type": "null"
         },
         {
-          "$ref": "predicado.schema.json#/$defs/predicado"
+          "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
         }
       ]
     },
@@ -121,7 +121,7 @@
         "quando": {
           "title": "Quando impede",
           "description": "Predicado que, verdadeiro, impede a inscrição.",
-          "$ref": "predicado.schema.json#/$defs/predicado"
+          "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
         },
         "mensagem": {
           "title": "Mensagem",

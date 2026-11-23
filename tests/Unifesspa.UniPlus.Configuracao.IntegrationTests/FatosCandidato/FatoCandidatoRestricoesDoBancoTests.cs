@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.FatosCandidato.FatoCandidatoCodigoDeTeste;
 
 /// <summary>
-/// As restrições do banco sobre <c>fatos_do_candidato</c> e <c>valores_de_dominio_do_fato</c>: CHECKs de
+/// As restrições do banco sobre <c>dados_do_candidato</c> e <c>opcoes_dos_dados</c>: CHECKs de
 /// domínio, origem, coerência e proteção, e os índices únicos do código e do valor, por SQL cru.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
@@ -38,15 +38,15 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
     [Theory(DisplayName = "CHECK recusa categórico sem fonte e texto sem formato via SQL cru")]
     [InlineData("CATEGORICO")]
     [InlineData("TEXTO")]
-    public async Task Check_RecusaCategoricoSemFonteETextoSemFormato(string dominio)
+    public async Task Check_RecusaCategoricoSemFonteETextoSemFormato(string tipo)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {dominio}, {"DECLARADO"}, {"ESCALAR"},
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {tipo}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -63,8 +63,8 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, formato, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
@@ -80,17 +80,17 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_fatos_do_candidato_classificacao_protecao só admite a escala da ADR-0081");
+            "o CHECK ck_dados_do_candidato_classificacao_protecao só admite a escala da ADR-0081");
     }
 
-    [Fact(DisplayName = "Índice único (FatoCandidatoId, Codigo) de valores_de_dominio_do_fato recusa código duplicado no mesmo fato")]
+    [Fact(DisplayName = "Índice único (FatoCandidatoId, Codigo) de opcoes_dos_dados recusa código duplicado no mesmo fato")]
     public async Task FatoValorDominio_IndiceUnico_RecusaDuplicataNoMesmoFato()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -98,7 +98,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.valores_de_dominio_do_fato (id, fato_candidato_id, codigo, descricao, ordem, ativo, created_at)
+            INSERT INTO configuracao.opcoes_dos_dados (id, fato_candidato_id, codigo, descricao, ordem, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {corRaca.Id}, {"PRETA"}, {"Duplicata"}, 99, true, {DateTimeOffset.UtcNow})
             """);
 
@@ -114,8 +114,8 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
@@ -132,13 +132,13 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_fatos_do_candidato_dominio bloqueia 'TEXTO'");
+        await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_dados_do_candidato_tipo bloqueia 'TEXTO'");
     }
 
     [Fact(DisplayName = "CHECK de origem recusa token fora do vocabulário via SQL cru")]
@@ -148,13 +148,13 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fatos_do_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_fatos_do_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
+            "o CHECK ck_dados_do_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
     }
 }

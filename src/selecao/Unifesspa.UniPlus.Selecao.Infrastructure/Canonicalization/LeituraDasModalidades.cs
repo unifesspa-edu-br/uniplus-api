@@ -23,7 +23,7 @@ internal static class LeituraDasModalidades
     [
         "ofertaCursoOrigemId", "modalidadeOrigemId", "codigo", "descricao", "naturezaLegal", "composicaoVagas",
         "composicaoOrigemCodigo", "regraRemanejamento", "remanejamentoDestino", "remanejamentoPar",
-        "remanejamentoFallback", "regraDeAplicabilidade", "acaoQuandoIndeferido", "baseLegal", "quantidadeDeclarada",
+        "remanejamentoDestinoFinal", "regraDeAplicabilidade", "acaoQuandoIndeferido", "baseLegal", "quantidadeDeclarada",
     ];
 
     /// <summary>
@@ -99,7 +99,7 @@ internal static class LeituraDasModalidades
         Remanejamento = leitor.RegraDeRemanejamento(item, "regraRemanejamento", path),
         Destino = leitor.TextoOpcional(item, "remanejamentoDestino", path, LimitesDoEnvelope.ModalidadeCodigo),
         Par = leitor.TextoOpcional(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo),
-        Fallback = leitor.TextoOpcional(item, "remanejamentoFallback", path, LimitesDoEnvelope.ModalidadeCodigo),
+        Fallback = leitor.TextoOpcional(item, "remanejamentoDestinoFinal", path, LimitesDoEnvelope.ModalidadeCodigo),
     };
 
     private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, DeclaracaoDaModalidade d)
@@ -110,21 +110,12 @@ internal static class LeituraDasModalidades
             return leitor.Propagar<ModalidadeSelecionada>(regraLida.Error!);
         }
 
-        Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
-            d.OrigemId,
-            d.Codigo,
-            d.Descricao,
-            d.Natureza,
-            d.Composicao,
-            d.ComposicaoOrigem,
-            d.Remanejamento,
-            d.Destino,
-            d.Par,
-            d.Fallback,
-            regraLida.Value ?? PredicadoDnf.SemClausula,
-            d.AcaoQuandoIndeferido,
-            d.BaseLegal,
-            d.QuantidadeDeclarada);
+        return ReidratarModalidade(leitor, d, regraLida.Value);
+    }
+
+    private static ModalidadeSelecionada? ReidratarModalidade(LeitorEnvelope leitor, DeclaracaoDaModalidade d, PredicadoDnf? regra)
+    {
+        Result<ModalidadeSelecionada> modalidade = CriarModalidade(d, regra);
 
         if (modalidade.IsFailure)
         {
@@ -138,6 +129,23 @@ internal static class LeituraDasModalidades
             ? modalidade.Value
             : leitor.Malformado<ModalidadeSelecionada?>("modalidades", $"a regra de remanejamento de {d.Codigo} não é a que a natureza dela pede.");
     }
+
+    private static Result<ModalidadeSelecionada> CriarModalidade(DeclaracaoDaModalidade d, PredicadoDnf? regra) =>
+        ModalidadeSelecionada.Criar(
+            d.OrigemId,
+            d.Codigo,
+            d.Descricao,
+            d.Natureza,
+            d.Composicao,
+            d.ComposicaoOrigem,
+            d.Remanejamento,
+            d.Destino,
+            d.Par,
+            d.Fallback,
+            regra ?? PredicadoDnf.SemClausula,
+            d.AcaoQuandoIndeferido,
+            d.BaseLegal,
+            d.QuantidadeDeclarada);
 
     private sealed record DeclaracaoDaModalidade
     {
@@ -201,6 +209,11 @@ internal static class LeituraDasModalidades
                 "(A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
         }
 
+        return ConferirAcaoQuandoIndeferido(acaoQuandoIndeferido);
+    }
+
+    private static DomainError? ConferirAcaoQuandoIndeferido(string? acaoQuandoIndeferido)
+    {
         if (acaoQuandoIndeferido is not null && !AcoesQuandoIndeferido.Contains(acaoQuandoIndeferido, StringComparer.Ordinal))
         {
             return new DomainError(

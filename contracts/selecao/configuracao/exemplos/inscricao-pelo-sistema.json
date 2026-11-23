@@ -22,12 +22,12 @@
     }
   },
   "coleta": {
-    "referenciaTemporalFatos": {
+    "referenciaTemporalDosDados": {
       "tipo": "FIM_INSCRICAO"
     },
-    "regrasDerivacao": [
+    "calculosDosDados": [
       {
-        "fatoCodigo": "FAIXA_DE_RENDA",
+        "codigoDoDado": "FAIXA_DE_RENDA",
         "regras": [
           {
             "ordem": 0,
@@ -35,7 +35,7 @@
             "quando": [
               [
                 {
-                  "fato": "RENDA_PER_CAPITA",
+                  "codigoDoDado": "RENDA_PER_CAPITA",
                   "operador": "MENOR_IGUAL",
                   "valor": 1518
                 }
@@ -48,7 +48,7 @@
             "quando": [
               [
                 {
-                  "fato": "RENDA_PER_CAPITA",
+                  "codigoDoDado": "RENDA_PER_CAPITA",
                   "operador": "MAIOR_IGUAL",
                   "valor": 1518.01
                 }
@@ -64,7 +64,7 @@
       "finalidade": "INSCRICAO",
       "faseChave": "inscricao",
       "titulo": "Formulário de inscrição",
-      "etapas": [
+      "paginas": [
         {
           "codigo": "dados-pessoais",
           "ordem": 0,
@@ -87,8 +87,8 @@
       ],
       "itens": [
         {
-          "fatoCodigo": "RENDA_PER_CAPITA",
-          "etapaCodigo": "dados-socioeconomicos",
+          "codigoDoDado": "RENDA_PER_CAPITA",
+          "paginaCodigo": "dados-socioeconomicos",
           "ordem": 0,
           "rotulo": "Renda mensal per capita da família",
           "ajuda": "Informe o valor em reais.",
@@ -104,8 +104,8 @@
           ]
         },
         {
-          "fatoCodigo": "DATA_DE_NASCIMENTO",
-          "etapaCodigo": "dados-pessoais",
+          "codigoDoDado": "DATA_DE_NASCIMENTO",
+          "paginaCodigo": "dados-pessoais",
           "ordem": 1,
           "rotulo": "Data de nascimento",
           "obrigatoriedade": {
@@ -115,12 +115,12 @@
             {
               "tipo": "FAIXA_DE_DATA",
               "dataMinima": {
-                "ancora": "ENVIO",
+                "referenciaDaData": "ENVIO",
                 "anos": 120,
                 "dias": 0
               },
               "dataMaxima": {
-                "ancora": "ENVIO",
+                "referenciaDaData": "ENVIO",
                 "anos": 10,
                 "dias": 0
               }
@@ -131,7 +131,7 @@
       "grupos": [
         {
           "codigo": "composicao-familiar",
-          "etapaCodigo": "dados-socioeconomicos",
+          "paginaCodigo": "dados-socioeconomicos",
           "ordem": 2,
           "rotulo": "Composição familiar",
           "minimo": 0,
@@ -142,7 +142,7 @@
           },
           "subitens": [
             {
-              "fatoCodigo": "NOME_DO_MEMBRO_DA_FAMILIA",
+              "codigoDoDado": "NOME_DO_MEMBRO_DA_FAMILIA",
               "ordem": 0,
               "rotulo": "Nome do membro",
               "obrigatoriedade": {
@@ -216,7 +216,7 @@
       "codigo": "REMANEJ-CASCATA-LEI-12711",
       "versao": "v1"
     },
-    "fallbackCodigo": "AC",
+    "destinoFinalCodigo": "AC",
     "destinos": [
       {
         "modalidadeOrigemCodigo": "LB_PPI",
@@ -229,7 +229,7 @@
     "fases": [
       {
         "chave": "inscricao",
-        "faseCanonicaCodigo": "INSCRICAO",
+        "tipoFaseCodigo": "INSCRICAO",
         "inicio": "2027-01-10T03:00:00Z",
         "fim": "2027-01-20T02:59:59Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -238,7 +238,7 @@
       },
       {
         "chave": "avaliacao",
-        "faseCanonicaCodigo": "AVALIACAO",
+        "tipoFaseCodigo": "AVALIACAO",
         "inicio": "2027-01-25T11:00:00Z",
         "fim": "2027-01-25T16:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -247,13 +247,13 @@
       },
       {
         "chave": "resultado-final",
-        "faseCanonicaCodigo": "RESULTADO_FINAL",
+        "tipoFaseCodigo": "RESULTADO_FINAL",
         "inicio": "2027-02-01T03:00:00Z",
         "fim": "2027-02-15T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
         "unidadeResponsavelNome": "Centro de Processos Seletivos",
         "unidadeResponsavelSigla": "CEPS",
-        "produtos": [
+        "publicacoesPrevistas": [
           {
             "atoCodigo": "RESULTADO_FINAL",
             "papel": "PRELIMINAR"
@@ -284,7 +284,7 @@
           "regraVersao": "v1",
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
-          "atoAncoraCodigo": "RESULTADO_FINAL",
+          "publicacaoDeReferenciaAtoCodigo": "RESULTADO_FINAL",
           "admiteInstanciaSuperior": false,
           "efeitoSuspensivo": "semEfeitoSuspensivo",
           "guardaDaVaga": "ateOResultadoDefinitivo",
@@ -324,7 +324,7 @@
       "notaMaxima": 100,
       "passoDoLancamento": 0.5,
       "formaDeAvaliacao": "HUMANA",
-      "regraConsolidacao": {
+      "regraDeApuracaoDaAvaliacao": {
         "codigo": "CONSOLIDACAO-AVALIACAO-UNICA",
         "versao": "v1"
       },
@@ -360,7 +360,7 @@
       "ordem": 1,
       "faseChave": "avaliacao",
       "emiteParecerIndividual": false,
-      "produtos": [
+      "publicacoesPrevistas": [
         {
           "atoCodigo": "RESULTADO_PRELIMINAR",
           "papel": "PRELIMINAR"
@@ -383,12 +383,12 @@
       ],
       "recursos": [
         {
-          "ancora": "atoPublicado",
+          "eventoInicialDoPrazo": "atoPublicado",
           "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO",
           "regraVersao": "v1",
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
-          "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "publicacaoDeReferenciaAtoCodigo": "RESULTADO_PRELIMINAR",
           "admiteInstanciaSuperior": true,
           "prazoSegundaInstanciaValor": 3,
           "prazoSegundaInstanciaUnidade": "diasUteis",
@@ -475,10 +475,10 @@
         "aplicabilidade": "Condicional",
         "obrigatorio": true,
         "consequenciaIndeferimento": "REMOVE_VANTAGEM",
-        "condicaoGatilho": [
+        "condicoes": [
           [
             {
-              "fato": "SOLICITA_ISENCAO",
+              "codigoDoDado": "SOLICITA_ISENCAO",
               "operador": "IGUAL",
               "valor": true
             }
@@ -609,7 +609,7 @@
       }
     ]
   },
-  "motivos": [
+  "motivosDeDecisao": [
     {
       "faseChave": "inscricao",
       "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES",

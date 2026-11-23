@@ -25,7 +25,7 @@ public sealed class LeituraDosCadastrosDoPainel(
     LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     LeituraDasPrecedenciasDosCadastros precedencias,
-    IMotivoDoProcessoRepository motivos)
+    IMotivoDeDecisaoDoProcessoRepository motivos)
 {
     internal async Task<LeiturasDoPainel> LerAsync(ProcessoSeletivo processo, VersaoPublicadaNoPainel publicada, CancellationToken cancellationToken)
     {

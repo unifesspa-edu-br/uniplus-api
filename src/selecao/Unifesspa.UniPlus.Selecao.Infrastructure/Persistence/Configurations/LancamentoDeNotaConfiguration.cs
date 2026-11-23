@@ -32,16 +32,16 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
 
         builder.ToTable("lancamentos_de_nota", t =>
         {
-            t.HasComment("Uma nota individual de uma inscrição numa etapa: uma área do ENEM, com a nota e a situação. Append-only; corrigir é importar outro lote.");
+            t.HasComment("Uma nota de uma inscrição em uma área do ENEM, com sua situação. Os registros não são alterados ou excluídos; a correção exige importar outro lote.");
             t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
             t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", $"situacao IN ({(int)SituacaoDaProvaNoEnem.Presente}, {(int)SituacaoDaProvaNoEnem.Ausente})");
         });
 
         builder.HasKey(l => l.Id);
-        builder.Property(l => l.Id).ValueGeneratedNever();
+        builder.Property(l => l.Id).ValueGeneratedNever().HasComment("Identificador do lançamento da nota.");
 
-        builder.Property(l => l.LoteId).IsRequired();
-        builder.Property(l => l.InscricaoId).IsRequired();
+        builder.Property(l => l.LoteId).HasColumnName("importacao_id").IsRequired().HasComment("Identificador da importação que originou o lançamento.");
+        builder.Property(l => l.InscricaoId).IsRequired().HasComment("Identificador da inscrição à qual pertence a nota.");
         builder.Property(l => l.EtapaProcessoId)
             .IsRequired()
             .HasComment("A etapa do lote, repetida para ler o lançamento sem o lote; a chave estrangeira composta com o lote impede que divirja.");
@@ -49,11 +49,12 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.Property(l => l.ItemCodigo)
             .HasMaxLength(ItemMaxLength)
             .IsRequired()
-            .HasComment("A área do ENEM. Só o domínio enumera as áreas: o banco não carrega o vocabulário, para que acrescentar um item não exija migration.");
+            .HasComment("Área do ENEM: REDACAO, CIENCIAS_DA_NATUREZA, CIENCIAS_HUMANAS, LINGUAGENS ou MATEMATICA.");
 
         builder.Property(l => l.Nota)
             .HasPrecision(PrecisaoDaNota, EscalaDaNota)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("Nota da área do ENEM, de zero a mil, com até três casas decimais.");
 
         builder.Property(l => l.Situacao)
             .HasConversion<short>()
@@ -63,13 +64,13 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.HasOne<InscritoDoLoteDeNotas>()
             .WithMany()
             .HasForeignKey(l => new { l.LoteId, l.InscricaoId })
-            .HasConstraintName("fk_lancamentos_de_nota_inscrito_do_lote_de_notas")
+            .HasConstraintName("fk_lancamentos_de_nota_inscrito_da_importacao")
             .HasPrincipalKey(i => new { i.LoteId, i.InscricaoId })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(l => new { l.LoteId, l.InscricaoId, l.ItemCodigo })
             .IsUnique()
-            .HasDatabaseName("ux_lancamentos_de_nota_lote_inscricao_item");
+            .HasDatabaseName("ux_lancamentos_de_nota_importacao_inscricao_item");
 
         builder.HasIndex(l => new { l.InscricaoId, l.EtapaProcessoId })
             .HasDatabaseName("ix_lancamentos_de_nota_inscricao_etapa");

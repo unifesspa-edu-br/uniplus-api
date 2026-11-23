@@ -296,7 +296,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
         Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento) =>
-        ServicosDoHandler(mocks).ComMotivosDoProcesso(processo).PublicarAsync(ComandoDeAbertura(processo, documento));
+        ServicosDoHandler(mocks).ComMotivosDeDecisaoDoProcesso(processo).PublicarAsync(ComandoDeAbertura(processo, documento));
 
     private static ServicosDoCongelamentoDeTeste ServicosDoHandler(Mocks mocks)
     {

@@ -368,8 +368,8 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         return $$"""
             INSERT INTO selecao.versoes_configuracao (
                 id, processo_seletivo_id, numero_versao, vigente_a_partir_de,
-                schema_version, algoritmo_hash,
-                configuracao_congelada_canonica, configuracao_congelada, hash_configuracao,
+                versao_do_formato, algoritmo_hash,
+                bytes_da_configuracao, conteudo_da_configuracao, hash_configuracao,
                 ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_conta_id)
             VALUES (
                 '{{Guid.CreateVersion7()}}', '{{processoId}}', {{numeroVersao.ToString(CultureInfo.InvariantCulture)}}, {{vigencia}},

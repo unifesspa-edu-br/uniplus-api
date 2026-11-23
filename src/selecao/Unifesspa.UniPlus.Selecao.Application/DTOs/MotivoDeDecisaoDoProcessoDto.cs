@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <param name="Lugar">A fase ou a etapa em que o motivo foi escolhido.</param>
 /// <param name="Tipo">O tipo de decisão do motivo, com o código e o rótulo que a tela mostra.</param>
 /// <param name="Vigencia">As versões do edital em que a escolha vale.</param>
-public sealed record MotivoDoProcessoDto(
+public sealed record MotivoDeDecisaoDoProcessoDto(
     Guid MotivoDeDecisaoId,
     LugarDoMotivoDto Lugar,
     CodigoComRotulo<TipoMotivoDeDecisao> Tipo,

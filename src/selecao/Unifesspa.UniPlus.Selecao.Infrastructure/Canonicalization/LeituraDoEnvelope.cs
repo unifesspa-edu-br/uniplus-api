@@ -31,6 +31,13 @@ internal static class LeituraDoEnvelope
             return null;
         }
 
+        return LerColetaEComprovacao(leitor, payload, configuracao, documentos, publicacao, retificacao);
+    }
+
+    private static BlocosDoEnvelope? LerColetaEComprovacao(
+        LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao, BlocosDosDocumentos documentos,
+        BlocosDaPublicacao publicacao, RetificacaoDoEdital? retificacao)
+    {
         Dictionary<Guid, DocumentoExigido> exigenciasPorId = IndexarExigenciasPorId(leitor, documentos.DocumentosExigidos);
         if (leitor.Falhou)
         {
@@ -52,30 +59,25 @@ internal static class LeituraDoEnvelope
         LeituraDoEdital.LerTipoProcesso(leitor, payload);
 
         DadosEdital? dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
-        IReadOnlyList<EtapaProcesso> etapas = LeituraDasEtapas.LerEtapas(leitor, payload);
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload);
-        AtendimentoEspecializado? atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload);
-        ConfiguracaoBonusRegional? bonus = LeituraDoBonusEAtendimento.LerBonusRegional(leitor, payload);
-        ConfiguracaoCascataRemanejamento? cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload);
-        IReadOnlyList<CriterioDesempate> desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload);
-        ConfiguracaoClassificacao? classificacao = LeituraDaClassificacao.LerClassificacao(leitor, payload);
-        IReadOnlyList<FaseCronograma> cronogramaFases = LeituraDoCronograma.LerCronogramaFases(leitor, payload, comId: true);
+        BlocosDaConfiguracao configuracao = LerConfiguracaoDoProcesso(leitor, payload, dados, hashDocumento);
         LeituraDoEdital.LerIdentidadesUnidade(leitor, payload);
+        return configuracao;
+    }
 
-        return new BlocosDaConfiguracao
+    private static BlocosDaConfiguracao LerConfiguracaoDoProcesso(
+        LeitorEnvelope leitor, JsonObject payload, DadosEdital? dados, string hashDocumento) => new()
         {
             Dados = dados,
             HashDocumento = hashDocumento,
-            Etapas = etapas,
-            Distribuicao = distribuicao,
-            Atendimento = atendimento,
-            Bonus = bonus,
-            Cascata = cascata,
-            Desempate = desempate,
-            Classificacao = classificacao,
-            CronogramaFases = cronogramaFases,
+            Etapas = LeituraDasEtapas.LerEtapas(leitor, payload),
+            Distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload),
+            Atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload),
+            Bonus = LeituraDoBonusEAtendimento.LerBonusRegional(leitor, payload),
+            Cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload),
+            Desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload),
+            Classificacao = LeituraDaClassificacao.LerClassificacao(leitor, payload),
+            CronogramaFases = LeituraDoCronograma.LerCronogramaFases(leitor, payload),
         };
-    }
 
     private static BlocosDosDocumentos LerDocumentos(LeitorEnvelope leitor, JsonObject payload)
     {
@@ -120,26 +122,24 @@ internal static class LeituraDoEnvelope
         IReadOnlyList<GrupoColetado> grupos = leitor.Falhou
             ? []
             : LeituraDosGrupos.LerGruposColetados(leitor, payload, valores, agregados);
-        IReadOnlyList<ConfiguracaoDerivacaoFato> regras = LeituraDaDerivacao.LerRegrasDerivacao(leitor, payload);
-        string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
-        Dictionary<string, ApresentacaoDoFato> apresentacao = LeituraDoEdital.LerApresentacaoDosPressupostos(leitor, payload);
-        Dictionary<string, TipoDeAtoCongelado> tiposDeAto = LeituraDosTiposDeAto.LerTiposDeAto(
-            leitor, payload, configuracao.CronogramaFases, configuracao.Etapas);
-        Dictionary<string, FatoDerivadoCongelado> fatosDerivados = LeituraDosFatosDerivados.LerFatosDerivados(leitor, payload);
+        return LerDerivacaoEApresentacao(leitor, payload, configuracao, fatos, valores, grupos, agregados);
+    }
 
-        return new BlocosDeColeta
+    private static BlocosDeColeta LerDerivacaoEApresentacao(
+        LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao, IReadOnlyList<FatoColetado> fatos,
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores, IReadOnlyList<GrupoColetado> grupos,
+        List<DefinicaoAgregado> agregados) => new()
         {
             FatosColetados = fatos,
             ValoresSelecionaveis = valores,
             GruposColetados = grupos,
             AgregadosDosGrupos = agregados,
-            RegrasDerivacao = regras,
-            VersaoInterpretador = versaoInterpretador,
-            ApresentacaoDosPressupostos = apresentacao,
-            TiposDeAtoCongelados = tiposDeAto,
-            FatosDerivadosCongelados = fatosDerivados,
+            RegrasDerivacao = LeituraDaDerivacao.LerRegrasDerivacao(leitor, payload),
+            VersaoInterpretador = leitor.TextoNaoVazio(payload, "versaoDasRegrasDeCalculo", "$"),
+            ApresentacaoDosPressupostos = LeituraDoEdital.LerApresentacaoDosPressupostos(leitor, payload),
+            TiposDeAtoCongelados = LeituraDosTiposDeAto.LerTiposDeAto(leitor, payload, configuracao.CronogramaFases, configuracao.Etapas),
+            FatosDerivadosCongelados = LeituraDosFatosDerivados.LerFatosDerivados(leitor, payload),
         };
-    }
 
     /// <summary>
     /// O bloco de exigências nunca repete <c>exigenciaId</c> quando produzido por um encoder real, mas

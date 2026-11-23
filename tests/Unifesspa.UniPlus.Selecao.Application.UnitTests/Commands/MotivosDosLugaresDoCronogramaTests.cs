@@ -25,7 +25,7 @@ public sealed class MotivosDosLugaresDoCronogramaTests
         FaseCronogramaInput queFica = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
         FaseCronogramaInput queSai = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with { Ordem = 2 };
         (await cenario.DefinirFasesAsync(queFica, queSai)).IsSuccess.Should().BeTrue();
-        MotivoDoProcesso naFaseQueSai = Escolhido(cenario.Processo, LugarDaDecisao.DaFase(queSai.FaseCanonicaId), Motivo());
+        MotivoDeDecisaoDoProcesso naFaseQueSai = Escolhido(cenario.Processo, LugarDaDecisao.DaFase(queSai.FaseCanonicaId), Motivo());
         cenario.MotivosEscolhidos.ListarEscolhaAtualAsync(cenario.Processo.Id, Arg.Any<CancellationToken>()).Returns([naFaseQueSai]);
 
         Result resultado = await cenario.DefinirFasesAsync(queFica);

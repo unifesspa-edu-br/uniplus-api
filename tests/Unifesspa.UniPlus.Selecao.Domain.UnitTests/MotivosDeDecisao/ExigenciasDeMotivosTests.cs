@@ -63,11 +63,11 @@ public sealed class ExigenciasDeMotivosTests
     public void Isencao_CitaOFundamentoEOSentido()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
-        MotivoDoProcesso[] escolhidos = [Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)];
+        MotivoDeDecisaoDoProcesso[] escolhidos = [Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)];
 
         FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().FaltasDeCobertura(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];
 
-        faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivos");
+        faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivosDeDecisao");
         faltas.Select(f => f.Error.Message).Should().Equal(
         [
             $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.",
@@ -80,7 +80,7 @@ public sealed class ExigenciasDeMotivosTests
     public void Isencao_Coberta_SemFaltas()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDoProcesso[] escolhidos =
+        MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel),
             Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel),
@@ -112,7 +112,7 @@ public sealed class ExigenciasDeMotivosTests
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }
 
-    private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, string fundamento, SentidoDoMotivo sentido) =>
+    private static MotivoDeDecisaoDoProcesso Escolher(ProcessoSeletivo processo, string fundamento, SentidoDoMotivo sentido) =>
         ProcessoParaMotivos.Escolha(
             processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), ProcessoParaMotivos.DaIsencao(fundamento, sentido), versaoDeEntrada: 1);
 
@@ -124,10 +124,10 @@ public sealed class ExigenciasDeMotivosTests
 
         public IEnumerable<FieldError> TiposNaoDeclarados(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares) => Falta(codigoDoTipoNaoDeclarado);
 
-        public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
+        public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos) =>
             Falta(codigoDaCobertura);
 
         private static IEnumerable<FieldError> Falta(string? codigo) =>
-            codigo is null ? [] : [new FieldError("motivos", new DomainError(codigo, "Falta de teste."))];
+            codigo is null ? [] : [new FieldError("motivosDeDecisao", new DomainError(codigo, "Falta de teste."))];
     }
 }

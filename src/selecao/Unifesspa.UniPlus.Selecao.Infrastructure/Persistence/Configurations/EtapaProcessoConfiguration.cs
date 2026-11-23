@@ -81,6 +81,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.HasMany(e => e.Produtos)
             .WithOne()
             .HasForeignKey(p => p.EtapaProcessoId)
+            .HasConstraintName("fk_publicacoes_previstas_da_etapa_etapa")
             .OnDelete(DeleteBehavior.Cascade);
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.Produtos))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
@@ -91,7 +92,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(e => e.Recursos).WithOne()
-            .HasForeignKey(r => r.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(r => r.EtapaProcessoId).HasConstraintName("fk_recursos_configurados_da_etapa_etapa").OnDelete(DeleteBehavior.Cascade);
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.Recursos))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
@@ -123,7 +124,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // domínio, não de armazenamento: a coluna não a repete.
         builder.OwnsOne(e => e.RegraConsolidacao, regra =>
         {
-            regra.ConfigurarReferenciaRegra("regra_consolidacao");
+            regra.ConfigurarReferenciaRegra("apuracao_avaliacao");
             regra.Property(r => r.Codigo).HasComment("Código da regra de consolidação das notas, quando definida.");
             regra.Property(r => r.Versao).HasComment("Versão da regra de consolidação das notas, quando definida.");
             regra.Property(r => r.Hash).HasComment("Resumo que identifica o conteúdo da regra de consolidação, quando definida.");

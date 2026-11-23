@@ -46,7 +46,7 @@
     <Compile Include="../Shared/CongelamentoDeTeste.cs" Link="CongelamentoDeTeste.cs" />
     <Compile Include="../Shared/CenarioDeCongelamento.cs" Link="CenarioDeCongelamento.cs" />
     <Compile Include="../Shared/CadastrosDeTeste.cs" Link="CadastrosDeTeste.cs" />
-    <Compile Include="../Shared/MotivosDoProcessoDeTeste.cs" Link="MotivosDoProcessoDeTeste.cs" />
+    <Compile Include="../Shared/MotivosDeDecisaoDoProcessoDeTeste.cs" Link="MotivosDeDecisaoDoProcessoDeTeste.cs" />
     <Compile Include="../Shared/MotivosDaHomologacaoDeTeste.cs" Link="MotivosDaHomologacaoDeTeste.cs" />
     <Compile Include="../Shared/MotivosDaIsencaoDeTeste.cs" Link="MotivosDaIsencaoDeTeste.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />

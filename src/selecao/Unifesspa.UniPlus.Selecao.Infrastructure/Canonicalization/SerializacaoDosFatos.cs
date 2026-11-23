@@ -34,8 +34,8 @@ internal static class SerializacaoDosFatos
                 ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
                 ["descricao"] = HashCanonicalComputer.NormalizeNfc(f.Descricao),
                 ["componenteExibicao"] = f.ComponenteExibicao,
-                ["dominio"] = f.Dominio,
-                ["cardinalidade"] = f.Cardinalidade,
+                ["tipo"] = f.Dominio,
+                ["quantidadeDeValores"] = f.Cardinalidade,
                 ["classificacaoProtecao"] = f.ClassificacaoProtecao,
                 ["hipoteseLegal"] = f.HipoteseLegal,
                 ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(f.FinalidadeTratamento),
@@ -55,16 +55,16 @@ internal static class SerializacaoDosFatos
 
     private static JsonObject SerializarMetadadoDoFato(MetadadoFatoCongelado metadado) => new()
     {
-        ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(metadado.Codigo),
-        ["dominio"] = HashCanonicalComputer.NormalizeNfc(metadado.Dominio),
+        ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(metadado.Codigo),
+        ["tipo"] = HashCanonicalComputer.NormalizeNfc(metadado.Dominio),
         ["origem"] = HashCanonicalComputer.NormalizeNfc(metadado.Origem),
-        ["cardinalidade"] = HashCanonicalComputer.NormalizeNfc(metadado.Cardinalidade),
-        ["pontoResolucao"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
-        ["binding"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
-        ["valoresDominio"] = metadado.ValoresDominio is { } valores
+        ["quantidadeDeValores"] = HashCanonicalComputer.NormalizeNfc(metadado.Cardinalidade),
+        ["faseDeDisponibilidade"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
+        ["fonteDoValor"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
+        ["opcoes"] = metadado.ValoresDominio is { } valores
             ? EscritaCanonica.TextosEmOrdemCanonica(valores)
             : null,
-        ["valoresDominioDeclarados"] = metadado.ValoresDominioDeclarados is { } declarados
+        ["opcoesDeclaradas"] = metadado.ValoresDominioDeclarados is { } declarados
             ? SerializarValoresDominioDeclarados(declarados)
             : null,
     };
@@ -132,12 +132,12 @@ internal static class SerializacaoDosFatos
     {
         JsonObject objeto = new()
         {
-            ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
+            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
             ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
-            ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+            ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = fato.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-            ["tipoRenderizacao"] = fato.TipoRenderizacao.Codigo(),
+            ["tipoDeCampo"] = fato.TipoRenderizacao.Codigo(),
         };
         AdicionarRegrasDaResposta(objeto, fato);
         AdicionarTratamentoDoDado(objeto, fato);
@@ -169,7 +169,7 @@ internal static class SerializacaoDosFatos
     {
         objeto["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao);
         objeto["componenteExibicao"] = fato.ComponenteExibicao;
-        objeto["precondicao"] = SerializacaoDosPredicados.SerializarDnf(
+        objeto["exibicao"] = SerializacaoDosPredicados.SerializarDnf(
             fato.Precondicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, c.Valor)));
         objeto["valoresSelecionaveis"] = valoresDoFato is null ? null : SerializarValoresSelecionaveis(valoresDoFato);
     }
@@ -201,7 +201,7 @@ internal static class SerializacaoDosFatos
         {
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
             ["finalidade"] = EstruturaFormulario.ParaToken(g.Finalidade),
-            ["etapaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+            ["paginaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = g.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
             ["minimo"] = g.Minimo,
@@ -232,7 +232,7 @@ internal static class SerializacaoDosFatos
             .Select(static a => (JsonNode)new JsonObject
             {
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
-                ["fatoDeMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
+                ["codigoDoDadoDoMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
                 ["operacao"] = AgregadoDeGrupo.ParaToken(a.Operacao),
             })]);
 
@@ -241,7 +241,7 @@ internal static class SerializacaoDosFatos
             .OrderBy(static c => c.CodigoFato, StringComparer.Ordinal)
             .Select(static c => (JsonNode)new JsonObject
             {
-                ["codigoFato"] = HashCanonicalComputer.NormalizeNfc(c.CodigoFato),
+                ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(c.CodigoFato),
                 ["regras"] = new JsonArray([.. c.Regras.OrderBy(static r => r.Ordem).Select(SerializarRegraDeDerivacao)]),
             })];
 
@@ -267,17 +267,17 @@ internal static class SerializacaoDosFatos
 
     internal static JsonObject SerializarGrafoDependencia(GrafoDependenciaConjunta grafo) => new()
     {
-        ["nos"] = new JsonArray([.. grafo.Nos.Select(no => (JsonNode)new JsonObject
+        ["itens"] = new JsonArray([.. grafo.Nos.Select(no => (JsonNode)new JsonObject
         {
-            ["idCanonico"] = RotuloCanonico(no),
+            ["identificador"] = RotuloCanonico(no),
         })]),
-        ["arestas"] = new JsonArray([.. grafo.Arestas.Select(aresta => (JsonNode)new JsonObject
+        ["ligacoes"] = new JsonArray([.. grafo.Arestas.Select(aresta => (JsonNode)new JsonObject
         {
             ["tipo"] = aresta.Tipo.ToCodigo(),
             ["origem"] = RotuloCanonico(aresta.Origem),
             ["destino"] = RotuloCanonico(aresta.Destino),
         })]),
-        ["ordemTopologica"] = new JsonArray(
+        ["ordemDeDependencia"] = new JsonArray(
             [.. grafo.OrdemTopologica.Select(no => (JsonNode?)JsonValue.Create(RotuloCanonico(no)))]),
     };
 

@@ -39,6 +39,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // InstituicaoConfiguration/UnidadeConfiguration.
         builder.ToTable("processos_seletivos", t =>
         {
+            t.HasComment("Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
             t.HasCheckConstraint(
                 "ck_processos_seletivos_unidade_administradora_cidade_completa",
                 "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) "
@@ -53,9 +54,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // ao reconfigurar o agregado tracked (substituir filhos com Guid v7 já
         // preenchido), o EF marcaria os filhos novos como Modified → UPDATE de
         // linhas nunca inseridas. Convenção do repo (ver UnidadeIdentificadorHistorico).
-        builder.Property(p => p.Id).ValueGeneratedNever();
+        builder.Property(p => p.Id).ValueGeneratedNever().HasComment("Identificador do processo seletivo.");
 
-        builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired().HasComment("Nome do processo seletivo informado no cadastro.");
 
         // Identificador legível (issue #1479): nulável até a publicação, que o exige. O índice
         // único não filtra os excluídos logicamente — o endereço público de um certame excluído
@@ -67,7 +68,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // Declaração de que o processo aplica ou não o bônus regional: nula = ainda não declarado,
         // o que bloqueia a publicação.
         builder.Property(p => p.AplicaBonusRegional)
-            .HasComment("Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado.");
+            .HasComment("Indica se o processo aplica o bônus regional; ausente quando ainda não declarado.");
         // Quantos cursos o candidato escolhe na inscrição: nulo = ainda não declarado, o que bloqueia
         // a publicação. O intervalo é invariante do domínio e fica espelhado no banco.
         builder.Property(p => p.NumeroDeOpcoesDeCurso)
@@ -83,35 +84,35 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             tipo.Property(x => x.OrigemId)
                 .HasColumnName("tipo_processo_origem_id")
                 .IsRequired()
-                .HasComment("Id de origem do tipo de processo em Configuração, sem FK cross-schema; congelado na criação.");
-            tipo.Property(x => x.Codigo).HasColumnName("tipo_processo_codigo").HasMaxLength(64).IsRequired();
-            tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired();
+                .HasComment("Identificador do tipo de processo no cadastro de origem, copiado na criação.");
+            tipo.Property(x => x.Codigo).HasColumnName("tipo_processo_codigo").HasMaxLength(64).IsRequired().HasComment("Código do tipo de processo copiado do cadastro na criação.");
+            tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired().HasComment("Nome do tipo de processo copiado do cadastro na criação.");
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
-        builder.Property(p => p.Status).HasConversion<int>().IsRequired();
+        builder.Property(p => p.Status).HasConversion<int>().IsRequired().HasComment("Situação do processo: 1 = rascunho, 2 = publicado, 3 = encerrado, 4 = cancelado.");
         // Story #851 §3.4: NOT NULL, exigido na criação.
-        builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
+        builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired().HasComment("Origem dos candidatos: 1 = inscrição própria, 2 = importação externa.");
 
         // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido
         // na criação, imutável depois. Escalar de topo sem FK cross-schema (ADR-0061) + owned
         // type snapshot-copy, maxlengths espelhando UnidadeConfiguration.
         builder.Property(p => p.UnidadeAdministradoraOrigemId)
             .IsRequired()
-            .HasComment("Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema) — congelado na criação, imutável.");
+            .HasComment("Identificador da unidade administradora no cadastro de origem, copiado na criação e mantido sem alteração.");
 
         builder.OwnsOne(p => p.UnidadeAdministradora, u =>
         {
             u.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             u.Property(x => x.Sigla).HasColumnName("unidade_administradora_sigla").HasMaxLength(50).IsRequired()
-                .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                .HasComment("Cópia da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Codigo).HasColumnName("unidade_administradora_codigo").HasMaxLength(50).IsRequired()
-                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                .HasComment("Cópia do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
-                .HasComment("Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                .HasComment("Cópia do identificador usado no endereço da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Nome).HasColumnName("unidade_administradora_nome").HasMaxLength(250).IsRequired()
-                .HasComment("Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                .HasComment("Cópia do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Tipo).HasColumnName("unidade_administradora_tipo").HasMaxLength(30).IsRequired()
-                .HasComment("Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                .HasComment("Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro.");
 
             // Cidade da Unidade administradora (issue #1114) — snapshot-copy opcional
             // all-or-nothing: nula para processos criados antes desta Story (sem
@@ -121,16 +122,16 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasColumnName("unidade_administradora_cidade_codigo_ibge")
                 .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
                 .IsFixedLength()
-                .HasComment("Snapshot-copy do código IBGE da cidade da Unidade administradora no momento da criação — nulo para processos anteriores à issue #1114.");
+                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação — pode estar ausente em processos antigos.");
             u.Property(x => x.CidadeNome)
                 .HasColumnName("unidade_administradora_cidade_nome")
                 .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
-                .HasComment("Snapshot-copy do nome de exibição da cidade da Unidade administradora no momento da criação.");
+                .HasComment("Cópia do nome de exibição da cidade da Unidade administradora no momento da criação.");
             u.Property(x => x.CidadeUf)
                 .HasColumnName("unidade_administradora_cidade_uf")
                 .HasMaxLength(ReferenciaCidadeGeo.UfLength)
                 .IsFixedLength()
-                .HasComment("Snapshot-copy da UF da cidade da Unidade administradora no momento da criação.");
+                .HasComment("Cópia da UF da cidade da Unidade administradora no momento da criação.");
         });
         builder.Navigation(p => p.UnidadeAdministradora).IsRequired();
 
@@ -150,13 +151,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasColumnName("localidade_nome")
                 .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
                 .IsRequired()
-                .HasComment("Nome do município da localidade regente — cache de exibição, não entra em cálculo de prazo.");
+                .HasComment("Nome do município da localidade regente — guardado para exibição, não entra em cálculo de prazo.");
             l.Property(x => x.Uf)
                 .HasColumnName("localidade_uf")
                 .HasMaxLength(ReferenciaCidadeGeo.UfLength)
                 .IsFixedLength()
                 .IsRequired()
-                .HasComment("UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código.");
+                .HasComment("UF da localidade regente — guardado para exibição; a UF que vale é a derivada do prefixo do código.");
         });
         builder.Navigation(p => p.Localidade).IsRequired();
 
@@ -176,7 +177,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             algoritmo.Property(x => x.Versao)
                 .HasComment("Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente.");
             algoritmo.Property(x => x.Hash)
-                .HasComment("Hash da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
+                .HasComment("Resumo da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
         });
 
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
@@ -272,6 +273,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.GruposColetados)
             .WithOne()
             .HasForeignKey(g => g.ProcessoSeletivoId)
+            .HasConstraintName("fk_grupos_dos_formularios_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.GruposColetados)
@@ -312,7 +314,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.RegrasDerivacao)
             .WithOne()
             .HasForeignKey(c => c.ProcessoSeletivoId)
-            .HasConstraintName("fk_configuracoes_derivacao_fato_processo_seletivo")
+            .HasConstraintName("fk_calculos_dos_dados_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.RegrasDerivacao)
@@ -327,9 +329,10 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             referencia.Property(r => r.Tipo)
                 .HasColumnName("referencia_temporal_fatos_tipo")
                 .HasConversion(ReferenciaTipoConverter)
-                .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength);
-            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data");
-            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_fatos_fase_id");
+                .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength)
+                .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
+            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data").HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
+            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_fatos_fase_id").HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
         });
 
         builder.Navigation(p => p.Etapas)

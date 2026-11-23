@@ -18,7 +18,7 @@ public sealed class OperadorNoEnvelopeTests
     }
 
     private static JsonObject Item(string operador) =>
-        (JsonObject)JsonNode.Parse($$"""{"precondicao":[[{"fato":"FATO","operador":{{operador}},"valor":true}]]}""")!;
+        (JsonObject)JsonNode.Parse($$"""{"exibicao":[[{"codigoDoDado":"FATO","operador":{{operador}},"valor":true}]]}""")!;
 
     [Theory(DisplayName = "O envelope escreve cada operador pelo código declarado")]
     [InlineData(Operador.Igual, "IGUAL", "true")]
@@ -27,21 +27,21 @@ public sealed class OperadorNoEnvelopeTests
     [InlineData(Operador.Diferente, "DIFERENTE", "true")]
     public void SerializarDnf_Operador_EscrevePeloCodigo(Operador operador, string codigo, string valor) =>
         SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor(valor))])!.ToJsonString()
-            .Should().Be($$"""[[{"fato":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
+            .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
 
     [Theory(DisplayName = "O envelope escreve os operadores de lista pelo código declarado")]
     [InlineData(Operador.Em, "EM")]
     [InlineData(Operador.NaoEm, "NAO_EM")]
     public void SerializarDnf_OperadorDeLista_EscrevePeloCodigo(Operador operador, string codigo) =>
         SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor("[\"A\"]"))])!.ToJsonString()
-            .Should().Be($$"""[[{"fato":"FATO","operador":"{{codigo}}","valor":["A"]}]]""");
+            .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":["A"]}]]""");
 
     [Fact(DisplayName = "O envelope lê o código declarado")]
     public void LerDnf_CodigoDeclarado_LeOOperador()
     {
         LeitorEnvelope leitor = new();
 
-        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas = LeituraDasCondicoes.LerDnf(leitor, Item("\"DIFERENTE\""), "precondicao", "item");
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas = LeituraDasCondicoes.LerDnf(leitor, Item("\"DIFERENTE\""), "exibicao", "item");
 
         leitor.Falhou.Should().BeFalse();
         linhas.Select(static l => l.Operador).Should().Equal(Operador.Diferente);
@@ -56,7 +56,7 @@ public sealed class OperadorNoEnvelopeTests
     {
         LeitorEnvelope leitor = new();
 
-        LeituraDasCondicoes.LerDnf(leitor, Item(operador), "precondicao", "item");
+        LeituraDasCondicoes.LerDnf(leitor, Item(operador), "exibicao", "item");
 
         leitor.Falhou.Should().BeTrue();
         leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

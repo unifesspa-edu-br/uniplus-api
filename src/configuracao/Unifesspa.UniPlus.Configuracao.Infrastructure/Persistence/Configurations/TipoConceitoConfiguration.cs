@@ -40,16 +40,16 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     {
         tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
         string codigos = string.Join(", ", CatalogoDe<NaturezaConceito>.Valores().Select(static natureza => EmSql(natureza)));
-        tabela.HasCheckConstraint("ck_tipos_conceito_natureza", $"natureza IN ({codigos})");
+        tabela.HasCheckConstraint("ck_tipos_conceito_forma", $"forma IN ({codigos})");
 
         // O numérico traz a escala inteira e o categórico não traz nenhum dos três campos da escala.
         string numerico = EmSql(NaturezaConceito.Numerico);
         string categorico = EmSql(NaturezaConceito.Categorico);
         tabela.HasCheckConstraint(
-            "ck_tipos_conceito_parametros_da_natureza",
-            $"(natureza = {numerico} AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
+            "ck_tipos_conceito_parametros_da_forma",
+            $"(forma = {numerico} AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
             + "AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) "
-            + $"OR (natureza = {categorico} AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+            + $"OR (forma = {categorico} AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
     }
 
     private static string EmSql(NaturezaConceito natureza) => $"'{natureza.Codigo()}'";
@@ -75,8 +75,9 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     private static void ConfigurarNaturezaEEscala(EntityTypeBuilder<TipoConceito> builder)
     {
         builder.Property(tipo => tipo.Natureza)
+            .HasColumnName("forma")
             .HasMaxLength(NaturezaMaxLength).IsRequired()
-            .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de valores_tipo_conceito.");
+            .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
         builder.Property(tipo => tipo.EscalaMinima).HasColumnType("numeric")
             .HasComment("Menor valor da escala. Só no tipo numérico.");
         builder.Property(tipo => tipo.EscalaMaxima).HasColumnType("numeric")
@@ -97,8 +98,8 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
         builder.OwnsMany(tipo => tipo.Valores, valor =>
         {
             valor.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            valor.ToTable("valores_tipo_conceito", ConfigurarTabelaDosValores);
-            valor.WithOwner().HasForeignKey("TipoConceitoId");
+            valor.ToTable("opcoes_do_tipo_de_conceito", ConfigurarTabelaDosValores);
+            valor.WithOwner().HasForeignKey("TipoConceitoId").HasConstraintName("fk_opcoes_do_tipo_de_conceito_tipos_conceito");
             valor.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico da linha; os valores são substituídos em bloco a cada edição.");
             valor.HasKey("Id");
             valor.Property<Guid>("TipoConceitoId").HasComment("Tipo de conceito categórico a que o valor pertence.");
@@ -121,7 +122,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     private static void ConfigurarTabelaDosValores(OwnedNavigationTableBuilder<TipoConceito, ValorCategorico> tabela)
     {
         tabela.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
-        tabela.HasCheckConstraint("ck_valores_tipo_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
-        tabela.HasCheckConstraint("ck_valores_tipo_conceito_posicao", "posicao >= 1");
+        tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+        tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
     }
 }

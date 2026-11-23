@@ -58,7 +58,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
-    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
+    public IMotivoDeDecisaoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
 
     public static CenarioDoCronogramaDeFases EmRascunho() => Para(NovoProcessoEmRascunho());
 

@@ -85,7 +85,7 @@
                     "doc": "UUID da inscrição a que o acesso se refere."
                   },
                   {
-                    "name": "fatoCodigo",
+                    "name": "codigoDoDado",
                     "type": ["null", "string"],
                     "default": null,
                     "doc": "Código do fato revelado; nunca o valor."

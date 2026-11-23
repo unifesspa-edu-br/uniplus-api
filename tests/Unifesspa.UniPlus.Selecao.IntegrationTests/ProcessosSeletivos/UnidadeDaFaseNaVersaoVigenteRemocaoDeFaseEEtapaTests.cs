@@ -64,7 +64,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
     public async Task Remocao_VersaoDeVigenciaFutura_NaoLivraAFase()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS remocao e versao futura");
-        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["tipoFaseOrigemId"] = Guid.CreateVersion7());
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -77,7 +77,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fase fora da vigente");
         await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
         {
-            f["faseCanonicaOrigemId"] = Guid.CreateVersion7();
+            f["tipoFaseOrigemId"] = Guid.CreateVersion7();
             AdiaAJanela(f);
         });
 

@@ -94,7 +94,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false };
         ProcessoSeletivo processo = QueExigeODocumento("PS painel da proteção", tipo);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
@@ -107,7 +107,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
         ProcessoSeletivo processo = QueExigeODocumento("PS painel do derivado", tipo, ["RENDA_PER_CAPITA"]);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes("RENDA_PER_CAPITA"))
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
@@ -208,7 +208,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     }
 
     private static Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ProcessoSeletivo processo) =>
-        ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
     private static void AfirmarQueSoOCronogramaFicouVermelho(ConformidadeProcessoSeletivoDto result) =>
         // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
@@ -246,7 +246,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = QueExigeODocumento("PS painel dos fatos", tipo, fatos);
 
-        return await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
+        return await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes(fatos))
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));

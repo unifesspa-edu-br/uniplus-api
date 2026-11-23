@@ -16,7 +16,7 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -134,7 +134,7 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
 
     private static object[] ComandosNaOrdemDeChegada(Cenario cenario, OrdemDeChegada ordem)
     {
-        IncluirMotivoNoProcessoCommand inclusao = new(cenario.ProcessoId, LugarDaDecisao.DaFase(cenario.FaseId), cenario.Disputado.Id);
+        IncluirMotivoDeDecisaoNoProcessoCommand inclusao = new(cenario.ProcessoId, LugarDaDecisao.DaFase(cenario.FaseId), cenario.Disputado.Id);
         PublicarProcessoSeletivoCommand publicacao = new(
             cenario.ProcessoId, Numero: null, PeriodoInscricaoInicio: null, PeriodoInscricaoFim: null, cenario.DocumentoId, DadosDoAtoDeTeste.Padrao);
 
@@ -171,7 +171,7 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
     private static Guid[] MotivosEsperados(Cenario cenario, OrdemDeChegada ordem) =>
         ordem == OrdemDeChegada.InclusaoPrimeiro ? [.. cenario.Anteriores, cenario.Disputado.Id] : [.. cenario.Anteriores];
 
-    private static void ConferirEscolhaSemDuplicidadeNemOrfa(IReadOnlyList<MotivoDoProcesso> escolhas)
+    private static void ConferirEscolhaSemDuplicidadeNemOrfa(IReadOnlyList<MotivoDeDecisaoDoProcesso> escolhas)
     {
         escolhas.GroupBy(e => (e.MotivoDeDecisaoOrigemId, e.Lugar)).Should().OnlyContain(g => g.Count() == 1, "o motivo é escolhido uma só vez em cada lugar");
         escolhas.Should().OnlyContain(
@@ -179,7 +179,7 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
             "toda escolha gravada vale desde a primeira versão: não há escolha que fique de fora da versão publicada");
     }
 
-    private async Task ConferirQueAVersaoPublicadaTrazAEscolhaAsync(Guid processoId, IReadOnlyList<MotivoDoProcesso> escolhas)
+    private async Task ConferirQueAVersaoPublicadaTrazAEscolhaAsync(Guid processoId, IReadOnlyList<MotivoDeDecisaoDoProcesso> escolhas)
     {
         IReadOnlyList<JsonElement> naVersao1 = await _chamadas.LerAsync(processoId, versao: 1);
 
@@ -199,9 +199,9 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
     }
 
     // O processo semeado já escolhe o motivo da condição da regra de homologação; a escolha em disputa é só a dos motivos do teste.
-    private static async Task<IReadOnlyList<MotivoDoProcesso>> EscolhasDoTesteAsync(UniPlusDbContext db, Guid processoId)
+    private static async Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>> EscolhasDoTesteAsync(UniPlusDbContext db, Guid processoId)
     {
-        List<MotivoDoProcesso> escolhas = await db.MotivosDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == processoId).ToListAsync();
+        List<MotivoDeDecisaoDoProcesso> escolhas = await db.MotivosDeDecisaoDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == processoId).ToListAsync();
 
         return [.. escolhas.Where(static m => m.Codigo.Valor.StartsWith("TEST_ICP_", StringComparison.Ordinal))];
     }
@@ -210,5 +210,5 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
 
     private sealed record Desfecho(Result Inclusao, Result Publicacao);
 
-    private sealed record EstadoFinal(StatusProcesso Status, IReadOnlyList<MotivoDoProcesso> Escolhas, IReadOnlyList<VersaoConfiguracao> Versoes);
+    private sealed record EstadoFinal(StatusProcesso Status, IReadOnlyList<MotivoDeDecisaoDoProcesso> Escolhas, IReadOnlyList<VersaoConfiguracao> Versoes);
 }

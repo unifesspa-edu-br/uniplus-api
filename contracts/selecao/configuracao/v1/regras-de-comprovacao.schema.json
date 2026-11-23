@@ -44,7 +44,7 @@
       "description": "Base legal da regra de comprovação.",
       "type": "array",
       "items": {
-        "$ref": "predicado.schema.json#/$defs/baseLegal"
+        "$ref": "condicoes.schema.json#/$defs/baseLegal"
       }
     },
     "criterioDeDistincao": {

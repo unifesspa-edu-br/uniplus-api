@@ -41,7 +41,7 @@ public sealed class CalendarioCongeladoRoundTripTests
 
         // origemId e versaoDataset ficam como rastreio da procedência. O que reproduz a contagem
         // é a lista ao lado deles.
-        bloco.Should().ContainKey("origemId").And.ContainKey("versaoDataset");
+        bloco.Should().ContainKey("origemId").And.ContainKey("versaoDoCalendario");
         ConferirDiaMunicipal(bloco);
     }
 

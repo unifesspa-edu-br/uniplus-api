@@ -26,14 +26,21 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_de_remanejamento");
+        builder.ToTable("configuracoes_de_remanejamento", tabela => tabela.HasComment("Regra e destino final do remanejamento de vagas do processo."));
         builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.Property(c => c.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual a configuração pertence.");
+        builder.Property(c => c.Id).HasComment("Identificador da configuração de remanejamento.").ValueGeneratedNever();
 
-        builder.OwnsOne(c => c.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
+        builder.OwnsOne(c => c.Regra, regra =>
+        {
+            regra.ConfigurarReferenciaRegra("regra");
+            regra.Property(x => x.Codigo).HasComment("Código da regra de remanejamento.");
+            regra.Property(x => x.Versao).HasComment("Versão da regra de remanejamento.");
+            regra.Property(x => x.Hash).HasComment("Resumo do conteúdo da regra de remanejamento.");
+        });
         builder.Navigation(c => c.Regra).IsRequired();
 
-        builder.Property(c => c.FallbackCodigo).HasMaxLength(ConfiguracaoCascataRemanejamento.FallbackMaxLength).IsRequired();
+        builder.Property(c => c.FallbackCodigo).HasComment("Código da modalidade de destino final das vagas.").HasColumnName("destino_final_codigo").HasMaxLength(ConfiguracaoCascataRemanejamento.FallbackMaxLength).IsRequired();
 
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types) —
         // mesmo padrão de ConfiguracaoDistribuicaoVagas.Modalidades.

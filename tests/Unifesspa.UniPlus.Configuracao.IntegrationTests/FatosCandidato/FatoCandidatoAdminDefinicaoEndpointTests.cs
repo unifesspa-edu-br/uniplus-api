@@ -222,7 +222,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
     private static async Task<int> SegurarALinhaDoFatoAsync(UniPlusDbContext concorrente, Guid id)
     {
         await concorrente.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.fatos_do_candidato SET updated_at = now() WHERE id = {id}");
+            $"UPDATE configuracao.dados_do_candidato SET updated_at = now() WHERE id = {id}");
         return await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
     }
 }

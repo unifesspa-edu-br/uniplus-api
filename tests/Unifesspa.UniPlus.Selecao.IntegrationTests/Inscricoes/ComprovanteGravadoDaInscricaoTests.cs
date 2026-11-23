@@ -23,7 +23,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
 {
     private const string LinhasDaModalidade = """
         SELECT posicao, origem, tipo, valor_codigo FROM selecao.respostas_da_inscricao
-        WHERE inscricao_id = @id AND fato_codigo = 'MODALIDADE' ORDER BY posicao
+        WHERE inscricao_id = @id AND codigo_do_dado = 'MODALIDADE' ORDER BY posicao
         """;
 
     private readonly CenarioDaInscricaoGravada _cenario;

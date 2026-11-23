@@ -29,22 +29,22 @@ public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
     public void ReferenciaTemporalDosFatos_FicaNaColetaECitaAFasePelaChave()
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
-        JsonNode referencia = documento["coleta"]!["referenciaTemporalFatos"]!;
+        JsonNode referencia = documento["coleta"]!["referenciaTemporalDosDados"]!;
         referencia["tipo"] = "FIM_FASE";
         referencia["faseChave"] = "inscricao";
         CaminhosComErro(documento).Should().BeEmpty();
 
         referencia["faseChave"] = "Fase Inscrição";
-        CaminhosComErro(documento).Should().Contain("/coleta/referenciaTemporalFatos/faseChave");
+        CaminhosComErro(documento).Should().Contain("/coleta/referenciaTemporalDosDados/faseChave");
     }
 
     [Fact(DisplayName = "A referência temporal dos fatos na identificação é recusada")]
     public void ReferenciaTemporalDosFatos_NaIdentificacao_Recusa()
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
-        documento["identificacao"]!["referenciaTemporalFatos"] = new JsonObject { ["tipo"] = "FIM_INSCRICAO" };
+        documento["identificacao"]!["referenciaTemporalDosDados"] = new JsonObject { ["tipo"] = "FIM_INSCRICAO" };
 
-        CaminhosComErro(documento).Should().Contain("/identificacao/referenciaTemporalFatos");
+        CaminhosComErro(documento).Should().Contain("/identificacao/referenciaTemporalDosDados");
     }
 
     [Fact(DisplayName = "A etapa só com a chave valida, como num rascunho")]
@@ -112,10 +112,10 @@ public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
         JsonNode recurso = documento["etapas"]![0]!["recursos"]![0]!;
-        recurso["ancora"] = "cienciaIndividual";
+        recurso["eventoInicialDoPrazo"] = "cienciaIndividual";
         CaminhosComErro(documento).Should().BeEmpty();
 
-        recurso["ancora"] = "nenhuma";
-        CaminhosComErro(documento).Should().Contain("/etapas/0/recursos/0/ancora");
+        recurso["eventoInicialDoPrazo"] = "nenhuma";
+        CaminhosComErro(documento).Should().Contain("/etapas/0/recursos/0/eventoInicialDoPrazo");
     }
 }

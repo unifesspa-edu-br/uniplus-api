@@ -90,7 +90,7 @@ internal static class CenariosDeDefinirEtapas
     }
 
     /// <summary>A definição das etapas sobre o repositório e a escolha de motivos dados, com os cadastros que resolvem os dois tipos de etapa.</summary>
-    internal static DefinicaoDasEtapas DefinicaoDasEtapasComMotivos(IProcessoSeletivoRepository repository, IMotivoDoProcessoRepository motivos) => new(
+    internal static DefinicaoDasEtapas DefinicaoDasEtapasComMotivos(IProcessoSeletivoRepository repository, IMotivoDeDecisaoDoProcessoRepository motivos) => new(
         ReaderPadrao(),
         Substitute.For<ITipoBancaReader>(),
         Substitute.For<IRegraCatalogoReader>(),

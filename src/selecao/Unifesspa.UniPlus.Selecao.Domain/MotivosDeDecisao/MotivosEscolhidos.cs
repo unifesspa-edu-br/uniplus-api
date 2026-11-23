@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public sealed class MotivosEscolhidos
 {
     /// <summary>O bloco do documento da configuração em que os motivos escolhidos se identificam pelo lugar (a fase ou a etapa e a chave dela), pelo tipo e pelo código.</summary>
-    public const string CampoDosMotivos = "motivos";
+    public const string CampoDosMotivos = "motivosDeDecisao";
 
     private readonly IReadOnlyList<MotivoEscolhidoComOrigem> _escolha;
     private readonly int _numeroDaVersaoQueNasce;
@@ -63,7 +63,7 @@ public sealed class MotivosEscolhidos
     }
 
     /// <summary>Os motivos que a versão que nasce leva e que valem para a cobertura: sem os desativados e sem os de tipo que o lugar não declara.</summary>
-    public IReadOnlyCollection<MotivoDoProcesso> QueCompoemAVersao(LugaresDaDecisao lugares)
+    public IReadOnlyCollection<MotivoDeDecisaoDoProcesso> QueCompoemAVersao(LugaresDaDecisao lugares)
     {
         ArgumentNullException.ThrowIfNull(lugares);
 
@@ -88,7 +88,7 @@ public sealed class MotivosEscolhidos
             .OrderBy(static m => m.Escolhido.Codigo.Valor, StringComparer.Ordinal)
             .ThenBy(static m => m.Escolhido.Tipo.Codigo(), StringComparer.Ordinal);
 
-    private string MensagemDoTipoNaoDeclarado(LugarNoProcesso lugar, MotivoDoProcesso escolhido)
+    private string MensagemDoTipoNaoDeclarado(LugarNoProcesso lugar, MotivoDeDecisaoDoProcesso escolhido)
     {
         string recusa = $"{lugar.Descricao} não declara o tipo de decisão {escolhido.Tipo.Codigo()} do motivo {escolhido.Codigo.Valor}";
 

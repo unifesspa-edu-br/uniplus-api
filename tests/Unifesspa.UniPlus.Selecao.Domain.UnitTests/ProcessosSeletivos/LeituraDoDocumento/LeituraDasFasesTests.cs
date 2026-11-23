@@ -34,7 +34,7 @@ public sealed class LeituraDasFasesTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "digitada", "FASE-DIGITADA"), Fase(1, "resultado", "RESULTADO")));
 
         lidos.Cronograma.CronogramaFases.Should().ContainSingle();
-        PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/faseCanonicaCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada));
+        PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/tipoFaseCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada));
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITADA", StringComparison.Ordinal));
         Cronograma(lidos).TemParteRecusadaNaListaDeFases.Should().BeTrue();
     }
@@ -48,8 +48,8 @@ public sealed class LeituraDasFasesTests
 
         lidos.Cronograma.CronogramaFases.Should().BeEmpty();
         lidos.Origem.PartesRecusadas.Select(static parte => parte.Causa.Field).Should().Equal(
-            "/cronograma/fases/0/faseCanonicaCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
-            "/cronograma/fases/0/produtos/3/atoCodigo");
+            "/cronograma/fases/0/tipoFaseCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
+            "/cronograma/fases/0/publicacoesPrevistas/3/atoCodigo");
         lidos.Origem.PartesRecusadas.Should().OnlyContain(parte => parte.Caminho == "fases" && parte.Chave == "fase" && parte.PosicaoDeOrigem == 0);
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITAD", StringComparison.OrdinalIgnoreCase));
     }
@@ -69,7 +69,7 @@ public sealed class LeituraDasFasesTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "digitada", "FASE-DIGITADA"), Fase(1, "resultado", "RESULTADO", "UNIDADE-DIGITADA")));
 
         PartesRecusadas(lidos).Should().Equal(
-            ("/cronograma/fases/0/faseCanonicaCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada),
+            ("/cronograma/fases/0/tipoFaseCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada),
             ("/cronograma/fases/1/unidadeResponsavelCodigo", FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada));
         ParteRecusada daUnidade = lidos.Origem.PartesRecusadas[1];
         daUnidade.Caminho.Should().Be("fases[0].unidadeResponsavel");

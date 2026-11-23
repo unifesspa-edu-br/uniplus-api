@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261123011835_Inicial")]
+    [Migration("20261123184420_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3742,18 +3742,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do tipo de fase.");
 
                     b.Property<string>("BaseLegal")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("base_legal");
+                        .HasColumnName("base_legal")
+                        .HasComment("Fundamento legal da fase, quando informado.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código único do tipo de fase.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3779,7 +3782,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição do propósito da fase, quando informada.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -3790,27 +3794,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome do tipo de fase.");
 
                     b.Property<string>("OrigemData")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("origem_data");
+                        .HasColumnName("origem_data")
+                        .HasComment("Origem das datas: NO_EDITAL ou NA_EXECUCAO.");
 
                     b.Property<string>("UnidadeSugeridaNome")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("unidade_sugerida_nome");
+                        .HasColumnName("unidade_sugerida_nome")
+                        .HasComment("Nome da unidade sugerida, quando houver.");
 
                     b.Property<Guid?>("UnidadeSugeridaOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("unidade_sugerida_origem_id");
+                        .HasColumnName("unidade_sugerida_origem_id")
+                        .HasComment("Identificador da unidade sugerida, quando houver.");
 
                     b.Property<string>("UnidadeSugeridaSigla")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("unidade_sugerida_sigla");
+                        .HasColumnName("unidade_sugerida_sigla")
+                        .HasComment("Sigla da unidade sugerida, quando houver.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3824,28 +3833,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
-                        .HasName("pk_fases_canonicas");
+                        .HasName("pk_tipos_de_fase");
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_fases_canonicas_codigo_vivo")
+                        .HasDatabaseName("ix_tipos_de_fase_codigo_vivo")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("fases_canonicas", "configuracao", t =>
+                    b.ToTable("tipos_de_fase", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
+                            t.HasComment("Tipos de fase disponíveis para organizar o cronograma de seleção.");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                            t.HasCheckConstraint("ck_tipos_de_fase_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                            t.HasCheckConstraint("ck_tipos_de_fase_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
+                            t.HasCheckConstraint("ck_tipos_de_fase_codigo_formato", "codigo ~ '^[A-Z_]+$'");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
+                            t.HasCheckConstraint("ck_tipos_de_fase_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+                            t.HasCheckConstraint("ck_tipos_de_fase_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
+                            t.HasCheckConstraint("ck_tipos_de_fase_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+
+                            t.HasCheckConstraint("ck_tipos_de_fase_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
                         });
 
                     b.HasData(
@@ -3998,40 +4009,47 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do dado do candidato.");
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
-                        .HasColumnName("ativo");
+                        .HasColumnName("ativo")
+                        .HasComment("Indica se o dado está disponível para uso.");
 
                     b.Property<string>("Binding")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("binding");
+                        .HasColumnName("fonte_do_valor")
+                        .HasComment("Referência à fonte usada para obter o valor.");
 
                     b.Property<string>("Cardinalidade")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("cardinalidade");
+                        .HasColumnName("quantidade_de_valores")
+                        .HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_protecao");
+                        .HasColumnName("classificacao_protecao")
+                        .HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código único do dado, como RENDA_PER_CAPITA.");
 
                     b.Property<string>("ComponenteExibicao")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("componente_exibicao");
+                        .HasColumnName("componente_exibicao")
+                        .HasComment("Apresentação sugerida: MOEDA ou SITUACAO; nula quando não definida.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4049,76 +4067,89 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text[]")
                         .HasColumnName("dependencias")
-                        .HasDefaultValueSql("'{}'::text[]");
+                        .HasDefaultValueSql("'{}'::text[]")
+                        .HasComment("Códigos dos dados necessários ao cálculo pelo sistema.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição do significado e uso do dado.");
 
                     b.Property<string>("Dominio")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("dominio");
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
 
                     b.Property<string>("Escopo")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("escopo");
+                        .HasColumnName("escopo")
+                        .HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("finalidade_tratamento");
+                        .HasColumnName("finalidade_tratamento")
+                        .HasComment("Finalidade informada para o tratamento do dado.");
 
                     b.Property<string>("FonteValores")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("fonte_valores");
+                        .HasColumnName("fonte_das_opcoes")
+                        .HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
 
                     b.Property<string>("Formato")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("formato");
+                        .HasColumnName("formato")
+                        .HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("hipotese_legal");
+                        .HasColumnName("hipotese_legal")
+                        .HasComment("Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome apresentado para o dado.");
 
                     b.Property<string>("Origem")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("origem");
+                        .HasColumnName("origem")
+                        .HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
 
                     b.Property<string>("PontoResolucao")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("ponto_resolucao");
+                        .HasColumnName("fase_de_disponibilidade")
+                        .HasComment("Código da fase em que o valor fica disponível.");
 
                     b.Property<string>("RegrasPadrao")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
                         .HasColumnName("regras_padrao")
-                        .HasDefaultValueSql("'[]'::jsonb");
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("Regras de cálculo padrão do dado, em documento JSON.");
 
                     b.Property<bool>("SemeadoPeloSistema")
                         .HasColumnType("boolean")
-                        .HasColumnName("semeado_pelo_sistema");
+                        .HasColumnName("semeado_pelo_sistema")
+                        .HasComment("Indica se o dado foi fornecido pelo sistema.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4139,45 +4170,47 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
-                        .HasName("pk_fatos_do_candidato");
+                        .HasName("pk_dados_do_candidato");
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_fatos_do_candidato_codigo");
+                        .HasDatabaseName("ux_dados_do_candidato_codigo");
 
-                    b.ToTable("fatos_do_candidato", "configuracao", t =>
+                    b.ToTable("dados_do_candidato", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_fatos_do_candidato_cardinalidade", "cardinalidade IN ('ESCALAR', 'MULTIVALORADO')");
+                            t.HasComment("Catálogo de dados solicitados ou calculados para candidatos e suas regras de uso.");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_classificacao_minima_do_dominio", "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+                            t.HasCheckConstraint("ck_dados_do_candidato_classificacao_minima_do_tipo", "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_dominio", "dominio IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_fonte_das_opcoes_coerente", "(tipo = 'CATEGORICO' AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (tipo <> 'CATEGORICO' AND fonte_das_opcoes IS NULL)");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
+                            t.HasCheckConstraint("ck_dados_do_candidato_formato_coerente", "(tipo = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (tipo <> 'TEXTO' AND formato IS NULL)");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_formato_coerente", "(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (dominio <> 'TEXTO' AND formato IS NULL)");
+                            t.HasCheckConstraint("ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
 
-                            t.HasCheckConstraint("ck_fatos_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_quantidade_de_valores", "quantidade_de_valores IN ('ESCALAR', 'MULTIVALORADO')");
+
+                            t.HasCheckConstraint("ck_dados_do_candidato_tipo", "tipo IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
                         });
 
                     b.HasData(
@@ -5442,17 +5475,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da opção.");
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
-                        .HasColumnName("ativo");
+                        .HasColumnName("ativo")
+                        .HasComment("Indica se a opção está disponível para escolha.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da opção, único no dado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -5462,20 +5498,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Descricao")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da opção, quando informada.");
 
                     b.Property<Guid>("FatoCandidatoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fato_candidato_id");
+                        .HasColumnName("fato_candidato_id")
+                        .HasComment("Identificador do dado ao qual a opção pertence.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição de apresentação da opção.");
 
                     b.Property<string>("Orientacao")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("orientacao");
+                        .HasColumnName("orientacao")
+                        .HasComment("Orientação para a escolha, quando informada.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -5483,13 +5523,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_valores_de_dominio_do_fato");
+                        .HasName("pk_opcoes_dos_dados");
 
                     b.HasIndex("FatoCandidatoId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_valores_de_dominio_do_fato_fato_codigo");
+                        .HasDatabaseName("ux_opcoes_dos_dados_fato_codigo");
 
-                    b.ToTable("valores_de_dominio_do_fato", "configuracao");
+                    b.ToTable("opcoes_dos_dados", "configuracao", t =>
+                        {
+                            t.HasComment("Opções declaradas para dados categóricos do candidato.");
+                        });
 
                     b.HasData(
                         new
@@ -7732,8 +7775,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("natureza")
-                        .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de valores_tipo_conceito.");
+                        .HasColumnName("forma")
+                        .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7773,9 +7816,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
 
-                            t.HasCheckConstraint("ck_tipos_conceito_natureza", "natureza IN ('NUMERICO', 'CATEGORICO')");
+                            t.HasCheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'CATEGORICO')");
 
-                            t.HasCheckConstraint("ck_tipos_conceito_parametros_da_natureza", "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+                            t.HasCheckConstraint("ck_tipos_conceito_parametros_da_forma", "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (forma = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
                         });
                 });
 
@@ -11078,7 +11121,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da avaliação da inscrição na etapa.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -11099,7 +11143,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("LoteId")
                         .HasColumnType("uuid")
-                        .HasColumnName("lote_id");
+                        .HasColumnName("importacao_id")
+                        .HasComment("Identificador da importação que originou a avaliação.");
 
                     b.Property<decimal?>("Nota")
                         .HasColumnType("numeric")
@@ -11123,15 +11168,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_avaliacoes_da_etapa_inscricao_etapa");
 
                     b.HasIndex("LoteId", "EtapaProcessoId")
-                        .HasDatabaseName("ix_avaliacoes_da_etapa_lote_id_etapa_processo_id");
+                        .HasDatabaseName("ix_avaliacoes_da_etapa_importacao_id_etapa_processo_id");
 
                     b.HasIndex("LoteId", "InscricaoId", "OfertaCursoId")
                         .IsUnique()
-                        .HasDatabaseName("ux_avaliacoes_da_etapa_lote_inscricao_oferta");
+                        .HasDatabaseName("ux_avaliacoes_da_etapa_importacao_inscricao_oferta");
 
                     b.ToTable("avaliacoes_da_etapa", "selecao", t =>
                         {
-                            t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Append-only; vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
+                            t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
 
                             t.HasCheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 1) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
 
@@ -11558,7 +11603,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("Clausula")
                         .HasColumnType("integer")
-                        .HasColumnName("clausula");
+                        .HasColumnName("alternativa")
+                        .HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11567,19 +11613,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("DocumentoExigidoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("documento_exigido_id");
+                        .HasColumnName("documento_exigido_id")
+                        .HasComment("Identificador do documento exigido ao qual a condição pertence.");
 
                     b.Property<string>("Fato")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<string>("Operador")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("operador");
+                        .HasColumnName("operador")
+                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11589,15 +11638,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Valor")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("valor");
+                        .HasColumnName("valor")
+                        .HasComment("Valor de comparação da condição, em JSON.");
 
                     b.HasKey("Id")
-                        .HasName("pk_condicoes_gatilho");
+                        .HasName("pk_condicoes_das_exigencias");
 
                     b.HasIndex("DocumentoExigidoId")
-                        .HasDatabaseName("ix_condicoes_gatilho_documento_exigido_id");
+                        .HasDatabaseName("ix_condicoes_das_exigencias_documento_exigido_id");
 
-                    b.ToTable("condicoes_gatilho", "selecao");
+                    b.ToTable("condicoes_das_exigencias", "selecao", t =>
+                        {
+                            t.HasComment("Condições que determinam a exigência de um documento.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoOfertada", b =>
@@ -11654,7 +11707,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("Clausula")
                         .HasColumnType("integer")
-                        .HasColumnName("clausula");
+                        .HasColumnName("alternativa")
+                        .HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11665,17 +11719,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<Guid>("FatoColetadoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fato_coletado_id");
+                        .HasColumnName("fato_coletado_id")
+                        .HasComment("Identificador do dado do formulário ao qual a condição pertence.");
 
                     b.Property<string>("Operador")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("operador");
+                        .HasColumnName("operador")
+                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11685,15 +11742,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Valor")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("valor");
+                        .HasColumnName("valor")
+                        .HasComment("Valor de comparação da condição, em JSON.");
 
                     b.HasKey("Id")
-                        .HasName("pk_condicoes_precondicao_fato");
+                        .HasName("pk_condicoes_de_exibicao_do_dado");
 
                     b.HasIndex("FatoColetadoId")
-                        .HasDatabaseName("ix_condicoes_precondicao_fato_fato_coletado_id");
+                        .HasDatabaseName("ix_condicoes_de_exibicao_do_dado_fato_coletado_id");
 
-                    b.ToTable("condicoes_precondicao_fato", "selecao");
+                    b.ToTable("condicoes_de_exibicao_do_dado", "selecao", t =>
+                        {
+                            t.HasComment("Condições que determinam a exibição de um dado no formulário.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoRegraDerivacao", b =>
@@ -11704,7 +11765,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("Clausula")
                         .HasColumnType("integer")
-                        .HasColumnName("clausula");
+                        .HasColumnName("alternativa")
+                        .HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11715,17 +11777,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<string>("Operador")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("operador");
+                        .HasColumnName("operador")
+                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
 
                     b.Property<Guid>("RegraDerivacaoConfiguradaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("regra_derivacao_configurada_id");
+                        .HasColumnName("regra_derivacao_configurada_id")
+                        .HasComment("Identificador da regra de cálculo à qual a condição pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11735,15 +11800,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Valor")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("valor");
+                        .HasColumnName("valor")
+                        .HasComment("Valor de comparação da condição, em JSON.");
 
                     b.HasKey("Id")
-                        .HasName("pk_condicoes_regra_derivacao");
+                        .HasName("pk_condicoes_do_calculo_dos_dados");
 
                     b.HasIndex("RegraDerivacaoConfiguradaId")
-                        .HasDatabaseName("ix_condicoes_regra_derivacao_regra_derivacao_configurada_id");
+                        .HasDatabaseName("ix_condicoes_do_calculo_dos_dados_regra_id");
 
-                    b.ToTable("condicoes_regra_derivacao", "selecao");
+                    b.ToTable("condicoes_do_calculo_dos_dados", "selecao", t =>
+                        {
+                            t.HasComment("Condições que determinam a aplicação de uma regra de cálculo.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
@@ -11870,7 +11939,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da configuração de remanejamento.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11881,11 +11951,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fallback_codigo");
+                        .HasColumnName("destino_final_codigo")
+                        .HasComment("Código da modalidade de destino final das vagas.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual a configuração pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11899,7 +11971,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_configuracoes_de_remanejamento_processo");
 
-                    b.ToTable("configuracoes_de_remanejamento", "selecao");
+                    b.ToTable("configuracoes_de_remanejamento", "selecao", t =>
+                        {
+                            t.HasComment("Regra e destino final do remanejamento de vagas do processo.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", b =>
@@ -11963,7 +12038,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo_fato");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado calculado. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11972,7 +12048,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11980,13 +12057,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_configuracoes_derivacao_fato");
+                        .HasName("pk_calculos_dos_dados");
 
                     b.HasIndex("ProcessoSeletivoId", "CodigoFato")
                         .IsUnique()
-                        .HasDatabaseName("ux_configuracoes_derivacao_fato_processo_fato");
+                        .HasDatabaseName("ux_calculos_dos_dados_processo_dado");
 
-                    b.ToTable("configuracoes_derivacao_fato", "selecao");
+                    b.ToTable("calculos_dos_dados", "selecao", t =>
+                        {
+                            t.HasComment("Configurações dos cálculos dos dados de candidatos em um processo.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", b =>
@@ -12381,22 +12461,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da exigência documental.");
 
                     b.Property<int>("Aplicabilidade")
                         .HasColumnType("integer")
-                        .HasColumnName("aplicabilidade");
+                        .HasColumnName("aplicabilidade")
+                        .HasComment("A quem a exigência se aplica: 1 = todos os candidatos, 2 = candidatos que atendem às condições.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_protecao");
+                        .HasColumnName("classificacao_protecao")
+                        .HasComment("Classificação de proteção copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
 
                     b.Property<string>("ConsequenciaIndeferimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("consequencia_indeferimento");
+                        .HasColumnName("consequencia_indeferimento")
+                        .HasComment("Consequência do indeferimento, quando declarada: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12405,66 +12489,79 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid?>("ExigidoNaEtapaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("exigido_na_etapa_id");
+                        .HasColumnName("exigido_na_etapa_id")
+                        .HasComment("Identificador da etapa que coleta o documento; ausente quando a exigência pertence à fase inteira.");
 
                     b.Property<Guid>("ExigidoNaFaseId")
                         .HasColumnType("uuid")
-                        .HasColumnName("exigido_na_fase_id");
+                        .HasColumnName("exigido_na_fase_id")
+                        .HasComment("Identificador da fase em que o documento é exigido.");
 
                     b.PrimitiveCollection<string[]>("FatosComprovados")
                         .IsRequired()
                         .HasColumnType("text[]")
-                        .HasColumnName("fatos_comprovados");
+                        .HasColumnName("fatos_comprovados")
+                        .HasComment("Códigos dos fatos do processo comprovados pelo documento; lista vazia quando nenhum foi declarado.");
 
                     b.Property<int?>("Finalidade")
                         .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário: 1 = inscrição, 2 = isenção de taxa, 3 = habilitação; ausente quando a fase não coleta formulário.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("finalidade_tratamento");
+                        .HasColumnName("finalidade_tratamento")
+                        .HasComment("Finalidade do tratamento dos dados copiada do tipo de documento.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("hipotese_legal");
+                        .HasColumnName("hipotese_legal")
+                        .HasComment("Hipótese legal copiada do tipo de documento: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
 
                     b.Property<bool>("Obrigatorio")
                         .HasColumnType("boolean")
-                        .HasColumnName("obrigatorio");
+                        .HasColumnName("obrigatorio")
+                        .HasComment("Indica se a apresentação do documento é obrigatória.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo que declara a exigência.");
 
                     b.Property<int?>("TamanhoMaximoBytes")
                         .HasColumnType("integer")
-                        .HasColumnName("tamanho_maximo_bytes");
+                        .HasColumnName("tamanho_maximo_bytes")
+                        .HasComment("Tamanho máximo do arquivo apresentado, em bytes; ausente quando não declarado.");
 
                     b.Property<string>("TipoDocumentoCategoria")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("tipo_documento_categoria");
+                        .HasColumnName("tipo_documento_categoria")
+                        .HasComment("Categoria do tipo de documento copiada do cadastro.");
 
                     b.Property<string>("TipoDocumentoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("tipo_documento_codigo");
+                        .HasColumnName("tipo_documento_codigo")
+                        .HasComment("Código do tipo de documento copiado do cadastro.");
 
                     b.Property<string>("TipoDocumentoNome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasColumnName("tipo_documento_nome");
+                        .HasColumnName("tipo_documento_nome")
+                        .HasComment("Nome do tipo de documento copiado do cadastro.");
 
                     b.Property<Guid>("TipoDocumentoOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tipo_documento_origem_id");
+                        .HasColumnName("tipo_documento_origem_id")
+                        .HasComment("Identificador do tipo de documento no cadastro de origem.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12485,6 +12582,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("documentos_exigidos", "selecao", t =>
                         {
+                            t.HasComment("Documentos exigidos dos candidatos em cada processo seletivo.");
+
                             t.HasCheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
                         });
                 });
@@ -12778,7 +12877,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FaseCanonicaOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fase_canonica_origem_id")
+                        .HasColumnName("tipo_fase_origem_id")
                         .HasComment("Identificador da fase de origem copiado ao definir o cronograma.");
 
                     b.Property<DateTimeOffset?>("Fim")
@@ -12858,7 +12957,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "FaseCanonicaOrigemId")
                         .IsUnique()
-                        .HasDatabaseName("ux_fases_cronograma_processo_fase_canonica");
+                        .HasDatabaseName("ux_fases_cronograma_processo_tipo_fase");
 
                     b.HasIndex("ProcessoSeletivoId", "Ordem")
                         .IsUnique()
@@ -12881,18 +12980,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Ajuda")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("ajuda");
+                        .HasColumnName("ajuda")
+                        .HasComment("Orientação adicional exibida junto ao campo, quando houver.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("classificacao_protecao");
+                        .HasColumnName("classificacao_protecao")
+                        .HasComment("Classificação de proteção do dado coletado.");
 
                     b.Property<string>("ComponenteExibicao")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("componente_exibicao");
+                        .HasColumnName("componente_exibicao")
+                        .HasComment("Componente usado para exibir o dado, quando especificado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12903,85 +13005,102 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição do dado solicitado.");
 
                     b.Property<string>("EtapaCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("etapa_codigo");
+                        .HasColumnName("etapa_codigo")
+                        .HasComment("Código da etapa do formulário, quando houver.");
 
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_codigo");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<int>("Finalidade")
                         .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("finalidade_tratamento");
+                        .HasColumnName("finalidade_tratamento")
+                        .HasComment("Finalidade informada para o tratamento do dado.");
 
                     b.Property<string>("Formato")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("formato");
+                        .HasColumnName("formato")
+                        .HasComment("Formato esperado da resposta, quando especificado.");
 
                     b.Property<Guid?>("GrupoColetadoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("grupo_coletado_id");
+                        .HasColumnName("grupo_coletado_id")
+                        .HasComment("Identificador do grupo repetível ao qual o dado pertence, quando houver.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("hipotese_legal");
+                        .HasColumnName("hipotese_legal")
+                        .HasComment("Hipótese legal que fundamenta o tratamento do dado.");
 
                     b.Property<string>("Impedimento")
                         .HasColumnType("jsonb")
-                        .HasColumnName("impedimento");
+                        .HasColumnName("impedimento")
+                        .HasComment("Regra de impedimento associada à resposta, em JSON, quando houver.");
 
                     b.Property<string>("Obrigatoriedade")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("obrigatoriedade");
+                        .HasColumnName("obrigatoriedade")
+                        .HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição de apresentação ou avaliação no conjunto.");
 
                     b.Property<int>("OrigemValores")
                         .HasColumnType("integer")
-                        .HasColumnName("origem_valores");
+                        .HasColumnName("origem_valores")
+                        .HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas.");
 
                     b.Property<bool>("PedirConfirmacao")
                         .HasColumnType("boolean")
-                        .HasColumnName("pedir_confirmacao");
+                        .HasColumnName("pedir_confirmacao")
+                        .HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence.");
 
                     b.Property<string>("Restricoes")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("restricoes");
+                        .HasColumnName("restricoes")
+                        .HasComment("Restrições aplicadas à resposta, em JSON.");
 
                     b.Property<string>("Rotulo")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("rotulo");
+                        .HasColumnName("rotulo")
+                        .HasComment("Texto apresentado à pessoa candidata.");
 
                     b.Property<string>("TipoRenderizacao")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo_renderizacao");
+                        .HasColumnName("tipo_renderizacao")
+                        .HasComment("Tipo de campo: NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12989,22 +13108,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_fatos_coletados");
+                        .HasName("pk_dados_dos_formularios");
 
                     b.HasIndex("GrupoColetadoId", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_fatos_coletados_grupo_ordem");
+                        .HasDatabaseName("ux_dados_dos_formularios_grupo_ordem");
 
                     b.HasIndex("ProcessoSeletivoId", "FatoCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_fatos_coletados_processo_fato");
+                        .HasDatabaseName("ux_dados_dos_formularios_processo_dado");
 
                     b.HasIndex("ProcessoSeletivoId", "Finalidade", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_fatos_coletados_processo_finalidade_ordem")
+                        .HasDatabaseName("ux_dados_dos_formularios_processo_finalidade_ordem")
                         .HasFilter("grupo_coletado_id IS NULL");
 
-                    b.ToTable("fatos_coletados", "selecao");
+                    b.ToTable("dados_dos_formularios", "selecao", t =>
+                        {
+                            t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
@@ -13146,7 +13268,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código que identifica o item no processo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13156,46 +13279,56 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("EtapaCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("etapa_codigo");
+                        .HasColumnName("etapa_codigo")
+                        .HasComment("Código da etapa do formulário, quando houver.");
 
                     b.Property<string>("Exibicao")
                         .HasColumnType("jsonb")
-                        .HasColumnName("exibicao");
+                        .HasColumnName("exibicao")
+                        .HasComment("Condições para exibir o grupo, em JSON, quando houver.");
 
                     b.Property<int>("Finalidade")
                         .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
 
                     b.Property<bool>("IncluiCandidato")
                         .HasColumnType("boolean")
-                        .HasColumnName("inclui_candidato");
+                        .HasColumnName("inclui_candidato")
+                        .HasComment("Indica se o grupo inclui a própria pessoa candidata.");
 
                     b.Property<int?>("Maximo")
                         .HasColumnType("integer")
-                        .HasColumnName("maximo");
+                        .HasColumnName("maximo")
+                        .HasComment("Quantidade máxima de ocorrências do grupo, quando limitada.");
 
                     b.Property<int>("Minimo")
                         .HasColumnType("integer")
-                        .HasColumnName("minimo");
+                        .HasColumnName("minimo")
+                        .HasComment("Quantidade mínima de ocorrências do grupo.");
 
                     b.Property<string>("Obrigatoriedade")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("obrigatoriedade");
+                        .HasColumnName("obrigatoriedade")
+                        .HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição de apresentação ou avaliação no conjunto.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence.");
 
                     b.Property<string>("Rotulo")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("rotulo");
+                        .HasColumnName("rotulo")
+                        .HasComment("Texto apresentado à pessoa candidata.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13203,13 +13336,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_grupos_coletados");
+                        .HasName("pk_grupos_dos_formularios");
 
                     b.HasIndex("ProcessoSeletivoId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_grupos_coletados_processo_codigo");
+                        .HasDatabaseName("ux_grupos_dos_formularios_processo_codigo");
 
-                    b.ToTable("grupos_coletados", "selecao");
+                    b.ToTable("grupos_dos_formularios", "selecao", t =>
+                        {
+                            t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
@@ -13257,15 +13393,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro de inscrito na importação.");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição com linha válida no arquivo.");
 
                     b.Property<Guid>("LoteId")
                         .HasColumnType("uuid")
-                        .HasColumnName("lote_id");
+                        .HasColumnName("importacao_id")
+                        .HasComment("Identificador da importação à qual pertence o inscrito.");
 
                     b.Property<string>("NumeroDeInscricaoNoEnem")
                         .IsRequired()
@@ -13275,19 +13414,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("O número de inscrição do INEP, guardado para a conferência de um recurso.");
 
                     b.HasKey("Id")
-                        .HasName("pk_inscritos_do_lote_de_notas");
+                        .HasName("pk_inscritos_da_importacao");
 
                     b.HasAlternateKey("LoteId", "InscricaoId")
-                        .HasName("ak_inscritos_do_lote_de_notas_lote_inscricao");
+                        .HasName("ak_inscritos_da_importacao_importacao_inscricao");
 
                     b.HasIndex("InscricaoId")
-                        .HasDatabaseName("ix_inscritos_do_lote_de_notas_inscricao");
+                        .HasDatabaseName("ix_inscritos_da_importacao_inscricao");
 
-                    b.ToTable("inscritos_do_lote_de_notas", "selecao", t =>
+                    b.ToTable("inscritos_da_importacao", "selecao", t =>
                         {
-                            t.HasComment("A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
+                            t.HasComment("A inscrição com linha válida em um lote de notas e o número de inscrição atribuído pelo INEP. Os registros não são alterados ou excluídos.");
 
-                            t.HasCheckConstraint("ck_inscritos_do_lote_de_notas_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
+                            t.HasCheckConstraint("ck_inscritos_da_importacao_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
                         });
                 });
 
@@ -13341,7 +13480,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do lançamento da nota.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -13350,23 +13490,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição à qual pertence a nota.");
 
                     b.Property<string>("ItemCodigo")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("item_codigo")
-                        .HasComment("A área do ENEM. Só o domínio enumera as áreas: o banco não carrega o vocabulário, para que acrescentar um item não exija migration.");
+                        .HasComment("Área do ENEM: REDACAO, CIENCIAS_DA_NATUREZA, CIENCIAS_HUMANAS, LINGUAGENS ou MATEMATICA.");
 
                     b.Property<Guid>("LoteId")
                         .HasColumnType("uuid")
-                        .HasColumnName("lote_id");
+                        .HasColumnName("importacao_id")
+                        .HasComment("Identificador da importação que originou o lançamento.");
 
                     b.Property<decimal>("Nota")
                         .HasPrecision(7, 3)
                         .HasColumnType("numeric(7,3)")
-                        .HasColumnName("nota");
+                        .HasColumnName("nota")
+                        .HasComment("Nota da área do ENEM, de zero a mil, com até três casas decimais.");
 
                     b.Property<short>("Situacao")
                         .HasColumnType("smallint")
@@ -13380,15 +13523,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_lancamentos_de_nota_inscricao_etapa");
 
                     b.HasIndex("LoteId", "EtapaProcessoId")
-                        .HasDatabaseName("ix_lancamentos_de_nota_lote_id_etapa_processo_id");
+                        .HasDatabaseName("ix_lancamentos_de_nota_importacao_id_etapa_processo_id");
 
                     b.HasIndex("LoteId", "InscricaoId", "ItemCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_lancamentos_de_nota_lote_inscricao_item");
+                        .HasDatabaseName("ux_lancamentos_de_nota_importacao_inscricao_item");
 
                     b.ToTable("lancamentos_de_nota", "selecao", t =>
                         {
-                            t.HasComment("Uma nota individual de uma inscrição numa etapa: uma área do ENEM, com a nota e a situação. Append-only; corrigir é importar outro lote.");
+                            t.HasComment("Uma nota de uma inscrição em uma área do ENEM, com sua situação. Os registros não são alterados ou excluídos; a correção exige importar outro lote.");
 
                             t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
 
@@ -13400,7 +13543,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da importação.");
 
                     b.Property<string>("ArquivoHash")
                         .IsRequired()
@@ -13424,7 +13568,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("ImportadoEm")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("importado_em");
+                        .HasColumnName("importado_em")
+                        .HasComment("Data e hora da importação do arquivo.");
 
                     b.Property<string>("ImportadoPor")
                         .IsRequired()
@@ -13443,7 +13588,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("leiaute_codigo");
+                        .HasColumnName("leiaute_codigo")
+                        .HasComment("Código do leiaute usado para ler o arquivo.");
 
                     b.Property<string>("LeiauteHash")
                         .IsRequired()
@@ -13457,42 +13603,51 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("leiaute_versao");
+                        .HasColumnName("leiaute_versao")
+                        .HasComment("Versão do leiaute usado para ler o arquivo.");
 
                     b.Property<long>("OrdemDeRegistro")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
-                        .HasColumnName("ordem_de_registro");
+                        .HasColumnName("ordem_de_registro")
+                        .HasComment("Ordem atribuída pelo banco para desempatar importações do mesmo escopo.");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence a importação.");
 
                     b.Property<int>("TotalDeInscritosComNota")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_inscritos_com_nota");
+                        .HasColumnName("total_de_inscritos_com_nota")
+                        .HasComment("Quantidade de inscritos com nota importada.");
 
                     b.Property<int>("TotalDeInscritosEmConflito")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_inscritos_em_conflito");
+                        .HasColumnName("total_de_inscritos_em_conflito")
+                        .HasComment("Quantidade de inscritos com linhas conflitantes.");
 
                     b.Property<int>("TotalDeInscritosSemLinha")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_inscritos_sem_linha");
+                        .HasColumnName("total_de_inscritos_sem_linha")
+                        .HasComment("Quantidade de inscritos sem linha correspondente no arquivo.");
 
                     b.Property<int>("TotalDeLancamentos")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_lancamentos");
+                        .HasColumnName("total_de_lancamentos")
+                        .HasComment("Quantidade de notas individuais lançadas.");
 
                     b.Property<int>("TotalDeLinhas")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_linhas");
+                        .HasColumnName("total_de_linhas")
+                        .HasComment("Quantidade de linhas lidas no arquivo.");
 
                     b.Property<int>("TotalDeLinhasSemInscrito")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_linhas_sem_inscrito");
+                        .HasColumnName("total_de_linhas_sem_inscrito")
+                        .HasComment("Quantidade de linhas sem inscrição correspondente.");
 
                     b.Property<Guid>("VersaoConfiguracaoId")
                         .HasColumnType("uuid")
@@ -13500,31 +13655,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("A versão divulgada do certame cujos pesos apuraram as avaliações do lote.");
 
                     b.HasKey("Id")
-                        .HasName("pk_lotes_de_notas_do_enem");
+                        .HasName("pk_importacoes_de_notas_do_enem");
 
                     b.HasAlternateKey("Id", "EtapaProcessoId")
-                        .HasName("ak_lotes_de_notas_do_enem_id_etapa");
+                        .HasName("ak_importacoes_de_notas_do_enem_id_etapa");
 
                     b.HasIndex("OrdemDeRegistro")
                         .IsUnique()
-                        .HasDatabaseName("ux_lotes_de_notas_do_enem_ordem_de_registro");
+                        .HasDatabaseName("ux_importacoes_de_notas_do_enem_ordem_de_registro");
 
                     b.HasIndex("VersaoConfiguracaoId")
-                        .HasDatabaseName("ix_lotes_de_notas_do_enem_versao_configuracao_id");
+                        .HasDatabaseName("ix_importacoes_de_notas_do_enem_versao_configuracao_id");
 
                     b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "ImportadoEm", "OrdemDeRegistro")
                         .IsDescending(false, false, false, true, true)
-                        .HasDatabaseName("ix_lotes_de_notas_do_enem_escopo");
+                        .HasDatabaseName("ix_importacoes_de_notas_do_enem_escopo");
 
-                    b.ToTable("lotes_de_notas_do_enem", "selecao", t =>
+                    b.ToTable("importacoes_de_notas_do_enem", "selecao", t =>
                         {
-                            t.HasComment("Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Append-only; vale o lote mais recente do escopo, por inteiro. O arquivo não é guardado, só o hash.");
+                            t.HasComment("Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Os registros não são alterados ou excluídos; vale por inteiro o lote mais recente para esses dados. Do arquivo, guarda-se apenas o resumo do conteúdo.");
 
-                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_edicao", "edicao_codigo <> ''");
+                            t.HasCheckConstraint("ck_importacoes_de_notas_do_enem_edicao", "edicao_codigo <> ''");
 
-                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
+                            t.HasCheckConstraint("ck_importacoes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
 
-                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
+                            t.HasCheckConstraint("ck_importacoes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
                         });
                 });
 
@@ -13532,39 +13687,46 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da modalidade selecionada.");
 
                     b.Property<string>("AcaoQuandoIndeferido")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("acao_quando_indeferido");
+                        .HasColumnName("acao_quando_indeferido")
+                        .HasComment("Ação prevista quando o pedido é indeferido, quando definida.");
 
                     b.Property<string>("BaseLegal")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("base_legal");
+                        .HasColumnName("base_legal")
+                        .HasComment("Fundamento legal da modalidade copiado do cadastro.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da modalidade copiado do cadastro.");
 
                     b.Property<string>("ComposicaoOrigemCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("composicao_origem_codigo");
+                        .HasColumnName("composicao_origem_codigo")
+                        .HasComment("Código da modalidade de origem da composição, quando aplicável.");
 
                     b.Property<string>("ComposicaoVagas")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("composicao_vagas");
+                        .HasColumnName("composicao_vagas")
+                        .HasComment("Composição das vagas: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE ou SUPLEMENTAR_AO_TOTAL.");
 
                     b.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
                         .HasColumnType("uuid")
-                        .HasColumnName("configuracao_distribuicao_vagas_id");
+                        .HasColumnName("configuracao_distribuicao_vagas_id")
+                        .HasComment("Identificador da configuração de distribuição à qual pertence.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13574,46 +13736,55 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da modalidade copiada do cadastro, quando disponível.");
 
                     b.Property<Guid>("ModalidadeOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("modalidade_origem_id");
+                        .HasColumnName("modalidade_origem_id")
+                        .HasComment("Identificador da modalidade no cadastro de origem.");
 
                     b.Property<string>("NaturezaLegal")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("natureza_legal");
+                        .HasColumnName("natureza_legal")
+                        .HasComment("Natureza legal copiada do cadastro: COTA_RESERVADA, AMPLA ou ACAO_AFIRMATIVA.");
 
                     b.Property<int?>("QuantidadeDeclarada")
                         .HasColumnType("integer")
-                        .HasColumnName("quantidade_declarada");
+                        .HasColumnName("quantidade_declarada")
+                        .HasComment("Quantidade de vagas declarada, quando informada.");
 
                     b.Property<string>("RegraDeAplicabilidade")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("regra_de_aplicabilidade");
+                        .HasColumnName("regra_de_aplicabilidade")
+                        .HasComment("Condições de aplicabilidade da modalidade, copiadas do cadastro em JSON.");
 
                     b.Property<string>("RegraRemanejamentoCodigo")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("regra_remanejamento");
+                        .HasColumnName("regra_remanejamento")
+                        .HasComment("Código da regra de remanejamento, quando definida.");
 
                     b.Property<string>("RemanejamentoDestino")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("remanejamento_destino");
+                        .HasColumnName("remanejamento_destino")
+                        .HasComment("Código da modalidade de destino do remanejamento, quando definido.");
 
                     b.Property<string>("RemanejamentoFallback")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("remanejamento_fallback");
+                        .HasColumnName("remanejamento_destino_final")
+                        .HasComment("Código da modalidade de destino final do remanejamento, quando definido.");
 
                     b.Property<string>("RemanejamentoPar")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("remanejamento_par");
+                        .HasColumnName("remanejamento_par")
+                        .HasComment("Código da modalidade pareada para remanejamento, quando definido.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13626,7 +13797,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ConfiguracaoDistribuicaoVagasId")
                         .HasDatabaseName("ix_modalidades_selecionadas_configuracao_de_vagas");
 
-                    b.ToTable("modalidades_selecionadas", "selecao");
+                    b.ToTable("modalidades_selecionadas", "selecao", t =>
+                        {
+                            t.HasComment("Modalidades escolhidas para a distribuição de vagas, com dados copiados do cadastro.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModeloDeDocumento", b =>
@@ -13782,18 +13956,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("motivos_de_decisao", "selecao");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDoProcesso", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDeDecisaoDoProcesso", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da escolha do motivo no processo.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código do motivo copiado do cadastro na escolha.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13810,37 +13986,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição do motivo copiada do cadastro na escolha.");
 
                     b.Property<string>("JustificativaDaInclusao")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("justificativa_da_inclusao");
+                        .HasColumnName("justificativa_da_inclusao")
+                        .HasComment("Justificativa da inclusão após a publicação, vazia para escolhas anteriores.");
 
                     b.Property<Guid>("MotivoDeDecisaoOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("motivo_de_decisao_origem_id");
+                        .HasColumnName("motivo_de_decisao_origem_id")
+                        .HasComment("Identificador do motivo no cadastro de origem.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo que escolheu o motivo.");
 
                     b.Property<string>("Sentido")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasColumnName("sentido");
+                        .HasColumnName("sentido")
+                        .HasComment("Sentido da decisão associado ao motivo: Favoravel ou Desfavoravel.");
 
                     b.Property<string>("Subclassificacao")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("subclassificacao");
+                        .HasColumnName("subclassificacao")
+                        .HasComment("Subclassificação do motivo copiada do cadastro, quando houver.");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo de decisão: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA ou NOTA_DA_ETAPA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13861,16 +14044,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
-                        .HasName("pk_motivos_do_processo");
+                        .HasName("pk_motivos_de_decisao_do_processo");
 
                     b.HasIndex("ProcessoSeletivoId")
-                        .HasDatabaseName("ix_motivos_do_processo_processo");
+                        .HasDatabaseName("ix_motivos_de_decisao_do_processo_processo");
 
-                    b.ToTable("motivos_do_processo", "selecao", t =>
+                    b.ToTable("motivos_de_decisao_do_processo", "selecao", t =>
                         {
-                            t.HasCheckConstraint("ck_motivos_do_processo_lugar", "num_nonnulls(fase_canonica_origem_id, etapa_processo_id) = 1");
+                            t.HasComment("Motivos escolhidos para decisões do processo seletivo, com os dados do cadastro no momento da escolha e sua vigência no edital.");
 
-                            t.HasCheckConstraint("ck_motivos_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
+                            t.HasCheckConstraint("ck_motivos_de_decisao_do_processo_lugar", "num_nonnulls(tipo_fase_origem_id, etapa_processo_id) = 1");
+
+                            t.HasCheckConstraint("ck_motivos_de_decisao_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
                         });
                 });
 
@@ -13884,19 +14069,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("AtoNormativoUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("ato_normativo_url");
+                        .HasColumnName("ato_normativo_url")
+                        .HasComment("Endereço do ato normativo que fundamenta a regra, quando houver.");
 
                     b.Property<string>("BaseLegal")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("base_legal");
+                        .HasColumnName("base_legal")
+                        .HasComment("Fundamento legal da regra.");
 
                     b.Property<string>("Categoria")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasColumnName("categoria");
+                        .HasColumnName("categoria")
+                        .HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus, Atendimento ou Outros.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13924,14 +14112,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("descricao_humana");
+                        .HasColumnName("descricao_humana")
+                        .HasComment("Descrição da regra para leitura por pessoas.");
 
                     b.Property<string>("Hash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
                         .HasColumnName("hash")
-                        .IsFixedLength();
+                        .IsFixedLength()
+                        .HasComment("Resumo usado para identificar o conteúdo da regra.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -13941,24 +14131,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("PortariaInternaCodigo")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
-                        .HasColumnName("portaria_interna_codigo");
+                        .HasColumnName("portaria_interna_codigo")
+                        .HasComment("Código da portaria interna correspondente, quando houver.");
 
                     b.Property<string>("Predicado")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("predicado");
+                        .HasColumnName("condicoes")
+                        .HasComment("Condições de aplicação da regra legal, em JSON.");
 
                     b.Property<string>("RegraCodigo")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
-                        .HasColumnName("regra_codigo");
+                        .HasColumnName("regra_codigo")
+                        .HasComment("Código que identifica a regra legal.");
 
                     b.Property<string>("TipoProcessoCodigo")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("tipo_processo_codigo");
+                        .HasColumnName("tipo_processo_codigo")
+                        .HasComment("Código do tipo de processo ao qual a regra se aplica.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13973,11 +14167,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateOnly?>("VigenciaFim")
                         .HasColumnType("date")
-                        .HasColumnName("vigencia_fim");
+                        .HasColumnName("vigencia_fim")
+                        .HasComment("Data final de vigência da regra, quando houver.");
 
                     b.Property<DateOnly>("VigenciaInicio")
                         .HasColumnType("date")
-                        .HasColumnName("vigencia_inicio");
+                        .HasColumnName("vigencia_inicio")
+                        .HasComment("Data inicial de vigência da regra.");
 
                     b.HasKey("Id")
                         .HasName("pk_obrigatoriedades_legais");
@@ -13992,7 +14188,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("obrigatoriedades_legais", "selecao");
+                    b.ToTable("obrigatoriedades_legais", "selecao", t =>
+                        {
+                            t.HasComment("Regras legais aplicáveis à configuração de processos seletivos.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
@@ -14042,21 +14241,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da ocorrência na importação.");
 
                     b.Property<string>("CpfMascarado")
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)")
-                        .HasColumnName("cpf_mascarado")
+                        .HasColumnName("cpf_parcialmente_oculto")
                         .HasComment("O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro.");
 
                     b.Property<Guid?>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição afetada, quando encontrada.");
 
                     b.Property<Guid>("LoteId")
                         .HasColumnType("uuid")
-                        .HasColumnName("lote_id");
+                        .HasColumnName("importacao_id")
+                        .HasComment("Identificador da importação que registrou a ocorrência.");
 
                     b.Property<string>("Nome")
                         .HasMaxLength(200)
@@ -14081,19 +14283,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("1 = inscrito sem linha, 2 = linha sem inscrito, 3 = conflito.");
 
                     b.HasKey("Id")
-                        .HasName("pk_ocorrencias_do_lote_de_notas");
+                        .HasName("pk_ocorrencias_da_importacao");
 
                     b.HasIndex("InscricaoId")
-                        .HasDatabaseName("ix_ocorrencias_do_lote_de_notas_inscricao_id");
+                        .HasDatabaseName("ix_ocorrencias_da_importacao_inscricao_id");
 
                     b.HasIndex("LoteId")
-                        .HasDatabaseName("ix_ocorrencias_do_lote_de_notas_lote");
+                        .HasDatabaseName("ix_ocorrencias_da_importacao_importacao");
 
-                    b.ToTable("ocorrencias_do_lote_de_notas", "selecao", t =>
+                    b.ToTable("ocorrencias_da_importacao", "selecao", t =>
                         {
                             t.HasComment("O que não virou nota ao importar um lote: inscrito sem linha, linha de CPF sem inscrito e inscrito em conflito. Nunca guarda o CPF.");
 
-                            t.HasCheckConstraint("ck_ocorrencias_do_lote_de_notas_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
+                            t.HasCheckConstraint("ck_ocorrencias_da_importacao_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
                         });
                 });
 
@@ -14107,7 +14309,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da opção de resposta.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14118,21 +14321,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_codigo");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição de apresentação ou avaliação no conjunto.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence.");
 
                     b.Property<string>("Rotulo")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("rotulo");
+                        .HasColumnName("rotulo")
+                        .HasComment("Texto apresentado à pessoa candidata.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14144,21 +14351,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "FatoCodigo", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_opcoes_declaradas_fato_processo_fato_codigo");
+                        .HasDatabaseName("ux_opcoes_declaradas_fato_processo_dado_codigo");
 
-                    b.ToTable("opcoes_declaradas_fato", "selecao");
+                    b.ToTable("opcoes_declaradas_fato", "selecao", t =>
+                        {
+                            t.HasComment("Opções de resposta declaradas pelo processo para um dado.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do processo seletivo.");
 
                     b.Property<bool?>("AplicaBonusRegional")
                         .HasColumnType("boolean")
                         .HasColumnName("aplica_bonus_regional")
-                        .HasComment("Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado.");
+                        .HasComment("Indica se o processo aplica o bônus regional; ausente quando ainda não declarado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14190,7 +14401,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome do processo seletivo informado no cadastro.");
 
                     b.Property<int?>("NumeroDeOpcoesDeCurso")
                         .HasColumnType("integer")
@@ -14199,16 +14411,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("OrigemCandidatos")
                         .HasColumnType("integer")
-                        .HasColumnName("origem_candidatos");
+                        .HasColumnName("origem_candidatos")
+                        .HasComment("Origem dos candidatos: 1 = inscrição própria, 2 = importação externa.");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
-                        .HasColumnName("status");
+                        .HasColumnName("status")
+                        .HasComment("Situação do processo: 1 = rascunho, 2 = publicado, 3 = encerrado, 4 = cancelado.");
 
                     b.Property<Guid>("UnidadeAdministradoraOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("unidade_administradora_origem_id")
-                        .HasComment("Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema) — congelado na criação, imutável.");
+                        .HasComment("Identificador da unidade administradora no cadastro de origem, copiado na criação e mantido sem alteração.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14225,6 +14439,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("processos_seletivos", "selecao", t =>
                         {
+                            t.HasComment("Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
+
                             t.HasCheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
 
                             t.HasCheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
@@ -14235,13 +14451,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<string>("AtoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("ato_codigo");
+                        .HasColumnName("ato_codigo")
+                        .HasComment("Código do ato previsto para publicação.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14250,11 +14468,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("etapa_processo_id");
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
                     b.Property<int?>("Papel")
                         .HasColumnType("integer")
-                        .HasColumnName("papel");
+                        .HasColumnName("papel")
+                        .HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14262,28 +14482,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_produtos_da_etapa");
+                        .HasName("pk_publicacoes_previstas_da_etapa");
 
                     b.HasIndex("EtapaProcessoId", "AtoCodigo", "Papel")
                         .IsUnique()
-                        .HasDatabaseName("ux_produtos_da_etapa_ato");
+                        .HasDatabaseName("ux_publicacoes_previstas_da_etapa_ato");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("EtapaProcessoId", "AtoCodigo", "Papel"), false);
 
-                    b.ToTable("produtos_da_etapa", "selecao");
+                    b.ToTable("publicacoes_previstas_da_etapa", "selecao", t =>
+                        {
+                            t.HasComment("Publicações previstas para uma etapa de avaliação.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProdutoDaFase", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<string>("AtoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("ato_codigo");
+                        .HasColumnName("ato_codigo")
+                        .HasComment("Código do ato previsto para publicação.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14292,11 +14517,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fase_cronograma_id");
+                        .HasColumnName("fase_cronograma_id")
+                        .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
                     b.Property<int?>("Papel")
                         .HasColumnType("integer")
-                        .HasColumnName("papel");
+                        .HasColumnName("papel")
+                        .HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14304,15 +14531,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_produtos_da_fase");
+                        .HasName("pk_publicacoes_previstas_da_fase");
 
                     b.HasIndex("FaseCronogramaId", "AtoCodigo", "Papel")
                         .IsUnique()
-                        .HasDatabaseName("ux_produtos_da_fase_ato");
+                        .HasDatabaseName("ux_publicacoes_previstas_da_fase_ato");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("FaseCronogramaId", "AtoCodigo", "Papel"), false);
 
-                    b.ToTable("produtos_da_fase", "selecao");
+                    b.ToTable("publicacoes_previstas_da_fase", "selecao", t =>
+                        {
+                            t.HasComment("Publicações previstas para uma fase do cronograma.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDeProcessoSeletivo", b =>
@@ -14369,11 +14599,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<int>("Ancora")
                         .HasColumnType("integer")
-                        .HasColumnName("ancora");
+                        .HasColumnName("evento_inicial_do_prazo")
+                        .HasComment("Evento que inicia o prazo: 1 (publicação do ato) ou 2 (ciência individual).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14382,7 +14614,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("etapa_processo_id");
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
                     b.Property<string>("Procedimentos")
                         .IsRequired()
@@ -14394,7 +14627,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("ProdutoAncoraId")
                         .HasColumnType("uuid")
-                        .HasColumnName("produto_ancora_id");
+                        .HasColumnName("publicacao_de_referencia_id")
+                        .HasComment("Identificador da publicação usada como referência para o início do prazo.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14402,12 +14636,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_recursos_da_etapa");
+                        .HasName("pk_recursos_configurados_da_etapa");
 
                     b.HasIndex("EtapaProcessoId")
-                        .HasDatabaseName("ix_recursos_da_etapa_etapa_processo_id");
+                        .HasDatabaseName("ix_recursos_configurados_da_etapa_etapa_processo_id");
 
-                    b.ToTable("recursos_da_etapa", "selecao");
+                    b.ToTable("recursos_configurados_da_etapa", "selecao", t =>
+                        {
+                            t.HasComment("Configurações dos recursos de uma etapa de avaliação.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoOfertado", b =>
@@ -15059,12 +15296,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("ConfiguracaoDerivacaoFatoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("configuracao_derivacao_fato_id");
+                        .HasColumnName("calculo_do_dado_id")
+                        .HasComment("Identificador do cálculo ao qual a regra pertence.");
 
                     b.Property<string>("Contribui")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("contribui");
+                        .HasColumnName("contribui")
+                        .HasComment("Código do valor produzido quando a regra é atendida, quando houver.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15073,7 +15312,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição de apresentação ou avaliação no conjunto.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15081,13 +15321,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_regras_derivacao_configuradas");
+                        .HasName("pk_regras_de_calculo_dos_dados");
 
                     b.HasIndex("ConfiguracaoDerivacaoFatoId", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_regras_derivacao_configuradas_config_ordem");
+                        .HasDatabaseName("ux_regras_de_calculo_dos_dados_config_ordem");
 
-                    b.ToTable("regras_derivacao_configuradas", "selecao");
+                    b.ToTable("regras_de_calculo_dos_dados", "selecao", t =>
+                        {
+                            t.HasComment("Regras ordenadas que compõem o cálculo de um dado.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
@@ -15128,7 +15371,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15137,7 +15381,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fase_cronograma_id");
+                        .HasColumnName("fase_cronograma_id")
+                        .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
                     b.Property<string>("Procedimentos")
                         .IsRequired()
@@ -15149,7 +15394,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("ProdutoAncoraId")
                         .HasColumnType("uuid")
-                        .HasColumnName("produto_ancora_id");
+                        .HasColumnName("publicacao_de_referencia_id")
+                        .HasComment("Identificador da publicação usada como referência para o início do prazo.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15157,13 +15403,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_regras_recurso_fase");
+                        .HasName("pk_recursos_configurados_da_fase");
 
                     b.HasIndex("FaseCronogramaId")
                         .IsUnique()
-                        .HasDatabaseName("ux_regras_recurso_fase_fase_cronograma");
+                        .HasDatabaseName("ux_recursos_configurados_da_fase_fase_cronograma");
 
-                    b.ToTable("regras_recurso_fase", "selecao");
+                    b.ToTable("recursos_configurados_da_fase", "selecao", t =>
+                        {
+                            t.HasComment("Configuração dos recursos de uma fase do cronograma.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.TermoExigidoFormulario", b =>
@@ -15320,69 +15569,82 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da versão da configuração.");
 
                     b.Property<string>("AlgoritmoHash")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("algoritmo_hash");
+                        .HasColumnName("algoritmo_hash")
+                        .HasComment("Algoritmo usado para calcular o resumo da configuração.");
 
                     b.Property<string>("AtoCriadorHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
                         .HasColumnName("ato_criador_hash")
-                        .IsFixedLength();
+                        .IsFixedLength()
+                        .HasComment("Resumo SHA-256 do ato que criou a versão.");
 
                     b.Property<Guid>("AtoCriadorId")
                         .HasColumnType("uuid")
-                        .HasColumnName("ato_criador_id");
+                        .HasColumnName("ato_criador_id")
+                        .HasComment("Identificador do ato que criou a versão.");
 
                     b.Property<Guid?>("AtoCriadorRetificaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("ato_criador_retifica_id");
+                        .HasColumnName("ato_criador_retifica_id")
+                        .HasComment("Identificador do ato retificado, quando houver.");
 
                     b.Property<string>("AtorUsuarioContaId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("ator_usuario_conta_id");
+                        .HasColumnName("ator_usuario_conta_id")
+                        .HasComment("Identificador da conta responsável pela publicação.");
 
                     b.Property<string>("ConfiguracaoCongelada")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("configuracao_congelada");
+                        .HasColumnName("conteudo_da_configuracao")
+                        .HasComment("Conteúdo da configuração publicada em JSON para consulta.");
 
                     b.Property<byte[]>("ConfiguracaoCongeladaCanonica")
                         .IsRequired()
                         .HasColumnType("bytea")
-                        .HasColumnName("configuracao_congelada_canonica");
+                        .HasColumnName("bytes_da_configuracao")
+                        .HasComment("Bytes da configuração publicada usados no cálculo do resumo.");
 
                     b.Property<string>("HashConfiguracao")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
                         .HasColumnName("hash_configuracao")
-                        .IsFixedLength();
+                        .IsFixedLength()
+                        .HasComment("Resumo SHA-256 do conteúdo da configuração.");
 
                     b.Property<int>("NumeroVersao")
                         .HasColumnType("integer")
-                        .HasColumnName("numero_versao");
+                        .HasColumnName("numero_versao")
+                        .HasComment("Número sequencial da versão do processo.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo ao qual pertence a versão.");
 
                     b.Property<string>("SchemaVersion")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("schema_version");
+                        .HasColumnName("versao_do_formato")
+                        .HasComment("Versão do formato do conteúdo da configuração.");
 
                     b.Property<DateTimeOffset>("VigenteAPartirDe")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("vigente_a_partir_de");
+                        .HasColumnName("vigente_a_partir_de")
+                        .HasComment("Data e hora a partir da qual a versão vigora.");
 
                     b.HasKey("Id")
                         .HasName("pk_versoes_configuracao");
@@ -15401,6 +15663,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("versoes_configuracao", "selecao", t =>
                         {
+                            t.HasComment("Versões publicadas da configuração do processo seletivo.");
+
                             t.HasCheckConstraint("ck_versoes_configuracao_ato_criador_hash", "ato_criador_hash ~ '^[0-9a-f]{64}$'");
 
                             t.HasCheckConstraint("ck_versoes_configuracao_ato_criador_nao_zero", "ato_criador_id <> '00000000-0000-0000-0000-000000000000'");
@@ -15464,11 +15728,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Bairro")
                         .HasColumnType("text")
-                        .HasColumnName("bairro");
+                        .HasColumnName("bairro")
+                        .HasComment("Bairro do endereço, quando informado.");
 
                     b.Property<string>("Cep")
                         .HasColumnType("text")
-                        .HasColumnName("cep");
+                        .HasColumnName("cep")
+                        .HasComment("Código postal do endereço, quando informado.");
 
                     b.Property<bool?>("CepConfirmado")
                         .HasColumnType("boolean")
@@ -15477,57 +15743,70 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Complemento")
                         .HasColumnType("text")
-                        .HasColumnName("complemento");
+                        .HasColumnName("complemento")
+                        .HasComment("Complemento do endereço, quando informado.");
 
                     b.Property<string>("Distrito")
                         .HasColumnType("text")
-                        .HasColumnName("distrito");
+                        .HasColumnName("distrito")
+                        .HasComment("Distrito do endereço, quando informado.");
 
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_codigo");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição à qual pertence.");
 
                     b.Property<string>("Latitude")
                         .HasColumnType("text")
-                        .HasColumnName("latitude");
+                        .HasColumnName("latitude")
+                        .HasComment("Latitude do endereço, quando disponível.");
 
                     b.Property<string>("Logradouro")
                         .HasColumnType("text")
-                        .HasColumnName("logradouro");
+                        .HasColumnName("logradouro")
+                        .HasComment("Nome do logradouro, quando informado.");
 
                     b.Property<string>("Longitude")
                         .HasColumnType("text")
-                        .HasColumnName("longitude");
+                        .HasColumnName("longitude")
+                        .HasComment("Longitude do endereço, quando disponível.");
 
                     b.Property<string>("MunicipioCodigoIbge")
                         .HasColumnType("text")
-                        .HasColumnName("municipio_codigo_ibge");
+                        .HasColumnName("municipio_codigo_ibge")
+                        .HasComment("Código IBGE do município, quando informado.");
 
                     b.Property<string>("MunicipioNome")
                         .HasColumnType("text")
-                        .HasColumnName("municipio_nome");
+                        .HasColumnName("municipio_nome")
+                        .HasComment("Nome do município, quando informado.");
 
                     b.Property<string>("NivelResolucao")
                         .HasColumnType("text")
-                        .HasColumnName("nivel_resolucao");
+                        .HasColumnName("nivel_resolucao")
+                        .HasComment("Precisão da localização obtida para o endereço, quando disponível.");
 
                     b.Property<string>("Numero")
                         .HasColumnType("text")
-                        .HasColumnName("numero");
+                        .HasColumnName("numero")
+                        .HasComment("Número do endereço, quando informado.");
 
                     b.Property<Guid?>("OcorrenciaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("ocorrencia_id");
+                        .HasColumnName("ocorrencia_id")
+                        .HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
 
                     b.Property<int>("Origem")
                         .HasColumnType("integer")
-                        .HasColumnName("origem");
+                        .HasColumnName("origem")
+                        .HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
 
                     b.Property<string>("Procedencia")
                         .HasColumnType("text")
@@ -15536,7 +15815,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Uf")
                         .HasColumnType("text")
-                        .HasColumnName("uf");
+                        .HasColumnName("uf")
+                        .HasComment("Sigla da unidade federativa, quando informada.");
 
                     b.HasKey("Id")
                         .HasName("pk_enderecos_da_inscricao");
@@ -15546,7 +15826,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_enderecos_da_inscricao_fato");
+                        .HasDatabaseName("ux_enderecos_da_inscricao_dado");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo"), false);
 
@@ -15713,31 +15993,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_codigo");
+                        .HasColumnName("codigo_do_dado")
+                        .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição à qual pertence.");
 
                     b.Property<Guid?>("OcorrenciaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("ocorrencia_id");
+                        .HasColumnName("ocorrencia_id")
+                        .HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
 
                     b.Property<int>("Origem")
                         .HasColumnType("integer")
-                        .HasColumnName("origem");
+                        .HasColumnName("origem")
+                        .HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
 
                     b.Property<int?>("Posicao")
                         .HasColumnType("integer")
-                        .HasColumnName("posicao");
+                        .HasColumnName("posicao")
+                        .HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
 
                     b.Property<int>("Tipo")
                         .HasColumnType("integer")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo do valor: 1 booleano, 2 número, 3 código, 4 texto, 5 data ou 7 município.");
 
                     b.Property<bool?>("ValorBooleano")
                         .HasColumnType("boolean")
-                        .HasColumnName("valor_booleano");
+                        .HasColumnName("valor_booleano")
+                        .HasComment("Resposta booleana, quando aplicável.");
 
                     b.Property<byte[]>("ValorCifrado")
                         .HasColumnType("bytea")
@@ -15747,15 +16034,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("ValorCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("valor_codigo");
+                        .HasColumnName("valor_codigo")
+                        .HasComment("Código da opção ou município respondido, quando aplicável.");
 
                     b.Property<DateOnly?>("ValorData")
                         .HasColumnType("date")
-                        .HasColumnName("valor_data");
+                        .HasColumnName("valor_data")
+                        .HasComment("Resposta de data, quando aplicável.");
 
                     b.Property<decimal?>("ValorNumero")
                         .HasColumnType("numeric")
-                        .HasColumnName("valor_numero");
+                        .HasColumnName("valor_numero")
+                        .HasComment("Resposta numérica, quando aplicável.");
 
                     b.Property<string>("ValorRotulo")
                         .HasColumnType("text")
@@ -15764,7 +16054,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("ValorTexto")
                         .HasColumnType("text")
-                        .HasColumnName("valor_texto");
+                        .HasColumnName("valor_texto")
+                        .HasComment("Resposta em texto livre, quando aplicável.");
 
                     b.HasKey("Id")
                         .HasName("pk_respostas_da_inscricao");
@@ -15773,19 +16064,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_respostas_da_inscricao_ocorrencia_id");
 
                     b.HasIndex("FatoCodigo", "ValorBooleano")
-                        .HasDatabaseName("ix_respostas_da_inscricao_fato_booleano")
+                        .HasDatabaseName("ix_respostas_da_inscricao_dado_booleano")
                         .HasFilter("valor_booleano IS NOT NULL");
 
                     b.HasIndex("FatoCodigo", "ValorCodigo")
-                        .HasDatabaseName("ix_respostas_da_inscricao_fato_codigo")
+                        .HasDatabaseName("ix_respostas_da_inscricao_dado_codigo")
                         .HasFilter("valor_codigo IS NOT NULL");
 
                     b.HasIndex("FatoCodigo", "ValorData")
-                        .HasDatabaseName("ix_respostas_da_inscricao_fato_data")
+                        .HasDatabaseName("ix_respostas_da_inscricao_dado_data")
                         .HasFilter("valor_data IS NOT NULL");
 
                     b.HasIndex("FatoCodigo", "ValorNumero")
-                        .HasDatabaseName("ix_respostas_da_inscricao_fato_numero")
+                        .HasDatabaseName("ix_respostas_da_inscricao_dado_numero")
                         .HasFilter("valor_numero IS NOT NULL");
 
                     b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo", "Posicao")
@@ -16885,33 +17176,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
-                                .HasColumnName("agrupa_etapas");
+                                .HasColumnName("agrupa_etapas")
+                                .HasComment("Indica se a fase agrupa etapas de avaliação.");
 
                             b1.Property<bool>("ColetaInscricao")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
-                                .HasColumnName("coleta_inscricao");
+                                .HasColumnName("coleta_inscricao")
+                                .HasComment("Indica se a fase coleta inscrições.");
 
                             b1.Property<bool>("ColetaSolicitacaoIsencao")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
-                                .HasColumnName("coleta_solicitacao_isencao");
+                                .HasColumnName("coleta_solicitacao_isencao")
+                                .HasComment("Indica se a fase coleta solicitações de isenção.");
 
                             b1.Property<bool>("PermiteComplementacao")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
-                                .HasColumnName("permite_complementacao");
+                                .HasColumnName("permite_complementacao")
+                                .HasComment("Indica se a fase permite complementação.");
 
                             b1.HasKey("FaseCanonicaId");
 
-                            b1.ToTable("fases_canonicas", "configuracao");
+                            b1.ToTable("tipos_de_fase", "configuracao");
 
                             b1.WithOwner()
                                 .HasForeignKey("FaseCanonicaId")
-                                .HasConstraintName("fk_fases_canonicas_fases_canonicas_id");
+                                .HasConstraintName("fk_tipos_de_fase_tipos_de_fase_id");
 
                             b1.HasData(
                                 new
@@ -17042,70 +17337,83 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<DateTimeOffset?>("AceitaEm")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("protecao_aceita_em");
+                                .HasColumnName("protecao_aceita_em")
+                                .HasComment("Data e hora da aceitação, quando houver.");
 
                             b1.Property<string>("AceitaPor")
                                 .HasMaxLength(255)
                                 .HasColumnType("character varying(255)")
-                                .HasColumnName("protecao_aceita_por");
+                                .HasColumnName("protecao_aceita_por")
+                                .HasComment("Identificador de quem aceitou, quando houver.");
 
                             b1.Property<int>("Ciclo")
                                 .HasColumnType("integer")
-                                .HasColumnName("protecao_ciclo");
+                                .HasColumnName("protecao_ciclo")
+                                .HasComment("Número do ciclo de análise da proteção, iniciado em 1.");
 
                             b1.Property<string>("ClassificacaoRecomendada")
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("protecao_recomendada");
+                                .HasColumnName("protecao_recomendada")
+                                .HasComment("Classificação recomendada: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL; nula quando não houver.");
 
                             b1.Property<DateTimeOffset?>("DecididaEm")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("protecao_decidida_em");
+                                .HasColumnName("protecao_decidida_em")
+                                .HasComment("Data e hora da decisão, quando houver.");
 
                             b1.Property<string>("DecididaPor")
                                 .HasMaxLength(255)
                                 .HasColumnType("character varying(255)")
-                                .HasColumnName("protecao_decidida_por");
+                                .HasColumnName("protecao_decidida_por")
+                                .HasComment("Identificador de quem decidiu, quando houver.");
 
                             b1.Property<string>("Justificativa")
                                 .HasMaxLength(2000)
                                 .HasColumnType("character varying(2000)")
-                                .HasColumnName("protecao_justificativa");
+                                .HasColumnName("protecao_justificativa")
+                                .HasComment("Justificativa da decisão, quando informada.");
 
                             b1.Property<bool>("ManifestacaoDesfavoravelVigente")
                                 .HasColumnType("boolean")
-                                .HasColumnName("protecao_manifestacao_desfavoravel");
+                                .HasColumnName("protecao_manifestacao_desfavoravel")
+                                .HasComment("Indica se há manifestação desfavorável vigente.");
 
                             b1.Property<int>("ManifestacoesNoCiclo")
                                 .HasColumnType("integer")
-                                .HasColumnName("protecao_manifestacoes_no_ciclo");
+                                .HasColumnName("protecao_manifestacoes_no_ciclo")
+                                .HasComment("Quantidade de manifestações no ciclo atual.");
 
                             b1.Property<DateTimeOffset?>("ManifestadaEm")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("protecao_manifestada_em");
+                                .HasColumnName("protecao_manifestada_em")
+                                .HasComment("Data e hora da última manifestação no ciclo, quando houver.");
 
                             b1.Property<string>("Situacao")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("protecao_situacao");
+                                .HasColumnName("protecao_situacao")
+                                .HasComment("Situação da análise: PENDENTE, SOLICITADA, APROVADA, AJUSTE_RECOMENDADO ou REPROVADA.");
 
                             b1.Property<DateTimeOffset?>("SolicitadaEm")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("protecao_solicitada_em");
+                                .HasColumnName("protecao_solicitada_em")
+                                .HasComment("Data e hora da solicitação de análise, quando houver.");
 
                             b1.Property<string>("SolicitadaPor")
                                 .HasMaxLength(255)
                                 .HasColumnType("character varying(255)")
-                                .HasColumnName("protecao_solicitada_por");
+                                .HasColumnName("protecao_solicitada_por")
+                                .HasComment("Identificador de quem solicitou a análise, quando houver.");
 
                             b1.HasKey("FatoCandidatoId");
 
-                            b1.ToTable("fatos_do_candidato", "configuracao");
+                            b1.ToTable("dados_do_candidato", "configuracao");
 
                             b1.WithOwner()
                                 .HasForeignKey("FatoCandidatoId")
-                                .HasConstraintName("fk_fatos_do_candidato_fatos_do_candidato_id");
+                                .HasConstraintName("fk_dados_do_candidato_dados_do_candidato_id");
 
                             b1.HasData(
                                 new
@@ -17585,7 +17893,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FatoCandidatoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_valores_de_dominio_do_fato_fato_do_candidato");
+                        .HasConstraintName("fk_opcoes_dos_dados_dados_do_candidato");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.LocalOferta", b =>
@@ -18001,32 +18309,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasComment("Tipo de conceito categórico a que o valor pertence.");
 
                             b1.HasKey("Id")
-                                .HasName("pk_valores_tipo_conceito");
+                                .HasName("pk_opcoes_do_tipo_de_conceito");
 
                             b1.HasIndex("TipoConceitoId", "Codigo")
                                 .IsUnique()
-                                .HasDatabaseName("ix_valores_tipo_conceito_codigo");
+                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_codigo");
 
                             b1.HasIndex("TipoConceitoId", "Posicao")
                                 .IsUnique()
-                                .HasDatabaseName("ix_valores_tipo_conceito_posicao");
+                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_posicao");
 
                             b1.HasIndex("TipoConceitoId", "Rotulo")
                                 .IsUnique()
-                                .HasDatabaseName("ix_valores_tipo_conceito_rotulo");
+                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_rotulo");
 
-                            b1.ToTable("valores_tipo_conceito", "configuracao", t =>
+                            b1.ToTable("opcoes_do_tipo_de_conceito", "configuracao", t =>
                                 {
                                     t.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
 
-                                    t.HasCheckConstraint("ck_valores_tipo_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+                                    t.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
 
-                                    t.HasCheckConstraint("ck_valores_tipo_conceito_posicao", "posicao >= 1");
+                                    t.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
                                 });
 
                             b1.WithOwner()
                                 .HasForeignKey("TipoConceitoId")
-                                .HasConstraintName("fk_valores_tipo_conceito_tipos_conceito_tipo_conceito_id");
+                                .HasConstraintName("fk_opcoes_do_tipo_de_conceito_tipos_conceito");
                         });
 
                     b.Navigation("Valores");
@@ -19184,7 +19492,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_avaliacoes_da_etapa_lote_de_notas_do_enem");
+                        .HasConstraintName("fk_avaliacoes_da_etapa_importacao_de_notas_do_enem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
@@ -19456,7 +19764,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("DocumentoExigidoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_condicoes_gatilho_documento_exigido_documento_exigido_id");
+                        .HasConstraintName("fk_condicoes_das_exigencias_documento_exigido");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoOfertada", b =>
@@ -19476,7 +19784,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FatoColetadoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_condicoes_precondicao_fato_fato_coletado_fato_coletado_id");
+                        .HasConstraintName("fk_condicoes_de_exibicao_do_dado_dado_formulario");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoRegraDerivacao", b =>
@@ -19486,7 +19794,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("RegraDerivacaoConfiguradaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_condicoes_regra_derivacao_regra_derivacao_configurada");
+                        .HasConstraintName("fk_condicoes_calculo_regra_de_calculo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
@@ -19565,20 +19873,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_codigo");
+                                .HasColumnName("regra_codigo")
+                                .HasComment("Código da regra de remanejamento.");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_hash")
-                                .IsFixedLength();
+                                .IsFixedLength()
+                                .HasComment("Resumo do conteúdo da regra de remanejamento.");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_versao");
+                                .HasColumnName("regra_versao")
+                                .HasComment("Versão da regra de remanejamento.");
 
                             b1.HasKey("ConfiguracaoCascataRemanejamentoId");
 
@@ -19720,7 +20031,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_derivacao_fato_processo_seletivo");
+                        .HasConstraintName("fk_calculos_dos_dados_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", b =>
@@ -20053,11 +20364,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("Lista")
                                 .HasColumnType("jsonb")
-                                .HasColumnName("formatos_permitidos_lista");
+                                .HasColumnName("formatos_permitidos_lista")
+                                .HasComment("Lista de formatos permitidos e seus limites de tamanho em bytes; formatos: PDF, JPEG ou PNG. Ausente quando qualquer formato é permitido.");
 
                             b1.Property<bool>("Qualquer")
                                 .HasColumnType("boolean")
-                                .HasColumnName("formatos_permitidos_qualquer");
+                                .HasColumnName("formatos_permitidos_qualquer")
+                                .HasComment("Indica se qualquer formato de arquivo é permitido.");
 
                             b1.HasKey("DocumentoExigidoId");
 
@@ -20076,27 +20389,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<DateOnly?>("Data")
                                 .HasColumnType("date")
-                                .HasColumnName("idade_maxima_referencia_data");
+                                .HasColumnName("idade_maxima_referencia_data")
+                                .HasComment("Data escolhida para contar a idade da emissão quando a referência é uma data específica.");
 
                             b1.Property<Guid?>("ReferenciaFaseId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("idade_maxima_referencia_fase_id");
+                                .HasColumnName("idade_maxima_referencia_fase_id")
+                                .HasComment("Identificador da fase usada para contar a idade da emissão quando a referência é seu início ou fim.");
 
                             b1.Property<string>("ReferenciaTipo")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("idade_maxima_referencia_tipo");
+                                .HasColumnName("idade_maxima_referencia_tipo")
+                                .HasComment("Referência para contar a idade da emissão: FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA ou DATA_SUBMISSAO.");
 
                             b1.Property<string>("Unidade")
                                 .IsRequired()
                                 .HasMaxLength(10)
                                 .HasColumnType("character varying(10)")
-                                .HasColumnName("idade_maxima_unidade");
+                                .HasColumnName("idade_maxima_unidade")
+                                .HasComment("Unidade da idade máxima de emissão: DIAS, MESES ou ANOS.");
 
                             b1.Property<int>("Valor")
                                 .HasColumnType("integer")
-                                .HasColumnName("idade_maxima_valor");
+                                .HasColumnName("idade_maxima_valor")
+                                .HasComment("Quantidade máxima de tempo desde a emissão do arquivo, na unidade informada.");
 
                             b1.HasKey("DocumentoExigidoId");
 
@@ -20115,23 +20433,27 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<int>("Formato")
                                 .HasColumnType("integer")
-                                .HasColumnName("modelo_formato");
+                                .HasColumnName("modelo_formato")
+                                .HasComment("Formato do arquivo do modelo oferecido ao candidato: 1 = DOCX, 2 = ODT.");
 
                             b1.Property<string>("HashSha256")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
-                                .HasColumnName("modelo_hash_sha256");
+                                .HasColumnName("modelo_hash_sha256")
+                                .HasComment("Resumo SHA-256 do conteúdo do arquivo do modelo oferecido ao candidato.");
 
                             b1.Property<Guid>("ModeloId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("modelo_id");
+                                .HasColumnName("modelo_id")
+                                .HasComment("Identificador do modelo oferecido ao candidato, quando há modelo.");
 
                             b1.Property<string>("NomeArquivo")
                                 .IsRequired()
                                 .HasMaxLength(120)
                                 .HasColumnType("character varying(120)")
-                                .HasColumnName("modelo_nome_arquivo");
+                                .HasColumnName("modelo_nome_arquivo")
+                                .HasComment("Nome do arquivo do modelo oferecido ao candidato.");
 
                             b1.HasKey("DocumentoExigidoId");
 
@@ -20189,14 +20511,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_consolidacao_codigo")
+                                .HasColumnName("apuracao_avaliacao_codigo")
                                 .HasComment("Código da regra de consolidação das notas, quando definida.");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
-                                .HasColumnName("regra_consolidacao_hash")
+                                .HasColumnName("apuracao_avaliacao_hash")
                                 .IsFixedLength()
                                 .HasComment("Resumo que identifica o conteúdo da regra de consolidação, quando definida.");
 
@@ -20204,7 +20526,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_consolidacao_versao")
+                                .HasColumnName("apuracao_avaliacao_versao")
                                 .HasComment("Versão da regra de consolidação das notas, quando definida.");
 
                             b1.HasKey("EtapaProcessoId");
@@ -20343,14 +20665,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany("Subitens")
                         .HasForeignKey("GrupoColetadoId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_fatos_coletados_grupo_coletado_grupo_coletado_id");
+                        .HasConstraintName("fk_dados_dos_formularios_grupo_formulario");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany("Campos")
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_fatos_coletados_processo_seletivo_processo_seletivo_id");
+                        .HasConstraintName("fk_dados_dos_formularios_processo_seletivo_processo_seletivo_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
@@ -20380,7 +20702,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_grupos_coletados_processo_seletivo_processo_seletivo_id");
+                        .HasConstraintName("fk_grupos_dos_formularios_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
@@ -20432,14 +20754,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("InscricaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_inscritos_do_lote_de_notas_inscricoes_inscricao_id");
+                        .HasConstraintName("fk_inscritos_da_importacao_inscricao");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
                         .WithMany("Inscritos")
                         .HasForeignKey("LoteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_inscritos_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
+                        .HasConstraintName("fk_inscritos_da_importacao_importacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ItemDeAvaliacao", b =>
@@ -20460,7 +20782,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lancamentos_de_nota_lote_de_notas_do_enem");
+                        .HasConstraintName("fk_lancamentos_de_nota_importacao_de_notas_do_enem");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.InscritoDoLoteDeNotas", null)
                         .WithMany()
@@ -20468,7 +20790,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("LoteId", "InscricaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lancamentos_de_nota_inscrito_do_lote_de_notas");
+                        .HasConstraintName("fk_lancamentos_de_nota_inscrito_da_importacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
@@ -20478,14 +20800,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lotes_de_notas_do_enem_processo_seletivo");
+                        .HasConstraintName("fk_importacoes_de_notas_do_enem_processo_seletivo");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", null)
                         .WithMany()
                         .HasForeignKey("VersaoConfiguracaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lotes_de_notas_do_enem_versao_configuracao");
+                        .HasConstraintName("fk_importacoes_de_notas_do_enem_versao_configuracao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -20508,52 +20830,56 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_modelos_de_documento_processo_seletivo");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDoProcesso", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDeDecisaoDoProcesso", b =>
                 {
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao.LugarDaDecisao", "Lugar", b1 =>
                         {
-                            b1.Property<Guid>("MotivoDoProcessoId")
+                            b1.Property<Guid>("MotivoDeDecisaoDoProcessoId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
                             b1.Property<Guid?>("EtapaProcessoId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("etapa_processo_id");
+                                .HasColumnName("etapa_processo_id")
+                                .HasComment("Identificador da etapa à qual a escolha se aplica, quando a decisão é de uma etapa.");
 
                             b1.Property<Guid?>("FaseCanonicaOrigemId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("fase_canonica_origem_id");
+                                .HasColumnName("tipo_fase_origem_id")
+                                .HasComment("Identificador da fase à qual a escolha se aplica, quando a decisão é de uma fase.");
 
-                            b1.HasKey("MotivoDoProcessoId");
+                            b1.HasKey("MotivoDeDecisaoDoProcessoId");
 
-                            b1.ToTable("motivos_do_processo", "selecao");
+                            b1.ToTable("motivos_de_decisao_do_processo", "selecao");
 
                             b1.WithOwner()
-                                .HasForeignKey("MotivoDoProcessoId")
-                                .HasConstraintName("fk_motivos_do_processo_motivos_do_processo_id");
+                                .HasForeignKey("MotivoDeDecisaoDoProcessoId")
+                                .HasConstraintName("fk_motivos_de_decisao_do_processo_motivos_de_decisao_do_proces");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao.VigenciaNoEdital", "Vigencia", b1 =>
                         {
-                            b1.Property<Guid>("MotivoDoProcessoId")
+                            b1.Property<Guid>("MotivoDeDecisaoDoProcessoId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
                             b1.Property<int>("VersaoDoEditalDeEntrada")
                                 .HasColumnType("integer")
-                                .HasColumnName("versao_do_edital_de_entrada");
+                                .HasColumnName("versao_do_edital_de_entrada")
+                                .HasComment("Número da primeira versão do edital em que a escolha vale.");
 
                             b1.Property<int?>("VersaoDoEditalDeSaida")
                                 .HasColumnType("integer")
-                                .HasColumnName("versao_do_edital_de_saida");
+                                .HasColumnName("versao_do_edital_de_saida")
+                                .HasComment("Número da versão do edital a partir da qual a escolha deixa de valer; vazio enquanto vigente.");
 
-                            b1.HasKey("MotivoDoProcessoId");
+                            b1.HasKey("MotivoDeDecisaoDoProcessoId");
 
-                            b1.ToTable("motivos_do_processo", "selecao");
+                            b1.ToTable("motivos_de_decisao_do_processo", "selecao");
 
                             b1.WithOwner()
-                                .HasForeignKey("MotivoDoProcessoId")
-                                .HasConstraintName("fk_motivos_do_processo_motivos_do_processo_id");
+                                .HasForeignKey("MotivoDeDecisaoDoProcessoId")
+                                .HasConstraintName("fk_motivos_de_decisao_do_processo_motivos_de_decisao_do_proces");
                         });
 
                     b.Navigation("Lugar")
@@ -20579,14 +20905,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("InscricaoId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_inscricoes_inscricao_id");
+                        .HasConstraintName("fk_ocorrencias_da_importacao_inscricao");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
                         .WithMany("Ocorrencias")
                         .HasForeignKey("LoteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lote_de_notas_do_enem");
+                        .HasConstraintName("fk_ocorrencias_da_importacao_importacao_de_notas_do_enem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OpcaoDeclaradaFato", b =>
@@ -20620,7 +20946,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character(64)")
                                 .HasColumnName("algoritmo_contagem_prazo_hash")
                                 .IsFixedLength()
-                                .HasComment("Hash da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
+                                .HasComment("Resumo da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
@@ -20657,7 +20983,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(150)
                                 .HasColumnType("character varying(150)")
                                 .HasColumnName("localidade_nome")
-                                .HasComment("Nome do município da localidade regente — cache de exibição, não entra em cálculo de prazo.");
+                                .HasComment("Nome do município da localidade regente — guardado para exibição, não entra em cálculo de prazo.");
 
                             b1.Property<string>("Uf")
                                 .IsRequired()
@@ -20665,7 +20991,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character(2)")
                                 .HasColumnName("localidade_uf")
                                 .IsFixedLength()
-                                .HasComment("UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código.");
+                                .HasComment("UF da localidade regente — guardado para exibição; a UF que vale é a derivada do prefixo do código.");
 
                             b1.HasKey("ProcessoSeletivoId");
 
@@ -20684,17 +21010,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<DateOnly?>("Data")
                                 .HasColumnType("date")
-                                .HasColumnName("referencia_temporal_fatos_data");
+                                .HasColumnName("referencia_temporal_fatos_data")
+                                .HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
 
                             b1.Property<Guid?>("FaseId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("referencia_temporal_fatos_fase_id");
+                                .HasColumnName("referencia_temporal_fatos_fase_id")
+                                .HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
 
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("referencia_temporal_fatos_tipo");
+                                .HasColumnName("referencia_temporal_fatos_tipo")
+                                .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
 
                             b1.HasKey("ProcessoSeletivoId");
 
@@ -20715,18 +21044,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
-                                .HasColumnName("tipo_processo_codigo");
+                                .HasColumnName("tipo_processo_codigo")
+                                .HasComment("Código do tipo de processo copiado do cadastro na criação.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
-                                .HasColumnName("tipo_processo_nome");
+                                .HasColumnName("tipo_processo_nome")
+                                .HasComment("Nome do tipo de processo copiado do cadastro na criação.");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("tipo_processo_origem_id")
-                                .HasComment("Id de origem do tipo de processo em Configuração, sem FK cross-schema; congelado na criação.");
+                                .HasComment("Identificador do tipo de processo no cadastro de origem, copiado na criação.");
 
                             b1.HasKey("ProcessoSeletivoId");
 
@@ -20748,55 +21079,55 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character(7)")
                                 .HasColumnName("unidade_administradora_cidade_codigo_ibge")
                                 .IsFixedLength()
-                                .HasComment("Snapshot-copy do código IBGE da cidade da Unidade administradora no momento da criação — nulo para processos anteriores à issue #1114.");
+                                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação — pode estar ausente em processos antigos.");
 
                             b1.Property<string>("CidadeNome")
                                 .HasMaxLength(150)
                                 .HasColumnType("character varying(150)")
                                 .HasColumnName("unidade_administradora_cidade_nome")
-                                .HasComment("Snapshot-copy do nome de exibição da cidade da Unidade administradora no momento da criação.");
+                                .HasComment("Cópia do nome de exibição da cidade da Unidade administradora no momento da criação.");
 
                             b1.Property<string>("CidadeUf")
                                 .HasMaxLength(2)
                                 .HasColumnType("character(2)")
                                 .HasColumnName("unidade_administradora_cidade_uf")
                                 .IsFixedLength()
-                                .HasComment("Snapshot-copy da UF da cidade da Unidade administradora no momento da criação.");
+                                .HasComment("Cópia da UF da cidade da Unidade administradora no momento da criação.");
 
                             b1.Property<string>("Codigo")
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
                                 .HasColumnName("unidade_administradora_codigo")
-                                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                                .HasComment("Cópia do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(250)
                                 .HasColumnType("character varying(250)")
                                 .HasColumnName("unidade_administradora_nome")
-                                .HasComment("Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                                .HasComment("Cópia do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
                             b1.Property<string>("Sigla")
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
                                 .HasColumnName("unidade_administradora_sigla")
-                                .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                                .HasComment("Cópia da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
                             b1.Property<string>("Slug")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
                                 .HasColumnName("unidade_administradora_slug")
-                                .HasComment("Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                                .HasComment("Cópia do identificador usado no endereço da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(30)
                                 .HasColumnType("character varying(30)")
                                 .HasColumnName("unidade_administradora_tipo")
-                                .HasComment("Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+                                .HasComment("Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro.");
 
                             b1.HasKey("ProcessoSeletivoId");
 
@@ -20828,7 +21159,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_produtos_da_etapa_etapas_processo_etapa_processo_id");
+                        .HasConstraintName("fk_publicacoes_previstas_da_etapa_etapa");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProdutoDaFase", b =>
@@ -20838,7 +21169,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FaseCronogramaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_produtos_da_fase_fases_cronograma_fase_cronograma_id");
+                        .HasConstraintName("fk_publicacoes_previstas_da_fase_fase");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoDaEtapa", b =>
@@ -20848,7 +21179,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_recursos_da_etapa_etapas_processo_etapa_processo_id");
+                        .HasConstraintName("fk_recursos_configurados_da_etapa_etapa");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ParametrosRegraPrazoRecurso", "Parametros", b1 =>
                         {
@@ -20858,25 +21189,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<bool>("AdmiteInstanciaSuperior")
                                 .HasColumnType("boolean")
-                                .HasColumnName("admite_instancia_superior");
+                                .HasColumnName("admite_instancia_superior")
+                                .HasComment("Indica se há recurso à instância superior.");
 
                             b1.Property<string>("EfeitoSuspensivo")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("efeito_suspensivo");
+                                .HasColumnName("efeito_suspensivo")
+                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("guarda_da_vaga");
+                                .HasColumnName("guarda_da_vaga")
+                                .HasComment("Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda.");
 
                             b1.HasKey("RecursoDaEtapaId");
 
-                            b1.ToTable("recursos_da_etapa", "selecao");
+                            b1.ToTable("recursos_configurados_da_etapa", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("RecursoDaEtapaId")
-                                .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                .HasConstraintName("fk_recursos_configurados_da_etapa_recursos_configurados_da_eta");
 
                             b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDaSegundaInstancia", b2 =>
                                 {
@@ -20887,20 +21221,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
                                         .HasColumnType("text")
-                                        .HasColumnName("prazo_segunda_instancia_unidade");
+                                        .HasColumnName("prazo_segunda_instancia_unidade")
+                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
                                         .HasColumnType("numeric(18,4)")
-                                        .HasColumnName("prazo_segunda_instancia_valor");
+                                        .HasColumnName("prazo_segunda_instancia_valor")
+                                        .HasComment("Duração do prazo de recurso na unidade informada.");
 
                                     b2.HasKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId");
 
-                                    b2.ToTable("recursos_da_etapa", "selecao");
+                                    b2.ToTable("recursos_configurados_da_etapa", "selecao");
 
                                     b2.WithOwner()
                                         .HasForeignKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
-                                        .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                        .HasConstraintName("fk_recursos_configurados_da_etapa_recursos_configurados_da_eta");
                                 });
 
                             b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDeInterposicao", b2 =>
@@ -20912,20 +21248,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
                                         .HasColumnType("text")
-                                        .HasColumnName("prazo_unidade");
+                                        .HasColumnName("prazo_unidade")
+                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
                                         .HasColumnType("numeric(18,4)")
-                                        .HasColumnName("prazo_valor");
+                                        .HasColumnName("prazo_valor")
+                                        .HasComment("Duração do prazo de recurso na unidade informada.");
 
                                     b2.HasKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId");
 
-                                    b2.ToTable("recursos_da_etapa", "selecao");
+                                    b2.ToTable("recursos_configurados_da_etapa", "selecao");
 
                                     b2.WithOwner()
                                         .HasForeignKey("ParametrosRegraPrazoRecursoRecursoDaEtapaId")
-                                        .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                        .HasConstraintName("fk_recursos_configurados_da_etapa_recursos_configurados_da_eta");
                                 });
 
                             b1.Navigation("PrazoDaSegundaInstancia");
@@ -20944,28 +21282,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_codigo");
+                                .HasColumnName("regra_codigo")
+                                .HasComment("Código da regra aplicada ao prazo de recurso.");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_hash")
-                                .IsFixedLength();
+                                .IsFixedLength()
+                                .HasComment("Resumo do conteúdo da regra aplicada ao prazo de recurso.");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_versao");
+                                .HasColumnName("regra_versao")
+                                .HasComment("Versão da regra aplicada ao prazo de recurso.");
 
                             b1.HasKey("RecursoDaEtapaId");
 
-                            b1.ToTable("recursos_da_etapa", "selecao");
+                            b1.ToTable("recursos_configurados_da_etapa", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("RecursoDaEtapaId")
-                                .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
+                                .HasConstraintName("fk_recursos_configurados_da_etapa_recursos_configurados_da_eta");
                         });
 
                     b.Navigation("Parametros")
@@ -21045,7 +21386,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoDerivacaoFatoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_regras_derivacao_configuradas_configuracao_derivacao_fato");
+                        .HasConstraintName("fk_regras_de_calculo_dos_dados_calculo_do_dado");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
@@ -21102,7 +21443,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraRecursoFase", "FaseCronogramaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_regras_recurso_fase_fases_cronograma_fase_cronograma_id");
+                        .HasConstraintName("fk_recursos_configurados_da_fase_fase");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ParametrosRegraPrazoRecurso", "Parametros", b1 =>
                         {
@@ -21112,25 +21453,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<bool>("AdmiteInstanciaSuperior")
                                 .HasColumnType("boolean")
-                                .HasColumnName("admite_instancia_superior");
+                                .HasColumnName("admite_instancia_superior")
+                                .HasComment("Indica se há recurso à instância superior.");
 
                             b1.Property<string>("EfeitoSuspensivo")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("efeito_suspensivo");
+                                .HasColumnName("efeito_suspensivo")
+                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
                                 .HasColumnType("text")
-                                .HasColumnName("guarda_da_vaga");
+                                .HasColumnName("guarda_da_vaga")
+                                .HasComment("Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda.");
 
                             b1.HasKey("RegraRecursoFaseId");
 
-                            b1.ToTable("regras_recurso_fase", "selecao");
+                            b1.ToTable("recursos_configurados_da_fase", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("RegraRecursoFaseId")
-                                .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                .HasConstraintName("fk_recursos_configurados_da_fase_recursos_configurados_da_fase");
 
                             b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDaSegundaInstancia", b2 =>
                                 {
@@ -21141,20 +21485,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
                                         .HasColumnType("text")
-                                        .HasColumnName("prazo_segunda_instancia_unidade");
+                                        .HasColumnName("prazo_segunda_instancia_unidade")
+                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
                                         .HasColumnType("numeric(18,4)")
-                                        .HasColumnName("prazo_segunda_instancia_valor");
+                                        .HasColumnName("prazo_segunda_instancia_valor")
+                                        .HasComment("Duração do prazo de recurso na unidade informada.");
 
                                     b2.HasKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId");
 
-                                    b2.ToTable("regras_recurso_fase", "selecao");
+                                    b2.ToTable("recursos_configurados_da_fase", "selecao");
 
                                     b2.WithOwner()
                                         .HasForeignKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
-                                        .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                        .HasConstraintName("fk_recursos_configurados_da_fase_recursos_configurados_da_fase");
                                 });
 
                             b1.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrazoDoRecurso", "PrazoDeInterposicao", b2 =>
@@ -21166,20 +21512,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
                                         .HasColumnType("text")
-                                        .HasColumnName("prazo_unidade");
+                                        .HasColumnName("prazo_unidade")
+                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
                                         .HasColumnType("numeric(18,4)")
-                                        .HasColumnName("prazo_valor");
+                                        .HasColumnName("prazo_valor")
+                                        .HasComment("Duração do prazo de recurso na unidade informada.");
 
                                     b2.HasKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId");
 
-                                    b2.ToTable("regras_recurso_fase", "selecao");
+                                    b2.ToTable("recursos_configurados_da_fase", "selecao");
 
                                     b2.WithOwner()
                                         .HasForeignKey("ParametrosRegraPrazoRecursoRegraRecursoFaseId")
-                                        .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                        .HasConstraintName("fk_recursos_configurados_da_fase_recursos_configurados_da_fase");
                                 });
 
                             b1.Navigation("PrazoDaSegundaInstancia");
@@ -21198,28 +21546,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_codigo");
+                                .HasColumnName("regra_codigo")
+                                .HasComment("Código da regra aplicada ao prazo de recurso.");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_hash")
-                                .IsFixedLength();
+                                .IsFixedLength()
+                                .HasComment("Resumo do conteúdo da regra aplicada ao prazo de recurso.");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_versao");
+                                .HasColumnName("regra_versao")
+                                .HasComment("Versão da regra aplicada ao prazo de recurso.");
 
                             b1.HasKey("RegraRecursoFaseId");
 
-                            b1.ToTable("regras_recurso_fase", "selecao");
+                            b1.ToTable("recursos_configurados_da_fase", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("RegraRecursoFaseId")
-                                .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                                .HasConstraintName("fk_recursos_configurados_da_fase_recursos_configurados_da_fase");
                         });
 
                     b.Navigation("Parametros")

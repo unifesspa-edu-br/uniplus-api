@@ -61,9 +61,9 @@ public sealed class ConferenciaDoDocumentoLidoComOrigemDistintaTests
 
         causas.Select(static causa => causa.Field).Should().Contain(
         [
-            "/cronograma/fases/1/produtos",
+            "/cronograma/fases/1/publicacoesPrevistas",
             "/cronograma/fases/0/emiteParecerIndividual",
-            "/etapas/4/produtos",
+            "/etapas/4/publicacoesPrevistas",
         ]);
         causas.Count(static causa => causa.Field == "/cronograma/fases/1/bancasRequeridas/5").Should().Be(1);
     }
@@ -74,7 +74,7 @@ public sealed class ConferenciaDoDocumentoLidoComOrigemDistintaTests
         IReadOnlyList<FieldError> causas = CausasConvertidas(DocumentoComAsPartesForaDeOrdem());
 
         int daParte = causas.ToList().FindIndex(static causa => causa.Error.Code == "Leitura.ParteRecusada");
-        int daDeclaracao = causas.ToList().FindIndex(static causa => causa.Field == "/cronograma/fases/1/produtos");
+        int daDeclaracao = causas.ToList().FindIndex(static causa => causa.Field == "/cronograma/fases/1/publicacoesPrevistas");
 
         daParte.Should().BeGreaterThanOrEqualTo(0).And.BeLessThan(daDeclaracao);
     }
@@ -99,6 +99,6 @@ public sealed class ConferenciaDoDocumentoLidoComOrigemDistintaTests
         string?[] campos = [.. CausasConvertidas(comProdutosRecusados).Select(static causa => causa.Field)];
 
         campos.Should().NotContain("/cronograma/fases/0/emiteParecerIndividual");
-        campos.Should().Contain("/cronograma/fases/1/produtos");
+        campos.Should().Contain("/cronograma/fases/1/publicacoesPrevistas");
     }
 }

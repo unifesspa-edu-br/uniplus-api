@@ -114,7 +114,7 @@ public sealed class FaseCanonicaReaderPorCodigosTests : IAsyncLifetime
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlRawAsync(
-            "DELETE FROM configuracao.fases_canonicas WHERE codigo = ANY(@p0)",
+            "DELETE FROM configuracao.tipos_de_fase WHERE codigo = ANY(@p0)",
             new NpgsqlParameter("p0", CodigosUsados));
     }
 

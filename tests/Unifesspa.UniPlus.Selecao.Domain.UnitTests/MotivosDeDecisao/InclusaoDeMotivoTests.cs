@@ -38,7 +38,7 @@ public sealed class InclusaoDeMotivoTests
         LugarDaDecisao lugar = ProcessoParaMotivos.LugarDaFase(processo, Homologacao);
         MotivoDeDecisao origem = Desfavoravel();
 
-        MotivoDoProcesso copia = Incluir(processo, lugar, origem).Value!;
+        MotivoDeDecisaoDoProcesso copia = Incluir(processo, lugar, origem).Value!;
 
         copia.Should().BeEquivalentTo(CopiaEsperadaNoRascunho(origem, lugar));
         copia.Codigo.Valor.Should().Be("SEM_RESULTADO_INEP");
@@ -61,7 +61,7 @@ public sealed class InclusaoDeMotivoTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDeDecisao origem = Desfavoravel();
         string descricaoEscolhida = origem.Descricao;
-        MotivoDoProcesso copia = Incluir(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem).Value!;
+        MotivoDeDecisaoDoProcesso copia = Incluir(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem).Value!;
 
         origem.Atualizar("Outra redação do motivo.").IsSuccess.Should().BeTrue();
 
@@ -116,7 +116,7 @@ public sealed class InclusaoDeMotivoTests
 
         foreach (LugarDaDecisao lugar in new[] { ProcessoParaMotivos.LugarDaFase(processo, Homologacao), ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva") })
         {
-            MotivoDoProcesso primeiro = Incluir(processo, lugar, origem).Value!;
+            MotivoDeDecisaoDoProcesso primeiro = Incluir(processo, lugar, origem).Value!;
 
             Incluir(processo, lugar, origem, escolhaAtual: [primeiro]).Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.JaEscolhido);
         }
@@ -127,8 +127,8 @@ public sealed class InclusaoDeMotivoTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDeDecisao origem = Desfavoravel();
-        MotivoDoProcesso naFase = Incluir(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem).Value!;
-        MotivoDoProcesso naEtapa = Incluir(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), origem, escolhaAtual: [naFase]).Value!;
+        MotivoDeDecisaoDoProcesso naFase = Incluir(processo, ProcessoParaMotivos.LugarDaFase(processo, Homologacao), origem).Value!;
+        MotivoDeDecisaoDoProcesso naEtapa = Incluir(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), origem, escolhaAtual: [naFase]).Value!;
 
         Incluir(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova discursiva"), origem, escolhaAtual: [naFase, naEtapa]).IsSuccess.Should().BeTrue();
     }
@@ -142,10 +142,10 @@ public sealed class InclusaoDeMotivoTests
             .Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    private static Result<MotivoDoProcesso> Incluir(
+    private static Result<MotivoDeDecisaoDoProcesso> Incluir(
         ProcessoSeletivo processo,
         LugarDaDecisao lugar,
         MotivoDeDecisao origem,
-        IReadOnlyCollection<MotivoDoProcesso>? escolhaAtual = null) =>
+        IReadOnlyCollection<MotivoDeDecisaoDoProcesso>? escolhaAtual = null) =>
         EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(processo, lugar, escolhaAtual ?? [], origem));
 }

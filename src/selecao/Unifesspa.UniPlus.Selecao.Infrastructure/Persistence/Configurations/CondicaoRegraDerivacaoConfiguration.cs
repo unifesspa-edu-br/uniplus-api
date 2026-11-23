@@ -30,12 +30,21 @@ public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfigurati
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("condicoes_regra_derivacao");
+        builder.Property(c => c.RegraDerivacaoConfiguradaId).HasComment("Identificador da regra de cálculo à qual a condição pertence.");
+        builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
+        builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+        builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
+
+        builder.ToTable("condicoes_do_calculo_dos_dados", t => t.HasComment("Condições que determinam a aplicação de uma regra de cálculo."));
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.Property(c => c.Clausula).IsRequired();
-        builder.Property(c => c.Fato).HasMaxLength(FatoMaxLength).IsRequired();
+        builder.HasIndex(c => c.RegraDerivacaoConfiguradaId)
+            .HasDatabaseName("ix_condicoes_do_calculo_dos_dados_regra_id");
+
+        builder.Property(c => c.Clausula).HasColumnName("alternativa").IsRequired();
+        builder.Property(c => c.Fato).HasColumnName("codigo_do_dado").HasMaxLength(FatoMaxLength).IsRequired();
 
         builder.Property(c => c.Operador)
             .HasMaxLength(OperadorCodigoMaxLength)

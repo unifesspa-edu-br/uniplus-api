@@ -119,7 +119,7 @@ public sealed class LeituraDosMotivosPorVersaoEndpointTests : IAsyncLifetime
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int alteradas = await db.Database.ExecuteSqlAsync(
-            $"UPDATE selecao.motivos_do_processo SET versao_do_edital_de_saida = {versaoDeSaida} WHERE processo_seletivo_id = {processoId} AND motivo_de_decisao_origem_id = {motivoOrigemId}");
+            $"UPDATE selecao.motivos_de_decisao_do_processo SET versao_do_edital_de_saida = {versaoDeSaida} WHERE processo_seletivo_id = {processoId} AND motivo_de_decisao_origem_id = {motivoOrigemId}");
         alteradas.Should().Be(1);
     }
 }

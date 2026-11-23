@@ -23,9 +23,9 @@ internal static class LeituraDasExigencias
     private static readonly string[] ChavesDaExigencia =
     [
         "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
-        "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "fatosComprovados", "exigidoNaFaseId",
+        "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "dadosComprovados", "exigidoNaFaseId",
         "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaIndeferimento",
-        "condicaoGatilho", "basesLegais", "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
+        "condicoes", "basesLegais", "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
     ];
 
     /// <summary>
@@ -41,22 +41,7 @@ internal static class LeituraDasExigencias
             return [];
         }
 
-        List<DocumentoExigido> exigencias = [];
-        for (int i = 0; i < array.Count; i++)
-        {
-            DocumentoExigido? exigencia = LerExigencia(
-                leitor,
-                leitor.ItemObjeto(array, i, "documentosExigidos.exigencias"),
-                $"documentosExigidos.exigencias[{i}]");
-            if (exigencia is null)
-            {
-                return [];
-            }
-
-            exigencias.Add(exigencia);
-        }
-
-        return exigencias;
+        return LeituraDeItens.Ler(leitor, array, "documentosExigidos.exigencias", LerExigencia) ?? [];
     }
 
     private static DocumentoExigido? LerExigencia(LeitorEnvelope leitor, JsonObject item, string path)
@@ -74,6 +59,12 @@ internal static class LeituraDasExigencias
             return Recusar(leitor, $"'{path}.classificacaoProtecao' fora do vocabulário de classificações de proteção.");
         }
 
+        return MontarExigencia(leitor, item, path, declaracao, classificacaoProtecao);
+    }
+
+    private static DocumentoExigido? MontarExigencia(
+        LeitorEnvelope leitor, JsonObject item, string path, DeclaracaoDaExigencia declaracao, ClassificacaoDeProtecao classificacaoProtecao)
+    {
         ComplementosDaExigencia? complementos = LerComplementos(leitor, item, path);
         if (complementos is null)
         {
@@ -103,7 +94,7 @@ internal static class LeituraDasExigencias
 
     private static ComplementosDaExigencia? LerComplementos(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        IReadOnlyList<string> fatosComprovados = leitor.Textos(item, "fatosComprovados", path);
+        IReadOnlyList<string> fatosComprovados = leitor.Textos(item, "dadosComprovados", path);
         IReadOnlyList<CondicaoGatilho> condicoes = LeituraDasCondicoes.LerCondicaoGatilho(leitor, item, path);
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais = LeituraDosFormatosEBasesLegais.LerBasesLegais(leitor, item, path);
         IdadeMaximaEmissao? idadeMaximaEmissao = LerIdadeMaximaEmissao(leitor, item, path);
@@ -120,25 +111,12 @@ internal static class LeituraDasExigencias
         ClassificacaoDeProtecao classificacaoProtecao,
         FinalidadeFormulario? finalidade,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
-            d.ExigenciaId,
-            d.ExigidoNaFaseId,
-            d.TipoDocumentoOrigemId,
-            d.TipoDocumentoCodigo,
-            d.TipoDocumentoNome,
-            d.TipoDocumentoCategoria,
+            d.ExigenciaId, d.ExigidoNaFaseId, d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo,
+            d.TipoDocumentoNome, d.TipoDocumentoCategoria,
             new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal),
-            d.Aplicabilidade,
-            d.Obrigatorio,
-            d.ConsequenciaIndeferimento,
-            c.Condicoes,
-            c.BasesLegais,
-            c.IdadeMaximaEmissao,
-            c.FormatosPermitidos,
-            d.TamanhoMaximoBytes,
-            d.ExigidoNaEtapaId,
-            c.Modelo,
-            finalidade,
-            c.FatosComprovados);
+            d.Aplicabilidade, d.Obrigatorio, d.ConsequenciaIndeferimento, c.Condicoes, c.BasesLegais,
+            c.IdadeMaximaEmissao, c.FormatosPermitidos, d.TamanhoMaximoBytes, d.ExigidoNaEtapaId,
+            c.Modelo, finalidade, c.FatosComprovados);
 
     private sealed record ComplementosDaExigencia(
         IReadOnlyList<string> FatosComprovados,
@@ -151,7 +129,19 @@ internal static class LeituraDasExigencias
     private static DocumentoExigido? Recusar(LeitorEnvelope leitor, string mensagem) =>
         leitor.Propagar<DocumentoExigido>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, mensagem));
 
-    private static DeclaracaoDaExigencia LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static DeclaracaoDaExigencia LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
+        LerIdentificacaoDaExigencia(leitor, item, path) with
+        {
+            ExigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path),
+            ExigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path),
+            FinalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token),
+            Aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path),
+            Obrigatorio = leitor.Booleano(item, "obrigatorio", path),
+            ConsequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token),
+            TamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path),
+        };
+
+    private static DeclaracaoDaExigencia LerIdentificacaoDaExigencia(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         ExigenciaId = leitor.Identificador(item, "exigenciaId", path),
         TipoDocumentoOrigemId = leitor.Identificador(item, "tipoDocumentoOrigemId", path),
@@ -161,16 +151,9 @@ internal static class LeituraDasExigencias
         ClassificacaoToken = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token),
         FinalidadeTratamento = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento),
         HipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),
-        ExigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path),
-        ExigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path),
-        FinalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token),
-        Aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path),
-        Obrigatorio = leitor.Booleano(item, "obrigatorio", path),
-        ConsequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token),
-        TamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path),
     };
 
-    private sealed class DeclaracaoDaExigencia
+    private sealed record DeclaracaoDaExigencia
     {
         public Guid ExigenciaId { get; init; }
 
@@ -222,7 +205,11 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        string path = $"{pathPai}.modelo";
+        return LerBlocoDoModelo(leitor, bloco, $"{pathPai}.modelo");
+    }
+
+    private static ModeloDaExigencia? LerBlocoDoModelo(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
         leitor.ExigirChaves(bloco, path, "modeloId", "nomeArquivo", "formato", "hashSha256");
         Guid modeloId = leitor.Identificador(bloco, "modeloId", path);
         string nomeArquivo = leitor.TextoNaoVazio(bloco, "nomeArquivo", path, LimitesDoEnvelope.NomeArquivoDoModelo);
@@ -233,6 +220,12 @@ internal static class LeituraDasExigencias
             return null;
         }
 
+        return ConferirModelo(leitor, path, modeloId, nomeArquivo, formato, hash);
+    }
+
+    private static ModeloDaExigencia? ConferirModelo(
+        LeitorEnvelope leitor, string path, Guid modeloId, string nomeArquivo, string formato, string hash)
+    {
         FormatoDeDocumento? formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
         bool hashValido = EhSha256Hexadecimal(hash);
         return formatoDoModelo is { } formatoValido && hashValido
@@ -249,7 +242,11 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        string path = $"{pathPai}.idadeMaximaEmissao";
+        return LerBlocoDaIdade(leitor, idadeJson, $"{pathPai}.idadeMaximaEmissao");
+    }
+
+    private static IdadeMaximaEmissao? LerBlocoDaIdade(LeitorEnvelope leitor, JsonObject idadeJson, string path)
+    {
         leitor.ExigirChaves(idadeJson, path, "valor", "unidade", "referenciaTipo", "data", "referenciaFaseId");
 
         int valor = leitor.Inteiro(idadeJson, "valor", path);
@@ -262,17 +259,25 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        if (UnidadeIdadeCodigo.FromCodigo(unidadeCodigo) is not { } unidade)
+        return ConferirVocabularioDaIdade(leitor, path, new DadosDaIdade(valor, unidadeCodigo, referenciaTipoCodigo, data, referenciaFaseId));
+    }
+
+    private static IdadeMaximaEmissao? ConferirVocabularioDaIdade(LeitorEnvelope leitor, string path, DadosDaIdade dados)
+    {
+        if (UnidadeIdadeCodigo.FromCodigo(dados.Unidade) is not { } unidade)
         {
-            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.unidade' não reconhecida: '{unidadeCodigo}'.");
+            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.unidade' não reconhecida: '{dados.Unidade}'.");
         }
 
-        if (ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(referenciaTipoCodigo) is not { } referenciaTipo)
+        if (ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(dados.ReferenciaTipo) is not { } referenciaTipo)
         {
-            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.referenciaTipo' não reconhecida: '{referenciaTipoCodigo}'.");
+            return leitor.Recusar<IdadeMaximaEmissao?>($"'{path}.referenciaTipo' não reconhecida: '{dados.ReferenciaTipo}'.");
         }
 
-        Result<IdadeMaximaEmissao?> idadeResult = IdadeMaximaEmissao.Criar(valor, unidade, referenciaTipo, data, referenciaFaseId);
+        Result<IdadeMaximaEmissao?> idadeResult = IdadeMaximaEmissao.Criar(dados.Valor, unidade, referenciaTipo, dados.Data, dados.ReferenciaFaseId);
         return idadeResult.IsFailure ? leitor.Propagar<IdadeMaximaEmissao>(idadeResult.Error!) : idadeResult.Value;
     }
+
+    private sealed record DadosDaIdade(int Valor, string Unidade, string ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
+
 }
