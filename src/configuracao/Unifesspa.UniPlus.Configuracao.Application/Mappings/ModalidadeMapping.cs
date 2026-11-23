@@ -31,6 +31,6 @@ public static class ModalidadeMapping
                 CodigoComRotulo<RegraRemanejamento>.De(regra),
                 modalidade.RemanejamentoParametros.Destino,
                 modalidade.RemanejamentoParametros.Par,
-                modalidade.RemanejamentoParametros.Fallback)
+                modalidade.RemanejamentoParametros.DestinoFinal)
             : null;
 }

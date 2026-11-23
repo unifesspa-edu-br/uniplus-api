@@ -56,7 +56,7 @@ Toda tabela e coluna representada por uma `IEntityTypeConfiguration<T>` document
 via `builder.ToTable("...", table => table.HasComment("..."))` para a tabela e
 `builder.Property(...).HasComment("...")` para toda coluna mapeada — sem exceção
 por julgamento de "relevância", que criaria discricionariedade sobre o que fica
-documentado. SQL manual
+documentado. Colunas comuns de auditoria, exclusão lógica e versão recebem comentário uma vez por convenção no modelo. SQL manual
 com `COMMENT ON` fica restrito a objetos que o modelo do EF Core não representa
 (schema, extensão, view não mapeada) ou a limitação comprovada do provider Npgsql
 para um caso específico — sempre dentro de uma migration versionada, com a

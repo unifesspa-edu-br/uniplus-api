@@ -19,6 +19,7 @@ public sealed class PortalDbContext : DbContext, IUnitOfWork
         // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+        modelBuilder.AplicarComentariosDasColunasComuns();
         base.OnModelCreating(modelBuilder);
     }
 

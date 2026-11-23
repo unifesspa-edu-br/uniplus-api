@@ -149,18 +149,8 @@ public sealed class ModalidadeRepository : IModalidadeRepository
         return consulta.AnyAsync(cancellationToken);
     }
 
-    private IQueryable<Modalidade> ReferenciasAoCodigo(string codigoNorm)
-    {
-        // O EF não traduz acesso aos campos internos do JSON; o filtro de exclusão continua aplicado.
-        FormattableString sql = $@"
-            SELECT * FROM configuracao.modalidades
-            WHERE composicao_origem = {codigoNorm}
-               OR remanejamento_parametros ->> 'destino' = {codigoNorm}
-               OR remanejamento_parametros ->> 'par' = {codigoNorm}
-               OR remanejamento_parametros ->> 'fallback' = {codigoNorm}";
-
-        return _dbContext.Modalidades
-            .FromSqlInterpolated(sql)
-            .AsNoTracking();
-    }
+    private IQueryable<Modalidade> ReferenciasAoCodigo(string codigo) =>
+        _dbContext.Modalidades.AsNoTracking().Where(m =>
+            m.ComposicaoOrigem == codigo || m.RemanejamentoParametros.Destino == codigo ||
+            m.RemanejamentoParametros.Par == codigo || m.RemanejamentoParametros.DestinoFinal == codigo);
 }

@@ -5,7 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -18,8 +20,8 @@ internal static class EstadoDaRetificacaoNoBanco
         ConsultarAsync(servicos, db => db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId).OrderBy(v => v.NumeroVersao).ToListAsync());
 
-    public static Task<CertameDivulgado> DivulgacaoAsync(IServiceProvider servicos, Guid processoId) =>
-        ConsultarAsync(servicos, db => db.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId));
+    public static Task<CertameDivulgado> DivulgacaoAsync(IServiceProvider servicos, Guid processoId, CancellationToken cancellationToken = default) =>
+        ConsultarAsync(servicos, db => db.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId, cancellationToken));
 
     public static Task<AtoDoProcesso> AtoDoProcessoAsync(IServiceProvider servicos, Guid atoId) =>
         ConsultarAsync(servicos, db => db.AtosDoProcesso.AsNoTracking().SingleAsync(a => a.Id == atoId));
@@ -61,26 +63,39 @@ internal static class EstadoDaRetificacaoNoBanco
             """).ToListAsync(cancellationToken));
 
     /// <summary>
-    /// As mensagens pendentes depois de a publicação ter terminado de gerar as dela: o tratamento do evento de publicação acrescenta
-    /// outra mensagem pouco depois, e quem tira a foto antes disso a veria aparecer como se fosse efeito do que vem a seguir.
+    /// Espera os registros duráveis de entrega do evento e da cópia estarem tratados e a cópia registrar o endereço.
+    /// O transporte Kafka está desabilitado nesta fixture, portanto a projeção Avro não deixa mensagem durável aqui.
     /// </summary>
-    public static async Task<IReadOnlyList<string>> MensagensPendentesAssentadasAsync(IServiceProvider servicos, Guid processoId)
+    public static async Task<IReadOnlyList<string>> MensagensPendentesAssentadasAsync(IServiceProvider servicos, Guid processoId, Guid atoId)
     {
-        IReadOnlyList<string> anterior = await MensagensPendentesDoProcessoAsync(servicos, processoId);
-        for (int tentativa = 0; tentativa < 20; tentativa++)
+        using CancellationTokenSource prazo = new(TimeSpan.FromSeconds(60));
+        try
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(250));
-            IReadOnlyList<string> atual = await MensagensPendentesDoProcessoAsync(servicos, processoId);
-            if (atual.Order(StringComparer.Ordinal).SequenceEqual(anterior.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+            while (!await PublicacaoTratadaAsync(servicos, processoId, atoId, prazo.Token))
             {
-                return atual;
+                await Task.Delay(TimeSpan.FromMilliseconds(100), prazo.Token);
             }
 
-            anterior = atual;
+            return await MensagensPendentesDoProcessoAsync(servicos, processoId, prazo.Token);
         }
-
-        return anterior;
+        catch (OperationCanceledException cancelamento) when (prazo.IsCancellationRequested)
+        {
+            throw new TimeoutException($"A publicação do processo {processoId} não concluiu a entrega do evento, a cópia do ato {atoId} e o processamento das mensagens em 60 segundos.", cancelamento);
+        }
     }
+
+    private static async Task<bool> PublicacaoTratadaAsync(IServiceProvider servicos, Guid processoId, Guid atoId, CancellationToken cancellationToken)
+    {
+        bool copiado = (await DivulgacaoAsync(servicos, processoId, cancellationToken)).CopiouOsDocumentosDoAto(atoId);
+        return copiado && await EntregasTratadasAsync(servicos, processoId, cancellationToken) == 2;
+    }
+
+    private static Task<int> EntregasTratadasAsync(IServiceProvider servicos, Guid processoId, CancellationToken cancellationToken) =>
+        ConsultarAsync(servicos, db => db.Database.SqlQuery<int>($"""
+            SELECT count(DISTINCT message_type)::int AS "Value" FROM wolverine.wolverine_incoming_envelopes
+            WHERE status = 'Handled' AND position(convert_to({processoId.ToString("D")}, 'UTF8') in body) > 0
+              AND message_type IN ({typeof(ProcessoPublicadoEvent).FullName}, {typeof(CopiarDocumentosDoAtoAoAcervo).FullName})
+            """).SingleAsync(cancellationToken));
 
     /// <summary>
     /// Espera o banco registrar uma sessão de <paramref name="processosDaEsperante"/> parada na trava do processo seletivo (o

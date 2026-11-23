@@ -701,7 +701,9 @@ configuracao.modalidades.is_deleted: Interno
 configuracao.modalidades.natureza_legal: Interno
 configuracao.modalidades.regra_de_aplicabilidade: Interno
 configuracao.modalidades.regra_remanejamento: Interno
-configuracao.modalidades.remanejamento_parametros: Interno
+configuracao.modalidades.remanejamento_destino: Interno
+configuracao.modalidades.remanejamento_destino_final: Interno
+configuracao.modalidades.remanejamento_par: Interno
 configuracao.modalidades.updated_at: Interno
 configuracao.modalidades.updated_by: Pessoal
 configuracao.modelos_formulario.ativo: Interno
@@ -1554,7 +1556,6 @@ selecao.etapas_formulario.updated_at: Interno
 selecao.etapas_processo.carater: Interno
 selecao.etapas_processo.created_at: Interno
 selecao.etapas_processo.emite_parecer_individual: Interno
-selecao.etapas_processo.escala_de_atendimento: Interno
 selecao.etapas_processo.fase_codigo: Interno
 selecao.etapas_processo.fim: Interno
 selecao.etapas_processo.forma_de_avaliacao: Interno
@@ -1795,6 +1796,10 @@ selecao.municipios_do_bonus_regional.id: Interno
 selecao.municipios_do_bonus_regional.nome: Interno
 selecao.municipios_do_bonus_regional.uf: Interno
 selecao.municipios_do_bonus_regional.updated_at: Interno
+selecao.niveis_de_atendimento_da_etapa.etapa_processo_id: Interno
+selecao.niveis_de_atendimento_da_etapa.fracao: Interno
+selecao.niveis_de_atendimento_da_etapa.id: Interno
+selecao.niveis_de_atendimento_da_etapa.rotulo: Interno
 selecao.obrigatoriedades_legais.ato_normativo_url: Interno
 selecao.obrigatoriedades_legais.base_legal: Interno
 selecao.obrigatoriedades_legais.categoria: Interno

@@ -48,10 +48,6 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
         builder.Property(a => a.GrupoPesoAreaEnemCongeladoId)
             .HasComment("Id do grupo congelado dono da área (FK, cascade delete).");
 
-        builder.Property(a => a.CreatedAt)
-            .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
-        builder.Property(a => a.UpdatedAt)
-            .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
         builder.Property(a => a.Codigo)
             .HasMaxLength(LimitesDoEnvelope.AreaPesoAreaEnemCodigo)

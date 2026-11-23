@@ -48,7 +48,7 @@ public sealed class ModalidadeReferenciasTests(ConfiguracaoDbFixture fixture)
         referenciada.Should().BeTrue("outra modalidade viva aponta este código como composicao_origem");
     }
 
-    [Fact(DisplayName = "Remoção é bloqueada por referência via remanejamento_parametros jsonb (repo)")]
+    [Fact(DisplayName = "Remoção é bloqueada por referência pelo destino de remanejamento (repo)")]
     public async Task EhReferenciada_PorRemanejamentoParametros_True()
     {
         string destino = CodigoUnico();
@@ -62,7 +62,31 @@ public sealed class ModalidadeReferenciasTests(ConfiguracaoDbFixture fixture)
         var repo = new ModalidadeRepository(ctx);
         bool referenciada = await repo.EhReferenciadaPorOutraModalidadeVivaAsync(destino, ExcluirId(ctx, destino), default);
 
-        referenciada.Should().BeTrue("o destino consta em remanejamento_parametros->>'destino' de outra viva");
+        referenciada.Should().BeTrue("outra modalidade viva aponta para o destino");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EhReferenciada_PorParOuDestinoFinal_True(bool destinoFinal)
+    {
+        string codigo = CodigoUnico();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(AdminA);
+        contexto.Modalidades.Add(Ampla(codigo));
+        contexto.Modalidades.Add(Cruzada(CodigoUnico(), codigo, destinoFinal));
+        await contexto.SaveChangesAsync();
+        ModalidadeRepository repositorio = new(contexto);
+        bool referenciada = await repositorio.EhReferenciadaPorOutraModalidadeVivaAsync(codigo, null, default);
+        referenciada.Should().BeTrue();
+    }
+
+    private static Modalidade Cruzada(string codigo, string referencia, bool destinoFinal)
+    {
+        DeclaracaoDaModalidade declaracao = new(null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
+            null, destinoFinal ? "OUTRA" : referencia, destinoFinal ? referencia : null, SementeDeAplicabilidadeLegal.AcI, null, null);
+        Result<Modalidade> resultado = Modalidade.Criar(codigo, declaracao);
+        resultado.IsSuccess.Should().BeTrue();
+        return resultado.Value!;
     }
 
     [Fact(DisplayName = "Código não referenciado por ninguém não bloqueia a remoção (repo)")]

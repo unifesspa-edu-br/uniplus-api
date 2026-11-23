@@ -38,10 +38,6 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
         builder.Property(g => g.ConfiguracaoClassificacaoId)
             .HasComment("Id da configuração de classificação dona do quadro (FK, cascade delete).");
 
-        builder.Property(g => g.CreatedAt)
-            .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
-        builder.Property(g => g.UpdatedAt)
-            .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
         // Um grupo aparece uma vez por classificação. O índice único que garante isso no banco
         // (configuracao_classificacao_id, grupo_area_enem_codigo) combina a FK com uma coluna do

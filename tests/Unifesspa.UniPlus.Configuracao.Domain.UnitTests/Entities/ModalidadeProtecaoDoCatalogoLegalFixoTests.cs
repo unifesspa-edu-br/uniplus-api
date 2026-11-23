@@ -115,21 +115,21 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
     [InlineData("LB_PPI", null, null)]
     [InlineData("AC", "AC", null)]
     [InlineData("AC", null, "AC")]
-    public void Atualizar_LegalFixaParametros_Recusa(string? destino, string? par, string? fallback)
+    public void Atualizar_LegalFixaParametros_Recusa(string? destino, string? par, string? destinoFinal)
     {
         Modalidade m = AcPcd();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: null, CodigoDaNaturezaLegal: "ACAO_AFIRMATIVA", CodigoDaComposicaoDeVagas: "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem: "AC", CodigoDaRegraDeRemanejamento: "DESTINO_UNICO",
-            RemanejamentoDestino: destino, RemanejamentoPar: par, RemanejamentoFallback: fallback,
+            RemanejamentoDestino: destino, RemanejamentoPar: par, RemanejamentoFallback: destinoFinal,
             RegraDeAplicabilidade: RegraDaAcPcd(), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
         m.RemanejamentoParametros.Destino.Should().Be("AC");
         m.RemanejamentoParametros.Par.Should().BeNull();
-        m.RemanejamentoParametros.Fallback.Should().BeNull();
+        m.RemanejamentoParametros.DestinoFinal.Should().BeNull();
     }
 
     // A regra reenviada é outra instância com as mesmas condições: o teste distingue comparação por valor de

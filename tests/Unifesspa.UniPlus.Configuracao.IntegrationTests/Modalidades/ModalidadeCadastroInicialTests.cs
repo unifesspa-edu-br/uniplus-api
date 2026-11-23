@@ -87,7 +87,7 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
         modalidade.ComposicaoOrigem.Should().BeNull();
         modalidade.RegraRemanejamento.Should().Be(RegraRemanejamento.Cruzado);
         modalidade.RemanejamentoParametros.Destino.Should().BeNull();
-        modalidade.RemanejamentoParametros.Fallback.Should().BeNull();
+        modalidade.RemanejamentoParametros.DestinoFinal.Should().BeNull();
         modalidade.RemanejamentoParametros.Par.Should().Be(par);
         modalidade.BaseLegal.Should().NotBeNullOrWhiteSpace().And.NotContain("12.711");
     }
@@ -139,6 +139,6 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
             item.Descricao, item.Natureza.Codigo(),
             item.Composicao.Codigo(), item.ComposicaoOrigem,
             item.Regra?.Codigo(),
-            item.RemanejamentoParametros.Destino, item.RemanejamentoParametros.Par, item.RemanejamentoParametros.Fallback,
+            item.RemanejamentoParametros.Destino, item.RemanejamentoParametros.Par, item.RemanejamentoParametros.DestinoFinal,
             item.RegraDeAplicabilidade, CodigoDaAcaoQuandoIndeferido: null, item.BaseLegal));
 }

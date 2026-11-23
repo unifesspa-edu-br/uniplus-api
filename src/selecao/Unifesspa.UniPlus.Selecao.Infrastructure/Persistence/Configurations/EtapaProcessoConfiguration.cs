@@ -1,14 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Domain.Entities;
+using Domain.Enums;
 using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
@@ -16,25 +13,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
-    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-    private static readonly ValueConverter<IReadOnlyList<NivelDeAtendimento>?, string> EscalaConverter =
-        new(
-            escala => SerializarEscala(escala),
-            json => DesserializarEscala(json));
-
-    private static readonly ValueComparer<IReadOnlyList<NivelDeAtendimento>?> EscalaComparer =
-        new(
-            (a, b) => SerializarEscala(a) == SerializarEscala(b),
-            escala => SerializarEscala(escala).GetHashCode(StringComparison.Ordinal),
-            escala => DesserializarEscala(SerializarEscala(escala)));
-
-    private static string SerializarEscala(IReadOnlyList<NivelDeAtendimento>? escala) =>
-        JsonSerializer.Serialize(escala ?? [], JsonOptions);
-
-    private static List<NivelDeAtendimento> DesserializarEscala(string json) =>
-        JsonSerializer.Deserialize<List<NivelDeAtendimento>>(json, JsonOptions) ?? [];
-
     public void Configure(EntityTypeBuilder<EtapaProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -43,9 +21,11 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
 
         builder.ToTable("etapas_processo", t =>
         {
-            // Só a positividade fica no banco: numeric(18,4) arredonda 0,00001 para zero em
-            // silêncio, e o EF hidrata sem passar pelo domínio. A coerência entre os valores
-            // (mínima até a máxima, máxima no passo) é regra de gravação, não de armazenamento.
+            t.HasComment("Etapas de avaliação e suas definições em cada processo seletivo.");
+            // A coerência entre notas e passo é conferida pelo domínio.
+            t.HasCheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
+            t.HasCheckConstraint("ck_etapas_processo_nota_minima_nao_negativa", "nota_minima IS NULL OR nota_minima >= 0");
+            t.HasCheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
             t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
             t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
@@ -54,10 +34,13 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo
         // ao reconfigurar o agregado tracked). Convenção do repo.
-        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.Id).ValueGeneratedNever().HasComment("Identificador da etapa.");
+        builder.Property(e => e.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a etapa pertence.");
+        builder.Property(e => e.Ordem).HasComment("Posição da etapa no processo, quando definida.");
 
-        builder.Property(e => e.Nome).HasMaxLength(EtapaProcesso.NomeMaxLength).IsRequired();
-        builder.Property(e => e.Carater).HasConversion<int>().IsRequired();
+        builder.Property(e => e.Nome).HasMaxLength(EtapaProcesso.NomeMaxLength).IsRequired().HasComment("Nome da etapa no processo seletivo.");
+        builder.Property(e => e.Carater).HasConversion<int>().IsRequired()
+            .HasComment($"Finalidade da etapa na avaliação. Códigos: {CodigosNumericos<CaraterEtapa>()}.");
 
         builder.Ignore(e => e.TipoEtapaOrigemId);
         // Sem produção em nenhum ambiente: o vínculo nasce obrigatório, sem coluna nullable
@@ -68,19 +51,19 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             tipo.Property(x => x.OrigemId)
                 .HasColumnName("tipo_etapa_origem_id")
                 .IsRequired()
-                .HasComment("Id de origem do tipo de etapa em Configuração, sem FK cross-schema; congelado na definição.");
-            tipo.Property(x => x.Codigo).HasColumnName("tipo_etapa_codigo").HasMaxLength(64).IsRequired();
-            tipo.Property(x => x.Nome).HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
-            tipo.Property(x => x.AdmitePontuacao).HasColumnName("tipo_etapa_admite_pontuacao").IsRequired();
-            tipo.Property(x => x.AdmiteEliminacao).HasColumnName("tipo_etapa_admite_eliminacao").IsRequired();
+                .HasComment("Identificador do tipo de etapa de origem, copiado na definição.");
+            tipo.Property(x => x.Codigo).HasComment("Código do tipo de etapa copiado na definição.").HasColumnName("tipo_etapa_codigo").HasMaxLength(64).IsRequired();
+            tipo.Property(x => x.Nome).HasComment("Nome do tipo de etapa copiado na definição.").HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
+            tipo.Property(x => x.AdmitePontuacao).HasComment("Indica se o tipo de etapa admite pontuação, conforme a definição copiada.").HasColumnName("tipo_etapa_admite_pontuacao").IsRequired();
+            tipo.Property(x => x.AdmiteEliminacao).HasComment("Indica se o tipo de etapa admite eliminação, conforme a definição copiada.").HasColumnName("tipo_etapa_admite_eliminacao").IsRequired();
             tipo.Property(x => x.NotaDeOrigemNoEnem)
                 .HasColumnName("tipo_etapa_nota_de_origem_no_enem")
                 .IsRequired()
-                .HasComment("Nota da etapa vem do ENEM, congelado do tipo junto com a identidade.");
+                .HasComment("Indica se a nota da etapa vem do Enem, conforme a definição do tipo.");
             tipo.Property(x => x.ExigeCorrecaoIndependente)
                 .HasColumnName("tipo_etapa_exige_correcao_independente")
                 .IsRequired()
-                .HasComment("Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores.");
+                .HasComment("Indica se a etapa exige correções independentes por mais de um corretor, conforme a definição do tipo.");
         });
         builder.Navigation(e => e.TipoEtapa).IsRequired();
 
@@ -91,7 +74,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.FaseCodigo)
             .HasColumnName("fase_codigo")
             .HasMaxLength(60)
-            .HasComment("Código canônico da fase em que a etapa acontece; é por ele que a raiz a resolve no cronograma.");
+            .HasComment("Código da fase do cronograma em que a etapa acontece.");
 
         // Produtos da etapa em cascata: a configuração em rascunho é substituída por
         // inteiro, e nada fora do agregado referencia o produto por FK.
@@ -118,14 +101,14 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         // A janela própria da etapa: ausente quando ela herda a da fase.
-        builder.Property(e => e.Inicio).HasColumnName("inicio");
-        builder.Property(e => e.Fim).HasColumnName("fim");
+        builder.Property(e => e.Inicio).HasColumnName("inicio").HasComment("Início do período próprio da etapa; ausente quando usa o período da fase.");
+        builder.Property(e => e.Fim).HasColumnName("fim").HasComment("Fim do período próprio da etapa; ausente quando usa o período da fase.");
         builder.Property(e => e.EmiteParecerIndividual)
-            .HasColumnName("emite_parecer_individual").HasDefaultValue(false);
+            .HasColumnName("emite_parecer_individual").HasDefaultValue(false).HasComment("Indica se a etapa emite parecer individual para cada candidato.");
         builder.MapearTiposDeDecisao();
 
-        builder.Property(e => e.Peso).HasPrecision(18, 4);
-        builder.Property(e => e.NotaMinima).HasPrecision(18, 4);
+        builder.Property(e => e.Peso).HasPrecision(18, 4).HasComment("Peso da etapa no cálculo da nota final, quando aplicável.");
+        builder.Property(e => e.NotaMinima).HasPrecision(18, 4).HasComment("Nota mínima exigida na etapa, quando definida.");
         builder.Property(e => e.NotaMaxima).HasPrecision(18, 4)
             .HasComment("Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM.");
         builder.Property(e => e.PassoDoLancamento).HasPrecision(18, 4)
@@ -134,23 +117,42 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.FormaDeAvaliacao)
             .HasColumnName("forma_de_avaliacao")
             .HasConversion<int>()
-            .HasComment("Como a nota da etapa é obtida (1 objetiva, 2 humana); ausente em rascunho, na etapa sem nota e na do ENEM.");
+            .HasComment($"Como a nota da etapa é obtida; ausente quando não definida. Códigos: {CodigosNumericos<FormaDeAvaliacao>()}.");
 
         // Só a forma humana tem regra de consolidação, mas a coerência é regra de gravação do
         // domínio, não de armazenamento: a coluna não a repete.
-        builder.OwnsOne(e => e.RegraConsolidacao, regra => regra.ConfigurarReferenciaRegra("regra_consolidacao"));
+        builder.OwnsOne(e => e.RegraConsolidacao, regra =>
+        {
+            regra.ConfigurarReferenciaRegra("regra_consolidacao");
+            regra.Property(r => r.Codigo).HasComment("Código da regra de consolidação das notas, quando definida.");
+            regra.Property(r => r.Versao).HasComment("Versão da regra de consolidação das notas, quando definida.");
+            regra.Property(r => r.Hash).HasComment("Resumo que identifica o conteúdo da regra de consolidação, quando definida.");
+        });
         builder.Navigation(e => e.RegraConsolidacao).IsRequired(false);
 
-        // Os níveis são um valor pequeno, sem identidade e sempre lidos e gravados junto com a
-        // etapa: uma coluna jsonb evita uma tabela cujas linhas ninguém referencia.
-        builder.Property(e => e.EscalaDeAtendimento)
-            .HasColumnName("escala_de_atendimento")
-            .HasConversion(EscalaConverter, EscalaComparer)
-            .HasColumnType("jsonb")
-            .HasComment("Níveis de atendimento (rótulo e fração da pontuação do item), do que mais vale ao que menos vale; ausente quando a banca digita a nota.");
+        builder.OwnsMany(e => e.EscalaDeAtendimento, nivel =>
+        {
+            nivel.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            nivel.ToTable("niveis_de_atendimento_da_etapa", tabela =>
+            {
+                tabela.HasComment("Níveis de atendimento usados na avaliação dos itens da etapa.");
+                tabela.HasCheckConstraint("ck_niveis_atendimento_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
+                tabela.HasCheckConstraint("ck_niveis_atendimento_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
+            });
+            nivel.WithOwner().HasForeignKey("EtapaProcessoId").HasConstraintName("fk_niveis_atendimento_etapa");
+            nivel.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico do nível.");
+            nivel.HasKey("Id");
+            nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
+            nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
+            nivel.Property(n => n.Fracao).HasPrecision(5, 4).IsRequired().HasComment("Fração da pontuação do item atribuída ao nível.");
+            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Rotulo)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_rotulo");
+        });
+        builder.Navigation(e => e.EscalaDeAtendimento).HasField("_escalaDeAtendimento").UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Ordem única por processo quando informada (colunas nulas não
         // colidem em unique index no Postgres).
         builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Ordem }).IsUnique();
     }
+    private static string CodigosNumericos<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", Enum.GetValues<TEnum>().Select(static valor => $"{Convert.ToInt32(valor, System.Globalization.CultureInfo.InvariantCulture)} ({valor})"));
 }

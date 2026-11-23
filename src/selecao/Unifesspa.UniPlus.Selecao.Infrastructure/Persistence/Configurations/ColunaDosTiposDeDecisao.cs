@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -22,7 +23,7 @@ internal static class ColunaDosTiposDeDecisao
         builder.PrimitiveCollection<List<TipoMotivoDeDecisao>>(CampoDoDominio)
             .HasColumnName("tipos_de_decisao")
             .HasDefaultValueSql("'{}'::text[]")
-            .HasComment("Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição.")
+            .HasComment($"Tipos de decisão que a fase ou a etapa declara produzir, sem repetição. Códigos: {string.Join(", ", CatalogoDe<TipoMotivoDeDecisao>.Todos().Select(static item => item.Codigo))}.")
             .IsRequired()
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }

@@ -54,11 +54,7 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
         builder.Property(s => s.FinishedAt)
             .HasComment("Instante de conclusão da execução — nulo enquanto o status é Running.");
 
-        builder.Property(s => s.CreatedAt)
-            .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
-        builder.Property(s => s.UpdatedAt)
-            .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
         builder.HasIndex(s => s.StartedAt)
             .HasDatabaseName("ix_sincronizacoes_com_o_sigaa_started_at");
