@@ -22,13 +22,18 @@ internal static class AplicacaoDeModeloDeFormulario
         FinalidadeFormulario finalidade = copia.Finalidade;
         FormularioProcesso? existente = configuracao.Coleta.FormularioDe(finalidade);
         Result<FormularioProcesso> formulario = FormularioProcesso.Criar(
-            finalidade, existente?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo);
+            finalidade, existente?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo, copia.ModeloNome);
         if (formulario.IsFailure)
         {
             return Result<PlanoDaCopiaDoModelo>.ValidationFailure(formulario.Errors);
         }
 
-        FormularioProcesso novo = formulario.Value!;
+        return ConferirCopia(configuracao, copia, formulario.Value!, existente);
+    }
+
+    private static Result<PlanoDaCopiaDoModelo> ConferirCopia(
+        ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente)
+    {
         HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
         List<FieldError> erros = [.. ErrosDaCopia(configuracao, copia, novo, daCopia)];
         if (erros.Count > 0)
@@ -37,8 +42,7 @@ internal static class AplicacaoDeModeloDeFormulario
         }
 
         VincularFinalidadeAosItens(copia);
-        Result<PlanoDaCopiaDoModelo> recusaDoEstadoFinal = ConferirEstadoFinal(configuracao, copia, novo, existente, daCopia);
-        return recusaDoEstadoFinal;
+        return ConferirEstadoFinal(configuracao, copia, novo, existente, daCopia);
     }
 
     private static void VincularFinalidadeAosItens(CopiaDeModeloDeFormulario copia)

@@ -42,6 +42,8 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.NoMesmoMomentoDaAnterior).HasComment("Indica se a fase ocorre no mesmo momento da fase anterior.").HasColumnName("no_mesmo_momento_da_anterior").HasDefaultValue(false).IsRequired();
         builder.Property(f => f.FaseCanonicaOrigemId).HasColumnName("tipo_fase_origem_id").HasComment("Identificador da fase de origem copiado ao definir o cronograma.").IsRequired();
         builder.Property(f => f.Codigo).HasComment("Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES.").HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(f => f.TipoFaseNome).HasColumnName("tipo_fase_nome").HasMaxLength(200).IsRequired()
+            .HasComment("Nome do tipo de fase copiado do cadastro ao definir o cronograma.");
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired()
             .HasComment($"Momento em que as datas da fase são definidas. Códigos: {string.Join(", ", Enum.GetValues<OrigemDataFase>().Select(static valor => $"{(int)valor} ({valor})"))}.");
 

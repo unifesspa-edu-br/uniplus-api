@@ -48,6 +48,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <summary>Código canônico congelado (ex.: <c>"HOMOLOGACAO_INSCRICOES"</c>).</summary>
     public string Codigo { get; private set; } = string.Empty;
 
+    public string TipoFaseNome { get; private set; } = string.Empty;
+
     /// <summary>Id da unidade que responde pela fase, congelado sem FK (ADR-0061); opcional no rascunho, exigido na publicação.</summary>
     public Guid? UnidadeResponsavelOrigemId { get; private set; }
 
@@ -294,7 +296,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     }
 
     private OrigemCanonicaDaFase OrigemCanonica() => new(
-        FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+        FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao)
+    { Nome = TipoFaseNome };
 
     private DecisoesDeCronogramaDaFase DecisoesDeCronograma() =>
         new(Ordem, Inicio, Fim, UnidadeResponsavel) { NoMesmoMomentoDaAnterior = NoMesmoMomentoDaAnterior };
@@ -303,6 +306,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     {
         FaseCanonicaOrigemId = origem.OrigemId;
         Codigo = origem.Codigo.Trim();
+        TipoFaseNome = origem.Nome.Trim();
         OrigemData = origem.OrigemData;
         AgrupaEtapas = origem.AgrupaEtapas;
         PermiteComplementacao = origem.PermiteComplementacao;

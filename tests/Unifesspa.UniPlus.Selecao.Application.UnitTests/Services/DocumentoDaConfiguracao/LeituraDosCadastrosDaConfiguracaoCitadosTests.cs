@@ -106,7 +106,8 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { FasesCanonicas = ["EXECUCAO"] }, CancellationToken.None);
 
         lidos.Value!.FasesCanonicas["EXECUCAO"].Should().Be(new Domain.ValueObjects.OrigemCanonicaDaFase(
-            fase.Id, "EXECUCAO", OrigemDataFase.NaExecucao, false, true, true, false));
+            fase.Id, "EXECUCAO", OrigemDataFase.NaExecucao, false, true, true, false)
+        { Nome = fase.Nome });
     }
 
     [Fact(DisplayName = "O tipo de processo ativo congela o id, o código e o nome")]

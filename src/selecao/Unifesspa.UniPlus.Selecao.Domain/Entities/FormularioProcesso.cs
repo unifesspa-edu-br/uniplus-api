@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 {
     public const int ModeloOrigemCodigoMaxLength = 60;
+    public const int ModeloOrigemNomeMaxLength = 200;
 
     /// <summary>O código canônico da fase de habilitação no catálogo de fases.</summary>
     public const string CodigoFaseHabilitacao = "HABILITACAO";
@@ -37,6 +38,8 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     public string? ModeloOrigemCodigo { get; private set; }
 
+    public string? ModeloOrigemNome { get; private set; }
+
     public IReadOnlyCollection<EtapaFormulario> Etapas => _etapas.AsReadOnly();
 
     private FormularioProcesso() { }
@@ -48,43 +51,57 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     /// </summary>
     /// <param name="modeloOrigemId">O modelo de que o formulário partiu, quando partiu de um.</param>
     /// <param name="modeloOrigemCodigo">O código desse modelo.</param>
+    /// <param name="modeloOrigemNome">O nome desse modelo.</param>
     public static Result<FormularioProcesso> Criar(
         FinalidadeFormulario finalidade,
         Guid? faseId,
         string? titulo,
         IReadOnlyList<EtapaFormulario> etapas,
         Guid? modeloOrigemId = null,
-        string? modeloOrigemCodigo = null)
+        string? modeloOrigemCodigo = null,
+        string? modeloOrigemNome = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
+        List<FieldError> erros = ValidarForma(finalidade, titulo, etapas);
+        if (erros.Count > 0)
+        {
+            return Result<FormularioProcesso>.ValidationFailure(erros);
+        }
 
+        FormularioProcesso formulario = Novo(finalidade, faseId, titulo, modeloOrigemId, modeloOrigemCodigo, modeloOrigemNome);
+        formulario.AdicionarEtapas(etapas);
+        return Result<FormularioProcesso>.Success(formulario);
+    }
+
+    private static FormularioProcesso Novo(
+        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, Guid? modeloOrigemId, string? modeloOrigemCodigo, string? modeloOrigemNome) => new()
+        {
+            Finalidade = finalidade,
+            FaseId = faseId == Guid.Empty ? null : faseId,
+            Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
+            ModeloOrigemId = modeloOrigemId,
+            ModeloOrigemCodigo = modeloOrigemId is null ? null : modeloOrigemCodigo?.Trim(),
+            ModeloOrigemNome = modeloOrigemId is null ? null : modeloOrigemNome?.Trim(),
+        };
+
+    private static List<FieldError> ValidarForma(FinalidadeFormulario finalidade, string? titulo, IReadOnlyList<EtapaFormulario> etapas)
+    {
         List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
         if (finalidade != FinalidadeFormulario.Nenhuma)
         {
             erros.AddRange(EstruturaFormulario.ValidarEtapas(finalidade, [.. etapas.Select(static e => e.Estrutura)]));
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<FormularioProcesso>.ValidationFailure(erros);
-        }
+        return erros;
+    }
 
-        string? tituloNormalizado = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim();
-        FormularioProcesso formulario = new()
-        {
-            Finalidade = finalidade,
-            FaseId = faseId == Guid.Empty ? null : faseId,
-            Titulo = tituloNormalizado,
-            ModeloOrigemId = modeloOrigemId,
-            ModeloOrigemCodigo = modeloOrigemId is null ? null : modeloOrigemCodigo?.Trim(),
-        };
+    private void AdicionarEtapas(IReadOnlyList<EtapaFormulario> etapas)
+    {
         foreach (EtapaFormulario etapa in etapas)
         {
-            etapa.VincularFormulario(formulario.Id);
-            formulario._etapas.Add(etapa);
+            etapa.VincularFormulario(Id);
+            _etapas.Add(etapa);
         }
-
-        return Result<FormularioProcesso>.Success(formulario);
     }
 
     /// <summary>As etapas na forma que a estrutura do formulário confere.</summary>
@@ -104,10 +121,11 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
-    internal void RegistrarOrigem(Guid modeloId, string modeloCodigo)
+    internal void RegistrarOrigem(Guid modeloId, string modeloCodigo, string modeloNome)
     {
         ModeloOrigemId = modeloId;
         ModeloOrigemCodigo = modeloCodigo.Trim();
+        ModeloOrigemNome = modeloNome.Trim();
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;

@@ -2518,6 +2518,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     no_mesmo_momento_da_anterior = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase ocorre no mesmo momento da fase anterior."),
                     tipo_fase_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase de origem copiado ao definir o cronograma."),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES."),
+                    tipo_fase_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de fase copiado do cadastro ao definir o cronograma."),
                     unidade_responsavel_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da unidade responsável, copiado quando definida."),
                     unidade_responsavel_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Sigla da unidade responsável, copiada quando definida."),
                     unidade_responsavel_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade responsável, copiado quando definida."),
@@ -2560,6 +2561,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     titulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     modelo_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
                     modelo_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    modelo_origem_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome copiado do modelo de formulário de origem, nulo quando não há modelo."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },

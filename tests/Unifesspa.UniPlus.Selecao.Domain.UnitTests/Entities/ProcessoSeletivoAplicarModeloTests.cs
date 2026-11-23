@@ -45,6 +45,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         FormularioProcesso formulario = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
         formulario.ModeloOrigemId.Should().Be(ModeloId);
         formulario.ModeloOrigemCodigo.Should().Be("INSCRICAO_MEDICINA");
+        formulario.ModeloOrigemNome.Should().Be("Modelo de inscrição");
         processo.FatosColetados.Should().ContainSingle(static f => f.FatoCodigo == "COR_RACA" && f.Finalidade == FinalidadeFormulario.Inscricao);
     }
 
@@ -62,6 +63,20 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         FormularioProcesso formulario = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
         formulario.FaseId.Should().NotBeNull().And.Be(fase);
         formulario.ModeloOrigemId.Should().Be(ModeloId);
+        formulario.ModeloOrigemNome.Should().Be("Modelo de inscrição");
+    }
+
+    [Fact]
+    public void AplicarModeloDeFormulario_ModeloRenomeado_RecopiaNome()
+    {
+        ProcessoSeletivo processo = Processo();
+        CopiaDeModeloDeFormulario copia = Copia(FinalidadeFormulario.Inscricao, Item("COR_RACA", 0));
+        processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.AplicarModeloDeFormulario(copia with { ModeloNome = "Modelo atualizado" });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloOrigemNome.Should().Be("Modelo atualizado");
     }
 
     [Fact(DisplayName = "Na inscrição, o fato que outra finalidade coletava passa para a inscrição")]
@@ -166,7 +181,8 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static CopiaDeModeloDeFormulario Copia(FinalidadeFormulario finalidade, params FatoColetado[] itens) =>
-        new(finalidade, "Formulário", FormularioDeTeste.Etapas(), itens, [], [], [], ModeloId, "INSCRICAO_MEDICINA");
+        new(finalidade, "Formulário", FormularioDeTeste.Etapas(), itens, [], [], [], ModeloId, "INSCRICAO_MEDICINA")
+        { ModeloNome = "Modelo de inscrição" };
 
     private static FatoColetado Item(string fato, int ordem, string? exibidoQuando = null) => FatoColetadoDeTeste.Coletando(fato, ordem)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)

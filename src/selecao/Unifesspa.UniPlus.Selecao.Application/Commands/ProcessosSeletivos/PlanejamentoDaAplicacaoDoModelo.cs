@@ -115,7 +115,8 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         new(
             new CopiaDeModeloDeFormulario(
                 _finalidade, conteudo.Titulo, formulario.Etapas.Etapas, formulario.Itens.Itens, formulario.Grupos.Grupos,
-                copia.Termos, copia.Derivacoes, modelo.Id, modelo.Codigo),
+                copia.Termos, copia.Derivacoes, modelo.Id, modelo.Codigo)
+            { ModeloNome = modelo.Nome },
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),
             _relatorio,
             catalogo);

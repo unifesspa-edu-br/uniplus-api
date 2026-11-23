@@ -12947,6 +12947,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("regra_de_homologacao")
                         .HasComment("Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa.");
 
+                    b.Property<string>("TipoFaseNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tipo_fase_nome")
+                        .HasComment("Nome do tipo de fase copiado do cadastro ao definir o cronograma.");
+
                     b.Property<string>("UnidadeResponsavelNome")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
@@ -13181,6 +13188,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid?>("ModeloOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("modelo_origem_id");
+
+                    b.Property<string>("ModeloOrigemNome")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("modelo_origem_nome")
+                        .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
