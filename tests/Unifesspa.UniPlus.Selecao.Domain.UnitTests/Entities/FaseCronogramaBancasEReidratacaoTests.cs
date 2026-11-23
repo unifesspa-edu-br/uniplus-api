@@ -88,7 +88,7 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
     public void ReconstruirDosDadosSalvos_PreservaOIdNaFase()
     {
         Guid id = Guid.CreateVersion7();
-        BancaRequerida banca = BancaRequerida.ReconstruirDosDadosSalvos(id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
+        BancaRequerida banca = BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
 
         FaseCronograma fase = Reidratar([], null, [banca]);
 
@@ -98,7 +98,7 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
     [Fact(DisplayName = "A banca da fase reconstruída sem o Id congelado é erro de programação")]
     public void ReconstruirDosDadosSalvos_IdVazio_Lanca()
     {
-        Action reconstruir = () => BancaRequerida.ReconstruirDosDadosSalvos(Guid.Empty, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
+        Action reconstruir = () => BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, Guid.Empty, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
 
         reconstruir.Should().Throw<ArgumentException>();
     }

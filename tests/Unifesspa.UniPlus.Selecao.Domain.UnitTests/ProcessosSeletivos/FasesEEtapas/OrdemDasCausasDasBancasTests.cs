@@ -97,7 +97,7 @@ public sealed class OrdemDasCausasDasBancasTests
     // em algumas e depois em outras, e a fase que homologa vem depois da que tem a banca sem regra.
     private static ConfiguracaoDeclarada ImportacaoExternaComTodasAsCausas()
     {
-        BancaRequerida semRegra = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes), []);
+        BancaRequerida semRegra = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes), []);
         ModeloDeFase comBancaSemRegra = new ModeloDeFase(Avaliacao, 1) with { Bancas = [semRegra] };
         ModeloDeFase comBancaDaSegundaInstanciaSemRecurso = new ModeloDeFase(Resultado, 2) with { Bancas = [DaSegundaInstanciaNaFase()] };
         ModeloDeFase homologaComInstanciaSuperiorSemBancaEComRecursoSemJulgador =
@@ -118,7 +118,7 @@ public sealed class OrdemDasCausasDasBancasTests
         ModeloDeEtapa instanciaSuperiorNaoAdmitida = EtapaComRecurso(
             "Prova", Avaliacao, [Procedimento(TipoMotivoDeDecisao.Heteroidentificacao)], true, NaEtapa(Avaliadora(TipoDeBanca.Heteroidentificacao, true, TipoMotivoDeDecisao.Heteroidentificacao)));
         ModeloDeEtapa minimoDeBancasEDeIntegrantes = DaRegraLida(EtapaComRecurso(
-            "Redação", Avaliacao, DaNota, false, BancaDaEtapa.Criar(QueExigeDuasOuMais(), BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
+            "Redação", Avaliacao, DaNota, false, BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, QueExigeDuasOuMais(), BancasDeTeste.Regra(integrantes: 2, quorum: 2))));
         ModeloDeEtapa regraNaoResolvida = DaRegraLida(
             EtapaComRecurso("Entrevista", Avaliacao, DaNota, false, NaEtapa(Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa))), RegraForaDoCatalogo);
 
@@ -141,7 +141,7 @@ public sealed class OrdemDasCausasDasBancasTests
     private static ConfiguracaoDeclarada InscricaoPropriaComANotaDoEnemSemBancaDeImportacao()
     {
         ModeloDeFase soUmaBancaDoTipo = new ModeloDeFase(Avaliacao, 1) with { Bancas = [NaFase(QueExigeDuasOuMais())] };
-        ModeloDeEtapa semRegra = EtapaNaFase(Avaliacao) with { Bancas = [BancaDaEtapa.Criar(Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa))] };
+        ModeloDeEtapa semRegra = EtapaNaFase(Avaliacao) with { Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa))] };
         ModeloDeEtapa notaDoEnem = new ModeloDeEtapa("Nota do ENEM").DoEnem() with { FaseCodigo = Avaliacao };
 
         return Montar(

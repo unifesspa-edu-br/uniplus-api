@@ -27,12 +27,12 @@ internal static class TipoDeBancaCopiadoOwnedConfiguration
 
         tipo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        tipo.Property(t => t.OrigemId).HasColumnName("tipo_banca_origem_id").IsRequired();
-        tipo.Property(t => t.Codigo).HasColumnName("codigo").HasMaxLength(CodigoMaxLength).IsRequired();
-        tipo.Property(t => t.Nome).HasColumnName("nome").HasMaxLength(NomeMaxLength).IsRequired();
-        tipo.Property(t => t.Papel).HasColumnName("papel").HasMaxLength(CodigoMaxLength).IsRequired();
-        tipo.Property(t => t.ExigeDuasOuMaisBancas).HasColumnName("exige_duas_ou_mais_bancas").IsRequired();
-        tipo.Property(t => t.EncerraRecursoNaPrimeiraInstancia).HasColumnName("encerra_recurso_na_primeira_instancia").IsRequired();
+        tipo.Property(t => t.OrigemId).HasColumnName("tipo_banca_origem_id").IsRequired().HasComment("Identificador do tipo de banca no cadastro.");
+        tipo.Property(t => t.Codigo).HasColumnName("codigo").HasMaxLength(CodigoMaxLength).IsRequired().HasComment("Código do tipo de banca copiado do cadastro.");
+        tipo.Property(t => t.Nome).HasColumnName("nome").HasMaxLength(NomeMaxLength).IsRequired().HasComment("Nome do tipo de banca copiado do cadastro.");
+        tipo.Property(t => t.Papel).HasColumnName("papel").HasMaxLength(CodigoMaxLength).IsRequired().HasComment("Papel do tipo de banca copiado do cadastro.");
+        tipo.Property(t => t.ExigeDuasOuMaisBancas).HasColumnName("exige_duas_ou_mais_bancas").IsRequired().HasComment("Indica se o tipo exige duas ou mais bancas.");
+        tipo.Property(t => t.EncerraRecursoNaPrimeiraInstancia).HasColumnName("encerra_recurso_na_primeira_instancia").IsRequired().HasComment("Indica se o tipo encerra o recurso na primeira instância.");
         tipo.Ignore(t => t.TiposDeDecisaoJulgados);
         // Sem HasColumnType: com ele o provedor monta o elemento pelo tipo da coluna e ignora o conversor do código; o text[] sai do conversor.
         tipo.PrimitiveCollection<List<TipoMotivoDeDecisao>>(CampoDosTiposDeDecisaoJulgados)

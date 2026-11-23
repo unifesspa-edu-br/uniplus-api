@@ -116,7 +116,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
         objetiva.DefinirBancas([.. objetiva.Bancas.Select(b =>
-            BancaDaEtapa.Criar(b.Tipo, b.RegraDeDeliberacao))]);
+            BancaDaEtapa.Criar(b.Chave, b.Tipo, b.RegraDeDeliberacao))]);
 
         objetiva.Bancas.Select(b => b.Id).Should().NotIntersectWith(idsOriginais.Values,
             "sem o id, a banca declarada é outra");
@@ -134,7 +134,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
     // O cliente devolve a coleção inteira que leu, com o id de cada banca.
     private static void RedeclararComOIdLido(EtapaProcesso etapa) =>
-        etapa.DefinirBancas([.. etapa.Bancas.Select(b => BancaDaEtapa.Criar(b.Tipo, b.RegraDeDeliberacao, idDaBancaQueSubstitui: b.Id))]);
+        etapa.DefinirBancas([.. etapa.Bancas.Select(b => BancaDaEtapa.Criar(b.Chave, b.Tipo, b.RegraDeDeliberacao, idDaBancaQueSubstitui: b.Id))]);
 
     private static void ConferirQueALinhaNaoGirouDeId(EtapaProcesso etapa, Dictionary<TipoDeBanca, Guid> idsOriginais) =>
         etapa.Bancas.Select(b => b.Id).Should().BeEquivalentTo(idsOriginais.Values,

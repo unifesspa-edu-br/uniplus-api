@@ -5,15 +5,16 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ReconciliacaoDasBancasTests
 {
     private static BancaDaEtapa Banca(TipoDeBanca tipo, Guid? substitui = null, Guid? origem = null, string nome = "Banca") =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(tipo, origem), nome), idDaBancaQueSubstitui: substitui);
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(tipo, origem), nome), idDaBancaQueSubstitui: substitui);
 
     private static BancaRequerida BancaDaFase(TipoDeBanca tipo, Guid? substitui = null, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
             idDaBancaQueSubstitui: substitui);
@@ -140,7 +141,7 @@ public sealed class ReconciliacaoDasBancasTests
     }
 
     private static BancaRequerida DeclaradaComRendaEPpi(Guid idDaGravada, Guid origemDaRenda) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental),
             [CategoriaJulgada.Criar(origemDaRenda, "RENDA"), CategoriaJulgada.Criar(Guid.CreateVersion7(), "PPI")],
             idDaBancaQueSubstitui: idDaGravada);
@@ -183,7 +184,7 @@ public sealed class ReconciliacaoDasBancasTests
     public void Reconciliar_BancaDaEtapaReconstruida_SubstituiAGravadaDeMesmoId()
     {
         BancaDaEtapa gravada = Gravadas(Banca(TipoDeBanca.AnaliseDocumental))[0];
-        BancaDaEtapa reconstruida = BancaDaEtapa.ReconstruirDosDadosSalvos(gravada.Id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, gravada.Tipo.OrigemId));
+        BancaDaEtapa reconstruida = BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, gravada.Id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, gravada.Tipo.OrigemId));
 
         List<BancaDaEtapa> finais = ReconciliacaoDasBancas.Reconciliar([gravada], [reconstruida]);
 
@@ -195,7 +196,7 @@ public sealed class ReconciliacaoDasBancasTests
     {
         BancaRequerida gravada = BancaDaFase(TipoDeBanca.AnaliseDocumental, null, "RENDA");
         ReconciliacaoDasBancas.Reconciliar<BancaRequerida>([], [gravada]);
-        BancaRequerida reconstruida = BancaRequerida.ReconstruirDosDadosSalvos(gravada.Id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, gravada.Tipo.OrigemId), []);
+        BancaRequerida reconstruida = BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca").Value, gravada.Id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, gravada.Tipo.OrigemId), []);
 
         List<BancaRequerida> finais = ReconciliacaoDasBancas.Reconciliar([gravada], [reconstruida]);
 

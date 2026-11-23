@@ -71,7 +71,7 @@ public sealed class FaseDeclaradaTests
     [Fact(DisplayName = "Banca de análise de recursos com candidatos atendidos é recusada no campo dos candidatos atendidos da banca")]
     public void Declarar_CandidatosAtendidosEmBancaDeRecursos_RecusaNosCandidatosAtendidos()
     {
-        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
         ModeloDeFase modelo = new("RECURSO", 1) { Bancas = [comCandidatosAtendidos] };
@@ -85,7 +85,7 @@ public sealed class FaseDeclaradaTests
     [Fact(DisplayName = "Banca de 2ª instância com candidatos atendidos é recusada no campo dos candidatos atendidos, com o papel no detalhe")]
     public void Declarar_CandidatosAtendidosEmBancaDeSegundaInstancia_RecusaNosCandidatosAtendidos()
     {
-        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
 

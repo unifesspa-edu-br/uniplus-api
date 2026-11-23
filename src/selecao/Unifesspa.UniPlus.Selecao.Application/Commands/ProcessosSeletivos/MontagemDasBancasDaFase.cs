@@ -6,6 +6,7 @@ using Domain.ProcessosSeletivos.Bancas;
 using Domain.ProcessosSeletivos.Cronograma;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -17,7 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// não pode entrar no edital, porque os candidatos atendidos congelados respondem por parecer e recurso do certame inteiro. As
 /// violações da banca de uma mesma fase acumulam: o que falta numa não esconde o que falta nas outras.
 /// </summary>
-internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
+internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros, ChavesDasBancasDoProcesso chaves)
 {
     public async Task<Result<List<BancaRequerida>>> MontarAsync(
         FaseCronogramaInput fase, int indice, IReadOnlyCollection<BancaRequerida> gravadas, CancellationToken cancellationToken)
@@ -46,7 +47,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         Result<List<CategoriaJulgada>> atendidos = await CandidatosAtendidosAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
         return atendidos.IsFailure
             ? Result<BancaRequerida>.ValidationFailure(atendidos.Errors)
-            : Montada(declarada, tipo, atendidos.Value!, campo);
+            : Montada(declarada, tipo, atendidos.Value!, campo, gravadas);
     }
 
     private async Task<TipoDeBancaCopiado?> TipoAsync(
@@ -62,14 +63,14 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         return tipo is null ? null : CopiaDoTipoDeBanca.De(tipo);
     }
 
-    private static Result<BancaRequerida> Montada(
-        BancaRequeridaInput declarada, TipoDeBancaCopiado tipo, List<CategoriaJulgada> atendidos, string campo)
+    private Result<BancaRequerida> Montada(
+        BancaRequeridaInput declarada, TipoDeBancaCopiado tipo, List<CategoriaJulgada> atendidos, string campo, IReadOnlyCollection<BancaRequerida> gravadas)
     {
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, campo);
 
         return regra.Errors.Count > 0
             ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo, atendidos, regra.Value, declarada.Id));
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(gravadas.FirstOrDefault(banca => banca.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo()), tipo, atendidos, regra.Value, declarada.Id));
     }
 
     private async Task<Result<List<CategoriaJulgada>>> CandidatosAtendidosAsync(

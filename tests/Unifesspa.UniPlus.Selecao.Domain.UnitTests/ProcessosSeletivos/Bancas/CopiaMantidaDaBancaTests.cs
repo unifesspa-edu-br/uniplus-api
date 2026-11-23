@@ -19,10 +19,10 @@ public sealed class CopiaMantidaDaBancaTests
     private static readonly Guid Origem = Guid.CreateVersion7();
 
     private static BancaDaEtapa BancaDaEtapaGravada() =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Origem), "Nome de quando nasceu"));
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Origem), "Nome de quando nasceu"));
 
     private static BancaRequerida BancaDaFaseGravada() =>
-        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Origem), "Nome de quando nasceu"), []);
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Origem), "Nome de quando nasceu"), []);
 
     [Fact(DisplayName = "A banca da etapa que a declaração substitui, com o mesmo tipo, mantém a cópia que já tinha")]
     public void BancaDaEtapa_MesmoTipo_DevolveACopiaGravada()

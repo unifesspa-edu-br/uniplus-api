@@ -75,9 +75,11 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         [typeof(ParametrosElimAusenciaNaEtapa)] = (["EtapaRef"], []),
 
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
+        [typeof(ChaveLocal)] = (["Valor"], []),
+
         [typeof(FaseCronograma)] = (
             [
-                "Ordem", "NoMesmoMomentoDaAnterior", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
+                "Chave", "Ordem", "NoMesmoMomentoDaAnterior", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
                 "Produtos", "EmiteParecerIndividual",
@@ -85,6 +87,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("TipoFaseNome", "Nome copiado do cadastro, ainda não incluído no documento congelado."),
                 ("UnidadeResponsavelOrigemId", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("UnidadeResponsavelSigla", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("UnidadeResponsavelNome", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
@@ -115,7 +118,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["Tipo", "PosicaoNoTipo", "CandidatosAtendidos", "RegraDeDeliberacao"],
+            ["Chave", "Tipo", "PosicaoNoTipo", "CandidatosAtendidos", "RegraDeDeliberacao"],
             [("FaseCronogramaId", "FK interna.")]),
 
         // A cópia do tipo de banca que a banca da fase e a da etapa guardam, congelada na publicação. Sem Id no

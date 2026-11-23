@@ -242,7 +242,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA", cidade).Value!;
 
     private static EtapaProcesso NovaEtapa(string nome, CaraterEtapa carater, int ordem, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
-        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves.FormacaoDeChaveLocal.Formar("etapa", nome, new()),
             new IdentificacaoDaEtapa(
                 Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 Ordem: ordem, FaseCodigo: null),

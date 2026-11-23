@@ -21,7 +21,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
-                "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
+                "Chave", "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
                 "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
                 "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
@@ -115,6 +115,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ["Finalidade", "FaseId", "Titulo", "ModeloOrigemId", "ModeloOrigemCodigo", "Etapas"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("ModeloOrigemNome", "Nome copiado do cadastro, ainda não incluído no documento congelado."),
                 ("Estrutura", "Derivada das Etapas — a forma que a estrutura do formulário confere, recomputada."),
             ]),
 

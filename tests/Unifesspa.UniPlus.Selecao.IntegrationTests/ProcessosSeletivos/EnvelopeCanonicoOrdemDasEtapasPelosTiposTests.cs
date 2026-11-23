@@ -18,10 +18,8 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Envel
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.NormalizadorDeIdsDoEnvelope;
 
 /// <summary>
-/// Duas etapas que só diferem pelos tipos de decisão têm no envelope uma ordem que não depende da identidade
-/// técnica delas: nem da ordem de criação (Guid v7), nem da ordem em que a lista chega ao processo, nem da ordem
-/// em que os tipos foram declarados. O empate só existe entre etapas sem ordem, porque o processo recusa duas
-/// etapas com a mesma ordem.
+/// A ordem declarada das etapas independe da ordem de criação e da entrada da lista;
+/// os tipos de decisão de cada etapa são ordenados pelo código.
 /// </summary>
 public sealed class EnvelopeCanonicoOrdemDasEtapasPelosTiposTests
 {
@@ -91,9 +89,10 @@ public sealed class EnvelopeCanonicoOrdemDasEtapasPelosTiposTests
 
     private static EtapaProcesso Etapa(params string[] tipos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        bool analise = tipos.Contains(AnaliseDocumental, StringComparer.Ordinal);
+        EtapaProcesso etapa = EtapaProcesso.Criar(ChaveLocal.Criar(analise ? "etapa_analise_documental" : "etapa_classificacao").Value!,
             new IdentificacaoDaEtapa(
-                Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, Ordem: null, FaseCodigo: "INSCRICAO",
+                Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, Ordem: analise ? 1 : 2, FaseCodigo: "INSCRICAO",
                 TipoEtapa: TipoEtapaSnapshot.Criar(
                     new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva",
                     admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!),

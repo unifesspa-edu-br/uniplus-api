@@ -40,6 +40,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     /// </summary>
     internal static readonly (string Nome, int ValorNoCodec, Type Entidade, string Propriedade)[] Comprimentos =
     [
+        ("NomeDoProcesso", LimitesDoEnvelope.NomeDoProcesso, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.Nome)),
         ("EtapaNome", LimitesDoEnvelope.EtapaNome, typeof(EtapaProcesso), nameof(EtapaProcesso.Nome)),
         ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Codigo)),
         ("ModalidadeDescricao", LimitesDoEnvelope.ModalidadeDescricao, typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Descricao)),

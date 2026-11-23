@@ -92,7 +92,9 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.HasMany(f => f.BancasRequeridas)
             .WithOne()
-            .HasForeignKey(b => b.FaseCronogramaId)
+            .HasForeignKey("FaseCronogramaId", "ProcessoSeletivoId")
+            .HasPrincipalKey(nameof(FaseCronograma.Id), nameof(FaseCronograma.ProcessoSeletivoId))
+            .HasConstraintName("fk_bancas_requeridas_fase")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(f => f.RegraRecurso)

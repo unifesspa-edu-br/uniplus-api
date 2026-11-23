@@ -41,7 +41,7 @@ internal static class CorpusEnvelopeEtapas
     }
 
     internal static EtapaProcesso NovaEtapaObjetiva(int variante, bool permutar) =>
-        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_prova_objetiva").Value!,
             EtapaId(1, variante),
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3.5000m, NotaMinima: 40.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
@@ -82,9 +82,9 @@ internal static class CorpusEnvelopeEtapas
     // a ordenação pelo código do tipo não se manifestava.
     internal static IReadOnlyList<BancaDaEtapa> BancasDaObjetiva(int variante, bool permutar) =>
         Ordem([
-            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(2, variante), TiposDeBancaCopiadosDeTeste.DeRecursos(TipoBancaRecursal), BancasDeTeste.Regra()),
-            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, TipoBancaAnulacao), BancasDeTeste.Regra()),
-            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(1, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_objetiva_2").Value, BancaDaObjetivaId(2, variante), TiposDeBancaCopiadosDeTeste.DeRecursos(TipoBancaRecursal), BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_objetiva_3").Value, BancaDaObjetivaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, TipoBancaAnulacao), BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_objetiva_1").Value, BancaDaObjetivaId(1, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra()),
         ], permutar);
 
     internal static IReadOnlyList<RecursoDaEtapa> RecursosDaObjetiva(int variante) =>
@@ -145,7 +145,7 @@ internal static class CorpusEnvelopeEtapas
             ProcedimentosDoCorpusSemAlvo()).Value!;
 
     internal static EtapaProcesso EtapaRedacao(int variante) =>
-        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_redacao").Value!,
             EtapaId(2, variante),
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaRedacao(), Ordem: 2, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2.2500m, NotaMinima: null, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
@@ -154,7 +154,7 @@ internal static class CorpusEnvelopeEtapas
     // A etapa de avaliação humana exige ao menos uma banca para publicar.
     internal static EtapaProcesso EtapaEntrevista(int variante, bool permutar)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_entrevista").Value!,
             EtapaId(3, variante),
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
@@ -162,7 +162,7 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_primeiro_acesso").Value, ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_dominio").Value, ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
             ]);
-        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
+        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_etapa_3").Value, BancaDaEtapaId(3, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.Heteroidentificacao.Codigo()]).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -171,7 +171,7 @@ internal static class CorpusEnvelopeEtapas
     // escala de atendimento e dispensa o passo do lançamento.
     internal static EtapaProcesso EtapaDefesa(int variante, bool permutar)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_defesa").Value!,
             EtapaId(4, variante),
             new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
@@ -179,14 +179,14 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_coesao").Value, ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_argumentacao").Value, ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
             ]);
-        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(4, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
+        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_etapa_4").Value, BancaDaEtapaId(4, variante), TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaExaminadora), BancasDeTeste.Regra())]);
         return etapa;
     }
 
     internal static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa() =>
         [
-            new NivelDeAtendimento("Atendeu parcialmente", 0.5000m),
-            new NivelDeAtendimento("Atendeu", 1.0000m),
-            new NivelDeAtendimento("Não atendeu", 0.0000m),
+            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atendeu_parcialmente").Value!, "Atendeu parcialmente", 0.5000m),
+            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atendeu").Value!, "Atendeu", 1.0000m),
+            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_nao_atendeu").Value!, "Não atendeu", 0.0000m),
         ];
 }

@@ -155,7 +155,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         Result result = processo.DefinirEtapas([etapa]);
 
@@ -218,7 +218,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_OrdemDasRecusas()
     {
         EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        comTudo.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        comTudo.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
 
         NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)])
@@ -227,7 +227,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
-        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         NovoProcesso().DefinirEtapas([comBancaEProduto])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
@@ -239,7 +239,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -250,7 +250,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaRedacao();
-        redacao.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        redacao.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         redacao.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([EtapaNotaEnem(), redacao]);
@@ -276,7 +276,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         Result result = processo.DefinirEtapas([etapa]);
 
@@ -364,7 +364,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void ConferirEtapaDeNotaDoEnem_ComBancaQueAvalia_NaoRepeteARecusaDaDeclaracao()
     {
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         RegrasDasEtapas.ConferirEtapaDeNotaDoEnem([etapa], ClassificacaoMediaPonderada(baseadoEmEnem: true)).Should().BeNull();
         RegrasDasEtapas.ConferirEtapaDeNotaDoEnem([etapa], ClassificacaoMediaPonderada(baseadoEmEnem: false))!

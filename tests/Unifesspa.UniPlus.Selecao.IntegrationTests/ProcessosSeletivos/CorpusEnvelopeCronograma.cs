@@ -45,7 +45,7 @@ internal static class CorpusEnvelopeCronograma
     /// Fase 1: coleta inscrição e publica um ato SEM papel — o comunicado de abertura não é
     /// resultado, e publicá-lo não torna a fase produtora.
     /// </summary>
-    internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+    internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_inscricao").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
@@ -67,7 +67,7 @@ internal static class CorpusEnvelopeCronograma
     /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do corpus quando ausente.</param>
     /// <param name="comBancasExigidasNaPublicacao">Opt-in: acrescenta as bancas que a publicação exige e que a golden fixture não tem (homologação das inscrições e 2ª instância).</param>
     internal static FaseCronograma FaseResultadoPreliminarComRecurso(
-        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_resultado_preliminar").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
@@ -123,21 +123,21 @@ internal static class CorpusEnvelopeCronograma
 
     // A banca que julga a homologação das inscrições, que a publicação exige de toda fase que homologa.
     internal static BancaRequerida BancaDeHomologacaoDasInscricoes(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_5").Value,
             BancaId(5, variante),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes, new Guid("5555eeee-0000-4000-8000-000000000004")),
             [],
             BancasDeTeste.Regra());
 
     internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_1").Value,
             BancaId(1, variante),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, new Guid("5555eeee-0000-4000-8000-000000000001")),
             [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")],
             BancasDeTeste.Regra());
 
     internal static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_2").Value,
             BancaId(2, variante),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, new Guid("5555eeee-0000-4000-8000-000000000001")),
             [
@@ -147,7 +147,7 @@ internal static class CorpusEnvelopeCronograma
             BancasDeTeste.Regra());
 
     internal static BancaRequerida BancaDeHeteroidentificacao(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_3").Value,
             BancaId(3, variante),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, new Guid("5555eeee-0000-4000-8000-000000000002")),
             [],
@@ -156,7 +156,7 @@ internal static class CorpusEnvelopeCronograma
     // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do corpus só é
     // publicável com a banca de análise de recursos declarada.
     internal static BancaRequerida BancaDeAnaliseDeRecursos(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_4").Value,
             BancaId(4, variante),
             TiposDeBancaCopiadosDeTeste.DeRecursos(new Guid("5555eeee-0000-4000-8000-000000000003")),
             [],
@@ -164,7 +164,7 @@ internal static class CorpusEnvelopeCronograma
 
     // Quem julga em 2ª instância os recursos das etapas da fase que admitem instância superior: a publicação exige essa banca.
     internal static BancaRequerida BancaDeAnaliseDeRecursosDeSegundaInstancia(int variante = 0) =>
-        BancaRequerida.ReconstruirDosDadosSalvos(
+        BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_6").Value,
             BancaId(6, variante),
             TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(new Guid("5555eeee-0000-4000-8000-000000000005")),
             [],
@@ -188,7 +188,7 @@ internal static class CorpusEnvelopeCronograma
     /// <summary>
     /// Fase 3: não publica ato; tem a data final declarada.
     /// </summary>
-    internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+    internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_resultado_final").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,

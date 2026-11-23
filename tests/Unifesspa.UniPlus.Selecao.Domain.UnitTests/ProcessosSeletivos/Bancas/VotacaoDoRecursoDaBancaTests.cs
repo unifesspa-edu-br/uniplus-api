@@ -45,7 +45,7 @@ public sealed class VotacaoDoRecursoDaBancaTests
     private static IReadOnlyList<FieldError> RecusasDaFase(TipoDeBancaCopiado tipo, RegraDeDeliberacao? regra)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
-            fase: ProcessoConformeFactory.FaseConforme(bancas: [BancaRequerida.Criar(tipo, [], regra)]));
+            fase: ProcessoConformeFactory.FaseConforme(bancas: [BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, tipo, [], regra)]));
 
         return ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas));
     }
@@ -57,7 +57,7 @@ public sealed class VotacaoDoRecursoDaBancaTests
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipo, regra)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, tipo, regra)]);
 
         return ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas));
     }
@@ -135,8 +135,8 @@ public sealed class VotacaoDoRecursoDaBancaTests
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(ComPapel(PapelDaBanca.AvaliaOMerito), AtoIndividualSemVotacao()),
-            BancaDaEtapa.Criar(ComPapel(PapelDaBanca.JulgaAPrimeiraInstancia), AtoIndividualSemVotacao()),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, ComPapel(PapelDaBanca.AvaliaOMerito), AtoIndividualSemVotacao()),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, ComPapel(PapelDaBanca.JulgaAPrimeiraInstancia), AtoIndividualSemVotacao()),
         ]);
 
         IReadOnlyList<FieldError> recusas = ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas));
@@ -148,7 +148,7 @@ public sealed class VotacaoDoRecursoDaBancaTests
     [Fact(DisplayName = "A conferência da publicação acusa a banca que julga recurso por ato individual sem votação")]
     public void ConferenciaDaPublicacao_JulgaRecursoSemVotacao_Acusa()
     {
-        BancaRequerida banca = BancaRequerida.Criar(ComPapel(PapelDaBanca.JulgaAPrimeiraInstancia), [], AtoIndividualSemVotacao());
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, ComPapel(PapelDaBanca.JulgaAPrimeiraInstancia), [], AtoIndividualSemVotacao());
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(RegraDeRecurso(), bancas: [banca]));
 
         CodigosDaConferencia(processo, CorretoresDeTeste.SemConsolidacao).Should().Contain(CodigoDaRecusa);

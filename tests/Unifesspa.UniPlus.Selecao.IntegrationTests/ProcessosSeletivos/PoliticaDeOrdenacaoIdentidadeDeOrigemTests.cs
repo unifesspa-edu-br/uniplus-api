@@ -63,8 +63,8 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: o código governa sobre a identidade de origem — oráculo de sequência exata")]
     public void CronogramaFases_BancasRequeridas_CodigoGovernaSobreIdentidadeDeOrigem()
     {
-        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, IdFixo(1)), []);
-        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(2)), []);
+        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, IdFixo(1)), []);
+        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(2)), []);
 
         JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("INSCRICAO", bancaComOrigemMenor, bancaComOrigemMaior));
 
@@ -78,9 +78,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     public void CronogramaFases_BancasRequeridas_MesmoTipo_SeguemAPosicaoNoTipo()
     {
         Guid tipoUnico = IdFixo(1);
-        BancaRequerida bancaDaRenda = BancaRequerida.Criar(
+        BancaRequerida bancaDaRenda = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
-        BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(
+        BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
 
         CandidatosAtendidosNaOrdemDasBancas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial))
@@ -97,7 +97,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas[].candidatosAtendidos: o conteúdo (código) governa — oráculo de sequência exata")]
     public void CronogramaFases_CandidatosAtendidos_CodigoGoverna()
     {
-        BancaRequerida banca = BancaRequerida.Criar(
+        BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(1)),
             [
                 CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA"),

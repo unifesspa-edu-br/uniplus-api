@@ -54,7 +54,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         ProdutoDaFase.Reidratar(ProdutoDoGabaritoId, "GABARITO", PapelProdutoFase.Preliminar),
     ];
 
-    private static BancaRequerida Banca() => BancaRequerida.Criar(
+    private static BancaRequerida Banca() => BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
         TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.DeRecursos(new Guid("01a0d640-0000-7000-8000-0000000000c4")), "Banca de recursos"),
         []);
 
@@ -98,6 +98,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     {
         BancaRequeridaDto banca = ProjecaoDaFaseDoCronograma.ProjetarFase(FaseCompleta()).BancasRequeridas.Single();
 
+        banca.Chave.Should().Be("banca");
         banca.Codigo.Should().BeEquivalentTo(CodigoComRotulo<TipoDeBanca>.De(TipoDeBanca.AnaliseDeRecursos));
         banca.Papel.Should().BeEquivalentTo(CodigoComRotulo<PapelDaBanca>.De(PapelDaBanca.JulgaAPrimeiraInstancia));
         banca.ExigeDuasOuMaisBancas.Should().BeFalse();

@@ -45,10 +45,10 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca), idDaBancaQueSubstitui: idOriginal)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca), idDaBancaQueSubstitui: idOriginal)]);
 
         etapa.Bancas.Single().Id.Should().Be(idOriginal,
             "a banca devolvida com o id dela é a mesma; recriar a linha gira o id, que a designação e o julgamento apontam");
@@ -60,10 +60,10 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
 
         etapa.Bancas.Single().Id.Should().NotBe(idOriginal);
     }

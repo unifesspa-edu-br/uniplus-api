@@ -52,7 +52,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaId), "Banca geral"))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaId), "Banca geral"))]);
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
             .IsSuccess.Should().BeTrue();
         return etapa;
@@ -78,6 +78,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
     private static BancaDaEtapaDto BancaGeralEsperada(Guid id) => new(
         id,
+        "banca",
         TipoBancaId,
         CodigoComRotulo<TipoDeBanca>.De(TipoDeBanca.CorrecaoDeRedacoes),
         1,

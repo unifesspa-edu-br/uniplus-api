@@ -29,7 +29,7 @@ public sealed class BancaDeHomologacaoQueJulgaORecursoNaPublicacaoTests
 
     private static ProcessoSeletivo ProcessoComABancaDeHomologacao(RegraDeDeliberacao regra)
     {
-        BancaRequerida deHomologacao = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], regra);
+        BancaRequerida deHomologacao = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], regra);
         ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
 
         processo.DefinirCronogramaFases(
@@ -75,7 +75,7 @@ public sealed class BancaDeHomologacaoQueJulgaORecursoNaPublicacaoTests
     [Fact(DisplayName = "A banca de homologação em ato individual sem votação não é recusada quando há banca dedicada a julgar o recurso no lugar")]
     public void BancaDeHomologacao_ComBancaDedicadaNoLugar_NaoERecusada()
     {
-        BancaRequerida deHomologacao = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], AtoIndividualSemVotacao());
+        BancaRequerida deHomologacao = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], AtoIndividualSemVotacao());
         ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
 
         processo.DefinirCronogramaFases(

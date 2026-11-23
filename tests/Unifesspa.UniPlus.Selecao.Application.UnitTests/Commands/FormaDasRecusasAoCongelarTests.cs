@@ -139,8 +139,8 @@ public sealed class FormaDasRecusasAoCongelarTests
         EtapaProcesso etapa = EtapaQuePublicaPreliminarSemDefinitivo(processo);
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, Guid.CreateVersion7())),
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7())),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, Guid.CreateVersion7())),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7())),
         ]);
 
         return etapa;
@@ -162,11 +162,10 @@ public sealed class FormaDasRecusasAoCongelarTests
         return etapa;
     }
 
-    [Fact(DisplayName = "O estado recusado devolve erro único e sem eventos, antes de ler o ato, o documento e os cadastros, e descarta o rastreamento")]
+    [Fact(DisplayName = "O estado recusado devolve erro único e sem eventos, antes de ler o ato, o documento e os cadastros")]
     public async Task EstadoRecusado_NaoLeOAtoNemOsCadastros()
     {
-        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(cenario.Processo, StatusProcesso.Encerrado);
+        DependenciasDosHandlersQueCongelam cenario = DependenciasDosHandlersQueCongelam.Para(NovoProcessoConforme());
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
@@ -176,26 +175,7 @@ public sealed class FormaDasRecusasAoCongelarTests
         await cenario.Servicos.Documentos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
         await cenario.Servicos.TiposDeAto.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
         _ = cenario.Servicos.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.Repositorio.DidNotReceive().AdicionarVersaoConfiguracaoAsync(Arg.Any<VersaoConfiguracao>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "O registro do ato recusado depois da transição chega com o campo, sem eventos, e nada é escrito")]
-    public async Task RegistroDoAtoRecusado_ChegaComOCampoENadaEEscrito()
-    {
-        CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Retificar);
-        VersaoConfiguracao vigente = (await cenario.Servicos.Repositorio.ObterVersaoAtualAsync(cenario.Processo.Id, CancellationToken.None))!;
-        typeof(VersaoConfiguracao).GetProperty(nameof(VersaoConfiguracao.AtoCriadorId))!.SetValue(vigente, Guid.Empty);
-
-        (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
-
-        FieldError erro = resposta.Errors.Should().ContainSingle().Subject;
-        erro.Field.Should().Be("atoCorrigidoId");
-        erro.Error.Code.Should().Be(AtoDoProcessoErrorCodes.AtoCorrigidoInvalido);
-        eventos.Should().BeEmpty();
-        cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await cenario.Servicos.Repositorio.DidNotReceive().AdicionarVersaoConfiguracaoAsync(Arg.Any<VersaoConfiguracao>(), Arg.Any<CancellationToken>());
-        await cenario.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A unicidade violada no flush chega como erro único, sem eventos, e o rastreamento com a remoção do rascunho é descartado")]

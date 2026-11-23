@@ -5,9 +5,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -69,13 +71,13 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     public async Task TrocaDePosicoesEntreBancasDoMesmoTipo_NaoColide()
     {
         (Guid processoId, Guid etapaId) = await GravarEtapaComAsync(
-            "Certame de posições", Banca(TipoBanca, TipoDeBanca.Entrevista), Banca(TipoBanca, TipoDeBanca.Entrevista));
+            "Certame de posições", Banca(TipoBanca, TipoDeBanca.Entrevista), Banca(TipoBanca, TipoDeBanca.Entrevista, chave: "banca_entrevista_2"));
         IReadOnlyList<BancaDaEtapa> gravadas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
         gravadas.Select(b => b.PosicaoNoTipo).Should().Equal(1, 2);
 
         await RegravarAsync(
             processoId, etapaId,
-            [Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[1].Id), Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[0].Id)],
+            [Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[1].Id, "banca_entrevista_2"), Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[0].Id)],
             "trocar a posição de duas bancas é configuração legítima, e a restrição única só pode ser conferida ao fim da transação");
 
         IReadOnlyList<BancaDaEtapa> relidas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
@@ -104,7 +106,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     {
         TipoDeBancaCopiado copia = TiposDeBancaCopiadosDeTeste.Com(
             TipoDeBanca.Heteroidentificacao, PapelDaBanca.AvaliaOMerito, TipoBanca, "Comissão de heteroidentificação", exigeDuasOuMaisBancas: true, encerraRecursoNaPrimeiraInstancia: false);
-        (_, Guid etapaId) = await GravarEtapaComAsync("Certame da cópia", BancaDaEtapa.Criar(copia));
+        (_, Guid etapaId) = await GravarEtapaComAsync("Certame da cópia", BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, copia));
 
         EtapaProcesso relida = await RelerAsync(etapaId);
 
@@ -119,7 +121,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
             TipoBanca, TipoDeBanca.Heteroidentificacao, "Comissão de heteroidentificação", PapelDaBanca.AvaliaOMerito,
             exigeDuasOuMaisBancas: false, encerraRecursoNaPrimeiraInstancia: false,
             [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]);
-        (_, Guid etapaId) = await GravarEtapaComAsync("Certame dos códigos da cópia", BancaDaEtapa.Criar(copia));
+        (_, Guid etapaId) = await GravarEtapaComAsync("Certame dos códigos da cópia", BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, copia));
         Guid bancaId = (await RelerAsync(etapaId)).Bancas.Single().Id;
 
         await using UniPlusDbContext conferencia = fixture.CreateDbContext();
@@ -144,8 +146,8 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         relida.Tipo.Should().Be(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDeRecursos, OutroTipoBanca));
     }
 
-    private static BancaDaEtapa Banca(Guid origemDoTipo, TipoDeBanca tipo, Guid? idDaBancaQueSubstitui = null) =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo), idDaBancaQueSubstitui: idDaBancaQueSubstitui);
+    private static BancaDaEtapa Banca(Guid origemDoTipo, TipoDeBanca tipo, Guid? idDaBancaQueSubstitui = null, string? chave = null) =>
+        BancaDaEtapa.Criar(chave is null ? FormacaoDeChaveLocal.Formar("banca", tipo.Codigo(), new ChavesEmUso()) : ChaveLocal.Criar(chave).Value, TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo), idDaBancaQueSubstitui: idDaBancaQueSubstitui);
 
     private static EtapaProcesso NovaEtapaDeTitulos() =>
         EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,

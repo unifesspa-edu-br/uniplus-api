@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
 
@@ -116,8 +117,8 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
             CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(variante: variante, permutar: permutar))).Bytes;
 
     private static BancaDaEtapa ComOMesmoId(BancaDaEtapa banca) =>
-        BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id);
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id);
 
     private static BancaDaEtapa OutraDoMesmoTipo(BancaDaEtapa banca) =>
-        BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao);
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, banca.Tipo, banca.RegraDeDeliberacao);
 }

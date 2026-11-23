@@ -38,9 +38,9 @@ public sealed partial class ListasDasFasesTests
     {
         FaseNoDocumento fase = ComBancas(
             Fase(0, "recurso", "RECURSO"),
-            Banca(0, "banca-a", TipoDeBanca, []),
-            Banca(1, "banca-b", "TIPO-DIGITADO", []),
-            Banca(2, "banca-c", TipoDeBanca, []));
+            Banca(0, "banca_a", TipoDeBanca, []),
+            Banca(1, "banca_b", "TIPO-DIGITADO", []),
+            Banca(2, "banca_c", TipoDeBanca, []));
 
         IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
 
@@ -52,7 +52,7 @@ public sealed partial class ListasDasFasesTests
     public void FaseAnteriorRecusada_CausaDaBancaApontaAFaseEnviada()
     {
         FaseNoDocumento recusada = Fase(0, "inexistente", "FASE-DIGITADA");
-        FaseNoDocumento fase = ComBancas(Fase(1, "recurso", "RECURSO"), Banca(0, "banca-a", "TIPO-DIGITADO", []), Banca(1, "banca-b", TipoDeBanca, []));
+        FaseNoDocumento fase = ComBancas(Fase(1, "recurso", "RECURSO"), Banca(0, "banca_a", "TIPO-DIGITADO", []), Banca(1, "banca_b", TipoDeBanca, []));
 
         IdentificacaoECronogramaLidos lidos = Ler(Documento(recusada, fase));
 

@@ -12,7 +12,6 @@ using Kernel.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -47,7 +46,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaClassificatoriaEmTipoQueNaoPontua_Recusa));
 
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapaAsync(
+        Result resultado = await DefinirEtapaAsync(
             processoId, AnaliseDocumental, CaraterEtapa.Classificatoria, peso: 1m);
 
         resultado.IsFailure.Should().BeTrue();
@@ -68,7 +67,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaEliminatoriaEmTipoQueNaoPontua_Aceita));
 
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapasAsync(
+        Result resultado = await DefinirEtapasAsync(
             processoId,
             new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria, ProvaObjetiva, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
             new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria, AnaliseDocumental, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []));
@@ -81,7 +80,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaClassificatoriaEmTipoQuePontua_Aceita));
 
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapaAsync(
+        Result resultado = await DefinirEtapaAsync(
             processoId, ProvaObjetiva, CaraterEtapa.Classificatoria, peso: 1m);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -96,7 +95,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
         return processo.Id;
     }
 
-    private Task<Result<IReadOnlyList<EtapaProcessoDto>>> DefinirEtapaAsync(
+    private Task<Result> DefinirEtapaAsync(
         Guid processoId,
         Guid tipoEtapaOrigemId,
         CaraterEtapa carater,
@@ -106,7 +105,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
             processoId,
             new EtapaProcessoInput("Etapa", carater, tipoEtapaOrigemId, peso, notaMinima, 1, Produtos: [], Bancas: [], Recursos: []));
 
-    private async Task<Result<IReadOnlyList<EtapaProcessoDto>>> DefinirEtapasAsync(
+    private async Task<Result> DefinirEtapasAsync(
         Guid processoId,
         params EtapaProcessoInput[] etapas)
     {
@@ -114,6 +113,6 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        return await bus.InvokeAsync<Result<IReadOnlyList<EtapaProcessoDto>>>(command);
+        return await bus.InvokeAsync<Result>(command);
     }
 }

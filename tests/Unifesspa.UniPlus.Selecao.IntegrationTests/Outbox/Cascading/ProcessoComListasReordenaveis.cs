@@ -131,7 +131,7 @@ internal sealed class ProcessoComListasReordenaveis
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             preliminar.Id).Value!;
 
-        return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+        return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_classificacao").Value!,
             new OrigemCanonicaDaFase(_origemDaFaseComRecurso, CodigoDaFaseComRecurso, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([preliminar, definitivo], EmiteParecerIndividual: false, recurso),
@@ -140,7 +140,7 @@ internal sealed class ProcessoComListasReordenaveis
 
     private EtapaProcesso EtapaComRecursosDivergentes()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_prova_discursiva").Value!,
             new IdentificacaoDaEtapa(
                 NomeDaEtapaComRecursos, CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_DISCURSIVA", "Prova Discursiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

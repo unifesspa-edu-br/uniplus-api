@@ -200,7 +200,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         IEnumerable<TipoMotivoDeDecisao>? tipos = null,
         bool exigeDuasOuMais = false,
         bool encerraNaPrimeira = false) =>
-        Etapa(completar: e => e.DefinirBancas([BancaDaEtapa.Criar(
+        Etapa(completar: e => e.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(
                 TipoDeBanca.CorrecaoDeRedacoes, papel, OrigemDoTipo, null, exigeDuasOuMais, encerraNaPrimeira, tipos ?? [TipoMotivoDeDecisao.Classificacao]),
             BancasDeTeste.Regra())]));

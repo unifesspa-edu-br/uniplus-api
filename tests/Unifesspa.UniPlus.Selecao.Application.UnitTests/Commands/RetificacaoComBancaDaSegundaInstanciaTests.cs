@@ -18,7 +18,7 @@ public sealed class RetificacaoComBancaDaSegundaInstanciaTests
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
         EtapaProcesso etapa = cenario.Processo.Etapas.Single();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra())]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra())]);
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 

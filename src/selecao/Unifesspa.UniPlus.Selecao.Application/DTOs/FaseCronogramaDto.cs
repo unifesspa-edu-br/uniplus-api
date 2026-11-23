@@ -14,6 +14,7 @@ public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemI
 
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a fase, para a banca continuar sendo a mesma.</param>
+/// <param name="Chave">Chave local permanente da banca no documento.</param>
 /// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na fase, a partir de 1.</param>
 /// <param name="Codigo">O código do tipo de banca, com o rótulo que a tela mostra.</param>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
@@ -28,6 +29,7 @@ public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemI
 /// </param>
 public sealed record BancaRequeridaDto(
     Guid Id,
+    string Chave,
     Guid TipoBancaOrigemId,
     CodigoComRotulo<TipoDeBanca> Codigo,
     int PosicaoNoTipo,

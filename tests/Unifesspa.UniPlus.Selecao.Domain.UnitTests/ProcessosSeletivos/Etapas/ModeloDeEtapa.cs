@@ -63,7 +63,7 @@ internal sealed record ModeloDeEtapa(string Nome)
         Forma = FormaDeAvaliacao.Humana,
         RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64)),
         Passo = 0.5m,
-        Bancas = [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())],
+        Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())],
     };
 
     internal ModeloDeEtapa SemNota() => this with

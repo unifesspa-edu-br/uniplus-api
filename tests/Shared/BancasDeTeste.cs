@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>As bancas e regras de deliberação que o processo publicável de teste declara.</summary>
@@ -24,22 +24,24 @@ internal static class BancasDeTeste
 
     /// <summary>A banca de análise de recursos da fase, com a regra de deliberação declarada.</summary>
     public static BancaRequerida DeRecursosDaFase() =>
-        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), [], Regra());
+        BancaRequerida.Criar(Chave(TipoDeBanca.AnaliseDeRecursos), TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), [], Regra());
 
     /// <summary>A banca de análise de recursos de 2ª instância da fase, com a regra de deliberação declarada.</summary>
     public static BancaRequerida DeSegundaInstanciaDaFase() =>
-        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], Regra());
+        BancaRequerida.Criar(Chave(TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia), TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], Regra());
 
     /// <summary>A banca de análise de recursos da etapa, com a regra de deliberação declarada.</summary>
     public static BancaDaEtapa DeRecursosDaEtapa(RegraDeDeliberacao? regra = null) =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), regra ?? Regra());
+        BancaDaEtapa.Criar(Chave(TipoDeBanca.AnaliseDeRecursos), TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), regra ?? Regra());
 
     /// <summary>A banca de homologação das inscrições da fase, com a regra de deliberação declarada.</summary>
     public static BancaRequerida DaHomologacaoDasInscricoesDaFase() => DaFase(TipoDeBanca.HomologacaoDasInscricoes);
 
     /// <summary>Uma banca da fase do tipo pedido, com a regra de deliberação declarada.</summary>
-    public static BancaRequerida DaFase(TipoDeBanca tipo) => BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(tipo), [], Regra());
+    public static BancaRequerida DaFase(TipoDeBanca tipo) => BancaRequerida.Criar(Chave(tipo), TiposDeBancaCopiadosDeTeste.De(tipo), [], Regra());
 
     /// <summary>Uma banca da etapa do tipo pedido, com a regra de deliberação declarada.</summary>
-    public static BancaDaEtapa DaEtapa(TipoDeBanca tipo) => BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo), Regra());
+    public static BancaDaEtapa DaEtapa(TipoDeBanca tipo) => BancaDaEtapa.Criar(Chave(tipo), TiposDeBancaCopiadosDeTeste.De(tipo), Regra());
+
+    private static ChaveLocal Chave(TipoDeBanca tipo) => FormacaoDeChaveLocal.Formar("banca", tipo.Codigo(), new ChavesEmUso());
 }

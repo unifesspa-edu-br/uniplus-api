@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -191,7 +192,7 @@ public sealed class MontagemDasBancasDaFaseTests
     [Fact(DisplayName = "A banca gravada que a declaração substitui sem trocar o tipo mantém a cópia, ainda que o cadastro tenha mudado")]
     public async Task Montar_BancaGravadaDoMesmoTipo_MantemACopiaSemLerOCadastro()
     {
-        BancaRequerida gravada = BancaRequerida.Criar(
+        BancaRequerida gravada = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             new TipoDeBancaCopiado(TipoDocumental.Id, TipoDeBanca.AnaliseDocumental, "Nome de quando a banca nasceu", PapelDaBanca.ImportaCandidatos, true, true, []), []);
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [], null, gravada.Id);
 
@@ -205,7 +206,7 @@ public sealed class MontagemDasBancasDaFaseTests
     public async Task Montar_BancaGravadaComTipoQueSaiuDoCadastro_NaoRecusa()
     {
         Guid tipoDesativado = Guid.CreateVersion7();
-        BancaRequerida gravada = BancaRequerida.Criar(
+        BancaRequerida gravada = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             new TipoDeBancaCopiado(tipoDesativado, TipoDeBanca.Entrevista, "Banca de entrevista", PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]), []);
 
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(
@@ -218,7 +219,7 @@ public sealed class MontagemDasBancasDaFaseTests
     [Fact(DisplayName = "A banca gravada que troca de tipo copia o cadastro atual do tipo novo")]
     public async Task Montar_BancaGravadaQueTrocaDeTipo_CopiaOCadastroAtual()
     {
-        BancaRequerida gravada = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista), []);
+        BancaRequerida gravada = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista), []);
 
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(
             Fase(new BancaRequeridaInput(TipoDeRecursos.Id, [], null, gravada.Id)), 0, [gravada], CancellationToken.None);
@@ -249,7 +250,7 @@ public sealed class MontagemDasBancasDaFaseTests
         TiposDeBanca(),
         Categorias(),
         Substitute.For<IRegraCatalogoReader>(),
-        Substitute.For<IFatoCandidatoReader>()));
+        Substitute.For<IFatoCandidatoReader>()), new ChavesDasBancasDoProcesso());
 
     private static ITipoBancaReader TiposDeBanca()
     {

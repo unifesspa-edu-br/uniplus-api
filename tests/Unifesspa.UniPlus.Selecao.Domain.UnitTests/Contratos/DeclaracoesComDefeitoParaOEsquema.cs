@@ -41,7 +41,7 @@ internal static class DeclaracoesComDefeitoParaOEsquema
         ];
     }
 
-    private static BancaRequerida BancaDeFase(params string[] categorias) => BancaRequerida.Criar(
+    private static BancaRequerida BancaDeFase(params string[] categorias) => BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
         TiposDeBancaCopiadosDeTeste.De(Banca), [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     private static EtapaDeclarada[] Etapas()

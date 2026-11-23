@@ -34,7 +34,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
     private static readonly CorretoresDasEtapas NenhumLido = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra>());
 
     private static BancaRequerida DaFase(bool exige, TipoDeBanca tipo, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(tipo, PapelDaBanca.AvaliaOMerito, exigeDuasOuMaisBancas: exige),
             [.. categorias.Select(static categoria => CategoriaJulgada.Criar(Guid.CreateVersion7(), categoria))],
             BancasDeTeste.Regra());
@@ -42,7 +42,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
     private static BancaRequerida Heteroidentificacao(params string[] categorias) => DaFase(true, TipoDeBanca.Heteroidentificacao, categorias);
 
     private static BancaDaEtapa DaEtapa(bool exige, TipoDeBanca tipo) =>
-        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Com(tipo, PapelDaBanca.AvaliaOMerito, exigeDuasOuMaisBancas: exige), BancasDeTeste.Regra());
+        BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Com(tipo, PapelDaBanca.AvaliaOMerito, exigeDuasOuMaisBancas: exige), BancasDeTeste.Regra());
 
     private static ModeloDeFase Fase(params BancaRequerida[] bancas) => new ModeloDeFase("AVALIACAO", 1) with { Bancas = bancas };
 

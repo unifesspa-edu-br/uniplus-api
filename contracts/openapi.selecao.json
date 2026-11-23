@@ -9134,7 +9134,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
-        "description": "Para preservar a chave da fase, devolva o tipo de cada fase que permanece. A chave da fase nova vem na releitura pelo GET.",
+        "description": "Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas v\u00EAm na releitura pelo GET.",
         "parameters": [
           {
             "name": "id",
@@ -11162,7 +11162,7 @@
           "RascunhoDeProcessoSeletivo"
         ],
         "summary": "Substitui o documento inteiro do rascunho",
-        "description": "Substitui o documento inteiro do rascunho. O corpo \u00E9 o documento completo: todo bloco que o corpo n\u00E3o traz \u00E9 apagado, e nada \u00E9 mesclado com o que estava salvo. Uma lista enviada como [] continua presente e declara nenhum item; s\u00F3 o bloco omitido \u00E9 apagado. Para mudar uma parte, leia o rascunho pelo GET, altere a parte e envie o documento inteiro. Devolva a chave de cada parte que o esquema identifica por chave, como a leitura a trouxe, porque as refer\u00EAncias entre as partes (decis\u00F5es, dados, publica\u00E7\u00F5es previstas) usam a chave; essa parte, sem a chave, recusa o salvamento (422). A distribui\u00E7\u00E3o de vagas \u00E9 identificada por ofertaCursoCodigo e n\u00E3o tem chave. O id da raiz e os campos somente de leitura enviados s\u00E3o ignorados: vale o rascunho da rota. Exige o If-Match da revis\u00E3o lida. Se outra altera\u00E7\u00E3o do mesmo rascunho estiver em andamento e a espera passar do limite, a resposta \u00E9 503, nada \u00E9 gravado e o envio pode ser repetido.",
+        "description": "Substitui o documento inteiro do rascunho. O corpo \u00E9 o documento completo: todo bloco que o corpo n\u00E3o traz \u00E9 apagado, e nada \u00E9 mesclado com o que estava salvo. Uma lista enviada como [] continua presente e declara nenhum item; s\u00F3 o bloco omitido \u00E9 apagado. Para mudar uma parte, leia o rascunho pelo GET, altere a parte e envie o documento inteiro. Devolva a chave de cada parte que o esquema identifica por chave, como a leitura a trouxe, porque as refer\u00EAncias entre as partes (decis\u00F5es, fatos, produtos) usam a chave; essa parte, sem a chave, recusa o salvamento (422). A distribui\u00E7\u00E3o de vagas \u00E9 identificada por ofertaCursoCodigo e n\u00E3o tem chave. O id da raiz e os campos somente de leitura enviados s\u00E3o ignorados: vale o rascunho da rota. Exige o If-Match da revis\u00E3o lida. Se outra altera\u00E7\u00E3o do mesmo rascunho estiver em andamento e a espera passar do limite, a resposta \u00E9 503, nada \u00E9 gravado e o envio pode ser repetido.",
         "parameters": [
           {
             "name": "id",
@@ -13284,6 +13284,7 @@
       "BancaDaEtapaDto": {
         "required": [
           "id",
+          "chave",
           "tipoBancaOrigemId",
           "codigo",
           "posicaoNoTipo",
@@ -13299,6 +13300,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "chave": {
+            "type": "string"
           },
           "tipoBancaOrigemId": {
             "type": "string",
@@ -13373,6 +13377,7 @@
       "BancaRequeridaDto": {
         "required": [
           "id",
+          "chave",
           "tipoBancaOrigemId",
           "codigo",
           "posicaoNoTipo",
@@ -13389,6 +13394,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "chave": {
+            "type": "string"
           },
           "tipoBancaOrigemId": {
             "type": "string",
@@ -22968,9 +22976,6 @@
         ],
         "type": "object",
         "properties": {
-          "chave": {
-            "type": "string"
-          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -22985,6 +22990,9 @@
           "ordem": {
             "type": "integer",
             "format": "int32"
+          },
+          "chave": {
+            "type": "string"
           }
         }
       },
@@ -24115,9 +24123,6 @@
         ],
         "type": "object",
         "properties": {
-          "chave": {
-            "type": "string"
-          },
           "rotulo": {
             "type": "string"
           },
@@ -24128,6 +24133,9 @@
           "ordem": {
             "type": "integer",
             "format": "int32"
+          },
+          "chave": {
+            "type": "string"
           }
         }
       },
@@ -24138,19 +24146,18 @@
         ],
         "type": "object",
         "properties": {
-          "chave": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "description": "Informe a chave do n\u00EDvel que permanece."
-          },
           "rotulo": {
             "type": "string"
           },
           "fracao": {
             "type": "number",
             "format": "double"
+          },
+          "chave": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

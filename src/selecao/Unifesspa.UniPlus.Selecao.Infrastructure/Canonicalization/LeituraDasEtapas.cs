@@ -361,11 +361,11 @@ internal static class LeituraDasEtapas
 
     private static (BancaDaEtapa, BancaLida)? LerBancaDaEtapa(LeitorEnvelope leitor, JsonObject itemBanca, string caminhoBanca)
     {
-        leitor.ExigirChaves(itemBanca, caminhoBanca, [.. TipoDeBancaNoEnvelope.Chaves, "id", "posicaoNoTipo", "regraDeDeliberacao"]);
+        leitor.ExigirChaves(itemBanca, caminhoBanca, [.. TipoDeBancaNoEnvelope.Chaves, "id", "chave", "posicaoNoTipo", "regraDeDeliberacao"]);
         BancaLida? lida = BancaLida.Ler(leitor, itemBanca, caminhoBanca);
 
         return lida is null
             ? null
-            : (BancaDaEtapa.ReconstruirDosDadosSalvos(lida.Id, lida.Tipo, lida.Regra), lida);
+            : (BancaDaEtapa.ReconstruirDosDadosSalvos(lida.Chave, lida.Id, lida.Tipo, lida.Regra), lida);
     }
 }

@@ -185,7 +185,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     }
 
     private static BancaRequerida BancaDaFase(TipoDeBanca tipo, params string[] categorias) =>
-        BancaRequerida.Criar(
+        BancaRequerida.Criar(ChaveLocal.Criar(tipo == Heteroidentificacao ? "banca_heteroidentificacao" : categorias[0] == "RENDA" ? "banca_analise_documental" : "banca_analise_documental_2").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo), [.. categorias.Select(static codigo => CategoriaJulgada.Criar(Guid.CreateVersion7(), codigo))]);
 
     private static EtapaProcesso EtapaComBancasSemRegra()
@@ -198,9 +198,9 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(Heteroidentificacao)),
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
-            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca_heteroidentificacao").Value, TiposDeBancaCopiadosDeTeste.De(Heteroidentificacao)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca_analise_documental").Value, TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
+            BancaDaEtapa.Criar(ChaveLocal.Criar("banca_analise_documental_2").Value, TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
         ]);
 
         return etapa;
@@ -226,7 +226,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
         EtapaProcesso etapa = processo.Etapas.Single(e => e.Nome == NomeDaEtapaComBancas);
 
         etapa.DefinirBancas([.. etapa.Bancas.Where(banca => banca.Id != bancaRetiradaId).Select(static banca =>
-            BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id))]);
+            BancaDaEtapa.Criar(banca.Chave, banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id))]);
         await db.SaveChangesAsync();
     }
 

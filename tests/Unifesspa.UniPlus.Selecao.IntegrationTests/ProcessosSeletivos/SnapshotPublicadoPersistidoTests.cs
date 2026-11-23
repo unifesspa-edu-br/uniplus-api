@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do congelamento do snapshot de
 /// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0100): re-hashear os
-/// bytes lidos de volta do banco bate com o hash persistido pela app, os 33 blocos canônicos —
+/// bytes lidos de volta do banco bate com o hash persistido pela app, os 34 blocos canônicos —
 /// todos reais — estão presentes, e editar a configuração viva durante uma retificação aberta não
 /// altera a versão já persistida.
 /// </summary>
@@ -82,10 +82,10 @@ public sealed class SnapshotPublicadoPersistidoTests
     private async Task<VersaoConfiguracao> PublicarAsync(string nome) =>
         await _cenario.PublicarEPersistirAsync(CenarioDeRetificacaoPersistida.NovoProcessoConforme(nome));
 
-    [Fact(DisplayName = "Snapshot_Contem33BlocosCanonicos — os 33 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_Contem33BlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem34BlocosCanonicos — os 34 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem34BlocosCanonicos()
     {
-        VersaoConfiguracao publicada = await PublicarAsync(nameof(Snapshot_Contem33BlocosCanonicos));
+        VersaoConfiguracao publicada = await PublicarAsync(nameof(Snapshot_Contem34BlocosCanonicos));
 
         await using UniPlusDbContext readContext = _cenario.CriarDbContext();
         VersaoConfiguracao versao = await CenarioDeRetificacaoPersistida.LerVersaoAsync(readContext, publicada.Id);
@@ -97,17 +97,8 @@ public sealed class SnapshotPublicadoPersistidoTests
 
     private static void ConferirBlocosCanonicos(JsonObject objeto)
     {
-        foreach (string bloco in BlocosEsperados)
-        {
-            objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no envelope");
-        }
-
-        // Equivalência EXATA de conjunto entre as chaves do envelope e a lista literal acima —
-        // não só "os blocos esperados estão presentes" (o foreach acima, que por si só não
-        // reprovaria uma chave espúria), mas também "não sobra nenhuma outra". A lista literal
-        // FICA: este é o teste de contrato da abertura, e derivá-la do próprio objeto o
-        // tornaria tautológico — passaria com qualquer conjunto de chaves.
-        objeto.Select(static kvp => kvp.Key).Should().BeEquivalentTo(BlocosEsperados,
+        objeto["nome"]!.GetValue<string>().Should().NotBeNullOrWhiteSpace();
+        objeto.Select(static propriedade => propriedade.Key).Where(static chave => chave != "nome").Should().BeEquivalentTo(BlocosEsperados,
             "o envelope de abertura tem exatamente os blocos canônicos listados acima — nem mais, nem menos");
 
         ConferirBlocosReais(objeto);
