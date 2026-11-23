@@ -49,7 +49,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IProcessoSeletivoRepository Repositorio { get; private set; } = Substitute.For<IProcessoSeletivoRepository>();
 
-    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
+    public IMotivoDeDecisaoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
 
     public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
 
@@ -106,17 +106,17 @@ internal sealed class ServicosDoCongelamentoDeTeste
         Repositorio = RepositorioDoProcesso(processo);
         Documentos = RepositorioDeDocumento(processo.Id);
 
-        return ComMotivosDoProcesso(processo);
+        return ComMotivosDeDecisaoDoProcesso(processo);
     }
 
     // O processo escolhe, no rascunho, os motivos das decisões que declara; a porta devolve essa escolha, inclusive depois da publicação.
-    public ServicosDoCongelamentoDeTeste ComMotivosDoProcesso(ProcessoSeletivo processo)
+    public ServicosDoCongelamentoDeTeste ComMotivosDeDecisaoDoProcesso(ProcessoSeletivo processo)
     {
-        _ = MotivosDoProcessoDeTeste.Escolha(processo);
+        _ = MotivosDeDecisaoDoProcessoDeTeste.Escolha(processo);
         MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(_ => MotivosDoProcessoDeTeste.Escolha(processo));
+            .Returns(_ => MotivosDeDecisaoDoProcessoDeTeste.Escolha(processo));
         MotivosEscolhidos.ListarEscolhaAtualAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(_ => [.. MotivosDoProcessoDeTeste.Escolha(processo).Select(static m => m.Escolhido)]);
+            .Returns(_ => [.. MotivosDeDecisaoDoProcessoDeTeste.Escolha(processo).Select(static m => m.Escolhido)]);
 
         return this;
     }

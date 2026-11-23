@@ -47,7 +47,7 @@ internal static class MotivosDaHomologacaoDeTeste
         TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo(), codigo, "Condição de homologação não atendida", null, SentidoDoMotivo.Desfavoravel)).Value!;
 
     /// <summary>A cópia do motivo do cadastro que o processo escolhe na fase.</summary>
-    public static MotivoDoProcesso Escolher(ProcessoSeletivo processo, FaseCronograma fase, MotivoDeDecisao origem) =>
+    public static MotivoDeDecisaoDoProcesso Escolher(ProcessoSeletivo processo, FaseCronograma fase, MotivoDeDecisao origem) =>
         EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(processo, LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId), [], origem)).Value!;
 
     private static IEnumerable<string> CodigosDosMotivosDasCondicoes(FaseCronograma fase) =>

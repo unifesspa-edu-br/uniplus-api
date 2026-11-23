@@ -137,10 +137,10 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
     private static string? DataReferenciaFatos(SnapshotCanonico snapshot)
     {
         JsonObject envelope = JsonNode.Parse(System.Text.Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();
-        return envelope["documentosExigidos"]!["dataReferenciaFatos"]?.GetValue<string>();
+        return envelope["documentosExigidos"]!["dataDeReferenciaDosDados"]?.GetValue<string>();
     }
 
-    [Fact(DisplayName = "B-03: uma retificação que muda a política de ReferenciaTemporalFatos não altera a dataReferenciaFatos já congelada de uma versão anterior")]
+    [Fact(DisplayName = "B-03: uma retificação que muda a política de ReferenciaTemporalFatos não altera a dataDeReferenciaDosDados já congelada de uma versão anterior")]
     public void RetificacaoMudaPolitica_PreservaDataReferenciaFatosCongeladaDaVersaoAnterior()
     {
         ProcessoSeletivo processo = NovoProcessoConformeComGatilhoPorFaixaEtaria(out _);

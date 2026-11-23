@@ -161,7 +161,7 @@ internal sealed class CenarioDeInscricaoPublicada
         await using NpgsqlCommand command = connection.CreateCommand();
         command.CommandText = """
             SELECT posicao, origem, valor_codigo FROM selecao.respostas_da_inscricao
-            WHERE inscricao_id = @id AND fato_codigo = 'MODALIDADE' ORDER BY posicao
+            WHERE inscricao_id = @id AND codigo_do_dado = 'MODALIDADE' ORDER BY posicao
             """;
         command.Parameters.AddWithValue("id", inscricaoId);
         return await LerLinhasDaModalidadeAsync(command);

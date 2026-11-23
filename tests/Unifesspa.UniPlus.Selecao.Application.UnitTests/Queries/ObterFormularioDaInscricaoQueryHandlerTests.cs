@@ -77,7 +77,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static VersaoConfiguracao VersaoComExigencias(string exigencias) => VersaoConfiguracao.Abrir(
         ProcessoId,
-        new DocumentoCongelado(Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
+        new DocumentoCongelado(Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
         Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     private static IRegistroCodecsEnvelope RegistroReidratando(EnvelopeReidratado envelope)

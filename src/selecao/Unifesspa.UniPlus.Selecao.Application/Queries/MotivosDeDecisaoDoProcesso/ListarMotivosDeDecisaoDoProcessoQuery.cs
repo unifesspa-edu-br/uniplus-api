@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDoProcesso;
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisaoDoProcesso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -8,4 +8,4 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// Os motivos que o processo escolheu, por tipo e código, em cada fase ou etapa. Sem <paramref name="NumeroDaVersao"/>, a
 /// escolha atual; com ela, a que valia naquela versão publicada do edital.
 /// </summary>
-public sealed record ListarMotivosDoProcessoQuery(Guid ProcessoSeletivoId, int? NumeroDaVersao) : IQuery<Result<IReadOnlyList<MotivoDoProcessoDto>>>;
+public sealed record ListarMotivosDeDecisaoDoProcessoQuery(Guid ProcessoSeletivoId, int? NumeroDaVersao) : IQuery<Result<IReadOnlyList<MotivoDeDecisaoDoProcessoDto>>>;

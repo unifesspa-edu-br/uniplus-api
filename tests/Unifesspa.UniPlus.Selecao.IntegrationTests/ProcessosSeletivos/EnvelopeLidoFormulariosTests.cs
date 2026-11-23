@@ -44,8 +44,8 @@ public sealed class EnvelopeLidoFormulariosTests
         SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        JsonObject bolsa = Envelope(congelado)["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
+        JsonObject bolsa = Envelope(congelado)["dadosDosFormularios"]!.AsArray()
+            .Single(static f => f!["codigoDoDado"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
         bolsa["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
         bolsa["pedirConfirmacao"]!.GetValue<bool>().Should().BeTrue();
     }
@@ -63,8 +63,8 @@ public sealed class EnvelopeLidoFormulariosTests
 
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, versao, congelado);
-        Envelope(congelado)["regrasDerivacao"]!.AsArray()
-            .Select(static d => d!["codigoFato"]!.GetValue<string>())
+        Envelope(congelado)["calculosDosDados"]!.AsArray()
+            .Select(static d => d!["codigoDoDado"]!.GetValue<string>())
             .Should().NotContain(OpcaoPelasCotasDaLei.Fato);
         ConferirDerivacoesDoRecortePublico(versao);
     }
@@ -78,11 +78,11 @@ public sealed class EnvelopeLidoFormulariosTests
         SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        Envelope(congelado)["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "NOME_SOCIAL")!["formato"]!.GetValue<string>()
+        Envelope(congelado)["dadosDosFormularios"]!.AsArray()
+            .Single(static f => f!["codigoDoDado"]!.GetValue<string>() == "NOME_SOCIAL")!["formato"]!.GetValue<string>()
             .Should().Be("NOME_PESSOA");
-        Envelope(congelado)["fatosColetados"]!.AsArray()
-            .Select(static f => f!["tipoRenderizacao"]!.GetValue<string>()).Should().Contain(["DATA", "ENDERECO"]);
+        Envelope(congelado)["dadosDosFormularios"]!.AsArray()
+            .Select(static f => f!["tipoDeCampo"]!.GetValue<string>()).Should().Contain(["DATA", "ENDERECO"]);
     }
 
     [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoDoEdital ORIGINAL, recuperada do próprio envelope")]

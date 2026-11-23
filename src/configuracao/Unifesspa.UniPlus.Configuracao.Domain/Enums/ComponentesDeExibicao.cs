@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// Mapeamento entre <see cref="ComponenteDeExibicao"/> (PascalCase) e o token textual de contrato/banco
 /// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
 /// <see cref="FormatosTexto"/>). Fonte do CHECK de domínio em
-/// <c>fatos_do_candidato.componente_exibicao</c> e do value converter de persistência.
+/// <c>dados_do_candidato.componente_exibicao</c> e do value converter de persistência.
 /// </summary>
 public static class ComponentesDeExibicao
 {

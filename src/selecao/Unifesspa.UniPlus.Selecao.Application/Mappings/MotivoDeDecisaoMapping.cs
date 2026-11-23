@@ -24,11 +24,11 @@ public static class MotivoDeDecisaoMapping
             motivo.Ativo);
     }
 
-    public static MotivoDoProcessoDto ToDto(MotivoDoProcesso motivo)
+    public static MotivoDeDecisaoDoProcessoDto ToDto(MotivoDeDecisaoDoProcesso motivo)
     {
         ArgumentNullException.ThrowIfNull(motivo);
 
-        return new MotivoDoProcessoDto(
+        return new MotivoDeDecisaoDoProcessoDto(
             motivo.MotivoDeDecisaoOrigemId,
             new LugarDoMotivoDto(motivo.Lugar.FaseCanonicaOrigemId, motivo.Lugar.EtapaProcessoId),
             CodigoComRotulo<TipoMotivoDeDecisao>.De(motivo.Tipo),

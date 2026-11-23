@@ -134,11 +134,11 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
         processo.DefinirItens([], finalidade: finalidadeDoGrupo, grupos: [GrupoComOCampoDeMembro(finalidadeDoGrupo)]).IsSuccess.Should().BeTrue();
 
-        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
         AfirmarRecusaDoCampoDeMembro(recusa, esperadoAceito);
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)))
             .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
     }
 

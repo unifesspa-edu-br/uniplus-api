@@ -49,7 +49,7 @@ internal static class MapeadorDoRegistroDeAcesso
         registro.ChamadaId = Texto(origem.ChamadaId);
         registro.ResourceId = Texto(origem.ResourceId);
         registro.InscricaoId = Texto(origem.InscricaoId);
-        registro.FatoCodigo = origem.FatoCodigo;
+        registro.CodigoDoDado = origem.FatoCodigo;
         registro.Ocorrencia = origem.Ocorrencia;
     }
 

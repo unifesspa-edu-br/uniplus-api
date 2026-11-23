@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 public sealed class TipoRenderizacaoNoEnvelopeTests
 {
     private static JsonObject Payload(string tipo) => (JsonObject)JsonNode.Parse(
-        $$"""{"apresentacaoDosPressupostos":[{"fatoCodigo":"FATO","rotulo":"Fato","tipoRenderizacao":{{tipo}}}]}""")!;
+        $$"""{"dadosCitadosSemPergunta":[{"codigoDoDado":"FATO","rotulo":"Fato","tipoDeCampo":{{tipo}}}]}""")!;
 
     [Theory(DisplayName = "O envelope lê o código de cada tipo de campo da apresentação do fato")]
     [InlineData("NUMERO")]
@@ -45,7 +45,7 @@ public sealed class TipoRenderizacaoNoEnvelopeTests
         leitor.Falhou.Should().BeTrue();
         leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         leitor.Erro.Message.Should().Be(
-            "Envelope malformado em 'apresentacaoDosPressupostos[0].tipoRenderizacao': o tipo de campo não é um dos códigos aceitos: "
+            "Envelope malformado em 'dadosCitadosSemPergunta[0].tipoDeCampo': o tipo de campo não é um dos códigos aceitos: "
             + "NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
     }
 }

@@ -21,5 +21,5 @@ public interface IExigenciaDeMotivos
     /// As faltas de cobertura do processo diante dos motivos <paramref name="escolhidos"/>, que já são só os que a versão leva e
     /// que o lugar admite; vazio quando a exigência está atendida.
     /// </summary>
-    IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos);
+    IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos);
 }

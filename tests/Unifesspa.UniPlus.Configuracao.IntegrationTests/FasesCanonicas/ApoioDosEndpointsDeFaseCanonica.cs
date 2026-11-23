@@ -56,7 +56,7 @@ internal static class ApoioDosEndpointsDeFaseCanonica
 
         await using NpgsqlCommand comando = conexao.CreateCommand();
         comando.CommandText =
-            "DELETE FROM configuracao.fases_canonicas " +
+            "DELETE FROM configuracao.tipos_de_fase " +
             "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = @codigo";
         comando.Parameters.AddWithValue("codigo", codigo);
         await comando.ExecuteNonQueryAsync();
@@ -70,7 +70,7 @@ internal static class ApoioDosEndpointsDeFaseCanonica
         await conexao.OpenAsync();
 
         await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = "DELETE FROM configuracao.fases_canonicas WHERE codigo = @codigo";
+        comando.CommandText = "DELETE FROM configuracao.tipos_de_fase WHERE codigo = @codigo";
         comando.Parameters.AddWithValue("codigo", codigo);
         await comando.ExecuteNonQueryAsync();
     }

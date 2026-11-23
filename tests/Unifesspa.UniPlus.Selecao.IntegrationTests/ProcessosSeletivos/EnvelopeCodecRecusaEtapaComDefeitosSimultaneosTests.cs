@@ -26,10 +26,10 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             InverterAJanela(PrimeiraEtapa(envelope));
-            PrimeiraEtapa(envelope)["produtos"]![0]!.AsObject().Remove("atoCodigo");
+            PrimeiraEtapa(envelope)["publicacoesPrevistas"]![0]!.AsObject().Remove("atoCodigo");
         });
 
-        ConferirRecusaEm(resultado, "etapas[0].produtos[0]");
+        ConferirRecusaEm(resultado, "etapas[0].publicacoesPrevistas[0]");
     }
 
     [Fact(DisplayName = "Janela invertida e tipos de decisão fora de ordem: recusa a janela")]
@@ -62,10 +62,10 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             RepetirOProduto(PrimeiraEtapa(envelope));
-            PrimeiraEtapa(envelope)["recursos"]![0]!["produtoAncoraId"] = Guid.CreateVersion7().ToString();
+            PrimeiraEtapa(envelope)["recursos"]![0]!["publicacaoDeReferenciaId"] = Guid.CreateVersion7().ToString();
         });
 
-        ConferirRecusaEm(resultado, "etapas[0].produtos");
+        ConferirRecusaEm(resultado, "etapas[0].publicacoesPrevistas");
     }
 
     private static void ConferirRecusaEm(Result<EnvelopeReidratado> resultado, string caminho, string? detalhe = null)
@@ -99,7 +99,7 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
 
     private static void RepetirOProduto(JsonObject etapa)
     {
-        JsonArray produtos = etapa["produtos"]!.AsArray();
+        JsonArray produtos = etapa["publicacoesPrevistas"]!.AsArray();
         produtos[1]!["atoCodigo"] = produtos[0]!["atoCodigo"]!.GetValue<string>();
         produtos[1]!["papel"] = produtos[0]!["papel"]!.GetValue<string>();
     }

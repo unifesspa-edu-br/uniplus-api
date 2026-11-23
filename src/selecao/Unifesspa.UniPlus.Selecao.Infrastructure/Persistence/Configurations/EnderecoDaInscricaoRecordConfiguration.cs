@@ -20,6 +20,23 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Sensivel);
 
+        builder.Property(e => e.InscricaoId).HasComment("Identificador da inscrição à qual pertence.");
+        builder.Property(e => e.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
+        builder.Property(e => e.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(e => e.Origem).HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
+        builder.Property(e => e.Cep).HasComment("Código postal do endereço, quando informado.");
+        builder.Property(e => e.Logradouro).HasComment("Nome do logradouro, quando informado.");
+        builder.Property(e => e.Numero).HasComment("Número do endereço, quando informado.");
+        builder.Property(e => e.Complemento).HasComment("Complemento do endereço, quando informado.");
+        builder.Property(e => e.Bairro).HasComment("Bairro do endereço, quando informado.");
+        builder.Property(e => e.Distrito).HasComment("Distrito do endereço, quando informado.");
+        builder.Property(e => e.MunicipioCodigoIbge).HasComment("Código IBGE do município, quando informado.");
+        builder.Property(e => e.MunicipioNome).HasComment("Nome do município, quando informado.");
+        builder.Property(e => e.Uf).HasComment("Sigla da unidade federativa, quando informada.");
+        builder.Property(e => e.Latitude).HasComment("Latitude do endereço, quando disponível.");
+        builder.Property(e => e.Longitude).HasComment("Longitude do endereço, quando disponível.");
+        builder.Property(e => e.NivelResolucao).HasComment("Precisão da localização obtida para o endereço, quando disponível.");
+
         builder.ToTable("enderecos_da_inscricao", t =>
         {
             t.HasComment("A resposta de um campo de endereço da inscrição, um componente por coluna.");
@@ -34,7 +51,7 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(e => e.InscricaoId).ClassificaComo(ClassificacaoDeProtecao.Interno);
         builder.Property(e => e.OcorrenciaId).ClassificaComo(ClassificacaoDeProtecao.Interno);
 
-        builder.Property(e => e.FatoCodigo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
+        builder.Property(e => e.FatoCodigo).HasColumnName("codigo_do_dado").ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(e => e.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(e => e.Procedencia)
             .HasComment("Como o endereço foi preenchido no formulário: pela busca do CEP no Geo ou à mão.");
@@ -56,6 +73,6 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.HasIndex(e => new { e.InscricaoId, e.OcorrenciaId, e.FatoCodigo })
             .IsUnique()
             .AreNullsDistinct(false)
-            .HasDatabaseName("ux_enderecos_da_inscricao_fato");
+            .HasDatabaseName("ux_enderecos_da_inscricao_dado");
     }
 }

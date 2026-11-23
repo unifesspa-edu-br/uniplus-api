@@ -21,7 +21,7 @@ public sealed class LeituraDosCadastrosDaConfiguracao(
     LeituraDoContextoDeContagemDePrazos contextos,
     LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     LeituraDasPrecedenciasDosCadastros precedencias,
-    IMotivoDoProcessoRepository motivos)
+    IMotivoDeDecisaoDoProcessoRepository motivos)
 {
     // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois não alcança o processo já
     // publicado, nem pela retificação. O catálogo e o calendário valem no dia em que a operação publica.

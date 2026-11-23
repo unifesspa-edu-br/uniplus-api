@@ -21,7 +21,7 @@ public sealed class ObterFormularioRenderizavelPressupostosTests
         Guid processoId = Guid.CreateVersion7();
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            processoId, """{"documentosExigidos": {"dataReferenciaFatos": null}}""",
+            processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Habilitacao);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -36,7 +36,7 @@ public sealed class ObterFormularioRenderizavelPressupostosTests
         Guid processoId = Guid.CreateVersion7();
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            processoId, $$"""{"documentosExigidos": {"dataReferenciaFatos": {{data}} } }""",
+            processoId, $$"""{"documentosExigidos": {"dataDeReferenciaDosDados": {{data}} } }""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
 
         if (valida)
@@ -55,7 +55,7 @@ public sealed class ObterFormularioRenderizavelPressupostosTests
         Guid processoId = Guid.CreateVersion7();
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(
-            processoId, """{"documentosExigidos": {"dataReferenciaFatos": null}}""",
+            processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
 
         resultado.Value!.Formulario.Pressupostos.FusoDoEnvio.Should().Be("America/Belem");

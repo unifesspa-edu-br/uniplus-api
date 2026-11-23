@@ -207,7 +207,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_de_documento SET protecao_situacao = 'PENDENTE' WHERE id = {tipoId}");
-        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.fatos_do_candidato SET protecao_situacao = 'PENDENTE' WHERE codigo = {FatoSensivel}");
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.dados_do_candidato SET protecao_situacao = 'PENDENTE' WHERE codigo = {FatoSensivel}");
     }
 
     private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)

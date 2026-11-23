@@ -37,8 +37,8 @@ internal static class BancoDaSementeParaTeste
         await ctx.Database.ExecuteSqlRawAsync(
             """
             DELETE FROM configuracao.modelos_formulario WHERE codigo = ANY({0});
-            DELETE FROM configuracao.valores_de_dominio_do_fato WHERE id::text LIKE '5e3d%';
-            DELETE FROM configuracao.fatos_do_candidato WHERE id::text LIKE '5e3d%';
+            DELETE FROM configuracao.opcoes_dos_dados WHERE id::text LIKE '5e3d%';
+            DELETE FROM configuracao.dados_do_candidato WHERE id::text LIKE '5e3d%';
             DELETE FROM configuracao.versoes_do_termo_consentimento WHERE id = ANY({1});
             DELETE FROM configuracao.termos_de_consentimento WHERE id = ANY({2});
             DELETE FROM configuracao.tipos_processo WHERE codigo = {3};
@@ -72,7 +72,7 @@ internal static class BancoDaSementeParaTeste
         int termos = await ContarAsync(ctx, $"SELECT count(*)::int AS \"Value\" FROM configuracao.termos_de_consentimento WHERE id = ANY({IdsDosTermos})");
         int versoes = await ContarAsync(ctx, $"SELECT count(*)::int AS \"Value\" FROM configuracao.versoes_do_termo_consentimento WHERE id = ANY({IdsDasVersoes})");
         int tipos = await ContarAsync(ctx, $"SELECT count(*)::int AS \"Value\" FROM configuracao.tipos_processo WHERE codigo = {CodigoDoTipoDeProcesso}");
-        int fatos = await ContarAsync(ctx, $"SELECT count(*)::int AS \"Value\" FROM configuracao.fatos_do_candidato WHERE id::text LIKE '5e3d%'");
+        int fatos = await ContarAsync(ctx, $"SELECT count(*)::int AS \"Value\" FROM configuracao.dados_do_candidato WHERE id::text LIKE '5e3d%'");
         List<string> modelos = await ctx.Database.SqlQuery<string>(
             $"SELECT codigo AS \"Value\" FROM configuracao.modelos_formulario WHERE codigo = ANY({CodigosDosModelos})").ToListAsync();
         return new ResumoDaSemente(termos, versoes, string.Join(',', modelos.Order(StringComparer.Ordinal)), tipos, fatos);
@@ -111,8 +111,8 @@ internal static class BancoDaSementeParaTeste
             UNION ALL SELECT 'versao ' || to_jsonb(v)::text FROM configuracao.versoes_do_termo_consentimento v WHERE v.id = ANY({IdsDasVersoes})
             UNION ALL SELECT 'modelo ' || to_jsonb(m)::text FROM configuracao.modelos_formulario m WHERE m.codigo = ANY({CodigosDosModelos})
             UNION ALL SELECT 'tipo ' || to_jsonb(p)::text FROM configuracao.tipos_processo p WHERE p.codigo = {CodigoDoTipoDeProcesso}
-            UNION ALL SELECT 'fato ' || to_jsonb(f)::text FROM configuracao.fatos_do_candidato f WHERE f.id::text LIKE '5e3d%'
-            UNION ALL SELECT 'valor ' || to_jsonb(d)::text FROM configuracao.valores_de_dominio_do_fato d WHERE d.id::text LIKE '5e3d%'
+            UNION ALL SELECT 'fato ' || to_jsonb(f)::text FROM configuracao.dados_do_candidato f WHERE f.id::text LIKE '5e3d%'
+            UNION ALL SELECT 'valor ' || to_jsonb(d)::text FROM configuracao.opcoes_dos_dados d WHERE d.id::text LIKE '5e3d%'
             """).ToListAsync();
         return string.Join("\n", linhas.Order(StringComparer.Ordinal));
     }

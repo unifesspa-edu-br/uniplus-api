@@ -42,7 +42,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = contexto, TiposDeAtoUnicos = tipos ?? TiposDeAtoUnicosDeTeste.Nenhum });
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto? tipos = null) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo))
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(

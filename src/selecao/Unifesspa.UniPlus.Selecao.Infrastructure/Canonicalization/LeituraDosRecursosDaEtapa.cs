@@ -39,14 +39,14 @@ internal static class LeituraDosRecursosDaEtapa
 
     private static RecursoDaEtapa? LerRecurso(LeitorEnvelope leitor, JsonObject itemRecurso, string pathRecurso)
     {
-        leitor.ExigirChaves(itemRecurso, pathRecurso, "ancora", "regra", "parametros", "produtoAncoraId", "procedimentos");
-        AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
+        leitor.ExigirChaves(itemRecurso, pathRecurso, "eventoInicialDoPrazo", "regra", "parametros", "publicacaoDeReferenciaId", "procedimentos");
+        AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "eventoInicialDoPrazo", pathRecurso);
 
         // A referência vem inteira e conferida contra o código de regra esperado.
         ReferenciaRegra regra = leitor.Regra(itemRecurso, "regra", pathRecurso, RegraPrazoRecursoCodigo.AncoradoEmAto);
 
         // A âncora por ciência não tem produto: o campo vem nulo.
-        Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "produtoAncoraId", pathRecurso);
+        Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "publicacaoDeReferenciaId", pathRecurso);
         JsonObject parametrosObjeto = leitor.Objeto(itemRecurso, "parametros", pathRecurso);
         ProcedimentosDeRecurso? procedimentos = LerProcedimentos(leitor, itemRecurso, pathRecurso);
         return leitor.Falhou || procedimentos is null
@@ -63,7 +63,7 @@ internal static class LeituraDosRecursosDaEtapa
     {
         if (lido.Ancora == AncoraDoRecurso.Nenhuma)
         {
-            return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.ancora", "o recurso tem de declarar de que instante o prazo corre.");
+            return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.eventoInicialDoPrazo", "o recurso tem de declarar de que instante o prazo corre.");
         }
 
         ParametrosDeclaradosDoRecurso? parametros = LeituraDosPrazosDeRecurso.LerParametrosDePrazoDeRecurso(leitor, parametrosObjeto, $"{pathRecurso}.parametros");

@@ -64,16 +64,16 @@ public static class ClassificacaoDosBlocosDoCertame
         "distribuicao",
         "modalidades",
         "regrasDeComprovacao",
-        "grafoDependencia",
-        "regrasDerivacao",
-        "fatosColetados",
-        "gruposColetados",
+        "dependenciasEntreItens",
+        "calculosDosDados",
+        "dadosDosFormularios",
+        "gruposDosFormularios",
         "divulgacao",
         "calendarioDiasUteis",
         "algoritmoContagemPrazo",
-        "versaoInterpretador",
+        "versaoDasRegrasDeCalculo",
         "tiposDeAto",
-        "fatosDerivados",
+        "dadosCalculados",
     };
 
     /// <summary>
@@ -84,7 +84,7 @@ public static class ClassificacaoDosBlocosDoCertame
     public static readonly IReadOnlySet<string> PublicosPorOutroContrato = new HashSet<string>(StringComparer.Ordinal)
     {
         "formularios",
-        "apresentacaoDosPressupostos",
+        "dadosCitadosSemPergunta",
     };
 
     /// <summary>Todo bloco classificado, em qualquer das três categorias.</summary>

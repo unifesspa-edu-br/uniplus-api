@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Fonte única do seed do catálogo <c>fatos_do_candidato</c> (UNI-REQ-0077,
+/// Fonte única do seed do catálogo <c>dados_do_candidato</c> (UNI-REQ-0077,
 /// ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078 e pela ADR-0136): os
 /// fatos do vocabulário fechado do candidato. Consumida tanto pela configuração EF Core (que materializa as linhas
 /// via <c>HasData</c> na migration) quanto pelos testes (que conferem o seed do

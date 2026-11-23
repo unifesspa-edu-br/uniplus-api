@@ -202,16 +202,16 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     }
 
     private static string InsereInscritoSemLancamento(Guid loteId, Guid inscricao) =>
-        $"INSERT INTO selecao.inscritos_do_lote_de_notas (id, lote_id, inscricao_id, numero_de_inscricao_no_enem) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '240000000003')";
+        $"INSERT INTO selecao.inscritos_da_importacao (id, importacao_id, inscricao_id, numero_de_inscricao_no_enem) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '240000000003')";
 
     private static string InsereLancamento(Guid loteId, Guid inscricao, Guid etapa, string nota) =>
-        $"INSERT INTO selecao.lancamentos_de_nota (id, lote_id, inscricao_id, etapa_processo_id, item_codigo, nota, situacao) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '{etapa}', 'MATEMATICA', {nota}, 1)";
+        $"INSERT INTO selecao.lancamentos_de_nota (id, importacao_id, inscricao_id, etapa_processo_id, item_codigo, nota, situacao) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '{etapa}', 'MATEMATICA', {nota}, 1)";
 
     private static string InsereAvaliacao(LoteComAvaliacoes cenario, Guid etapa, Guid oferta, int situacao, string nota) =>
-        $"INSERT INTO selecao.avaliacoes_da_etapa (id, lote_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota) VALUES ('{Guid.CreateVersion7()}', '{cenario.Lote.Id}', '{etapa}', '{cenario.Kevin}', '{oferta}', 'TECNOLOGICA', {situacao}, {nota})";
+        $"INSERT INTO selecao.avaliacoes_da_etapa (id, importacao_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota) VALUES ('{Guid.CreateVersion7()}', '{cenario.Lote.Id}', '{etapa}', '{cenario.Kevin}', '{oferta}', 'TECNOLOGICA', {situacao}, {nota})";
 
     private static string InsereOcorrencia(Guid loteId, int tipo, string inscricaoId, string linhas) =>
-        $"INSERT INTO selecao.ocorrencias_do_lote_de_notas (id, lote_id, tipo, inscricao_id, numeros_das_linhas) VALUES ('{Guid.CreateVersion7()}', '{loteId}', {tipo}, {inscricaoId}, {linhas})";
+        $"INSERT INTO selecao.ocorrencias_da_importacao (id, importacao_id, tipo, inscricao_id, numeros_das_linhas) VALUES ('{Guid.CreateVersion7()}', '{loteId}', {tipo}, {inscricaoId}, {linhas})";
 
     private async Task ExecutarAsync(string sql)
     {

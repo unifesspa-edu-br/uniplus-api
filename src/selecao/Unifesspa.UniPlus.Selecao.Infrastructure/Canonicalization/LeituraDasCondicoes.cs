@@ -39,9 +39,9 @@ internal static class LeituraDasCondicoes
 
     private static Obrigatoriedade? LerObrigatoriedadeDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
-        leitor.ExigirChaves(bloco, path, "tipo", "predicado");
+        leitor.ExigirChaves(bloco, path, "tipo", "quando");
         string tipo = leitor.TextoNaoVazio(bloco, "tipo", path);
-        IReadOnlyList<LinhaDoPredicado> linhas = LerDnf(leitor, bloco, "predicado", path);
+        IReadOnlyList<LinhaDoPredicado> linhas = LerDnf(leitor, bloco, "quando", path);
         if (leitor.Falhou)
         {
             return null;
@@ -111,7 +111,7 @@ internal static class LeituraDasCondicoes
     /// </summary>
     internal static IReadOnlyList<CondicaoGatilho> LerCondicaoGatilho(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
-        const string chave = "condicaoGatilho";
+        const string chave = "condicoes";
         if (ArrayDeClausulas(leitor, item, chave, pathPai) is not { } clausulas)
         {
             return [];
@@ -269,9 +269,9 @@ internal static class LeituraDasCondicoes
     {
         string condicaoPath = $"{clausulaPath}[{indice}]";
         JsonObject condicao = leitor.ItemObjeto(condicoes, indice, clausulaPath);
-        leitor.ExigirChaves(condicao, condicaoPath, "fato", "operador", "valor");
+        leitor.ExigirChaves(condicao, condicaoPath, "codigoDoDado", "operador", "valor");
 
-        string fato = leitor.TextoNaoVazio(condicao, "fato", condicaoPath, LimitesDoEnvelope.Fato);
+        string fato = leitor.TextoNaoVazio(condicao, "codigoDoDado", condicaoPath, LimitesDoEnvelope.Fato);
         Operador operador = LerOperador(leitor, condicao, condicaoPath);
         JsonElement valor = leitor.Valor(condicao, "valor", condicaoPath);
 

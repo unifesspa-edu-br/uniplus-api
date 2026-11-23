@@ -162,9 +162,9 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
         TiposDeAtoUnicosPorObjeto unicos = Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação");
 
-        ChecklistDeConformidade.AvaliarConformidade(duplicado.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(duplicado)))
+        ChecklistDeConformidade.AvaliarConformidade(duplicado.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(duplicado)))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && !item.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(unico.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(unico)))
+        ChecklistDeConformidade.AvaliarConformidade(unico.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(unico)))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && item.Ok);
     }
 

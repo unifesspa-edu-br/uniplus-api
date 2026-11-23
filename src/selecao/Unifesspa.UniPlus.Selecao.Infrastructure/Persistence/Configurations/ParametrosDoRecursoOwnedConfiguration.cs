@@ -31,9 +31,9 @@ internal static class ParametrosDoRecursoOwnedConfiguration
         parametros.OwnsOne(x => x.PrazoDeInterposicao, prazo => ConfigurarPrazo(prazo, "prazo"));
         parametros.Navigation(x => x.PrazoDeInterposicao).IsRequired();
         parametros.OwnsOne(x => x.PrazoDaSegundaInstancia, prazo => ConfigurarPrazo(prazo, "prazo_segunda_instancia"));
-        parametros.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
-        parametros.Property(x => x.EfeitoSuspensivo).HasColumnName("efeito_suspensivo").IsRequired();
-        parametros.Property(x => x.GuardaDaVaga).HasColumnName("guarda_da_vaga").IsRequired();
+        parametros.Property(x => x.AdmiteInstanciaSuperior).HasComment("Indica se há recurso à instância superior.").HasColumnName("admite_instancia_superior").IsRequired();
+        parametros.Property(x => x.EfeitoSuspensivo).HasComment("Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo.").HasColumnName("efeito_suspensivo").IsRequired();
+        parametros.Property(x => x.GuardaDaVaga).HasComment("Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda.").HasColumnName("guarda_da_vaga").IsRequired();
 
         return parametros;
     }
@@ -41,7 +41,7 @@ internal static class ParametrosDoRecursoOwnedConfiguration
     private static void ConfigurarPrazo(OwnedNavigationBuilder<ParametrosRegraPrazoRecurso, PrazoDoRecurso> prazo, string prefixo)
     {
         prazo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        prazo.Property(x => x.Valor).HasColumnName($"{prefixo}_valor").HasPrecision(PrecisaoDoPrazo, EscalaDoPrazo);
-        prazo.Property(x => x.Unidade).HasColumnName($"{prefixo}_unidade");
+        prazo.Property(x => x.Valor).HasComment("Duração do prazo de recurso na unidade informada.").HasColumnName($"{prefixo}_valor").HasPrecision(PrecisaoDoPrazo, EscalaDoPrazo);
+        prazo.Property(x => x.Unidade).HasComment("Unidade do prazo: horas, dias ou diasUteis.").HasColumnName($"{prefixo}_unidade");
     }
 }

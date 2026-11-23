@@ -69,7 +69,7 @@ internal static class SerializacaoDasEtapas
         item["notaMaxima"] = SerializarDecimalOpcional(etapa.NotaMaxima);
         item["passoDoLancamento"] = SerializarDecimalOpcional(etapa.PassoDoLancamento);
         item["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString();
-        item["regraConsolidacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null;
+        item["regraDeApuracaoDaAvaliacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null;
         item["itensDeAvaliacao"] = SerializarItensDeAvaliacao(etapa);
         item["escalaDeAtendimento"] = SerializarEscalaDeAtendimento(etapa);
     }
@@ -84,7 +84,7 @@ internal static class SerializacaoDasEtapas
     {
         item["emiteParecerIndividual"] = etapa.EmiteParecerIndividual;
         item["recursos"] = SerializarRecursos(etapa);
-        item["produtos"] = SerializarProdutos(etapa);
+        item["publicacoesPrevistas"] = SerializarProdutos(etapa);
         item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(etapa.TiposDeDecisao);
     }
 
@@ -128,10 +128,10 @@ internal static class SerializacaoDasEtapas
         new([.. etapa.Recursos
             .Select(static r => (JsonNode)new JsonObject
             {
-                ["ancora"] = r.Ancora.ToString(),
+                ["eventoInicialDoPrazo"] = r.Ancora.ToString(),
                 ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
                 ["parametros"] = SerializacaoDoCronograma.SerializarParametrosRegraPrazoRecurso(r.Parametros),
-                ["produtoAncoraId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
+                ["publicacaoDeReferenciaId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
                 ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(r.Procedimentos),
             })]);
 

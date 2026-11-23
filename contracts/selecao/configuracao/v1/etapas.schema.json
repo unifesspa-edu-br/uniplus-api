@@ -67,7 +67,7 @@
         "HUMANA"
       ]
     },
-    "regraConsolidacao": {
+    "regraDeApuracaoDaAvaliacao": {
       "title": "Regra de consolidação",
       "description": "Regra do catálogo que consolida as correções na avaliação humana.",
       "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
@@ -114,12 +114,12 @@
       "description": "Se a etapa emite parecer individual ao candidato, quando ela publica resultado.",
       "type": "boolean"
     },
-    "produtos": {
+    "publicacoesPrevistas": {
       "title": "Atos que a etapa publica",
       "description": "Tipos de ato publicados pela etapa. O par tipo de ato e papel não se repete na etapa.",
       "type": "array",
       "items": {
-        "$ref": "comuns.schema.json#/$defs/produto"
+        "$ref": "comuns.schema.json#/$defs/publicacaoPrevista"
       }
     },
     "bancas": {
@@ -155,7 +155,7 @@
         }
       ],
       "properties": {
-        "ancora": {
+        "eventoInicialDoPrazo": {
           "title": "Âncora do prazo",
           "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ciência individual do candidato (cienciaIndividual).",
           "enum": [

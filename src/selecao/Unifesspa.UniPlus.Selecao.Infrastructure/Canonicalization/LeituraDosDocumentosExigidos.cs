@@ -38,22 +38,36 @@ internal static class LeituraDosDocumentosExigidos
             return (null, [], null, null);
         }
 
+        return LerBlocoDosDocumentos(leitor, bloco);
+    }
+
+    private static (
+        ResultadoConformidade? Conformidade,
+        IReadOnlyList<DocumentoExigido> DocumentosExigidos,
+        ReferenciaTemporalFatos? ReferenciaTemporalFatos,
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados)
+        LerBlocoDosDocumentos(LeitorEnvelope leitor, JsonObject bloco)
+    {
         leitor.ExigirChaves(
             bloco, "documentosExigidos",
-            "exigencias", "obrigatoriedades", "referenciaTemporalFatos", "dataReferenciaFatos", "metadadosFatos");
+            "exigencias", "obrigatoriedades", "referenciaTemporalDosDados", "dataDeReferenciaDosDados", "definicoesDosDados");
 
         IReadOnlyList<DocumentoExigido> exigencias = LeituraDasExigencias.LerExigencias(leitor, bloco);
         ResultadoConformidade? conformidade = LerObrigatoriedades(leitor, bloco);
         ReferenciaTemporalFatos? referenciaTemporalFatos = LeituraDosFatos.LerReferenciaTemporalFatosPolitica(leitor, bloco);
 
-        // A data resolvida só é lida para participar do payload fechado; a prova de que ela bate com
-        // a política é o round-trip reidratar e recanonicalizar, não uma comparação aqui.
-        leitor.DataOpcional(bloco, "dataReferenciaFatos", "documentosExigidos");
-        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = LeituraDosMetadadosDosFatos.LerMetadadosFatos(leitor, bloco);
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = LerDadosDeReferencia(leitor, bloco);
 
         return leitor.Falhou
             ? (null, [], null, null)
             : (conformidade, exigencias, referenciaTemporalFatos, metadadosFatos);
+    }
+
+    private static Dictionary<string, MetadadoFatoCongelado> LerDadosDeReferencia(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        // A data resolvida participa do payload fechado; a prova de coerência é o round-trip.
+        leitor.DataOpcional(bloco, "dataDeReferenciaDosDados", "documentosExigidos");
+        return LeituraDosMetadadosDosFatos.LerMetadadosFatos(leitor, bloco);
     }
 
     /// <summary>Reaproveita <see cref="LerPredicadoObrigatoriedade"/> para o predicado de cada regra.</summary>
@@ -65,48 +79,42 @@ internal static class LeituraDosDocumentosExigidos
             return null;
         }
 
-        List<RegraAvaliada> regras = [];
-        for (int i = 0; i < array.Count; i++)
-        {
-            RegraAvaliada? regra = LerRegraAvaliada(
-                leitor,
-                leitor.ItemObjeto(array, i, "documentosExigidos.obrigatoriedades"),
-                $"documentosExigidos.obrigatoriedades[{i}]");
-            if (regra is null)
-            {
-                return null;
-            }
-
-            regras.Add(regra);
-        }
-
-        return regras.Count == 0 ? null : new ResultadoConformidade(regras, []);
+        List<RegraAvaliada>? regras = LeituraDeItens.Ler(leitor, array, "documentosExigidos.obrigatoriedades", LerRegraAvaliada);
+        return regras is null || regras.Count == 0 ? null : new ResultadoConformidade(regras, []);
     }
 
     private static PredicadoObrigatoriedade? LerPredicadoDaRegra(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        JsonObject predicadoJson = leitor.Objeto(item, "predicado", path);
-        return leitor.Falhou ? null : LerPredicadoObrigatoriedade(leitor, predicadoJson, $"{path}.predicado");
+        JsonObject predicadoJson = leitor.Objeto(item, "condicoes", path);
+        return leitor.Falhou ? null : LerPredicadoObrigatoriedade(leitor, predicadoJson, $"{path}.condicoes");
     }
 
     private static RegraAvaliada? LerRegraAvaliada(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(
             item, path,
-            "regraId", "regraCodigo", "categoria", "tipoProcessoCodigoAvaliado", "predicado",
+            "regraId", "regraCodigo", "categoria", "tipoProcessoCodigoAvaliado", "condicoes",
             "aprovada", "baseLegal", "atoNormativoUrl", "portariaInterna", "descricaoHumana",
             "vigenciaInicio", "vigenciaFim", "hash");
 
-        Guid regraId = leitor.Identificador(item, "regraId", path);
-        string regraCodigo = leitor.TextoNaoVazio(item, "regraCodigo", path);
-        CategoriaObrigatoriedade categoria = leitor.Enumeracao<CategoriaObrigatoriedade>(item, "categoria", path);
-        string tipoProcessoCodigoAvaliado = leitor.TextoNaoVazio(item, "tipoProcessoCodigoAvaliado", path);
-        PredicadoObrigatoriedade? predicado = LerPredicadoDaRegra(leitor, item, path);
+        IdentificacaoDaRegra identificacao = LerIdentificacaoDaRegra(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
+        return MontarRegraAvaliada(leitor, item, path, identificacao);
+    }
+
+    private static IdentificacaoDaRegra LerIdentificacaoDaRegra(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.Identificador(item, "regraId", path),
+        leitor.TextoNaoVazio(item, "regraCodigo", path),
+        leitor.Enumeracao<CategoriaObrigatoriedade>(item, "categoria", path),
+        leitor.TextoNaoVazio(item, "tipoProcessoCodigoAvaliado", path),
+        LerPredicadoDaRegra(leitor, item, path));
+
+    private static RegraAvaliada? MontarRegraAvaliada(LeitorEnvelope leitor, JsonObject item, string path, IdentificacaoDaRegra identificacao)
+    {
         bool aprovada = leitor.Booleano(item, "aprovada", path);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path);
         string? atoNormativoUrl = leitor.TextoOpcional(item, "atoNormativoUrl", path);
@@ -115,13 +123,13 @@ internal static class LeituraDosDocumentosExigidos
         DateOnly vigenciaInicio = leitor.Data(item, "vigenciaInicio", path);
         DateOnly? vigenciaFim = leitor.DataOpcional(item, "vigenciaFim", path);
         string hash = leitor.TextoNaoVazio(item, "hash", path);
-
-        return leitor.Falhou
-            ? null
-            : new RegraAvaliada(
-                regraId, regraCodigo, categoria, tipoProcessoCodigoAvaliado, predicado!, aprovada, null,
-                baseLegal, atoNormativoUrl, portariaInterna, descricaoHumana, vigenciaInicio, vigenciaFim, hash);
+        return leitor.Falhou ? null : new RegraAvaliada(
+            identificacao.Id, identificacao.Codigo, identificacao.Categoria, identificacao.TipoProcesso, identificacao.Predicado!,
+            aprovada, null, baseLegal, atoNormativoUrl, portariaInterna, descricaoHumana, vigenciaInicio, vigenciaFim, hash);
     }
+
+    private sealed record IdentificacaoDaRegra(
+        Guid Id, string Codigo, CategoriaObrigatoriedade Categoria, string TipoProcesso, PredicadoObrigatoriedade? Predicado);
 
     /// <summary>
     /// A variante vem do campo <c>tipo</c> (o próprio envelope carrega o discriminador
@@ -139,6 +147,11 @@ internal static class LeituraDosDocumentosExigidos
             return null;
         }
 
+        return LerVarianteDoPredicado(leitor, tipo, parametros, path);
+    }
+
+    private static PredicadoObrigatoriedade? LerVarianteDoPredicado(LeitorEnvelope leitor, string tipo, JsonObject parametros, string path)
+    {
         string parametrosPath = $"{path}.parametros";
         return tipo switch
         {

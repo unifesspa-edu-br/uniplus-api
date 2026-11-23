@@ -162,7 +162,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     public async Task Iniciadas_FaseRetiradaEReinserida_ContinuaIniciada()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fase retirada");
-        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["tipoFaseOrigemId"] = Guid.CreateVersion7());
         await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);

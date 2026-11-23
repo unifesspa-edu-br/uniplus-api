@@ -28,7 +28,7 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
             : FundamentosHabilitados(configuracao).Select(SemLugarQueDeclareOTipo);
     }
 
-    public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(lugares);
@@ -46,7 +46,7 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
     private static IReadOnlyList<FundamentoIsencao> FundamentosHabilitados(ConfiguracaoDeclarada configuracao) =>
         configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is { Cobra: true } taxa ? taxa.Fundamentos : [];
 
-    private static bool Cobre(MotivoDoProcesso escolhido, LugarNoProcesso lugar, string fundamento, SentidoDoMotivo sentido) =>
+    private static bool Cobre(MotivoDeDecisaoDoProcesso escolhido, LugarNoProcesso lugar, string fundamento, SentidoDoMotivo sentido) =>
         escolhido.Lugar == lugar.Lugar
         && escolhido.Tipo == TipoMotivoDeDecisao.IsencaoDaTaxa
         && escolhido.Sentido == sentido

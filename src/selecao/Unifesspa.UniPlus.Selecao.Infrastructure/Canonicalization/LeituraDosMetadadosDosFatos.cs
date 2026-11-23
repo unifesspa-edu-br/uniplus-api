@@ -37,60 +37,79 @@ internal static class LeituraDosMetadadosDosFatos
     internal static Dictionary<string, MetadadoFatoCongelado> LerMetadadosFatos(LeitorEnvelope leitor, JsonObject bloco)
     {
         Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal);
-        JsonArray array = leitor.Array(bloco, "metadadosFatos", "documentosExigidos");
+        JsonArray array = leitor.Array(bloco, "definicoesDosDados", "documentosExigidos");
         if (leitor.Falhou)
         {
             return metadados;
         }
 
+        PreencherMetadados(leitor, array, metadados);
+        return metadados;
+    }
+
+    private static void PreencherMetadados(LeitorEnvelope leitor, JsonArray array, Dictionary<string, MetadadoFatoCongelado> metadados)
+    {
         for (int i = 0; i < array.Count; i++)
         {
             MetadadoFatoCongelado? metadado = LerMetadadoDoFato(
-                leitor,
-                leitor.ItemObjeto(array, i, "documentosExigidos.metadadosFatos"),
-                $"documentosExigidos.metadadosFatos[{i}]");
-            if (metadado is null)
+                leitor, leitor.ItemObjeto(array, i, "documentosExigidos.definicoesDosDados"),
+                $"documentosExigidos.definicoesDosDados[{i}]");
+            if (metadado is null || !AdicionarMetadado(leitor, metadados, metadado, i))
             {
-                return metadados;
-            }
-
-            if (!metadados.TryAdd(metadado.Codigo, metadado))
-            {
-                leitor.Recusar<object>(
-                    $"'documentosExigidos.metadadosFatos[{i}]': o fato '{metadado.Codigo}' aparece mais de uma vez em 'metadadosFatos' — cada fato tem no máximo um metadado congelado.");
-                return metadados;
+                return;
             }
         }
+    }
 
-        return metadados;
+    private static bool AdicionarMetadado(LeitorEnvelope leitor, Dictionary<string, MetadadoFatoCongelado> metadados, MetadadoFatoCongelado metadado, int indice)
+    {
+        if (metadados.TryAdd(metadado.Codigo, metadado))
+        {
+            return true;
+        }
+
+        leitor.Recusar<object>(
+            $"'documentosExigidos.definicoesDosDados[{indice}]': o fato '{metadado.Codigo}' aparece mais de uma vez em 'definicoesDosDados' — cada fato tem no máximo um metadado congelado.");
+        return false;
     }
 
     private static MetadadoFatoCongelado? LerMetadadoDoFato(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(
             item, path,
-            "fatoCodigo", "dominio", "origem", "cardinalidade", "pontoResolucao", "binding",
-            "valoresDominio", "valoresDominioDeclarados");
+            "codigoDoDado", "tipo", "origem", "quantidadeDeValores", "faseDeDisponibilidade", "fonteDoValor",
+            "opcoes", "opcoesDeclaradas");
 
-        string codigo = leitor.TextoNaoVazio(item, "fatoCodigo", path);
-        string dominio = leitor.TextoNaoVazio(item, "dominio", path);
-        string origem = leitor.TextoNaoVazio(item, "origem", path);
-        string cardinalidade = leitor.TextoNaoVazio(item, "cardinalidade", path);
-        string pontoResolucao = leitor.TextoNaoVazio(item, "pontoResolucao", path);
-        string binding = leitor.TextoNaoVazio(item, "binding", path);
+        DadosDoMetadado dados = LerDadosDoMetadado(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
+        return CongelarMetadado(leitor, item, path, dados);
+    }
+
+    private static MetadadoFatoCongelado? CongelarMetadado(LeitorEnvelope leitor, JsonObject item, string path, DadosDoMetadado dados)
+    {
         IReadOnlyList<string>? valoresDominio = LerValoresDominio(leitor, item, path);
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDeclarados = leitor.Falhou
             ? null
             : LeituraDosValoresDeDominio.LerValoresDominioDeclarados(leitor, item, path);
+        return leitor.Falhou ? null : dados.Congelar(valoresDominio, valoresDeclarados);
+    }
 
-        return leitor.Falhou
-            ? null
-            : new MetadadoFatoCongelado(codigo, dominio, origem, cardinalidade, pontoResolucao, binding, valoresDominio, valoresDeclarados);
+    private static DadosDoMetadado LerDadosDoMetadado(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.TextoNaoVazio(item, "codigoDoDado", path),
+        leitor.TextoNaoVazio(item, "tipo", path),
+        leitor.TextoNaoVazio(item, "origem", path),
+        leitor.TextoNaoVazio(item, "quantidadeDeValores", path),
+        leitor.TextoNaoVazio(item, "faseDeDisponibilidade", path),
+        leitor.TextoNaoVazio(item, "fonteDoValor", path));
+
+    private sealed record DadosDoMetadado(string Codigo, string Dominio, string Origem, string Cardinalidade, string PontoResolucao, string Binding)
+    {
+        internal MetadadoFatoCongelado Congelar(IReadOnlyList<string>? valores, IReadOnlyList<ValorDominioDeclaradoCongelado>? declarados) =>
+            new(Codigo, Dominio, Origem, Cardinalidade, PontoResolucao, Binding, valores, declarados);
     }
 
     /// <summary>
@@ -102,8 +121,8 @@ internal static class LeituraDosMetadadosDosFatos
     /// </summary>
     internal static IReadOnlyList<string>? LerValoresDominio(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
-        string path = $"{pathPai}.valoresDominio";
-        if (item["valoresDominio"] is not JsonNode node)
+        string path = $"{pathPai}.opcoes";
+        if (item["opcoes"] is not JsonNode node)
         {
             return null;
         }
@@ -114,6 +133,6 @@ internal static class LeituraDosMetadadosDosFatos
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' deveria ser um array de textos ou null."));
         }
 
-        return leitor.Textos(item, "valoresDominio", pathPai);
+        return leitor.Textos(item, "opcoes", pathPai);
     }
 }

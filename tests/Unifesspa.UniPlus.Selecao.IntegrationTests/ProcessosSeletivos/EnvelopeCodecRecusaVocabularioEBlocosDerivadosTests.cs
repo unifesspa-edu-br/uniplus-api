@@ -53,7 +53,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     public void ComponenteDeExibicaoForaDoVocabulario_RecusaComOErroDoDominio()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = "COMPONENTE-XPTO");
+            envelope["dadosDosFormularios"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = "COMPONENTE-XPTO");
 
         resultado.IsFailure.Should().BeTrue("o componente tem de pertencer ao vocabulário fechado de componentes de exibição");
         resultado.Error!.Code.Should().Be("FatoColetado.ComponenteExibicaoInvalido");
@@ -66,7 +66,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     public void ComponenteDeExibicaoForaDaFormaCanonica_Recusa(string componente)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = componente);
+            envelope["dadosDosFormularios"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = componente);
 
         resultado.IsFailure.Should().BeTrue("a reidratação normalizaria o valor e devolveria um grafo diferente do congelado");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

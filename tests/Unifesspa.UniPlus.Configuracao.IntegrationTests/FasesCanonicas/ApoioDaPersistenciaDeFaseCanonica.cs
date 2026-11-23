@@ -85,7 +85,7 @@ internal sealed class ApoioDaPersistenciaDeFaseCanonica
         // `Contains` sobre ele nao traduz para SQL. O filtro pelo prefixo do id
         // restringe o apagamento as linhas do seed.
         const string comando =
-            "DELETE FROM configuracao.fases_canonicas " +
+            "DELETE FROM configuracao.tipos_de_fase " +
             "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = ANY(@p0)";
 
         await ctx.Database.ExecuteSqlRawAsync(comando, new NpgsqlParameter("p0", codigos));

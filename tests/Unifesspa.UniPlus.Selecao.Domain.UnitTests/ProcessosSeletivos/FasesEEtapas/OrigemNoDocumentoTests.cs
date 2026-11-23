@@ -37,7 +37,7 @@ public sealed class OrigemNoDocumentoTests
         "regrasEliminacao",
         "exigencias",
         "termos",
-        "motivos",
+        "motivosDeDecisao",
     ];
 
     public static TheoryData<string> ListasQueAConferenciaApontaPorPosicao => [.. ListasDaConferencia];
@@ -103,7 +103,7 @@ public sealed class OrigemNoDocumentoTests
         FieldError[] daLeitura =
         [
             new("/cronograma/fases/0/bancasRequeridas/1", new DomainError("A.Banca", "banca")),
-            new("/etapas/2/produtos/0", new DomainError("A.Produto", "produto")),
+            new("/etapas/2/publicacoesPrevistas/0", new DomainError("A.Produto", "produto")),
             new("/etapas/2/bancas/4", new DomainError("A.Outra", "outra")),
         ];
         ContextoDaConferencia contexto = DeclaracoesComDefeitoParaOEsquema.ContextoComTodosOsDefeitos();
@@ -135,7 +135,7 @@ public sealed class OrigemNoDocumentoTests
     [Fact(DisplayName = "A causa de uma declaração que ficou sai com o ponteiro da posição de origem, e a da parte recusada, como a leitura a deu")]
     public void ConferenciaCompleta_ConverteASoDaDeclaracaoEMantemADaParteRecusada()
     {
-        FieldError daParte = new("/etapas/9/produtos/0", new DomainError("A.Produto", "produto"));
+        FieldError daParte = new("/etapas/9/publicacoesPrevistas/0", new DomainError("A.Produto", "produto"));
         ContextoDaConferencia contexto = DeclaracoesComDefeitoParaOEsquema.ContextoComTodosOsDefeitos();
         OrigemNoDocumento origem = new(
             new Dictionary<string, IReadOnlyList<int>> { ["fases"] = [3, 2, 1, 0], ["etapas"] = [6, 5, 4, 3, 2, 1, 0] },
@@ -145,7 +145,7 @@ public sealed class OrigemNoDocumentoTests
         IReadOnlyList<FieldError> convertidas = PonteiroNoDocumento.Converter(CausasQueImpedemCongelar.De(lida), lida.Configuracao.Origem);
 
         convertidas.Select(static causa => causa.Field).Should()
-            .Contain(["/etapas/9/produtos/0", "/cronograma/fases/2/faseCanonicaCodigo", "/etapas/5/chave"]);
-        convertidas.Count(static causa => causa.Field == "/etapas/9/produtos/0").Should().Be(1);
+            .Contain(["/etapas/9/publicacoesPrevistas/0", "/cronograma/fases/2/tipoFaseCodigo", "/etapas/5/chave"]);
+        convertidas.Count(static causa => causa.Field == "/etapas/9/publicacoesPrevistas/0").Should().Be(1);
     }
 }

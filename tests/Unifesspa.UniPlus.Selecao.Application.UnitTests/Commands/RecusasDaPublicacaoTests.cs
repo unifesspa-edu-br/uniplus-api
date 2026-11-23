@@ -222,7 +222,7 @@ public sealed class RecusasDaPublicacaoTests
         {
             return new ServicosDoCongelamentoDeTeste()
                     .ComRepositorio(RepositorioQueDevolve(_processo))
-                    .ComMotivosDoProcesso(_processo)
+                    .ComMotivosDeDecisaoDoProcesso(_processo)
                     .ComDocumentos(RepositorioDoDocumento(_documento))
                     .ComCanonicalizer(canonicalizer)
                     .ComUsuario(UsuarioDeTeste())

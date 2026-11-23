@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/formulario.schema.json",
   "title": "Formulário do processo",
-  "description": "O formulário de uma finalidade: as etapas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no máximo um formulário no processo. Um formulário comporta no máximo 200 itens, contando itens, grupos e subitens.",
+  "description": "O formulário de uma finalidade: as páginas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no máximo um formulário no processo. Um formulário comporta no máximo 200 itens, contando itens, grupos e subitens.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -37,12 +37,12 @@
       "maxLength": 60,
       "readOnly": true
     },
-    "etapas": {
-      "title": "Etapas",
+    "paginas": {
+      "title": "Páginas",
       "description": "Seções e blocos do formulário, na ordem de apresentação.",
       "type": "array",
       "items": {
-        "$ref": "#/$defs/etapa"
+        "$ref": "#/$defs/pagina"
       }
     },
     "itens": {
@@ -71,8 +71,8 @@
     }
   },
   "$defs": {
-    "etapa": {
-      "title": "Etapa do formulário",
+    "pagina": {
+      "title": "Página do formulário",
       "description": "Uma seção de campos ou um bloco de sistema.",
       "type": "object",
       "additionalProperties": false,
@@ -83,7 +83,7 @@
       "properties": {
         "codigo": {
           "title": "Código",
-          "description": "Código da etapa, único no formulário. Os itens e grupos a citam em etapaCodigo.",
+          "description": "Código da página, único no formulário. Os itens e grupos a citam em paginaCodigo.",
           "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
         },
         "ordem": {
@@ -102,7 +102,7 @@
         },
         "bloco": {
           "title": "Bloco de sistema",
-          "description": "Qual bloco de sistema a etapa é. Só faz sentido quando o tipo é BLOCO; a coerência é regra do domínio.",
+          "description": "Qual bloco de sistema a página é. Só faz sentido quando o tipo é BLOCO; a coerência é regra do domínio.",
           "enum": [
             "COMPROVACAO_DOCUMENTAL",
             "MODALIDADES_CALCULADAS",
@@ -111,31 +111,31 @@
         },
         "titulo": {
           "title": "Título",
-          "description": "Título da etapa, de até 300 caracteres.",
+          "description": "Título da página, de até 300 caracteres.",
           "type": "string",
           "maxLength": 300
         },
         "descricao": {
           "title": "Descrição",
-          "description": "Texto explicativo da etapa, de até 2000 caracteres.",
+          "description": "Texto explicativo da página, de até 2000 caracteres.",
           "type": "string",
           "maxLength": 2000
         },
         "aviso": {
           "title": "Aviso",
-          "description": "Aviso destacado da etapa, de até 2000 caracteres.",
+          "description": "Aviso destacado da página, de até 2000 caracteres.",
           "type": "string",
           "maxLength": 2000
         },
         "exibicao": {
           "title": "Exibição",
-          "description": "Condição para exibir a etapa. Nula ou ausente: sempre exibida.",
+          "description": "Condição para exibir a página. Nula ou ausente: sempre exibida.",
           "anyOf": [
             {
               "type": "null"
             },
             {
-              "$ref": "predicado.schema.json#/$defs/predicado"
+              "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
             }
           ]
         }
@@ -156,9 +156,9 @@
           "description": "Código do grupo, único no processo e distinto de qualquer código de fato.",
           "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
         },
-        "etapaCodigo": {
-          "title": "Etapa",
-          "description": "Código da etapa do tipo SECAO, do mesmo formulário, em que o grupo aparece.",
+        "paginaCodigo": {
+          "title": "Página",
+          "description": "Código da página do tipo SECAO, do mesmo formulário, em que o grupo aparece.",
           "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
         },
         "ordem": {
@@ -201,26 +201,26 @@
               "type": "null"
             },
             {
-              "$ref": "predicado.schema.json#/$defs/predicado"
+              "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
             }
           ]
         },
         "obrigatoriedade": {
           "title": "Obrigatoriedade",
           "description": "Se o preenchimento do grupo é obrigatório sempre, nunca ou só sob uma condição.",
-          "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+          "$ref": "condicoes.schema.json#/$defs/obrigatoriedade"
         },
         "subitens": {
           "title": "Subitens",
-          "description": "Campos de cada ocorrência, até 30. O subitem não tem etapa nem impedimento: ficam ausentes ou nulos.",
+          "description": "Campos de cada ocorrência, até 30. O subitem não tem página nem impedimento: ficam ausentes ou nulos.",
           "type": "array",
           "maxItems": 30,
           "items": {
             "$ref": "item-do-formulario.schema.json",
             "properties": {
-              "etapaCodigo": {
-                "title": "Etapa do subitem",
-                "description": "Sempre ausente ou nula: o subitem aparece na etapa do grupo.",
+              "paginaCodigo": {
+                "title": "Página do subitem",
+                "description": "Sempre ausente ou nula: o subitem aparece na página do grupo.",
                 "type": "null"
               },
               "impedimento": {
@@ -277,14 +277,14 @@
               "type": "null"
             },
             {
-              "$ref": "predicado.schema.json#/$defs/predicado"
+              "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
             }
           ]
         },
         "obrigatoriedade": {
           "title": "Obrigatoriedade",
           "description": "Se o aceite é obrigatório sempre, nunca ou só sob uma condição.",
-          "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+          "$ref": "condicoes.schema.json#/$defs/obrigatoriedade"
         }
       }
     }

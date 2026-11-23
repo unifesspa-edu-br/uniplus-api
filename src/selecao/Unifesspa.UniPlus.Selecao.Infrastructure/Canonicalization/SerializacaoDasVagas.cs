@@ -83,7 +83,7 @@ internal static class SerializacaoDasVagas
         objeto["regraRemanejamento"] = modalidade.RegraRemanejamento.ToCodigo();
         objeto["remanejamentoDestino"] = modalidade.RemanejamentoDestino;
         objeto["remanejamentoPar"] = modalidade.RemanejamentoPar;
-        objeto["remanejamentoFallback"] = modalidade.RemanejamentoFallback;
+        objeto["remanejamentoDestinoFinal"] = modalidade.RemanejamentoFallback;
         return objeto;
     }
 

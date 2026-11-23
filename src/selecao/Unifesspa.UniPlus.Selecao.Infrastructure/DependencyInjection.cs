@@ -60,7 +60,7 @@ public static class SelecaoInfrastructureRegistration
     private static void AddRepositoriosDoModulo(this IServiceCollection services)
     {
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
-        services.AddScoped<IMotivoDeDecisaoRepository, MotivoDeDecisaoRepository>().AddScoped<IMotivoDoProcessoRepository, MotivoDoProcessoRepository>();
+        services.AddScoped<IMotivoDeDecisaoRepository, MotivoDeDecisaoRepository>().AddScoped<IMotivoDeDecisaoDoProcessoRepository, MotivoDeDecisaoDoProcessoRepository>();
         services.AddScoped<IDocumentoAPublicarRepository, DocumentoAPublicarRepository>();
         services.AddScoped<IAtoDoProcessoRepository, AtoDoProcessoRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();

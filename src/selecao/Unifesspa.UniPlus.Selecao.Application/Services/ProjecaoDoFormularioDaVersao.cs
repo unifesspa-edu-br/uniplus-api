@@ -191,7 +191,7 @@ public static class ProjecaoDoFormularioDaVersao
         texto = null;
         return envelope.TryGetPropertyValue("documentosExigidos", out JsonNode? node)
             && node is JsonObject documentos
-            && TentarStringOpcional(documentos, "dataReferenciaFatos", out texto);
+            && TentarStringOpcional(documentos, "dataDeReferenciaDosDados", out texto);
     }
 
     private static bool TentarDataIso(string texto, out DateOnly? data)

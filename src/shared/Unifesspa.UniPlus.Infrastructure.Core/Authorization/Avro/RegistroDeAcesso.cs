@@ -27,7 +27,7 @@ public sealed class RegistroDeAcesso : ISpecificRecord
         static registro => registro.ChamadaId,
         static registro => registro.ResourceId,
         static registro => registro.InscricaoId,
-        static registro => registro.FatoCodigo,
+        static registro => registro.CodigoDoDado,
         static registro => registro.Ocorrencia,
         static registro => registro.Origem,
         static registro => registro.ClienteOidc,
@@ -56,7 +56,7 @@ public sealed class RegistroDeAcesso : ISpecificRecord
         static (registro, valor) => registro.ChamadaId = (string?)valor,
         static (registro, valor) => registro.ResourceId = (string?)valor,
         static (registro, valor) => registro.InscricaoId = (string?)valor,
-        static (registro, valor) => registro.FatoCodigo = (string?)valor,
+        static (registro, valor) => registro.CodigoDoDado = (string?)valor,
         static (registro, valor) => registro.Ocorrencia = (string?)valor,
         static (registro, valor) => registro.Origem = (string)valor!,
         static (registro, valor) => registro.ClienteOidc = (string?)valor,
@@ -110,7 +110,7 @@ public sealed class RegistroDeAcesso : ISpecificRecord
     public string? InscricaoId { get; set; }
 
     /// <summary>Código do fato revelado, nunca o valor.</summary>
-    public string? FatoCodigo { get; set; }
+    public string? CodigoDoDado { get; set; }
 
     /// <summary>Ocorrência do fato revelado num grupo que se repete.</summary>
     public string? Ocorrencia { get; set; }

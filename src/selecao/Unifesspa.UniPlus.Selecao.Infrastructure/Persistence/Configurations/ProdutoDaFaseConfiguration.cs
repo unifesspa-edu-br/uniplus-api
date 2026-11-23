@@ -24,12 +24,13 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("produtos_da_fase");
+        builder.ToTable("publicacoes_previstas_da_fase", tabela => tabela.HasComment("Publicações previstas para uma fase do cronograma."));
+        builder.Property(p => p.FaseCronogramaId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).ValueGeneratedNever();
+        builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
-        builder.Property(p => p.AtoCodigo).HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasConversion<int>();
+        builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
+        builder.Property(p => p.Papel).HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).").HasConversion<int>();
 
         // O par ato + papel declarado uma única vez por fase — a mesma matéria é publicada
         // uma vez como preliminar e outra como definitiva, então o ato sozinho não é chave.
@@ -43,6 +44,6 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
         builder.HasIndex(p => new { p.FaseCronogramaId, p.AtoCodigo, p.Papel })
             .IsUnique()
             .AreNullsDistinct(false)
-            .HasDatabaseName("ux_produtos_da_fase_ato");
+            .HasDatabaseName("ux_publicacoes_previstas_da_fase_ato");
     }
 }

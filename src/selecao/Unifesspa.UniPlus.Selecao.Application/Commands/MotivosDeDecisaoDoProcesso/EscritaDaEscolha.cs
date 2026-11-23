@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProcesso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;

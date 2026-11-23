@@ -114,12 +114,12 @@ public sealed class TipoConceitoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.tipos_conceito (id, codigo, nome, ativo, natureza, escala_minima, escala_maxima, casas_decimais, created_at)
+            INSERT INTO configuracao.tipos_conceito (id, codigo, nome, ativo, forma, escala_minima, escala_maxima, casas_decimais, created_at)
             VALUES ({Guid.CreateVersion7()}, {Codigo()}, {"Escala invertida"}, {true}, {"NUMERICO"}, {10m}, {0m}, {2}, {DateTimeOffset.UtcNow})
             """);
 
         PostgresException erro = (await act.Should().ThrowAsync<PostgresException>()).Which;
-        (erro.SqlState, erro.ConstraintName).Should().Be(("23514", "ck_tipos_conceito_parametros_da_natureza"));
+        (erro.SqlState, erro.ConstraintName).Should().Be(("23514", "ck_tipos_conceito_parametros_da_forma"));
     }
 
     // As duas leituras acontecem antes de qualquer gravação; devolve o que a segunda gravação lançou, se lançou.
@@ -144,7 +144,7 @@ public sealed class TipoConceitoPersistenceTests
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string gravada = await ctx.Database
-            .SqlQuery<string>($"SELECT natureza AS \"Value\" FROM configuracao.tipos_conceito WHERE id = {tipo.Id}")
+            .SqlQuery<string>($"SELECT forma AS \"Value\" FROM configuracao.tipos_conceito WHERE id = {tipo.Id}")
             .SingleAsync();
         gravada.Should().Be("CATEGORICO");
     }
@@ -158,11 +158,11 @@ public sealed class TipoConceitoPersistenceTests
             .GetCheckConstraints()
             .ToDictionary(static c => c.Name!, static c => c.Sql);
 
-        restricoes["ck_tipos_conceito_natureza"].Should().Be("natureza IN ('NUMERICO', 'CATEGORICO')");
-        restricoes["ck_tipos_conceito_parametros_da_natureza"].Should().Be(
-            "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
+        restricoes["ck_tipos_conceito_forma"].Should().Be("forma IN ('NUMERICO', 'CATEGORICO')");
+        restricoes["ck_tipos_conceito_parametros_da_forma"].Should().Be(
+            "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
             + "AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) "
-            + "OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+            + "OR (forma = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
     }
 
     [Fact(DisplayName = "A leitura de uma natureza que o enum não declara falha em vez de virar natureza")]
@@ -173,8 +173,8 @@ public sealed class TipoConceitoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
         await ctx.Database.ExecuteSqlRawAsync(
-            "ALTER TABLE configuracao.tipos_conceito DROP CONSTRAINT ck_tipos_conceito_natureza, DROP CONSTRAINT ck_tipos_conceito_parametros_da_natureza");
-        await ctx.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_conceito SET natureza = 'ORDINAL' WHERE id = {tipo.Id}");
+            "ALTER TABLE configuracao.tipos_conceito DROP CONSTRAINT ck_tipos_conceito_forma, DROP CONSTRAINT ck_tipos_conceito_parametros_da_forma");
+        await ctx.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_conceito SET forma = 'ORDINAL' WHERE id = {tipo.Id}");
 
         Func<Task> ler = async () => await ctx.Set<TipoConceito>().AsNoTracking().SingleAsync(t => t.Id == tipo.Id);
 
@@ -214,6 +214,6 @@ public sealed class TipoConceitoPersistenceTests
 
     private static async Task<List<string>> CodigosPorPosicaoAsync(UniPlusDbContext ctx, Guid tipoId) =>
         await ctx.Database.SqlQuery<string>(
-            $"""SELECT codigo AS "Value" FROM configuracao.valores_tipo_conceito WHERE tipo_conceito_id = {tipoId} ORDER BY posicao""")
+            $"""SELECT codigo AS "Value" FROM configuracao.opcoes_do_tipo_de_conceito WHERE tipo_conceito_id = {tipoId} ORDER BY posicao""")
             .ToListAsync();
 }

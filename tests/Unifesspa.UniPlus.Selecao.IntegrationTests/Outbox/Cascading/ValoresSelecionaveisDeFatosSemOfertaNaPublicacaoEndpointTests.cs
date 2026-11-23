@@ -49,8 +49,8 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
         int posicaoDoPrimeiro = await PosicaoDoItemAsync(processoId, primeiro);
         int posicaoDoSegundo = await PosicaoDoItemAsync(processoId, segundo);
         erros.Select(static e => e.GetProperty("field").GetString()).Should().SatisfyRespectively(
-            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoPrimeiro}/fatoCodigo$"),
-            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoSegundo}/fatoCodigo$"));
+            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoPrimeiro}/codigoDoDado$"),
+            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoSegundo}/codigoDoDado$"));
     }
 
     private static (string Primeiro, string Segundo) CodigosDosFatos()
@@ -135,7 +135,7 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
         string valorDoSegundo = $"V_{segundo}";
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.valores_de_dominio_do_fato SET ativo = false WHERE codigo IN ({valorDoPrimeiro}, {valorDoSegundo})");
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.opcoes_dos_dados SET ativo = false WHERE codigo IN ({valorDoPrimeiro}, {valorDoSegundo})");
     }
 
     // O formulário de inscrição guarda outros itens além dos gravados, e o caminho do documento é a posição por ordem entre eles.

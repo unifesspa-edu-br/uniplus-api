@@ -88,7 +88,7 @@ internal static class SerializacaoDoBonusEDoAtendimento
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(bonus.Regra),
             ["fator"] = HashCanonicalComputer.SerializeDecimalCanonical(bonus.Fator, EscritaCanonica.EscalaPadrao),
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscritaCanonica.EscalaPadrao) : null,
-            ["fatoElegibilidadeCodigo"] = bonus.FatoElegibilidadeCodigo,
+            ["codigoDoDadoDeElegibilidade"] = bonus.FatoElegibilidadeCodigo,
         };
 
     private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoBonusRegional bonus)

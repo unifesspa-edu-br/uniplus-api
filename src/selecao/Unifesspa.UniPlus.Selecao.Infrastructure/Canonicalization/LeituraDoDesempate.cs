@@ -99,8 +99,8 @@ internal static class LeituraDoDesempate
 
     private static ParametrosDesempateMaiorNotaEtapa? LerMaiorNotaEtapa(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(parametros, path, "etapaRef");
-        Guid etapaRef = leitor.Identificador(parametros, "etapaRef", path);
+        leitor.ExigirChaves(parametros, path, "etapaId");
+        Guid etapaRef = leitor.Identificador(parametros, "etapaId", path);
         return leitor.Falhou ? null : new ParametrosDesempateMaiorNotaEtapa(etapaRef);
     }
 
@@ -123,8 +123,8 @@ internal static class LeituraDoDesempate
     // pode ter mudado.
     private static ParametrosCriterioDesempate? LerPredicadoFato(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(parametros, path, "fato", "operador", "valor");
-        string fato = leitor.TextoNaoVazio(parametros, "fato", path);
+        leitor.ExigirChaves(parametros, path, "codigoDoDado", "operador", "valor");
+        string fato = leitor.TextoNaoVazio(parametros, "codigoDoDado", path);
         Operador operador = LeituraDasCondicoes.LerOperador(leitor, parametros, path);
         System.Text.Json.JsonElement valor = leitor.Valor(parametros, "valor", path);
         if (leitor.Falhou)

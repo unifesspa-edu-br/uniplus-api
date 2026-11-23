@@ -18,9 +18,9 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     private const string FasesForaDeOrdem = """
         {
           "cronograma": { "fases": [
-            { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO" },
-            { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
-            { "chave": "recurso", "faseCanonicaCodigo": "RECURSO" }
+            { "chave": "resultado", "tipoFaseCodigo": "RESULTADO" },
+            { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
+            { "chave": "recurso", "tipoFaseCodigo": "RECURSO" }
           ] }
         }
         """;
@@ -28,11 +28,11 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     private const string FaseCompleta = """
         {
           "cronograma": { "fases": [ {
-            "chave": "analise", "faseCanonicaCodigo": "ANALISE",
+            "chave": "analise", "tipoFaseCodigo": "ANALISE",
             "inicio": "2027-01-10T03:00:00Z", "fim": "2027-01-12T15:30:00.5Z",
             "emiteParecerIndividual": true,
             "tiposDeDecisao": [ "ANALISE_DOCUMENTAL", "HOMOLOGACAO_DAS_INSCRICOES" ],
-            "produtos": [ { "atoCodigo": "AVISO" }, { "atoCodigo": "RESULTADO_PRELIMINAR", "papel": "PRELIMINAR" } ],
+            "publicacoesPrevistas": [ { "atoCodigo": "AVISO" }, { "atoCodigo": "RESULTADO_PRELIMINAR", "papel": "PRELIMINAR" } ],
             "bancasRequeridas": [
               { "chave": "documental", "tipoBancaCodigo": "BANCA_DOCUMENTAL", "categoriasDocumentoCodigos": [ "RENDA", "IDENTIDADE" ] },
               { "chave": "colegiado", "tipoBancaCodigo": "BANCA_COLEGIADA", "regraDeDeliberacao": { "modo": "colegiadaComVotacao", "integrantes": 3, "suplentes": 1, "quorum": 2,
@@ -45,10 +45,10 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     private const string RegraDeRecurso = """
         {
           "cronograma": { "fases": [ {
-            "chave": "analise", "faseCanonicaCodigo": "ANALISE",
+            "chave": "analise", "tipoFaseCodigo": "ANALISE",
             "regraRecurso": {
               "regraCodigo": "PRAZO-ANCORADO", "regraVersao": "v2", "prazoValor": 2.5, "prazoUnidade": "diasUteis",
-              "atoAncoraCodigo": "RESULTADO_PRELIMINAR", "admiteInstanciaSuperior": true,
+              "publicacaoDeReferenciaAtoCodigo": "RESULTADO_PRELIMINAR", "admiteInstanciaSuperior": true,
               "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "horas",
               "efeitoSuspensivo": "semEfeitoSuspensivo", "guardaDaVaga": "ateOResultadoDefinitivo",
               "procedimentosDeRecurso": [
@@ -64,7 +64,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     private const string Homologacao = """
         {
           "cronograma": { "fases": [ {
-            "chave": "homologacao", "faseCanonicaCodigo": "HOMOLOGACAO",
+            "chave": "homologacao", "tipoFaseCodigo": "HOMOLOGACAO",
             "regraDeHomologacao": {
               "resultadoAtoCodigo": "RESULTADO_HOMOLOGACAO",
               "alternativas": [
@@ -139,9 +139,9 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     {
         IReadOnlyList<FaseNoDocumento> fases = Lidas("""
             { "cronograma": { "fases": [
-              { "chave": "isencao", "faseCanonicaCodigo": "ISENCAO" },
-              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "noMesmoMomentoDaAnterior": true },
-              { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO", "noMesmoMomentoDaAnterior": false }
+              { "chave": "isencao", "tipoFaseCodigo": "ISENCAO" },
+              { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "noMesmoMomentoDaAnterior": true },
+              { "chave": "resultado", "tipoFaseCodigo": "RESULTADO", "noMesmoMomentoDaAnterior": false }
             ] } }
             """).Fases;
 
@@ -208,7 +208,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     public void Procedimento_ComTipoDeDecisaoDesconhecido_FicaSemTipo()
     {
         IReadOnlyList<ProcedimentoNoDocumento> procedimentos = UnicaFase("""
-            { "cronograma": { "fases": [ { "chave": "analise", "faseCanonicaCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO",
+            { "cronograma": { "fases": [ { "chave": "analise", "tipoFaseCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO",
               "procedimentosDeRecurso": [ { "tipoDeDecisao": "TIPO_QUE_NAO_EXISTE", "regra": { "codigo": "PROCEDIMENTO-CONFERENCIA", "versao": "v1" } } ] } } ] } }
             """).RegraDeRecurso!.Procedimentos;
 
@@ -219,7 +219,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     public void RegraDeRecursoSemParametros_FicaSemValorDeclarado()
     {
         RegraDeRecursoNoDocumento regra = UnicaFase("""
-            { "cronograma": { "fases": [ { "chave": "analise", "faseCanonicaCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO" } } ] } }
+            { "cronograma": { "fases": [ { "chave": "analise", "tipoFaseCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO" } } ] } }
             """).RegraDeRecurso!;
 
         regra.Parametros.Should().Be(new ParametrosDeclaradosDoRecurso(PrazoDeclarado.Ausente, false, PrazoDeclarado.Ausente, null, null));

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// não grava nada nela e não refaz a cópia: o texto publicado é o da escolha, mesmo que o cadastro mude depois.
 /// A regra de quando incluir e retirar é de <see cref="EscolhaDosMotivos"/>, que enxerga o estado do processo.
 /// </remarks>
-public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
+public sealed class MotivoDeDecisaoDoProcesso : EntityBase, IAuditableEntity
 {
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -52,11 +52,11 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
 
     public string? UpdatedBy { get; private set; }
 
-    private MotivoDoProcesso()
+    private MotivoDeDecisaoDoProcesso()
     {
     }
 
-    internal static MotivoDoProcesso Copiar(
+    internal static MotivoDeDecisaoDoProcesso Copiar(
         Guid processoSeletivoId, LugarDaDecisao lugar, MotivoDeDecisao origem, int versaoDeEntrada, string? justificativa)
     {
         return new()
@@ -81,11 +81,11 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
     public bool PendenteNa(int numeroDaVersaoEmPreparo) => Vigencia.VersaoDoEditalDeEntrada >= numeroDaVersaoEmPreparo;
 
     /// <summary>As escolhas que valem na versão do edital: a que entrou nela ou antes, e que não saiu até ela.</summary>
-    public static Expression<Func<MotivoDoProcesso, bool>> ValeNaVersao(int numeroDaVersao) =>
+    public static Expression<Func<MotivoDeDecisaoDoProcesso, bool>> ValeNaVersao(int numeroDaVersao) =>
         m => m.Vigencia.VersaoDoEditalDeEntrada <= numeroDaVersao
             && (m.Vigencia.VersaoDoEditalDeSaida == null || m.Vigencia.VersaoDoEditalDeSaida > numeroDaVersao);
 
     /// <summary>As escolhas atuais: as que ainda não saíram do edital.</summary>
-    public static Expression<Func<MotivoDoProcesso, bool>> NaEscolhaAtual =>
+    public static Expression<Func<MotivoDeDecisaoDoProcesso, bool>> NaEscolhaAtual =>
         m => m.Vigencia.VersaoDoEditalDeSaida == null;
 }

@@ -136,7 +136,7 @@ public sealed class PrecedenciaFasePersistenceTests
 
     // As duas CHECKs de precedencias_entre_fases repetem o rol separadamente. Exercitar os
     // dois sentidos é o que distingue "acrescentei o código nas três" de "acrescentei
-    // só na de fases_canonicas" — neste último caso a fase existiria no cadastro e
+    // só na de tipos_de_fase" — neste último caso a fase existiria no cadastro e
     // nenhuma aresta poderia referenciá-la.
     [Fact(DisplayName = "CHECK de banco aceita a solicitação de isenção como antecessora e como sucessora")]
     public async Task Check_AceitaSolicitacaoIsencaoNosDoisSentidos()

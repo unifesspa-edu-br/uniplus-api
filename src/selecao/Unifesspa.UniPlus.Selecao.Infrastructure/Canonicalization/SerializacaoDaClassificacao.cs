@@ -42,7 +42,7 @@ internal static class SerializacaoDaClassificacao
 
     private static JsonObject SerializarParametrosCriterioDesempate(ParametrosCriterioDesempate parametros) => parametros switch
     {
-        ParametrosDesempateMaiorNotaEtapa maiorNotaEtapa => new JsonObject { ["etapaRef"] = maiorNotaEtapa.EtapaRef },
+        ParametrosDesempateMaiorNotaEtapa maiorNotaEtapa => new JsonObject { ["etapaId"] = maiorNotaEtapa.EtapaRef },
         ParametrosDesempateMaiorIdade => [],
         ParametrosDesempateIdoso idoso => new JsonObject { ["idadeMinima"] = idoso.IdadeMinima },
         ParametrosDesempatePredicadoFato predicadoFato => SerializarPredicadoDoDesempate(predicadoFato.Condicao),
@@ -52,7 +52,7 @@ internal static class SerializacaoDaClassificacao
 
     private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao) => new()
     {
-        ["fato"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
+        ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
         ["operador"] = condicao.Operador.Codigo(),
         ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
     };
@@ -126,10 +126,10 @@ internal static class SerializacaoDaClassificacao
 
     private static JsonObject SerializarParametrosRegraEliminacao(ParametrosRegraEliminacao parametros) => parametros switch
     {
-        ParametrosElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaRef"] = ausencia.EtapaRef },
+        ParametrosElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaId"] = ausencia.EtapaRef },
         ParametrosElimNotaMinimaEtapa notaMinima => new JsonObject
         {
-            ["etapaRef"] = notaMinima.EtapaRef,
+            ["etapaId"] = notaMinima.EtapaRef,
             ["notaMinima"] = HashCanonicalComputer.SerializeDecimalCanonical(notaMinima.NotaMinima, EscritaCanonica.EscalaPadrao),
         },
         ParametrosElimCorteEmArea corteEmArea => new JsonObject

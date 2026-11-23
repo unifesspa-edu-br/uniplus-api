@@ -88,7 +88,7 @@
           "maxLength": 40,
           "readOnly": true
         },
-        "fatosComprovados": {
+        "dadosComprovados": {
           "title": "Fatos comprovados",
           "description": "Códigos dos fatos do candidato que o documento comprova. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
           "type": "array",
@@ -141,17 +141,17 @@
             "PENDENCIA_REENVIO"
           ]
         },
-        "condicaoGatilho": {
+        "condicoes": {
           "title": "Condição de gatilho",
           "description": "Predicado que torna a exigência aplicável, quando ela é condicional.",
-          "$ref": "predicado.schema.json#/$defs/predicado"
+          "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
         },
         "basesLegais": {
           "title": "Bases legais",
           "description": "Embasamento normativo da exigência.",
           "type": "array",
           "items": {
-            "$ref": "predicado.schema.json#/$defs/baseLegal"
+            "$ref": "condicoes.schema.json#/$defs/baseLegal"
           }
         },
         "idadeMaximaEmissao": {

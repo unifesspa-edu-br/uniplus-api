@@ -39,11 +39,24 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
     [Fact(DisplayName = "o lote identifica cada inscrito, a linha sem inscrito e os ausentes, e nenhuma coluna guarda CPF completo")]
     public async Task Obter_IdentificaInscritosLinhasEAusentes_SemCpfCompleto()
     {
-        // 0: ausente em Matemática; 1: ausente total; 2: com nota; 3: sem linha; 4: conflito e sem 2ª opção; 5: não inscrito na edição.
         Cenario cenario = await _apoio.NovoCenarioAsync([0, 1, 2, 3, 4], semSegundaOpcao: [4]);
         using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage importado = await ImportarAsync(client, cenario, ArquivoDeTeste());
+        importado.StatusCode.Should().Be(HttpStatusCode.Created, await importado.Content.ReadAsStringAsync());
+        Guid loteId = await IdDoLoteAsync(importado);
+        using HttpRequestMessage consulta = Requisicao(HttpMethod.Get, $"{cenario.Base}/{loteId}");
+        string corpo = await (await client.SendAsync(consulta)).Content.ReadAsStringAsync();
+        corpo.Should().NotContain(Pessoas[5].Cpf);
+        using JsonDocument doc = JsonDocument.Parse(corpo);
+        ConferirOcorrencias(doc.RootElement);
+        ConferirAusentes(doc.RootElement, cenario);
+        await ConferirDadosGravadosAsync(loteId);
+    }
+
+    private static byte[] ArquivoDeTeste()
+    {
         string[] outraNota = ["100", "722.2", "833.3", "544.4", "960"];
-        byte[] arquivo = Bytes(
+        return Bytes(
         [
             LinhaComMatematicaAusente(Pessoas[0], 1),
             LinhaDeAusente(Pessoas[1], 2),
@@ -52,36 +65,42 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
             Linha(Pessoas[4], 4, outraNota),
             Linha(Pessoas[5], 6),
         ]);
+    }
 
-        HttpResponseMessage importado = await ImportarAsync(client, cenario, arquivo);
-        importado.StatusCode.Should().Be(HttpStatusCode.Created, await importado.Content.ReadAsStringAsync());
-        Guid loteId = await IdDoLoteAsync(importado);
-
-        using HttpRequestMessage consulta = Requisicao(HttpMethod.Get, $"{cenario.Base}/{loteId}");
-        string corpo = await (await client.SendAsync(consulta)).Content.ReadAsStringAsync();
-        corpo.Should().NotContain(Pessoas[5].Cpf);
-        using JsonDocument doc = JsonDocument.Parse(corpo);
-        JsonElement raiz = doc.RootElement;
+    private static void ConferirOcorrencias(JsonElement raiz)
+    {
         raiz.GetProperty("importadoPorNome").GetString().Should().Be("Test User");
-
         JsonElement[] ocorrencias = [.. raiz.GetProperty("ocorrencias").EnumerateArray()];
-        JsonElement semLinha = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "INSCRITO_SEM_LINHA");
+        ConferirSemLinha(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "INSCRITO_SEM_LINHA"));
+        ConferirConflito(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "CONFLITO"));
+        ConferirSemInscrito(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "LINHA_SEM_INSCRITO"));
+    }
+
+    private static void ConferirSemLinha(JsonElement semLinha)
+    {
         semLinha.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[3].Nome);
         semLinha.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[3]));
         OpcoesDe(semLinha).Should().Equal(
             "1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino",
             "2:Pedagogia (Licenciatura) — Campus Universitário de Marabá — Noturno");
+    }
 
-        JsonElement conflito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "CONFLITO");
+    private static void ConferirConflito(JsonElement conflito)
+    {
         conflito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[4].Nome);
         OpcoesDe(conflito).Should().Equal("1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino");
+    }
 
-        JsonElement semInscrito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "LINHA_SEM_INSCRITO");
+    private static void ConferirSemInscrito(JsonElement semInscrito)
+    {
         semInscrito.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[5]));
         semInscrito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[5].Nome);
         semInscrito.GetProperty("sexo").GetString().Should().Be(Pessoas[5].Sexo[..1]);
         semInscrito.GetProperty("ofertas").ValueKind.Should().Be(JsonValueKind.Null);
+    }
 
+    private static void ConferirAusentes(JsonElement raiz, Cenario cenario)
+    {
         raiz.GetProperty("totalDeInscritosAusentes").GetInt32().Should().Be(2);
         JsonElement[] ausentes = [.. raiz.GetProperty("ausentes").EnumerateArray()];
         JsonElement parcial = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[0]);
@@ -91,14 +110,17 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
         OpcoesDe(parcial).Should().HaveCount(2);
         JsonElement total = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[1]);
         total.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().HaveCount(5);
+    }
 
+    private async Task ConferirDadosGravadosAsync(Guid loteId)
+    {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string[] linhasGravadas = await db.Database
             .SqlQuery<string>($"""
-                SELECT o::text AS "Value" FROM selecao.ocorrencias_do_lote_de_notas o WHERE o.lote_id = {loteId}
+                SELECT o::text AS "Value" FROM selecao.ocorrencias_da_importacao o WHERE o.importacao_id = {loteId}
                 UNION ALL
-                SELECT l::text AS "Value" FROM selecao.lotes_de_notas_do_enem l WHERE l.id = {loteId}
+                SELECT l::text AS "Value" FROM selecao.importacoes_de_notas_do_enem l WHERE l.id = {loteId}
                 """)
             .ToArrayAsync();
         linhasGravadas.Should().NotBeEmpty();

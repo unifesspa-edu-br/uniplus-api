@@ -12,7 +12,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 public static class ClasseNoGrafoCodigo
 {
     public const string Campo = "CAMPO";
-    public const string Fato = "FATO";
+    public const string Fato = "DADO";
     public const string Exigencia = "EXIGENCIA";
     public const string Secao = "SECAO";
     public const string Termo = "TERMO";

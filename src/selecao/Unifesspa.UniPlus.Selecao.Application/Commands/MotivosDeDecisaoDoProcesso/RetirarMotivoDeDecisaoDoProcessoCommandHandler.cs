@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProcesso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -11,12 +11,12 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 /// Handler convention-based da retirada de motivo do processo. Achar a escolha no lugar e recusar a que não existe é do
 /// domínio (<see cref="EscolhaDosMotivos"/>); aqui só se carrega e se grava.
 /// </summary>
-public static class RetirarMotivoDoProcessoCommandHandler
+public static class RetirarMotivoDeDecisaoDoProcessoCommandHandler
 {
     public static async Task<Result> Handle(
-        RetirarMotivoDoProcessoCommand command,
+        RetirarMotivoDeDecisaoDoProcessoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IMotivoDoProcessoRepository motivoDoProcessoRepository,
+        IMotivoDeDecisaoDoProcessoRepository motivoDoProcessoRepository,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -33,13 +33,13 @@ public static class RetirarMotivoDoProcessoCommandHandler
 
     private static async Task<Result> RetirarAsync(
         ProcessoSeletivo processo,
-        RetirarMotivoDoProcessoCommand command,
-        IMotivoDoProcessoRepository repository,
+        RetirarMotivoDeDecisaoDoProcessoCommand command,
+        IMotivoDeDecisaoDoProcessoRepository repository,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<MotivoDoProcesso> escolhaAtual = await repository.ListarEscolhaAtualAsync(processo.Id, cancellationToken).ConfigureAwait(false);
-        Result<MotivoDoProcesso> retirada = EscolhaDosMotivos.Retirar(processo, escolhaAtual, command.Lugar, command.MotivoDeDecisaoId);
+        IReadOnlyList<MotivoDeDecisaoDoProcesso> escolhaAtual = await repository.ListarEscolhaAtualAsync(processo.Id, cancellationToken).ConfigureAwait(false);
+        Result<MotivoDeDecisaoDoProcesso> retirada = EscolhaDosMotivos.Retirar(processo, escolhaAtual, command.Lugar, command.MotivoDeDecisaoId);
         if (retirada.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();

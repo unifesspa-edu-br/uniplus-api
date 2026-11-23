@@ -144,7 +144,7 @@ public sealed class SementeSobreBancoOcupadoTests
         await ApagarSementeAsync(ctx);
         await AplicarAsync(ctx, new RegistroDeLogDeTeste());
         await ctx.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.fatos_do_candidato SET id = {Guid.Parse("7e570001-0000-7000-8000-0000000000c1")} WHERE codigo = 'SOLICITA_FATOR_ATENUACAO'");
+            $"UPDATE configuracao.dados_do_candidato SET id = {Guid.Parse("7e570001-0000-7000-8000-0000000000c1")} WHERE codigo = 'SOLICITA_FATOR_ATENUACAO'");
 
         Func<Task> aplicar = () => AplicarAsync(ctx, new RegistroDeLogDeTeste());
 
@@ -215,8 +215,8 @@ public sealed class SementeSobreBancoOcupadoTests
             """
             UPDATE configuracao.termos_de_consentimento SET nome = 'Termo fictício editado', texto_rascunho = 'Texto fictício editado.', revisado = FALSE WHERE id = {0};
             UPDATE configuracao.modelos_formulario SET nome = 'Modelo fictício editado', descricao = 'Descrição fictícia editada.' WHERE codigo = {1};
-            UPDATE configuracao.fatos_do_candidato SET descricao = 'Descrição fictícia editada.' WHERE codigo = 'SOLICITA_FATOR_ATENUACAO';
-            UPDATE configuracao.valores_de_dominio_do_fato SET descricao = 'Descrição fictícia editada.' WHERE id::text LIKE '5e3d%' AND codigo = 'RESIDENCIA';
+            UPDATE configuracao.dados_do_candidato SET descricao = 'Descrição fictícia editada.' WHERE codigo = 'SOLICITA_FATOR_ATENUACAO';
+            UPDATE configuracao.opcoes_dos_dados SET descricao = 'Descrição fictícia editada.' WHERE id::text LIKE '5e3d%' AND codigo = 'RESIDENCIA';
             UPDATE configuracao.tipos_processo SET nome = 'Tipo fictício editado' WHERE codigo = {2};
             """,
             SementePsrMedicina2027.Termos[0].TermoId, SementeIsencaoDaTaxa.ModeloDeIsencao, CodigoDoTipoDeProcesso);

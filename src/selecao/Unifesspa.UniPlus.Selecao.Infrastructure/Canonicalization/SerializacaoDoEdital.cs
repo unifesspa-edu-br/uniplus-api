@@ -29,9 +29,9 @@ internal static class SerializacaoDoEdital
             .OrderBy(static a => a.FatoCodigo, StringComparer.Ordinal)
             .Select(static a => (JsonNode?)new JsonObject
             {
-                ["fatoCodigo"] = a.FatoCodigo,
+                ["codigoDoDado"] = a.FatoCodigo,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
-                ["tipoRenderizacao"] = a.TipoRenderizacao,
+                ["tipoDeCampo"] = a.TipoRenderizacao,
             })]);
 
     internal static JsonArray SerializarTiposDeAto(IReadOnlyDictionary<string, TipoDeAtoCongelado>? tipos) =>
@@ -81,20 +81,19 @@ internal static class SerializacaoDoEdital
         {
             ["presente"] = true,
             ["origemId"] = calendario.OrigemId,
-            ["versaoDataset"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
-            ["diasNaoUteis"] = new JsonArray(
-            [
-                .. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(static dia => (JsonNode)new JsonObject
-                {
-                    ["data"] = dia.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    ["abrangencia"] = dia.Abrangencia,
-                    ["municipioIbge"] = dia.MunicipioIbge,
-                    ["municipioNome"] = dia.MunicipioNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
-                    ["uf"] = dia.Uf,
-                }),
-            ]),
+            ["versaoDoCalendario"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
+            ["diasNaoUteis"] = new JsonArray([.. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(SerializarDiaNaoUtil)]),
         };
     }
+
+    private static JsonNode SerializarDiaNaoUtil(DiaNaoUtilCongelado dia) => new JsonObject
+    {
+        ["data"] = dia.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["abrangencia"] = dia.Abrangencia,
+        ["municipioIbge"] = dia.MunicipioIbge,
+        ["municipioNome"] = dia.MunicipioNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
+        ["uf"] = dia.Uf,
+    };
 
     internal static JsonObject SerializarIdentidadesUnidade(ProcessoSeletivo processo) => new()
     {

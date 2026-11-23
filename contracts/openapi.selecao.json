@@ -7581,7 +7581,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MotivoDoProcessoDto"
+                    "$ref": "#/components/schemas/MotivoDeDecisaoDoProcessoDto"
                   }
                 }
               }
@@ -16040,7 +16040,7 @@
             "description": "Declara\u00E7\u00E3o de que o processo tem ou n\u00E3o prova presencial e, se tem, dos munic\u00EDpios de aplica\u00E7\u00E3o. Ausente no rascunho que ainda n\u00E3o a declarou.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoProvaPresencial"
           },
-          "motivos": {
+          "motivosDeDecisao": {
             "title": "Motivos de decis\u00E3o",
             "description": "Motivos do cat\u00E1logo que o processo escolheu para as decis\u00F5es das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo c\u00F3digo.",
             "type": "array",
@@ -16296,7 +16296,7 @@
             "exclusiveMinimum": 0,
             "maximum": 99.9999
           },
-          "fatoElegibilidadeCodigo": {
+          "codigoDoDadoDeElegibilidade": {
             "title": "Fato de elegibilidade",
             "description": "C\u00F3digo do fato que decide quem recebe o b\u00F4nus, quando o processo o declara, de 1 a 60 caracteres.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo",
@@ -16358,7 +16358,7 @@
             "regra": false,
             "fator": false,
             "teto": false,
-            "fatoElegibilidadeCodigo": false,
+            "codigoDoDadoDeElegibilidade": false,
             "baseLegalBonusRegionalCodigo": false,
             "tipoInstrumento": false,
             "identificacao": false,
@@ -16404,7 +16404,7 @@
             "description": "Regra do cat\u00E1logo que define o remanejamento.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
           },
-          "fallbackCodigo": {
+          "destinoFinalCodigo": {
             "title": "Modalidade de destino final",
             "description": "C\u00F3digo da modalidade que recebe as vagas quando nenhum destino da cascata as absorve, em geral a ampla concorr\u00EAncia.",
             "type": "string",
@@ -16533,7 +16533,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "referenciaTemporalFatos": {
+          "referenciaTemporalDosDados": {
             "title": "Refer\u00EAncia temporal dos fatos",
             "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato. A fase citada \u00E9 a do cronograma deste documento.",
             "type": "object",
@@ -16562,7 +16562,7 @@
               }
             }
           },
-          "regrasDerivacao": {
+          "calculosDosDados": {
             "title": "Regras de deriva\u00E7\u00E3o",
             "description": "Regras que derivam o valor de um fato do cat\u00E1logo a partir de outros fatos. Cada fato derivado aparece uma vez. A deriva\u00E7\u00E3o da modalidade n\u00E3o entra aqui: vem da oferta.",
             "type": "array",
@@ -16570,10 +16570,10 @@
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "fatoCodigo"
+                "codigoDoDado"
               ],
               "properties": {
-                "fatoCodigo": {
+                "codigoDoDado": {
                   "title": "Fato derivado",
                   "description": "C\u00F3digo do fato derivado no cat\u00E1logo, de 1 a 60 caracteres.",
                   "type": "string",
@@ -16612,7 +16612,7 @@
                             "type": "null"
                           },
                           {
-                            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
                           }
                         ]
                       }
@@ -16723,33 +16723,6 @@
           "regra"
         ]
       },
-      "DocumentoDaConfiguracaoComunsProduto": {
-        "title": "Ato publicado pela fase",
-        "description": "Um tipo de ato que a fase publica, com o papel dele no ciclo de recurso.",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "atoCodigo": {
-            "title": "Tipo de ato",
-            "description": "C\u00F3digo do tipo de ato no cat\u00E1logo de publica\u00E7\u00F5es.",
-            "type": "string",
-            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
-            "minLength": 1,
-            "maxLength": 60
-          },
-          "papel": {
-            "title": "Papel do ato",
-            "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato n\u00E3o \u00E9 um resultado.",
-            "enum": [
-              "PRELIMINAR",
-              "DEFINITIVO"
-            ]
-          }
-        },
-        "required": [
-          "atoCodigo"
-        ]
-      },
       "DocumentoDaConfiguracaoComunsPropriedadesDoRecurso": {
         "title": "Propriedades do recurso",
         "description": "Prazos, efeito suspensivo e guarda da vaga do recurso, comuns \u00E0 fase e \u00E0 etapa.",
@@ -16784,7 +16757,7 @@
               "diasUteis"
             ]
           },
-          "atoAncoraCodigo": {
+          "publicacaoDeReferenciaAtoCodigo": {
             "title": "Ato \u00E2ncora do prazo",
             "description": "C\u00F3digo do tipo de ato, entre os atos preliminares da pr\u00F3pria fase, a partir de cujo instante o prazo corre.",
             "type": "string",
@@ -16838,6 +16811,33 @@
           }
         }
       },
+      "DocumentoDaConfiguracaoComunsPublicacaoPrevista": {
+        "title": "Ato publicado pela fase",
+        "description": "Um tipo de ato que a fase publica, com o papel dele no ciclo de recurso.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "atoCodigo": {
+            "title": "Tipo de ato",
+            "description": "C\u00F3digo do tipo de ato no cat\u00E1logo de publica\u00E7\u00F5es.",
+            "type": "string",
+            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "papel": {
+            "title": "Papel do ato",
+            "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato n\u00E3o \u00E9 um resultado.",
+            "enum": [
+              "PRELIMINAR",
+              "DEFINITIVO"
+            ]
+          }
+        },
+        "required": [
+          "atoCodigo"
+        ]
+      },
       "DocumentoDaConfiguracaoComunsReferenciaDeRegra": {
         "title": "Refer\u00EAncia a uma regra do cat\u00E1logo",
         "description": "Cita uma regra do cat\u00E1logo de regras pelo c\u00F3digo e pela vers\u00E3o. O cat\u00E1logo \u00E9 s\u00F3 de acr\u00E9scimo: a vers\u00E3o citada nunca muda de conte\u00FAdo.",
@@ -16890,6 +16890,203 @@
           "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
         }
       },
+      "DocumentoDaConfiguracaoCondicoesBaseLegal": {
+        "title": "Base legal",
+        "description": "Embasamento da exig\u00EAncia: a norma, a abrang\u00EAncia dela e se a refer\u00EAncia j\u00E1 foi resolvida.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "referencia": {
+            "title": "Refer\u00EAncia",
+            "description": "Cita\u00E7\u00E3o da norma que fundamenta a exig\u00EAncia.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "abrangencia": {
+            "title": "Abrang\u00EAncia",
+            "description": "Esfera da norma.",
+            "enum": [
+              "FEDERAL",
+              "ESTADUAL",
+              "MUNICIPAL",
+              "INTERNA_NORMA",
+              "INTERNA_EDITAL"
+            ]
+          },
+          "situacao": {
+            "title": "Situa\u00E7\u00E3o",
+            "description": "Se a refer\u00EAncia foi resolvida ou ainda est\u00E1 pendente.",
+            "enum": [
+              "PENDENTE",
+              "RESOLVIDO"
+            ]
+          },
+          "observacao": {
+            "title": "Observa\u00E7\u00E3o",
+            "description": "Nota livre sobre a base legal.",
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCondicoesCondicao": {
+        "title": "Condi\u00E7\u00E3o de aplica\u00E7\u00E3o",
+        "description": "Uma condi\u00E7\u00E3o: o dado, o operador e o valor de compara\u00E7\u00E3o. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A exist\u00EAncia do dado no vocabul\u00E1rio \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigoDoDado",
+          "operador",
+          "valor"
+        ],
+        "properties": {
+          "codigoDoDado": {
+            "title": "Dado",
+            "description": "C\u00F3digo do fato que a condi\u00E7\u00E3o examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que n\u00E3o seja espa\u00E7o.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "operador": {
+            "title": "Operador",
+            "description": "Operador de compara\u00E7\u00E3o entre o fato e o valor.",
+            "enum": [
+              "IGUAL",
+              "DIFERENTE",
+              "MAIOR_IGUAL",
+              "MENOR_IGUAL",
+              "EM",
+              "NAO_EM"
+            ]
+          },
+          "valor": {
+            "title": "Valor",
+            "description": "Valor de compara\u00E7\u00E3o: uma lista para EM e NAO_EM, um texto, n\u00FAmero ou booleano para os demais. Texto em branco, sozinho ou como item da lista, \u00E9 recusado.",
+            "if": {
+              "type": "string"
+            },
+            "then": {
+              "pattern": "\\S"
+            },
+            "else": {
+              "if": {
+                "type": "array",
+                "items": {}
+              },
+              "then": {
+                "items": {
+                  "if": {
+                    "type": "string"
+                  },
+                  "then": {
+                    "pattern": "\\S"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "operador": {
+              "enum": [
+                "EM",
+                "NAO_EM"
+              ]
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "valor": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "valor": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCondicoesCondicoesAlternativas": {
+        "title": "Alternativas de condi\u00E7\u00F5es",
+        "description": "Lista de alternativas ligadas por OU; cada alternativa \u00E9 uma lista de condi\u00E7\u00F5es ligadas por E. A lista vazia \u00E9 a aus\u00EAncia de alternativas, que n\u00E3o \u00E9 verdadeira para ningu\u00E9m: us\u00E1-lo como condi\u00E7\u00E3o de uma regra a torna nunca aplic\u00E1vel.",
+        "type": "array",
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicao"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCondicoesObrigatoriedade": {
+        "title": "Obrigatoriedade",
+        "description": "Se a exig\u00EAncia vale sempre, nunca, ou s\u00F3 quando as condi\u00E7\u00F5es s\u00E3o verdadeiras. As condi\u00E7\u00F5es existem somente em QUANDO.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo"
+        ],
+        "properties": {
+          "tipo": {
+            "title": "Tipo da obrigatoriedade",
+            "description": "SEMPRE, NUNCA ou QUANDO.",
+            "enum": [
+              "SEMPRE",
+              "NUNCA",
+              "QUANDO"
+            ]
+          },
+          "quando": {
+            "title": "Condi\u00E7\u00F5es",
+            "description": "Condi\u00E7\u00E3o em que a obrigatoriedade QUANDO vale; nas outras o campo \u00E9 nulo ou ausente.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
+              }
+            ]
+          }
+        },
+        "if": {
+          "properties": {
+            "tipo": {
+              "const": "QUANDO"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "quando"
+          ],
+          "properties": {
+            "quando": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "quando": {
+              "type": "null"
+            }
+          }
+        }
+      },
       "DocumentoDaConfiguracaoCronograma": {
         "title": "Cronograma",
         "description": "As fases do processo, cada uma com a sua janela de datas, unidade respons\u00E1vel, atos que publica, bancas e regra de recurso.",
@@ -16913,7 +17110,7 @@
         "additionalProperties": false,
         "required": [
           "chave",
-          "faseCanonicaCodigo"
+          "tipoFaseCodigo"
         ],
         "properties": {
           "chave": {
@@ -16921,7 +17118,7 @@
             "description": "Chave local da fase, \u00FAnica no documento. Outras partes a usam para citar esta fase. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a fase, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
-          "faseCanonicaCodigo": {
+          "tipoFaseCodigo": {
             "title": "Fase can\u00F4nica",
             "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
@@ -16961,12 +17158,12 @@
             "maxLength": 50,
             "readOnly": true
           },
-          "produtos": {
+          "publicacoesPrevistas": {
             "title": "Atos que a fase publica",
             "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel n\u00E3o se repete na fase. A fase que publica o resultado preliminar de um tipo de ato publica nela mesma o definitivo do mesmo tipo.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProduto"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsPublicacaoPrevista"
             }
           },
           "emiteParecerIndividual": {
@@ -17182,7 +17379,7 @@
       "DocumentoDaConfiguracaoDesempateCondicaoDoDesempate": {
         "title": "Condi\u00E7\u00E3o do desempate",
         "description": "Fato, operador e valor que o desempate por predicado avalia.",
-        "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoCondicao"
+        "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicao"
       },
       "DocumentoDaConfiguracaoDesempateParametrosIdoso": {
         "title": "Par\u00E2metros da regra",
@@ -17817,7 +18014,7 @@
               "HUMANA"
             ]
           },
-          "regraConsolidacao": {
+          "regraDeApuracaoDaAvaliacao": {
             "title": "Regra de consolida\u00E7\u00E3o",
             "description": "Regra do cat\u00E1logo que consolida as corre\u00E7\u00F5es na avalia\u00E7\u00E3o humana.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
@@ -17864,12 +18061,12 @@
             "description": "Se a etapa emite parecer individual ao candidato, quando ela publica resultado.",
             "type": "boolean"
           },
-          "produtos": {
+          "publicacoesPrevistas": {
             "title": "Atos que a etapa publica",
             "description": "Tipos de ato publicados pela etapa. O par tipo de ato e papel n\u00E3o se repete na etapa.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProduto"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsPublicacaoPrevista"
             }
           },
           "bancas": {
@@ -17965,7 +18162,7 @@
           }
         ],
         "properties": {
-          "ancora": {
+          "eventoInicialDoPrazo": {
             "title": "\u00C2ncora do prazo",
             "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ci\u00EAncia individual do candidato (cienciaIndividual).",
             "enum": [
@@ -18064,7 +18261,7 @@
             "maxLength": 40,
             "readOnly": true
           },
-          "fatosComprovados": {
+          "dadosComprovados": {
             "title": "Fatos comprovados",
             "description": "C\u00F3digos dos fatos do candidato que o documento comprova. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
             "type": "array",
@@ -18117,17 +18314,17 @@
               "PENDENCIA_REENVIO"
             ]
           },
-          "condicaoGatilho": {
+          "condicoes": {
             "title": "Condi\u00E7\u00E3o de gatilho",
             "description": "Predicado que torna a exig\u00EAncia aplic\u00E1vel, quando ela \u00E9 condicional.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
           },
           "basesLegais": {
             "title": "Bases legais",
             "description": "Embasamento normativo da exig\u00EAncia.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesBaseLegal"
             }
           },
           "idadeMaximaEmissao": {
@@ -18263,7 +18460,7 @@
       },
       "DocumentoDaConfiguracaoFormulario": {
         "title": "Formul\u00E1rio do processo",
-        "description": "O formul\u00E1rio de uma finalidade: as etapas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no m\u00E1ximo um formul\u00E1rio no processo. Um formul\u00E1rio comporta no m\u00E1ximo 200 itens, contando itens, grupos e subitens.",
+        "description": "O formul\u00E1rio de uma finalidade: as p\u00E1ginas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no m\u00E1ximo um formul\u00E1rio no processo. Um formul\u00E1rio comporta no m\u00E1ximo 200 itens, contando itens, grupos e subitens.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -18298,12 +18495,12 @@
             "maxLength": 60,
             "readOnly": true
           },
-          "etapas": {
-            "title": "Etapas",
+          "paginas": {
+            "title": "P\u00E1ginas",
             "description": "Se\u00E7\u00F5es e blocos do formul\u00E1rio, na ordem de apresenta\u00E7\u00E3o.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormularioEtapa"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormularioPagina"
             }
           },
           "itens": {
@@ -18332,76 +18529,6 @@
           }
         }
       },
-      "DocumentoDaConfiguracaoFormularioEtapa": {
-        "title": "Etapa do formul\u00E1rio",
-        "description": "Uma se\u00E7\u00E3o de campos ou um bloco de sistema.",
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "codigo",
-          "tipo"
-        ],
-        "properties": {
-          "codigo": {
-            "title": "C\u00F3digo",
-            "description": "C\u00F3digo da etapa, \u00FAnico no formul\u00E1rio. Os itens e grupos a citam em etapaCodigo.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
-          },
-          "ordem": {
-            "title": "Ordem",
-            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0.",
-            "type": "integer",
-            "minimum": 0
-          },
-          "tipo": {
-            "title": "Tipo",
-            "description": "SECAO re\u00FAne campos; BLOCO \u00E9 um bloco de sistema.",
-            "enum": [
-              "SECAO",
-              "BLOCO"
-            ]
-          },
-          "bloco": {
-            "title": "Bloco de sistema",
-            "description": "Qual bloco de sistema a etapa \u00E9. S\u00F3 faz sentido quando o tipo \u00E9 BLOCO; a coer\u00EAncia \u00E9 regra do dom\u00EDnio.",
-            "enum": [
-              "COMPROVACAO_DOCUMENTAL",
-              "MODALIDADES_CALCULADAS",
-              "REVISAO_E_ACEITE"
-            ]
-          },
-          "titulo": {
-            "title": "T\u00EDtulo",
-            "description": "T\u00EDtulo da etapa, de at\u00E9 300 caracteres.",
-            "type": "string",
-            "maxLength": 300
-          },
-          "descricao": {
-            "title": "Descri\u00E7\u00E3o",
-            "description": "Texto explicativo da etapa, de at\u00E9 2000 caracteres.",
-            "type": "string",
-            "maxLength": 2000
-          },
-          "aviso": {
-            "title": "Aviso",
-            "description": "Aviso destacado da etapa, de at\u00E9 2000 caracteres.",
-            "type": "string",
-            "maxLength": 2000
-          },
-          "exibicao": {
-            "title": "Exibi\u00E7\u00E3o",
-            "description": "Condi\u00E7\u00E3o para exibir a etapa. Nula ou ausente: sempre exibida.",
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
-              }
-            ]
-          }
-        }
-      },
       "DocumentoDaConfiguracaoFormularioGrupo": {
         "title": "Grupo repet\u00EDvel",
         "description": "Conjunto de campos que o candidato repete, uma vez por ocorr\u00EAncia.",
@@ -18417,9 +18544,9 @@
             "description": "C\u00F3digo do grupo, \u00FAnico no processo e distinto de qualquer c\u00F3digo de fato.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
           },
-          "etapaCodigo": {
-            "title": "Etapa",
-            "description": "C\u00F3digo da etapa do tipo SECAO, do mesmo formul\u00E1rio, em que o grupo aparece.",
+          "paginaCodigo": {
+            "title": "P\u00E1gina",
+            "description": "C\u00F3digo da p\u00E1gina do tipo SECAO, do mesmo formul\u00E1rio, em que o grupo aparece.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
           },
           "ordem": {
@@ -18462,26 +18589,26 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
               }
             ]
           },
           "obrigatoriedade": {
             "title": "Obrigatoriedade",
             "description": "Se o preenchimento do grupo \u00E9 obrigat\u00F3rio sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesObrigatoriedade"
           },
           "subitens": {
             "title": "Subitens",
-            "description": "Campos de cada ocorr\u00EAncia, at\u00E9 30. O subitem n\u00E3o tem etapa nem impedimento: ficam ausentes ou nulos.",
+            "description": "Campos de cada ocorr\u00EAncia, at\u00E9 30. O subitem n\u00E3o tem p\u00E1gina nem impedimento: ficam ausentes ou nulos.",
             "type": "array",
             "maxItems": 30,
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormulario",
               "properties": {
-                "etapaCodigo": {
-                  "title": "Etapa do subitem",
-                  "description": "Sempre ausente ou nula: o subitem aparece na etapa do grupo.",
+                "paginaCodigo": {
+                  "title": "P\u00E1gina do subitem",
+                  "description": "Sempre ausente ou nula: o subitem aparece na p\u00E1gina do grupo.",
                   "type": "null"
                 },
                 "impedimento": {
@@ -18491,6 +18618,76 @@
                 }
               }
             }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFormularioPagina": {
+        "title": "P\u00E1gina do formul\u00E1rio",
+        "description": "Uma se\u00E7\u00E3o de campos ou um bloco de sistema.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "tipo"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo da p\u00E1gina, \u00FAnico no formul\u00E1rio. Os itens e grupos a citam em paginaCodigo.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "tipo": {
+            "title": "Tipo",
+            "description": "SECAO re\u00FAne campos; BLOCO \u00E9 um bloco de sistema.",
+            "enum": [
+              "SECAO",
+              "BLOCO"
+            ]
+          },
+          "bloco": {
+            "title": "Bloco de sistema",
+            "description": "Qual bloco de sistema a p\u00E1gina \u00E9. S\u00F3 faz sentido quando o tipo \u00E9 BLOCO; a coer\u00EAncia \u00E9 regra do dom\u00EDnio.",
+            "enum": [
+              "COMPROVACAO_DOCUMENTAL",
+              "MODALIDADES_CALCULADAS",
+              "REVISAO_E_ACEITE"
+            ]
+          },
+          "titulo": {
+            "title": "T\u00EDtulo",
+            "description": "T\u00EDtulo da p\u00E1gina, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o",
+            "description": "Texto explicativo da p\u00E1gina, de at\u00E9 2000 caracteres.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "aviso": {
+            "title": "Aviso",
+            "description": "Aviso destacado da p\u00E1gina, de at\u00E9 2000 caracteres.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "exibicao": {
+            "title": "Exibi\u00E7\u00E3o",
+            "description": "Condi\u00E7\u00E3o para exibir a p\u00E1gina. Nula ou ausente: sempre exibida.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
+              }
+            ]
           }
         }
       },
@@ -18538,14 +18735,14 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
               }
             ]
           },
           "obrigatoriedade": {
             "title": "Obrigatoriedade",
             "description": "Se o aceite \u00E9 obrigat\u00F3rio sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesObrigatoriedade"
           }
         }
       },
@@ -18623,7 +18820,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
               }
             ]
           }
@@ -18767,10 +18964,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "fatoCodigo"
+          "codigoDoDado"
         ],
         "properties": {
-          "fatoCodigo": {
+          "codigoDoDado": {
             "title": "Fato",
             "description": "C\u00F3digo do fato no cat\u00E1logo, de 1 a 60 caracteres. Cada fato \u00E9 coletado por um s\u00F3 formul\u00E1rio do processo.",
             "type": "string",
@@ -18778,7 +18975,7 @@
             "maxLength": 60,
             "pattern": "\\S"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "title": "Etapa",
             "description": "C\u00F3digo da etapa do tipo SECAO, do mesmo formul\u00E1rio, em que o item aparece. Nulo ou ausente em subitem de grupo.",
             "anyOf": [
@@ -18816,9 +19013,9 @@
           "obrigatoriedade": {
             "title": "Obrigatoriedade",
             "description": "Se a resposta \u00E9 obrigat\u00F3ria sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesObrigatoriedade"
           },
-          "precondicao": {
+          "exibicao": {
             "title": "Precondi\u00E7\u00E3o",
             "description": "Condi\u00E7\u00E3o para o fato ser coletado. Nula ou ausente: \u00E9 sempre coletado. A lista vazia nunca \u00E9 verdadeira.",
             "anyOf": [
@@ -18826,7 +19023,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
               }
             ]
           },
@@ -18882,7 +19079,7 @@
           "quando": {
             "title": "Quando impede",
             "description": "Predicado que, verdadeiro, impede a inscri\u00E7\u00E3o.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
           },
           "mensagem": {
             "title": "Mensagem",
@@ -19071,203 +19268,6 @@
           }
         }
       },
-      "DocumentoDaConfiguracaoPredicadoBaseLegal": {
-        "title": "Base legal",
-        "description": "Embasamento da exig\u00EAncia: a norma, a abrang\u00EAncia dela e se a refer\u00EAncia j\u00E1 foi resolvida.",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "referencia": {
-            "title": "Refer\u00EAncia",
-            "description": "Cita\u00E7\u00E3o da norma que fundamenta a exig\u00EAncia.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 500
-          },
-          "abrangencia": {
-            "title": "Abrang\u00EAncia",
-            "description": "Esfera da norma.",
-            "enum": [
-              "FEDERAL",
-              "ESTADUAL",
-              "MUNICIPAL",
-              "INTERNA_NORMA",
-              "INTERNA_EDITAL"
-            ]
-          },
-          "situacao": {
-            "title": "Situa\u00E7\u00E3o",
-            "description": "Se a refer\u00EAncia foi resolvida ou ainda est\u00E1 pendente.",
-            "enum": [
-              "PENDENTE",
-              "RESOLVIDO"
-            ]
-          },
-          "observacao": {
-            "title": "Observa\u00E7\u00E3o",
-            "description": "Nota livre sobre a base legal.",
-            "type": "string",
-            "maxLength": 1000
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoPredicadoCondicao": {
-        "title": "Condi\u00E7\u00E3o de um predicado",
-        "description": "Um \u00E1tomo do predicado: o fato, o operador e o valor de compara\u00E7\u00E3o. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A exist\u00EAncia do fato no vocabul\u00E1rio \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "properties": {
-          "fato": {
-            "title": "Fato",
-            "description": "C\u00F3digo do fato que a condi\u00E7\u00E3o examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que n\u00E3o seja espa\u00E7o.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "\\S"
-          },
-          "operador": {
-            "title": "Operador",
-            "description": "Operador de compara\u00E7\u00E3o entre o fato e o valor.",
-            "enum": [
-              "IGUAL",
-              "DIFERENTE",
-              "MAIOR_IGUAL",
-              "MENOR_IGUAL",
-              "EM",
-              "NAO_EM"
-            ]
-          },
-          "valor": {
-            "title": "Valor",
-            "description": "Valor de compara\u00E7\u00E3o: uma lista para EM e NAO_EM, um texto, n\u00FAmero ou booleano para os demais. Texto em branco, sozinho ou como item da lista, \u00E9 recusado.",
-            "if": {
-              "type": "string"
-            },
-            "then": {
-              "pattern": "\\S"
-            },
-            "else": {
-              "if": {
-                "type": "array",
-                "items": {}
-              },
-              "then": {
-                "items": {
-                  "if": {
-                    "type": "string"
-                  },
-                  "then": {
-                    "pattern": "\\S"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "if": {
-          "properties": {
-            "operador": {
-              "enum": [
-                "EM",
-                "NAO_EM"
-              ]
-            }
-          }
-        },
-        "then": {
-          "properties": {
-            "valor": {
-              "type": "array",
-              "items": {}
-            }
-          }
-        },
-        "else": {
-          "properties": {
-            "valor": {
-              "type": [
-                "string",
-                "number",
-                "boolean",
-                "null"
-              ]
-            }
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoPredicadoObrigatoriedade": {
-        "title": "Obrigatoriedade",
-        "description": "Se a exig\u00EAncia vale sempre, nunca, ou s\u00F3 quando o predicado \u00E9 verdadeiro. O predicado existe somente em QUANDO.",
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "tipo"
-        ],
-        "properties": {
-          "tipo": {
-            "title": "Tipo da obrigatoriedade",
-            "description": "SEMPRE, NUNCA ou QUANDO.",
-            "enum": [
-              "SEMPRE",
-              "NUNCA",
-              "QUANDO"
-            ]
-          },
-          "predicado": {
-            "title": "Predicado",
-            "description": "Condi\u00E7\u00E3o em que a obrigatoriedade QUANDO vale; nas outras o campo \u00E9 nulo ou ausente.",
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
-              }
-            ]
-          }
-        },
-        "if": {
-          "properties": {
-            "tipo": {
-              "const": "QUANDO"
-            }
-          }
-        },
-        "then": {
-          "required": [
-            "predicado"
-          ],
-          "properties": {
-            "predicado": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
-            }
-          }
-        },
-        "else": {
-          "properties": {
-            "predicado": {
-              "type": "null"
-            }
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoPredicadoPredicado": {
-        "title": "Predicado em forma normal disjuntiva",
-        "description": "Lista de cl\u00E1usulas ligadas por OU; cada cl\u00E1usula \u00E9 uma lista de condi\u00E7\u00F5es ligadas por E. A lista vazia \u00E9 o predicado sem cl\u00E1usula, que n\u00E3o \u00E9 verdadeiro para ningu\u00E9m: us\u00E1-lo como condi\u00E7\u00E3o de uma regra a torna nunca aplic\u00E1vel.",
-        "type": "array",
-        "items": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoCondicao"
-          }
-        }
-      },
       "DocumentoDaConfiguracaoProvaPresencial": {
         "title": "Prova presencial",
         "description": "O que o processo declara da prova presencial: se a tem e, s\u00F3 ent\u00E3o, os munic\u00EDpios em que a aplica. A declara\u00E7\u00E3o \u00E9 do pr\u00F3prio processo, nunca deduzida do tipo de processo nem das etapas.",
@@ -19374,7 +19374,7 @@
             "description": "Base legal da regra de comprova\u00E7\u00E3o.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesBaseLegal"
             }
           },
           "criterioDeDistincao": {
@@ -19488,7 +19488,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                      "$ref": "#/components/schemas/DocumentoDaConfiguracaoCondicoesCondicoesAlternativas"
                     }
                   ]
                 },
@@ -19505,7 +19505,7 @@
               }
             }
           },
-          "fatos": {
+          "codigosDosDados": {
             "title": "Fatos de origem",
             "description": "C\u00F3digos dos fatos cujas respostas formam as op\u00E7\u00F5es (OPCOES_DAS_RESPOSTAS) ou fato com a UF respondida (MUNICIPIOS_DA_UF).",
             "type": "array",
@@ -19548,10 +19548,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "ancora"
+          "referenciaDaData"
         ],
         "properties": {
-          "ancora": {
+          "referenciaDaData": {
             "title": "\u00C2ncora",
             "description": "DATA_FIXA usa a data; ENVIO usa o deslocamento em anos e dias.",
             "enum": [
@@ -23722,55 +23722,7 @@
           }
         }
       },
-      "MotivoDeDecisaoDto": {
-        "required": [
-          "id",
-          "tipo",
-          "codigo",
-          "descricao",
-          "subclassificacao",
-          "sentido",
-          "ativo"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipo": {
-            "$ref": "#/components/schemas/TipoMotivoDeDecisao"
-          },
-          "codigo": {
-            "type": "string"
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "subclassificacao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "sentido": {
-            "type": "string"
-          },
-          "ativo": {
-            "type": "boolean"
-          },
-          "_links": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "MotivoDoProcessoDto": {
+      "MotivoDeDecisaoDoProcessoDto": {
         "required": [
           "motivoDeDecisaoId",
           "lugar",
@@ -23817,6 +23769,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "MotivoDeDecisaoDto": {
+        "required": [
+          "id",
+          "tipo",
+          "codigo",
+          "descricao",
+          "subclassificacao",
+          "sentido",
+          "ativo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoMotivoDeDecisao"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "subclassificacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sentido": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "_links": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },

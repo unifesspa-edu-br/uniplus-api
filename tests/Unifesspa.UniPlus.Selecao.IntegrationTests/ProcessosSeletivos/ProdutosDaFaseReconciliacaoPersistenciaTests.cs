@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <c>FaseCronograma.AtualizarDe</c>, contra Postgres real.
 /// </summary>
 /// <remarks>
-/// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo)</c> único, e é isso que separa esta
+/// <c>ux_publicacoes_previstas_da_fase_ato</c> torna <c>(fase, ato_codigo)</c> único, e é isso que separa esta
 /// coleção das bancas requeridas: repor por <c>Clear()</c> + <c>Add</c> produziria DELETE do
 /// produto antigo e INSERT de um novo com o MESMO par na mesma transação, e o EF Core não infere
 /// essa ordem entre entidades sem relação de FK. O teste precisa de banco: em memória a colisão

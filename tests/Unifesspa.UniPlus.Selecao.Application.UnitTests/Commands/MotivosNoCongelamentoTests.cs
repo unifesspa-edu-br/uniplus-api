@@ -30,7 +30,7 @@ public sealed class MotivosNoCongelamentoTests
     public async Task Publicar_MotivoDesativadoDepoisDeEscolhido_Recusa()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar);
-        (MotivoDeDecisao origem, MotivoDoProcesso escolhido) = EscolherNaPrimeiraFase(cenario);
+        (MotivoDeDecisao origem, MotivoDeDecisaoDoProcesso escolhido) = EscolherNaPrimeiraFase(cenario);
         origem.Desativar();
         LerEscolha(cenario, new MotivoEscolhidoComOrigem(escolhido, origem));
 
@@ -38,7 +38,7 @@ public sealed class MotivosNoCongelamentoTests
 
         FieldError recusa = resposta.Errors.Should().ContainSingle().Subject;
         recusa.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
-        recusa.Field.Should().Be("/motivos");
+        recusa.Field.Should().Be("/motivosDeDecisao");
         eventos.Should().BeEmpty();
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
@@ -47,7 +47,7 @@ public sealed class MotivosNoCongelamentoTests
     public async Task Publicar_DescricaoAlteradaNoCadastro_NaoMudaOTextoDaEscolha()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar);
-        (MotivoDeDecisao origem, MotivoDoProcesso escolhido) = EscolherNaPrimeiraFase(cenario);
+        (MotivoDeDecisao origem, MotivoDeDecisaoDoProcesso escolhido) = EscolherNaPrimeiraFase(cenario);
         string descricaoEscolhida = escolhido.Descricao;
         origem.Atualizar("Redação nova, posterior à escolha.").IsSuccess.Should().BeTrue();
         LerEscolha(cenario, new MotivoEscolhidoComOrigem(escolhido, origem));
@@ -59,7 +59,7 @@ public sealed class MotivosNoCongelamentoTests
     }
 
     // A fase declara o tipo de decisão do motivo, que a conferência exige; a escolha é de um lugar que o processo tem.
-    private static (MotivoDeDecisao Origem, MotivoDoProcesso Escolhido) EscolherNaPrimeiraFase(CenarioDeRecusaNoCongelamento cenario)
+    private static (MotivoDeDecisao Origem, MotivoDeDecisaoDoProcesso Escolhido) EscolherNaPrimeiraFase(CenarioDeRecusaNoCongelamento cenario)
     {
         ProcessoSeletivo processo = cenario.Processo;
         typeof(FaseCronograma).GetField("_tiposDeDecisao", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -72,5 +72,5 @@ public sealed class MotivosNoCongelamentoTests
     // Além do motivo do teste, o processo escolhe os que cobrem as decisões que a conferência exige.
     private static void LerEscolha(CenarioDeRecusaNoCongelamento cenario, params MotivoEscolhidoComOrigem[] escolha) =>
         cenario.Servicos.MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([.. MotivosDoProcessoDeTeste.Escolha(cenario.Processo), .. escolha]);
+            .Returns([.. MotivosDeDecisaoDoProcessoDeTeste.Escolha(cenario.Processo), .. escolha]);
 }

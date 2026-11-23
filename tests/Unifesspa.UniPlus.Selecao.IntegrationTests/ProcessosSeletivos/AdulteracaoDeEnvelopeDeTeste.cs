@@ -51,12 +51,12 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     }
 
     public static JsonObject FatoColetadoPorCodigo(JsonObject envelope, string codigo) =>
-        envelope["fatosColetados"]!.AsArray()
-            .Single(fato => fato!["fatoCodigo"]!.GetValue<string>() == codigo)!.AsObject();
+        envelope["dadosDosFormularios"]!.AsArray()
+            .Single(fato => fato!["codigoDoDado"]!.GetValue<string>() == codigo)!.AsObject();
 
     public static JsonObject MetadadoFatoPorCodigo(JsonObject envelope, string codigo) =>
-        envelope["documentosExigidos"]!["metadadosFatos"]!.AsArray()
-            .Single(metadado => metadado!["fatoCodigo"]!.GetValue<string>() == codigo)!.AsObject();
+        envelope["documentosExigidos"]!["definicoesDosDados"]!.AsArray()
+            .Single(metadado => metadado!["codigoDoDado"]!.GetValue<string>() == codigo)!.AsObject();
 
     public static JsonObject Navegar(JsonObject raiz, string caminho)
     {

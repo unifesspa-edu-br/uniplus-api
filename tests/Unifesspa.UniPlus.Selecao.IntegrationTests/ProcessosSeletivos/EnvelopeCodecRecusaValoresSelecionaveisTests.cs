@@ -18,19 +18,19 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 /// </summary>
 public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
 {
-    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis ausente é recusado — omitir a chave não é o mesmo que declará-la null")]
+    [Fact(DisplayName = "dadosDosFormularios[].valoresSelecionaveis ausente é recusado — omitir a chave não é o mesmo que declará-la null")]
     public void ValoresSelecionaveis_ChaveAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             FatoColetadoPorCodigo(envelope, "COR_RACA").Remove("valoresSelecionaveis"));
 
         resultado.IsFailure.Should().BeTrue(
-            "a gramática de cada item de fatosColetados fecha em 'valoresSelecionaveis' — o encoder sempre a " +
+            "a gramática de cada item de dadosDosFormularios fecha em 'valoresSelecionaveis' — o encoder sempre a " +
             "emite, presente e explícita (array ou null), nunca omitida");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis de tipo errado (nem array nem null) é recusado")]
+    [Fact(DisplayName = "dadosDosFormularios[].valoresSelecionaveis de tipo errado (nem array nem null) é recusado")]
     public void ValoresSelecionaveis_TipoErrado_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -41,7 +41,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].valorCodigo duplicado é recusado")]
+    [Fact(DisplayName = "dadosDosFormularios[].valoresSelecionaveis[].valorCodigo duplicado é recusado")]
     public void ValoresSelecionaveis_ValorCodigoDuplicado_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -56,7 +56,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].ordem ausente é recusado")]
+    [Fact(DisplayName = "dadosDosFormularios[].valoresSelecionaveis[].ordem ausente é recusado")]
     public void ValoresSelecionaveis_OrdemAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -68,7 +68,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].ordem negativa é recusada")]
+    [Fact(DisplayName = "dadosDosFormularios[].valoresSelecionaveis[].ordem negativa é recusada")]
     public void ValoresSelecionaveis_OrdemNegativa_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -117,7 +117,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
     public void ValoresSelecionaveis_ArrayEmFatoNaoDeSelecao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoRenderizacao"] = "BOOLEANO");
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoDeCampo"] = "BOOLEANO");
 
         resultado.IsFailure.Should().BeTrue(
             "trocar o tipo de renderização para BOOLEANO sem esvaziar 'valoresSelecionaveis' deixa um " +
@@ -125,45 +125,45 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos com item que não é objeto é recusado, nunca lança")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados com item que não é objeto é recusado, nunca lança")]
     public void MetadadosFatos_ItemQueNaoEObjeto_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            envelope["documentosExigidos"]!["metadadosFatos"] = new JsonArray(42));
+            envelope["documentosExigidos"]!["definicoesDosDados"] = new JsonArray(42));
 
         resultado.IsFailure.Should().BeTrue("um item que não é objeto é forma que o encoder nunca produz");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados ausente é recusado")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados ausente é recusado")]
     public void ValoresDominioDeclarados_ChaveAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            MetadadoFatoPorCodigo(envelope, "COR_RACA").Remove("valoresDominioDeclarados"));
+            MetadadoFatoPorCodigo(envelope, "COR_RACA").Remove("opcoesDeclaradas"));
 
         resultado.IsFailure.Should().BeTrue(
-            "a gramática de cada item de metadadosFatos fecha em 'valoresDominioDeclarados' — o encoder " +
+            "a gramática de cada item de definicoesDosDados fecha em 'valoresDominioDeclarados' — o encoder " +
             "sempre a emite, presente e explícita, nunca omitida");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados de tipo errado (nem array nem null) é recusado")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados de tipo errado (nem array nem null) é recusado")]
     public void ValoresDominioDeclarados_TipoErrado_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"] = "BRANCA");
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["opcoesDeclaradas"] = "BRANCA");
 
         resultado.IsFailure.Should().BeTrue(
             "um escalar no lugar do array (ou de null) é forma que o encoder nunca produz para este campo");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].valorCodigo duplicado é recusado")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados[].valorCodigo duplicado é recusado")]
     public void ValoresDominioDeclarados_ValorCodigoDuplicado_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
         {
-            JsonArray valores = MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray();
+            JsonArray valores = MetadadoFatoPorCodigo(envelope, "COR_RACA")["opcoesDeclaradas"]!.AsArray();
             valores[1] = valores[0]!.DeepClone();
         });
 
@@ -172,22 +172,22 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].ordem ausente é recusado")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados[].ordem ausente é recusado")]
     public void ValoresDominioDeclarados_OrdemAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray()[0]!.AsObject().Remove("ordem"));
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["opcoesDeclaradas"]!.AsArray()[0]!.AsObject().Remove("ordem"));
 
         resultado.IsFailure.Should().BeTrue(
             "'ordem' fecha a gramática de cada item de valoresDominioDeclarados — o encoder sempre a emite");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].ordem negativa é recusada")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados[].ordem negativa é recusada")]
     public void ValoresDominioDeclarados_OrdemNegativa_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray()[0]!["ordem"] = -1);
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["opcoesDeclaradas"]!.AsArray()[0]!["ordem"] = -1);
 
         resultado.IsFailure.Should().BeTrue(
             "uma ordem negativa não corresponde a posição alguma de exibição — o encoder só emite índices " +

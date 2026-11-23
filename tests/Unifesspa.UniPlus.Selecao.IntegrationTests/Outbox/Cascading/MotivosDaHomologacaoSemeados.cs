@@ -19,7 +19,7 @@ internal static class MotivosDaHomologacaoSemeados
         foreach ((FaseCronograma fase, string codigo) in MotivosDaHomologacaoDeTeste.MotivosExigidos(processo))
         {
             MotivoDeDecisao origem = await OrigemNoCadastroAsync(db, codigo);
-            await db.MotivosDoProcesso.AddAsync(MotivosDaHomologacaoDeTeste.Escolher(processo, fase, origem));
+            await db.MotivosDeDecisaoDoProcesso.AddAsync(MotivosDaHomologacaoDeTeste.Escolher(processo, fase, origem));
         }
     }
 

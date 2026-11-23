@@ -42,6 +42,6 @@ internal static class MotivosDaIsencaoDeTeste
         MotivoDeDecisao.Criar(new CamposDoMotivo(
             TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), $"TEST_ISN_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Situação conferida pela comissão", fundamento, sentido)).Value!;
 
-    private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
+    private static MotivoDeDecisaoDoProcesso Escolher(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
         EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(processo, lugar, [], origem)).Value!;
 }

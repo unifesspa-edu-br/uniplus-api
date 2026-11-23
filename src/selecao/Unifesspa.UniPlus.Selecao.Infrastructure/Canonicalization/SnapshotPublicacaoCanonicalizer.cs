@@ -87,7 +87,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["periodo"] = SerializarPeriodo(entrada.Dados);
         payload["hashesEdital"] = SerializacaoDoEdital.SerializarHashesEdital(entrada.Dados, entrada.HashDocumento);
         payload["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor;
-        payload["apresentacaoDosPressupostos"] = SerializacaoDoEdital.SerializarApresentacaoDosPressupostos(entrada.DadosDeCatalogo.ApresentacaoDosPressupostos);
+        payload["dadosCitadosSemPergunta"] = SerializacaoDoEdital.SerializarApresentacaoDosPressupostos(entrada.DadosDeCatalogo.ApresentacaoDosPressupostos);
         payload["tiposDeAto"] = SerializacaoDoEdital.SerializarTiposDeAto(entrada.DadosDeCatalogo.TiposDeAtoCongelados);
         payload["localidade"] = SerializacaoDoEdital.SerializarLocalidade(processo, entrada.FusoHorario);
         payload["algoritmoContagemPrazo"] = SerializacaoDoEdital.SerializarAlgoritmoContagemPrazo(processo);
@@ -145,12 +145,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)
     {
         ProcessoSeletivo processo = entrada.Processo;
-        payload["fatosColetados"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados);
-        payload["gruposColetados"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
-        payload["regrasDerivacao"] = SerializacaoDosFatos.SerializarRegrasDerivacao(processo.RegrasDerivacao);
-        payload["grafoDependencia"] = SerializacaoDosFatos.SerializarGrafoDependencia(processo);
-        payload["versaoInterpretador"] = MotorDerivacao.VersaoSemantica;
-        payload["fatosDerivados"] = SerializacaoDosFatos.SerializarFatosDerivados(entrada.DadosDeCatalogo.FatosDerivadosCongelados);
+        payload["dadosDosFormularios"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados);
+        payload["gruposDosFormularios"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
+        payload["calculosDosDados"] = SerializacaoDosFatos.SerializarRegrasDerivacao(processo.RegrasDerivacao);
+        payload["dependenciasEntreItens"] = SerializacaoDosFatos.SerializarGrafoDependencia(processo);
+        payload["versaoDasRegrasDeCalculo"] = MotorDerivacao.VersaoSemantica;
+        payload["dadosCalculados"] = SerializacaoDosFatos.SerializarFatosDerivados(entrada.DadosDeCatalogo.FatosDerivadosCongelados);
     }
 
     private static JsonObject SerializarTipoProcesso(ProcessoSeletivo processo) => new()

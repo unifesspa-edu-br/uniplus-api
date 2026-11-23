@@ -14,13 +14,13 @@ internal static class CoberturaDosMotivos
 {
     /// <summary>As faltas das exigências diante dos motivos que a versão leva, na ordem dos tipos não declarados e da cobertura; vazio quando a cobertura está completa.</summary>
     internal static IEnumerable<FieldError> Faltas(
-        ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
+        ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos) =>
         Faltas(configuracao, lugares, escolhidos, ExigenciasDeMotivos.Todas);
 
     internal static IEnumerable<FieldError> Faltas(
         ConfiguracaoDeclarada configuracao,
         LugaresDaDecisao lugares,
-        IReadOnlyCollection<MotivoDoProcesso> escolhidos,
+        IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos,
         IEnumerable<IExigenciaDeMotivos> exigencias)
     {
         ArgumentNullException.ThrowIfNull(configuracao);

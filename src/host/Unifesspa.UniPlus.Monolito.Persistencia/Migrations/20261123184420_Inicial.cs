@@ -412,6 +412,72 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "dados_do_candidato",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do dado do candidato."),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código único do dado, como RENDA_PER_CAPITA."),
+                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome apresentado para o dado."),
+                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição do significado e uso do dado."),
+                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Apresentação sugerida: MOEDA ou SITUACAO; nula quando não definida."),
+                    tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO."),
+                    origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO."),
+                    quantidade_de_valores = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Quantidade de valores: ESCALAR ou MULTIVALORADO."),
+                    fonte_das_opcoes = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos."),
+                    fase_de_disponibilidade = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código da fase em que o valor fica disponível."),
+                    fonte_do_valor = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Referência à fonte usada para obter o valor."),
+                    formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos."),
+                    escopo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade informada para o tratamento do dado."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE."),
+                    semeado_pelo_sistema = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o dado foi fornecido pelo sistema."),
+                    protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Situação da análise: PENDENTE, SOLICITADA, APROVADA, AJUSTE_RECOMENDADO ou REPROVADA."),
+                    protecao_ciclo = table.Column<int>(type: "integer", nullable: false, comment: "Número do ciclo de análise da proteção, iniciado em 1."),
+                    protecao_solicitada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da solicitação de análise, quando houver."),
+                    protecao_solicitada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador de quem solicitou a análise, quando houver."),
+                    protecao_decidida_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da decisão, quando houver."),
+                    protecao_decidida_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador de quem decidiu, quando houver."),
+                    protecao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Classificação recomendada: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL; nula quando não houver."),
+                    protecao_justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true, comment: "Justificativa da decisão, quando informada."),
+                    protecao_aceita_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da aceitação, quando houver."),
+                    protecao_aceita_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador de quem aceitou, quando houver."),
+                    protecao_manifestada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última manifestação no ciclo, quando houver."),
+                    protecao_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se há manifestação desfavorável vigente."),
+                    protecao_manifestacoes_no_ciclo = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de manifestações no ciclo atual."),
+                    ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o dado está disponível para uso."),
+                    regras_padrao = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Regras de cálculo padrão do dado, em documento JSON."),
+                    dependencias = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Códigos dos dados necessários ao cálculo pelo sistema."),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_dados_do_candidato", x => x.id);
+                    table.CheckConstraint("ck_dados_do_candidato_classificacao_minima_do_tipo", "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+                    table.CheckConstraint("ck_dados_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
+                    table.CheckConstraint("ck_dados_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
+                    table.CheckConstraint("ck_dados_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
+                    table.CheckConstraint("ck_dados_do_candidato_fonte_das_opcoes_coerente", "(tipo = 'CATEGORICO' AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (tipo <> 'CATEGORICO' AND fonte_das_opcoes IS NULL)");
+                    table.CheckConstraint("ck_dados_do_candidato_formato_coerente", "(tipo = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (tipo <> 'TEXTO' AND formato IS NULL)");
+                    table.CheckConstraint("ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
+                    table.CheckConstraint("ck_dados_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+                    table.CheckConstraint("ck_dados_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
+                    table.CheckConstraint("ck_dados_do_candidato_quantidade_de_valores", "quantidade_de_valores IN ('ESCALAR', 'MULTIVALORADO')");
+                    table.CheckConstraint("ck_dados_do_candidato_tipo", "tipo IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
+                },
+                comment: "Catálogo de dados solicitados ou calculados para candidatos e suas regras de uso.");
+
+            migrationBuilder.CreateTable(
                 name: "documentos_a_publicar",
                 schema: "selecao",
                 columns: table => new
@@ -434,109 +500,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "fases_canonicas",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    origem_data = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    unidade_sugerida_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    unidade_sugerida_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    unidade_sugerida_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
-                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_fases_canonicas", x => x.id);
-                    table.CheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
-                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
-                    table.CheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
-                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
-                    table.CheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
-                    table.CheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
-                    table.CheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "fatos_do_candidato",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    dominio = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    cardinalidade = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    fonte_valores = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    ponto_resolucao = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    binding = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    escopo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    semeado_pelo_sistema = table.Column<bool>(type: "boolean", nullable: false),
-                    protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    protecao_ciclo = table.Column<int>(type: "integer", nullable: false),
-                    protecao_solicitada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_solicitada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_decidida_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_decidida_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    protecao_justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    protecao_aceita_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_aceita_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_manifestada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
-                    protecao_manifestacoes_no_ciclo = table.Column<int>(type: "integer", nullable: false),
-                    ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    regras_padrao = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
-                    dependencias = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]"),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_fatos_do_candidato", x => x.id);
-                    table.CheckConstraint("ck_fatos_do_candidato_cardinalidade", "cardinalidade IN ('ESCALAR', 'MULTIVALORADO')");
-                    table.CheckConstraint("ck_fatos_do_candidato_classificacao_minima_do_dominio", "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
-                    table.CheckConstraint("ck_fatos_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
-                    table.CheckConstraint("ck_fatos_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
-                    table.CheckConstraint("ck_fatos_do_candidato_dominio", "dominio IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
-                    table.CheckConstraint("ck_fatos_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
-                    table.CheckConstraint("ck_fatos_do_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
-                    table.CheckConstraint("ck_fatos_do_candidato_formato_coerente", "(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (dominio <> 'TEXTO' AND formato IS NULL)");
-                    table.CheckConstraint("ck_fatos_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
-                    table.CheckConstraint("ck_fatos_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
-                    table.CheckConstraint("ck_fatos_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
                 });
 
             migrationBuilder.CreateTable(
@@ -766,23 +729,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "motivos_do_processo",
+                name: "motivos_de_decisao_do_processo",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    motivo_de_decisao_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    subclassificacao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    sentido = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    versao_do_edital_de_entrada = table.Column<int>(type: "integer", nullable: false),
-                    versao_do_edital_de_saida = table.Column<int>(type: "integer", nullable: true),
-                    justificativa_da_inclusao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da escolha do motivo no processo."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo que escolheu o motivo."),
+                    motivo_de_decisao_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do motivo no cadastro de origem."),
+                    tipo = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Tipo de decisão: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA ou NOTA_DA_ETAPA."),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do motivo copiado do cadastro na escolha."),
+                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Descrição do motivo copiada do cadastro na escolha."),
+                    subclassificacao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Subclassificação do motivo copiada do cadastro, quando houver."),
+                    sentido = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Sentido da decisão associado ao motivo: Favoravel ou Desfavoravel."),
+                    tipo_fase_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase à qual a escolha se aplica, quando a decisão é de uma fase."),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da etapa à qual a escolha se aplica, quando a decisão é de uma etapa."),
+                    versao_do_edital_de_entrada = table.Column<int>(type: "integer", nullable: false, comment: "Número da primeira versão do edital em que a escolha vale."),
+                    versao_do_edital_de_saida = table.Column<int>(type: "integer", nullable: true, comment: "Número da versão do edital a partir da qual a escolha deixa de valer; vazio enquanto vigente."),
+                    justificativa_da_inclusao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Justificativa da inclusão após a publicação, vazia para escolhas anteriores."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
@@ -791,10 +754,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_motivos_do_processo", x => x.id);
-                    table.CheckConstraint("ck_motivos_do_processo_lugar", "num_nonnulls(fase_canonica_origem_id, etapa_processo_id) = 1");
-                    table.CheckConstraint("ck_motivos_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
-                });
+                    table.PrimaryKey("pk_motivos_de_decisao_do_processo", x => x.id);
+                    table.CheckConstraint("ck_motivos_de_decisao_do_processo_lugar", "num_nonnulls(tipo_fase_origem_id, etapa_processo_id) = 1");
+                    table.CheckConstraint("ck_motivos_de_decisao_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
+                },
+                comment: "Motivos escolhidos para decisões do processo seletivo, com os dados do cadastro no momento da escolha e sua vigência no edital.");
 
             migrationBuilder.CreateTable(
                 name: "obrigatoriedades_legais",
@@ -802,17 +766,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    categoria = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    predicado = table.Column<string>(type: "jsonb", nullable: false),
-                    descricao_humana = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    ato_normativo_url = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    portaria_interna_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
-                    vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
-                    hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de processo ao qual a regra se aplica."),
+                    categoria = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus, Atendimento ou Outros."),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código que identifica a regra legal."),
+                    condicoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições de aplicação da regra legal, em JSON."),
+                    descricao_humana = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição da regra para leitura por pessoas."),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Fundamento legal da regra."),
+                    ato_normativo_url = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Endereço do ato normativo que fundamenta a regra, quando houver."),
+                    portaria_interna_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da portaria interna correspondente, quando houver."),
+                    vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false, comment: "Data inicial de vigência da regra."),
+                    vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data final de vigência da regra, quando houver."),
+                    hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo usado para identificar o conteúdo da regra."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -824,7 +788,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_obrigatoriedades_legais", x => x.id);
-                });
+                },
+                comment: "Regras legais aplicáveis à configuração de processos seletivos.");
 
             migrationBuilder.CreateTable(
                 name: "perfis",
@@ -902,33 +867,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo."),
+                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Nome do processo seletivo informado no cadastro."),
                     identificador_legivel = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado."),
-                    tipo_processo_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id de origem do tipo de processo em Configuração, sem FK cross-schema; congelado na criação."),
-                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    tipo_processo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
-                    origem_candidatos = table.Column<int>(type: "integer", nullable: false),
-                    unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema) — congelado na criação, imutável."),
-                    unidade_administradora_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
-                    unidade_administradora_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
-                    unidade_administradora_slug = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
-                    unidade_administradora_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
-                    unidade_administradora_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
-                    unidade_administradora_cidade_codigo_ibge = table.Column<string>(type: "character(7)", fixedLength: true, maxLength: 7, nullable: true, comment: "Snapshot-copy do código IBGE da cidade da Unidade administradora no momento da criação — nulo para processos anteriores à issue #1114."),
-                    unidade_administradora_cidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true, comment: "Snapshot-copy do nome de exibição da cidade da Unidade administradora no momento da criação."),
-                    unidade_administradora_cidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: true, comment: "Snapshot-copy da UF da cidade da Unidade administradora no momento da criação."),
+                    tipo_processo_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de processo no cadastro de origem, copiado na criação."),
+                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de processo copiado do cadastro na criação."),
+                    tipo_processo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de processo copiado do cadastro na criação."),
+                    status = table.Column<int>(type: "integer", nullable: false, comment: "Situação do processo: 1 = rascunho, 2 = publicado, 3 = encerrado, 4 = cancelado."),
+                    origem_candidatos = table.Column<int>(type: "integer", nullable: false, comment: "Origem dos candidatos: 1 = inscrição própria, 2 = importação externa."),
+                    unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da unidade administradora no cadastro de origem, copiado na criação e mantido sem alteração."),
+                    unidade_administradora_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Cópia da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
+                    unidade_administradora_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Cópia do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
+                    unidade_administradora_slug = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Cópia do identificador usado no endereço da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
+                    unidade_administradora_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Cópia do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
+                    unidade_administradora_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro."),
+                    unidade_administradora_cidade_codigo_ibge = table.Column<string>(type: "character(7)", fixedLength: true, maxLength: 7, nullable: true, comment: "Cópia do código IBGE da cidade da Unidade administradora no momento da criação — pode estar ausente em processos antigos."),
+                    unidade_administradora_cidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true, comment: "Cópia do nome de exibição da cidade da Unidade administradora no momento da criação."),
+                    unidade_administradora_cidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: true, comment: "Cópia da UF da cidade da Unidade administradora no momento da criação."),
                     localidade_codigo_ibge = table.Column<string>(type: "character(7)", fixedLength: true, maxLength: 7, nullable: false, comment: "Código IBGE do município cujo calendário rege a contagem dos prazos — o único valor normativo da localidade."),
-                    localidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false, comment: "Nome do município da localidade regente — cache de exibição, não entra em cálculo de prazo."),
-                    localidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: false, comment: "UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código."),
+                    localidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false, comment: "Nome do município da localidade regente — guardado para exibição, não entra em cálculo de prazo."),
+                    localidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: false, comment: "UF da localidade regente — guardado para exibição; a UF que vale é a derivada do prefixo do código."),
                     algoritmo_contagem_prazo_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da entrada de algoritmo de contagem do catálogo de regras que o certame declarou."),
                     algoritmo_contagem_prazo_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente."),
-                    algoritmo_contagem_prazo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Hash da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois."),
-                    referencia_temporal_fatos_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    referencia_temporal_fatos_data = table.Column<DateOnly>(type: "date", nullable: true),
-                    referencia_temporal_fatos_fase_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    aplica_bonus_regional = table.Column<bool>(type: "boolean", nullable: true, comment: "Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado."),
+                    algoritmo_contagem_prazo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Resumo da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois."),
+                    referencia_temporal_fatos_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada."),
+                    referencia_temporal_fatos_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data escolhida quando a referência para apurar os fatos é uma data específica."),
+                    referencia_temporal_fatos_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase."),
+                    aplica_bonus_regional = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se o processo aplica o bônus regional; ausente quando ainda não declarado."),
                     numero_de_opcoes_de_curso = table.Column<int>(type: "integer", nullable: true, comment: "Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
@@ -941,7 +906,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_processos_seletivos", x => x.id);
                     table.CheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
                     table.CheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
-                });
+                },
+                comment: "Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
 
             migrationBuilder.CreateTable(
                 name: "rascunhos_processos_seletivos",
@@ -1116,7 +1082,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de conceito, em NFC."),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição livre do tipo, em NFC. Nula quando não informada."),
                     ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Falso quando o tipo foi desativado: deixa de ser oferecido, e o código continua reservado."),
-                    natureza = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de valores_tipo_conceito."),
+                    forma = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de opcoes_do_tipo_de_conceito."),
                     escala_minima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Menor valor da escala. Só no tipo numérico."),
                     escala_maxima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Maior valor da escala, sempre acima do menor. Só no tipo numérico."),
                     casas_decimais = table.Column<int>(type: "integer", nullable: true, comment: "Número de casas decimais da escala, de 0 a 4. Só no tipo numérico."),
@@ -1129,8 +1095,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_tipos_conceito", x => x.id);
-                    table.CheckConstraint("ck_tipos_conceito_natureza", "natureza IN ('NUMERICO', 'CATEGORICO')");
-                    table.CheckConstraint("ck_tipos_conceito_parametros_da_natureza", "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+                    table.CheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'CATEGORICO')");
+                    table.CheckConstraint("ck_tipos_conceito_parametros_da_forma", "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (forma = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
                 },
                 comment: "Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
 
@@ -1272,6 +1238,45 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_tipos_de_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
                     table.CheckConstraint("ck_tipos_de_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
                 });
+
+            migrationBuilder.CreateTable(
+                name: "tipos_de_fase",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de fase."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código único do tipo de fase."),
+                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de fase."),
+                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true, comment: "Descrição do propósito da fase, quando informada."),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Fundamento legal da fase, quando informado."),
+                    agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase agrupa etapas de avaliação."),
+                    permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase permite complementação."),
+                    coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase coleta inscrições."),
+                    coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase coleta solicitações de isenção."),
+                    origem_data = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Origem das datas: NO_EDITAL ou NA_EXECUCAO."),
+                    unidade_sugerida_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da unidade sugerida, quando houver."),
+                    unidade_sugerida_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Sigla da unidade sugerida, quando houver."),
+                    unidade_sugerida_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade sugerida, quando houver."),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_tipos_de_fase", x => x.id);
+                    table.CheckConstraint("ck_tipos_de_fase_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
+                    table.CheckConstraint("ck_tipos_de_fase_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_tipos_de_fase_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                    table.CheckConstraint("ck_tipos_de_fase_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
+                    table.CheckConstraint("ck_tipos_de_fase_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
+                    table.CheckConstraint("ck_tipos_de_fase_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+                    table.CheckConstraint("ck_tipos_de_fase_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
+                },
+                comment: "Tipos de fase disponíveis para organizar o cronograma de seleção.");
 
             migrationBuilder.CreateTable(
                 name: "tipos_etapa",
@@ -1621,31 +1626,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "valores_de_dominio_do_fato",
+                name: "opcoes_dos_dados",
                 schema: "configuracao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fato_candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    orientacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    ativo = table.Column<bool>(type: "boolean", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da opção."),
+                    fato_candidato_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do dado ao qual a opção pertence."),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código da opção, único no dado."),
+                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Descrição da opção, quando informada."),
+                    orientacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Orientação para a escolha, quando informada."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação da opção."),
+                    ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a opção está disponível para escolha."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_valores_de_dominio_do_fato", x => x.id);
+                    table.PrimaryKey("pk_opcoes_dos_dados", x => x.id);
                     table.ForeignKey(
-                        name: "fk_valores_de_dominio_do_fato_fato_do_candidato",
+                        name: "fk_opcoes_dos_dados_dados_do_candidato",
                         column: x => x.fato_candidato_id,
                         principalSchema: "configuracao",
-                        principalTable: "fatos_do_candidato",
+                        principalTable: "dados_do_candidato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Opções declaradas para dados categóricos do candidato.");
 
             migrationBuilder.CreateTable(
                 name: "permissoes_implantadas",
@@ -2196,6 +2202,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "calculos_dos_dados",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado calculado. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_calculos_dos_dados", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_calculos_dos_dados_processo_seletivo",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Configurações dos cálculos dos dados de candidatos em um processo.");
+
+            migrationBuilder.CreateTable(
                 name: "configuracoes_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -2268,12 +2298,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    fallback_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da configuração de remanejamento."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual a configuração pertence."),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código da regra de remanejamento."),
+                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra de remanejamento."),
+                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo do conteúdo da regra de remanejamento."),
+                    destino_final_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da modalidade de destino final das vagas."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -2287,7 +2317,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Regra e destino final do remanejamento de vagas do processo.");
 
             migrationBuilder.CreateTable(
                 name: "configuracoes_de_vagas",
@@ -2337,29 +2368,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_configuracoes_de_vagas_reserva_legal_completa", "(percentual_da_reserva_legal IS NULL AND reserva_legal_nominal IS NULL AND reserva_legal_efetiva IS NULL AND excedente_sobre_reserva_legal IS NULL AND vagas_cortadas_por_escassez IS NULL) OR (percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_configuracoes_de_vagas_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "configuracoes_derivacao_fato",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo_fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_configuracoes_derivacao_fato", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_configuracoes_derivacao_fato_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2466,9 +2474,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nota_maxima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM."),
                     passo_do_lancamento = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "De quanto em quanto a nota pode ser lançada; vale só para a nota digitada."),
                     forma_de_avaliacao = table.Column<int>(type: "integer", nullable: true, comment: "Como a nota da etapa é obtida; ausente quando não definida. Códigos: 1 (Objetiva), 2 (Humana)."),
-                    regra_consolidacao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da regra de consolidação das notas, quando definida."),
-                    regra_consolidacao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da regra de consolidação das notas, quando definida."),
-                    regra_consolidacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Resumo que identifica o conteúdo da regra de consolidação, quando definida."),
+                    apuracao_avaliacao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da regra de consolidação das notas, quando definida."),
+                    apuracao_avaliacao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da regra de consolidação das notas, quando definida."),
+                    apuracao_avaliacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Resumo que identifica o conteúdo da regra de consolidação, quando definida."),
                     ordem = table.Column<int>(type: "integer", nullable: true, comment: "Posição da etapa no processo, quando definida."),
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Início do período próprio da etapa; ausente quando usa o período da fase."),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Fim do período próprio da etapa; ausente quando usa o período da fase."),
@@ -2505,7 +2513,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a fase pertence."),
                     ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição da fase no cronograma."),
                     no_mesmo_momento_da_anterior = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase ocorre no mesmo momento da fase anterior."),
-                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase de origem copiado ao definir o cronograma."),
+                    tipo_fase_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase de origem copiado ao definir o cronograma."),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES."),
                     unidade_responsavel_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da unidade responsável, copiado quando definida."),
                     unidade_responsavel_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Sigla da unidade responsável, copiada quando definida."),
@@ -2597,36 +2605,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "O registro de que o arquivo de envio ao INEP foi gerado para uma edição do ENEM. Append-only; o arquivo e os CPFs não são guardados.");
 
             migrationBuilder.CreateTable(
-                name: "grupos_coletados",
+                name: "grupos_dos_formularios",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    finalidade = table.Column<int>(type: "integer", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    etapa_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    minimo = table.Column<int>(type: "integer", nullable: false),
-                    maximo = table.Column<int>(type: "integer", nullable: true),
-                    exibicao = table.Column<string>(type: "jsonb", nullable: true),
-                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
-                    inclui_candidato = table.Column<bool>(type: "boolean", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    finalidade = table.Column<int>(type: "integer", nullable: false, comment: "Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica o item no processo."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
+                    etapa_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da etapa do formulário, quando houver."),
+                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
+                    minimo = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade mínima de ocorrências do grupo."),
+                    maximo = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade máxima de ocorrências do grupo, quando limitada."),
+                    exibicao = table.Column<string>(type: "jsonb", nullable: true, comment: "Condições para exibir o grupo, em JSON, quando houver."),
+                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
+                    inclui_candidato = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o grupo inclui a própria pessoa candidata."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_grupos_coletados", x => x.id);
+                    table.PrimaryKey("pk_grupos_dos_formularios", x => x.id);
                     table.ForeignKey(
-                        name: "fk_grupos_coletados_processo_seletivo_processo_seletivo_id",
+                        name: "fk_grupos_dos_formularios_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Grupos repetíveis de dados solicitados nos formulários.");
 
             migrationBuilder.CreateTable(
                 name: "modelos_de_documento",
@@ -2665,11 +2674,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da opção de resposta."),
+                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -2683,7 +2692,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Opções de resposta declaradas pelo processo para um dado.");
 
             migrationBuilder.CreateTable(
                 name: "termos_exigidos_formulario",
@@ -2726,19 +2736,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    numero_versao = table.Column<int>(type: "integer", nullable: false),
-                    vigente_a_partir_de = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    schema_version = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    algoritmo_hash = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    configuracao_congelada_canonica = table.Column<byte[]>(type: "bytea", nullable: false),
-                    configuracao_congelada = table.Column<string>(type: "jsonb", nullable: false),
-                    hash_configuracao = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    ato_criador_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_criador_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    ato_criador_retifica_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    ator_usuario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da versão da configuração."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence a versão."),
+                    numero_versao = table.Column<int>(type: "integer", nullable: false, comment: "Número sequencial da versão do processo."),
+                    vigente_a_partir_de = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora a partir da qual a versão vigora."),
+                    versao_do_formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Versão do formato do conteúdo da configuração."),
+                    algoritmo_hash = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Algoritmo usado para calcular o resumo da configuração."),
+                    bytes_da_configuracao = table.Column<byte[]>(type: "bytea", nullable: false, comment: "Bytes da configuração publicada usados no cálculo do resumo."),
+                    conteudo_da_configuracao = table.Column<string>(type: "jsonb", nullable: false, comment: "Conteúdo da configuração publicada em JSON para consulta."),
+                    hash_configuracao = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo SHA-256 do conteúdo da configuração."),
+                    ato_criador_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do ato que criou a versão."),
+                    ato_criador_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo SHA-256 do ato que criou a versão."),
+                    ato_criador_retifica_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do ato retificado, quando houver."),
+                    ator_usuario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "Identificador da conta responsável pela publicação.")
                 },
                 constraints: table =>
                 {
@@ -2756,7 +2766,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
+                },
+                comment: "Versões publicadas da configuração do processo seletivo.");
 
             migrationBuilder.CreateTable(
                 name: "versoes_do_termo_consentimento",
@@ -2787,7 +2798,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "valores_tipo_conceito",
+                name: "opcoes_do_tipo_de_conceito",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -2801,11 +2812,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_valores_tipo_conceito", x => x.id);
-                    table.CheckConstraint("ck_valores_tipo_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
-                    table.CheckConstraint("ck_valores_tipo_conceito_posicao", "posicao >= 1");
+                    table.PrimaryKey("pk_opcoes_do_tipo_de_conceito", x => x.id);
+                    table.CheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+                    table.CheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
                     table.ForeignKey(
-                        name: "fk_valores_tipo_conceito_tipos_conceito_tipo_conceito_id",
+                        name: "fk_opcoes_do_tipo_de_conceito_tipos_conceito",
                         column: x => x.tipo_conceito_id,
                         principalSchema: "configuracao",
                         principalTable: "tipos_conceito",
@@ -3045,22 +3056,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ocorrencia_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    fato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    origem = table.Column<int>(type: "integer", nullable: false),
-                    cep = table.Column<string>(type: "text", nullable: true),
-                    logradouro = table.Column<string>(type: "text", nullable: true),
-                    numero = table.Column<string>(type: "text", nullable: true),
-                    complemento = table.Column<string>(type: "text", nullable: true),
-                    bairro = table.Column<string>(type: "text", nullable: true),
-                    distrito = table.Column<string>(type: "text", nullable: true),
-                    municipio_codigo_ibge = table.Column<string>(type: "text", nullable: true),
-                    municipio_nome = table.Column<string>(type: "text", nullable: true),
-                    uf = table.Column<string>(type: "text", nullable: true),
-                    latitude = table.Column<string>(type: "text", nullable: true),
-                    longitude = table.Column<string>(type: "text", nullable: true),
-                    nivel_resolucao = table.Column<string>(type: "text", nullable: true),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da inscrição à qual pertence."),
+                    ocorrencia_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    origem = table.Column<int>(type: "integer", nullable: false, comment: "Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema."),
+                    cep = table.Column<string>(type: "text", nullable: true, comment: "Código postal do endereço, quando informado."),
+                    logradouro = table.Column<string>(type: "text", nullable: true, comment: "Nome do logradouro, quando informado."),
+                    numero = table.Column<string>(type: "text", nullable: true, comment: "Número do endereço, quando informado."),
+                    complemento = table.Column<string>(type: "text", nullable: true, comment: "Complemento do endereço, quando informado."),
+                    bairro = table.Column<string>(type: "text", nullable: true, comment: "Bairro do endereço, quando informado."),
+                    distrito = table.Column<string>(type: "text", nullable: true, comment: "Distrito do endereço, quando informado."),
+                    municipio_codigo_ibge = table.Column<string>(type: "text", nullable: true, comment: "Código IBGE do município, quando informado."),
+                    municipio_nome = table.Column<string>(type: "text", nullable: true, comment: "Nome do município, quando informado."),
+                    uf = table.Column<string>(type: "text", nullable: true, comment: "Sigla da unidade federativa, quando informada."),
+                    latitude = table.Column<string>(type: "text", nullable: true, comment: "Latitude do endereço, quando disponível."),
+                    longitude = table.Column<string>(type: "text", nullable: true, comment: "Longitude do endereço, quando disponível."),
+                    nivel_resolucao = table.Column<string>(type: "text", nullable: true, comment: "Precisão da localização obtida para o endereço, quando disponível."),
                     procedencia = table.Column<string>(type: "text", nullable: true, comment: "Como o endereço foi preenchido no formulário: pela busca do CEP no Geo ou à mão."),
                     cep_confirmado = table.Column<bool>(type: "boolean", nullable: true, comment: "O candidato confirmou que o CEP é o geral da cidade ou do bairro, quando o Geo só o resolveu por faixa.")
                 },
@@ -3091,18 +3102,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ocorrencia_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    fato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    posicao = table.Column<int>(type: "integer", nullable: true),
-                    origem = table.Column<int>(type: "integer", nullable: false),
-                    tipo = table.Column<int>(type: "integer", nullable: false),
-                    valor_booleano = table.Column<bool>(type: "boolean", nullable: true),
-                    valor_numero = table.Column<decimal>(type: "numeric", nullable: true),
-                    valor_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da inscrição à qual pertence."),
+                    ocorrencia_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    posicao = table.Column<int>(type: "integer", nullable: true, comment: "Posição do valor em uma resposta com vários valores; nula para valor único."),
+                    origem = table.Column<int>(type: "integer", nullable: false, comment: "Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema."),
+                    tipo = table.Column<int>(type: "integer", nullable: false, comment: "Tipo do valor: 1 booleano, 2 número, 3 código, 4 texto, 5 data ou 7 município."),
+                    valor_booleano = table.Column<bool>(type: "boolean", nullable: true, comment: "Resposta booleana, quando aplicável."),
+                    valor_numero = table.Column<decimal>(type: "numeric", nullable: true, comment: "Resposta numérica, quando aplicável."),
+                    valor_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da opção ou município respondido, quando aplicável."),
                     valor_rotulo = table.Column<string>(type: "text", nullable: true, comment: "O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada."),
-                    valor_texto = table.Column<string>(type: "text", nullable: true),
-                    valor_data = table.Column<DateOnly>(type: "date", nullable: true),
+                    valor_texto = table.Column<string>(type: "text", nullable: true, comment: "Resposta em texto livre, quando aplicável."),
+                    valor_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Resposta de data, quando aplicável."),
                     valor_cifrado = table.Column<byte[]>(type: "bytea", nullable: true, comment: "Resposta cifrada (AES-GCM, ADR-0121) — nunca texto claro: o número de documento, com a chave dos identificadores, ou o dado sensível de cifra individual, com a chave dos sensíveis.")
                 },
                 constraints: table =>
@@ -3467,6 +3478,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "regras_de_calculo_dos_dados",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    calculo_do_dado_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do cálculo ao qual a regra pertence."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
+                    contribui = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código do valor produzido quando a regra é atendida, quando houver."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_regras_de_calculo_dos_dados", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_regras_de_calculo_dos_dados_calculo_do_dado",
+                        column: x => x.calculo_do_dado_id,
+                        principalSchema: "selecao",
+                        principalTable: "calculos_dos_dados",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Regras ordenadas que compõem o cálculo de um dado.");
+
+            migrationBuilder.CreateTable(
                 name: "municipios_do_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -3575,22 +3611,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    configuracao_distribuicao_vagas_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    modalidade_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    natureza_legal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    composicao_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    remanejamento_destino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    remanejamento_par = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    remanejamento_fallback = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false),
-                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    quantidade_declarada = table.Column<int>(type: "integer", nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da modalidade selecionada."),
+                    configuracao_distribuicao_vagas_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da configuração de distribuição à qual pertence."),
+                    modalidade_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da modalidade no cadastro de origem."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da modalidade copiado do cadastro."),
+                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true, comment: "Descrição da modalidade copiada do cadastro, quando disponível."),
+                    natureza_legal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Natureza legal copiada do cadastro: COTA_RESERVADA, AMPLA ou ACAO_AFIRMATIVA."),
+                    composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Composição das vagas: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE ou SUPLEMENTAR_AO_TOTAL."),
+                    composicao_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade de origem da composição, quando aplicável."),
+                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código da regra de remanejamento, quando definida."),
+                    remanejamento_destino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade de destino do remanejamento, quando definido."),
+                    remanejamento_par = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade pareada para remanejamento, quando definido."),
+                    remanejamento_destino_final = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade de destino final do remanejamento, quando definido."),
+                    regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições de aplicabilidade da modalidade, copiadas do cadastro em JSON."),
+                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Ação prevista quando o pedido é indeferido, quando definida."),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Fundamento legal da modalidade copiado do cadastro."),
+                    quantidade_declarada = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de vagas declarada, quando informada."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -3604,7 +3640,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "configuracoes_de_vagas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Modalidades escolhidas para a distribuição de vagas, com dados copiados do cadastro.");
 
             migrationBuilder.CreateTable(
                 name: "vagas_ofertadas",
@@ -3627,30 +3664,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         column: x => x.configuracao_distribuicao_vagas_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_de_vagas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "regras_derivacao_configuradas",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    configuracao_derivacao_fato_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    contribui = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_regras_derivacao_configuradas", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_regras_derivacao_configuradas_configuracao_derivacao_fato",
-                        column: x => x.configuracao_derivacao_fato_id,
-                        principalSchema: "selecao",
-                        principalTable: "configuracoes_derivacao_fato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -3746,63 +3759,65 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Níveis de atendimento usados na avaliação dos itens da etapa.");
 
             migrationBuilder.CreateTable(
-                name: "produtos_da_etapa",
+                name: "publicacoes_previstas_da_etapa",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    papel = table.Column<int>(type: "integer", nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro ao qual esta configuração pertence."),
+                    ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do ato previsto para publicação."),
+                    papel = table.Column<int>(type: "integer", nullable: true, comment: "Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo)."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_produtos_da_etapa", x => x.id);
+                    table.PrimaryKey("pk_publicacoes_previstas_da_etapa", x => x.id);
                     table.ForeignKey(
-                        name: "fk_produtos_da_etapa_etapas_processo_etapa_processo_id",
+                        name: "fk_publicacoes_previstas_da_etapa_etapa",
                         column: x => x.etapa_processo_id,
                         principalSchema: "selecao",
                         principalTable: "etapas_processo",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Publicações previstas para uma etapa de avaliação.");
 
             migrationBuilder.CreateTable(
-                name: "recursos_da_etapa",
+                name: "recursos_configurados_da_etapa",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ancora = table.Column<int>(type: "integer", nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    prazo_unidade = table.Column<string>(type: "text", nullable: false),
-                    admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false),
-                    prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
-                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true),
-                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false),
-                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false),
-                    produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro ao qual esta configuração pertence."),
+                    evento_inicial_do_prazo = table.Column<int>(type: "integer", nullable: false, comment: "Evento que inicia o prazo: 1 (publicação do ato) ou 2 (ciência individual)."),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código da regra aplicada ao prazo de recurso."),
+                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra aplicada ao prazo de recurso."),
+                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo do conteúdo da regra aplicada ao prazo de recurso."),
+                    prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false, comment: "Duração do prazo de recurso na unidade informada."),
+                    prazo_unidade = table.Column<string>(type: "text", nullable: false, comment: "Unidade do prazo: horas, dias ou diasUteis."),
+                    admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se há recurso à instância superior."),
+                    prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Duração do prazo de recurso na unidade informada."),
+                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true, comment: "Unidade do prazo: horas, dias ou diasUteis."),
+                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false, comment: "Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo."),
+                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false, comment: "Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda."),
+                    publicacao_de_referencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da publicação usada como referência para o início do prazo."),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_recursos_da_etapa", x => x.id);
+                    table.PrimaryKey("pk_recursos_configurados_da_etapa", x => x.id);
                     table.ForeignKey(
-                        name: "fk_recursos_da_etapa_etapas_processo_etapa_processo_id",
+                        name: "fk_recursos_configurados_da_etapa_etapa",
                         column: x => x.etapa_processo_id,
                         principalSchema: "selecao",
                         principalTable: "etapas_processo",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Configurações dos recursos de uma etapa de avaliação.");
 
             migrationBuilder.CreateTable(
                 name: "bancas_requeridas",
@@ -3847,34 +3862,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    finalidade = table.Column<int>(type: "integer", nullable: true),
-                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    fatos_comprovados = table.Column<string[]>(type: "text[]", nullable: false),
-                    aplicabilidade = table.Column<int>(type: "integer", nullable: false),
-                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false),
-                    consequencia_indeferimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    idade_maxima_valor = table.Column<int>(type: "integer", nullable: true),
-                    idade_maxima_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
-                    idade_maxima_referencia_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    idade_maxima_referencia_data = table.Column<DateOnly>(type: "date", nullable: true),
-                    idade_maxima_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false),
-                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true),
-                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true),
-                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
-                    modelo_formato = table.Column<int>(type: "integer", nullable: true),
-                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exigência documental."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo que declara a exigência."),
+                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase em que o documento é exigido."),
+                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da etapa que coleta o documento; ausente quando a exigência pertence à fase inteira."),
+                    finalidade = table.Column<int>(type: "integer", nullable: true, comment: "Finalidade do formulário: 1 = inscrição, 2 = isenção de taxa, 3 = habilitação; ausente quando a fase não coleta formulário."),
+                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de documento no cadastro de origem."),
+                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de documento copiado do cadastro."),
+                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de documento copiado do cadastro."),
+                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Categoria do tipo de documento copiada do cadastro."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade do tratamento dos dados copiada do tipo de documento."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal copiada do tipo de documento: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE."),
+                    fatos_comprovados = table.Column<string[]>(type: "text[]", nullable: false, comment: "Códigos dos fatos do processo comprovados pelo documento; lista vazia quando nenhum foi declarado."),
+                    aplicabilidade = table.Column<int>(type: "integer", nullable: false, comment: "A quem a exigência se aplica: 1 = todos os candidatos, 2 = candidatos que atendem às condições."),
+                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a apresentação do documento é obrigatória."),
+                    consequencia_indeferimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Consequência do indeferimento, quando declarada: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO."),
+                    idade_maxima_valor = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade máxima de tempo desde a emissão do arquivo, na unidade informada."),
+                    idade_maxima_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true, comment: "Unidade da idade máxima de emissão: DIAS, MESES ou ANOS."),
+                    idade_maxima_referencia_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Referência para contar a idade da emissão: FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA ou DATA_SUBMISSAO."),
+                    idade_maxima_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data escolhida para contar a idade da emissão quando a referência é uma data específica."),
+                    idade_maxima_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase usada para contar a idade da emissão quando a referência é seu início ou fim."),
+                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se qualquer formato de arquivo é permitido."),
+                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true, comment: "Lista de formatos permitidos e seus limites de tamanho em bytes; formatos: PDF, JPEG ou PNG. Ausente quando qualquer formato é permitido."),
+                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true, comment: "Tamanho máximo do arquivo apresentado, em bytes; ausente quando não declarado."),
+                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do modelo oferecido ao candidato, quando há modelo."),
+                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, comment: "Nome do arquivo do modelo oferecido ao candidato."),
+                    modelo_formato = table.Column<int>(type: "integer", nullable: true, comment: "Formato do arquivo do modelo oferecido ao candidato: 1 = DOCX, 2 = ODT."),
+                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Resumo SHA-256 do conteúdo do arquivo do modelo oferecido ao candidato."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -3903,65 +3918,68 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Documentos exigidos dos candidatos em cada processo seletivo.");
 
             migrationBuilder.CreateTable(
-                name: "produtos_da_fase",
+                name: "publicacoes_previstas_da_fase",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    papel = table.Column<int>(type: "integer", nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro ao qual esta configuração pertence."),
+                    ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do ato previsto para publicação."),
+                    papel = table.Column<int>(type: "integer", nullable: true, comment: "Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo)."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_produtos_da_fase", x => x.id);
+                    table.PrimaryKey("pk_publicacoes_previstas_da_fase", x => x.id);
                     table.ForeignKey(
-                        name: "fk_produtos_da_fase_fases_cronograma_fase_cronograma_id",
+                        name: "fk_publicacoes_previstas_da_fase_fase",
                         column: x => x.fase_cronograma_id,
                         principalSchema: "selecao",
                         principalTable: "fases_cronograma",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Publicações previstas para uma fase do cronograma.");
 
             migrationBuilder.CreateTable(
-                name: "regras_recurso_fase",
+                name: "recursos_configurados_da_fase",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    prazo_unidade = table.Column<string>(type: "text", nullable: false),
-                    admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false),
-                    prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
-                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true),
-                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false),
-                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false),
-                    produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro ao qual esta configuração pertence."),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código da regra aplicada ao prazo de recurso."),
+                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra aplicada ao prazo de recurso."),
+                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo do conteúdo da regra aplicada ao prazo de recurso."),
+                    prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false, comment: "Duração do prazo de recurso na unidade informada."),
+                    prazo_unidade = table.Column<string>(type: "text", nullable: false, comment: "Unidade do prazo: horas, dias ou diasUteis."),
+                    admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se há recurso à instância superior."),
+                    prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Duração do prazo de recurso na unidade informada."),
+                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true, comment: "Unidade do prazo: horas, dias ou diasUteis."),
+                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false, comment: "Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo."),
+                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false, comment: "Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda."),
+                    publicacao_de_referencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da publicação usada como referência para o início do prazo."),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_regras_recurso_fase", x => x.id);
+                    table.PrimaryKey("pk_recursos_configurados_da_fase", x => x.id);
                     table.ForeignKey(
-                        name: "fk_regras_recurso_fase_fases_cronograma_fase_cronograma_id",
+                        name: "fk_recursos_configurados_da_fase_fase",
                         column: x => x.fase_cronograma_id,
                         principalSchema: "selecao",
                         principalTable: "fases_cronograma",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Configuração dos recursos de uma fase do cronograma.");
 
             migrationBuilder.CreateTable(
                 name: "etapas_formulario",
@@ -3994,102 +4012,103 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "fatos_coletados",
+                name: "dados_dos_formularios",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    grupo_coletado_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    fato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    tipo_renderizacao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
-                    ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false),
-                    restricoes = table.Column<string>(type: "jsonb", nullable: false),
-                    origem_valores = table.Column<int>(type: "integer", nullable: false),
-                    formato = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    classificacao_protecao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    impedimento = table.Column<string>(type: "jsonb", nullable: true),
-                    finalidade = table.Column<int>(type: "integer", nullable: false),
-                    etapa_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    grupo_coletado_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do grupo repetível ao qual o dado pertence, quando houver."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
+                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
+                    tipo_renderizacao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo de campo: NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO."),
+                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
+                    ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Orientação adicional exibida junto ao campo, quando houver."),
+                    pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a resposta deve ser confirmada pela pessoa candidata."),
+                    restricoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Restrições aplicadas à resposta, em JSON."),
+                    origem_valores = table.Column<int>(type: "integer", nullable: false, comment: "Origem das opções: 0 catálogo, 1 processo, 2 municípios do bônus ou 3 unidades federativas."),
+                    formato = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Formato esperado da resposta, quando especificado."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Classificação de proteção do dado coletado."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal que fundamenta o tratamento do dado."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade informada para o tratamento do dado."),
+                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição do dado solicitado."),
+                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Componente usado para exibir o dado, quando especificado."),
+                    impedimento = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de impedimento associada à resposta, em JSON, quando houver."),
+                    finalidade = table.Column<int>(type: "integer", nullable: false, comment: "Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação."),
+                    etapa_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da etapa do formulário, quando houver."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_fatos_coletados", x => x.id);
+                    table.PrimaryKey("pk_dados_dos_formularios", x => x.id);
                     table.ForeignKey(
-                        name: "fk_fatos_coletados_grupo_coletado_grupo_coletado_id",
+                        name: "fk_dados_dos_formularios_grupo_formulario",
                         column: x => x.grupo_coletado_id,
                         principalSchema: "selecao",
-                        principalTable: "grupos_coletados",
+                        principalTable: "grupos_dos_formularios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_fatos_coletados_processo_seletivo_processo_seletivo_id",
+                        name: "fk_dados_dos_formularios_processo_seletivo_processo_seletivo_id",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Dados solicitados nos formulários de um processo seletivo.");
 
             migrationBuilder.CreateTable(
-                name: "lotes_de_notas_do_enem",
+                name: "importacoes_de_notas_do_enem",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da importação."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence a importação."),
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A etapa de nota do ENEM, guardada por valor e sem chave estrangeira: pertence à configuração do processo, que a retificação recria."),
                     edicao_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "O código da opção do fato EDICAO_ENEM, como o processo a declara."),
-                    leiaute_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    leiaute_versao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    leiaute_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do leiaute usado para ler o arquivo."),
+                    leiaute_versao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Versão do leiaute usado para ler o arquivo."),
                     leiaute_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "SHA-256 da definição do leiaute com que o arquivo foi lido."),
                     arquivo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "SHA-256 dos bytes do arquivo importado."),
                     importado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "A conta do token de quem importou."),
                     importado_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "O nome de quem importou, gravado no momento da ação."),
-                    importado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    importado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora da importação do arquivo."),
                     versao_configuracao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A versão divulgada do certame cujos pesos apuraram as avaliações do lote."),
-                    total_de_linhas = table.Column<int>(type: "integer", nullable: false),
-                    total_de_inscritos_com_nota = table.Column<int>(type: "integer", nullable: false),
-                    total_de_lancamentos = table.Column<int>(type: "integer", nullable: false),
-                    total_de_inscritos_sem_linha = table.Column<int>(type: "integer", nullable: false),
-                    total_de_linhas_sem_inscrito = table.Column<int>(type: "integer", nullable: false),
-                    total_de_inscritos_em_conflito = table.Column<int>(type: "integer", nullable: false),
-                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
+                    total_de_linhas = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de linhas lidas no arquivo."),
+                    total_de_inscritos_com_nota = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de inscritos com nota importada."),
+                    total_de_lancamentos = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de notas individuais lançadas."),
+                    total_de_inscritos_sem_linha = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de inscritos sem linha correspondente no arquivo."),
+                    total_de_linhas_sem_inscrito = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de linhas sem inscrição correspondente."),
+                    total_de_inscritos_em_conflito = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de inscritos com linhas conflitantes."),
+                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false, comment: "Ordem atribuída pelo banco para desempatar importações do mesmo escopo.")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_lotes_de_notas_do_enem", x => x.id);
-                    table.UniqueConstraint("ak_lotes_de_notas_do_enem_id_etapa", x => new { x.id, x.etapa_processo_id });
-                    table.CheckConstraint("ck_lotes_de_notas_do_enem_edicao", "edicao_codigo <> ''");
-                    table.CheckConstraint("ck_lotes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_lotes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
+                    table.PrimaryKey("pk_importacoes_de_notas_do_enem", x => x.id);
+                    table.UniqueConstraint("ak_importacoes_de_notas_do_enem_id_etapa", x => new { x.id, x.etapa_processo_id });
+                    table.CheckConstraint("ck_importacoes_de_notas_do_enem_edicao", "edicao_codigo <> ''");
+                    table.CheckConstraint("ck_importacoes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_importacoes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
                     table.ForeignKey(
-                        name: "fk_lotes_de_notas_do_enem_processo_seletivo",
+                        name: "fk_importacoes_de_notas_do_enem_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_lotes_de_notas_do_enem_versao_configuracao",
+                        name: "fk_importacoes_de_notas_do_enem_versao_configuracao",
                         column: x => x.versao_configuracao_id,
                         principalSchema: "selecao",
                         principalTable: "versoes_configuracao",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 },
-                comment: "Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Append-only; vale o lote mais recente do escopo, por inteiro. O arquivo não é guardado, só o hash.");
+                comment: "Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Os registros não são alterados ou excluídos; vale por inteiro o lote mais recente para esses dados. Do arquivo, guarda-se apenas o resumo do conteúdo.");
 
             migrationBuilder.CreateTable(
                 name: "eventos_da_contencao",
@@ -4285,6 +4304,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "condicoes_do_calculo_dos_dados",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    regra_derivacao_configurada_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da regra de cálculo à qual a condição pertence."),
+                    alternativa = table.Column<int>(type: "integer", nullable: false, comment: "Número da alternativa que reúne condições atendidas em conjunto."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM."),
+                    valor = table.Column<string>(type: "jsonb", nullable: false, comment: "Valor de comparação da condição, em JSON."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_condicoes_do_calculo_dos_dados", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_condicoes_calculo_regra_de_calculo",
+                        column: x => x.regra_derivacao_configurada_id,
+                        principalSchema: "selecao",
+                        principalTable: "regras_de_calculo_dos_dados",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Condições que determinam a aplicação de uma regra de cálculo.");
+
+            migrationBuilder.CreateTable(
                 name: "areas_do_quadro_de_pesos",
                 schema: "selecao",
                 columns: table => new
@@ -4314,32 +4360,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Peso e corte de cada área do ENEM num grupo do quadro de pesos por área congelado na classificação, copiados por valor da resolução de Pesos por Área declarada.");
 
             migrationBuilder.CreateTable(
-                name: "condicoes_regra_derivacao",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    regra_derivacao_configurada_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    clausula = table.Column<int>(type: "integer", nullable: false),
-                    fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    valor = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_condicoes_regra_derivacao", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_condicoes_regra_derivacao_regra_derivacao_configurada",
-                        column: x => x.regra_derivacao_configurada_id,
-                        principalSchema: "selecao",
-                        principalTable: "regras_derivacao_configuradas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "categorias_julgadas",
                 schema: "selecao",
                 columns: table => new
@@ -4364,30 +4384,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "condicoes_gatilho",
+                name: "condicoes_das_exigencias",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    documento_exigido_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    clausula = table.Column<int>(type: "integer", nullable: false),
-                    fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    valor = table.Column<string>(type: "jsonb", nullable: false),
+                    documento_exigido_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do documento exigido ao qual a condição pertence."),
+                    alternativa = table.Column<int>(type: "integer", nullable: false, comment: "Número da alternativa que reúne condições atendidas em conjunto."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM."),
+                    valor = table.Column<string>(type: "jsonb", nullable: false, comment: "Valor de comparação da condição, em JSON."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_condicoes_gatilho", x => x.id);
+                    table.PrimaryKey("pk_condicoes_das_exigencias", x => x.id);
                     table.ForeignKey(
-                        name: "fk_condicoes_gatilho_documento_exigido_documento_exigido_id",
+                        name: "fk_condicoes_das_exigencias_documento_exigido",
                         column: x => x.documento_exigido_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_exigidos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Condições que determinam a exigência de um documento.");
 
             migrationBuilder.CreateTable(
                 name: "documentos_exigidos_base_legal",
@@ -4467,38 +4488,39 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "condicoes_precondicao_fato",
+                name: "condicoes_de_exibicao_do_dado",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fato_coletado_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    clausula = table.Column<int>(type: "integer", nullable: false),
-                    fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    valor = table.Column<string>(type: "jsonb", nullable: false),
+                    fato_coletado_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do dado do formulário ao qual a condição pertence."),
+                    alternativa = table.Column<int>(type: "integer", nullable: false, comment: "Número da alternativa que reúne condições atendidas em conjunto."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM."),
+                    valor = table.Column<string>(type: "jsonb", nullable: false, comment: "Valor de comparação da condição, em JSON."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_condicoes_precondicao_fato", x => x.id);
+                    table.PrimaryKey("pk_condicoes_de_exibicao_do_dado", x => x.id);
                     table.ForeignKey(
-                        name: "fk_condicoes_precondicao_fato_fato_coletado_fato_coletado_id",
+                        name: "fk_condicoes_de_exibicao_do_dado_dado_formulario",
                         column: x => x.fato_coletado_id,
                         principalSchema: "selecao",
-                        principalTable: "fatos_coletados",
+                        principalTable: "dados_dos_formularios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Condições que determinam a exibição de um dado no formulário.");
 
             migrationBuilder.CreateTable(
                 name: "avaliacoes_da_etapa",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    lote_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da avaliação da inscrição na etapa."),
+                    importacao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da importação que originou a avaliação."),
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A etapa do lote, repetida para ler a avaliação sem o lote; a chave estrangeira composta com o lote impede que divirja."),
                     inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A inscrição avaliada, guardada por valor: quem não tem linha no arquivo do lote também tem avaliação, sem nota."),
                     oferta_curso_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A oferta de curso concorrida (origem da oferta no edital divulgado), guardada por valor e sem chave estrangeira: pertence à configuração do processo."),
@@ -4512,77 +4534,77 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 1) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
                     table.CheckConstraint("ck_avaliacoes_da_etapa_situacao", "situacao IN (1, 2, 3)");
                     table.ForeignKey(
-                        name: "fk_avaliacoes_da_etapa_lote_de_notas_do_enem",
-                        columns: x => new { x.lote_id, x.etapa_processo_id },
+                        name: "fk_avaliacoes_da_etapa_importacao_de_notas_do_enem",
+                        columns: x => new { x.importacao_id, x.etapa_processo_id },
                         principalSchema: "selecao",
-                        principalTable: "lotes_de_notas_do_enem",
+                        principalTable: "importacoes_de_notas_do_enem",
                         principalColumns: new[] { "id", "etapa_processo_id" },
                         onDelete: ReferentialAction.Restrict);
                 },
-                comment: "A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Append-only; vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
+                comment: "A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
 
             migrationBuilder.CreateTable(
-                name: "inscritos_do_lote_de_notas",
+                name: "inscritos_da_importacao",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    lote_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro de inscrito na importação."),
+                    importacao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da importação à qual pertence o inscrito."),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da inscrição com linha válida no arquivo."),
                     numero_de_inscricao_no_enem = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: false, comment: "O número de inscrição do INEP, guardado para a conferência de um recurso.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_inscritos_do_lote_de_notas", x => x.id);
-                    table.UniqueConstraint("ak_inscritos_do_lote_de_notas_lote_inscricao", x => new { x.lote_id, x.inscricao_id });
-                    table.CheckConstraint("ck_inscritos_do_lote_de_notas_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
+                    table.PrimaryKey("pk_inscritos_da_importacao", x => x.id);
+                    table.UniqueConstraint("ak_inscritos_da_importacao_importacao_inscricao", x => new { x.importacao_id, x.inscricao_id });
+                    table.CheckConstraint("ck_inscritos_da_importacao_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
                     table.ForeignKey(
-                        name: "fk_inscritos_do_lote_de_notas_inscricoes_inscricao_id",
+                        name: "fk_inscritos_da_importacao_importacao",
+                        column: x => x.importacao_id,
+                        principalSchema: "selecao",
+                        principalTable: "importacoes_de_notas_do_enem",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_inscritos_da_importacao_inscricao",
                         column: x => x.inscricao_id,
                         principalSchema: "selecao",
                         principalTable: "inscricoes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_inscritos_do_lote_de_notas_lotes_de_notas_do_enem_lote_id",
-                        column: x => x.lote_id,
-                        principalSchema: "selecao",
-                        principalTable: "lotes_de_notas_do_enem",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 },
-                comment: "A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
+                comment: "A inscrição com linha válida em um lote de notas e o número de inscrição atribuído pelo INEP. Os registros não são alterados ou excluídos.");
 
             migrationBuilder.CreateTable(
-                name: "ocorrencias_do_lote_de_notas",
+                name: "ocorrencias_da_importacao",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    lote_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da ocorrência na importação."),
+                    importacao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da importação que registrou a ocorrência."),
                     tipo = table.Column<short>(type: "smallint", nullable: false, comment: "1 = inscrito sem linha, 2 = linha sem inscrito, 3 = conflito."),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da inscrição afetada, quando encontrada."),
                     numeros_das_linhas = table.Column<int[]>(type: "integer[]", nullable: true, comment: "Os números das linhas do arquivo, a partir de 1."),
-                    cpf_mascarado = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: true, comment: "O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro."),
+                    cpf_parcialmente_oculto = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: true, comment: "O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro."),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "O nome que o arquivo traz para a linha sem inscrito."),
                     sexo = table.Column<string>(type: "character varying(1)", maxLength: 1, nullable: true, comment: "O sexo (F ou M) que o arquivo traz para a linha sem inscrito.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_ocorrencias_do_lote_de_notas", x => x.id);
-                    table.CheckConstraint("ck_ocorrencias_do_lote_de_notas_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
+                    table.PrimaryKey("pk_ocorrencias_da_importacao", x => x.id);
+                    table.CheckConstraint("ck_ocorrencias_da_importacao_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
                     table.ForeignKey(
-                        name: "fk_ocorrencias_do_lote_de_notas_inscricoes_inscricao_id",
-                        column: x => x.inscricao_id,
+                        name: "fk_ocorrencias_da_importacao_importacao_de_notas_do_enem",
+                        column: x => x.importacao_id,
                         principalSchema: "selecao",
-                        principalTable: "inscricoes",
+                        principalTable: "importacoes_de_notas_do_enem",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_ocorrencias_do_lote_de_notas_lote_de_notas_do_enem",
-                        column: x => x.lote_id,
+                        name: "fk_ocorrencias_da_importacao_inscricao",
+                        column: x => x.inscricao_id,
                         principalSchema: "selecao",
-                        principalTable: "lotes_de_notas_do_enem",
+                        principalTable: "inscricoes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 },
@@ -4874,12 +4896,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    lote_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do lançamento da nota."),
+                    importacao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da importação que originou o lançamento."),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da inscrição à qual pertence a nota."),
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A etapa do lote, repetida para ler o lançamento sem o lote; a chave estrangeira composta com o lote impede que divirja."),
-                    item_codigo = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "A área do ENEM. Só o domínio enumera as áreas: o banco não carrega o vocabulário, para que acrescentar um item não exija migration."),
-                    nota = table.Column<decimal>(type: "numeric(7,3)", precision: 7, scale: 3, nullable: false),
+                    item_codigo = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Área do ENEM: REDACAO, CIENCIAS_DA_NATUREZA, CIENCIAS_HUMANAS, LINGUAGENS ou MATEMATICA."),
+                    nota = table.Column<decimal>(type: "numeric(7,3)", precision: 7, scale: 3, nullable: false, comment: "Nota da área do ENEM, de zero a mil, com até três casas decimais."),
                     situacao = table.Column<short>(type: "smallint", nullable: false, comment: "1 = presente, 2 = ausente. Quem faltou tem nota zero, que não vale como nota obtida.")
                 },
                 constraints: table =>
@@ -4888,21 +4910,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
                     table.CheckConstraint("ck_lancamentos_de_nota_situacao", "situacao IN (1, 2)");
                     table.ForeignKey(
-                        name: "fk_lancamentos_de_nota_inscrito_do_lote_de_notas",
-                        columns: x => new { x.lote_id, x.inscricao_id },
+                        name: "fk_lancamentos_de_nota_importacao_de_notas_do_enem",
+                        columns: x => new { x.importacao_id, x.etapa_processo_id },
                         principalSchema: "selecao",
-                        principalTable: "inscritos_do_lote_de_notas",
-                        principalColumns: new[] { "lote_id", "inscricao_id" },
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_lancamentos_de_nota_lote_de_notas_do_enem",
-                        columns: x => new { x.lote_id, x.etapa_processo_id },
-                        principalSchema: "selecao",
-                        principalTable: "lotes_de_notas_do_enem",
+                        principalTable: "importacoes_de_notas_do_enem",
                         principalColumns: new[] { "id", "etapa_processo_id" },
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_lancamentos_de_nota_inscrito_da_importacao",
+                        columns: x => new { x.importacao_id, x.inscricao_id },
+                        principalSchema: "selecao",
+                        principalTable: "inscritos_da_importacao",
+                        principalColumns: new[] { "importacao_id", "inscricao_id" },
+                        onDelete: ReferentialAction.Restrict);
                 },
-                comment: "Uma nota individual de uma inscrição numa etapa: uma área do ENEM, com a nota e a situação. Append-only; corrigir é importar outro lote.");
+                comment: "Uma nota de uma inscrição em uma área do ENEM, com sua situação. Os registros não são alterados ou excluídos; a correção exige importar outro lote.");
 
             migrationBuilder.CreateTable(
                 name: "aceites_do_termo",
@@ -5180,55 +5202,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_inscricao" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null, true });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_solicitacao_isencao" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null, true });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO_INSCRICOES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", null, null, null, null, null, true });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000004"), null, "ENSALAMENTO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Distribuição dos candidatos pelos locais de prova.", false, "Ensalamento", "NO_EDITAL", null, null, null, null, null });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "agrupa_etapas" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null, true });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[,]
-                {
-                    { new Guid("f45e0000-0000-7000-8000-000000000006"), null, "CLASSIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Apuração das notas e ordenação dos candidatos por modalidade.", false, "Classificação", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000009"), null, "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.", false, "Resultado final", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000010"), "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018", "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.", false, "Heteroidentificação", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000011"), null, "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Comprovação documental dos requisitos declarados pelo candidato.", false, "Habilitação", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000012"), null, "HOMOLOGACAO_RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ato do conselho que homologa o resultado final do processo seletivo.", false, "Homologação do resultado final", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000013"), null, "MATRICULA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Efetivação do vínculo do candidato aprovado com a instituição.", false, "Matrícula", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000014"), null, "LISTA_ESPERA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.", false, "Lista de espera", "NA_EXECUCAO", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000015"), null, "CHAMADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.", false, "Chamada", "NA_EXECUCAO", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000016"), "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016", "AVALIACAO_BIOPSICOSSOCIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Avaliação multiprofissional e interdisciplinar que verifica se o candidato com deficiência atende aos requisitos legais para concorrer às vagas reservadas às pessoas com deficiência.", false, "Avaliação biopsicossocial", "NO_EDITAL", null, null, null, null, null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fatos_do_candidato",
-                columns: new[] { "id", "ativo", "binding", "cardinalidade", "classificacao_protecao", "codigo", "componente_exibicao", "created_at", "created_by", "dependencias", "descricao", "dominio", "escopo", "finalidade_tratamento", "fonte_valores", "formato", "hipotese_legal", "nome", "origem", "ponto_resolucao", "regras_padrao", "semeado_pelo_sistema", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
+                table: "dados_do_candidato",
+                columns: new[] { "id", "ativo", "fonte_do_valor", "quantidade_de_valores", "classificacao_protecao", "codigo", "componente_exibicao", "created_at", "created_by", "dependencias", "descricao", "tipo", "escopo", "finalidade_tratamento", "fonte_das_opcoes", "formato", "hipotese_legal", "nome", "origem", "fase_de_disponibilidade", "regras_padrao", "semeado_pelo_sistema", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
                 values: new object[,]
                 {
                     { new Guid("fa700000-0000-7000-8000-000000000001"), true, "CAMPO_FORMULARIO:COR_RACA", "ESCALAR", "SENSIVEL", "COR_RACA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Cor ou raça que o candidato declara. É o dado de que depende a concorrência às vagas reservadas a pretos, pardos e indígenas.", "CATEGORICO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", "GLOBAL", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Cor ou raça", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
@@ -5486,37 +5461,55 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.InsertData(
-                schema: "autorizacao",
-                table: "permissoes_do_perfil",
-                columns: new[] { "codigo", "perfil_id" },
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_inscricao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null, true });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_solicitacao_isencao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null, true });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO_INSCRICOES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", null, null, null, null, null, true });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000004"), null, "ENSALAMENTO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Distribuição dos candidatos pelos locais de prova.", false, "Ensalamento", "NO_EDITAL", null, null, null, null, null });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "agrupa_etapas" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null, true });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[,]
                 {
-                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:pedidos:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:perfis:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:perfis:manter", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:revisoes:rever-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:termos:publicar", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:pedidos:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:perfis:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:revisoes:conduzir", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "configuracao:protecao-do-catalogo:aprovar", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:concessoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:pedidos:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:perfis:consultar-versoes", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:providencias:solicitar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:revisoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "configuracao:protecao-do-catalogo:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "configuracao:protecao-do-catalogo:manifestar", new Guid("019a0000-0000-7000-8000-000000000003") }
+                    { new Guid("f45e0000-0000-7000-8000-000000000006"), null, "CLASSIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Apuração das notas e ordenação dos candidatos por modalidade.", false, "Classificação", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000009"), null, "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.", false, "Resultado final", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000010"), "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018", "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.", false, "Heteroidentificação", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000011"), null, "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Comprovação documental dos requisitos declarados pelo candidato.", false, "Habilitação", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000012"), null, "HOMOLOGACAO_RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ato do conselho que homologa o resultado final do processo seletivo.", false, "Homologação do resultado final", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000013"), null, "MATRICULA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Efetivação do vínculo do candidato aprovado com a instituição.", false, "Matrícula", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000014"), null, "LISTA_ESPERA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.", false, "Lista de espera", "NA_EXECUCAO", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000015"), null, "CHAMADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.", false, "Chamada", "NA_EXECUCAO", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000016"), "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016", "AVALIACAO_BIOPSICOSSOCIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Avaliação multiprofissional e interdisciplinar que verifica se o candidato com deficiência atende aos requisitos legais para concorrer às vagas reservadas às pessoas com deficiência.", false, "Avaliação biopsicossocial", "NO_EDITAL", null, null, null, null, null }
                 });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "valores_de_dominio_do_fato",
+                table: "opcoes_dos_dados",
                 columns: new[] { "id", "ativo", "codigo", "created_at", "descricao", "fato_candidato_id", "ordem", "orientacao", "updated_at" },
                 values: new object[,]
                 {
@@ -5600,6 +5593,35 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     { new Guid("fa70d000-0000-7000-8000-000000000080"), true, "ASSEXUAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Assexual", new Guid("fa700000-0000-7000-8000-000000000059"), 3, null, null },
                     { new Guid("fa70d000-0000-7000-8000-000000000081"), true, "PANSEXUAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Pansexual", new Guid("fa700000-0000-7000-8000-000000000059"), 4, null, null },
                     { new Guid("fa70d000-0000-7000-8000-000000000082"), true, "PREFIRO_NAO_INFORMAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Prefiro não informar", new Guid("fa700000-0000-7000-8000-000000000059"), 5, null, null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "autorizacao",
+                table: "permissoes_do_perfil",
+                columns: new[] { "codigo", "perfil_id" },
+                values: new object[,]
+                {
+                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:pedidos:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:perfis:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:perfis:manter", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:revisoes:rever-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:termos:publicar", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:pedidos:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:perfis:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:revisoes:conduzir", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "configuracao:protecao-do-catalogo:aprovar", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:concessoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:pedidos:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:perfis:consultar-versoes", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:providencias:solicitar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:revisoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "configuracao:protecao-do-catalogo:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "configuracao:protecao-do-catalogo:manifestar", new Guid("019a0000-0000-7000-8000-000000000003") }
                 });
 
             migrationBuilder.CreateIndex(
@@ -5789,22 +5811,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "ato_retificado_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "ix_avaliacoes_da_etapa_importacao_id_etapa_processo_id",
+                schema: "selecao",
+                table: "avaliacoes_da_etapa",
+                columns: new[] { "importacao_id", "etapa_processo_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_avaliacoes_da_etapa_inscricao_etapa",
                 schema: "selecao",
                 table: "avaliacoes_da_etapa",
                 columns: new[] { "inscricao_id", "etapa_processo_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_avaliacoes_da_etapa_lote_id_etapa_processo_id",
+                name: "ux_avaliacoes_da_etapa_importacao_inscricao_oferta",
                 schema: "selecao",
                 table: "avaliacoes_da_etapa",
-                columns: new[] { "lote_id", "etapa_processo_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_avaliacoes_da_etapa_lote_inscricao_oferta",
-                schema: "selecao",
-                table: "avaliacoes_da_etapa",
-                columns: new[] { "lote_id", "inscricao_id", "oferta_curso_id" },
+                columns: new[] { "importacao_id", "inscricao_id", "oferta_curso_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5871,6 +5893,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "bases_legais_do_bonus_regional",
                 column: "tipo_instrumento");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_calculos_dos_dados_processo_dado",
+                schema: "selecao",
+                table: "calculos_dos_dados",
+                columns: new[] { "processo_seletivo_id", "codigo_do_dado" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_calendarios_de_dias_uteis_versao_dataset",
@@ -6022,6 +6051,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_condicoes_das_exigencias_documento_exigido_id",
+                schema: "selecao",
+                table: "condicoes_das_exigencias",
+                column: "documento_exigido_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_condicoes_de_atendimento_codigo_vivo",
                 schema: "configuracao",
                 table: "condicoes_de_atendimento",
@@ -6030,10 +6065,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_condicoes_gatilho_documento_exigido_id",
+                name: "ix_condicoes_de_exibicao_do_dado_fato_coletado_id",
                 schema: "selecao",
-                table: "condicoes_gatilho",
-                column: "documento_exigido_id");
+                table: "condicoes_de_exibicao_do_dado",
+                column: "fato_coletado_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_condicoes_do_calculo_dos_dados_regra_id",
+                schema: "selecao",
+                table: "condicoes_do_calculo_dos_dados",
+                column: "regra_derivacao_configurada_id");
 
             migrationBuilder.CreateIndex(
                 name: "ux_condicoes_ofertadas_por_atendimento_origem",
@@ -6041,18 +6082,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "condicoes_ofertadas",
                 columns: new[] { "atendimento_especializado_id", "condicao_origem_id" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_condicoes_precondicao_fato_fato_coletado_id",
-                schema: "selecao",
-                table: "condicoes_precondicao_fato",
-                column: "fato_coletado_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_condicoes_regra_derivacao_regra_derivacao_configurada_id",
-                schema: "selecao",
-                table: "condicoes_regra_derivacao",
-                column: "regra_derivacao_configurada_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_configuracoes_bonus_regional_processo_seletivo_id",
@@ -6080,13 +6109,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "configuracoes_de_vagas",
                 columns: new[] { "processo_seletivo_id", "oferta_curso_origem_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_configuracoes_derivacao_fato_processo_fato",
-                schema: "selecao",
-                table: "configuracoes_derivacao_fato",
-                columns: new[] { "processo_seletivo_id", "codigo_fato" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6137,6 +6159,35 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "cursos",
                 columns: new[] { "nome_ordenacao", "codigo", "id" },
                 filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_dados_do_candidato_codigo",
+                schema: "configuracao",
+                table: "dados_do_candidato",
+                column: "codigo",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_dados_dos_formularios_grupo_ordem",
+                schema: "selecao",
+                table: "dados_dos_formularios",
+                columns: new[] { "grupo_coletado_id", "ordem" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_dados_dos_formularios_processo_dado",
+                schema: "selecao",
+                table: "dados_dos_formularios",
+                columns: new[] { "processo_seletivo_id", "codigo_do_dado" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_dados_dos_formularios_processo_finalidade_ordem",
+                schema: "selecao",
+                table: "dados_dos_formularios",
+                columns: new[] { "processo_seletivo_id", "finalidade", "ordem" },
+                unique: true,
+                filter: "grupo_coletado_id IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_decisoes_da_migracao_perfil_id_concessao_id",
@@ -6328,10 +6379,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "ocorrencia_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_enderecos_da_inscricao_fato",
+                name: "ux_enderecos_da_inscricao_dado",
                 schema: "selecao",
                 table: "enderecos_da_inscricao",
-                columns: new[] { "inscricao_id", "ocorrencia_id", "fato_codigo" },
+                columns: new[] { "inscricao_id", "ocorrencia_id", "codigo_do_dado" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
@@ -6414,21 +6465,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_fases_canonicas_codigo_vivo",
-                schema: "configuracao",
-                table: "fases_canonicas",
-                column: "codigo",
-                unique: true,
-                filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_fases_cronograma_processo_fase_canonica",
-                schema: "selecao",
-                table: "fases_cronograma",
-                columns: new[] { "processo_seletivo_id", "fase_canonica_origem_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ux_fases_cronograma_processo_ordem",
                 schema: "selecao",
                 table: "fases_cronograma",
@@ -6436,32 +6472,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_fatos_coletados_grupo_ordem",
+                name: "ux_fases_cronograma_processo_tipo_fase",
                 schema: "selecao",
-                table: "fatos_coletados",
-                columns: new[] { "grupo_coletado_id", "ordem" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_fatos_coletados_processo_fato",
-                schema: "selecao",
-                table: "fatos_coletados",
-                columns: new[] { "processo_seletivo_id", "fato_codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_fatos_coletados_processo_finalidade_ordem",
-                schema: "selecao",
-                table: "fatos_coletados",
-                columns: new[] { "processo_seletivo_id", "finalidade", "ordem" },
-                unique: true,
-                filter: "grupo_coletado_id IS NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_fatos_do_candidato_codigo",
-                schema: "configuracao",
-                table: "fatos_do_candidato",
-                column: "codigo",
+                table: "fases_cronograma",
+                columns: new[] { "processo_seletivo_id", "tipo_fase_origem_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6479,13 +6493,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 descending: new[] { false, false, false, true });
 
             migrationBuilder.CreateIndex(
-                name: "ux_grupos_coletados_processo_codigo",
-                schema: "selecao",
-                table: "grupos_coletados",
-                columns: new[] { "processo_seletivo_id", "codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ux_grupos_da_inscricao_membro",
                 schema: "selecao",
                 table: "grupos_da_inscricao",
@@ -6497,6 +6504,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "grupos_do_quadro_de_pesos",
                 column: "configuracao_classificacao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_grupos_dos_formularios_processo_codigo",
+                schema: "selecao",
+                table: "grupos_dos_formularios",
+                columns: new[] { "processo_seletivo_id", "codigo" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_historicos_da_obrigatoriedade_regra_snapshot_at",
@@ -6516,6 +6530,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao",
                 table: "implantacoes_das_permissoes",
                 column: "sequencia",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_importacoes_de_notas_do_enem_escopo",
+                schema: "selecao",
+                table: "importacoes_de_notas_do_enem",
+                columns: new[] { "processo_seletivo_id", "etapa_processo_id", "edicao_codigo", "importado_em", "ordem_de_registro" },
+                descending: new[] { false, false, false, true, true });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_importacoes_de_notas_do_enem_versao_configuracao_id",
+                schema: "selecao",
+                table: "importacoes_de_notas_do_enem",
+                column: "versao_configuracao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_importacoes_de_notas_do_enem_ordem_de_registro",
+                schema: "selecao",
+                table: "importacoes_de_notas_do_enem",
+                column: "ordem_de_registro",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6539,9 +6573,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "situacao <> 3");
 
             migrationBuilder.CreateIndex(
-                name: "ix_inscritos_do_lote_de_notas_inscricao",
+                name: "ix_inscritos_da_importacao_inscricao",
                 schema: "selecao",
-                table: "inscritos_do_lote_de_notas",
+                table: "inscritos_da_importacao",
                 column: "inscricao_id");
 
             migrationBuilder.CreateIndex(
@@ -6592,22 +6626,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "etapa_processo_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_lancamentos_de_nota_importacao_id_etapa_processo_id",
+                schema: "selecao",
+                table: "lancamentos_de_nota",
+                columns: new[] { "importacao_id", "etapa_processo_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_lancamentos_de_nota_inscricao_etapa",
                 schema: "selecao",
                 table: "lancamentos_de_nota",
                 columns: new[] { "inscricao_id", "etapa_processo_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_lancamentos_de_nota_lote_id_etapa_processo_id",
+                name: "ux_lancamentos_de_nota_importacao_inscricao_item",
                 schema: "selecao",
                 table: "lancamentos_de_nota",
-                columns: new[] { "lote_id", "etapa_processo_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_lancamentos_de_nota_lote_inscricao_item",
-                schema: "selecao",
-                table: "lancamentos_de_nota",
-                columns: new[] { "lote_id", "inscricao_id", "item_codigo" },
+                columns: new[] { "importacao_id", "inscricao_id", "item_codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6653,26 +6687,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "locais_de_oferta",
                 column: "cidade_codigo_ibge");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_lotes_de_notas_do_enem_escopo",
-                schema: "selecao",
-                table: "lotes_de_notas_do_enem",
-                columns: new[] { "processo_seletivo_id", "etapa_processo_id", "edicao_codigo", "importado_em", "ordem_de_registro" },
-                descending: new[] { false, false, false, true, true });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_lotes_de_notas_do_enem_versao_configuracao_id",
-                schema: "selecao",
-                table: "lotes_de_notas_do_enem",
-                column: "versao_configuracao_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_lotes_de_notas_do_enem_ordem_de_registro",
-                schema: "selecao",
-                table: "lotes_de_notas_do_enem",
-                column: "ordem_de_registro",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_manifestacoes_da_protecao_item_ciclo",
@@ -6768,9 +6782,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_motivos_do_processo_processo",
+                name: "ix_motivos_de_decisao_do_processo_processo",
                 schema: "selecao",
-                table: "motivos_do_processo",
+                table: "motivos_de_decisao_do_processo",
                 column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
@@ -6803,16 +6817,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_ocorrencias_do_lote_de_notas_inscricao_id",
+                name: "ix_ocorrencias_da_importacao_importacao",
                 schema: "selecao",
-                table: "ocorrencias_do_lote_de_notas",
-                column: "inscricao_id");
+                table: "ocorrencias_da_importacao",
+                column: "importacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_ocorrencias_do_lote_de_notas_lote",
+                name: "ix_ocorrencias_da_importacao_inscricao_id",
                 schema: "selecao",
-                table: "ocorrencias_do_lote_de_notas",
-                column: "lote_id");
+                table: "ocorrencias_da_importacao",
+                column: "inscricao_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_ofertas_de_curso_codigo_vivo",
@@ -6835,10 +6849,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "local_oferta_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_opcoes_declaradas_fato_processo_fato_codigo",
+                name: "ux_opcoes_declaradas_fato_processo_dado_codigo",
                 schema: "selecao",
                 table: "opcoes_declaradas_fato",
-                columns: new[] { "processo_seletivo_id", "fato_codigo", "codigo" },
+                columns: new[] { "processo_seletivo_id", "codigo_do_dado", "codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_opcoes_do_tipo_de_conceito_codigo",
+                schema: "configuracao",
+                table: "opcoes_do_tipo_de_conceito",
+                columns: new[] { "tipo_conceito_id", "codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_opcoes_do_tipo_de_conceito_posicao",
+                schema: "configuracao",
+                table: "opcoes_do_tipo_de_conceito",
+                columns: new[] { "tipo_conceito_id", "posicao" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_opcoes_do_tipo_de_conceito_rotulo",
+                schema: "configuracao",
+                table: "opcoes_do_tipo_de_conceito",
+                columns: new[] { "tipo_conceito_id", "rotulo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_opcoes_dos_dados_fato_codigo",
+                schema: "configuracao",
+                table: "opcoes_dos_dados",
+                columns: new[] { "fato_candidato_id", "codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6913,22 +6955,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "identificador_legivel IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ux_produtos_da_etapa_ato",
-                schema: "selecao",
-                table: "produtos_da_etapa",
-                columns: new[] { "etapa_processo_id", "ato_codigo", "papel" },
-                unique: true)
-                .Annotation("Npgsql:NullsDistinct", false);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_produtos_da_fase_ato",
-                schema: "selecao",
-                table: "produtos_da_fase",
-                columns: new[] { "fase_cronograma_id", "ato_codigo", "papel" },
-                unique: true)
-                .Annotation("Npgsql:NullsDistinct", false);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_providencias_concessao",
                 schema: "autorizacao",
                 table: "providencias",
@@ -6947,6 +6973,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "concessao_id",
                 unique: true,
                 filter: "estado = 'aberta'");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_publicacoes_previstas_da_etapa_ato",
+                schema: "selecao",
+                table: "publicacoes_previstas_da_etapa",
+                columns: new[] { "etapa_processo_id", "ato_codigo", "papel" },
+                unique: true)
+                .Annotation("Npgsql:NullsDistinct", false);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_publicacoes_previstas_da_fase_ato",
+                schema: "selecao",
+                table: "publicacoes_previstas_da_fase",
+                columns: new[] { "fase_cronograma_id", "ato_codigo", "papel" },
+                unique: true)
+                .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
                 name: "ix_rascunhos_processos_seletivos_unidade_id",
@@ -6982,10 +7024,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_recursos_da_etapa_etapa_processo_id",
+                name: "ix_recursos_configurados_da_etapa_etapa_processo_id",
                 schema: "selecao",
-                table: "recursos_da_etapa",
+                table: "recursos_configurados_da_etapa",
                 column: "etapa_processo_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_recursos_configurados_da_fase_fase_cronograma",
+                schema: "selecao",
+                table: "recursos_configurados_da_fase",
+                column: "fase_cronograma_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_recursos_de_acessibilidade_codigo_vivo",
@@ -7019,6 +7068,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
+                name: "ux_regras_de_calculo_dos_dados_config_ordem",
+                schema: "selecao",
+                table: "regras_de_calculo_dos_dados",
+                columns: new[] { "calculo_do_dado_id", "ordem" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_regras_de_comprovacao_processo_seletivo_id",
                 schema: "selecao",
                 table: "regras_de_comprovacao",
@@ -7037,13 +7093,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "documento_exigido_id",
                 unique: true,
                 filter: "documento_exigido_id IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_regras_derivacao_configuradas_config_ordem",
-                schema: "selecao",
-                table: "regras_derivacao_configuradas",
-                columns: new[] { "configuracao_derivacao_fato_id", "ordem" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_regras_do_catalogo_hash",
@@ -7065,38 +7114,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "configuracao_classificacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_regras_recurso_fase_fase_cronograma",
-                schema: "selecao",
-                table: "regras_recurso_fase",
-                column: "fase_cronograma_id",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_respostas_da_inscricao_fato_booleano",
+                name: "ix_respostas_da_inscricao_dado_booleano",
                 schema: "selecao",
                 table: "respostas_da_inscricao",
-                columns: new[] { "fato_codigo", "valor_booleano" },
+                columns: new[] { "codigo_do_dado", "valor_booleano" },
                 filter: "valor_booleano IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ix_respostas_da_inscricao_fato_codigo",
+                name: "ix_respostas_da_inscricao_dado_codigo",
                 schema: "selecao",
                 table: "respostas_da_inscricao",
-                columns: new[] { "fato_codigo", "valor_codigo" },
+                columns: new[] { "codigo_do_dado", "valor_codigo" },
                 filter: "valor_codigo IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ix_respostas_da_inscricao_fato_data",
+                name: "ix_respostas_da_inscricao_dado_data",
                 schema: "selecao",
                 table: "respostas_da_inscricao",
-                columns: new[] { "fato_codigo", "valor_data" },
+                columns: new[] { "codigo_do_dado", "valor_data" },
                 filter: "valor_data IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ix_respostas_da_inscricao_fato_numero",
+                name: "ix_respostas_da_inscricao_dado_numero",
                 schema: "selecao",
                 table: "respostas_da_inscricao",
-                columns: new[] { "fato_codigo", "valor_numero" },
+                columns: new[] { "codigo_do_dado", "valor_numero" },
                 filter: "valor_numero IS NOT NULL");
 
             migrationBuilder.CreateIndex(
@@ -7109,7 +7151,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_respostas_da_inscricao_valor",
                 schema: "selecao",
                 table: "respostas_da_inscricao",
-                columns: new[] { "inscricao_id", "ocorrencia_id", "fato_codigo", "posicao" },
+                columns: new[] { "inscricao_id", "ocorrencia_id", "codigo_do_dado", "posicao" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
@@ -7280,6 +7322,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
+                name: "ix_tipos_de_fase_codigo_vivo",
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_tipos_etapa_ativo",
                 schema: "configuracao",
                 table: "tipos_etapa",
@@ -7417,34 +7467,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "vagas_ofertadas",
                 columns: new[] { "configuracao_distribuicao_vagas_id", "modalidade_codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_valores_de_dominio_do_fato_fato_codigo",
-                schema: "configuracao",
-                table: "valores_de_dominio_do_fato",
-                columns: new[] { "fato_candidato_id", "codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_valores_tipo_conceito_codigo",
-                schema: "configuracao",
-                table: "valores_tipo_conceito",
-                columns: new[] { "tipo_conceito_id", "codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_valores_tipo_conceito_posicao",
-                schema: "configuracao",
-                table: "valores_tipo_conceito",
-                columns: new[] { "tipo_conceito_id", "posicao" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_valores_tipo_conceito_rotulo",
-                schema: "configuracao",
-                table: "valores_tipo_conceito",
-                columns: new[] { "tipo_conceito_id", "rotulo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7719,23 +7741,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
+                name: "condicoes_das_exigencias",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
                 name: "condicoes_de_atendimento",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "condicoes_gatilho",
+                name: "condicoes_de_exibicao_do_dado",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "condicoes_do_calculo_dos_dados",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "condicoes_ofertadas",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "condicoes_precondicao_fato",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "condicoes_regra_derivacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7801,10 +7823,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "eventos_da_contencao",
                 schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "fases_canonicas",
-                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "geracoes_de_envio_ao_inep",
@@ -7875,7 +7893,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "motivos_do_processo",
+                name: "motivos_de_decisao_do_processo",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7891,7 +7909,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "ocorrencias_do_lote_de_notas",
+                name: "ocorrencias_da_importacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7901,6 +7919,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "opcoes_declaradas_fato",
                 schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "opcoes_do_tipo_de_conceito",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "opcoes_dos_dados",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "permissoes_da_versao_do_perfil",
@@ -7919,16 +7945,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "produtos_da_etapa",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "produtos_da_fase",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
                 name: "providencias",
                 schema: "autorizacao");
+
+            migrationBuilder.DropTable(
+                name: "publicacoes_previstas_da_etapa",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "publicacoes_previstas_da_fase",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "rascunhos_processos_seletivos",
@@ -7939,7 +7965,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "recursos_da_etapa",
+                name: "recursos_configurados_da_etapa",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "recursos_configurados_da_fase",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7960,10 +7990,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "regras_eliminacao",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "regras_recurso_fase",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8003,6 +8029,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
+                name: "tipos_de_fase",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
                 name: "tipos_etapa_conceitos",
                 schema: "configuracao");
 
@@ -8021,14 +8051,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "vagas_ofertadas",
                 schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "valores_de_dominio_do_fato",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "valores_tipo_conceito",
-                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "versoes_do_termo_consentimento",
@@ -8075,11 +8097,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "fatos_coletados",
+                name: "dados_dos_formularios",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "regras_derivacao_configuradas",
+                name: "regras_de_calculo_dos_dados",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8127,7 +8149,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "inscritos_do_lote_de_notas",
+                name: "inscritos_da_importacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8155,6 +8177,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
+                name: "dados_do_candidato",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
                 name: "concessoes",
                 schema: "autorizacao");
 
@@ -8171,20 +8197,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
+                name: "tipos_conceito",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
                 name: "tipos_etapa",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "configuracoes_de_vagas",
                 schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "fatos_do_candidato",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "tipos_conceito",
-                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "termos_de_consentimento",
@@ -8207,11 +8229,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "grupos_coletados",
+                name: "grupos_dos_formularios",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "configuracoes_derivacao_fato",
+                name: "calculos_dos_dados",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8219,7 +8241,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "lotes_de_notas_do_enem",
+                name: "importacoes_de_notas_do_enem",
                 schema: "selecao");
 
             migrationBuilder.DropTable(

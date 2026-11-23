@@ -68,7 +68,7 @@ public sealed class SementeTiposConceitoTests
     {
         await ctx.Database.ExecuteSqlRawAsync($"DELETE FROM configuracao.tipos_etapa_conceitos WHERE tipo_conceito_id = {TipoAptoInapto}");
         await ctx.Database.ExecuteSqlRawAsync(
-            $"UPDATE configuracao.valores_tipo_conceito SET rotulo = 'Habilitado' WHERE codigo = 'APTO' AND tipo_conceito_id = {TipoAptoInapto}");
+            $"UPDATE configuracao.opcoes_do_tipo_de_conceito SET rotulo = 'Habilitado' WHERE codigo = 'APTO' AND tipo_conceito_id = {TipoAptoInapto}");
     }
 
     private static async Task ReaplicarOScriptAsync(UniPlusDbContext ctx) =>
@@ -80,7 +80,7 @@ public sealed class SementeTiposConceitoTests
 
     private static async Task<List<string>> ValoresDoAptoInaptoAsync(UniPlusDbContext ctx) =>
         await ctx.Database.SqlQueryRaw<string>(
-            $"SELECT codigo || '|' || rotulo AS \"Value\" FROM configuracao.valores_tipo_conceito WHERE tipo_conceito_id = {TipoAptoInapto} ORDER BY posicao").ToListAsync();
+            $"SELECT codigo || '|' || rotulo AS \"Value\" FROM configuracao.opcoes_do_tipo_de_conceito WHERE tipo_conceito_id = {TipoAptoInapto} ORDER BY posicao").ToListAsync();
 
     private static string ScriptDeSemente()
     {

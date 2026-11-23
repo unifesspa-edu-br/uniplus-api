@@ -33,7 +33,7 @@ public sealed class ExemplosDoEsquemaDaConfiguracaoTests
         JsonNode rascunho = Documento("""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "identificacao": { "nome": "Processo seletivo em preparação" },
-              "cronograma": { "fases": [ { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" } ] } }
+              "cronograma": { "fases": [ { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO" } ] } }
             """);
 
         CaminhosComErro(rascunho).Should().BeEmpty();
@@ -55,7 +55,7 @@ public sealed class ExemplosDoEsquemaDaConfiguracaoTests
     {
         JsonNode rascunho = Documento("""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-              "cronograma": { "fases": [ { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "ordem": 1 } ] } }
+              "cronograma": { "fases": [ { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "ordem": 1 } ] } }
             """);
 
         CaminhosComErro(rascunho).Should().Contain("/cronograma/fases/0/ordem");

@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// strings soltas — fecha o gap que a modelagem da classificação documentava
 /// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
 /// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
-/// condição contra o vocabulário resolvido do catálogo <c>fatos_do_candidato</c>
+/// condição contra o vocabulário resolvido do catálogo <c>dados_do_candidato</c>
 /// (#846), fechando a integridade da referência à etapa.
 /// </para>
 /// </remarks>

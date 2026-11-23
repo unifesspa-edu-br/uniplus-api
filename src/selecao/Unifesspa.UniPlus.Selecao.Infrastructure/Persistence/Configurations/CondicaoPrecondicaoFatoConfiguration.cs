@@ -30,12 +30,18 @@ public sealed class CondicaoPrecondicaoFatoConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("condicoes_precondicao_fato");
+        builder.Property(c => c.FatoColetadoId).HasComment("Identificador do dado do formulário ao qual a condição pertence.");
+        builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
+        builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+        builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
+
+        builder.ToTable("condicoes_de_exibicao_do_dado", t => t.HasComment("Condições que determinam a exibição de um dado no formulário."));
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.Property(c => c.Clausula).IsRequired();
-        builder.Property(c => c.Fato).HasMaxLength(FatoMaxLength).IsRequired();
+        builder.Property(c => c.Clausula).HasColumnName("alternativa").IsRequired();
+        builder.Property(c => c.Fato).HasColumnName("codigo_do_dado").HasMaxLength(FatoMaxLength).IsRequired();
 
         builder.Property(c => c.Operador)
             .HasMaxLength(OperadorCodigoMaxLength)

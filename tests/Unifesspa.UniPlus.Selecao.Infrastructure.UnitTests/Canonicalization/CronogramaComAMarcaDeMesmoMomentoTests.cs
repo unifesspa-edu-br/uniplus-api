@@ -36,7 +36,7 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
     private static LeitorEnvelope Ler(JsonObject item, out IReadOnlyList<FaseCronograma> fases)
     {
         LeitorEnvelope leitor = new();
-        fases = LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item), comId: true);
+        fases = LeituraDoCronograma.LerCronogramaFases(leitor, Payload(item));
 
         return leitor;
     }

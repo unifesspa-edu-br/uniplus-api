@@ -10,22 +10,22 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>Repositório dos motivos escolhidos pelos processos.</summary>
-public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
+public sealed class MotivoDeDecisaoDoProcessoRepository : IMotivoDeDecisaoDoProcessoRepository
 {
     private readonly UniPlusDbContext _context;
 
-    public MotivoDoProcessoRepository(UniPlusDbContext context)
+    public MotivoDeDecisaoDoProcessoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
     }
 
-    public async Task<IReadOnlyList<MotivoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+    public async Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
         await EscolhaAtual(processoSeletivoId).ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<IReadOnlyList<MotivoEscolhidoComOrigem>> ListarEscolhaAtualComOrigemAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
     {
-        List<MotivoDoProcesso> escolhidos = await EscolhaAtual(processoSeletivoId).AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<MotivoDeDecisaoDoProcesso> escolhidos = await EscolhaAtual(processoSeletivoId).AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         Guid[] origens = [.. escolhidos.Select(static e => e.MotivoDeDecisaoOrigemId)];
 
         Dictionary<Guid, MotivoDeDecisao> porId = await _context.MotivosDeDecisao
@@ -37,12 +37,12 @@ public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
         return [.. escolhidos.Select(e => new MotivoEscolhidoComOrigem(e, porId.GetValueOrDefault(e.MotivoDeDecisaoOrigemId)))];
     }
 
-    private IQueryable<MotivoDoProcesso> EscolhaAtual(Guid processoSeletivoId) =>
-        _context.MotivosDoProcesso
+    private IQueryable<MotivoDeDecisaoDoProcesso> EscolhaAtual(Guid processoSeletivoId) =>
+        _context.MotivosDeDecisaoDoProcesso
             .Where(m => m.ProcessoSeletivoId == processoSeletivoId)
-            .Where(MotivoDoProcesso.NaEscolhaAtual);
+            .Where(MotivoDeDecisaoDoProcesso.NaEscolhaAtual);
 
-    public async Task<IReadOnlyList<MotivoDoProcesso>?> ListarDaVersaoPublicadaAsync(
+    public async Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>?> ListarDaVersaoPublicadaAsync(
         Guid processoSeletivoId, int numeroDaVersao, CancellationToken cancellationToken = default)
     {
         bool publicada = await _context.VersoesConfiguracao
@@ -50,24 +50,24 @@ public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
             .ConfigureAwait(false);
 
         return publicada
-            ? await _context.MotivosDoProcesso
+            ? await _context.MotivosDeDecisaoDoProcesso
                 .AsNoTracking()
                 .Where(m => m.ProcessoSeletivoId == processoSeletivoId)
-                .Where(MotivoDoProcesso.ValeNaVersao(numeroDaVersao))
+                .Where(MotivoDeDecisaoDoProcesso.ValeNaVersao(numeroDaVersao))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false)
             : null;
     }
 
-    public async Task AdicionarAsync(MotivoDoProcesso motivo, CancellationToken cancellationToken = default)
+    public async Task AdicionarAsync(MotivoDeDecisaoDoProcesso motivo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(motivo);
-        await _context.MotivosDoProcesso.AddAsync(motivo, cancellationToken).ConfigureAwait(false);
+        await _context.MotivosDeDecisaoDoProcesso.AddAsync(motivo, cancellationToken).ConfigureAwait(false);
     }
 
-    public void Remover(MotivoDoProcesso motivo)
+    public void Remover(MotivoDeDecisaoDoProcesso motivo)
     {
         ArgumentNullException.ThrowIfNull(motivo);
-        _context.MotivosDoProcesso.Remove(motivo);
+        _context.MotivosDeDecisaoDoProcesso.Remove(motivo);
     }
 }

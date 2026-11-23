@@ -64,10 +64,11 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
             return new(null, []);
         }
 
-        Result<PredicadoDnf> predicado = PredicadoDnfJson.DeJson(json);
+        Result<PredicadoDnf> predicado = PredicadoDaTroca.Ler(json);
 
         FieldError[] erros = [.. predicado.Errors.Select(static erro => erro with
         {
+            Field = erro.Field?.Replace(".fato", ".codigoDoDado", StringComparison.Ordinal),
             Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)),
         })];
         return new(predicado.Value, Recusas(fase, campo, erros));

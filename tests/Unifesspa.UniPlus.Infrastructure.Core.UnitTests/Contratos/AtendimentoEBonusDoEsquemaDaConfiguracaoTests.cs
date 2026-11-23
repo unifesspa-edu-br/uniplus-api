@@ -43,7 +43,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     {
         JsonNode completo = Documento("""
             { "aplica": true, "regra": { "codigo": "BONUS-MULTIPLICATIVO", "versao": "v1" }, "fator": 1.2, "teto": 50.5,
-              "fatoElegibilidadeCodigo": "MUNICIPIO_RESIDENCIA", "baseLegalBonusRegionalCodigo": "LEI_REGIONAL",
+              "codigoDoDadoDeElegibilidade": "MUNICIPIO_RESIDENCIA", "baseLegalBonusRegionalCodigo": "LEI_REGIONAL",
               "tipoInstrumento": "LEI", "identificacao": "Lei 1/2020", "descricao": "Bônus para municípios do sul e sudeste do Pará.",
               "municipios": [ { "codigoIbge": "1505304", "nome": "Marabá", "uf": "PA" } ] }
             """);

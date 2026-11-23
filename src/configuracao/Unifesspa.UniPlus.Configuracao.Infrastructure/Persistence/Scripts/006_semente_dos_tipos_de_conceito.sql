@@ -6,14 +6,14 @@
 -- editou depois não volta na reaplicação.
 WITH tipos_novos AS (
     INSERT INTO configuracao.tipos_conceito
-        (id, codigo, nome, ativo, natureza, escala_minima, escala_maxima, casas_decimais, created_at)
+        (id, codigo, nome, ativo, forma, escala_minima, escala_maxima, casas_decimais, created_at)
     VALUES
         ('019fee1f-7000-7000-8000-000000000001', 'NOTA', 'Nota', true, 'NUMERICO', 0, 1000, 2, TIMESTAMPTZ '2026-11-14 00:00:00+00'),
         ('019fee1f-7000-7000-8000-000000000002', 'APTO_INAPTO', 'Apto ou inapto', true, 'CATEGORICO', NULL, NULL, NULL, TIMESTAMPTZ '2026-11-14 00:00:00+00')
     ON CONFLICT DO NOTHING
     RETURNING id, codigo
 ), valores_novos AS (
-    INSERT INTO configuracao.valores_tipo_conceito
+    INSERT INTO configuracao.opcoes_do_tipo_de_conceito
         (tipo_conceito_id, codigo, rotulo, conta_como_aprovacao, posicao)
     SELECT tipo.id, valor.codigo, valor.rotulo, valor.conta_como_aprovacao, valor.posicao
     FROM (VALUES

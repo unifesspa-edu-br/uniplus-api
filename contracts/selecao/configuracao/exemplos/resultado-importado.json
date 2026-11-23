@@ -13,11 +13,11 @@
     "fases": [
       {
         "chave": "resultado-final",
-        "faseCanonicaCodigo": "RESULTADO_FINAL",
+        "tipoFaseCodigo": "RESULTADO_FINAL",
         "inicio": "2027-03-01T03:00:00Z",
         "fim": "2027-03-01T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
-        "produtos": [
+        "publicacoesPrevistas": [
           {
             "atoCodigo": "RESULTADO_FINAL",
             "papel": "DEFINITIVO"

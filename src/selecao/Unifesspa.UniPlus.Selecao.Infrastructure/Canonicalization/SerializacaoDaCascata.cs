@@ -30,30 +30,36 @@ internal static class SerializacaoDaCascata
             return new JsonObject { ["presente"] = false };
         }
 
-        JsonArray ordens = [];
-        foreach (string origem in cascata.Destinos.Select(static d => d.ModalidadeOrigemCodigo).Distinct(StringComparer.Ordinal).OrderBy(static o => o, StringComparer.Ordinal))
-        {
-            JsonArray destinos = [];
-            foreach (DestinoRemanejamento destino in cascata.Destinos
-                .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
-                .OrderBy(static d => d.Ordem))
-            {
-                destinos.Add(HashCanonicalComputer.NormalizeNfc(destino.ModalidadeDestinoCodigo));
-            }
-
-            ordens.Add(new JsonObject
-            {
-                ["origem"] = HashCanonicalComputer.NormalizeNfc(origem),
-                ["destinos"] = destinos,
-            });
-        }
-
         return new JsonObject
         {
             ["presente"] = true,
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(cascata.Regra),
-            ["fallbackCodigo"] = HashCanonicalComputer.NormalizeNfc(cascata.FallbackCodigo),
-            ["ordens"] = ordens,
+            ["destinoFinalCodigo"] = HashCanonicalComputer.NormalizeNfc(cascata.FallbackCodigo),
+            ["ordens"] = SerializarOrdens(cascata),
         };
+    }
+
+    private static JsonArray SerializarOrdens(ConfiguracaoCascataRemanejamento cascata)
+    {
+        JsonArray ordens = [];
+        foreach (string origem in cascata.Destinos.Select(static d => d.ModalidadeOrigemCodigo).Distinct(StringComparer.Ordinal).OrderBy(static o => o, StringComparer.Ordinal))
+        {
+            ordens.Add(SerializarOrdem(cascata, origem));
+        }
+
+        return ordens;
+    }
+
+    private static JsonObject SerializarOrdem(ConfiguracaoCascataRemanejamento cascata, string origem)
+    {
+        JsonArray destinos = [];
+        foreach (DestinoRemanejamento destino in cascata.Destinos
+            .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
+            .OrderBy(static d => d.Ordem))
+        {
+            destinos.Add(HashCanonicalComputer.NormalizeNfc(destino.ModalidadeDestinoCodigo));
+        }
+
+        return new JsonObject { ["origem"] = HashCanonicalComputer.NormalizeNfc(origem), ["destinos"] = destinos };
     }
 }

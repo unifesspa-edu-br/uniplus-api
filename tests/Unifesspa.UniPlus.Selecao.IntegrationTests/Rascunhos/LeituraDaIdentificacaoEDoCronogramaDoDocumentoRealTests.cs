@@ -75,8 +75,8 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
     {
         Result<DocumentoLido> lido = LerOTexto("""
             "cronograma": { "fases": [
-              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" },
-              { "chave": "inscricao", "faseCanonicaCodigo": "RESULTADO" }
+              { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO" },
+              { "chave": "inscricao", "tipoFaseCodigo": "RESULTADO" }
             ] }
             """);
 
@@ -89,8 +89,8 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
     {
         Result<DocumentoLido> lido = LerOTexto("""
             "cronograma": { "fases": [
-              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" },
-              { "faseCanonicaCodigo": "RESULTADO" }
+              { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO" },
+              { "tipoFaseCodigo": "RESULTADO" }
             ] }
             """);
 
@@ -103,8 +103,8 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
     {
         Result<IdentificacaoECronogramaLidos> lidos = await LerODocumentoAsync("""
             "cronograma": { "fases": [
-              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
-              { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO", "unidadeResponsavelCodigo": "EXTINTA" }
+              { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
+              { "chave": "resultado", "tipoFaseCodigo": "RESULTADO", "unidadeResponsavelCodigo": "EXTINTA" }
             ] }
             """);
 
@@ -118,14 +118,14 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
     {
         Result<IdentificacaoECronogramaLidos> lidos = await LerODocumentoAsync("""
             "cronograma": { "fases": [
-              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" },
-              { "chave": "intermediaria", "faseCanonicaCodigo": "FASE_EXTINTA" },
-              { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO" }
+              { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO" },
+              { "chave": "intermediaria", "tipoFaseCodigo": "FASE_EXTINTA" },
+              { "chave": "resultado", "tipoFaseCodigo": "RESULTADO" }
             ] }
             """);
 
         lidos.Value!.Cronograma.CronogramaFases.Select(static fase => fase.Ordem).Should().Equal(1, 3);
         lidos.Value.Origem.PartesRecusadas.Select(static parte => (parte.Causa.Field, parte.Causa.Error.Code)).Should().Equal(
-            ("/cronograma/fases/1/faseCanonicaCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada));
+            ("/cronograma/fases/1/tipoFaseCodigo", FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada));
     }
 }

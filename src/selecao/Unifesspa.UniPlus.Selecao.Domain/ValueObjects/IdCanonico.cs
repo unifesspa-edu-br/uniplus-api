@@ -61,21 +61,18 @@ public sealed class IdCanonico : IComparable<IdCanonico>, IEquatable<IdCanonico>
         ExigirComponente(tipoDeNo, nameof(classe));
         ExigirComponente(codigoCanonico, nameof(codigo));
 
-        string valor = string.Join(
-            Delimitador,
-            tipoDeNo,
-            LiteralEscopoProcesso,
-            processoId.ToString("N", CultureInfo.InvariantCulture),
-            codigoCanonico);
-
+        string valor = ComporValor(tipoDeNo, processoId, codigoCanonico);
         return new IdCanonico(valor, Encoding.UTF8.GetBytes(valor));
     }
+
+    private static string ComporValor(string tipoDeNo, Guid processoId, string codigo) =>
+        string.Join(Delimitador, tipoDeNo, LiteralEscopoProcesso, processoId.ToString("N", CultureInfo.InvariantCulture), codigo);
 
     /// <summary>O token de <c>tipoDeNo</c> de cada classe — parte da gramática congelada.</summary>
     private static string TipoDeNo(ClasseNoGrafo classe) => classe switch
     {
         ClasseNoGrafo.Campo => "CAMPO",
-        ClasseNoGrafo.Fato => "FATO",
+        ClasseNoGrafo.Fato => "DADO",
         ClasseNoGrafo.Exigencia => "EXIGENCIA",
         ClasseNoGrafo.Secao => "SECAO",
         ClasseNoGrafo.Termo => "TERMO",

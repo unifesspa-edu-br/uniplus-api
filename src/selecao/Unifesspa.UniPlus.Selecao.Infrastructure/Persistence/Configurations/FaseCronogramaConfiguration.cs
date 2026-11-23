@@ -40,7 +40,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.Ordem).HasComment("Posição da fase no cronograma.").IsRequired();
         builder.Property(f => f.NoMesmoMomentoDaAnterior).HasComment("Indica se a fase ocorre no mesmo momento da fase anterior.").HasColumnName("no_mesmo_momento_da_anterior").HasDefaultValue(false).IsRequired();
-        builder.Property(f => f.FaseCanonicaOrigemId).HasComment("Identificador da fase de origem copiado ao definir o cronograma.").IsRequired();
+        builder.Property(f => f.FaseCanonicaOrigemId).HasColumnName("tipo_fase_origem_id").HasComment("Identificador da fase de origem copiado ao definir o cronograma.").IsRequired();
         builder.Property(f => f.Codigo).HasComment("Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES.").HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired()
             .HasComment($"Momento em que as datas da fase são definidas. Códigos: {string.Join(", ", Enum.GetValues<OrigemDataFase>().Select(static valor => $"{(int)valor} ({valor})"))}.");
@@ -73,11 +73,12 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
             .HasDatabaseName("ux_fases_cronograma_processo_ordem");
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.FaseCanonicaOrigemId })
             .IsUnique()
-            .HasDatabaseName("ux_fases_cronograma_processo_fase_canonica");
+            .HasDatabaseName("ux_fases_cronograma_processo_tipo_fase");
 
         builder.HasMany(f => f.Produtos)
             .WithOne()
             .HasForeignKey(p => p.FaseCronogramaId)
+            .HasConstraintName("fk_publicacoes_previstas_da_fase_fase")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(f => f.BancasRequeridas)
@@ -88,6 +89,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.HasOne(f => f.RegraRecurso)
             .WithOne()
             .HasForeignKey<RegraRecursoFase>(r => r.FaseCronogramaId)
+            .HasConstraintName("fk_recursos_configurados_da_fase_fase")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.Produtos)

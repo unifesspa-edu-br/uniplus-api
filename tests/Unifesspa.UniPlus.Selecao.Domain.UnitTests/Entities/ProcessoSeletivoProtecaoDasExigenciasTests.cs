@@ -70,10 +70,10 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid>());
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao = null) =>
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
     private static IEnumerable<string> VermelhosDoPainel(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)))
             .Where(i => !i.Ok).Select(i => i.Codigo);
 
     [Fact(DisplayName = "Exigência pessoal que comprova fato sensível é recusada, citando o tipo e o fato")]
@@ -185,8 +185,8 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         Guid exigenciaId = processo.DocumentosExigidos.Single().Id;
         ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>(), new HashSet<Guid>());
 
-        Result<ConfiguracaoAptaACongelar> comRebaixada = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: rebaixada, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
-        Result<ConfiguracaoAptaACongelar> comProtecaoDoCadastro = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: ComCatalogo, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+        Result<ConfiguracaoAptaACongelar> comRebaixada = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: rebaixada, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
+        Result<ConfiguracaoAptaACongelar> comProtecaoDoCadastro = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: ComCatalogo, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
         comRebaixada.Errors.Select(static causa => causa.Error.Code).Should().Contain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         comProtecaoDoCadastro.Errors.Select(static causa => causa.Error.Code).Should().NotContain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);

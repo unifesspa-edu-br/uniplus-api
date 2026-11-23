@@ -111,7 +111,7 @@ public sealed class FormaDasRecusasAoCongelarTests
         (Result resposta, _) = await cenario.ExecutarAsync();
 
         etapa.Produtos.Should().ContainSingle();
-        resposta.Errors.Select(static e => e.Field).Should().Contain("/etapas/0/produtos");
+        resposta.Errors.Select(static e => e.Field).Should().Contain("/etapas/0/publicacoesPrevistas");
         resposta.Errors.Select(static e => e.Field).OfType<string>().Should().OnlyContain(static campo => campo.Length == 0 || campo[0] == '/');
     }
 

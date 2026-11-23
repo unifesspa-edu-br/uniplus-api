@@ -28,10 +28,10 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
         MotivoDeDecisao desativada = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "FAVORAVEL_DESATIVADO");
-        MotivoDoProcesso desativado = Escolha(processo, "INSCRICAO", desativada);
+        MotivoDeDecisaoDoProcesso desativado = Escolha(processo, "INSCRICAO", desativada);
         desativada.Desativar();
         MotivoDeDecisao semDeclarar = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "DESFAVORAVEL_NA_ETAPA");
-        MotivoDoProcesso naEtapa = Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), semDeclarar);
+        MotivoDeDecisaoDoProcesso naEtapa = Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), semDeclarar);
 
         FieldError[] causas = Assunto(processo, new MotivoEscolhidoComOrigem(desativado, desativada), new MotivoEscolhidoComOrigem(naEtapa, semDeclarar));
 
@@ -145,9 +145,9 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
         return [.. CausasQueImpedemCongelar.Assuntos.Single(f => f.Nome == NomeDoAssunto.MotivosDeDecisao).Causas(contexto)];
     }
 
-    private static MotivoDoProcesso Escolha(ProcessoSeletivo processo, string codigoDaFase, MotivoDeDecisao origem) =>
+    private static MotivoDeDecisaoDoProcesso Escolha(ProcessoSeletivo processo, string codigoDaFase, MotivoDeDecisao origem) =>
         Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, codigoDaFase), origem);
 
-    private static MotivoDoProcesso Escolha(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
+    private static MotivoDeDecisaoDoProcesso Escolha(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
         ProcessoParaMotivos.Escolha(processo, lugar, origem, VersaoQueNasce);
 }

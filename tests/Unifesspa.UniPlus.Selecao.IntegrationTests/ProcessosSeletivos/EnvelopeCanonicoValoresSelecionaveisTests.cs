@@ -65,7 +65,7 @@ public sealed class EnvelopeCanonicoValoresSelecionaveisTests
     // A entrada de teste insere PRETA (ordem 1) ANTES de BRANCA (ordem 0): se o encoder dependesse
     // da ordem de inserção do dicionário, o array sairia [PRETA, BRANCA]. Ele sai
     // [BRANCA, PRETA, PARDA] — por Ordem ascendente, não por ordem de chegada.
-    [Fact(DisplayName = "valoresSelecionaveis[].ordem e metadadosFatos[].valoresDominioDeclarados[].ordem batem com a Ordem de origem, ordenados por Ordem/Codigo — independente da ordem de inserção no dicionário")]
+    [Fact(DisplayName = "valoresSelecionaveis[].ordem e definicoesDosDados[].valoresDominioDeclarados[].ordem batem com a Ordem de origem, ordenados por Ordem/Codigo — independente da ordem de inserção no dicionário")]
     public void Ordem_BateComAOrigemEEhCanonica_NosDoisBlocos()
     {
         JsonObject envelope = EnvelopeComoObjeto();
@@ -114,12 +114,12 @@ public sealed class EnvelopeCanonicoValoresSelecionaveisTests
     }
 
     private static JsonArray ValoresSelecionaveisDoFato(JsonObject envelope, string fatoCodigo) =>
-        envelope["fatosColetados"]!.AsArray()
-            .Single(f => f!["fatoCodigo"]!.GetValue<string>() == fatoCodigo)!["valoresSelecionaveis"]!.AsArray();
+        envelope["dadosDosFormularios"]!.AsArray()
+            .Single(f => f!["codigoDoDado"]!.GetValue<string>() == fatoCodigo)!["valoresSelecionaveis"]!.AsArray();
 
     private static JsonArray ValoresDeclaradosNosMetadadosDoFato(JsonObject envelope, string fatoCodigo) =>
-        envelope["documentosExigidos"]!["metadadosFatos"]!.AsArray()
-            .Single(m => m!["fatoCodigo"]!.GetValue<string>() == fatoCodigo)!["valoresDominioDeclarados"]!.AsArray();
+        envelope["documentosExigidos"]!["definicoesDosDados"]!.AsArray()
+            .Single(m => m!["codigoDoDado"]!.GetValue<string>() == fatoCodigo)!["opcoesDeclaradas"]!.AsArray();
 
     private static IEnumerable<string> CodigosDosValores(JsonArray valores) =>
         valores.Select(v => v!["valorCodigo"]!.GetValue<string>());

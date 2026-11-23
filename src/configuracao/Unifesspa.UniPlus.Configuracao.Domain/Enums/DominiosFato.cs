@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// Mapeamento entre <see cref="DominioFato"/> (domínio, PascalCase) e o token
 /// textual de contrato/banco (UPPER_SNAKE), com parsing de domínio fechado por
 /// allowlist explícita. Fonte do CHECK de
-/// domínio em <c>fatos_do_candidato.dominio</c> e do value converter de persistência.
+/// domínio em <c>dados_do_candidato.tipo</c> e do value converter de persistência.
 /// </summary>
 public static class DominiosFato
 {

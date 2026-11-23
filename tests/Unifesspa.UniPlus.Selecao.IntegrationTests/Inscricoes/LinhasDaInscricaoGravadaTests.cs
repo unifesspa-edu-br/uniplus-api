@@ -28,14 +28,14 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes.CenarioDaInsc
 public sealed class LinhasDaInscricaoGravadaTests
 {
     private const string ColunasPorTipo = """
-        SELECT fato_codigo, posicao, origem, valor_booleano, valor_numero, valor_codigo, valor_data
+        SELECT codigo_do_dado, posicao, origem, valor_booleano, valor_numero, valor_codigo, valor_data
         FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id
         """;
 
     private const string PlanoDaConsultaPorFatoEValor = """
         SET enable_seqscan = off;
         EXPLAIN SELECT inscricao_id FROM selecao.respostas_da_inscricao
-        WHERE fato_codigo = 'CONCORRER_RENDA' AND valor_booleano = true
+        WHERE codigo_do_dado = 'CONCORRER_RENDA' AND valor_booleano = true
         """;
 
     private readonly CenarioDaInscricaoGravada _cenario;
@@ -101,7 +101,7 @@ public sealed class LinhasDaInscricaoGravadaTests
             plano.Add(leitor.GetString(0));
         }
 
-        string.Join('\n', plano).Should().Contain("ix_respostas_da_inscricao_fato_booleano");
+        string.Join('\n', plano).Should().Contain("ix_respostas_da_inscricao_dado_booleano");
     }
 
     private static Dictionary<string, JsonElement> RespostasDeCadaTipo()

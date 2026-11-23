@@ -18,7 +18,7 @@ public sealed class IdCanonicoTests
     public void Compoe_AFormaCanonica()
     {
         IdCanonico.De(ClasseNoGrafo.Fato, ProcessoA, "COR_RACA").Valor
-            .Should().Be("FATO/PROCESSO/11111111111141118111111111111111/COR_RACA");
+            .Should().Be("DADO/PROCESSO/11111111111141118111111111111111/COR_RACA");
     }
 
     [Fact(DisplayName = "IdCanonico — campo e fato do mesmo código são identidades distintas")]
@@ -29,7 +29,7 @@ public sealed class IdCanonicoTests
 
         campo.Should().NotBe(fato);
         campo.Valor.Should().StartWith("CAMPO/");
-        fato.Valor.Should().StartWith("FATO/");
+        fato.Valor.Should().StartWith("DADO/");
     }
 
     [Fact(DisplayName = "IdCanonico — o mesmo código em processos distintos são identidades distintas")]

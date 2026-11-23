@@ -108,7 +108,7 @@ public sealed class CalendarioCongeladoRecusaTests
 
     [Fact(DisplayName = "Versão do dataset vazia é recusada")]
     public void VersaoVazia_Recusada() => DeveRecusar(
-        bloco => bloco["versaoDataset"] = string.Empty,
+        bloco => bloco["versaoDoCalendario"] = string.Empty,
         "a versão identifica a remessa de onde a lista veio — vazia, não identifica nada");
 
     [Fact(DisplayName = "Bloco declarado ausente com conteúdo é recusado")]
@@ -178,12 +178,12 @@ public sealed class CalendarioCongeladoRecusaTests
 
     [Fact(DisplayName = "Versão do dataset acima do limite do cadastro é recusada")]
     public void VersaoAcimaDoLimite_Recusada() => DeveRecusar(
-        bloco => bloco["versaoDataset"] = new string('A', 61),
+        bloco => bloco["versaoDoCalendario"] = new string('A', 61),
         "o cadastro de origem grava no máximo 60 caracteres — aceitar 61 reidrataria um calendário que não veio dele");
 
     [Fact(DisplayName = "Versão do dataset com espaço em volta é recusada em vez de aparada")]
     public void VersaoForaDaFormaCanonica_Recusada() => DeveRecusar(
-        bloco => bloco["versaoDataset"] = " 2026 ",
+        bloco => bloco["versaoDoCalendario"] = " 2026 ",
         "a factory apara a versão, e aceitar o texto aparado devolveria um objeto que não representa os bytes decodificados");
 
     [Fact(DisplayName = "Ausência do bloco num processo com fase que aceita recurso é recusada")]
@@ -192,7 +192,7 @@ public sealed class CalendarioCongeladoRecusaTests
         {
             bloco["presente"] = false;
             bloco.Remove("origemId");
-            bloco.Remove("versaoDataset");
+            bloco.Remove("versaoDoCalendario");
             bloco.Remove("diasNaoUteis");
         },
         "nenhuma transição publica processo com recurso e sem calendário — o round-trip não acusaria, "
@@ -203,7 +203,7 @@ public sealed class CalendarioCongeladoRecusaTests
     // nasce de uma publicação: nasce de bytes montados fora dele. Por isso o artefato é
     // reserializado aqui pelo serializador comum, que preserva a forma decomposta — usar o
     // canônico desfaria a mutação e o teste passaria sem provar nada.
-    [InlineData("versaoDataset", "202\u0036\u0301")]
+    [InlineData("versaoDoCalendario", "202\u0036\u0301")]
     [InlineData("municipioNome", "Maraba\u0301")]
     public void TextoDecomposto_Recusado(string campo, string decomposto)
     {
@@ -213,7 +213,7 @@ public sealed class CalendarioCongeladoRecusaTests
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         JsonObject bloco = payload["calendarioDiasUteis"]!.AsObject();
-        JsonObject destino = campo == "versaoDataset" ? bloco : Dia(bloco, "MUNICIPAL");
+        JsonObject destino = campo == "versaoDoCalendario" ? bloco : Dia(bloco, "MUNICIPAL");
         destino[campo] = decomposto;
 
         byte[] adulterados = System.Text.Encoding.UTF8.GetBytes(payload.ToJsonString());

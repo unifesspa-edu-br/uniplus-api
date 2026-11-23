@@ -190,12 +190,12 @@ public sealed class EnvelopeCodecRecusaEtapasTests
     public void Etapa_ProdutoAtoCodigoAcimaDoLimite_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["etapas"]!.AsArray()[0]!["produtos"]!.AsArray()[0]!["atoCodigo"] = new string('A', 61));
+            envelope["etapas"]!.AsArray()[0]!["publicacoesPrevistas"]!.AsArray()[0]!["atoCodigo"] = new string('A', 61));
 
         resultado.IsFailure.Should().BeTrue(
             "um código de 61 caracteres não cabe na coluna ato_codigo de produtos_da_etapa (varchar 60)");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("etapas[0].produtos[0].atoCodigo").And.Contain("60");
+        resultado.Error.Message.Should().Contain("etapas[0].publicacoesPrevistas[0].atoCodigo").And.Contain("60");
     }
 
     [Fact(DisplayName = "etapas[].bancas[].codigo fora do vocabulário de tipos de banca é recusado, sem repetir o texto recebido")]

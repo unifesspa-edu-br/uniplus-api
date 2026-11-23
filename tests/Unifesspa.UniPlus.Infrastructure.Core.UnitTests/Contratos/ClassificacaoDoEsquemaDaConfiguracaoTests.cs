@@ -28,7 +28,7 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
           "criteriosDeDesempate": [
             { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva" } },
             { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "v1" }, "parametros": { "idadeMinima": 60 } },
-            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "parametros": { "fato": "UF", "operador": "EM", "valor": ["PA"] } },
+            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "parametros": { "codigoDoDado": "UF", "operador": "EM", "valor": ["PA"] } },
             { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-AREA-ENEM", "versao": "v1" }, "parametros": { "areas": [ "MATEMATICA", "REDACAO" ] } },
             { "ordem": 5, "regra": { "codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1" }, "parametros": {} } ],
           "resolucaoPesoAreaEnem": "RES-2026-01" }
@@ -52,11 +52,11 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
     [InlineData("DESEMPATE-IDOSO", "{ \"idadeMinima\": 0 }", "/parametros/idadeMinima")]
     [InlineData("DESEMPATE-MAIOR-NOTA-AREA-ENEM", "{ \"areas\": [] }", "/parametros/areas")]
     [InlineData("DESEMPATE-MAIOR-IDADE", "{ \"idadeMinima\": 60 }", "/parametros/idadeMinima")]
-    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"fato\": \"UF\", \"operador\": \"EM\", \"valor\": \"PA\" }", "/parametros/valor")]
+    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"codigoDoDado\": \"UF\", \"operador\": \"EM\", \"valor\": \"PA\" }", "/parametros/valor")]
     [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{ \"etapaChave\": \"prova\", \"invento\": 1 }", "/parametros/invento")]
     [InlineData("DESEMPATE-IDOSO", "{ \"idadeMinima\": 60, \"invento\": 1 }", "/parametros/invento")]
     [InlineData("DESEMPATE-MAIOR-NOTA-AREA-ENEM", "{ \"areas\": [ \"MAT\" ], \"invento\": 1 }", "/parametros/invento")]
-    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"fato\": \"UF\", \"operador\": \"EM\", \"valor\": [ \"PA\" ], \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"codigoDoDado\": \"UF\", \"operador\": \"EM\", \"valor\": [ \"PA\" ], \"invento\": 1 }", "/parametros/invento")]
     public void Desempate_ParametroIncoerenteComARegra_Recusa(string codigo, string parametros, string caminho)
     {
         ArgumentNullException.ThrowIfNull(codigo);

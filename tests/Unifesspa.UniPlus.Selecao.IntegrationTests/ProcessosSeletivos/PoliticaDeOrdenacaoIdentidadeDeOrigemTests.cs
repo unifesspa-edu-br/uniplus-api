@@ -122,7 +122,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))
             ["cronogramaFases"]!["fases"]![0]!["bancasRequeridas"]!.AsArray();
 
-    [Fact(DisplayName = "fatosColetados: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]
+    [Fact(DisplayName = "dadosDosFormularios: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]
     public void FatosColetados_OrdemGovernaSobreConteudo()
     {
         FatoColetado fatoZeta = FatoColetadoDeTeste.Coletando("ZETA_FATO", 0).ComRotulo("Rótulo Zeta").Construir();
@@ -133,13 +133,13 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoAlfa, fatoZeta]);
 
-        JsonArray fatosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["fatosColetados"]!.AsArray();
+        JsonArray fatosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["dadosDosFormularios"]!.AsArray();
 
         // O formulário de inscrição traz também a seção do conjunto básico, que vem antes.
-        fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(["ZETA_FATO", "ALFA_FATO"]);
+        fatosJson.Select(static f => f!["codigoDoDado"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(["ZETA_FATO", "ALFA_FATO"]);
     }
 
-    [Fact(DisplayName = "regrasDerivacao[].regras: Ordem governa sobre o conteúdo (Contribui) — oráculo de sequência exata")]
+    [Fact(DisplayName = "calculosDosDados[].regras: Ordem governa sobre o conteúdo (Contribui) — oráculo de sequência exata")]
     public void RegrasDerivacao_RegrasInternas_OrdemGovernaSobreConteudo()
     {
         RegraDerivacaoConfigurada regraZeta = RegraDerivacaoConfigurada.Criar(0, "ZETA_VALOR", null).Value!;
@@ -151,7 +151,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("FATO_TESTE", [regraAlfa, regraZeta]).Value!;
         ProcessoSeletivo processo = Montar(regrasDerivacao: [config]);
 
-        JsonArray regrasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDerivacao"]![0]!["regras"]!.AsArray();
+        JsonArray regrasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["calculosDosDados"]![0]!["regras"]!.AsArray();
 
         regrasJson.Select(static r => r!["contribui"]!.GetValue<string>()).Should().Equal(["ZETA_VALOR", "ALFA_VALOR"]);
     }

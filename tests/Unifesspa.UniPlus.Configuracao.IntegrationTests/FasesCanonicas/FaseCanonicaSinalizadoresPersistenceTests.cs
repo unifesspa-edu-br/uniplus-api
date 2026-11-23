@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Os sinalizadores da fase canônica no banco: as quatro colunas da linha de <c>fases_canonicas</c>
+/// Os sinalizadores da fase canônica no banco: as quatro colunas da linha de <c>tipos_de_fase</c>
 /// que o valor <see cref="SinalizadoresDaFase"/> grava e lê, e os dois CHECKs que as cruzam com o
 /// código e entre si.
 /// </summary>
@@ -38,7 +38,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
             ctx, codigo, coletaInscricao: false, coletaSolicitacaoIsencao);
 
         (await act.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be("ck_fases_canonicas_solicitacao_isencao");
+            .Which.ConstraintName.Should().Be("ck_tipos_de_fase_solicitacao_isencao");
     }
 
     [Fact(DisplayName = "CHECK de banco recusa coletar inscrição e solicitação de isenção na mesma fase via SQL cru")]
@@ -50,7 +50,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
             ctx, "SOLICITACAO_ISENCAO", coletaInscricao: true, coletaSolicitacaoIsencao: true);
 
         (await act.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be("ck_fases_canonicas_inscricao_e_isencao_exclusivas");
+            .Which.ConstraintName.Should().Be("ck_tipos_de_fase_inscricao_e_isencao_exclusivas");
     }
 
     [Theory(DisplayName = "Os sinalizadores gravados voltam iguais na leitura, uma marca por fase")]
@@ -88,7 +88,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
     private static Task<int> InserirViaSqlCruAsync(
         UniPlusDbContext ctx, string codigo, bool coletaInscricao, bool coletaSolicitacaoIsencao) =>
         ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, coleta_inscricao, coleta_solicitacao_isencao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {codigo}, {"Fase"}, {coletaInscricao}, {coletaSolicitacaoIsencao}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, coleta_inscricao, coleta_solicitacao_isencao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {codigo}, {"Fase"}, {coletaInscricao}, {coletaSolicitacaoIsencao}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
     private async Task GravarComoAsync(string usuario, FaseCanonica fase)
     {

@@ -163,7 +163,7 @@
       "description": "Declaração de que o processo tem ou não prova presencial e, se tem, dos municípios de aplicação. Ausente no rascunho que ainda não a declarou.",
       "$ref": "prova-presencial.schema.json"
     },
-    "motivos": {
+    "motivosDeDecisao": {
       "title": "Motivos de decisão",
       "description": "Motivos do catálogo que o processo escolheu para as decisões das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo código.",
       "type": "array",

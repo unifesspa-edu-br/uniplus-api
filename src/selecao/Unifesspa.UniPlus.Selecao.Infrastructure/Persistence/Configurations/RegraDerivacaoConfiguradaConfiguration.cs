@@ -22,10 +22,15 @@ public sealed class RegraDerivacaoConfiguradaConfiguration : IEntityTypeConfigur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("regras_derivacao_configuradas");
+        builder.Property(r => r.ConfiguracaoDerivacaoFatoId).HasComment("Identificador do cálculo ao qual a regra pertence.");
+        builder.Property(r => r.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
+        builder.Property(r => r.Contribui).HasComment("Código do valor produzido quando a regra é atendida, quando houver.");
+
+        builder.ToTable("regras_de_calculo_dos_dados", t => t.HasComment("Regras ordenadas que compõem o cálculo de um dado."));
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
 
+        builder.Property(r => r.ConfiguracaoDerivacaoFatoId).HasColumnName("calculo_do_dado_id");
         builder.Property(r => r.Ordem).IsRequired();
         builder.Property(r => r.Contribui).HasMaxLength(ContribuiMaxLength);
 
@@ -33,12 +38,12 @@ public sealed class RegraDerivacaoConfiguradaConfiguration : IEntityTypeConfigur
         // pelo índice para a serialização determinística da regra.
         builder.HasIndex(r => new { r.ConfiguracaoDerivacaoFatoId, r.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_regras_derivacao_configuradas_config_ordem");
+            .HasDatabaseName("ux_regras_de_calculo_dos_dados_config_ordem");
 
         builder.HasMany(r => r.Condicoes)
             .WithOne()
             .HasForeignKey(c => c.RegraDerivacaoConfiguradaId)
-            .HasConstraintName("fk_condicoes_regra_derivacao_regra_derivacao_configurada")
+            .HasConstraintName("fk_condicoes_calculo_regra_de_calculo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(r => r.Condicoes)

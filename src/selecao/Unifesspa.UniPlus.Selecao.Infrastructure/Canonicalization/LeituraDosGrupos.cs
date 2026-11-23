@@ -35,11 +35,11 @@ internal static class LeituraDosGrupos
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
         List<DefinicaoAgregado> agregados)
     {
-        JsonArray array = leitor.Array(payload, "gruposColetados", "$");
+        JsonArray array = leitor.Array(payload, "gruposDosFormularios", "$");
         List<GrupoColetado> grupos = [];
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            if (LerGrupo(leitor, leitor.ItemObjeto(array, i, "gruposColetados"), $"gruposColetados[{i}]", valoresSelecionaveis, agregados) is not { } grupo)
+            if (LerGrupo(leitor, leitor.ItemObjeto(array, i, "gruposDosFormularios"), $"gruposDosFormularios[{i}]", valoresSelecionaveis, agregados) is not { } grupo)
             {
                 return [];
             }
@@ -70,7 +70,7 @@ internal static class LeituraDosGrupos
     private static DeclaracaoDoGrupo? LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(
-            item, path, "codigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
+            item, path, "codigo", "finalidade", "paginaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
         DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path);
         return leitor.Falhou ? null
             : declaracao.Finalidade == FinalidadeFormulario.Nenhuma
@@ -131,7 +131,7 @@ internal static class LeituraDosGrupos
     {
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
         Finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path)),
-        EtapaCodigo = leitor.TextoOpcional(item, "etapaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+        EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
         Minimo = leitor.Inteiro(item, "minimo", path),
@@ -184,9 +184,9 @@ internal static class LeituraDosGrupos
 
     private static DefinicaoAgregado? LerAgregado(LeitorEnvelope leitor, JsonObject agregado, string caminho, GrupoColetado grupo, string? anterior)
     {
-        leitor.ExigirChaves(agregado, caminho, "codigo", "fatoDeMembro", "operacao");
+        leitor.ExigirChaves(agregado, caminho, "codigo", "codigoDoDadoDoMembro", "operacao");
         string codigo = leitor.TextoNaoVazio(agregado, "codigo", caminho, LimitesDoEnvelope.Fato);
-        string fatoDeMembro = leitor.TextoNaoVazio(agregado, "fatoDeMembro", caminho, LimitesDoEnvelope.Fato);
+        string fatoDeMembro = leitor.TextoNaoVazio(agregado, "codigoDoDadoDoMembro", caminho, LimitesDoEnvelope.Fato);
         OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(leitor.TextoNaoVazio(agregado, "operacao", caminho));
         if (leitor.Falhou)
         {

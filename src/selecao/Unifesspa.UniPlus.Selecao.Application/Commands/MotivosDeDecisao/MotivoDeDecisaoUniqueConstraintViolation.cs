@@ -12,7 +12,7 @@ internal static class MotivoDeDecisaoUniqueConstraintViolation
 
     private const string CodigoConstraint = "ux_motivos_de_decisao_tipo_codigo";
 
-    private const string EscolhaConstraint = "ux_motivos_do_processo_vigente";
+    private const string EscolhaConstraint = "ux_motivos_de_decisao_do_processo_vigente";
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

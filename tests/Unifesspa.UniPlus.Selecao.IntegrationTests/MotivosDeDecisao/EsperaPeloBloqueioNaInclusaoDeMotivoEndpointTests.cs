@@ -44,7 +44,7 @@ public sealed class EsperaPeloBloqueioNaInclusaoDeMotivoEndpointTests : IAsyncLi
     {
         await using AsyncServiceScope scope = _cenario.Preparo.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_do_processo WHERE codigo LIKE 'TEST\\_EPT\\_%' ESCAPE '\\'");
+        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao_do_processo WHERE codigo LIKE 'TEST\\_EPT\\_%' ESCAPE '\\'");
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_EPT\\_%' ESCAPE '\\'");
         await _cenario.DisposeAsync();
     }
@@ -128,7 +128,7 @@ public sealed class EsperaPeloBloqueioNaInclusaoDeMotivoEndpointTests : IAsyncLi
         {
             await using AsyncServiceScope escopo = _cenario.Preparo.Services.CreateAsyncScope();
             UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            List<MotivoDoProcesso> escolhas = await db.MotivosDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == ProcessoId).ToListAsync();
+            List<MotivoDeDecisaoDoProcesso> escolhas = await db.MotivosDeDecisaoDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == ProcessoId).ToListAsync();
 
             // O processo semeado já escolhe o motivo da condição da regra de homologação; só se contam os motivos do teste.
             return escolhas.Count(static m => m.Codigo.Valor.StartsWith("TEST_EPT_", StringComparison.Ordinal));

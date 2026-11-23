@@ -56,7 +56,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoesTests
     public void Faltas_MotivoAusenteOuInativo_Recusa()
     {
         ConfiguracaoDeclarada configuracao = Configuracao(Codigo);
-        MotivoDoProcesso escolha = Escolha(configuracao, TipoMotivoDeDecisao.HomologacaoDasInscricoes, SentidoDoMotivo.Desfavoravel);
+        MotivoDeDecisaoDoProcesso escolha = Escolha(configuracao, TipoMotivoDeDecisao.HomologacaoDasInscricoes, SentidoDoMotivo.Desfavoravel);
         MotivosEscolhidos motivos = new([new MotivoEscolhidoComOrigem(escolha, null)], 1);
         LugaresDaDecisao lugares = LugaresDaDecisao.Da(configuracao);
         string detalhe = Faltas(configuracao).Should().ContainSingle().Which.Error.Message;
@@ -71,7 +71,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoesTests
         ConfiguracaoDeclarada configuracao = Configuracao(Codigo);
         MotivoDeDecisao origem = ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.HomologacaoDasInscricoes, Codigo, SentidoDoMotivo.Desfavoravel);
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(configuracao.Cronograma.CronogramaFases[0].FaseCanonicaOrigemId);
-        MotivoDoProcesso escolhido = MotivoDoProcesso.Copiar(Guid.NewGuid(), lugar, origem, 1, null);
+        MotivoDeDecisaoDoProcesso escolhido = MotivoDeDecisaoDoProcesso.Copiar(Guid.NewGuid(), lugar, origem, 1, null);
         MotivosEscolhidos motivos = new([new MotivoEscolhidoComOrigem(escolhido, origem)], 1);
         Faltas(configuracao, escolhido).Should().BeEmpty();
         ItensDosMotivosDeDecisao.Avaliar(configuracao, motivos)[2].Ok.Should().BeTrue();
@@ -102,7 +102,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoesTests
         ConfiguracaoDeclarada configuracao = Configuracao(Codigo, declaraTipo: true, ComPartesRecusadas("fases[0].regraDeHomologacao"));
         MotivoDeDecisao origem = ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.HomologacaoDasInscricoes, Codigo, SentidoDoMotivo.Desfavoravel);
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(configuracao.Cronograma.CronogramaFases[0].FaseCanonicaOrigemId);
-        MotivosEscolhidos motivos = new([new MotivoEscolhidoComOrigem(MotivoDoProcesso.Copiar(Guid.NewGuid(), lugar, origem, 1, null), origem)], 1);
+        MotivosEscolhidos motivos = new([new MotivoEscolhidoComOrigem(MotivoDeDecisaoDoProcesso.Copiar(Guid.NewGuid(), lugar, origem, 1, null), origem)], 1);
         ItensDosMotivosDeDecisao.Avaliar(configuracao, motivos)[2].Ok.Should().BeFalse();
     }
 
@@ -184,14 +184,14 @@ public sealed class ExigenciaDaHomologacaoDasInscricoesTests
         return Lida([modelo.Adotada()], [], origem ?? OrigemNoDocumento.Identidade);
     }
 
-    private static MotivoDoProcesso Escolha(ConfiguracaoDeclarada configuracao, TipoMotivoDeDecisao tipo, SentidoDoMotivo sentido)
+    private static MotivoDeDecisaoDoProcesso Escolha(ConfiguracaoDeclarada configuracao, TipoMotivoDeDecisao tipo, SentidoDoMotivo sentido)
     {
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(configuracao.Cronograma.CronogramaFases[0].FaseCanonicaOrigemId);
         MotivoDeDecisao motivo = ProcessoParaMotivos.Motivo(tipo, Codigo, sentido, tipo == TipoMotivoDeDecisao.IsencaoDaTaxa ? FundamentoIsencaoCodigo.CadastroUnico : null);
-        return MotivoDoProcesso.Copiar(Guid.NewGuid(), lugar, motivo, 1, null);
+        return MotivoDeDecisaoDoProcesso.Copiar(Guid.NewGuid(), lugar, motivo, 1, null);
     }
 
-    private static FieldError[] Faltas(ConfiguracaoDeclarada configuracao, params MotivoDoProcesso[] escolhidos)
+    private static FieldError[] Faltas(ConfiguracaoDeclarada configuracao, params MotivoDeDecisaoDoProcesso[] escolhidos)
     {
         ExigenciaDaHomologacaoDasInscricoes exigencia = new();
         LugaresDaDecisao lugares = LugaresDaDecisao.Da(configuracao);

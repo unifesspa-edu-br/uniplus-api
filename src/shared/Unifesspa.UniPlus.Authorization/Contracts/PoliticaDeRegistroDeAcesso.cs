@@ -30,9 +30,14 @@ public static class PoliticaDeRegistroDeAcesso
             return [];
         }
 
-        DecisaoDeAcesso[] permitidas = [.. avaliadas.OfType<DecisaoPermitida>()];
+        DecisaoDeAcesso[] escolhidas = EscolherDecisoes(avaliadas, intencao);
+        return [.. escolhidas.Where(d => Grava(d, intencao)).Select(RegistroDe)];
+    }
 
-        DecisaoDeAcesso[] escolhidas = (permitidas.Length, intencao) switch
+    private static DecisaoDeAcesso[] EscolherDecisoes(DecisaoDeAcesso[] avaliadas, IntencaoDoRegistro intencao)
+    {
+        DecisaoDeAcesso[] permitidas = [.. avaliadas.OfType<DecisaoPermitida>()];
+        return (permitidas.Length, intencao) switch
         {
             ( > 0, IntencaoDoRegistro.Pedido) => [permitidas[0]],
             ( > 0, _) => permitidas,
@@ -40,7 +45,6 @@ public static class PoliticaDeRegistroDeAcesso
             _ => avaliadas,
         };
 
-        return [.. escolhidas.Where(d => Grava(d, intencao)).Select(RegistroDe)];
     }
 
     /// <summary>

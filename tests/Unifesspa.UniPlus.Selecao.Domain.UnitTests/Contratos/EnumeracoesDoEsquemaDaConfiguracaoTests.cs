@@ -26,7 +26,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     private const string Deliberacao = "/$defs/regraDeDeliberacao/properties";
     private const string Exigencias = "exigencias.schema.json";
     private const string Exigencia = "/$defs/exigencia/properties";
-    private const string Predicado = "predicado.schema.json";
+    private const string Condicoes = "condicoes.schema.json";
     private const string Recurso = "/$defs/propriedadesDoRecurso/properties";
 
     private static readonly (string Arquivo, string Caminho, Func<IEnumerable<string?>> Dominio)[] Paridades =
@@ -39,22 +39,22 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Bancas, $"{Deliberacao}/desempate", () => Codigos<DesempateDaVotacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/encerramento", () => Codigos<EncerramentoDaVotacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/semUnanimidade", () => Codigos<ResultadoSemUnanimidade>(static v => v.Codigo())),
-        ("coleta.schema.json", "/properties/referenciaTemporalFatos/properties/tipo", () => Codigos<ReferenciaTipo>(static v => v.ToCodigo())),
-        (Comuns, "/$defs/produto/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
+        ("coleta.schema.json", "/properties/referenciaTemporalDosDados/properties/tipo", () => Codigos<ReferenciaTipo>(static v => v.ToCodigo())),
+        (Comuns, "/$defs/publicacaoPrevista/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
         (Comuns, $"{Recurso}/prazoUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/prazoSegundaInstanciaUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/efeitoSuspensivo", () => Codigos<EfeitoSuspensivo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/guardaDaVaga", () => Codigos<GuardaDaVaga>(static v => v.Codigo())),
-        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
-        (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
-        (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
-        (Predicado, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
+        (Condicoes, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
+        (Condicoes, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
+        (Condicoes, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
+        (Condicoes, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
         (Comuns, "/$defs/tipoDeDecisao", () => CatalogoDe<TipoMotivoDeDecisao>.Todos().Select(static c => c.Codigo)),
         ("motivo.schema.json", "/properties/sentido", () => SentidoDoMotivoCodigo.Todos),
         ("etapas.schema.json", "/properties/carater", Nomes<CaraterEtapa>),
         ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => ((FormaDeAvaliacao?)v).ToCodigo()!)),
-        ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/ancora", Nomes<AncoraDoRecurso>),
+        ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/eventoInicialDoPrazo", Nomes<AncoraDoRecurso>),
         (Exigencias, $"{Exigencia}/classificacaoProtecao", () => ClassificacoesDeProtecao.TokensCanonicos),
         (Exigencias, $"{Exigencia}/aplicabilidade", () => Enum.GetNames<Aplicabilidade>().Where(static n => n != nameof(Aplicabilidade.Nenhuma))),
         (Exigencias, $"{Exigencia}/consequenciaIndeferimento", () => ConsequenciaIndeferimentoCodigo.Validas),
@@ -64,11 +64,11 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         ("identificacao.schema.json", "/properties/origemCandidatos", Nomes<OrigemCandidatos>),
         ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => FundamentoIsencaoCodigo.Codigos),
         ("formulario.schema.json", "/properties/finalidade", () => [EstruturaFormulario.FinalidadeInscricao, EstruturaFormulario.FinalidadeIsencaoTaxa, EstruturaFormulario.FinalidadeHabilitacao]),
-        ("formulario.schema.json", "/$defs/etapa/properties/tipo", () => [EstruturaFormulario.TipoSecao, EstruturaFormulario.TipoBloco]),
-        ("formulario.schema.json", "/$defs/etapa/properties/bloco", () => [EstruturaFormulario.BlocoComprovacaoDocumental, EstruturaFormulario.BlocoModalidadesCalculadas, EstruturaFormulario.BlocoRevisaoEAceite]),
+        ("formulario.schema.json", "/$defs/pagina/properties/tipo", () => [EstruturaFormulario.TipoSecao, EstruturaFormulario.TipoBloco]),
+        ("formulario.schema.json", "/$defs/pagina/properties/bloco", () => [EstruturaFormulario.BlocoComprovacaoDocumental, EstruturaFormulario.BlocoModalidadesCalculadas, EstruturaFormulario.BlocoRevisaoEAceite]),
         (Comuns, "/$defs/alvoDoProcedimentoDeRecurso/properties/areaDoEnem", () => AreaDoEnem.Todas),
         (Comuns, "/$defs/procedimentoDeRecurso/properties/regra/properties/codigo", () => RegraProcedimentoRecursoCodigo.Rol),
-        ("restricao-de-valor.schema.json", "/$defs/limiteDeData/properties/ancora", () => [RestricaoValorJson.AncoraDataFixa, RestricaoValorJson.AncoraEnvio]),
+        ("restricao-de-valor.schema.json", "/$defs/limiteDeData/properties/referenciaDaData", () => [RestricaoValorJson.AncoraDataFixa, RestricaoValorJson.AncoraEnvio]),
     ];
 
     public static TheoryData<string> ChavesDeParidade => [.. Paridades.Select(static p => $"{p.Arquivo}{p.Caminho}")];

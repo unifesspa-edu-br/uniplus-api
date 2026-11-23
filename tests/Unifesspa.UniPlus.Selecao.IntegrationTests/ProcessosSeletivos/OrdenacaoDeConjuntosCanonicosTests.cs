@@ -267,7 +267,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     {
         RegraAvaliada regraUm = RegraModalidadesMinimas(["QUI", "AC", "LB_PPI"]);
 
-        JsonArray codigosUm = EnvelopeDeRegras([regraUm])["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
+        JsonArray codigosUm = EnvelopeDeRegras([regraUm])["documentosExigidos"]!["obrigatoriedades"]![0]!["condicoes"]!["parametros"]!["codigos"]!.AsArray();
 
         codigosUm.Select(static c => c!.GetValue<string>()).Should().Equal(
             ["AC", "LB_PPI", "QUI"],
@@ -275,7 +275,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
         // CA-02 — a entrada invertida produz os MESMOS bytes.
         RegraAvaliada regraDois = RegraModalidadesMinimas(["AC", "LB_PPI", "QUI"]);
-        JsonArray codigosDois = EnvelopeDeRegras([regraDois])["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
+        JsonArray codigosDois = EnvelopeDeRegras([regraDois])["documentosExigidos"]!["obrigatoriedades"]![0]!["condicoes"]!["parametros"]!["codigos"]!.AsArray();
 
         BytesDoFragmento(codigosDois).Should().Equal(BytesDoFragmento(codigosUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");
@@ -288,7 +288,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     {
         RegraAvaliada regraUm = RegraAtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]);
 
-        JsonArray necessidadesUm = EnvelopeDeRegras([regraUm])["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
+        JsonArray necessidadesUm = EnvelopeDeRegras([regraUm])["documentosExigidos"]!["obrigatoriedades"]![0]!["condicoes"]!["parametros"]!["necessidades"]!.AsArray();
 
         necessidadesUm.Select(static n => n!.GetValue<string>()).Should().Equal(
             ["AUDITIVA", "FISICA", "VISUAL"],
@@ -296,7 +296,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
         // CA-02 — a entrada invertida produz os MESMOS bytes.
         RegraAvaliada regraDois = RegraAtendimentoDisponivel(["FISICA", "AUDITIVA", "VISUAL"]);
-        JsonArray necessidadesDois = EnvelopeDeRegras([regraDois])["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
+        JsonArray necessidadesDois = EnvelopeDeRegras([regraDois])["documentosExigidos"]!["obrigatoriedades"]![0]!["condicoes"]!["parametros"]!["necessidades"]!.AsArray();
 
         BytesDoFragmento(necessidadesDois).Should().Equal(BytesDoFragmento(necessidadesUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");
@@ -304,7 +304,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
     // ── documentosExigidos.metadadosFatos[].valoresDominio ──
 
-    [Fact(DisplayName = "metadadosFatos[].valoresDominio ordena pela chave de conteúdo — oráculo escrito à mão")]
+    [Fact(DisplayName = "definicoesDosDados[].valoresDominio ordena pela chave de conteúdo — oráculo escrito à mão")]
     public void MetadadosFatos_ValoresDominio_OrdenaPelaChaveDeConteudo()
     {
         JsonArray valoresUm = ValoresDeDominio(["PRETA", "AMARELA", "BRANCA"]);
@@ -378,6 +378,6 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
                 ValoresDominio: valores, ValoresDominioDeclarados: null),
         };
         return ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(MontarProcesso(), metadadosFatos: metadados)))
-            ["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray();
+            ["documentosExigidos"]!["definicoesDosDados"]![0]!["opcoes"]!.AsArray();
     }
 }

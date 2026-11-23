@@ -26,9 +26,9 @@ internal static class LeituraDosFatos
 {
     private static readonly string[] ChavesDoFatoColetado =
     [
-        "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
+        "codigoDoDado", "finalidade", "paginaCodigo", "ordem", "rotulo", "tipoDeCampo", "obrigatoriedade", "ajuda",
         "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao",
-        "hipoteseLegal", "finalidadeTratamento", "descricao", "componenteExibicao", "precondicao", "valoresSelecionaveis",
+        "hipoteseLegal", "finalidadeTratamento", "descricao", "componenteExibicao", "exibicao", "valoresSelecionaveis",
     ];
 
     /// <summary>
@@ -36,13 +36,13 @@ internal static class LeituraDosFatos
     /// </summary>
     internal static ReferenciaTemporalFatos? LerReferenciaTemporalFatosPolitica(LeitorEnvelope leitor, JsonObject bloco)
     {
-        JsonObject? json = leitor.ObjetoOpcional(bloco, "referenciaTemporalFatos", "documentosExigidos");
+        JsonObject? json = leitor.ObjetoOpcional(bloco, "referenciaTemporalDosDados", "documentosExigidos");
         if (leitor.Falhou || json is null)
         {
             return null;
         }
 
-        const string path = "documentosExigidos.referenciaTemporalFatos";
+        const string path = "documentosExigidos.referenciaTemporalDosDados";
         leitor.ExigirChaves(json, path, "tipo", "data", "faseId");
         string tipoCodigo = leitor.TextoNaoVazio(json, "tipo", path);
         DateOnly? data = leitor.DataOpcional(json, "data", path);
@@ -75,8 +75,8 @@ internal static class LeituraDosFatos
     {
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal);
 
-        JsonArray array = leitor.Array(payload, "fatosColetados", "$");
-        return leitor.Falhou ? ([], valoresSelecionaveis) : (LerListaDeFatos(leitor, array, "fatosColetados", valoresSelecionaveis), valoresSelecionaveis);
+        JsonArray array = leitor.Array(payload, "dadosDosFormularios", "$");
+        return leitor.Falhou ? ([], valoresSelecionaveis) : (LerListaDeFatos(leitor, array, "dadosDosFormularios", valoresSelecionaveis), valoresSelecionaveis);
     }
 
     /// <summary>Uma lista de fatos coletados — os itens ou os campos de um grupo —, na forma congelada.</summary>
@@ -193,7 +193,7 @@ internal static class LeituraDosFatos
 
     private static PredicadoDnf? LerPrecondicoes(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        IReadOnlyList<LinhaDoPredicado> linhas = LeituraDasCondicoes.LerDnf(leitor, item, "precondicao", path);
+        IReadOnlyList<LinhaDoPredicado> linhas = LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path);
         if (leitor.Falhou)
         {
             return null;
@@ -205,12 +205,12 @@ internal static class LeituraDosFatos
 
     private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
-        FatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato),
+        FatoCodigo = leitor.TextoNaoVazio(item, "codigoDoDado", path, LimitesDoEnvelope.Fato),
         Finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path)),
-        EtapaCodigo = leitor.TextoOpcional(item, "etapaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+        EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
-        TipoRenderizacao = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoRenderizacao", path)),
+        TipoRenderizacao = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoDeCampo", path)),
         Ajuda = leitor.TextoOpcional(item, "ajuda", path, LimitesDoEnvelope.AjudaDoCampo),
         PedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path),
         Copia = LerCopiaDoCatalogo(leitor, item, path),

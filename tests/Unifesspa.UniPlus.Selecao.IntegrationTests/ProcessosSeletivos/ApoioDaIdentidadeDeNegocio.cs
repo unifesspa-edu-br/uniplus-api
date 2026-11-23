@@ -130,12 +130,12 @@ internal static class ApoioDaIdentidadeDeNegocio
     private static bool DoCaso(string idCanonico) =>
         idCanonico.EndsWith("/A_FATO", StringComparison.Ordinal) || idCanonico.EndsWith("/B_FATO", StringComparison.Ordinal);
 
-    private static readonly string[] OrdemCanonicaDosNos = ["CAMPO/B_FATO", "FATO/B_FATO", "CAMPO/A_FATO", "FATO/A_FATO"];
+    private static readonly string[] OrdemCanonicaDosNos = ["CAMPO/B_FATO", "DADO/B_FATO", "CAMPO/A_FATO", "DADO/A_FATO"];
 
     internal static void ConferirAOrdemTopologica(JsonObject grafoJson)
     {
         // Só os nós do caso: o formulário de inscrição traz também os do conjunto básico.
-        List<string> ordemTopologica = [.. grafoJson["ordemTopologica"]!.AsArray().Select(static n => n!.GetValue<string>()).Where(DoCaso)];
+        List<string> ordemTopologica = [.. grafoJson["ordemDeDependencia"]!.AsArray().Select(static n => n!.GetValue<string>()).Where(DoCaso)];
         ordemTopologica.Should().HaveCountGreaterThanOrEqualTo(2, "pré-condição: o caminho existe e tem nós de A_FATO e de B_FATO");
         List<string> ordenadosAlfabeticamente = [.. ordemTopologica.OrderBy(static r => r, StringComparer.Ordinal)];
         ordenadosAlfabeticamente.FindIndex(static r => r.Contains("A_FATO", StringComparison.Ordinal))
@@ -151,7 +151,7 @@ internal static class ApoioDaIdentidadeDeNegocio
     }
 
     internal static void ConferirOsNosDoGrafo(JsonObject grafoJson) =>
-        grafoJson["nos"]!.AsArray().Select(static n => n!["idCanonico"]!.GetValue<string>()).Where(DoCaso).Should().Equal(
+        grafoJson["itens"]!.AsArray().Select(static n => n!["identificador"]!.GetValue<string>()).Where(DoCaso).Should().Equal(
             OrdemCanonicaDosNos,
             "os nós saem na MESMA ordem canônica que GrafoDependenciaConjunta calcula (ordem de coleta efetiva, depois Classe/Codigo) — " +
             "não a ordem alfabética, que poria CAMPO/A_FATO primeiro");
@@ -162,14 +162,14 @@ internal static class ApoioDaIdentidadeDeNegocio
     /// origem (B_FATO, Ordem 0, primeiro).
     /// </summary>
     internal static void ConferirAsArestasDoGrafo(JsonObject grafoJson) =>
-        grafoJson["arestas"]!.AsArray()
+        grafoJson["ligacoes"]!.AsArray()
             .Select(static a => (Tipo: a!["tipo"]!.GetValue<string>(), Origem: a["origem"]!.GetValue<string>(), Destino: a["destino"]!.GetValue<string>()))
             .Where(static a => DoCaso(a.Origem))
             .Should().Equal(
                 [
-                    ("PRODUCAO", "CAMPO/B_FATO", "FATO/B_FATO"),
-                    ("PRODUCAO", "CAMPO/A_FATO", "FATO/A_FATO"),
-                    ("PRECONDICAO", "FATO/B_FATO", "CAMPO/A_FATO"),
+                    ("RESPOSTA_DO_CAMPO", "CAMPO/B_FATO", "DADO/B_FATO"),
+                    ("RESPOSTA_DO_CAMPO", "CAMPO/A_FATO", "DADO/A_FATO"),
+                    ("EXIBICAO", "DADO/B_FATO", "CAMPO/A_FATO"),
                 ],
                 "as arestas saem ordenadas por (Tipo, Origem, Destino) canônicos — as duas de PRODUCAO desempatam pela ordem de coleta " +
                 "efetiva da origem (B_FATO antes de A_FATO), o oposto da ordem alfabética da pré-condição");

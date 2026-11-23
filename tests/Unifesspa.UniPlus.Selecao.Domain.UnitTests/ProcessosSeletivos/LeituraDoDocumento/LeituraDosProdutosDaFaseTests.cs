@@ -29,7 +29,7 @@ public sealed class LeituraDosProdutosDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, AtoDoResultado), Preliminar(1, "ATO-DIGITADO"))));
 
         lidos.Cronograma.CronogramaFases.Single().Produtos.Should().ContainSingle();
-        PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/produtos/1/atoCodigo", FaseCronogramaErrorCodes.AtoDoProdutoNaoEncontrado));
+        PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/publicacoesPrevistas/1/atoCodigo", FaseCronogramaErrorCodes.AtoDoProdutoNaoEncontrado));
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITADO", StringComparison.Ordinal));
     }
 
@@ -48,6 +48,6 @@ public sealed class LeituraDosProdutosDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, "ATO-UM"), Definitivo(1, "ATO-DOIS"))));
 
         PartesRecusadas(lidos).Select(static parte => parte.Ponteiro).Should().Equal(
-            "/cronograma/fases/0/produtos/0/atoCodigo", "/cronograma/fases/0/produtos/1/atoCodigo");
+            "/cronograma/fases/0/publicacoesPrevistas/0/atoCodigo", "/cronograma/fases/0/publicacoesPrevistas/1/atoCodigo");
     }
 }

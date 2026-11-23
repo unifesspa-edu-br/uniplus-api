@@ -216,7 +216,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
     private static VersaoConfiguracao VersaoDoCenario() => VersaoConfiguracao.Abrir(
         ProcessoId,
-        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
+        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataDeReferenciaDosDados":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
         Guid.CreateVersion7(), "user-conta-1", DataHoraFixa);
 
     private static CertameDivulgado DivulgadoDoCenario() => CertameDivulgado.Criar(

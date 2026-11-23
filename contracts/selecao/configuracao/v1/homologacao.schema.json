@@ -74,7 +74,7 @@
               "type": "null"
             },
             {
-              "$ref": "predicado.schema.json#/$defs/predicado"
+              "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
             }
           ]
         }

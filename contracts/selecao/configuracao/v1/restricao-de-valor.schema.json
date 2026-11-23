@@ -56,7 +56,7 @@
                 "type": "null"
               },
               {
-                "$ref": "predicado.schema.json#/$defs/predicado"
+                "$ref": "condicoes.schema.json#/$defs/condicoesAlternativas"
               }
             ]
           },
@@ -73,7 +73,7 @@
         }
       }
     },
-    "fatos": {
+    "codigosDosDados": {
       "title": "Fatos de origem",
       "description": "Códigos dos fatos cujas respostas formam as opções (OPCOES_DAS_RESPOSTAS) ou fato com a UF respondida (MUNICIPIOS_DA_UF).",
       "type": "array",
@@ -116,10 +116,10 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ancora"
+        "referenciaDaData"
       ],
       "properties": {
-        "ancora": {
+        "referenciaDaData": {
           "title": "Âncora",
           "description": "DATA_FIXA usa a data; ENVIO usa o deslocamento em anos e dias.",
           "enum": [

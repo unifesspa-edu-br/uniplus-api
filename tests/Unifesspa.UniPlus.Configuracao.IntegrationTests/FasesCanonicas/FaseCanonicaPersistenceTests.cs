@@ -111,7 +111,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
@@ -123,7 +123,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z_]+$' impede o INSERT direto");
@@ -135,7 +135,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência agrupa_etapas ⇒ avaliação impede o INSERT direto");
@@ -147,7 +147,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência permite_complementacao ⇒ fases permitidas impede o INSERT direto");
@@ -159,7 +159,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_fase (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de origem_data impede o INSERT direto");

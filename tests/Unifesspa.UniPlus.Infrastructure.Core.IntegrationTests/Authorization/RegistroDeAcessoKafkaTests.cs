@@ -160,7 +160,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         await registro.RegistrarAsync([Registro(fatoCodigo: "CPF")], default);
 
         LoteDoRegistroDeAcesso valor = await LerAsync(Consumir(topico).Should().ContainSingle().Subject);
-        valor.Registros.Single().Registro.FatoCodigo.Should().Be("CPF");
+        valor.Registros.Single().Registro.CodigoDoDado.Should().Be("CPF");
         (await provedor.GetRequiredService<ISchemaRegistryClient>().GetLatestSchemaAsync(EsquemaDoRegistroDeAcesso.SubjectDoTopico(topico)))
             .SchemaType.Should().Be(SchemaType.Avro);
     }
@@ -227,7 +227,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         await registro.RegistrarAsync([Registro(fatoCodigo: "CPF")], default);
 
         LoteDoRegistroDeAcesso valor = await LerAsync(Consumir(topico).Should().ContainSingle().Subject);
-        valor.Registros[0].Registro.FatoCodigo.Should().Be("CPF");
+        valor.Registros[0].Registro.CodigoDoDado.Should().Be("CPF");
     }
 
     [Theory(DisplayName = "A mensagem publicada traz o client OIDC em clienteOidc, ou nulo quando o token não o traz")]

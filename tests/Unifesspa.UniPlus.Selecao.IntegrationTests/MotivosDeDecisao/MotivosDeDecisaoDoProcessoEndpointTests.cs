@@ -29,13 +29,13 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
-public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
+public sealed class MotivosDeDecisaoDoProcessoEndpointTests : IAsyncLifetime
 {
     private const string PrefixoDosMotivosDoTeste = "TEST_MDP_";
 
     private readonly CascadingFixture _fixture;
 
-    public MotivosDoProcessoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public MotivosDeDecisaoDoProcessoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
     public Task InitializeAsync() => TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
 
@@ -43,7 +43,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_do_processo WHERE codigo LIKE 'TEST\\_MDP\\_%' ESCAPE '\\'");
+        await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao_do_processo WHERE codigo LIKE 'TEST\\_MDP\\_%' ESCAPE '\\'");
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_MDP\\_%' ESCAPE '\\'");
     }
 
@@ -174,7 +174,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int alteradas = await db.Database.ExecuteSqlAsync(
-            $"UPDATE selecao.motivos_do_processo SET justificativa_da_inclusao = {JustificativaInterna} WHERE processo_seletivo_id = {processoId} AND motivo_de_decisao_origem_id = {motivo.Id}");
+            $"UPDATE selecao.motivos_de_decisao_do_processo SET justificativa_da_inclusao = {JustificativaInterna} WHERE processo_seletivo_id = {processoId} AND motivo_de_decisao_origem_id = {motivo.Id}");
         alteradas.Should().Be(1);
         return processoId;
     }

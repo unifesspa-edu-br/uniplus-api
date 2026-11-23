@@ -82,7 +82,7 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
         JsonArray fases = (JsonArray)envelope["cronogramaFases"]!["fases"]!;
         JsonObject nova = JsonNode.Parse(fases[0]!.ToJsonString())!.AsObject();
         nova["id"] = Guid.CreateVersion7();
-        nova["faseCanonicaOrigemId"] = origemId;
+        nova["tipoFaseOrigemId"] = origemId;
         nova["codigo"] = "SEGUNDA_FASE";
         AdiaAJanela(nova);
         fases.Add(nova);

@@ -13,10 +13,10 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FatoValorDominio"/> — a tabela
-/// <c>valores_de_dominio_do_fato</c> (ADR-0116), filha de <c>fatos_do_candidato</c>.
+/// <c>opcoes_dos_dados</c> (ADR-0116), filha de <c>dados_do_candidato</c>.
 /// </summary>
 /// <remarks>
-/// A FK para <c>fatos_do_candidato</c> é <strong>intra-schema</strong> (ambas
+/// A FK para <c>dados_do_candidato</c> é <strong>intra-schema</strong> (ambas
 /// as tabelas vivem no schema <c>configuracao</c>, do mesmo <c>DbContext</c>) —
 /// não é a FK cross-schema que o ADR-0061/fitness test
 /// <c>FatoCandidatoCatalogoTests.Migrations_SemFkParaFatoCandidato</c> proíbe (essa
@@ -37,9 +37,16 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("valores_de_dominio_do_fato");
+        builder.ToTable("opcoes_dos_dados", tabela => tabela.HasComment("Opções declaradas para dados categóricos do candidato."));
 
         builder.HasKey(v => v.Id);
+        builder.Property(v => v.Id).HasComment("Identificador da opção.");
+        builder.Property(v => v.FatoCandidatoId).HasComment("Identificador do dado ao qual a opção pertence.");
+        builder.Property(v => v.Codigo).HasComment("Código da opção, único no dado.");
+        builder.Property(v => v.Descricao).HasComment("Descrição da opção, quando informada.");
+        builder.Property(v => v.Orientacao).HasComment("Orientação para a escolha, quando informada.");
+        builder.Property(v => v.Ordem).HasComment("Posição de apresentação da opção.");
+        builder.Property(v => v.Ativo).HasComment("Indica se a opção está disponível para escolha.");
 
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever força o
         // EF a tratar a chave como fornecida pela aplicação (convenção do repo).

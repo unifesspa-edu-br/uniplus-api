@@ -78,7 +78,7 @@ public sealed class HashEstavelEntreGravacoesTests
         processo.Etapas.Single().Produtos.Single().AtoCodigo.Should().Be(emNfd);
 
         using JsonDocument documento = JsonDocument.Parse(Canonicalizar(processo));
-        string emitido = documento.RootElement.GetProperty("etapas")[0].GetProperty("produtos")[0].GetProperty("atoCodigo").GetString()!;
+        string emitido = documento.RootElement.GetProperty("etapas")[0].GetProperty("publicacoesPrevistas")[0].GetProperty("atoCodigo").GetString()!;
 
         emitido.Should().Be(EmNfc, "a emissão normaliza o texto que ainda está decomposto na entidade");
     }

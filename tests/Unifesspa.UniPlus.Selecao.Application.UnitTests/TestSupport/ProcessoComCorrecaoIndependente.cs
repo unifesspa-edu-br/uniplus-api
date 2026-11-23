@@ -110,7 +110,7 @@ internal static class ProcessoComCorrecaoIndependente
                 Guid.CreateVersion7(), "2026", [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
             FusoInstitucional: TimeZoneInfo.Utc);
         Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(
-            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(contexto, corretores: corretores, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo));
+            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(contexto, corretores: corretores, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo));
         conferida.IsSuccess.Should().BeTrue(conferida.Error?.Message);
 
         return conferida.Value!;

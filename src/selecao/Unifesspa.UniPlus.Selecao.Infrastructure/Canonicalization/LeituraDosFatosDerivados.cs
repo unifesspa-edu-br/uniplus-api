@@ -25,54 +25,75 @@ internal static class LeituraDosFatosDerivados
             return fatos;
         }
 
-        JsonArray array = leitor.Array(payload, "fatosDerivados", "$");
+        LerCatalogoDeFatos(leitor, leitor.Array(payload, "dadosCalculados", "$"), fatos);
+        return fatos;
+    }
+
+    private static void LerCatalogoDeFatos(LeitorEnvelope leitor, JsonArray array, Dictionary<string, FatoDerivadoCongelado> fatos)
+    {
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            FatoDerivadoCongelado? fato = LerFatoDerivado(leitor, leitor.ItemObjeto(array, i, "fatosDerivados"), $"fatosDerivados[{i}]");
+            FatoDerivadoCongelado? fato = LerFatoDerivado(leitor, leitor.ItemObjeto(array, i, "dadosCalculados"), $"dadosCalculados[{i}]");
             if (fato is null)
             {
                 break;
             }
 
-            if (!fatos.TryAdd(fato.Codigo, fato))
+            if (!AdicionarFatoUnico(leitor, fatos, fato))
             {
-                leitor.Recusar<object>($"Envelope malformado em 'fatosDerivados': o fato '{fato.Codigo}' aparece mais de uma vez.");
                 break;
             }
         }
 
-        return fatos;
+    }
+
+    private static bool AdicionarFatoUnico(LeitorEnvelope leitor, Dictionary<string, FatoDerivadoCongelado> fatos, FatoDerivadoCongelado fato)
+    {
+        if (fatos.TryAdd(fato.Codigo, fato))
+        {
+            return true;
+        }
+
+        leitor.Recusar<object>($"Envelope malformado em 'dadosCalculados': o fato '{fato.Codigo}' aparece mais de uma vez.");
+        return false;
     }
 
     private static FatoDerivadoCongelado? LerFatoDerivado(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(
-            item, path, "codigo", "nome", "descricao", "componenteExibicao", "dominio", "cardinalidade", "classificacaoProtecao", "hipoteseLegal",
+            item, path, "codigo", "nome", "descricao", "componenteExibicao", "tipo", "quantidadeDeValores", "classificacaoProtecao", "hipoteseLegal",
             "finalidadeTratamento");
-        string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato);
-        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDeCadastro);
-        string descricao = leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato);
-        string? componente = leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao);
-        string dominio = leitor.TextoNaoVazio(item, "dominio", path, LimitesDoEnvelope.Token);
-        string cardinalidade = leitor.TextoNaoVazio(item, "cardinalidade", path, LimitesDoEnvelope.Token);
-        string classificacao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
-        string hipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal);
-        string finalidade = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento);
+        FatoDerivadoCongelado fato = LerDeclaracaoDoFato(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        string? foraDoVocabulario =
-            !ClassificacoesDeProtecao.TryAnalisar(classificacao, out _) ? "classificacaoProtecao"
-            : !DominioDoCatalogo.Dominios.Contains(dominio) ? "dominio"
-            : !DominioDoCatalogo.Cardinalidades.Contains(cardinalidade) ? "cardinalidade"
-            : !DominioDoCatalogo.HipotesesLegais.Contains(hipoteseLegal) ? "hipoteseLegal"
-            : componente is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componente) ? "componenteExibicao"
-            : null;
-
+        string? foraDoVocabulario = CampoForaDoVocabulario(fato);
         return foraDoVocabulario is null
-            ? new FatoDerivadoCongelado(codigo, nome, descricao, componente, dominio, cardinalidade, classificacao, hipoteseLegal, finalidade)
+            ? fato
             : leitor.Recusar<FatoDerivadoCongelado?>($"'{path}.{foraDoVocabulario}' fora do vocabulário fechado.");
     }
+
+    private static FatoDerivadoCongelado LerDeclaracaoDoFato(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
+        leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDeCadastro),
+        leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato),
+        leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao),
+        leitor.TextoNaoVazio(item, "tipo", path, LimitesDoEnvelope.Token),
+        leitor.TextoNaoVazio(item, "quantidadeDeValores", path, LimitesDoEnvelope.Token),
+        leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token),
+        leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),
+        leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento));
+
+    private static string? CampoForaDoVocabulario(FatoDerivadoCongelado fato) =>
+        !ClassificacoesDeProtecao.TryAnalisar(fato.ClassificacaoProtecao, out _) ? "classificacaoProtecao"
+        : !DominioDoCatalogo.Dominios.Contains(fato.Dominio) ? "tipo"
+        : !DominioDoCatalogo.Cardinalidades.Contains(fato.Cardinalidade) ? "quantidadeDeValores"
+        : CampoDeTratamentoOuExibicaoForaDoVocabulario(fato);
+
+    private static string? CampoDeTratamentoOuExibicaoForaDoVocabulario(FatoDerivadoCongelado fato) =>
+        !DominioDoCatalogo.HipotesesLegais.Contains(fato.HipoteseLegal) ? "hipoteseLegal"
+        : fato.ComponenteExibicao is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(fato.ComponenteExibicao) ? "componenteExibicao"
+        : null;
 }

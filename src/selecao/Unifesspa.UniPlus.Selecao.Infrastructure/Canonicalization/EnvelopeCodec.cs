@@ -38,11 +38,11 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         "formularios",
         "divulgacao",
         "identidadesUnidade",
-        "fatosColetados",
-        "gruposColetados",
-        "regrasDerivacao",
-        "grafoDependencia",
-        "versaoInterpretador",
+        "dadosDosFormularios",
+        "gruposDosFormularios",
+        "calculosDosDados",
+        "dependenciasEntreItens",
+        "versaoDasRegrasDeCalculo",
         "modalidadesOfertadas",
         "taxaInscricao",
         "localidade",
@@ -50,9 +50,9 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         "algoritmoContagemPrazo",
         "calendarioDiasUteis",
         "identificadorLegivel",
-        "apresentacaoDosPressupostos",
+        "dadosCitadosSemPergunta",
         "tiposDeAto",
-        "fatosDerivados",
+        "dadosCalculados",
     ];
 
     /// <summary>

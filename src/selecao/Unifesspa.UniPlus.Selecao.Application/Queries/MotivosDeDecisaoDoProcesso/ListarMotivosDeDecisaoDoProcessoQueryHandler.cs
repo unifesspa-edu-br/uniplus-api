@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDoProcesso;
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisaoDoProcesso;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -8,25 +8,25 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>Handler convention-based da leitura dos motivos escolhidos pelo processo, na escolha atual ou numa versão publicada.</summary>
-public static class ListarMotivosDoProcessoQueryHandler
+public static class ListarMotivosDeDecisaoDoProcessoQueryHandler
 {
-    public static async Task<Result<IReadOnlyList<MotivoDoProcessoDto>>> Handle(
-        ListarMotivosDoProcessoQuery query,
-        IMotivoDoProcessoRepository repository,
+    public static async Task<Result<IReadOnlyList<MotivoDeDecisaoDoProcessoDto>>> Handle(
+        ListarMotivosDeDecisaoDoProcessoQuery query,
+        IMotivoDeDecisaoDoProcessoRepository repository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        IReadOnlyList<MotivoDoProcesso>? escolhidos = await ListarAsync(query, repository, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<MotivoDeDecisaoDoProcesso>? escolhidos = await ListarAsync(query, repository, cancellationToken).ConfigureAwait(false);
         return escolhidos is null
-            ? Result<IReadOnlyList<MotivoDoProcessoDto>>.Failure(VersaoNaoPublicada(query.NumeroDaVersao!.Value))
-            : Result<IReadOnlyList<MotivoDoProcessoDto>>.Success([.. Ordenados(escolhidos).Select(MotivoDeDecisaoMapping.ToDto)]);
+            ? Result<IReadOnlyList<MotivoDeDecisaoDoProcessoDto>>.Failure(VersaoNaoPublicada(query.NumeroDaVersao!.Value))
+            : Result<IReadOnlyList<MotivoDeDecisaoDoProcessoDto>>.Success([.. Ordenados(escolhidos).Select(MotivoDeDecisaoMapping.ToDto)]);
     }
 
     // A versão anterior à primeira nunca existiu, e a consulta dispensa o banco para dizê-lo.
-    private static async Task<IReadOnlyList<MotivoDoProcesso>?> ListarAsync(
-        ListarMotivosDoProcessoQuery query, IMotivoDoProcessoRepository repository, CancellationToken cancellationToken) =>
+    private static async Task<IReadOnlyList<MotivoDeDecisaoDoProcesso>?> ListarAsync(
+        ListarMotivosDeDecisaoDoProcessoQuery query, IMotivoDeDecisaoDoProcessoRepository repository, CancellationToken cancellationToken) =>
         query.NumeroDaVersao switch
         {
             null => await repository.ListarEscolhaAtualAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false),
@@ -34,7 +34,7 @@ public static class ListarMotivosDoProcessoQueryHandler
             { } numero => await repository.ListarDaVersaoPublicadaAsync(query.ProcessoSeletivoId, numero, cancellationToken).ConfigureAwait(false),
         };
 
-    private static IOrderedEnumerable<MotivoDoProcesso> Ordenados(IEnumerable<MotivoDoProcesso> escolhidos) =>
+    private static IOrderedEnumerable<MotivoDeDecisaoDoProcesso> Ordenados(IEnumerable<MotivoDeDecisaoDoProcesso> escolhidos) =>
         escolhidos
             .OrderBy(static e => e.Tipo)
             .ThenBy(static e => e.Codigo.Valor, StringComparer.Ordinal)

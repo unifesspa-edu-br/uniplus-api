@@ -43,7 +43,7 @@ internal static class SerializacaoDosPredicados
     private static JsonArray SerializarClausula(IGrouping<int, LinhaDoPredicado> clausula) =>
         EscritaCanonica.OrdenarPorConteudo(clausula.Select(static c => new JsonObject
         {
-            ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
+            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
             ["operador"] = c.Operador.Codigo(),
             ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
         }));

@@ -230,7 +230,7 @@ internal static class LeituraDoEdital
     internal static Dictionary<string, ApresentacaoDoFato> LerApresentacaoDosPressupostos(LeitorEnvelope leitor, JsonObject payload)
     {
         Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
-        JsonArray array = leitor.Falhou ? new JsonArray() : leitor.Array(payload, "apresentacaoDosPressupostos", "$");
+        JsonArray array = leitor.Falhou ? new JsonArray() : leitor.Array(payload, "dadosCitadosSemPergunta", "$");
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
             if (!AdicionarApresentacao(leitor, array, i, apresentacao))
@@ -246,7 +246,7 @@ internal static class LeituraDoEdital
         LeitorEnvelope leitor, JsonArray array, int posicao, Dictionary<string, ApresentacaoDoFato> apresentacao)
     {
         ApresentacaoDoFato? fato = LerApresentacao(
-            leitor, leitor.ItemObjeto(array, posicao, "apresentacaoDosPressupostos"), $"apresentacaoDosPressupostos[{posicao}]");
+            leitor, leitor.ItemObjeto(array, posicao, "dadosCitadosSemPergunta"), $"dadosCitadosSemPergunta[{posicao}]");
         if (fato is null)
         {
             return false;
@@ -257,16 +257,16 @@ internal static class LeituraDoEdital
             return true;
         }
 
-        leitor.Recusar<object>($"Envelope malformado em 'apresentacaoDosPressupostos': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
+        leitor.Recusar<object>($"Envelope malformado em 'dadosCitadosSemPergunta': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
         return false;
     }
 
     private static ApresentacaoDoFato? LerApresentacao(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "fatoCodigo", "rotulo", "tipoRenderizacao");
-        string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, FormaDoItem.FatoCodigoMaxLength);
+        leitor.ExigirChaves(item, path, "codigoDoDado", "rotulo", "tipoDeCampo");
+        string fatoCodigo = leitor.TextoNaoVazio(item, "codigoDoDado", path, FormaDoItem.FatoCodigoMaxLength);
         string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
-        string? tipo = leitor.TextoOpcional(item, "tipoRenderizacao", path, LimitesDoEnvelope.Token);
+        string? tipo = leitor.TextoOpcional(item, "tipoDeCampo", path, LimitesDoEnvelope.Token);
         if (leitor.Falhou)
         {
             return null;
@@ -278,6 +278,6 @@ internal static class LeituraDoEdital
     }
 
     private static string TipoDeCampoForaDoCatalogo(string path) =>
-        $"Envelope malformado em '{path}.tipoRenderizacao': o tipo de campo não é um dos códigos aceitos: "
+        $"Envelope malformado em '{path}.tipoDeCampo': o tipo de campo não é um dos códigos aceitos: "
         + $"{string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static d => d.Codigo))}.";
 }

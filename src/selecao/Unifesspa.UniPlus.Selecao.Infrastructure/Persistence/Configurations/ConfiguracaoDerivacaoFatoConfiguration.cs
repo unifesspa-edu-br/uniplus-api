@@ -23,22 +23,25 @@ public sealed class ConfiguracaoDerivacaoFatoConfiguration : IEntityTypeConfigur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_derivacao_fato");
+        builder.Property(c => c.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
+        builder.Property(c => c.CodigoFato).HasComment("Código do dado calculado. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+
+        builder.ToTable("calculos_dos_dados", t => t.HasComment("Configurações dos cálculos dos dados de candidatos em um processo."));
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.Property(c => c.CodigoFato).HasMaxLength(FatoCodigoMaxLength).IsRequired();
+        builder.Property(c => c.CodigoFato).HasColumnName("codigo_do_dado").HasMaxLength(FatoCodigoMaxLength).IsRequired();
 
         // Um fato derivado tem no máximo uma configuração de derivação por processo — invariante do
         // agregado, garantida também pelo índice contra qualquer caminho que não passe por ele.
         builder.HasIndex(c => new { c.ProcessoSeletivoId, c.CodigoFato })
             .IsUnique()
-            .HasDatabaseName("ux_configuracoes_derivacao_fato_processo_fato");
+            .HasDatabaseName("ux_calculos_dos_dados_processo_dado");
 
         builder.HasMany(c => c.Regras)
             .WithOne()
             .HasForeignKey(r => r.ConfiguracaoDerivacaoFatoId)
-            .HasConstraintName("fk_regras_derivacao_configuradas_configuracao_derivacao_fato")
+            .HasConstraintName("fk_regras_de_calculo_dos_dados_calculo_do_dado")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.Regras)

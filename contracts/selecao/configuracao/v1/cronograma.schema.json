@@ -23,7 +23,7 @@
       "additionalProperties": false,
       "required": [
         "chave",
-        "faseCanonicaCodigo"
+        "tipoFaseCodigo"
       ],
       "properties": {
         "chave": {
@@ -31,7 +31,7 @@
           "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase. É obrigatória: é escolhida por quem cria a fase, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
-        "faseCanonicaCodigo": {
+        "tipoFaseCodigo": {
           "title": "Fase canônica",
           "description": "Código da fase no catálogo de fases canônicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
           "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
@@ -71,12 +71,12 @@
           "maxLength": 50,
           "readOnly": true
         },
-        "produtos": {
+        "publicacoesPrevistas": {
           "title": "Atos que a fase publica",
           "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel não se repete na fase. A fase que publica o resultado preliminar de um tipo de ato publica nela mesma o definitivo do mesmo tipo.",
           "type": "array",
           "items": {
-            "$ref": "comuns.schema.json#/$defs/produto"
+            "$ref": "comuns.schema.json#/$defs/publicacaoPrevista"
           }
         },
         "emiteParecerIndividual": {

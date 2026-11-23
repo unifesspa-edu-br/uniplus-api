@@ -39,7 +39,7 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
         builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
 
-        // fase_tipica: rótulo de texto orientativo (NÃO é FK para fases_canonicas).
+        // fase_tipica: rótulo de texto orientativo (NÃO é FK para tipos_de_fase).
         builder.Property(b => b.FaseTipica).HasMaxLength(FaseTipicaMaxLength);
 
         builder.Property(b => b.Descricao).HasMaxLength(DescricaoMaxLength);

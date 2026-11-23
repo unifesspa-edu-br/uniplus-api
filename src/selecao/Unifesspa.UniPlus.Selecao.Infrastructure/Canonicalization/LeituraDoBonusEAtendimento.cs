@@ -32,6 +32,11 @@ internal static partial class LeituraDoBonusEAtendimento
             return null;
         }
 
+        return LerAtendimentoCompleto(leitor, arrayCondicoes, arrayRecursos, arrayTipos);
+    }
+
+    private static AtendimentoEspecializado? LerAtendimentoCompleto(LeitorEnvelope leitor, JsonArray arrayCondicoes, JsonArray arrayRecursos, JsonArray arrayTipos)
+    {
         List<CondicaoOfertada>? condicoes = LerItens(leitor, arrayCondicoes, "atendimento.condicoes", LerCondicao);
         List<RecursoOfertado>? recursos = LerItens(leitor, arrayRecursos, "atendimento.recursos", LerRecurso);
         List<DeficienciaAtendida>? tipos = LerItens(leitor, arrayTipos, "atendimento.tiposDeficiencia", LerTipoDeDeficiencia);
@@ -69,13 +74,9 @@ internal static partial class LeituraDoBonusEAtendimento
         Guid origemId = leitor.Identificador(item, "condicaoOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "condicaoCodigo", path, LimitesDoEnvelope.CondicaoCodigo);
 
-        // O código da condição é chave natural: é por ele que a invariante reconhece a condição PcD.
-        // Um código fora do formato do cadastro nunca é produzido por ele.
         if (!leitor.Falhou && !LeituraDasModalidades.FormatoCodigoCondicao.IsMatch(codigo))
         {
-            return leitor.Malformado<CondicaoOfertada?>(
-                path,
-                $"o código de condição '{codigo}' não tem o formato do cadastro (maiúscula inicial, depois maiúsculas, dígitos e underscore).");
+            return leitor.Malformado<CondicaoOfertada?>(path, $"o código de condição '{codigo}' não tem o formato do cadastro (maiúscula inicial, depois maiúsculas, dígitos e underscore).");
         }
 
         string nome = leitor.TextoNaoVazio(item, "condicaoNome", path, LimitesDoEnvelope.NomeDeCadastro);
@@ -124,7 +125,7 @@ internal static partial class LeituraDoBonusEAtendimento
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", "bonusRegional", RegraBonusCodigo.Multiplicativo);
         decimal fator = leitor.Decimal(bloco, "fator", EscritaCanonica.EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
         decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscritaCanonica.EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
-        string? fatoElegibilidade = leitor.TextoOpcional(bloco, "fatoElegibilidadeCodigo", "bonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);
+        string? fatoElegibilidade = leitor.TextoOpcional(bloco, "codigoDoDadoDeElegibilidade", "bonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);
         BaseLegalCongelada? baseLegal = LerBaseLegalCongelada(leitor, bloco);
         if (baseLegal is null)
         {
@@ -151,7 +152,7 @@ internal static partial class LeituraDoBonusEAtendimento
 
     private static void ExigirChavesDoBonus(LeitorEnvelope leitor, JsonObject bloco) =>
         leitor.ExigirChaves(
-            bloco, "bonusRegional", "presente", "regra", "fator", "teto", "fatoElegibilidadeCodigo",
+            bloco, "bonusRegional", "presente", "regra", "fator", "teto", "codigoDoDadoDeElegibilidade",
             "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios");
 
     private static BaseLegalCongelada? LerBaseLegalCongelada(LeitorEnvelope leitor, JsonObject bloco)
@@ -165,31 +166,33 @@ internal static partial class LeituraDoBonusEAtendimento
         return municipios is null ? null : new BaseLegalCongelada(id, codigo, tipoInstrumento, identificacao, descricao, municipios);
     }
 
-    private static List<(string CodigoIbge, string Nome, string Uf)>? LerMunicipios(LeitorEnvelope leitor, JsonArray arrayMunicipios)
-    {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+    private static List<(string CodigoIbge, string Nome, string Uf)>? LerMunicipios(LeitorEnvelope leitor, JsonArray arrayMunicipios) =>
+        leitor.Falhou ? null : LerListaDeMunicipios(leitor, arrayMunicipios);
 
+    private static List<(string CodigoIbge, string Nome, string Uf)>? LerListaDeMunicipios(LeitorEnvelope leitor, JsonArray arrayMunicipios)
+    {
         List<(string CodigoIbge, string Nome, string Uf)> municipios = [];
         for (int i = 0; i < arrayMunicipios.Count; i++)
         {
-            string path = $"bonusRegional.municipios[{i}]";
-            JsonObject item = leitor.ItemObjeto(arrayMunicipios, i, "bonusRegional.municipios");
-            leitor.ExigirChaves(item, path, "codigoIbge", "nome", "uf");
-
-            string codigoIbge = leitor.TextoNaoVazio(item, "codigoIbge", path, LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge);
-            string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.MunicipioBonusRegionalNome);
-            string uf = leitor.TextoNaoVazio(item, "uf", path, LimitesDoEnvelope.MunicipioBonusRegionalUf);
-            if (leitor.Falhou)
+            if (LerMunicipio(leitor, arrayMunicipios, i) is not { } municipio)
             {
                 return null;
             }
 
-            municipios.Add((codigoIbge, nome, uf));
+            municipios.Add(municipio);
         }
 
         return municipios;
     }
+    private static (string CodigoIbge, string Nome, string Uf)? LerMunicipio(LeitorEnvelope leitor, JsonArray array, int indice)
+    {
+        string path = $"bonusRegional.municipios[{indice}]";
+        JsonObject item = leitor.ItemObjeto(array, indice, "bonusRegional.municipios");
+        leitor.ExigirChaves(item, path, "codigoIbge", "nome", "uf");
+        string codigo = leitor.TextoNaoVazio(item, "codigoIbge", path, LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge);
+        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.MunicipioBonusRegionalNome);
+        string uf = leitor.TextoNaoVazio(item, "uf", path, LimitesDoEnvelope.MunicipioBonusRegionalUf);
+        return leitor.Falhou ? null : (codigo, nome, uf);
+    }
+
 }

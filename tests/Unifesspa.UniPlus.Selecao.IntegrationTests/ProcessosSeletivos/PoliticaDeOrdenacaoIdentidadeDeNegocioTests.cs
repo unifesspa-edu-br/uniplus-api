@@ -22,7 +22,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
 {
-    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados: Ordem governa sobre o Codigo — oráculo de sequência exata")]
+    [Fact(DisplayName = "documentosExigidos.definicoesDosDados[].valoresDominioDeclarados: Ordem governa sobre o Codigo — oráculo de sequência exata")]
     public void MetadadosFatos_ValoresDominioDeclarados_OrdemGovernaSobreCodigo()
     {
         ValorDominioDeclaradoCongelado valorZeta = new("ZETA_VALOR", "Zeta descricao", 0);
@@ -32,7 +32,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
         ProcessoSeletivo processo = Montar();
 
         JsonArray declaradosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo, MetadadosDaCorRaca(valorAlfa, valorZeta))))
-            ["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominioDeclarados"]!.AsArray();
+            ["documentosExigidos"]!["definicoesDosDados"]![0]!["opcoesDeclaradas"]!.AsArray();
 
         declaradosJson.Select(static v => v!["valorCodigo"]!.GetValue<string>()).Should().Equal(
             ["ZETA_VALOR", "ALFA_VALOR"],
@@ -102,14 +102,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
     /// física de uma coleção diferente da que o domínio devolve) passaria despercebido se só
     /// <c>ordemTopologica</c> fosse observada.
     /// </summary>
-    [Fact(DisplayName = "grafoDependencia.nos/arestas/ordemTopologica: delegação — a ordem produzida pelo domínio é preservada, não reordenada alfabeticamente")]
+    [Fact(DisplayName = "dependenciasEntreItens.nos/arestas/ordemTopologica: delegação — a ordem produzida pelo domínio é preservada, não reordenada alfabeticamente")]
     public void GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente()
     {
         FatoColetado fatoB = FatoBooleanoPessoal("B_FATO", 0, null);
         FatoColetado fatoA = FatoBooleanoPessoal("A_FATO", 1, ExibicaoDeTeste.Quando("B_FATO", Operador.Igual, true));
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoA, fatoB]);
 
-        JsonObject grafoJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["grafoDependencia"]!.AsObject();
+        JsonObject grafoJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["dependenciasEntreItens"]!.AsObject();
 
         ConferirAOrdemTopologica(grafoJson);
         ConferirOsNosDoGrafo(grafoJson);

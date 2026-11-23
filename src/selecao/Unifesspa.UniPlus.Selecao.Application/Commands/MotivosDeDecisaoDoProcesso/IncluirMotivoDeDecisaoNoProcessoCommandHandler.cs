@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProcesso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -12,13 +12,13 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 /// Handler convention-based da inclusão de motivo numa fase ou etapa do processo. A regra de quando incluir é do domínio
 /// (<see cref="EscolhaDosMotivos"/>); aqui só se carrega o que ela confere e se grava.
 /// </summary>
-public static class IncluirMotivoNoProcessoCommandHandler
+public static class IncluirMotivoDeDecisaoNoProcessoCommandHandler
 {
     public static async Task<Result> Handle(
-        IncluirMotivoNoProcessoCommand command,
+        IncluirMotivoDeDecisaoNoProcessoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IMotivoDeDecisaoRepository motivoDeDecisaoRepository,
-        IMotivoDoProcessoRepository motivoDoProcessoRepository,
+        IMotivoDeDecisaoDoProcessoRepository motivoDoProcessoRepository,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -35,7 +35,7 @@ public static class IncluirMotivoNoProcessoCommandHandler
     }
 
     private static async Task<Result<InclusaoPedida>> CarregarAsync(
-        IncluirMotivoNoProcessoCommand command,
+        IncluirMotivoDeDecisaoNoProcessoCommand command,
         IProcessoSeletivoRepository processos,
         IMotivoDeDecisaoRepository motivos,
         CancellationToken cancellationToken)
@@ -52,19 +52,19 @@ public static class IncluirMotivoNoProcessoCommandHandler
             : Result<InclusaoPedida>.Success(new InclusaoPedida(command, processo!, origem));
     }
 
-    private static DomainError? RecusaAntesDeLerOCadastro(ProcessoSeletivo? processo, IncluirMotivoNoProcessoCommand command) =>
+    private static DomainError? RecusaAntesDeLerOCadastro(ProcessoSeletivo? processo, IncluirMotivoDeDecisaoNoProcessoCommand command) =>
         processo is null
             ? DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId)
             : EscolhaDosMotivos.RecusaDoLugarOuDoBloqueio(processo, command.Lugar);
 
     private static async Task<Result> IncluirAsync(
         InclusaoPedida pedido,
-        IMotivoDoProcessoRepository repository,
+        IMotivoDeDecisaoDoProcessoRepository repository,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<MotivoDoProcesso> escolhaAtual = await repository.ListarEscolhaAtualAsync(pedido.Processo.Id, cancellationToken).ConfigureAwait(false);
-        Result<MotivoDoProcesso> incluida = EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(pedido.Processo, pedido.Command.Lugar, escolhaAtual, pedido.Origem));
+        IReadOnlyList<MotivoDeDecisaoDoProcesso> escolhaAtual = await repository.ListarEscolhaAtualAsync(pedido.Processo.Id, cancellationToken).ConfigureAwait(false);
+        Result<MotivoDeDecisaoDoProcesso> incluida = EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(pedido.Processo, pedido.Command.Lugar, escolhaAtual, pedido.Origem));
         if (incluida.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -75,5 +75,5 @@ public static class IncluirMotivoNoProcessoCommandHandler
         return await EscritaDaEscolha.GravarAsync(pedido.Processo, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private sealed record InclusaoPedida(IncluirMotivoNoProcessoCommand Command, ProcessoSeletivo Processo, MotivoDeDecisao Origem);
+    private sealed record InclusaoPedida(IncluirMotivoDeDecisaoNoProcessoCommand Command, ProcessoSeletivo Processo, MotivoDeDecisao Origem);
 }

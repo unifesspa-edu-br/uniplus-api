@@ -30,7 +30,7 @@ public sealed class MotivosEscolhidosTests
         FieldError recusa = OsMotivos(escolhido).Desativados(ProcessoParaMotivos.Lugares(processo)).Should().ContainSingle().Subject;
 
         recusa.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
-        recusa.Field.Should().Be("motivos");
+        recusa.Field.Should().Be("motivosDeDecisao");
         recusa.Error.Message.Should().Be(
             "A fase 'INSCRICAO' tem o motivo RENDA_ACIMA_DO_LIMITE, desativado no cadastro depois de escolhido; troque-o antes de publicar.");
     }
@@ -39,7 +39,7 @@ public sealed class MotivosEscolhidosTests
     public void Desativados_SemOrigem_Recusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDoProcesso escolhido = Escolha(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel), VersaoQueNasce);
+        MotivoDeDecisaoDoProcesso escolhido = Escolha(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel), VersaoQueNasce);
 
         OsMotivos(new MotivoEscolhidoComOrigem(escolhido, null)).Desativados(ProcessoParaMotivos.Lugares(processo))
             .Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
@@ -99,7 +99,7 @@ public sealed class MotivosEscolhidosTests
         FieldError recusa = OsMotivos(escolhido).Desativados(ProcessoParaMotivos.Lugares(processo)).Should().ContainSingle().Subject;
 
         recusa.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
-        recusa.Field.Should().Be("motivos");
+        recusa.Field.Should().Be("motivosDeDecisao");
         recusa.Error.Message.Should().StartWith("O motivo RENDA_ACIMA_DO_LIMITE está desativado no cadastro depois de escolhido");
     }
 
@@ -150,7 +150,7 @@ public sealed class MotivosEscolhidosTests
         FieldError recusa = OsMotivos(naEtapa).DeTipoNaoDeclarado(ProcessoParaMotivos.Lugares(processo)).Should().ContainSingle().Subject;
 
         recusa.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
-        recusa.Field.Should().Be("motivos");
+        recusa.Field.Should().Be("motivosDeDecisao");
         recusa.Error.Message.Should().Be(
             "A etapa 'Prova objetiva' não declara o tipo de decisão ISENCAO_DA_TAXA do motivo RENDA_ACIMA_DO_LIMITE; declare o tipo ou retire o motivo.");
     }
@@ -229,7 +229,7 @@ public sealed class MotivosEscolhidosTests
     private static MotivoDeDecisao IsencaoFavoravel() =>
         ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
 
-    private static MotivoDoProcesso Escolha(ProcessoSeletivo processo, MotivoDeDecisao origem, int versaoDeEntrada) =>
+    private static MotivoDeDecisaoDoProcesso Escolha(ProcessoSeletivo processo, MotivoDeDecisao origem, int versaoDeEntrada) =>
         ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem, versaoDeEntrada);
 
     private static MotivoEscolhidoComOrigem NaInscricao(ProcessoSeletivo processo, MotivoDeDecisao origem, int versaoDeEntrada) =>

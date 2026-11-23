@@ -28,14 +28,20 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("condicoes_gatilho");
+        builder.Property(c => c.DocumentoExigidoId).HasComment("Identificador do documento exigido ao qual a condição pertence.");
+        builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
+        builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+        builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
+
+        builder.ToTable("condicoes_das_exigencias", t => t.HasComment("Condições que determinam a exigência de um documento."));
         builder.HasKey(c => c.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // DocumentoExigido/FaseCronograma.
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.Property(c => c.Clausula).IsRequired();
-        builder.Property(c => c.Fato).HasMaxLength(FatoMaxLength).IsRequired();
+        builder.Property(c => c.Clausula).HasColumnName("alternativa").IsRequired();
+        builder.Property(c => c.Fato).HasColumnName("codigo_do_dado").HasMaxLength(FatoMaxLength).IsRequired();
 
         // A convenção do modelo grava o código declarado no enum (ADR-0176), o mesmo token
         // IGUAL/EM/MAIOR_IGUAL/MENOR_IGUAL do wire; aqui só o tamanho da coluna.

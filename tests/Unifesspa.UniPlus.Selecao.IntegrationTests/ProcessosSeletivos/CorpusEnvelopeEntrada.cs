@@ -88,7 +88,7 @@ internal static class CorpusEnvelopeEntrada
     {
         SnapshotCanonico snapshot = Canonicalizador.Canonicalizar(entrada ?? Entrada(processo));
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = DadosRicos(), Documento = new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = Ator, Contagem = ContextoRico(), MotivosEscolhidos = MotivosDoProcessoDeTeste.Cobrindo(processo) });
+            new CenarioDeCongelamento { Dados = DadosRicos(), Documento = new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = Ator, Contagem = ContextoRico(), MotivosEscolhidos = MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo) });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
     }

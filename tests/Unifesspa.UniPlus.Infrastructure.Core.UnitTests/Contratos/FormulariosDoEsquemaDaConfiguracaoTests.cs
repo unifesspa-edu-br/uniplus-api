@@ -20,21 +20,21 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
     private const string FormularioValido = """
         {
           "finalidade": "INSCRICAO", "faseChave": "inscricao", "titulo": "Inscrição",
-          "etapas": [
+          "paginas": [
             { "codigo": "dados", "ordem": 0, "tipo": "SECAO", "titulo": "Dados" },
             { "codigo": "revisao", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE" }
           ],
           "itens": [
-            { "fatoCodigo": "RENDA_PER_CAPITA", "etapaCodigo": "dados", "ordem": 0, "rotulo": "Renda",
+            { "codigoDoDado": "RENDA_PER_CAPITA", "paginaCodigo": "dados", "ordem": 0, "rotulo": "Renda",
               "obrigatoriedade": { "tipo": "SEMPRE" },
               "restricoes": [ { "tipo": "FAIXA_NUMERICA", "minimo": 0, "maximo": 100000.5 } ],
-              "impedimento": { "quando": [[ { "fato": "RENDA_PER_CAPITA", "operador": "MAIOR_IGUAL", "valor": 5000 } ]], "mensagem": "Renda acima do limite." } },
-            { "fatoCodigo": "SITUACAO", "etapaCodigo": "dados", "ordem": 1, "opcoes": [ { "codigo": "A", "rotulo": "Opção A" } ] }
+              "impedimento": { "quando": [[ { "codigoDoDado": "RENDA_PER_CAPITA", "operador": "MAIOR_IGUAL", "valor": 5000 } ]], "mensagem": "Renda acima do limite." } },
+            { "codigoDoDado": "SITUACAO", "paginaCodigo": "dados", "ordem": 1, "opcoes": [ { "codigo": "A", "rotulo": "Opção A" } ] }
           ],
           "grupos": [
-            { "codigo": "familia", "etapaCodigo": "dados", "ordem": 2, "rotulo": "Família", "minimo": 0, "maximo": null, "incluiCandidato": true,
+            { "codigo": "familia", "paginaCodigo": "dados", "ordem": 2, "rotulo": "Família", "minimo": 0, "maximo": null, "incluiCandidato": true,
               "obrigatoriedade": { "tipo": "NUNCA" },
-              "subitens": [ { "fatoCodigo": "NOME_MEMBRO", "ordem": 0 } ] }
+              "subitens": [ { "codigoDoDado": "NOME_MEMBRO", "ordem": 0 } ] }
           ],
           "termos": [
             { "codigo": "lgpd", "ordem": 0, "termoCodigo": "TERMO_LGPD", "versaoNumero": 2, "obrigatoriedade": { "tipo": "SEMPRE" } }
@@ -98,14 +98,14 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
 
     [Theory(DisplayName = "A finalidade, o bloco ou a fase fora do vocabulário e do formato são recusados")]
     [InlineData("/finalidade", "MATRICULA", "/finalidade")]
-    [InlineData("/etapas/1/bloco", "OUTRO_BLOCO", "/etapas/1/bloco")]
+    [InlineData("/paginas/1/bloco", "OUTRO_BLOCO", "/paginas/1/bloco")]
     [InlineData("/faseChave", "Fase Um", "/faseChave")]
     public void Formulario_ForaDoVocabulario_Recusa(string ponteiro, string valor, string caminho) =>
         CaminhosComErro(Alterado(ponteiro, valor), Formulario).Should().Contain(caminho);
 
     [Theory(DisplayName = "O subitem de grupo com etapa ou impedimento preenchidos é recusado")]
-    [InlineData("etapaCodigo", "\"dados\"")]
-    [InlineData("impedimento", """{ "quando": [[ { "fato": "F", "operador": "IGUAL", "valor": true } ]], "mensagem": "Não." }""")]
+    [InlineData("paginaCodigo", "\"dados\"")]
+    [InlineData("impedimento", """{ "quando": [[ { "codigoDoDado": "F", "operador": "IGUAL", "valor": true } ]], "mensagem": "Não." }""")]
     public void Subitem_ComEtapaOuImpedimento_Recusa(string propriedade, string valor)
     {
         ArgumentNullException.ThrowIfNull(propriedade);
@@ -120,7 +120,7 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
     public void Subitem_ComEtapaEImpedimentoNulos_Valida()
     {
         JsonNode formulario = Documento(FormularioValido);
-        formulario["grupos"]![0]!["subitens"]![0]!["etapaCodigo"] = null;
+        formulario["grupos"]![0]!["subitens"]![0]!["paginaCodigo"] = null;
         formulario["grupos"]![0]!["subitens"]![0]!["impedimento"] = null;
 
         CaminhosComErro(formulario, Formulario).Should().BeEmpty();
@@ -130,15 +130,15 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
     public void Grupo_QuantidadeDeSubitens()
     {
         JsonNode rascunho = Alterado("/grupos/0/subitens", new JsonArray());
-        rascunho["etapas"]![0]!["bloco"] = "COMPROVACAO_DOCUMENTAL";
-        JsonNode excesso = Alterado("/grupos/0/subitens", new JsonArray([.. Enumerable.Range(0, 31).Select(static i => (JsonNode)Documento($$"""{ "fatoCodigo": "F{{i}}" }"""))]));
+        rascunho["paginas"]![0]!["bloco"] = "COMPROVACAO_DOCUMENTAL";
+        JsonNode excesso = Alterado("/grupos/0/subitens", new JsonArray([.. Enumerable.Range(0, 31).Select(static i => (JsonNode)Documento($$"""{ "codigoDoDado": "F{{i}}" }"""))]));
 
         CaminhosComErro(rascunho, Formulario).Should().BeEmpty();
         CaminhosComErro(excesso, Formulario).Should().Contain("/grupos/0/subitens");
     }
 
     [Theory(DisplayName = "A propriedade do catálogo copiada no item é recusada")]
-    [InlineData("tipoRenderizacao", "NUMERO")]
+    [InlineData("tipoDeCampo", "NUMERO")]
     [InlineData("classificacaoProtecao", "SENSIVEL")]
     [InlineData("formato", "CPF")]
     public void Item_CopiaDoCatalogo_Recusa(string propriedade, string valor)
@@ -151,8 +151,8 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
 
     [Theory(DisplayName = "A restrição com tipo desconhecido ou a data com âncora inválida é recusada")]
     [InlineData("""{ "tipo": "REGEX" }""", "/itens/0/restricoes/0/tipo")]
-    [InlineData("""{ "tipo": "FAIXA_DE_DATA", "dataMinima": { "ancora": "HOJE" } }""", "/itens/0/restricoes/0/dataMinima/ancora")]
-    [InlineData("""{ "tipo": "FAIXA_DE_DATA", "dataMaxima": { "ancora": "ENVIO", "anos": 151 } }""", "/itens/0/restricoes/0/dataMaxima/anos")]
+    [InlineData("""{ "tipo": "FAIXA_DE_DATA", "dataMinima": { "referenciaDaData": "HOJE" } }""", "/itens/0/restricoes/0/dataMinima/referenciaDaData")]
+    [InlineData("""{ "tipo": "FAIXA_DE_DATA", "dataMaxima": { "referenciaDaData": "ENVIO", "anos": 151 } }""", "/itens/0/restricoes/0/dataMaxima/anos")]
     public void Restricao_Invalida_Recusa(string restricao, string caminho)
     {
         ArgumentNullException.ThrowIfNull(restricao);
@@ -170,16 +170,16 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "As regras de derivação com regra âncora e regra condicionada validam")]
     public void RegrasDeDerivacao_Valida() =>
         CaminhosComErro(Documento("""
-            { "regrasDerivacao": [ { "fatoCodigo": "RENDA_FAIXA", "regras": [
-                { "ordem": 0, "contribui": "ATE_1", "quando": [[ { "fato": "RENDA_PER_CAPITA", "operador": "MENOR_IGUAL", "valor": 1000 } ]] },
+            { "calculosDosDados": [ { "codigoDoDado": "RENDA_FAIXA", "regras": [
+                { "ordem": 0, "contribui": "ATE_1", "quando": [[ { "codigoDoDado": "RENDA_PER_CAPITA", "operador": "MENOR_IGUAL", "valor": 1000 } ]] },
                 { "ordem": 1, "contribui": "ACIMA" } ] } ] }
             """), Coleta).Should().BeEmpty();
 
     [Fact(DisplayName = "A derivação sem o fato ou com valor contribuído acima de sessenta caracteres é recusada")]
     public void RegrasDeDerivacao_Invalida_Recusa()
     {
-        CaminhosComErro(Documento("""{ "regrasDerivacao": [ { "regras": [] } ] }"""), Coleta).Should().Contain("/regrasDerivacao/0");
-        CaminhosComErro(Documento($$"""{ "regrasDerivacao": [ { "fatoCodigo": "F", "regras": [ { "contribui": "{{new string('A', 61)}}" } ] } ] }"""), Coleta)
-            .Should().Contain("/regrasDerivacao/0/regras/0/contribui");
+        CaminhosComErro(Documento("""{ "calculosDosDados": [ { "regras": [] } ] }"""), Coleta).Should().Contain("/calculosDosDados/0");
+        CaminhosComErro(Documento($$"""{ "calculosDosDados": [ { "codigoDoDado": "F", "regras": [ { "contribui": "{{new string('A', 61)}}" } ] } ] }"""), Coleta)
+            .Should().Contain("/calculosDosDados/0/regras/0/contribui");
     }
 }

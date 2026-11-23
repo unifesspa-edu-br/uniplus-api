@@ -24,9 +24,9 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         {
           "identificacao": { "nome": "Processo de Teste", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "importacaoExterna", "localidadeCodigoIbge": "1504208" },
           "cronograma": { "fases": [
-            { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
-            { "chave": "recurso", "faseCanonicaCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },
-            { "chave": "recurso-externo", "faseCanonicaCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA" }
+            { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
+            { "chave": "recurso", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },
+            { "chave": "recurso-externo", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA" }
           ] }
         }
         """;

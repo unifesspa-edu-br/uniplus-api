@@ -23,7 +23,7 @@ internal static class CadastrosDeTeste
 
     /// <summary>Os cadastros padrão, com os motivos que cobrem as decisões que o processo declara.</summary>
     public static CadastrosDaConfiguracao Para(ProcessoSeletivo processo) =>
-        Com(motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo);
+        Com(motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo);
 
     /// <summary>Usa as referências do processo como regras vigentes nos testes de outras causas.</summary>
     public static CadastrosDaConfiguracao ComRegrasDo(this CadastrosDaConfiguracao cadastros, ProcessoSeletivo processo, string? regraAusente = null)
