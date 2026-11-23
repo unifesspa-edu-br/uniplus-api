@@ -115,17 +115,17 @@ public static class ModalidadeSeed
 
         new(SeedId(10), CodigoModalidade.AcPcd, "Ampla Concorrência – Pessoa com Deficiência (V)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiradaDeOutraModalidade, ComposicaoOrigem: CodigoModalidade.Ac,
-            RegraRemanejamento.DestinoUnico, RemanejamentoParametros.Criar(CodigoModalidade.Ac, par: null, fallback: null),
+            RegraRemanejamento.DestinoUnico, RemanejamentoParametros.Criar(CodigoModalidade.Ac, par: null, destinoFinal: null),
             BaseLegalReservaPcdNaAmplaConcorrencia, SementeDeAplicabilidadeLegal.AcPcd),
 
         new(SeedId(12), CodigoModalidade.AcI, "Vaga por acréscimo — candidato indígena (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
-            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcQ, fallback: null),
+            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcQ, destinoFinal: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcI),
 
         new(SeedId(13), CodigoModalidade.AcQ, "Vaga por acréscimo — candidato quilombola (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
-            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcI, fallback: null),
+            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcI, destinoFinal: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcQ),
     ];
 }

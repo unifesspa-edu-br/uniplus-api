@@ -116,7 +116,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
-            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao);
+            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
+            .Include(p => p.Etapas).ThenInclude(e => e.EscalaDeAtendimento);
 
     private static IQueryable<ProcessoSeletivo> ComAtendimentoEspecializado(IQueryable<ProcessoSeletivo> query) =>
         query

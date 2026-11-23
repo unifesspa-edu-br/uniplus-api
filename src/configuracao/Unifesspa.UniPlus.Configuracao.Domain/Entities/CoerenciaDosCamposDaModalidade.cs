@@ -21,7 +21,7 @@ internal static class CoerenciaDosCamposDaModalidade
         (static c => c.ComposicaoOrigem, "composicaoOrigem", ModalidadeErrorCodes.ComposicaoOrigemCircular, "origem da composição"),
         (static c => c.RemanejamentoParametros.Destino, "remanejamento.destino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
         (static c => c.RemanejamentoParametros.Par, "remanejamento.par", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
-        (static c => c.RemanejamentoParametros.Fallback, "remanejamento.fallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
+        (static c => c.RemanejamentoParametros.DestinoFinal, "remanejamento.fallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "destino final de remanejamento"),
     ];
 
     /// <remarks>
@@ -131,8 +131,8 @@ internal static class CoerenciaDosCamposDaModalidade
             return RecusaDoRemanejamento(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio, "Regra DESTINO_UNICO exige o parâmetro 'destino'.");
         }
 
-        return parametros.Par is not null || parametros.Fallback is not null
-            ? RecusaDoRemanejamento(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio, "Regra DESTINO_UNICO não admite os parâmetros 'par' e 'fallback'.")
+        return parametros.Par is not null || parametros.DestinoFinal is not null
+            ? RecusaDoRemanejamento(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio, "Regra DESTINO_UNICO não admite os parâmetros 'par' e 'destino final'.")
             : null;
     }
 
@@ -143,7 +143,7 @@ internal static class CoerenciaDosCamposDaModalidade
             return RecusaDoRemanejamento(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio, "Regra CRUZADO exige o parâmetro 'par'.");
         }
 
-        // 'fallback' é opcional, e a ausência dele é uma declaração, não uma omissão:
+        // O destino final é opcional, e sua ausência é uma declaração:
         // significa que o par não tem destino final — a vaga que nenhuma das duas
         // modalidades preencher permanece ociosa. É o caso do certame isolado, que não
         // oferta ampla concorrência para receber a sobra (UNI-REQ-0096).

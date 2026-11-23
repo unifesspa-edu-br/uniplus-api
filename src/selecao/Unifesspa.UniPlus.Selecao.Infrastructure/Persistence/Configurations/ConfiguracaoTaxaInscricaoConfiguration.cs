@@ -38,10 +38,6 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
         builder.Property(c => c.ProcessoSeletivoId)
             .HasComment("Id do processo seletivo dono desta configuração (FK 1:1, cascade delete).");
 
-        builder.Property(c => c.CreatedAt)
-            .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
-        builder.Property(c => c.UpdatedAt)
-            .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
         builder.Property(c => c.Cobra)
             .IsRequired()

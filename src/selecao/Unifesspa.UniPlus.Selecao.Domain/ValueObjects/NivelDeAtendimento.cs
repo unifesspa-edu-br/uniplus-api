@@ -6,6 +6,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed record NivelDeAtendimento(string Rotulo, decimal Fracao)
 {
-    /// <summary>Largura máxima do rótulo; o nível vive em coluna jsonb, então o teto é do domínio.</summary>
+    /// <summary>Largura máxima do rótulo do nível.</summary>
     public const int RotuloMaxLength = 100;
 }

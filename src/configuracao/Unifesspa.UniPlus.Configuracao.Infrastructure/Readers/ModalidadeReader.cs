@@ -96,7 +96,7 @@ internal sealed class ModalidadeReader : IModalidadeReader
             m.RegraRemanejamento?.Codigo(),
             m.RemanejamentoParametros.Destino,
             m.RemanejamentoParametros.Par,
-            m.RemanejamentoParametros.Fallback,
+            m.RemanejamentoParametros.DestinoFinal,
             m.RegraDeAplicabilidade,
             m.AcaoQuandoIndeferido?.Codigo(),
             m.BaseLegal);

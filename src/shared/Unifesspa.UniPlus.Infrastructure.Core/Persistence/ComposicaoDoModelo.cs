@@ -30,6 +30,7 @@ internal static class ComposicaoDoModelo
     {
         modelBuilder.ConfigurarConversaoDosEnumsDeContrato();
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+        modelBuilder.AplicarComentariosDasColunasComuns();
     }
 
     // Sem este registro a consulta que chama FuncoesDaPlataforma.NormalizarParaComparacao não traduz, e o EF tentaria avaliá-la

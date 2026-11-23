@@ -164,20 +164,20 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio);
     }
 
-    [Fact(DisplayName = "CRUZADO com par e sem fallback é aceito — o par sem destino final deixa a vaga ociosa")]
-    public void Criar_CruzadoSemFallback_Aceita()
+    [Fact(DisplayName = "CRUZADO com par e sem destino final é aceito — o par sem destino final deixa a vaga ociosa")]
+    public void Criar_CruzadoSemDestinoFinal_Aceita()
     {
         Modalidade m = Criar(ajuste: d => d.ComoAcaoAfirmativa("CRUZADO") with { RemanejamentoPar = "AC_Q" }).Value!;
 
         m.RemanejamentoParametros.Par.Should().Be("AC_Q");
-        m.RemanejamentoParametros.Fallback.Should().BeNull(
+        m.RemanejamentoParametros.DestinoFinal.Should().BeNull(
             "no certame isolado não há ampla concorrência para receber a vaga que nenhuma "
-            + "das duas modalidades preencheu — a ausência de fallback declara isso");
+            + "das duas modalidades preencheu — a ausência de destino final declara isso");
         m.RemanejamentoParametros.Destino.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Contraprova: CRUZADO com par e fallback é aceito")]
-    public void Criar_CruzadoComParFallback_Aceita()
+    [Fact(DisplayName = "Contraprova: CRUZADO com par e destino final é aceito")]
+    public void Criar_CruzadoComParEDestinoFinal_Aceita()
     {
         Modalidade m = Criar("AC_I", d => d.ComoAcaoAfirmativa("CRUZADO") with
         {
@@ -186,7 +186,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         }).Value!;
 
         m.RemanejamentoParametros.Par.Should().Be("AC");
-        m.RemanejamentoParametros.Fallback.Should().Be("LB_PPI");
+        m.RemanejamentoParametros.DestinoFinal.Should().Be("LB_PPI");
         m.RemanejamentoParametros.Destino.Should().BeNull();
     }
 

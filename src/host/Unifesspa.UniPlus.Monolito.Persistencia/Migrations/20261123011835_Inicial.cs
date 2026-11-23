@@ -169,13 +169,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -191,14 +191,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     versao_dataset = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     vigente = table.Column<bool>(type: "boolean", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -233,13 +233,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     endereco_origem = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     endereco_display_atualizado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     codigo_emec = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -258,13 +258,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     ordem = table.Column<int>(type: "integer", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -293,7 +293,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     atos_divulgados = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público."),
                     divulgado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     nome_ordenacao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, collation: "C"),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.")
                 },
                 constraints: table =>
                 {
@@ -311,11 +311,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     status = table.Column<int>(type: "integer", nullable: false),
                     data_publicacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     prazo_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -330,8 +330,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     object_key = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "A chave do objeto; leva só o id do arquivo."),
                     limpar_apos = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "A partir de quando a chave pode ser apagada."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -354,7 +354,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
                     encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro.")
                 },
                 constraints: table =>
                 {
@@ -370,13 +370,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -395,15 +395,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nivel_ensino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     grupo_area_enem = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_cursos_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo."),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     nome_ordenacao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, collation: "C"),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Rótulo do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), posto pelo sistema a partir do código em grupo_area_enem. Nulo quando o curso não declara grupo."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -428,8 +428,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -454,13 +454,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     unidade_sugerida_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
                     unidade_sugerida_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     unidade_sugerida_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -512,11 +512,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
                     regras_padrao = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
                     dependencias = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]"),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -575,8 +575,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cancelada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "A conta do token de quem cancelou; nulo se não foi cancelada."),
                     motivo_do_cancelamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada."),
                     revisao = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -607,9 +607,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     iniciada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     cancelada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -665,11 +665,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     status = table.Column<int>(type: "integer", nullable: false),
                     codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -681,24 +681,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    natureza_legal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    composicao_origem = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    remanejamento_parametros = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
-                    regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false),
-                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da modalidade."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica a modalidade. Exemplos: AC, AC_PCD."),
+                    descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true, comment: "Descrição da modalidade para apresentação."),
+                    natureza_legal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Natureza legal da modalidade. Códigos: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA."),
+                    composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Forma de composição das vagas. Códigos: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE, SUPLEMENTAR_AO_TOTAL."),
+                    composicao_origem = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade de origem das vagas, quando retiradas de outra modalidade."),
+                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Regra aplicada ao remanejamento das vagas, quando definida. Códigos: SEGUE_CASCATA, DESTINO_UNICO, CRUZADO."),
+                    remanejamento_destino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade que recebe as vagas no destino único."),
+                    remanejamento_par = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade que participa do remanejamento cruzado."),
+                    remanejamento_destino_final = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade que recebe as vagas restantes ao fim do remanejamento cruzado."),
+                    regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições que determinam a aplicação da modalidade, em JSON; lista vazia indica aplicação incondicional."),
+                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICAR_AC, RECLASSIFICAR_REGRA_EDITAL."),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Fundamento legal da modalidade, quando informado."),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -708,8 +710,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
                     table.CheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
                     table.CheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
+                    table.CheckConstraint("ck_modalidades_remanejamento_cruzado", "regra_remanejamento IS DISTINCT FROM 'CRUZADO' OR (remanejamento_par IS NOT NULL AND remanejamento_destino IS NULL)");
+                    table.CheckConstraint("ck_modalidades_remanejamento_destino_unico", "regra_remanejamento IS DISTINCT FROM 'DESTINO_UNICO' OR (remanejamento_destino IS NOT NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
+                    table.CheckConstraint("ck_modalidades_remanejamento_sem_parametros", "(regra_remanejamento IS NOT NULL AND regra_remanejamento IN ('DESTINO_UNICO', 'CRUZADO')) OR (remanejamento_destino IS NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
                     table.CheckConstraint("ck_modalidades_retirada_de_outra_modalidade_origem", "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
-                });
+                },
+                comment: "Modalidades de concorrência e suas regras de composição e remanejamento de vagas.");
 
             migrationBuilder.CreateTable(
                 name: "modelos_formulario",
@@ -724,11 +730,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     conteudo = table.Column<string>(type: "jsonb", nullable: false),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -748,11 +754,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     subclassificacao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     sentido = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -777,11 +783,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     versao_do_edital_de_entrada = table.Column<int>(type: "integer", nullable: false),
                     versao_do_edital_de_saida = table.Column<int>(type: "integer", nullable: true),
                     justificativa_da_inclusao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -807,13 +813,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
                     vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
                     hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -831,9 +837,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
                     governanca = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     nome_normalizado = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, computedColumnSql: "lower(nome)", stored: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -849,14 +855,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     resolucao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     grupo_curso = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_pesos_por_area_do_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo."),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     grupo_curso_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Rótulo do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), posto pelo sistema a partir do código em grupo_curso."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -873,13 +879,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     antecessora_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     sucessora_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     permite_sobreposicao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -924,11 +930,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     referencia_temporal_fatos_fase_id = table.Column<Guid>(type: "uuid", nullable: true),
                     aplica_bonus_regional = table.Column<bool>(type: "boolean", nullable: true, comment: "Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado."),
                     numero_de_opcoes_de_curso = table.Column<int>(type: "integer", nullable: true, comment: "Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -947,8 +953,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema): decide quem lê, grava, exclui e publica o rascunho."),
                     documento = table.Column<string>(type: "jsonb", nullable: false, comment: "Documento da configuração. Traz o identificador da conta de quem assina (dado pessoal pseudonimizado); o formato não prevê nome, CPF nem e-mail, mas o texto livre de campos como o dos assinantes é guardado como veio."),
                     nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -966,13 +972,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -991,13 +997,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     quilombola_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     pcd_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1020,8 +1026,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     invariantes = table.Column<string>(type: "jsonb", nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1038,9 +1044,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     aberta_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     aberta_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     aberta_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1061,8 +1067,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     error_count = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de itens que falharam durante o processamento."),
                     started_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, comment: "Instante de início da execução."),
                     finished_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, comment: "Instante de conclusão da execução — nulo enquanto o status é Running."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor)."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).")
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1084,14 +1090,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     revisado = table.Column<bool>(type: "boolean", nullable: false),
                     revisado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     revisado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1114,11 +1120,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     escala_minima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Menor valor da escala. Só no tipo numérico."),
                     escala_maxima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Maior valor da escala, sempre acima do menor. Só no tipo numérico."),
                     casas_decimais = table.Column<int>(type: "integer", nullable: true, comment: "Número de casas decimais da escala, de 0 a 4. Só no tipo numérico."),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Quem criou o tipo."),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Quem fez a última alteração. Nulo enquanto o tipo não foi alterado."),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante em que o tipo foi criado."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última alteração. Nulo enquanto o tipo não foi alterado.")
+                    created_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1145,13 +1151,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
                     vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1174,13 +1180,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     exige_duas_ou_mais_bancas = table.Column<bool>(type: "boolean", nullable: false),
                     encerra_recurso_na_primeira_instancia = table.Column<bool>(type: "boolean", nullable: false),
                     tipos_de_decisao_julgados = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara."),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1200,13 +1206,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     permanente = table.Column<bool>(type: "boolean", nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1243,14 +1249,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     protecao_manifestada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     protecao_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
                     protecao_manifestacoes_no_ciclo = table.Column<int>(type: "integer", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1281,11 +1287,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
                     nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API."),
                     exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1305,11 +1311,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1335,18 +1341,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cidade_codigo_ibge = table.Column<string>(type: "character(7)", fixedLength: true, maxLength: 7, nullable: true, comment: "Código IBGE (7 dígitos) da cidade da Unidade — referência ao Geo, sem FK cross-banco; opcional all-or-nothing com nome/UF."),
                     cidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true, comment: "Nome de exibição da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização."),
                     cidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: true, comment: "UF da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização."),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     alias_para_busca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, computedColumnSql: "plataforma.normalizar_para_comparacao(alias)", stored: true, comment: "Forma normalizada de alias (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     codigo_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(codigo)", stored: true, comment: "Forma normalizada de codigo (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     nome_para_busca = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, comment: "Forma normalizada de nome (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     sigla_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(sigla)", stored: true, comment: "Forma normalizada de sigla (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     slug_para_busca = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(slug)", stored: true, comment: "Forma normalizada de slug (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1515,8 +1521,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: true),
                     data = table.Column<DateOnly>(type: "date", nullable: false),
                     descricao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1559,13 +1565,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     endereco_origem = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     endereco_display_atualizado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     codigo_emec = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1596,11 +1602,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     posicao = table.Column<int>(type: "integer", nullable: false),
                     codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     data_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1626,8 +1632,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     orientacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ordem = table.Column<int>(type: "integer", nullable: false),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1699,8 +1705,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     exigencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "O DocumentoExigido.Id da configuração congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070)."),
                     ocorrencia_id = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "A ocorrência do grupo repetível a que o documento se refere; nulo quando a exigência não se repete."),
                     nome_do_documento = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "O nome do documento como a exigência o chamava no envio; dá nome ao arquivo baixado."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -1835,11 +1841,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tamanho_bytes = table.Column<long>(type: "bigint", nullable: false),
                     validado = table.Column<bool>(type: "boolean", nullable: false),
                     motivo_rejeicao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -1895,8 +1901,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     reativada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_da_reativacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2017,9 +2023,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     retomada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2067,9 +2073,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cancelada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     cancelada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     expirada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2129,8 +2135,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2167,8 +2173,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2207,8 +2213,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2242,8 +2248,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_ordem_alocacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     baseado_em_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "A classificação usa a estrutura de pontuação por área do ENEM — sinal explícito (Story #850) do qual as regras de eliminação do ENEM dependem, substituindo a ramificação por TipoProcesso."),
                     resolucao_peso_area_enem = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true, comment: "Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_do_quadro_de_pesos. Nulo nas demais classificações."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2268,8 +2274,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     fallback_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2319,8 +2325,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     vagas_cortadas_por_escassez = table.Column<int>(type: "integer", nullable: true),
                     vagas_retiradas_no_ajuste = table.Column<string>(type: "jsonb", nullable: true),
                     total_de_vagas_do_edital = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2346,8 +2352,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo_fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2370,8 +2376,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     campos_publicos = table.Column<string>(type: "jsonb", nullable: false),
                     justificativa = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2395,8 +2401,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cobra = table.Column<bool>(type: "boolean", nullable: false, comment: "Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01)."),
                     valor = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true, comment: "Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03)."),
                     fundamentos = table.Column<string>(type: "jsonb", nullable: false, comment: "Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio somente quando cobra=false (issue #1310)."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor)."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).")
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2423,8 +2429,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     parametros = table.Column<string>(type: "json", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2443,41 +2449,43 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fase_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código canônico da fase em que a etapa acontece; é por ele que a raiz a resolve no cronograma."),
-                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    carater = table.Column<int>(type: "integer", nullable: false),
-                    tipo_etapa_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id de origem do tipo de etapa em Configuração, sem FK cross-schema; congelado na definição."),
-                    tipo_etapa_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    tipo_etapa_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    tipo_etapa_admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false),
-                    tipo_etapa_admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
-                    tipo_etapa_nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota da etapa vem do ENEM, congelado do tipo junto com a identidade."),
-                    tipo_etapa_exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false, comment: "Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores."),
-                    peso = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
-                    nota_minima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da etapa."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a etapa pertence."),
+                    fase_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da fase do cronograma em que a etapa acontece."),
+                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Nome da etapa no processo seletivo."),
+                    carater = table.Column<int>(type: "integer", nullable: false, comment: "Finalidade da etapa na avaliação. Códigos: 0 (Nenhum), 1 (Classificatoria), 2 (Eliminatoria), 3 (Ambas)."),
+                    tipo_etapa_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de etapa de origem, copiado na definição."),
+                    tipo_etapa_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de etapa copiado na definição."),
+                    tipo_etapa_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de etapa copiado na definição."),
+                    tipo_etapa_admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o tipo de etapa admite pontuação, conforme a definição copiada."),
+                    tipo_etapa_admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o tipo de etapa admite eliminação, conforme a definição copiada."),
+                    tipo_etapa_nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a nota da etapa vem do Enem, conforme a definição do tipo."),
+                    tipo_etapa_exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a etapa exige correções independentes por mais de um corretor, conforme a definição do tipo."),
+                    peso = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Peso da etapa no cálculo da nota final, quando aplicável."),
+                    nota_minima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Nota mínima exigida na etapa, quando definida."),
                     nota_maxima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM."),
                     passo_do_lancamento = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "De quanto em quanto a nota pode ser lançada; vale só para a nota digitada."),
-                    forma_de_avaliacao = table.Column<int>(type: "integer", nullable: true, comment: "Como a nota da etapa é obtida (1 objetiva, 2 humana); ausente em rascunho, na etapa sem nota e na do ENEM."),
-                    regra_consolidacao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    regra_consolidacao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
-                    regra_consolidacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
-                    escala_de_atendimento = table.Column<string>(type: "jsonb", nullable: true, comment: "Níveis de atendimento (rótulo e fração da pontuação do item), do que mais vale ao que menos vale; ausente quando a banca digita a nota."),
-                    ordem = table.Column<int>(type: "integer", nullable: true),
-                    inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    forma_de_avaliacao = table.Column<int>(type: "integer", nullable: true, comment: "Como a nota da etapa é obtida; ausente quando não definida. Códigos: 1 (Objetiva), 2 (Humana)."),
+                    regra_consolidacao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da regra de consolidação das notas, quando definida."),
+                    regra_consolidacao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da regra de consolidação das notas, quando definida."),
+                    regra_consolidacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Resumo que identifica o conteúdo da regra de consolidação, quando definida."),
+                    ordem = table.Column<int>(type: "integer", nullable: true, comment: "Posição da etapa no processo, quando definida."),
+                    inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Início do período próprio da etapa; ausente quando usa o período da fase."),
+                    fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Fim do período próprio da etapa; ausente quando usa o período da fase."),
+                    emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a etapa emite parecer individual para cada candidato."),
+                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_etapas_processo", x => x.id);
                     table.CheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
                     table.CheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
+                    table.CheckConstraint("ck_etapas_processo_nota_minima_nao_negativa", "nota_minima IS NULL OR nota_minima >= 0");
                     table.CheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
+                    table.CheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+                    table.CheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
                     table.ForeignKey(
                         name: "fk_etapas_processo_processo_seletivo_processo_seletivo_id",
                         column: x => x.processo_seletivo_id,
@@ -2485,38 +2493,40 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Etapas de avaliação e suas definições em cada processo seletivo.");
 
             migrationBuilder.CreateTable(
                 name: "fases_cronograma",
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    no_mesmo_momento_da_anterior = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    unidade_responsavel_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    unidade_responsavel_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    unidade_responsavel_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
-                    origem_data = table.Column<int>(type: "integer", nullable: false),
-                    agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false),
-                    permite_complementacao = table.Column<bool>(type: "boolean", nullable: false),
-                    coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false),
-                    coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false),
-                    inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase no cronograma."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a fase pertence."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição da fase no cronograma."),
+                    no_mesmo_momento_da_anterior = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase ocorre no mesmo momento da fase anterior."),
+                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da fase de origem copiado ao definir o cronograma."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES."),
+                    unidade_responsavel_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da unidade responsável, copiado quando definida."),
+                    unidade_responsavel_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Sigla da unidade responsável, copiada quando definida."),
+                    unidade_responsavel_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade responsável, copiado quando definida."),
+                    origem_data = table.Column<int>(type: "integer", nullable: false, comment: "Momento em que as datas da fase são definidas. Códigos: 0 (Nenhuma), 1 (NoEdital), 2 (NaExecucao)."),
+                    agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase agrupa etapas de avaliação."),
+                    permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase permite complementar informações."),
+                    coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase recebe inscrições."),
+                    coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase recebe pedidos de isenção da taxa."),
+                    inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Início do período da fase, quando definido."),
+                    fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Fim do período da fase, quando definido."),
+                    emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase emite parecer individual para cada candidato."),
                     regra_de_homologacao = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa."),
-                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_fases_cronograma", x => x.id);
+                    table.CheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
                     table.ForeignKey(
                         name: "fk_fases_cronograma_processo_seletivo_processo_seletivo_id",
                         column: x => x.processo_seletivo_id,
@@ -2524,7 +2534,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Fases e períodos do cronograma de cada processo seletivo.");
 
             migrationBuilder.CreateTable(
                 name: "formularios_processo",
@@ -2538,8 +2549,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     titulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     modelo_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
                     modelo_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2602,8 +2613,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     exibicao = table.Column<string>(type: "jsonb", nullable: true),
                     obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
                     inclui_candidato = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2633,8 +2644,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2659,8 +2670,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2695,8 +2706,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     hash_versao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     exibicao = table.Column<string>(type: "jsonb", nullable: true),
                     obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2843,8 +2854,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
                     vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
                     motivo_mudanca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -2898,13 +2909,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     endereco_display_atualizado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     unidade_raiz_id = table.Column<Guid>(type: "uuid", nullable: true),
                     registro_vivo_sentinela = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -2946,13 +2957,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     vagas_anuais_autorizadas = table.Column<int>(type: "integer", nullable: true),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ato_autorizacao_mec = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<string>(type: "text", nullable: true)
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da exclusão lógica, quando houver."),
+                    deleted_by = table.Column<string>(type: "text", nullable: true, comment: "Identificador do responsável pela exclusão lógica, quando disponível.")
                 },
                 constraints: table =>
                 {
@@ -3005,8 +3016,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     chave_definitiva = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "A chave do objeto promovido ao bucket definitivo; nula enquanto não verificado."),
                     motivo_da_recusa = table.Column<int>(type: "integer", nullable: true, comment: "Por que a verificação recusou o arquivo; nulo fora da recusa."),
                     constou_de_envio = table.Column<bool>(type: "boolean", nullable: false, comment: "O arquivo verificado já constou de um envio da inscrição; a limpeza dos envios seguintes nunca o apaga (UNI-REQ-0168)."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3196,9 +3207,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     enviado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     verificado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     recusado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3280,9 +3291,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     encerrada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     aviso_48h_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     aviso_24h_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3325,9 +3336,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     versao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     desde = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3358,8 +3369,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     condicao_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     condicao_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     condicao_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3383,8 +3394,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_deficiencia_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_deficiencia_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     tipo_deficiencia_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3408,8 +3419,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     recurso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     recurso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     recurso_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3433,8 +3444,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     documento_a_publicar_id = table.Column<Guid>(type: "uuid", nullable: false),
                     nome_de_exibicao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3465,8 +3476,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false),
                     nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3490,8 +3501,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     grupo_area_enem_codigo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Código do grupo de área do ENEM, sem abreviação e sem acento, copiado da resolução de Pesos por Área; casa a oferta com a linha do quadro."),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Rótulo do grupo de área do ENEM, copiado junto do código."),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Dispositivo legal que fundamenta os pesos do grupo, copiado da resolução de Pesos por Área."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor)."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).")
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3517,8 +3528,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     parametros = table.Column<string>(type: "json", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3542,8 +3553,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     modalidade_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
                     modalidade_destino_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3580,8 +3591,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     quantidade_declarada = table.Column<int>(type: "integer", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3605,8 +3616,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     modalidade_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     modalidade_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     quantidade = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3629,8 +3640,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     configuracao_derivacao_fato_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
                     contribui = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3667,8 +3678,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_deliberacao_desempate = table.Column<string>(type: "text", nullable: true),
                     regra_deliberacao_encerramento = table.Column<string>(type: "text", nullable: true),
                     regra_deliberacao_sem_unanimidade = table.Column<string>(type: "text", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3691,8 +3702,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     pontuacao_maxima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false, comment: "O quanto o item vale da nota máxima da etapa."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3709,6 +3720,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Itens de avaliação (critérios ou blocos) da etapa; o id é a identidade a que lançamento e recurso apontam.");
 
             migrationBuilder.CreateTable(
+                name: "niveis_de_atendimento_da_etapa",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador técnico do nível.")
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    rotulo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, comment: "Texto escolhido pela banca na avaliação."),
+                    fracao = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: false, comment: "Fração da pontuação do item atribuída ao nível."),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Etapa à qual o nível pertence.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_niveis_de_atendimento_da_etapa", x => x.id);
+                    table.CheckConstraint("ck_niveis_atendimento_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
+                    table.CheckConstraint("ck_niveis_atendimento_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
+                    table.ForeignKey(
+                        name: "fk_niveis_atendimento_etapa",
+                        column: x => x.etapa_processo_id,
+                        principalSchema: "selecao",
+                        principalTable: "etapas_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Níveis de atendimento usados na avaliação dos itens da etapa.");
+
+            migrationBuilder.CreateTable(
                 name: "produtos_da_etapa",
                 schema: "selecao",
                 columns: table => new
@@ -3717,8 +3754,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     papel = table.Column<int>(type: "integer", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3752,8 +3789,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     guarda_da_vaga = table.Column<string>(type: "text", nullable: false),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3790,8 +3827,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_deliberacao_desempate = table.Column<string>(type: "text", nullable: true),
                     regra_deliberacao_encerramento = table.Column<string>(type: "text", nullable: true),
                     regra_deliberacao_sem_unanimidade = table.Column<string>(type: "text", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3838,8 +3875,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     modelo_formato = table.Column<int>(type: "integer", nullable: true),
                     modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3877,8 +3914,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ato_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     papel = table.Column<int>(type: "integer", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3911,8 +3948,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     guarda_da_vaga = table.Column<string>(type: "text", nullable: false),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3941,8 +3978,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     aviso = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     exibicao = table.Column<string>(type: "jsonb", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -3982,8 +4019,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     impedimento = table.Column<string>(type: "jsonb", nullable: true),
                     finalidade = table.Column<int>(type: "integer", nullable: false),
                     etapa_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4182,9 +4219,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     revogada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_revogacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     revogada_pela_revisao_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4258,8 +4295,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     rotulo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, comment: "Rótulo oficial da área do ENEM, copiado junto do código."),
                     peso = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: false, comment: "Peso da área na média do grupo, copiado da resolução de Pesos por Área."),
                     corte = table.Column<decimal>(type: "numeric(8,4)", precision: 8, scale: 4, nullable: true, comment: "Nota mínima da área (0 a 1000), copiada da resolução de Pesos por Área; nulo quando a área não tem corte."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor)."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).")
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4287,8 +4324,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     valor = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4311,8 +4348,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     banca_requerida_id = table.Column<Guid>(type: "uuid", nullable: false),
                     categoria_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4337,8 +4374,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     valor = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4363,8 +4400,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     abrangencia = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     observacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4395,8 +4432,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     data_referencia = table.Column<DateOnly>(type: "date", nullable: true),
                     ocorrencias_esperadas = table.Column<string>(type: "jsonb", nullable: true),
                     grupo_para_repeticao = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4440,8 +4477,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     valor = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4594,9 +4631,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     decidido_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decidido_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decidido_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4671,9 +4708,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     situacao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     exige_protecao_de_dados = table.Column<bool>(type: "boolean", nullable: false),
                     atualizada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4715,9 +4752,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     desfecho_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     desfecho_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_do_desfecho = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4817,8 +4854,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     abrangencia = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     observacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4901,9 +4938,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     enviado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     verificado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     recusado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -4990,9 +5027,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     termo_numero = table.Column<int>(type: "integer", nullable: true),
                     termo_resumo = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
                     versao_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -5050,9 +5087,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     versao_vigente_id = table.Column<Guid>(type: "uuid", nullable: true),
                     ultimo_numero = table.Column<int>(type: "integer", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
@@ -5257,21 +5294,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "modalidades",
-                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "remanejamento_parametros", "updated_at", "updated_by" },
+                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "updated_at", "updated_by", "remanejamento_destino", "remanejamento_destino_final", "remanejamento_par" },
                 values: new object[,]
                 {
-                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESTANTE_DAS_VAGAS_OFERTADAS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRADA_DE_OUTRA_MODALIDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000012"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_I", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato indígena (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000013"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_Q", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato quilombola (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}", null, null }
+                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESTANTE_DAS_VAGAS_OFERTADAS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", null, null, null, null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRADA_DE_OUTRA_MODALIDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", null, null, "AC", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000012"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_I", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato indígena (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", null, null, null, null, "AC_Q" },
+                    { new Guid("70da1000-0000-7000-8000-000000000013"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_Q", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato quilombola (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", null, null, null, null, "AC_I" }
                 });
 
             migrationBuilder.InsertData(
@@ -6743,6 +6780,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "configuracao_bonus_regional_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_niveis_atendimento_etapa_rotulo",
+                schema: "selecao",
+                table: "niveis_de_atendimento_da_etapa",
+                columns: new[] { "etapa_processo_id", "rotulo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_obrigatoriedades_legais_hash_ativos",
                 schema: "selecao",
                 table: "obrigatoriedades_legais",
@@ -7840,6 +7884,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "municipios_do_bonus_regional",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "niveis_de_atendimento_da_etapa",
                 schema: "selecao");
 
             migrationBuilder.DropTable(

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261122181149_Inicial")]
+    [Migration("20261123011835_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -97,7 +97,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("ETag")
                         .HasMaxLength(200)
@@ -133,7 +134,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<DateTimeOffset?>("VerificadoEm")
                         .HasColumnType("timestamp with time zone")
@@ -143,7 +145,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_anexos_do_pedido");
@@ -301,7 +304,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("EscopoTipo")
                         .IsRequired()
@@ -357,7 +361,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<DateTimeOffset?>("ValidaAte")
                         .HasColumnType("timestamp with time zone")
@@ -371,7 +376,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_concessoes");
@@ -799,7 +805,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("DesativadaEm")
                         .HasColumnType("timestamp with time zone")
@@ -862,7 +869,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_desativacoes_do_perfil");
@@ -953,7 +961,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("ETag")
                         .HasMaxLength(200)
@@ -989,7 +998,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<DateTimeOffset?>("VerificadoEm")
                         .HasColumnType("timestamp with time zone")
@@ -1003,7 +1013,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_documentos_da_versao");
@@ -1284,7 +1295,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("DocumentoETag")
                         .HasMaxLength(200)
@@ -1347,13 +1359,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_instalacoes");
@@ -1383,7 +1397,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("DecididoComo")
                         .HasMaxLength(40)
@@ -1420,13 +1435,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_itens_da_revisao");
@@ -1637,7 +1654,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<bool>("ExigeProtecaoDeDados")
                         .HasColumnType("boolean")
@@ -1659,13 +1677,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_migracoes_da_concessao");
@@ -1704,7 +1724,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
@@ -1720,7 +1741,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid?>("VersaoId")
                         .HasColumnType("uuid")
@@ -1730,7 +1752,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_pedidos_de_concessao");
@@ -1772,7 +1795,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -1800,13 +1824,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_perfis");
@@ -1898,7 +1924,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("DesfechoEm")
                         .HasColumnType("timestamp with time zone")
@@ -1966,13 +1993,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_providencias");
@@ -2124,7 +2153,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("EncerradaEm")
                         .HasColumnType("timestamp with time zone")
@@ -2176,7 +2206,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid>("VersaoAlvoId")
                         .HasColumnType("uuid")
@@ -2190,7 +2221,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_revisoes_das_concessoes");
@@ -2254,17 +2286,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_revisoes_de_acessos");
@@ -2280,7 +2315,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Motivo")
                         .IsRequired()
@@ -2329,13 +2365,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_suspensoes_do_perfil");
@@ -2405,7 +2443,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<int>("UltimoNumero")
                         .HasColumnType("integer")
@@ -2413,7 +2452,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid?>("VersaoVigenteId")
                         .HasColumnType("uuid")
@@ -2423,7 +2463,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_termos_de_responsabilidade");
@@ -2568,7 +2609,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("CriadaEm")
                         .HasColumnType("timestamp with time zone")
@@ -2667,7 +2709,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid?>("VersaoDoDocumento")
                         .HasColumnType("uuid")
@@ -2677,7 +2720,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_versoes_do_perfil");
@@ -2797,7 +2841,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("Desde")
                         .HasColumnType("timestamp with time zone")
@@ -2809,7 +2854,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid>("VersaoId")
                         .HasColumnType("uuid")
@@ -2819,7 +2865,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_vigencias_do_perfil");
@@ -3011,20 +3058,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -3040,7 +3091,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("TipoInstrumento")
                         .IsRequired()
@@ -3050,12 +3102,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_bases_legais_do_bonus_regional");
@@ -3083,33 +3137,40 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<string>("VersaoDataset")
                         .IsRequired()
@@ -3121,7 +3182,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.Property<bool>("Vigente")
                         .HasColumnType("boolean")
@@ -3180,24 +3242,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -3213,12 +3280,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_campus");
@@ -3254,20 +3323,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -3276,7 +3349,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -3290,12 +3364,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_categorias_de_documento");
@@ -3423,20 +3499,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -3445,7 +3525,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -3455,12 +3536,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_condicoes_de_atendimento");
@@ -3491,20 +3574,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Grau")
                         .IsRequired()
@@ -3520,7 +3607,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("NivelEnsino")
                         .IsRequired()
@@ -3545,12 +3633,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<string>("_grupoAreaEnemRotulo")
                         .HasMaxLength(60)
@@ -3595,7 +3685,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateOnly>("Data")
                         .HasColumnType("date")
@@ -3629,7 +3720,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_dias_nao_uteis");
@@ -3665,20 +3757,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
@@ -3687,7 +3783,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -3717,12 +3814,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_fases_canonicas");
@@ -3936,12 +4035,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.PrimitiveCollection<string[]>("Dependencias")
                         .IsRequired()
@@ -4021,18 +4122,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_fatos_do_candidato");
@@ -5352,7 +5456,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(500)
@@ -5374,7 +5479,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_valores_de_dominio_do_fato");
@@ -6250,24 +6356,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -6277,12 +6388,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_locais_de_oferta");
@@ -6404,92 +6517,102 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da modalidade.");
 
                     b.Property<string>("AcaoQuandoIndeferido")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("acao_quando_indeferido");
+                        .HasColumnName("acao_quando_indeferido")
+                        .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICAR_AC, RECLASSIFICAR_REGRA_EDITAL.");
 
                     b.Property<string>("BaseLegal")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("base_legal");
+                        .HasColumnName("base_legal")
+                        .HasComment("Fundamento legal da modalidade, quando informado.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código que identifica a modalidade. Exemplos: AC, AC_PCD.");
 
                     b.Property<string>("ComposicaoOrigem")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("composicao_origem");
+                        .HasColumnName("composicao_origem")
+                        .HasComment("Código da modalidade de origem das vagas, quando retiradas de outra modalidade.");
 
                     b.Property<string>("ComposicaoVagas")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("composicao_vagas");
+                        .HasColumnName("composicao_vagas")
+                        .HasComment("Forma de composição das vagas. Códigos: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE, SUPLEMENTAR_AO_TOTAL.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("descricao");
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da modalidade para apresentação.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("NaturezaLegal")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("natureza_legal");
+                        .HasColumnName("natureza_legal")
+                        .HasComment("Natureza legal da modalidade. Códigos: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
 
                     b.Property<string>("RegraDeAplicabilidade")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("regra_de_aplicabilidade");
+                        .HasColumnName("regra_de_aplicabilidade")
+                        .HasComment("Condições que determinam a aplicação da modalidade, em JSON; lista vazia indica aplicação incondicional.");
 
                     b.Property<string>("RegraRemanejamento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("regra_remanejamento");
-
-                    b.Property<string>("RemanejamentoParametros")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("remanejamento_parametros")
-                        .HasDefaultValueSql("'{}'::jsonb");
+                        .HasColumnName("regra_remanejamento")
+                        .HasComment("Regra aplicada ao remanejamento das vagas, quando definida. Códigos: SEGUE_CASCATA, DESTINO_UNICO, CRUZADO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_modalidades");
@@ -6501,6 +6624,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("modalidades", "configuracao", t =>
                         {
+                            t.HasComment("Modalidades de concorrência e suas regras de composição e remanejamento de vagas.");
+
                             t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')");
 
                             t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
@@ -6510,6 +6635,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
 
                             t.HasCheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
+
+                            t.HasCheckConstraint("ck_modalidades_remanejamento_cruzado", "regra_remanejamento IS DISTINCT FROM 'CRUZADO' OR (remanejamento_par IS NOT NULL AND remanejamento_destino IS NULL)");
+
+                            t.HasCheckConstraint("ck_modalidades_remanejamento_destino_unico", "regra_remanejamento IS DISTINCT FROM 'DESTINO_UNICO' OR (remanejamento_destino IS NOT NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
+
+                            t.HasCheckConstraint("ck_modalidades_remanejamento_sem_parametros", "(regra_remanejamento IS NOT NULL AND regra_remanejamento IN ('DESTINO_UNICO', 'CRUZADO')) OR (remanejamento_destino IS NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
 
                             t.HasCheckConstraint("ck_modalidades_retirada_de_outra_modalidade_origem", "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
                         });
@@ -6525,8 +6656,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Ampla concorrência",
                             IsDeleted = false,
                             NaturezaLegal = "AMPLA",
-                            RegraDeAplicabilidade = "[]",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraDeAplicabilidade = "[]"
                         },
                         new
                         {
@@ -6539,8 +6669,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6553,8 +6682,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6567,8 +6695,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6581,8 +6708,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6595,8 +6721,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6609,8 +6734,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6623,8 +6747,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6637,8 +6760,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "SEGUE_CASCATA"
                         },
                         new
                         {
@@ -6652,8 +6774,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "DESTINO_UNICO",
-                            RemanejamentoParametros = "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}"
+                            RegraRemanejamento = "DESTINO_UNICO"
                         },
                         new
                         {
@@ -6666,8 +6787,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "CRUZADO",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}"
+                            RegraRemanejamento = "CRUZADO"
                         },
                         new
                         {
@@ -6680,8 +6800,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "CRUZADO",
-                            RemanejamentoParametros = "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}"
+                            RegraRemanejamento = "CRUZADO"
                         });
                 });
 
@@ -6708,12 +6827,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -6739,18 +6860,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_modelos_formulario");
@@ -6798,12 +6922,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<Guid>("CursoId")
                         .HasColumnType("uuid")
@@ -6811,11 +6937,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("EMecCodigo")
                         .HasMaxLength(20)
@@ -6830,7 +6958,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<Guid>("LocalOfertaId")
                         .HasColumnType("uuid")
@@ -6861,12 +6990,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<int?>("VagasAnuaisAutorizadas")
                         .HasColumnType("integer")
@@ -6925,20 +7056,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("GrupoCurso")
                         .IsRequired()
@@ -6949,7 +7084,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Resolucao")
                         .IsRequired()
@@ -6959,12 +7095,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<string>("_grupoCursoRotulo")
                         .IsRequired()
@@ -7002,24 +7140,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<bool>("PermiteSobreposicao")
                         .ValueGeneratedOnAdd()
@@ -7035,12 +7178,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_precedencias_entre_fases");
@@ -7117,20 +7262,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -7139,7 +7288,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7149,12 +7299,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_recursos_de_acessibilidade");
@@ -7196,24 +7348,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<decimal>("PcdPercentual")
                         .HasPrecision(5, 2)
@@ -7232,12 +7389,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_referencias_demograficas");
@@ -7277,20 +7436,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("FormaAceiteRascunho")
                         .IsRequired()
@@ -7300,7 +7463,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7328,18 +7492,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_termos_de_consentimento");
@@ -7442,20 +7609,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
@@ -7469,7 +7640,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7479,12 +7651,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_de_banca");
@@ -7531,13 +7705,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasComment("Instante em que o tipo foi criado.");
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("created_by")
-                        .HasComment("Quem criou o tipo.");
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -7572,19 +7745,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
-                        .HasComment("Instante da última alteração. Nulo enquanto o tipo não foi alterado.");
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("updated_by")
-                        .HasComment("Quem fez a última alteração. Nulo enquanto o tipo não foi alterado.");
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_conceito");
@@ -7621,20 +7794,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -7644,7 +7821,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7658,12 +7836,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_de_deficiencia");
@@ -7711,20 +7891,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -7750,7 +7934,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7769,18 +7954,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_de_documento");
@@ -8950,12 +9138,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -8979,18 +9169,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_etapa");
@@ -9030,12 +9223,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(1000)
@@ -9050,18 +9245,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_processo");
@@ -9087,7 +9285,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateOnly>("DataDeReferencia")
                         .HasColumnType("date")
@@ -9132,7 +9330,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
-                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_sincronizacoes_com_o_sigaa");
@@ -9283,7 +9481,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<byte[]>("EncryptedResponseBody")
                         .HasColumnType("bytea")
@@ -9345,7 +9544,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("DataPublicacao")
                         .HasColumnType("timestamp with time zone")
@@ -9353,11 +9553,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<Guid>("EditalId")
                         .HasColumnType("uuid")
@@ -9365,7 +9567,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<int>("Numero")
                         .HasColumnType("integer")
@@ -9381,7 +9584,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_chamadas");
@@ -9416,7 +9620,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("DataManifestacao")
                         .HasColumnType("timestamp with time zone")
@@ -9424,11 +9629,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
@@ -9436,7 +9643,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<int>("Posicao")
                         .HasColumnType("integer")
@@ -9448,7 +9656,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_convocacoes");
@@ -9474,19 +9683,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<Guid>("MatriculaId")
                         .HasColumnType("uuid")
@@ -9515,7 +9728,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<bool>("Validado")
                         .HasColumnType("boolean")
@@ -9553,19 +9767,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Observacoes")
                         .HasMaxLength(2000)
@@ -9578,7 +9796,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_matriculas");
@@ -9658,20 +9877,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("Igc")
                         .HasMaxLength(100)
@@ -9680,7 +9903,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Mantenedora")
                         .HasMaxLength(250)
@@ -9722,12 +9946,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<string>("Website")
                         .HasMaxLength(255)
@@ -9821,24 +10047,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -9904,12 +10135,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<DateOnly?>("VigenciaFim")
                         .HasColumnType("date")
@@ -9987,7 +10220,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("MotivoMudanca")
                         .HasMaxLength(500)
@@ -10006,7 +10240,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("Valor")
                         .IsRequired()
@@ -10225,20 +10460,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<bool>("EfeitoIrreversivel")
                         .HasColumnType("boolean")
@@ -10254,7 +10493,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -10272,12 +10512,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<DateOnly?>("VigenciaFim")
                         .HasColumnType("date")
@@ -10407,7 +10649,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("DocumentoAPublicarId")
                         .HasColumnType("uuid")
@@ -10425,7 +10668,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_anexos_do_ato_do_processo");
@@ -10452,7 +10696,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("ExigenciaId")
                         .HasColumnType("uuid")
@@ -10478,7 +10723,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_apresentacoes_de_documento");
@@ -10517,7 +10763,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("GrupoPesoAreaEnemCongeladoId")
                         .HasColumnType("uuid")
@@ -10540,7 +10786,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
-                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_areas_do_quadro_de_pesos");
@@ -10586,7 +10832,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("ETag")
                         .HasMaxLength(256)
@@ -10651,7 +10898,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_arquivos_da_apresentacao");
@@ -10680,7 +10928,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -10688,7 +10937,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_atendimentos_especializados");
@@ -10718,7 +10968,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateOnly>("DataDoAto")
                         .HasColumnType("date")
@@ -10793,7 +11044,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_atos_do_processo");
@@ -10895,7 +11147,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -10907,7 +11160,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_bancas_da_etapa");
@@ -10926,7 +11180,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
@@ -10938,7 +11193,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_bancas_requeridas");
@@ -10963,7 +11219,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Observacao")
                         .HasMaxLength(1000)
@@ -10988,7 +11245,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_bases_legais_da_comprovacao");
@@ -11021,11 +11279,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_categorias_julgadas");
@@ -11124,7 +11384,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_certames_divulgados");
@@ -11162,7 +11423,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("LimparApos")
                         .HasColumnType("timestamp with time zone")
@@ -11178,7 +11440,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_chaves_a_limpar");
@@ -11299,7 +11562,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("DocumentoExigidoId")
                         .HasColumnType("uuid")
@@ -11319,7 +11583,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("Valor")
                         .IsRequired()
@@ -11363,11 +11628,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_condicoes_ofertadas");
@@ -11391,7 +11658,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Fato")
                         .IsRequired()
@@ -11411,7 +11679,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("Valor")
                         .IsRequired()
@@ -11439,7 +11708,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Fato")
                         .IsRequired()
@@ -11459,7 +11729,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("Valor")
                         .IsRequired()
@@ -11493,7 +11764,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -11534,7 +11806,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_bonus_regional");
@@ -11564,7 +11837,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -11580,7 +11854,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_municipios_do_bonus_regional");
@@ -11599,7 +11874,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("FallbackCodigo")
                         .IsRequired()
@@ -11613,7 +11889,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_de_remanejamento");
@@ -11642,7 +11919,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<decimal?>("EscalaNotaFinal")
                         .HasPrecision(9, 4)
@@ -11662,7 +11940,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_classificacao");
@@ -11688,7 +11967,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -11696,7 +11976,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_derivacao_fato");
@@ -11720,7 +12001,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<int?>("ExcedenteSobreReservaLegal")
                         .HasColumnType("integer")
@@ -11753,7 +12035,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<int?>("VagasCortadasPorEscassez")
                         .HasColumnType("integer")
@@ -11799,7 +12082,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Justificativa")
                         .HasMaxLength(1000)
@@ -11812,7 +12096,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_divulgacao");
@@ -11839,7 +12124,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Fundamentos")
                         .IsRequired()
@@ -11855,7 +12140,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
-                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<decimal?>("Valor")
                         .HasPrecision(12, 2)
@@ -11884,7 +12169,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
@@ -11901,7 +12187,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_criterios_desempate");
@@ -11925,7 +12212,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("TipoDeficienciaCodigo")
                         .IsRequired()
@@ -11945,7 +12233,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_deficiencias_atendidas");
@@ -11969,7 +12258,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("ModalidadeDestinoCodigo")
                         .IsRequired()
@@ -11989,7 +12279,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_destinos_remanejamento");
@@ -12022,7 +12313,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
@@ -12072,7 +12364,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_documentos_a_publicar");
@@ -12107,7 +12400,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid?>("ExigidoNaEtapaId")
                         .HasColumnType("uuid")
@@ -12174,7 +12468,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_documentos_exigidos");
@@ -12208,7 +12503,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("DocumentoExigidoId")
                         .HasColumnType("uuid")
@@ -12233,7 +12529,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_documentos_exigidos_base_legal");
@@ -12267,7 +12564,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(2000)
@@ -12298,7 +12596,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_etapas_formulario");
@@ -12318,51 +12617,53 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da etapa.");
 
                     b.Property<int>("Carater")
                         .HasColumnType("integer")
-                        .HasColumnName("carater");
+                        .HasColumnName("carater")
+                        .HasComment("Finalidade da etapa na avaliação. Códigos: 0 (Nenhum), 1 (Classificatoria), 2 (Eliminatoria), 3 (Ambas).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<bool>("EmiteParecerIndividual")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
-                        .HasColumnName("emite_parecer_individual");
-
-                    b.Property<string>("EscalaDeAtendimento")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("escala_de_atendimento")
-                        .HasComment("Níveis de atendimento (rótulo e fração da pontuação do item), do que mais vale ao que menos vale; ausente quando a banca digita a nota.");
+                        .HasColumnName("emite_parecer_individual")
+                        .HasComment("Indica se a etapa emite parecer individual para cada candidato.");
 
                     b.Property<string>("FaseCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("fase_codigo")
-                        .HasComment("Código canônico da fase em que a etapa acontece; é por ele que a raiz a resolve no cronograma.");
+                        .HasComment("Código da fase do cronograma em que a etapa acontece.");
 
                     b.Property<DateTimeOffset?>("Fim")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fim");
+                        .HasColumnName("fim")
+                        .HasComment("Fim do período próprio da etapa; ausente quando usa o período da fase.");
 
                     b.Property<int?>("FormaDeAvaliacao")
                         .HasColumnType("integer")
                         .HasColumnName("forma_de_avaliacao")
-                        .HasComment("Como a nota da etapa é obtida (1 objetiva, 2 humana); ausente em rascunho, na etapa sem nota e na do ENEM.");
+                        .HasComment("Como a nota da etapa é obtida; ausente quando não definida. Códigos: 1 (Objetiva), 2 (Humana).");
 
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("inicio");
+                        .HasColumnName("inicio")
+                        .HasComment("Início do período próprio da etapa; ausente quando usa o período da fase.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome da etapa no processo seletivo.");
 
                     b.Property<decimal?>("NotaMaxima")
                         .HasPrecision(18, 4)
@@ -12373,11 +12674,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<decimal?>("NotaMinima")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
-                        .HasColumnName("nota_minima");
+                        .HasColumnName("nota_minima")
+                        .HasComment("Nota mínima exigida na etapa, quando definida.");
 
                     b.Property<int?>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição da etapa no processo, quando definida.");
 
                     b.Property<decimal?>("PassoDoLancamento")
                         .HasPrecision(18, 4)
@@ -12388,15 +12691,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<decimal?>("Peso")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
-                        .HasColumnName("peso");
+                        .HasColumnName("peso")
+                        .HasComment("Peso da etapa no cálculo da nota final, quando aplicável.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Processo seletivo ao qual a etapa pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.PrimitiveCollection<string[]>("_tiposDeDecisao")
                         .IsRequired()
@@ -12404,7 +12710,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("tipos_de_decisao")
                         .HasDefaultValueSql("'{}'::text[]")
-                        .HasComment("Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição.");
+                        .HasComment("Tipos de decisão que a fase ou a etapa declara produzir, sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                     b.HasKey("Id")
                         .HasName("pk_etapas_processo");
@@ -12415,11 +12721,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("etapas_processo", "selecao", t =>
                         {
+                            t.HasComment("Etapas de avaliação e suas definições em cada processo seletivo.");
+
                             t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
 
                             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
 
+                            t.HasCheckConstraint("ck_etapas_processo_nota_minima_nao_negativa", "nota_minima IS NULL OR nota_minima >= 0");
+
                             t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
+
+                            t.HasCheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+
+                            t.HasCheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
                         });
                 });
 
@@ -12427,67 +12741,82 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da fase no cronograma.");
 
                     b.Property<bool>("AgrupaEtapas")
                         .HasColumnType("boolean")
-                        .HasColumnName("agrupa_etapas");
+                        .HasColumnName("agrupa_etapas")
+                        .HasComment("Indica se a fase agrupa etapas de avaliação.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES.");
 
                     b.Property<bool>("ColetaInscricao")
                         .HasColumnType("boolean")
-                        .HasColumnName("coleta_inscricao");
+                        .HasColumnName("coleta_inscricao")
+                        .HasComment("Indica se a fase recebe inscrições.");
 
                     b.Property<bool>("ColetaSolicitacaoIsencao")
                         .HasColumnType("boolean")
-                        .HasColumnName("coleta_solicitacao_isencao");
+                        .HasColumnName("coleta_solicitacao_isencao")
+                        .HasComment("Indica se a fase recebe pedidos de isenção da taxa.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<bool>("EmiteParecerIndividual")
                         .HasColumnType("boolean")
-                        .HasColumnName("emite_parecer_individual");
+                        .HasColumnName("emite_parecer_individual")
+                        .HasComment("Indica se a fase emite parecer individual para cada candidato.");
 
                     b.Property<Guid>("FaseCanonicaOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fase_canonica_origem_id");
+                        .HasColumnName("fase_canonica_origem_id")
+                        .HasComment("Identificador da fase de origem copiado ao definir o cronograma.");
 
                     b.Property<DateTimeOffset?>("Fim")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fim");
+                        .HasColumnName("fim")
+                        .HasComment("Fim do período da fase, quando definido.");
 
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("inicio");
+                        .HasColumnName("inicio")
+                        .HasComment("Início do período da fase, quando definido.");
 
                     b.Property<bool>("NoMesmoMomentoDaAnterior")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
-                        .HasColumnName("no_mesmo_momento_da_anterior");
+                        .HasColumnName("no_mesmo_momento_da_anterior")
+                        .HasComment("Indica se a fase ocorre no mesmo momento da fase anterior.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição da fase no cronograma.");
 
                     b.Property<int>("OrigemData")
                         .HasColumnType("integer")
-                        .HasColumnName("origem_data");
+                        .HasColumnName("origem_data")
+                        .HasComment("Momento em que as datas da fase são definidas. Códigos: 0 (Nenhuma), 1 (NoEdital), 2 (NaExecucao).");
 
                     b.Property<bool>("PermiteComplementacao")
                         .HasColumnType("boolean")
-                        .HasColumnName("permite_complementacao");
+                        .HasColumnName("permite_complementacao")
+                        .HasComment("Indica se a fase permite complementar informações.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Processo seletivo ao qual a fase pertence.");
 
                     b.Property<string>("RegraDeHomologacao")
                         .HasColumnType("jsonb")
@@ -12497,20 +12826,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("UnidadeResponsavelNome")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("unidade_responsavel_nome");
+                        .HasColumnName("unidade_responsavel_nome")
+                        .HasComment("Nome da unidade responsável, copiado quando definida.");
 
                     b.Property<Guid?>("UnidadeResponsavelOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("unidade_responsavel_origem_id");
+                        .HasColumnName("unidade_responsavel_origem_id")
+                        .HasComment("Identificador da unidade responsável, copiado quando definida.");
 
                     b.Property<string>("UnidadeResponsavelSigla")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("unidade_responsavel_sigla");
+                        .HasColumnName("unidade_responsavel_sigla")
+                        .HasComment("Sigla da unidade responsável, copiada quando definida.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.PrimitiveCollection<string[]>("_tiposDeDecisao")
                         .IsRequired()
@@ -12518,7 +12851,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("tipos_de_decisao")
                         .HasDefaultValueSql("'{}'::text[]")
-                        .HasComment("Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição.");
+                        .HasComment("Tipos de decisão que a fase ou a etapa declara produzir, sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                     b.HasKey("Id")
                         .HasName("pk_fases_cronograma");
@@ -12531,7 +12864,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_fases_cronograma_processo_ordem");
 
-                    b.ToTable("fases_cronograma", "selecao");
+                    b.ToTable("fases_cronograma", "selecao", t =>
+                        {
+                            t.HasComment("Fases e períodos do cronograma de cada processo seletivo.");
+
+                            t.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FatoColetado", b =>
@@ -12558,7 +12896,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -12646,7 +12985,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_fatos_coletados");
@@ -12675,7 +13015,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid?>("FaseId")
                         .HasColumnType("uuid")
@@ -12705,7 +13046,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_formularios_processo");
@@ -12808,7 +13150,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("EtapaCodigo")
                         .HasMaxLength(60)
@@ -12856,7 +13199,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_grupos_coletados");
@@ -12890,12 +13234,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
-                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_grupos_do_quadro_de_pesos");
@@ -12955,7 +13299,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -12975,7 +13320,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_itens_de_avaliacao_da_etapa");
@@ -13222,7 +13568,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
@@ -13270,7 +13617,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_modalidades_selecionadas");
@@ -13293,7 +13641,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
@@ -13339,7 +13688,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_modelos_de_documento");
@@ -13369,12 +13719,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -13401,18 +13753,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_motivos_de_decisao");
@@ -13442,12 +13797,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -13487,18 +13844,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasComment("Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes.");
 
                     b.HasKey("Id")
                         .HasName("pk_motivos_do_processo");
@@ -13540,21 +13900,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_by")
+                        .HasComment("Identificador do responsável pela criação, quando disponível.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("DescricaoHumana")
                         .IsRequired()
@@ -13571,7 +13935,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("PortariaInternaCodigo")
                         .HasMaxLength(128)
@@ -13597,12 +13962,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
+                        .HasColumnName("updated_by")
+                        .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
                     b.Property<DateOnly?>("VigenciaFim")
                         .HasColumnType("date")
@@ -13744,7 +14111,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
@@ -13768,7 +14136,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_opcoes_declaradas_fato");
@@ -13793,15 +14162,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("deleted_at")
+                        .HasComment("Data e hora da exclusão lógica, quando houver.");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text")
-                        .HasColumnName("deleted_by");
+                        .HasColumnName("deleted_by")
+                        .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("IdentificadorLegivel")
                         .HasMaxLength(64)
@@ -13811,7 +14183,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
+                        .HasColumnName("is_deleted")
+                        .HasComment("Indica se o registro foi excluído logicamente.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -13839,7 +14212,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_processos_seletivos");
@@ -13871,7 +14245,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -13883,7 +14258,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_produtos_da_etapa");
@@ -13911,7 +14287,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
@@ -13923,7 +14300,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_produtos_da_fase");
@@ -13945,7 +14323,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Documento")
                         .IsRequired()
@@ -13969,7 +14348,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_rascunhos_processos_seletivos");
@@ -13997,7 +14377,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("EtapaProcessoId")
                         .HasColumnType("uuid")
@@ -14017,7 +14398,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_recursos_da_etapa");
@@ -14040,7 +14422,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("RecursoCodigo")
                         .IsRequired()
@@ -14060,7 +14443,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_recursos_ofertados");
@@ -14092,7 +14476,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("DeclaracaoDaRegra")
                         .IsRequired()
@@ -14119,7 +14504,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<string>("Versao")
                         .IsRequired()
@@ -14599,7 +14985,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid?>("DocumentoExigidoId")
                         .HasColumnType("uuid")
@@ -14633,7 +15020,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_regras_de_comprovacao");
@@ -14680,7 +15068,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
@@ -14688,7 +15077,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_regras_derivacao_configuradas");
@@ -14712,7 +15102,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Parametros")
                         .IsRequired()
@@ -14721,7 +15112,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_regras_eliminacao");
@@ -14740,7 +15132,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
@@ -14760,7 +15153,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_regras_recurso_fase");
@@ -14792,7 +15186,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("Exibicao")
                         .HasColumnType("jsonb")
@@ -14851,7 +15246,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid>("VersaoId")
                         .HasColumnType("uuid")
@@ -14887,7 +15283,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("ModalidadeCodigo")
                         .IsRequired()
@@ -14905,7 +15302,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
                         .HasName("pk_vagas_ofertadas");
@@ -15192,7 +15590,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
 
                     b.Property<string>("EmissorToken")
                         .IsRequired()
@@ -15237,7 +15636,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.Property<Guid>("VersaoFormularioId")
                         .HasColumnType("uuid")
@@ -17299,6 +17699,98 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Configuracao.Domain.Entities.ManifestacaoDaProtecaoDoCatalogo", "SubstituiId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_manifestacoes_da_protecao_substitui");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.Modalidade", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.RemanejamentoParametros", "RemanejamentoParametros", b1 =>
+                        {
+                            b1.Property<Guid>("ModalidadeId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Destino")
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("remanejamento_destino")
+                                .HasComment("Código da modalidade que recebe as vagas no destino único.");
+
+                            b1.Property<string>("DestinoFinal")
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("remanejamento_destino_final")
+                                .HasComment("Código da modalidade que recebe as vagas restantes ao fim do remanejamento cruzado.");
+
+                            b1.Property<string>("Par")
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("remanejamento_par")
+                                .HasComment("Código da modalidade que participa do remanejamento cruzado.");
+
+                            b1.HasKey("ModalidadeId");
+
+                            b1.ToTable("modalidades", "configuracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ModalidadeId")
+                                .HasConstraintName("fk_modalidades_modalidades_id");
+
+                            b1.HasData(
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000001")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000002")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000003")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000004")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000005")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000006")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000007")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000008")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000009")
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000010"),
+                                    Destino = "AC"
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000012"),
+                                    Par = "AC_Q"
+                                },
+                                new
+                                {
+                                    ModalidadeId = new Guid("70da1000-0000-7000-8000-000000000013"),
+                                    Par = "AC_I"
+                                });
+                        });
+
+                    b.Navigation("RemanejamentoParametros")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.OfertaCurso", b =>
@@ -19697,20 +20189,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(128)
                                 .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_consolidacao_codigo");
+                                .HasColumnName("regra_consolidacao_codigo")
+                                .HasComment("Código da regra de consolidação das notas, quando definida.");
 
                             b1.Property<string>("Hash")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_consolidacao_hash")
-                                .IsFixedLength();
+                                .IsFixedLength()
+                                .HasComment("Resumo que identifica o conteúdo da regra de consolidação, quando definida.");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
                                 .HasMaxLength(16)
                                 .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_consolidacao_versao");
+                                .HasColumnName("regra_consolidacao_versao")
+                                .HasComment("Versão da regra de consolidação das notas, quando definida.");
 
                             b1.HasKey("EtapaProcessoId");
 
@@ -19719,6 +20214,55 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("EtapaProcessoId")
                                 .HasConstraintName("fk_etapas_processo_etapas_processo_id");
+                        });
+
+                    b.OwnsMany("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.NivelDeAtendimento", "EscalaDeAtendimento", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasColumnName("id")
+                                .HasComment("Identificador técnico do nível.");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<Guid>("EtapaProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("etapa_processo_id")
+                                .HasComment("Etapa à qual o nível pertence.");
+
+                            b1.Property<decimal>("Fracao")
+                                .HasPrecision(5, 4)
+                                .HasColumnType("numeric(5,4)")
+                                .HasColumnName("fracao")
+                                .HasComment("Fração da pontuação do item atribuída ao nível.");
+
+                            b1.Property<string>("Rotulo")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("rotulo")
+                                .HasComment("Texto escolhido pela banca na avaliação.");
+
+                            b1.HasKey("Id")
+                                .HasName("pk_niveis_de_atendimento_da_etapa");
+
+                            b1.HasIndex("EtapaProcessoId", "Rotulo")
+                                .IsUnique()
+                                .HasDatabaseName("ux_niveis_atendimento_etapa_rotulo");
+
+                            b1.ToTable("niveis_de_atendimento_da_etapa", "selecao", t =>
+                                {
+                                    t.HasComment("Níveis de atendimento usados na avaliação dos itens da etapa.");
+
+                                    t.HasCheckConstraint("ck_niveis_atendimento_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
+
+                                    t.HasCheckConstraint("ck_niveis_atendimento_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
+                                });
+
+                            b1.WithOwner()
+                                .HasForeignKey("EtapaProcessoId")
+                                .HasConstraintName("fk_niveis_atendimento_etapa");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.TipoEtapaSnapshot", "TipoEtapa", b1 =>
@@ -19729,38 +20273,42 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<bool>("AdmiteEliminacao")
                                 .HasColumnType("boolean")
-                                .HasColumnName("tipo_etapa_admite_eliminacao");
+                                .HasColumnName("tipo_etapa_admite_eliminacao")
+                                .HasComment("Indica se o tipo de etapa admite eliminação, conforme a definição copiada.");
 
                             b1.Property<bool>("AdmitePontuacao")
                                 .HasColumnType("boolean")
-                                .HasColumnName("tipo_etapa_admite_pontuacao");
+                                .HasColumnName("tipo_etapa_admite_pontuacao")
+                                .HasComment("Indica se o tipo de etapa admite pontuação, conforme a definição copiada.");
 
                             b1.Property<string>("Codigo")
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
-                                .HasColumnName("tipo_etapa_codigo");
+                                .HasColumnName("tipo_etapa_codigo")
+                                .HasComment("Código do tipo de etapa copiado na definição.");
 
                             b1.Property<bool>("ExigeCorrecaoIndependente")
                                 .HasColumnType("boolean")
                                 .HasColumnName("tipo_etapa_exige_correcao_independente")
-                                .HasComment("Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores.");
+                                .HasComment("Indica se a etapa exige correções independentes por mais de um corretor, conforme a definição do tipo.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
-                                .HasColumnName("tipo_etapa_nome");
+                                .HasColumnName("tipo_etapa_nome")
+                                .HasComment("Nome do tipo de etapa copiado na definição.");
 
                             b1.Property<bool>("NotaDeOrigemNoEnem")
                                 .HasColumnType("boolean")
                                 .HasColumnName("tipo_etapa_nota_de_origem_no_enem")
-                                .HasComment("Nota da etapa vem do ENEM, congelado do tipo junto com a identidade.");
+                                .HasComment("Indica se a nota da etapa vem do Enem, conforme a definição do tipo.");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("tipo_etapa_origem_id")
-                                .HasComment("Id de origem do tipo de etapa em Configuração, sem FK cross-schema; congelado na definição.");
+                                .HasComment("Identificador do tipo de etapa de origem, copiado na definição.");
 
                             b1.HasKey("EtapaProcessoId");
 
@@ -19770,6 +20318,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasForeignKey("EtapaProcessoId")
                                 .HasConstraintName("fk_etapas_processo_etapas_processo_id");
                         });
+
+                    b.Navigation("EscalaDeAtendimento");
 
                     b.Navigation("RegraConsolidacao");
 

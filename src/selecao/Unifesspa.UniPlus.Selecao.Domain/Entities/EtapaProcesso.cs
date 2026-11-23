@@ -69,7 +69,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// Os níveis entre os quais a banca escolhe em cada item, do de maior fração ao de menor; ausente
     /// quando a etapa lança nota digitada.
     /// </summary>
-    public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento { get; private set; }
+    public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento => NiveisDeAtendimento.EmOrdemCanonica(_escalaDeAtendimento);
+
+    private readonly List<NivelDeAtendimento> _escalaDeAtendimento = [];
 
     public int? Ordem { get; private set; }
 
@@ -231,7 +233,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         PassoDoLancamento = avaliacao.PassoDoLancamento;
         FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
         RegraConsolidacao = avaliacao.RegraConsolidacao;
-        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(avaliacao.EscalaDeAtendimento);
+        FilhasDoAgregado.Substituir(_escalaDeAtendimento, NiveisDeAtendimento.EmOrdemCanonica(avaliacao.EscalaDeAtendimento) ?? []);
     }
 
     private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, AvaliacaoDeclaradaDaEtapa avaliacao)

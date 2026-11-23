@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>SoftDeleteInterceptor</c> — bloqueia (409) as modalidades do catálogo legal fixo
 /// (<c>RemocaoBloqueadaCodigoProtegido</c>) e bloqueia (409) quando ESTA modalidade é
 /// referenciada por OUTRA modalidade viva como <c>composicao_origem</c> ou como
-/// destino/par/fallback em <c>remanejamento_parametros</c> (integridade referencial
+/// destino, par ou destino final do remanejamento (integridade referencial
 /// intra-banco, invariante 7). Nunca é bloqueada por snapshot-copy de Seleção
 /// (ADR-0061). A auto-referência não bloqueia a própria remoção (checagem exclui o
 /// próprio Id).

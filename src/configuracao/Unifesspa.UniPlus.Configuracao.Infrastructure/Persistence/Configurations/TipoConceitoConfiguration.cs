@@ -87,10 +87,6 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
 
     private static void ConfigurarAuditoria(EntityTypeBuilder<TipoConceito> builder)
     {
-        builder.Property(tipo => tipo.CreatedAt).HasComment("Instante em que o tipo foi criado.");
-        builder.Property(tipo => tipo.UpdatedAt).HasComment("Instante da última alteração. Nulo enquanto o tipo não foi alterado.");
-        builder.Property(tipo => tipo.CreatedBy).HasMaxLength(255).HasComment("Quem criou o tipo.");
-        builder.Property(tipo => tipo.UpdatedBy).HasMaxLength(255).HasComment("Quem fez a última alteração. Nulo enquanto o tipo não foi alterado.");
     }
 
     // Os valores ficam numa tabela filha, substituídos em bloco a cada edição; a chave própria deixa o

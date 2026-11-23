@@ -260,9 +260,11 @@ internal static class CatalogosDoEnvelopeFechado
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
-            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
+        Result<BaseLegalBonusRegional> resultado = BaseLegalBonusRegional.Criar(
+            "PORTARIA", $"Portaria do ciclo {Guid.CreateVersion7():N}", "Institui inclusão regional",
+            [("1504208", "Marabá", "PA")]);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        BaseLegalBonusRegional baseLegal = resultado.Value!;
         await db.BaseLegaisBonus.AddAsync(baseLegal).ConfigureAwait(false);
         await db.SaveChangesAsync().ConfigureAwait(false);
         return baseLegal.Id;

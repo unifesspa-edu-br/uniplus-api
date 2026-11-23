@@ -1,11 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -30,17 +26,17 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     // Instante fixo do seed (HasData exige valor determinístico).
     private static readonly DateTimeOffset InstanteDoSeed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new()
-    {
-        WriteIndented = false,
-    });
-
     public void Configure(EntityTypeBuilder<Modalidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.ToTable("modalidades", ConfigurarChecks);
+        builder.ToTable("modalidades", tabela =>
+        {
+            tabela.HasComment("Modalidades de concorrência e suas regras de composição e remanejamento de vagas.");
+            ConfigurarChecks(tabela);
+        });
         builder.HasKey(m => m.Id);
+        builder.Property(m => m.Id).HasComment("Identificador da modalidade.");
         ConfigurarIdentificacao(builder);
         ConfigurarNaturezaEComposicaoDasVagas(builder);
         ConfigurarRemanejamento(builder);
@@ -57,47 +53,60 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static void ConfigurarIdentificacao(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.Codigo)
+            .HasComment("Código que identifica a modalidade. Exemplos: AC, AC_PCD.")
             .HasConversion<CodigoModalidadeValueConverter>()
             .HasMaxLength(CodigoMaxLength)
             .IsRequired();
 
-        builder.Property(m => m.Descricao).HasMaxLength(DescricaoMaxLength);
-        builder.Property(m => m.BaseLegal).HasMaxLength(BaseLegalMaxLength);
+        builder.Property(m => m.Descricao).HasComment("Descrição da modalidade para apresentação.").HasMaxLength(DescricaoMaxLength);
+        builder.Property(m => m.BaseLegal).HasComment("Fundamento legal da modalidade, quando informado.").HasMaxLength(BaseLegalMaxLength);
     }
 
     private static void ConfigurarNaturezaEComposicaoDasVagas(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.NaturezaLegal)
+            .HasComment($"Natureza legal da modalidade. Códigos: {Codigos<NaturezaLegal>()}.")
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoVagas)
+            .HasComment($"Forma de composição das vagas. Códigos: {Codigos<ComposicaoVagas>()}.")
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
-        builder.Property(m => m.ComposicaoOrigem).HasMaxLength(CodigoReferenciaMaxLength);
+        builder.Property(m => m.ComposicaoOrigem).HasComment("Código da modalidade de origem das vagas, quando retiradas de outra modalidade.").HasMaxLength(CodigoReferenciaMaxLength);
     }
 
     // Enums opcionais: a ausência é null na coluna.
     private static void ConfigurarRemanejamento(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.RegraRemanejamento)
+            .HasComment($"Regra aplicada ao remanejamento das vagas, quando definida. Códigos: {Codigos<RegraRemanejamento>()}.")
             .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(m => m.AcaoQuandoIndeferido)
+            .HasComment($"Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: {Codigos<AcaoQuandoIndeferido>()}.")
             .HasMaxLength(CodigoDeContratoMaxLength);
     }
 
-    // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por
-    // JsonPropertyName — destino/par/fallback). Default '{}' cobre inserts crus.
     private static void ConfigurarParametrosDoRemanejamento(EntityTypeBuilder<Modalidade> builder)
     {
-        builder.Property(m => m.RemanejamentoParametros)
-            .HasColumnName("remanejamento_parametros")
-            .HasConversion(RemanejamentoParametrosConverter, RemanejamentoParametrosComparer)
-            .HasColumnType("jsonb")
-            .HasDefaultValueSql("'{}'::jsonb")
-            .IsRequired();
+        builder.OwnsOne(m => m.RemanejamentoParametros, parametros =>
+        {
+            parametros.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            parametros.Property(p => p.Destino).HasComment("Código da modalidade que recebe as vagas no destino único.").HasColumnName("remanejamento_destino").HasMaxLength(CodigoReferenciaMaxLength);
+            parametros.Property(p => p.Par).HasComment("Código da modalidade que participa do remanejamento cruzado.").HasColumnName("remanejamento_par").HasMaxLength(CodigoReferenciaMaxLength);
+            parametros.Property(p => p.DestinoFinal).HasComment("Código da modalidade que recebe as vagas restantes ao fim do remanejamento cruzado.").HasColumnName("remanejamento_destino_final").HasMaxLength(CodigoReferenciaMaxLength);
+            parametros.Ignore(p => p.TemAlgum);
+            parametros.HasData(ModalidadeSeed.Itens.Select(item => new
+            {
+                ModalidadeId = item.Id,
+                item.RemanejamentoParametros.Destino,
+                item.RemanejamentoParametros.Par,
+                item.RemanejamentoParametros.DestinoFinal,
+            }));
+        });
+        builder.Navigation(m => m.RemanejamentoParametros).IsRequired();
     }
 
     // A regra de aplicabilidade (ADR-0144): o predicado como lista de cláusulas, cada uma lista
@@ -105,6 +114,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static void ConfigurarRegraDeAplicabilidade(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.RegraDeAplicabilidade)
+            .HasComment("Condições que determinam a aplicação da modalidade, em JSON; lista vazia indica aplicação incondicional.")
             .HasConversion(PredicadoDnfColunaJson.Converter, PredicadoDnfColunaJson.Comparer)
             .HasColumnType("jsonb")
             .IsRequired();
@@ -147,7 +157,6 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         ComposicaoVagas = item.Composicao,
         item.ComposicaoOrigem,
         RegraRemanejamento = item.Regra,
-        item.RemanejamentoParametros,
         item.RegraDeAplicabilidade,
         AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
         item.BaseLegal,
@@ -155,11 +164,19 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         IsDeleted = false,
     };
 
+    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(static item => item.Codigo));
+
     private static void ConfigurarChecks(TableBuilder<Modalidade> table)
     {
         ConfigurarChecksDosDominiosDasVagas(table);
         ConfigurarChecksDosDominiosDoRemanejamento(table);
         ConfigurarChecksDeCoerenciaDoCodigoEDaComposicao(table);
+        string destinoUnico = SqlDosCodigosDeContrato.Literal(RegraRemanejamento.DestinoUnico);
+        string cruzado = SqlDosCodigosDeContrato.Literal(RegraRemanejamento.Cruzado);
+        table.HasCheckConstraint("ck_modalidades_remanejamento_destino_unico", $"regra_remanejamento IS DISTINCT FROM {destinoUnico} OR (remanejamento_destino IS NOT NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
+        table.HasCheckConstraint("ck_modalidades_remanejamento_cruzado", $"regra_remanejamento IS DISTINCT FROM {cruzado} OR (remanejamento_par IS NOT NULL AND remanejamento_destino IS NULL)");
+        table.HasCheckConstraint("ck_modalidades_remanejamento_sem_parametros", $"(regra_remanejamento IS NOT NULL AND regra_remanejamento IN ({destinoUnico}, {cruzado})) OR (remanejamento_destino IS NULL AND remanejamento_par IS NULL AND remanejamento_destino_final IS NULL)");
     }
 
     // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
@@ -199,24 +216,4 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             $"(composicao_vagas = {SqlDosCodigosDeContrato.Literal(ComposicaoVagas.RetiradaDeOutraModalidade)}) = (composicao_origem IS NOT NULL)");
     }
 
-    // ── Conversores/comparadores jsonb ────────────────────────────────────────
-
-    private static readonly ValueConverter<RemanejamentoParametros, string> RemanejamentoParametrosConverter =
-        new(
-            parametros => JsonSerializer.Serialize(parametros, JsonOptions),
-            json => JsonSerializer.Deserialize<RemanejamentoParametros>(json, JsonOptions) ?? RemanejamentoParametros.Vazio);
-
-    private static readonly ValueComparer<RemanejamentoParametros> RemanejamentoParametrosComparer =
-        new(
-            (a, b) => SerializeParametros(a) == SerializeParametros(b),
-            v => v == null ? 0 : SerializeParametros(v).GetHashCode(StringComparison.Ordinal),
-            v => DeserializeParametros(SerializeParametros(v)));
-
-    private static string SerializeParametros(RemanejamentoParametros? v) =>
-        v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
-
-    private static RemanejamentoParametros DeserializeParametros(string json) =>
-        string.IsNullOrEmpty(json)
-            ? RemanejamentoParametros.Vazio
-            : JsonSerializer.Deserialize<RemanejamentoParametros>(json, JsonOptions) ?? RemanejamentoParametros.Vazio;
 }

@@ -55,7 +55,7 @@ public sealed class AtomicidadeDaRetificacaoTests
         await using CenarioDaRetificacaoAtomica cenario = await CenarioDaRetificacaoAtomica.PublicadoAsync(_fixture, nameof(DuasRetificacoesConcorrentes_SerializamEmVersoesSucessivas));
         Guid primeiro = await cenario.SemearDocumentoAsync();
         Guid segundo = await cenario.SemearDocumentoAsync();
-        await cenario.AguardarAsMensagensDaPublicacaoTerminaremAsync();
+        await EstadoDaRetificacaoNoBanco.MensagensPendentesAssentadasAsync(cenario.Servicos, cenario.ProcessoId, cenario.AtoDaAbertura);
         cenario.Controle.Armar(cenario.ProcessoId, ComportamentoNaConfirmacao.Reter);
 
         Task<Result> primeira = cenario.RetificarAsync(primeiro);
@@ -74,7 +74,7 @@ public sealed class AtomicidadeDaRetificacaoTests
         await using CenarioDaRetificacaoAtomica cenario = await CenarioDaRetificacaoAtomica.PublicadoAsync(_fixture, nameof(RecusaDaVagaDoObjeto_NaoDeixaResiduo));
         string tipoUnico = await cenario.SemearTipoDeAtoUnicoPorObjetoAsync();
         await cenario.OcuparAVagaDoObjetoAsync(tipoUnico);
-        IReadOnlyList<string> mensagensAntes = await EstadoDaRetificacaoNoBanco.MensagensPendentesAssentadasAsync(cenario.Servicos, cenario.ProcessoId);
+        IReadOnlyList<string> mensagensAntes = await EstadoDaRetificacaoNoBanco.MensagensPendentesAssentadasAsync(cenario.Servicos, cenario.ProcessoId, cenario.AtoDaAbertura);
 
         Result recusa = await cenario.RetificarAsync(await cenario.SemearDocumentoAsync(), tipoUnico);
 

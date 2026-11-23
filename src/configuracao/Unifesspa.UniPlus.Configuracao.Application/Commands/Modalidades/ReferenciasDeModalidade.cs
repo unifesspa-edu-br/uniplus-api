@@ -22,7 +22,7 @@ internal static class ReferenciasDeModalidade
         Adicionar(referencias, modalidade.ComposicaoOrigem);
         Adicionar(referencias, modalidade.RemanejamentoParametros.Destino);
         Adicionar(referencias, modalidade.RemanejamentoParametros.Par);
-        Adicionar(referencias, modalidade.RemanejamentoParametros.Fallback);
+        Adicionar(referencias, modalidade.RemanejamentoParametros.DestinoFinal);
 
         return referencias;
     }

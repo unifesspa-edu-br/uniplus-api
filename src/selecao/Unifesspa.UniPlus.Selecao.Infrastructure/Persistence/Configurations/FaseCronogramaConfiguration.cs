@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
+using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,29 +27,41 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("fases_cronograma");
+        builder.ToTable("fases_cronograma", tabela =>
+        {
+            tabela.HasComment("Fases e períodos do cronograma de cada processo seletivo.");
+            tabela.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+        });
         builder.HasKey(f => f.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo
         // ao reconfigurar o agregado tracked). Convenção do repo.
-        builder.Property(f => f.Id).ValueGeneratedNever();
+        builder.Property(f => f.Id).ValueGeneratedNever().HasComment("Identificador da fase no cronograma.");
 
-        builder.Property(f => f.Ordem).IsRequired();
-        builder.Property(f => f.NoMesmoMomentoDaAnterior).HasColumnName("no_mesmo_momento_da_anterior").HasDefaultValue(false).IsRequired();
-        builder.Property(f => f.FaseCanonicaOrigemId).IsRequired();
-        builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired();
+        builder.Property(f => f.Ordem).HasComment("Posição da fase no cronograma.").IsRequired();
+        builder.Property(f => f.NoMesmoMomentoDaAnterior).HasComment("Indica se a fase ocorre no mesmo momento da fase anterior.").HasColumnName("no_mesmo_momento_da_anterior").HasDefaultValue(false).IsRequired();
+        builder.Property(f => f.FaseCanonicaOrigemId).HasComment("Identificador da fase de origem copiado ao definir o cronograma.").IsRequired();
+        builder.Property(f => f.Codigo).HasComment("Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES.").HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired()
+            .HasComment($"Momento em que as datas da fase são definidas. Códigos: {string.Join(", ", Enum.GetValues<OrigemDataFase>().Select(static valor => $"{(int)valor} ({valor})"))}.");
 
         // Snapshot-copy (ADR-0061) da unidade responsável: o id sem FK e a cópia de sigla e
         // nome, que o domínio grava e lê juntos — nulos enquanto o rascunho não a definiu.
-        builder.Property(f => f.UnidadeResponsavelOrigemId);
-        builder.Property(f => f.UnidadeResponsavelSigla).HasMaxLength(UnidadeSiglaMaxLength);
-        builder.Property(f => f.UnidadeResponsavelNome).HasMaxLength(UnidadeNomeMaxLength);
+        builder.Property(f => f.UnidadeResponsavelOrigemId).HasComment("Identificador da unidade responsável, copiado quando definida.");
+        builder.Property(f => f.UnidadeResponsavelSigla).HasComment("Sigla da unidade responsável, copiada quando definida.").HasMaxLength(UnidadeSiglaMaxLength);
+        builder.Property(f => f.UnidadeResponsavelNome).HasComment("Nome da unidade responsável, copiado quando definida.").HasMaxLength(UnidadeNomeMaxLength);
         builder.Ignore(f => f.UnidadeResponsavel);
 
+        builder.Property(f => f.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a fase pertence.");
+        builder.Property(f => f.AgrupaEtapas).HasComment("Indica se a fase agrupa etapas de avaliação.");
+        builder.Property(f => f.PermiteComplementacao).HasComment("Indica se a fase permite complementar informações.");
+        builder.Property(f => f.ColetaInscricao).HasComment("Indica se a fase recebe inscrições.");
+        builder.Property(f => f.ColetaSolicitacaoIsencao).HasComment("Indica se a fase recebe pedidos de isenção da taxa.");
+        builder.Property(f => f.Inicio).HasComment("Início do período da fase, quando definido.");
+        builder.Property(f => f.Fim).HasComment("Fim do período da fase, quando definido.");
         builder.MapearRegraDeHomologacao(f => f.RegraDeHomologacao);
 
-        builder.Property(f => f.EmiteParecerIndividual).IsRequired();
+        builder.Property(f => f.EmiteParecerIndividual).HasComment("Indica se a fase emite parecer individual para cada candidato.").IsRequired();
         builder.MapearTiposDeDecisao();
 
         // Ordem e fase canônica únicas por processo — a rejeição em

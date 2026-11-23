@@ -122,26 +122,6 @@ internal sealed class CenarioDaRetificacaoAtomica : IAsyncDisposable
             servicos.ConfigureDbContext<MonolitoDbContext>(opcoes => opcoes.AddInterceptors(Controle, Conexoes)));
     }
 
-    /// <summary>
-    /// Espera as mensagens que a publicação deixou pendentes (entre elas a cópia dos documentos ao acervo, que também trava o
-    /// processo) terminarem, para a trava só ser disputada pelas retificações do teste.
-    /// </summary>
-    public async Task AguardarAsMensagensDaPublicacaoTerminaremAsync()
-    {
-        using CancellationTokenSource limite = new(TimeSpan.FromSeconds(30));
-        try
-        {
-            while (await EstadoDaRetificacaoNoBanco.MensagensPendentesDoProcessoAsync(Servicos, ProcessoId, limite.Token) is { Count: > 0 })
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(100), limite.Token);
-            }
-        }
-        catch (OperationCanceledException cancelamento) when (limite.IsCancellationRequested)
-        {
-            throw new TimeoutException("As mensagens pendentes da publicação não terminaram em 30 segundos.", cancelamento);
-        }
-    }
-
     private async Task PublicarAAberturaAsync()
     {
         Result publicada = await InvocarAsync(new PublicarProcessoSeletivoCommand(
