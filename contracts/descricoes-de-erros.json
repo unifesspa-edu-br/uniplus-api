@@ -14620,6 +14620,19 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.chave_local.invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A chave local está ausente ou tem formato inválido."
+      ],
+      "comoResolver": [
+        "Informe uma chave de até 64 caracteres, começando por letra minúscula e usando apenas letras minúsculas sem acento, números e sublinhados entre palavras."
+      ],
+      "ondeAparece": [
+        "Configuração do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.condicao_gatilho.clausula_invalida",
       "requisitos": [
         "UNI-REQ-0017"
