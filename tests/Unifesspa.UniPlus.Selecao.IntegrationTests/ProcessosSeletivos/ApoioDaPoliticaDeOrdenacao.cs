@@ -65,7 +65,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
         },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    internal static FaseCronograma FaseMinima() => FaseCronograma.Criar(
+    internal static FaseCronograma FaseMinima() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -140,7 +140,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
         processo.DefinirCronogramaFases(
             cronogramaFases ?? [FaseMinima()], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(etapas ?? [
-            EtapaProcesso.Criar(
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaDeProvaObjetiva(), Ordem: 1, FaseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();

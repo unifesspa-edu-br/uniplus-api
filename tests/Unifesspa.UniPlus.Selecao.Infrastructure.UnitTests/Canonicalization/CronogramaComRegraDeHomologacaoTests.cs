@@ -120,7 +120,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         "RESULTADO_PRELIMINAR_HOMOLOGACAO",
         Alternativa(Condicao(2025, "MOTIVO_A", null), Condicao(2024, "MOTIVO_B", EnquadramentoDaModalidade("AMPLA"))));
 
-    private static FaseCronograma Fase(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Reidratar(
+    private static FaseCronograma Fase(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         IdDaFase,
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NoEdital,

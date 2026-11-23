@@ -24,7 +24,7 @@ internal static class EtapaDeAtendimentoBuilder
     {
         Result<TipoEtapaSnapshot> tipo = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ENTREVISTA", "Entrevista", true, true, false);
         tipo.IsSuccess.Should().BeTrue();
-        Result<EtapaProcesso> etapa = EtapaProcesso.Criar(
+        Result<EtapaProcesso> etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa("Entrevista", CaraterEtapa.Classificatoria, tipo.Value!, 1, null),
             new DeclaracaoDaAvaliacaoDaEtapa(1m, null, 10m, null, FormaDeAvaliacao.Humana, null, niveis),
             itens);

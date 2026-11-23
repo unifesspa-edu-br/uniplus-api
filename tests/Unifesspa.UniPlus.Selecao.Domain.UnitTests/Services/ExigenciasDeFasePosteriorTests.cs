@@ -187,7 +187,7 @@ public sealed class ExigenciasDeFasePosteriorTests
             [EtapaFormulario.Criar("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             id,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), $"FASE_{ordem}", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: false),

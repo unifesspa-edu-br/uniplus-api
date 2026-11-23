@@ -27,7 +27,7 @@ internal static class ApoioFaseCronograma
         IReadOnlyList<ProdutoDaFase> produtos,
         RegraRecursoFase? regraRecurso,
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
@@ -44,6 +44,6 @@ internal static class ApoioFaseCronograma
         ModeloDeFase modelo = new ModeloDeFase("RESULTADO_PRELIMINAR", 1) { OrigemData = OrigemDataFase.NoEdital };
         modelo = ajuste?.Invoke(modelo) ?? modelo;
 
-        return FaseCronograma.Criar(modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
+        return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
     }
 }

@@ -99,7 +99,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    private static EtapaProcesso EtapaDeRedacao(string? faseCodigo = null) => EtapaProcesso.Criar(
+    private static EtapaProcesso EtapaDeRedacao(string? faseCodigo = null) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoProvaObjetiva(), Ordem: 1, FaseCodigo: faseCodigo),
         DeclaracaoComPeso(1m)).Value!;
 

@@ -17,9 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class DeclaracoesAdotadasDeTeste
 {
     internal static FaseCronograma Adotada(this ModeloDeFase modelo) =>
-        FaseCronograma.Adotar(modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
+        FaseCronograma.Adotar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
 
-    internal static EtapaProcesso Adotada(this ModeloDeEtapa modelo) => EtapaProcesso.Adotar(
+    internal static EtapaProcesso Adotada(this ModeloDeEtapa modelo) => EtapaProcesso.Adotar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         modelo.Identificacao(),
         new AvaliacaoDeclaradaDaEtapa(modelo.Avaliacao(), modelo.Itens, modelo.Conceito),
         new JanelaDeTempo(modelo.Inicio, modelo.Fim),

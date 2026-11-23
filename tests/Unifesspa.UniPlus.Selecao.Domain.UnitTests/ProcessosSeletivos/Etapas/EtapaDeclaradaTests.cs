@@ -235,7 +235,7 @@ public sealed class EtapaDeclaradaTests
         DeclaracaoDaAvaliacaoDaEtapa declaracao = new(1m, null, 10m, null, null, null, null);
         Action declarar = () => EtapaDeclarada.Declarar(
             modelo.Id, semTipo, new AvaliacaoDeclaradaDaEtapa(declaracao, [], null), new JanelaDeTempo(null, null), new PublicacoesDaEtapa([], false, []), []);
-        Action reidratar = () => EtapaProcesso.Reidratar(modelo.Id, semTipo, declaracao, null);
+        Action reidratar = () => EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, modelo.Id, semTipo, declaracao, null);
 
         declarar.Should().Throw<ArgumentNullException>().WithParameterName("identificacao");
         reidratar.Should().Throw<ArgumentNullException>().WithParameterName("tipoEtapa");

@@ -65,7 +65,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Result definida = processo.DefinirEtapas(
-            [EtapaProcesso.Criar(
+            [EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
@@ -86,22 +86,59 @@ public sealed class VocabularioDaLeituraDoProcessoTests
     [Fact(DisplayName = "A modalidade devolve os tokens do catálogo, e ausência de remanejamento como null")]
     public async Task Modalidade_DevolveTokensDoCatalogo()
     {
+        JsonElement modalidade = await ModalidadeSimulada();
+
+        modalidade.GetProperty("naturezaLegal").GetString().Should().Be("AMPLA",
+            "o catálogo descreve esta mesma modalidade com este token, e o cliente cruza as duas rotas");
+        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESTANTE_DAS_VAGAS_OFERTADAS");
+        modalidade.GetProperty("regraRemanejamento").ValueKind.Should().Be(JsonValueKind.Null,
+            "a origem representa 'não remaneja' por ausência do campo, não por um token próprio");
+    }
+
+    private static async Task<JsonElement> ModalidadeSimulada()
+    {
         Guid processoId = Guid.CreateVersion7();
         Guid ofertaCursoId = Guid.CreateVersion7();
         Guid modalidadeId = Guid.CreateVersion7();
 
+        (IProcessoSeletivoRepository repository, ConfiguracaoDistribuicaoVagasResolver resolvedor) =
+            CadastroDaModalidade(processoId, ofertaCursoId, modalidadeId);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> simulada =
+            await SimularModalidade(processoId, ofertaCursoId, modalidadeId, repository, resolvedor);
+        simulada.IsSuccess.Should().BeTrue(simulada.Error?.Message);
+
+        return Serializar(simulada.Value!)[0].GetProperty("modalidades")[0];
+
+    }
+
+    private static Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> SimularModalidade(
+        Guid processoId, Guid ofertaCursoId, Guid modalidadeId, IProcessoSeletivoRepository repository,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor) => SimularDistribuicaoVagasQueryHandler.Handle(
+            new SimularDistribuicaoVagasQuery(processoId,
+                [new ConfiguracaoDistribuicaoVagasInput(
+                    ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+                    [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]),
+            repository, resolvedor, CancellationToken.None);
+
+    private static (IProcessoSeletivoRepository, ConfiguracaoDistribuicaoVagasResolver) CadastroDaModalidade(
+        Guid processoId, Guid ofertaCursoId, Guid modalidadeId)
+    {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
-        IRegraCatalogoReader regras = Substitute.For<IRegraCatalogoReader>();
-        regras.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCatalogo.Criar(
-                RegraDistribuicaoVagasCodigo.Institucional, "v1", TipoRegra.RegraDistribuicaoVagas,
-                Json("{}"), Json("[]"), "base legal"));
+        IRegraCatalogoReader regras = RegrasDaDistribuicao();
         IOfertaCursoReader ofertas = Substitute.For<IOfertaCursoReader>();
         ofertas.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(new OfertaCursoView(
             ofertaCursoId, "MEDICINA_MARABA", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
             "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado"));
+        IModalidadeReader modalidades = ModalidadeNoCadastro(modalidadeId);
+        return (repository, new ConfiguracaoDistribuicaoVagasResolver(
+            regras, ofertas, modalidades, Substitute.For<IReferenciaReservaDemograficaReader>()));
+    }
+
+    private static IModalidadeReader ModalidadeNoCadastro(Guid modalidadeId)
+    {
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
 
         // Ampla concorrência: o catálogo publica `AMPLA`/`RESTANTE_DAS_VAGAS_OFERTADAS` e NÃO publica regra
@@ -110,23 +147,17 @@ public sealed class VocabularioDaLeituraDoProcessoTests
             modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
             null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012"));
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> simulada = await SimularDistribuicaoVagasQueryHandler.Handle(
-            new SimularDistribuicaoVagasQuery(
-                processoId,
-                [new ConfiguracaoDistribuicaoVagasInput(
-                    ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                    [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]),
-            repository, new ConfiguracaoDistribuicaoVagasResolver(regras, ofertas, modalidades, Substitute.For<IReferenciaReservaDemograficaReader>()),
-            CancellationToken.None);
-        simulada.IsSuccess.Should().BeTrue(simulada.Error?.Message);
+        return modalidades;
+    }
 
-        JsonElement modalidade = Serializar(simulada.Value!)[0].GetProperty("modalidades")[0];
-
-        modalidade.GetProperty("naturezaLegal").GetString().Should().Be("AMPLA",
-            "o catálogo descreve esta mesma modalidade com este token, e o cliente cruza as duas rotas");
-        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESTANTE_DAS_VAGAS_OFERTADAS");
-        modalidade.GetProperty("regraRemanejamento").ValueKind.Should().Be(JsonValueKind.Null,
-            "a origem representa 'não remaneja' por ausência do campo, não por um token próprio");
+    private static IRegraCatalogoReader RegrasDaDistribuicao()
+    {
+        IRegraCatalogoReader regras = Substitute.For<IRegraCatalogoReader>();
+        regras.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                RegraDistribuicaoVagasCodigo.Institucional, "v1", TipoRegra.RegraDistribuicaoVagas,
+                Json("{}"), Json("[]"), "base legal"));
+        return regras;
     }
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(

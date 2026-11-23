@@ -285,7 +285,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje) =>
         (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
 
-    private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

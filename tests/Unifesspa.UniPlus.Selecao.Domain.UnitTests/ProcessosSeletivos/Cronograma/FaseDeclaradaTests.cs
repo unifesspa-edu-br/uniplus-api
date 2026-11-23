@@ -101,7 +101,7 @@ public sealed class FaseDeclaradaTests
     {
         ModeloDeFase modelo = new ModeloDeFase("INSCRICAO", 1) { EmiteParecerIndividual = true }.Janela(5, 1);
 
-        Result<FaseCronograma> criada = FaseCronograma.Criar(modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
+        Result<FaseCronograma> criada = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, modelo.Origem(), modelo.Decisoes(), modelo.Publicacoes(), modelo.Bancas);
 
         criada.IsFailure.Should().BeTrue();
         criada.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(Recusas(modelo.Declarar()));

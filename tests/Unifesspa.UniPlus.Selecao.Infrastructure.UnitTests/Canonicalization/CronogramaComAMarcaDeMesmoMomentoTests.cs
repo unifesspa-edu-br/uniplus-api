@@ -18,7 +18,7 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
 {
     private const string Chave = "noMesmoMomentoDaAnterior";
 
-    private static FaseCronograma Fase(bool marcada) => FaseCronograma.Reidratar(
+    private static FaseCronograma Fase(bool marcada) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new Guid("6666aaaa-0000-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital,
@@ -63,6 +63,41 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
         leitor.Falhou.Should().BeFalse();
         fases.Single().NoMesmoMomentoDaAnterior.Should().Be(marcada);
         fases.Single().Ordem.Should().Be(2);
+        item["chave"]!.GetValue<string>().Should().Be("fase");
+        fases.Single().Chave.Valor.Should().Be("fase");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Fase")]
+    [InlineData("fase__invalida")]
+    public void ChaveLocal_AusenteOuMalformada_Recusada(string? chave)
+    {
+        JsonObject item = SacarFase(Fase(true));
+        if (chave is null)
+        {
+            item.Remove("chave");
+        }
+        else
+        {
+            item["chave"] = chave;
+        }
+
+        Ler(item, out _).Falhou.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ChaveLocal_Repetida_Recusada()
+    {
+        JsonObject item = SacarFase(Fase(true));
+        JsonObject documento = Payload(item);
+        documento["cronogramaFases"]!["fases"]!.AsArray().Add(item.DeepClone());
+        LeitorEnvelope leitor = new();
+
+        LeituraDoCronograma.LerCronogramaFases(leitor, documento);
+
+        leitor.Falhou.Should().BeTrue();
+        leitor.Erro.Message.Should().Contain("fase");
     }
 
     [Fact(DisplayName = "A marca muda os bytes canônicos e o hash do envelope, e a mesma marca produz os mesmos bytes")]

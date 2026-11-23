@@ -55,6 +55,7 @@ internal static class SerializacaoDasEtapas
 
     private static void AcrescentarIdentificacao(JsonObject item, EtapaProcesso etapa)
     {
+        item["chave"] = etapa.Chave.Valor;
         item["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome);
         item["carater"] = etapa.Carater.ToString();
         item["tipoEtapa"] = SerializarTipoEtapa(etapa);

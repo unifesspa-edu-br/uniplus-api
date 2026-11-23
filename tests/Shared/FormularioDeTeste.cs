@@ -238,7 +238,7 @@ internal static class FormularioDeTeste
         }
     }
 
-    private static FaseCronograma FaseDeInscricao(int ordem) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao(int ordem) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),

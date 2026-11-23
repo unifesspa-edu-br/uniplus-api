@@ -74,7 +74,7 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
 
         public Guid AtoDaLinhagem { get; } = Guid.CreateVersion7();
 
-        private static FaseCronograma FaseDeClassificacaoComResultado() => FaseCronograma.Criar(
+        private static FaseCronograma FaseDeClassificacaoComResultado() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
                 ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

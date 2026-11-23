@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -54,6 +55,12 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.UnidadeResponsavelNome).HasComment("Nome da unidade responsável, copiado quando definida.").HasMaxLength(UnidadeNomeMaxLength);
         builder.Ignore(f => f.UnidadeResponsavel);
 
+        builder.Property(f => f.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Chave local estável da fase no processo seletivo.");
+        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Chave })
+            .IsUnique().HasDatabaseName("ux_fases_cronograma_processo_chave");
         builder.Property(f => f.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a fase pertence.");
         builder.Property(f => f.AgrupaEtapas).HasComment("Indica se a fase agrupa etapas de avaliação.");
         builder.Property(f => f.PermiteComplementacao).HasComment("Indica se a fase permite complementar informações.");

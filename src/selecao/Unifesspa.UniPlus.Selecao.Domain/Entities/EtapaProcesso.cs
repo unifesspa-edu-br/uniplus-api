@@ -29,6 +29,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
     public const int NomeMaxLength = 300;
 
+    public ChaveLocal Chave { get; private set; }
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>
@@ -124,11 +126,12 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// ordem de <see cref="AtualizarDados"/>. A identidade é do sistema e os itens entram todos como novos.
     /// </summary>
     public static Result<EtapaProcesso> Criar(
+        ChaveLocal chave,
         IdentificacaoDaEtapa identificacao,
         DeclaracaoDaAvaliacaoDaEtapa avaliacao,
         IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null)
     {
-        EtapaProcesso etapa = new();
+        EtapaProcesso etapa = new() { Chave = chave };
         Result declarada = etapa.AtualizarDados(identificacao, avaliacao, itens);
 
         return declarada.IsSuccess
@@ -142,6 +145,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// conceito da avaliação, que não é parte da entidade, fica de fora.
     /// </summary>
     internal static EtapaProcesso Adotar(
+        ChaveLocal chave,
         IdentificacaoDaEtapa identificacao,
         AvaliacaoDeclaradaDaEtapa avaliacao,
         JanelaDeTempo janela,
@@ -154,7 +158,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(publicacoes);
         ArgumentNullException.ThrowIfNull(bancas);
 
-        EtapaProcesso etapa = new();
+        EtapaProcesso etapa = new() { Chave = chave };
         etapa.AdotarAvaliacao(identificacao, avaliacao);
         etapa.AdotarPublicacoes(janela, publicacoes, bancas);
 
@@ -172,6 +176,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// bytes inválidos com <c>Result</c>: as guardas aqui são só contra erro de programação.
     /// </remarks>
     public static EtapaProcesso Reidratar(
+        ChaveLocal chave,
         Guid id,
         IdentificacaoDaEtapa identificacao,
         DeclaracaoDaAvaliacaoDaEtapa avaliacao,
@@ -181,7 +186,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(avaliacao);
         ConferenciaDaDeclaracaoDaEtapa.ExigirIdentidadeCongelada(id, identificacao.Nome, identificacao.Carater, identificacao.TipoEtapa);
 
-        EtapaProcesso etapa = new() { Id = id };
+        EtapaProcesso etapa = new() { Id = id, Chave = chave };
         etapa.DefinirIdentificacaoECarater(identificacao);
         etapa.DefinirLancamentoDaNota(avaliacao);
         etapa.SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(etapa._itensDeAvaliacao, itens ?? []));

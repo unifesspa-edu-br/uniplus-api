@@ -61,7 +61,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     private static FaseCronograma FaseCompleta(
         bool agrupaEtapas = true, bool permiteComplementacao = false, bool coletaInscricao = true, bool coletaIsencao = false,
         RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool noMesmoMomentoDaAnterior = false) =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             FaseId,
             Origem(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaIsencao),
             Cronograma(new UnidadeResponsavelSnapshot(UnidadeId, "CEPS", "Centro de Processos Seletivos"), noMesmoMomentoDaAnterior),
@@ -74,7 +74,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             [Banca()]);
 
     private static FaseCronograma FaseSemUnidadeNemPublicacoes() =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             FaseId,
             Origem(agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaIsencao: false),
             Cronograma(unidade: null),

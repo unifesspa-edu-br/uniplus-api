@@ -21,7 +21,7 @@ internal static class LeituraDoCronograma
 {
     private static readonly string[] ChavesDaFase =
     [
-        "id", "ordem", "noMesmoMomentoDaAnterior", "tipoFaseOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
+        "id", "chave", "ordem", "noMesmoMomentoDaAnterior", "tipoFaseOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
         "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "publicacoesPrevistas",
         "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
@@ -57,7 +57,8 @@ internal static class LeituraDoCronograma
             fases.Add(fase);
         }
 
-        return fases;
+        ChavesNoEnvelope.ExigirUnicas(leitor, fases.Select(static fase => fase.Chave), "cronogramaFases.fases");
+        return leitor.Falhou ? [] : fases;
     }
 
     private static FaseCronograma? LerFase(LeitorEnvelope leitor, JsonObject item, string path)
@@ -65,6 +66,7 @@ internal static class LeituraDoCronograma
         leitor.ExigirChaves(item, path, ChavesDaFase);
 
         Guid id = leitor.Identificador(item, "id", path);
+        ChaveLocal chave = ChavesNoEnvelope.Ler(leitor, item, path);
         int ordem = leitor.Inteiro(item, "ordem", path);
         OrigemCanonicaDaFase origem = LerOrigemCanonica(leitor, item, path);
         DecisoesDeCronogramaDaFase decisoes = LerDecisoesSemUnidade(leitor, item, path, ordem);
@@ -72,7 +74,7 @@ internal static class LeituraDoCronograma
 
         return leitor.Falhou
             ? null
-            : LerFilhasEMontar(leitor, item, path, id, origem, decisoes, emiteParecerIndividual);
+            : LerFilhasEMontar(leitor, item, path, (id, chave), origem, decisoes, emiteParecerIndividual);
     }
 
     private static OrigemCanonicaDaFase LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path) => new(
@@ -96,7 +98,7 @@ internal static class LeituraDoCronograma
         LeitorEnvelope leitor,
         JsonObject item,
         string path,
-        Guid id,
+        (Guid Id, ChaveLocal Chave) identidade,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         bool emiteParecerIndividual)
@@ -111,19 +113,19 @@ internal static class LeituraDoCronograma
         return leitor.Falhou
             ? null
             : Montar(
-                leitor, id, origem, decisoes with { UnidadeResponsavel = unidade },
+                leitor, identidade, origem, decisoes with { UnidadeResponsavel = unidade },
                 new(produtos, emiteParecerIndividual, regraRecurso, tipos, regraDeHomologacao), bancas);
     }
 
     private static FaseCronograma? Montar(
         LeitorEnvelope leitor,
-        Guid id,
+        (Guid Id, ChaveLocal Chave) identidade,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
         BancasLidas<BancaRequerida> bancas)
     {
-        Result<FaseCronograma> fase = ConferirEReidratar(id, origem, decisoes, publicacoes, bancas.Bancas);
+        Result<FaseCronograma> fase = ConferirEReidratar(identidade, origem, decisoes, publicacoes, bancas.Bancas);
         if (fase.IsFailure)
         {
             return leitor.Propagar<FaseCronograma?>(fase.Error!);
@@ -138,7 +140,7 @@ internal static class LeituraDoCronograma
     // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
     // envelope incoerente tem de virar recusa nomeada.
     private static Result<FaseCronograma> ConferirEReidratar(
-        Guid id,
+        (Guid Id, ChaveLocal Chave) identidade,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
@@ -151,16 +153,16 @@ internal static class LeituraDoCronograma
 
         return CandidatosAtendidosPelasBancas.Violacoes(bancas) is [{ } violacaoDosCandidatosAtendidos, ..]
             ? Result<FaseCronograma>.Failure(violacaoDosCandidatosAtendidos.Error)
-            : Reidratar(id, origem, decisoes, publicacoes, bancas);
+            : Reidratar(identidade, origem, decisoes, publicacoes, bancas);
     }
 
     private static Result<FaseCronograma> Reidratar(
-        Guid id,
+        (Guid Id, ChaveLocal Chave) identidade,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
         IReadOnlyList<BancaRequerida> bancas) =>
-        Result<FaseCronograma>.Success(FaseCronograma.Reidratar(id, origem, decisoes, publicacoes, bancas));
+        Result<FaseCronograma>.Success(FaseCronograma.Reidratar(identidade.Chave, identidade.Id, origem, decisoes, publicacoes, bancas));
 
     /// <summary>
     /// A unidade que responde pela fase, congelada por valor: <c>null</c> enquanto a fase não a

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.Chaves;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -24,10 +25,11 @@ internal static class MontagemDasEtapas
 {
     public static Result<List<EtapaProcesso>> Montar(IReadOnlyList<EtapaConferida> conferidas)
     {
+        ChavesEmUso chaves = ReservarChaves(conferidas);
         List<EtapaProcesso> montadas = [];
         for (int indice = 0; indice < conferidas.Count; indice++)
         {
-            Result<EtapaProcesso> etapa = MontarEtapa(conferidas[indice], indice);
+            Result<EtapaProcesso> etapa = MontarEtapa(conferidas[indice], indice, chaves);
             if (etapa.IsFailure)
             {
                 return Result<List<EtapaProcesso>>.ValidationFailure(etapa.Errors);
@@ -39,7 +41,18 @@ internal static class MontagemDasEtapas
         return Result<List<EtapaProcesso>>.Success(montadas);
     }
 
-    private static Result<EtapaProcesso> MontarEtapa(EtapaConferida conferida, int indice)
+    private static ChavesEmUso ReservarChaves(IReadOnlyList<EtapaConferida> conferidas)
+    {
+        ChavesEmUso chaves = new();
+        foreach (EtapaConferida conferida in conferidas.Where(static etapa => etapa.Existente is not null))
+        {
+            chaves.Adicionar(conferida.Existente!.Chave);
+        }
+
+        return chaves;
+    }
+
+    private static Result<EtapaProcesso> MontarEtapa(EtapaConferida conferida, int indice, ChavesEmUso chaves)
     {
         Result<TipoEtapaSnapshot> tipo = TipoDaEtapa(conferida);
         if (tipo.IsFailure)
@@ -47,17 +60,20 @@ internal static class MontagemDasEtapas
             return Result<EtapaProcesso>.Failure(tipo.Error!);
         }
 
-        Result<EtapaProcesso> montada = conferida.Existente is null ? Criar(conferida, tipo.Value!) : Atualizar(conferida, tipo.Value!);
+        Result<EtapaProcesso> montada = conferida.Existente is null ? Criar(conferida, tipo.Value!, chaves) : Atualizar(conferida, tipo.Value!);
         return montada.IsSuccess
             ? montada
             : Result<EtapaProcesso>.ValidationFailure(EscritaDasEtapasDoProcesso.ComIndice(montada.Errors, indice));
     }
 
-    private static Result<EtapaProcesso> Criar(EtapaConferida conferida, TipoEtapaSnapshot tipo) =>
-        EtapaProcesso.Criar(
-            IdentificacaoDeclarada(conferida.Declarada, tipo),
-            AvaliacaoDeclarada(conferida),
-            EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
+    private static Result<EtapaProcesso> Criar(EtapaConferida conferida, TipoEtapaSnapshot tipo, ChavesEmUso chaves)
+    {
+        ChaveLocal chave = FormacaoDeChaveLocal.Formar("etapa", tipo.Codigo, chaves);
+        chaves.Adicionar(chave);
+        return EtapaProcesso.Criar(
+            chave, IdentificacaoDeclarada(conferida.Declarada, tipo),
+            AvaliacaoDeclarada(conferida), EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
+    }
 
     private static Result<EtapaProcesso> Atualizar(EtapaConferida conferida, TipoEtapaSnapshot tipo)
     {

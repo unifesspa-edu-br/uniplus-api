@@ -32,7 +32,7 @@ public sealed class ComposicaoDosItensTests
     {
         ProdutoDaFase preliminar = Preliminar($"RESULTADO_{codigo}");
 
-        return FaseCronograma.Reidratar(
+        return FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, false, false, false, false),
             new DecisoesDeCronogramaDaFase(ordem, inicio, fim, UnidadesDeTeste.Ceps),

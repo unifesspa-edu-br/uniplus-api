@@ -43,14 +43,14 @@ public sealed class EtapaProcessoRecusasTests
 
     private static ItemDeAvaliacaoDeclarado Item(string rotulo, decimal pontuacao) => new(null, rotulo, pontuacao);
 
-    private static Result<EtapaProcesso> Criar(EntradaDaEtapa e) => EtapaProcesso.Criar(
+    private static Result<EtapaProcesso> Criar(EntradaDaEtapa e) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: e.Nome, Carater: e.Carater, TipoEtapa: Tipo(e.DoEnem), Ordem: e.Ordem, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: e.Peso, NotaMinima: e.NotaMinima, NotaMaxima: e.NotaMaxima, PassoDoLancamento: e.Passo, FormaDeAvaliacao: e.Forma, RegraConsolidacao: e.Regra, EscalaDeAtendimento: e.Escala),
         e.Itens);
 
     private static Result Atualizar(EntradaDaEtapa e)
     {
-        EtapaProcesso existente = EtapaProcesso.Criar(
+        EtapaProcesso existente = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Etapa existente", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         return existente.AtualizarDados(

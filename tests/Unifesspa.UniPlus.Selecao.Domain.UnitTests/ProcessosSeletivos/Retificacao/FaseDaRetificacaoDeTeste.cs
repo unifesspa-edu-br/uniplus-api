@@ -27,7 +27,7 @@ internal static class FaseDaRetificacaoDeTeste
         bool coletaIsencao = false,
         bool noMesmoMomentoDaAnterior = false,
         params ProdutoDaFase[] produtos) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: janela?.Inicio ?? Instante.AddDays(ordem), Fim: janela?.Fim ?? Instante.AddDays(ordem + 5), UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
@@ -36,7 +36,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     /// <summary>A fase de data definida na execução, que começa no instante dado e ainda não tem data final.</summary>
     internal static FaseCronograma SemDataFinal(int ordem, string codigo, DateTimeOffset inicio) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -44,7 +44,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     /// <summary>A mesma fase, com a mesma origem canônica, com a janela trocada: a fase como a retificação a propõe.</summary>
     internal static FaseCronograma ComJanela(FaseCronograma fase, DateTimeOffset? inicio, DateTimeOffset? fim) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
@@ -53,7 +53,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     /// <summary>A mesma fase, com a mesma origem canônica e os mesmos dados, com a marca "no mesmo momento da anterior" trocada.</summary>
     internal static FaseCronograma ComMarca(FaseCronograma fase, bool noMesmoMomentoDaAnterior) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
@@ -62,7 +62,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     /// <summary>A mesma fase, com a mesma origem canônica e a mesma janela, declarando os tipos de decisão dados.</summary>
     internal static FaseCronograma ComTiposDeDecisao(FaseCronograma fase, params string[] tipos) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
@@ -71,7 +71,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     /// <summary>A mesma fase, com a mesma origem canônica, com outro código, outra ordem e outros produtos: o que não entra no preliminar.</summary>
     internal static FaseCronograma Renomeada(FaseCronograma fase, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
@@ -88,7 +88,7 @@ internal static class FaseDaRetificacaoDeTeste
 
     internal static EtapaProcesso EtapaComJanela(string nome, DateTimeOffset inicio, int ordem)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirJanelaEParecer(inicio, inicio.AddDays(3), emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
@@ -99,7 +99,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A etapa de identidade fixa, com peso e produtos: a mesma etapa em versões diferentes tem o mesmo <c>Id</c>.</summary>
     internal static EtapaProcesso EtapaComPeso(Guid id, string nome, decimal peso, string faseCodigo, params ProdutoDaEtapa[] produtos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             id,
             new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoDaEtapaDeTeste, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null), itens: []);

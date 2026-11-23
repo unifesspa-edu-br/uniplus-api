@@ -26,7 +26,7 @@ internal static class LeituraDasFases
             return new(null, fase.PosicaoNoDocumento, fase.Chave, [FaseCanonicaNaoEncontrada(fase), .. declaracao.Recusas], ItensAdotadosDaFase.Nenhum);
         }
 
-        FaseCronograma adotada = FaseCronograma.Adotar(canonica, declaracao.Cronograma, declaracao.Publicacoes, declaracao.Bancas);
+        FaseCronograma adotada = FaseCronograma.Adotar(ChaveLocal.Criar(fase.Chave).Value, canonica, declaracao.Cronograma, declaracao.Publicacoes, declaracao.Bancas);
         return new(adotada, fase.PosicaoNoDocumento, fase.Chave, declaracao.Recusas, declaracao.Itens);
     }
 

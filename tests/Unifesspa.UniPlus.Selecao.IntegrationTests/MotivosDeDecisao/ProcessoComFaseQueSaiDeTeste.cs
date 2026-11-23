@@ -47,7 +47,7 @@ internal static class ProcessoComFaseQueSaiDeTeste
         etapas.IsSuccess.Should().BeTrue(etapas.Error?.Message);
     }
 
-    private static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: CodigoDaFaseQueSai, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
@@ -57,7 +57,7 @@ internal static class ProcessoComFaseQueSaiDeTeste
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static EtapaProcesso ProvaObjetivaNaFaseDeAvaliacao() => EtapaProcesso.Criar(
+    private static EtapaProcesso ProvaObjetivaNaFaseDeAvaliacao() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
             Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, Ordem: 1, FaseCodigo: CodigoDaFaseQueSai,
             TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!),

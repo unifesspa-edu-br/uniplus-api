@@ -124,7 +124,7 @@ public sealed class EtapaProcessoTests
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
 
     private static EtapaProcesso EtapaDeProvaObjetivaParaAmbosOsCarateres() =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
@@ -141,7 +141,7 @@ public sealed class EtapaProcessoTests
     [InlineData(FormaDeAvaliacao.Objetiva)]
     public void Criar_RegraDeConsolidacaoForaDaFormaHumana_Recusa(FormaDeAvaliacao? forma)
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: forma, RegraConsolidacao: RegraDeConsolidacao(), EscalaDeAtendimento: null));
 
@@ -152,7 +152,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "O passo do lançamento é recusado na forma objetiva, onde ninguém lança a nota")]
     public void Criar_PassoNaFormaObjetiva_Recusa()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -163,7 +163,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "A etapa de nota do ENEM recusa forma e regra, cada uma no seu campo")]
     public void Criar_FormaERegraNaEtapaDoEnem_Recusa()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaDoEnem(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(), EscalaDeAtendimento: null));
 
@@ -177,7 +177,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "A forma humana só aceita regra que seja do rol de consolidação")]
     public void Criar_RegraForaDoRolDeConsolidacao_Recusa()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao("PRECISAO-TRUNCAR"), EscalaDeAtendimento: null));
 
@@ -187,10 +187,10 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Em rascunho, a forma humana sem regra e sem passo é gravada: a falta só recusa a publicação")]
     public void Criar_FormaHumanaSemRegraESemPasso_Grava()
     {
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(RegraConsolidacaoCodigo.CorrecaoIndependente), EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
     }
@@ -198,7 +198,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_DadosValidos_Sucesso()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -209,7 +209,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar sem peso e nota mínima tem sucesso")]
     public void Criar_SemCamposOpcionais_Sucesso()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Análise de histórico", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -219,7 +219,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com nome vazio falha com NomeObrigatorio")]
     public void Criar_NomeVazio_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "   ", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -230,7 +230,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com nome acima do limite falha com NomeTamanho")]
     public void Criar_NomeAcimaDoLimite_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: new string('a', EtapaProcesso.NomeMaxLength + 1), Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -241,7 +241,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com caráter Nenhum falha com CaraterObrigatorio")]
     public void Criar_CaraterNenhum_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Nenhum, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -255,7 +255,7 @@ public sealed class EtapaProcessoTests
         // O JsonStringEnumConverter global aceita inteiro cru (allowIntegerValues: true por
         // padrão) — sem esta checagem, "carater": 4 bindaria como (CaraterEtapa)4 e passaria
         // pela checagem de Nenhum, sendo persistido como valor indefinido.
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: (CaraterEtapa)4, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -266,7 +266,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com peso não positivo falha com PesoInvalido")]
     public void Criar_PesoInvalido_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 0m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -277,7 +277,7 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Criar com nota mínima negativa falha com NotaMinimaInvalida")]
     public void Criar_NotaMinimaInvalida_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: -1m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 

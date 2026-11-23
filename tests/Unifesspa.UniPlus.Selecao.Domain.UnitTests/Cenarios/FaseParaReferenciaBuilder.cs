@@ -8,6 +8,7 @@ internal static class FaseParaReferenciaBuilder
 {
     internal static FaseCronograma Criar(bool coleta, DateTimeOffset? inicio, DateTimeOffset? fim) =>
         FaseCronograma.Reidratar(
+            ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, false, false, coleta, false),
             new DecisoesDeCronogramaDaFase(1, inicio, fim, null),

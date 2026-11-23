@@ -28,7 +28,7 @@ public sealed class CausasQueImpedemCongelarTests
 
     private static readonly DateTimeOffset Abertura = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private static FaseCronograma FaseDeColeta(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeColeta(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(30), UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -40,7 +40,7 @@ public sealed class CausasQueImpedemCongelarTests
             regra),
         bancasRequeridas: []).Value!;
 
-    private static FaseCronograma FaseSemColeta() => FaseCronograma.Criar(
+    private static FaseCronograma FaseSemColeta() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

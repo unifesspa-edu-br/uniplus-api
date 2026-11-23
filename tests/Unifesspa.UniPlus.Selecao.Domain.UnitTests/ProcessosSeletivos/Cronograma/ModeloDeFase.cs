@@ -60,7 +60,7 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal FaseDeclarada Declarar() => FaseDeclarada.Declarar(Guid.CreateVersion7(), Origem(), Decisoes(), Publicacoes(), Bancas);
 
-    internal FaseCronograma Criar() => FaseCronograma.Criar(Origem(), Decisoes(), Publicacoes(), Bancas).Value!;
+    internal FaseCronograma Criar() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, Origem(), Decisoes(), Publicacoes(), Bancas).Value!;
 
     internal OrigemCanonicaDaFase Origem() => new(
         OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao)

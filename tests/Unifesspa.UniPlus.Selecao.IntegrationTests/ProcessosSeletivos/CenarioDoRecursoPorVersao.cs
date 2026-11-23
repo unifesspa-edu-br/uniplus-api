@@ -168,7 +168,7 @@ internal sealed class CenarioDoRecursoPorVersao
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps);
 
-        return FaseCronograma.Criar(origem, periodo, publicacoes, [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase(), BancasDeTeste.DeSegundaInstanciaDaFase()]).Value!;
+        return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, origem, periodo, publicacoes, [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase(), BancasDeTeste.DeSegundaInstanciaDaFase()]).Value!;
     }
 
     private static ProdutoDaFase[] ProdutosDoResultado(Guid preliminarId) =>

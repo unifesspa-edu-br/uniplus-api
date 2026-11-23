@@ -79,7 +79,7 @@ internal static class ApoioDoDesempatePorAreaEnem
 
     internal static void AdicionarEtapasDeNotaDoEnem(ProcessoSeletivo processo, int quantidade)
     {
-        EtapaProcesso Etapa(int ordem) => EtapaProcesso.Criar(
+        EtapaProcesso Etapa(int ordem) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         System.Reflection.FieldInfo etapas = typeof(ProcessoSeletivo).GetField("_etapas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;

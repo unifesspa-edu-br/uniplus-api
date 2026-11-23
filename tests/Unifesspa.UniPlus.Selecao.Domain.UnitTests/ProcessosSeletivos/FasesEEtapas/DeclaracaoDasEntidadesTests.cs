@@ -70,7 +70,7 @@ public sealed class DeclaracaoDasEntidadesTests
             TiposDeBancaCopiadosDeTeste.DeRecursos(TipoDaBanca),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
 
-        return FaseCronograma.Reidratar(
+        return FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
             new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(9), UnidadesDeTeste.Ceps),

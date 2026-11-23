@@ -62,26 +62,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Persiste dois processos do mesmo tipo no mesmo DbContext sem compartilhar o owned snapshot")]
     public async Task Persistir_DoisProcessosDoMesmoTipoNoMesmoContexto_PreservaSnapshotEmAmbos()
     {
-        ProcessoSeletivo processoA = ProcessoSeletivo.Criar(
-            "PS snapshot A", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        ProcessoSeletivo processoB = ProcessoSeletivo.Criar(
-            "PS snapshot B", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processoA, CancellationToken.None);
-            await repository.AdicionarAsync(processoB, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo[] recarregados = await readContext.ProcessosSeletivos
-            .AsNoTracking()
-            .Where(processo => processo.Id == processoA.Id || processo.Id == processoB.Id)
-            .ToArrayAsync(CancellationToken.None);
+        ProcessoSeletivo[] recarregados = await GravarERecarregarDoisProcessosAsync();
 
         recarregados.Should().HaveCount(2);
         recarregados.Should().OnlyContain(processo =>
@@ -147,21 +128,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         // A coluna é passada EXPLICITAMENTE como NULL, não omitida, e as demais colunas obrigatórias
         // recebem valor: o banco não tem valor padrão para nenhuma, então o INSERT só prova a constraint
         // NOT NULL da sigla se não falhar antes em outra coluna.
-        Func<Task> act = async () => await writeContext.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO selecao.processos_seletivos (
-                id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
-                status, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
-                unidade_administradora_origem_id,
-                unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
-                created_at, is_deleted)
-            VALUES (
-                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, '1504208', 'Marabá', 'PA',
-                {Guid.NewGuid()},
-                NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
-                now(), false)
-            """,
-            CancellationToken.None);
+        Func<Task> act = () => InserirSemUnidadeAsync(writeContext, processoId);
 
         (await act.Should().ThrowAsync<PostgresException>(
             "unidade_administradora_sigla é NOT NULL, sem estratégia em duas fases"))
@@ -195,35 +162,74 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDaDerivacao();
+        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
+
+        await _apoio.GravarAsync(processo);
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
+        ProcessoSeletivo? recarregado = await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        ConferirDerivacao(recarregado!);
+    }
+
+    private static void ConferirDerivacao(ProcessoSeletivo processo)
+    {
+        ConfiguracaoDerivacaoFato configuracaoRecarregada = processo.RegrasDerivacao.Single();
+        configuracaoRecarregada.CodigoFato.Should().Be("REGIME_DE_VAGA");
+        configuracaoRecarregada.Regras.Should().HaveCount(2, "os três níveis reidratam — a configuração, as regras e as condições");
+        configuracaoRecarregada.Regras.Single(r => r.Contribui == "AC_PCD").Condicoes.Should().ContainSingle(c => c.Fato == "CONCORRER_PCD");
+
+        // A avaliação usa a regra reconstruída com os dados cadastrados.
+        DerivacaoDoFato derivacao = configuracaoRecarregada.ParaDerivacaoDoFato(["AC", "AC_PCD"]).Value!;
+        derivacao.Regras.Should().HaveCount(2);
+        derivacao.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);
+    }
+
+    private static ConfiguracaoDerivacaoFato ConfiguracaoDaDerivacao()
+    {
+        return ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
         [
             RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
             RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                 [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
         ]).Value!;
-        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
+    }
+
+    private static Task<int> InserirSemUnidadeAsync(UniPlusDbContext writeContext, Guid processoId) =>
+        writeContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO selecao.processos_seletivos (
+                id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
+                status, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
+                unidade_administradora_origem_id,
+                unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
+                created_at, is_deleted)
+            VALUES (
+                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, '1504208', 'Marabá', 'PA',
+                {Guid.NewGuid()},
+                NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
+                now(), false)
+            """,
+            CancellationToken.None);
+
+    private async Task<ProcessoSeletivo[]> GravarERecarregarDoisProcessosAsync()
+    {
+        ProcessoSeletivo processoA = NovoProcesso("PS A");
+        ProcessoSeletivo processoB = NovoProcesso("PS B");
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await repository.AdicionarAsync(processoA, CancellationToken.None);
+            await repository.AdicionarAsync(processoB, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository readRepo = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo? recarregado = await readRepo.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        ConfiguracaoDerivacaoFato recarregadaConfig = recarregado!.RegrasDerivacao.Single();
-        recarregadaConfig.CodigoFato.Should().Be("REGIME_DE_VAGA");
-        recarregadaConfig.Regras.Should().HaveCount(2, "os três níveis reidratam — a configuração, as regras e as condições");
-        recarregadaConfig.Regras.Single(r => r.Contribui == "AC_PCD").Condicoes.Should().ContainSingle(c => c.Fato == "CONCORRER_PCD");
-
-        // A avaliação usa a regra reconstruída com os dados cadastrados.
-        DerivacaoDoFato vo = recarregadaConfig.ParaDerivacaoDoFato(["AC", "AC_PCD"]).Value!;
-        vo.Regras.Should().HaveCount(2);
-        vo.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);
+        return await readContext.ProcessosSeletivos.AsNoTracking()
+            .Where(processo => processo.Id == processoA.Id || processo.Id == processoB.Id).ToArrayAsync(CancellationToken.None);
     }
 
     private static ProcessoSeletivo NovoProcesso(
@@ -236,7 +242,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA", cidade).Value!;
 
     private static EtapaProcesso NovaEtapa(string nome, CaraterEtapa carater, int ordem, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 Ordem: ordem, FaseCodigo: null),

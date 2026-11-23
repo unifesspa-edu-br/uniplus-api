@@ -197,7 +197,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     /// <summary>Acrescenta ao cronograma conforme uma segunda fase NA_EXECUCAO (sem janela) — a única forma de ter uma fase sem Fim, já que NO_EDITAL exige janela (CA-07).</summary>
     private static Guid AcrescentarFaseSemExtremo(ProcessoSeletivo processo)
     {
-        FaseCronograma semExtremo = FaseCronograma.Criar(
+        FaseCronograma semExtremo = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -223,7 +223,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     /// </remarks>
     private static Guid DefinirCronogramaSemFaseDeColeta(ProcessoSeletivo processo)
     {
-        FaseCronograma resultado = FaseCronograma.Criar(
+        FaseCronograma resultado = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
@@ -235,7 +235,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
 
     private static FaseCronograma ColetaNaPrimeiraQuinzena()
     {
-        FaseCronograma coletaOrdem1 = FaseCronograma.Criar(
+        FaseCronograma coletaOrdem1 = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_AC", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -246,7 +246,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
 
     private static FaseCronograma ColetaNaSegundaQuinzena()
     {
-        FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
+        FaseCronograma coletaOrdem2 = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_REMANEJAMENTO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
@@ -257,7 +257,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
 
     private static FaseCronograma FaseComFimDeMadrugadaEmUtc()
     {
-        FaseCronograma faseComVirada = FaseCronograma.Criar(
+        FaseCronograma faseComVirada = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

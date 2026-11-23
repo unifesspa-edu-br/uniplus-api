@@ -39,7 +39,7 @@ internal static class ApoioDasBancasDoProcesso
     internal static readonly ReferenciaRegra AvaliacaoUnica =
         ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('e', 64));
 
-    internal static EtapaProcesso NovaEtapa(string nome, int ordem, ReferenciaRegra? consolidacao = null) => EtapaProcesso.Criar(
+    internal static EtapaProcesso NovaEtapa(string nome, int ordem, ReferenciaRegra? consolidacao = null) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: consolidacao is null ? FormaDeAvaliacao.Objetiva : FormaDeAvaliacao.Humana, RegraConsolidacao: consolidacao, EscalaDeAtendimento: null)).Value!;
 

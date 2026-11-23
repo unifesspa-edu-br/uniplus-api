@@ -71,7 +71,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     private static AtoDoProcesso AtoDeOutroItem(Guid processoId)
     {
         ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma fase = FaseCronograma.Criar(
+        FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "ANALISE", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: Instante, Fim: Instante.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [preliminar], EmiteParecerIndividual: false, RegraRecurso: null),

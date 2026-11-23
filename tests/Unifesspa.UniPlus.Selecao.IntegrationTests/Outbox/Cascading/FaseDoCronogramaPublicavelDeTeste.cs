@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class FaseDoCronogramaPublicavelDeTeste
 {
     internal static FaseCronograma Criar(string codigo, int ordem, DateTimeOffset inicio, DateTimeOffset fim, bool noMesmoMomentoDaAnterior = false) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: false),

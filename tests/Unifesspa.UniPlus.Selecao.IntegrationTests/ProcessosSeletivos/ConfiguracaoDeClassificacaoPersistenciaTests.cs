@@ -125,7 +125,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     private static ProcessoSeletivo ProcessoComEtapa(string nome, TipoProcessoSnapshot tipo, string? faseCodigo = null)
     {
         ProcessoSeletivo processo = NovoProcesso(nome, tipo);
-        EtapaProcesso etapa = EtapaProcesso.Criar(IdentificacaoDaProva("Prova Objetiva", faseCodigo), AvaliacaoDaProva(1m)).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, IdentificacaoDaProva("Prova Objetiva", faseCodigo), AvaliacaoDaProva(1m)).Value!;
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         return processo;
     }

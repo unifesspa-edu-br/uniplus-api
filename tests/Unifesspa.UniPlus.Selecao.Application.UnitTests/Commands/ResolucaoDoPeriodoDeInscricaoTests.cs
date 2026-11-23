@@ -50,7 +50,7 @@ public sealed class ResolucaoDoPeriodoDeInscricaoTests
         return processo;
     }
 
-    private static FaseCronograma FaseDeInscricaoSemJanela() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricaoSemJanela() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

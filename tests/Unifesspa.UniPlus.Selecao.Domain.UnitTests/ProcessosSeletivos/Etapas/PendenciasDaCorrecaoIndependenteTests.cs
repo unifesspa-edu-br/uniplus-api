@@ -23,7 +23,7 @@ public sealed class PendenciasDaCorrecaoIndependenteTests
 
     private static EtapaProcesso Etapa(bool tipoExige, string nome = "Redação", ReferenciaRegra? regra = null, int ordem = 1)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 Nome: nome, Carater: CaraterEtapa.Classificatoria,
                 TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: tipoExige).Value!,

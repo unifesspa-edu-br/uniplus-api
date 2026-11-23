@@ -37,7 +37,7 @@ internal static class SerializacaoDoCronograma
 
     internal static JsonObject SerializarFase(FaseCronograma fase)
     {
-        JsonObject item = new() { ["id"] = fase.Id, ["bancasRequeridas"] = SerializarBancasRequeridas(fase) };
+        JsonObject item = new() { ["id"] = fase.Id, ["chave"] = fase.Chave.Valor, ["bancasRequeridas"] = SerializarBancasRequeridas(fase) };
         AcrescentarOrigemCanonica(item, fase);
         AcrescentarDecisoesDeCronograma(item, fase);
         AcrescentarPublicacoes(item, fase);

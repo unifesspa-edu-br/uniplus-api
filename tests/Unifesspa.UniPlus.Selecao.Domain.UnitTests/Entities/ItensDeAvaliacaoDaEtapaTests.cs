@@ -32,7 +32,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         FormaDeAvaliacao? forma = FormaDeAvaliacao.Humana,
         decimal? passo = null,
         bool doEnem = false) =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(doEnem), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: passo, FormaDeAvaliacao: forma, RegraConsolidacao: null, EscalaDeAtendimento: escala),
             itens);

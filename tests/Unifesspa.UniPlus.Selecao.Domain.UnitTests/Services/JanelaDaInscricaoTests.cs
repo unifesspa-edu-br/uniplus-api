@@ -37,7 +37,7 @@ public sealed class JanelaDaInscricaoTests
         return JanelaDaInscricao.Da(Configuracao(processo), Dados(publicadaDe, publicadaAte)).Value!;
     }
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false,
             PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),

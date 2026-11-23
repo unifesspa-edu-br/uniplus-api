@@ -30,7 +30,7 @@ internal static class FaseDeTesteDaAtualizacao
         public UnidadeResponsavelSnapshot? Unidade { get; init; } = UnidadesDeTeste.Ceps;
     }
 
-    internal static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(
+    internal static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
@@ -38,7 +38,7 @@ internal static class FaseDeTesteDaAtualizacao
 
     internal static FaseCronograma Fase(DadosDaFase dados) => Criar(dados).Value!;
 
-    internal static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(
+    internal static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id,
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),

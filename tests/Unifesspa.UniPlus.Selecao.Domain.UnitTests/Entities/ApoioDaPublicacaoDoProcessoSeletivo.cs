@@ -42,7 +42,7 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
     /// <summary>Etapa de prova objetiva com nota de 0 a 10, a mínima peça de um processo que compõe a nota.</summary>
     internal static EtapaProcesso EtapaDaProvaObjetiva(
         string nome, CaraterEtapa carater, decimal? peso, decimal? notaMinima = null, int? ordem = 1, string? faseCodigo = null) =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 nome, carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
                 ordem, faseCodigo),
@@ -74,7 +74,7 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
     }
 
     /// <summary>Fase mínima e conforme: agrupa etapas (há 1 acima), produz resultado e coleta inscrição (há vagas e a origem é InscricaoPropria).</summary>
-    internal static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+    internal static FaseCronograma FaseConforme() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),

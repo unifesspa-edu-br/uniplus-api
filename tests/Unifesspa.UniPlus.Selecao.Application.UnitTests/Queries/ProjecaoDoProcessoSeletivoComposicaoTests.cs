@@ -69,7 +69,7 @@ public sealed class ProjecaoDoProcessoSeletivoComposicaoTests
     private static ConfiguracaoDistribuicaoVagas Distribuicao(Guid ofertaCursoOrigemId) =>
         ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: ofertaCursoOrigemId);
 
-    private static FaseCronograma Fase(string codigo, int ordem) => FaseCronograma.Criar(
+    private static FaseCronograma Fase(string codigo, int ordem) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -81,7 +81,7 @@ public sealed class ProjecaoDoProcessoSeletivoComposicaoTests
         TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-        return EtapaProcesso.Criar(
+        return EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(nome, CaraterEtapa.Ambas, tipo, ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null,

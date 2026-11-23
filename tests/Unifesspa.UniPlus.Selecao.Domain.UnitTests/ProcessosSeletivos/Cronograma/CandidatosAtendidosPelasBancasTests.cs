@@ -125,7 +125,7 @@ public sealed class CandidatosAtendidosPelasBancasTests
     {
         ModeloDeFase fase = new(CodigoDaFaseComoDigitado, 1) { Bancas = [Banca(Documental, Renda), Banca(Documental), Banca(Heteroidentificacao, Renda, Renda)] };
 
-        Result<FaseCronograma> resultado = FaseCronograma.Criar(fase.Origem(), fase.Decisoes(), fase.Publicacoes(), fase.Bancas);
+        Result<FaseCronograma> resultado = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, fase.Origem(), fase.Decisoes(), fase.Publicacoes(), fase.Bancas);
 
         resultado.Errors.Select(static erro => erro.Error.Message).Should().HaveCount(2)
             .And.OnlyContain(mensagem => !mensagem.Contains("ANALISE_DOCUMENTAL_DIGITADA", StringComparison.Ordinal));

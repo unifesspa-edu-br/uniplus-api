@@ -29,7 +29,7 @@ public sealed class CaraterAdmitidoPeloTipoNaDeclaracaoDaEtapaTests
     {
         ModeloDeEtapa modelo = ClassificatoriaEmTipoQueNaoPontua();
 
-        Result<EtapaProcesso> criada = EtapaProcesso.Criar(modelo.Identificacao(), modelo.Avaliacao());
+        Result<EtapaProcesso> criada = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, modelo.Identificacao(), modelo.Avaliacao());
 
         criada.IsFailure.Should().BeTrue();
         Recusas(criada.Errors).Should().Equal(("carater", CaraterNaoAdmitido));
@@ -52,7 +52,7 @@ public sealed class CaraterAdmitidoPeloTipoNaDeclaracaoDaEtapaTests
     {
         ModeloDeEtapa modelo = new ModeloDeEtapa("Prova").SemNota() with { TipoAdmiteEliminacao = false };
 
-        Result<EtapaProcesso> criada = EtapaProcesso.Criar(modelo.Identificacao(), modelo.Avaliacao());
+        Result<EtapaProcesso> criada = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, modelo.Identificacao(), modelo.Avaliacao());
 
         Recusas(criada.Errors).Should().Equal(("carater", CaraterNaoAdmitido));
     }

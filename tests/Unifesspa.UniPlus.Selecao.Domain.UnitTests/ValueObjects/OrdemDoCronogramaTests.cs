@@ -172,7 +172,7 @@ public sealed class OrdemDoCronogramaTests
     }
 
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             id,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), $"FASE_{ordem}", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

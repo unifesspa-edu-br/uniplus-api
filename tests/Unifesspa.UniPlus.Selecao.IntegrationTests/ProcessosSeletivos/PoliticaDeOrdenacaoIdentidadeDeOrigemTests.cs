@@ -22,7 +22,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 {
-    private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(1),
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "ALFA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
@@ -32,7 +32,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
-    private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(2),
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "ZETA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
@@ -109,7 +109,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         candidatosAtendidosJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_CATEGORIA", "ZETA_CATEGORIA"]);
     }
 
-    private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(
+    private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),

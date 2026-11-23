@@ -19,7 +19,7 @@ internal static class LeituraDasEtapas
 {
     private static readonly string[] ChavesDaEtapa =
     [
-        "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao",
+        "id", "chave", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao",
         "regraDeApuracaoDaAvaliacao", "itensDeAvaliacao", "escalaDeAtendimento", "ordem", "faseCodigo", "publicacoesPrevistas",
         "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos", "tiposDeDecisao",
     ];
@@ -144,7 +144,8 @@ internal static class LeituraDasEtapas
             etapas.Add(etapa);
         }
 
-        return etapas;
+        ChavesNoEnvelope.ExigirUnicas(leitor, etapas.Select(static etapa => etapa.Chave), "etapas");
+        return leitor.Falhou ? [] : etapas;
     }
 
     private static EtapaProcesso? LerEtapa(LeitorEnvelope leitor, JsonObject item, string path)
@@ -241,6 +242,7 @@ internal static class LeituraDasEtapas
     private static EtapaProcesso? ReidratarEtapa(LeitorEnvelope leitor, JsonObject item, string path)
     {
         Guid id = leitor.Identificador(item, "id", path);
+        ChaveLocal chave = ChavesNoEnvelope.Ler(leitor, item, path);
         string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
         CaraterEtapa carater = leitor.Enumeracao<CaraterEtapa>(item, "carater", path);
         TipoEtapaSnapshot? tipoEtapa = LeituraDoTipoDaEtapa.Ler(leitor, item, path);
@@ -250,7 +252,7 @@ internal static class LeituraDasEtapas
 
         return leitor.Falhou
             ? null
-            : ReidratarDentroDosLimites(leitor, path, id, new IdentificacaoDaEtapa(nome, carater, tipoEtapa!, ordem, faseCodigo), avaliacao, itens);
+            : ReidratarDentroDosLimites(leitor, path, (id, chave), new IdentificacaoDaEtapa(nome, carater, tipoEtapa!, ordem, faseCodigo), avaliacao, itens);
     }
 
     private static (DeclaracaoDaAvaliacaoDaEtapa Avaliacao, List<ItemDeAvaliacao> Itens) LerAvaliacaoDaEtapa(
@@ -274,13 +276,13 @@ internal static class LeituraDasEtapas
     private static EtapaProcesso? ReidratarDentroDosLimites(
         LeitorEnvelope leitor,
         string path,
-        Guid id,
+        (Guid Id, ChaveLocal Chave) identidade,
         IdentificacaoDaEtapa identificacao,
         DeclaracaoDaAvaliacaoDaEtapa avaliacao,
         List<ItemDeAvaliacao> itens) =>
         ForaDosLimites(identificacao, avaliacao)
             ? RecusarEtapa(leitor, path, "peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")
-            : EtapaProcesso.Reidratar(id, identificacao, avaliacao, itens);
+            : EtapaProcesso.Reidratar(identidade.Chave, identidade.Id, identificacao, avaliacao, itens);
 
     private static bool ForaDosLimites(IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao) =>
         identificacao.Carater == CaraterEtapa.Nenhum

@@ -28,7 +28,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
             null).Value!;
 
     private static EtapaProcesso EtapaMovidaParaAFase(EtapaProcesso etapa, string faseCodigo) =>
-        EtapaProcesso.Reidratar(
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             etapa.Id,
             new IdentificacaoDaEtapa(Nome: etapa.Nome, Carater: etapa.Carater, TipoEtapa: etapa.TipoEtapa, Ordem: etapa.Ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: etapa.Peso, NotaMinima: etapa.NotaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),

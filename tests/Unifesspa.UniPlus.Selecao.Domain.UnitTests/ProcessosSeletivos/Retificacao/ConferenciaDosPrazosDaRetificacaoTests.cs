@@ -306,7 +306,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
 
     private static EtapaProcesso CopiaComInicio(EtapaProcesso etapa, DateTimeOffset inicio)
     {
-        EtapaProcesso copia = EtapaProcesso.Reidratar(
+        EtapaProcesso copia = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             etapa.Id,
             new IdentificacaoDaEtapa(etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Ordem, etapa.FaseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima,

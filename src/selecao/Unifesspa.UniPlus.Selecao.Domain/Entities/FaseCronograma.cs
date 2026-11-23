@@ -34,6 +34,8 @@ using ValueObjects;
 /// </remarks>
 public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFase
 {
+    public ChaveLocal Chave { get; private set; }
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>Posição do certame na linha do tempo, única dentro do cronograma.</summary>
@@ -156,6 +158,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// bancas e regra de recurso continuam sem fase. As mensagens citam o código como chegou, sem aparar.
     /// </remarks>
     public static Result<FaseCronograma> Criar(
+        ChaveLocal chave,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
         PublicacoesDaFase publicacoes,
@@ -170,7 +173,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
             return Result<FaseCronograma>.ValidationFailure(violacoes);
         }
 
-        return Result<FaseCronograma>.Success(Adotar(origem, cronograma, publicacoes, bancasRequeridas));
+        return Result<FaseCronograma>.Success(Adotar(chave, origem, cronograma, publicacoes, bancasRequeridas));
     }
 
     /// <summary>
@@ -178,6 +181,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// congelamento, que a lê pela <see cref="Declaracao()"/>. A fase nasce com identidade nova.
     /// </summary>
     internal static FaseCronograma Adotar(
+        ChaveLocal chave,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
         PublicacoesDaFase publicacoes,
@@ -185,7 +189,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     {
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
 
-        FaseCronograma fase = new();
+        FaseCronograma fase = new() { Chave = chave };
         fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
 
         return fase;
@@ -201,6 +205,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// de negócio já rodou em <see cref="Criar"/>.
     /// </remarks>
     public static FaseCronograma Reidratar(
+        ChaveLocal chave,
         Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
@@ -212,7 +217,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
         ConferenciaDaDeclaracaoDaFase.ExigirAncoraCoerente(publicacoes.Produtos, publicacoes.RegraRecurso);
         ConferenciaDaDeclaracaoDaFase.ExigirCandidatosAtendidosCoerentes(bancasRequeridas);
 
-        FaseCronograma fase = new() { Id = id };
+        FaseCronograma fase = new() { Id = id, Chave = chave };
         fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
 
         return fase;

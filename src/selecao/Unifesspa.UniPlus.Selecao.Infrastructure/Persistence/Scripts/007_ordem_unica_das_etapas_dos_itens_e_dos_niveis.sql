@@ -1,5 +1,12 @@
--- Reordenar itens e níveis, ou trocar rótulos de níveis, altera linhas existentes na mesma
+-- Reordenar etapas, itens e níveis, ou trocar rótulos de níveis, altera linhas existentes na mesma
 -- transação. As restrições adiadas conferem a unicidade no estado final da transação.
+DROP INDEX IF EXISTS selecao.ix_etapas_processo_processo_seletivo_id_ordem;
+ALTER TABLE selecao.etapas_processo
+    DROP CONSTRAINT IF EXISTS uq_etapas_processo_processo_ordem;
+ALTER TABLE selecao.etapas_processo
+    ADD CONSTRAINT uq_etapas_processo_processo_ordem
+    UNIQUE (processo_seletivo_id, ordem) DEFERRABLE INITIALLY DEFERRED;
+
 ALTER TABLE selecao.itens_de_avaliacao_da_etapa
     DROP CONSTRAINT IF EXISTS uq_itens_de_avaliacao_da_etapa_ordem;
 ALTER TABLE selecao.itens_de_avaliacao_da_etapa

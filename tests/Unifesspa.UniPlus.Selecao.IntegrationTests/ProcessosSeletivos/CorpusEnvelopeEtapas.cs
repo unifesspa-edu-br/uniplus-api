@@ -41,7 +41,7 @@ internal static class CorpusEnvelopeEtapas
     }
 
     internal static EtapaProcesso NovaEtapaObjetiva(int variante, bool permutar) =>
-        EtapaProcesso.Reidratar(
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             EtapaId(1, variante),
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3.5000m, NotaMinima: 40.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
@@ -145,7 +145,7 @@ internal static class CorpusEnvelopeEtapas
             ProcedimentosDoCorpusSemAlvo()).Value!;
 
     internal static EtapaProcesso EtapaRedacao(int variante) =>
-        EtapaProcesso.Reidratar(
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             EtapaId(2, variante),
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaRedacao(), Ordem: 2, FaseCodigo: "RESULTADO_PRELIMINAR"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2.2500m, NotaMinima: null, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
@@ -154,7 +154,7 @@ internal static class CorpusEnvelopeEtapas
     // A etapa de avaliação humana exige ao menos uma banca para publicar.
     internal static EtapaProcesso EtapaEntrevista(int variante, bool permutar)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             EtapaId(3, variante),
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
@@ -171,7 +171,7 @@ internal static class CorpusEnvelopeEtapas
     // escala de atendimento e dispensa o passo do lançamento.
     internal static EtapaProcesso EtapaDefesa(int variante, bool permutar)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             EtapaId(4, variante),
             new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
