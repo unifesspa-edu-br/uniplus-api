@@ -885,7 +885,10 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 }
 ```
 
-- Montar cenários com **Test Data Builders** (padrões válidos, métodos expressivos) em vez de repetir a chamada à fábrica em cada teste; o builder vive só no projeto de testes e chama a fábrica de domínio. Os testes da própria fábrica a chamam diretamente — ver [§ Value objects no lugar de primitivos](#value-objects-no-lugar-de-primitivos)
+- Montar cenários repetidos com um **Test Data Builder** por conceito, com entradas válidas e métodos que expressem as diferenças do cenário. Colocá-lo em `Cenarios/<Conceito>Builder.cs` no projeto dono; se projetos do mesmo módulo o compartilharem, manter um único fonte em `tests/Shared/<Modulo>/Cenarios/`, incluído pelo MSBuild. Construções diretas simples dispensam montador; testes da fábrica chamam a própria fábrica.
+- O montador usa as operações do domínio e confere o sucesso das transições. Para reconstituir dados, usar as fábricas e leitores que o produto já utiliza, sem ampliar `InternalsVisibleTo`. Reflexão manual, emissão de assemblies e alteração direta de estado privado são vedadas nos testes.
+- Usar o identificador devolvido pelo produto e controlar o tempo por um instante fixo ou `FakeTimeProvider`. Ordem gerada pelo banco é conferida em integração com PostgreSQL.
+- O `BannedApiAnalyzers` foi reavaliado para proibir por símbolo APIs de reflexão nos projetos de teste saneados. A revisão continua responsável por conferir se os estados dos cenários podem ser construídos ou lidos pelo produto.
 - Usar **Bogus** para dados de teste (nomes, CPFs, endereços fictícios)
 - Usar **Testcontainers** para testes de integração (PostgreSQL, Redis, Kafka)
 - Nunca usar dados reais de candidatos em testes

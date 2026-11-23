@@ -132,3 +132,7 @@ Os projetos de arquitetura existem onde há regras que precisam de conferência 
 A conferência de estrutura usa ArchUnitNET 0.13.5 nos projetos de arquitetura, com uma carga da arquitetura por projeto. Registros, ações e atributos oferecidos pelo produto são obtidos do contêiner e da descrição de ações do host no projeto de contratos. Os arquivos de referência são copiados pelo MSBuild para a saída dos testes; divergências produzem resultados separados para aprovação explícita.
 
 As conferências abrangidas por esta emenda não usam reflexão escrita à mão, apoio criado apenas para conferir, regex ou análise de código-fonte, nem proíbem palavras em nomes. Regras que a biblioteca não expressa são repensadas ou retiradas, com a garantia substituta registrada. O host fica restrito ao projeto de contratos; a carga compartilhada evita trabalho repetido nos projetos de arquitetura.
+
+As regras estruturais usam a interface declarativa do ArchUnitNET e contraprovas compiladas. Contratos externos são conferidos na representação entregue; persistência, pelo modelo público do EF ou pelo banco; composição, pelo host e pelo contêiner do produto. Quando a biblioteca não representa a propriedade exigida, a revisão registra a garantia alternativa.
+
+A montagem de cenários usa operações e leitores do produto, com transições verificadas. O BannedApiAnalyzers detecta chamadas a símbolos de reflexão nos projetos de teste saneados; a revisão confere se os estados preparados são alcançáveis ou podem ser lidos pelo produto.
