@@ -78,11 +78,20 @@ internal static class LeituraDosProcedimentosDeRecurso
         return leitor.Falhou ? null : AlvoDoTipo(leitor, tipo, valor, pathAlvo);
     }
 
-    private static AlvoDoProcedimentoDeRecurso? AlvoDoTipo(LeitorEnvelope leitor, string tipo, string valor, string pathAlvo) => tipo switch
+    private static AlvoDoProcedimentoDeRecurso? AlvoDoTipo(LeitorEnvelope leitor, string tipo, string valor, string pathAlvo)
     {
-        SerializacaoDosProcedimentosDeRecurso.AlvoItemDeAvaliacao when Guid.TryParseExact(valor, "D", out Guid id) =>
-            AlvoDoProcedimentoDeRecurso.DoItem(id),
-        SerializacaoDosProcedimentosDeRecurso.AlvoAreaDoEnem => AlvoDoProcedimentoDeRecurso.DaArea(valor),
-        _ => leitor.Malformado<AlvoDoProcedimentoDeRecurso?>(pathAlvo, "o alvo deve ser um item de avaliação, por identificador, ou uma área do ENEM, por código."),
-    };
+        if (CatalogoDe<TipoDeAlvoDoProcedimentoDeRecurso>.TentarObter(tipo, out TipoDeAlvoDoProcedimentoDeRecurso tipoDeAlvo))
+        {
+            if (tipoDeAlvo == TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao && Guid.TryParseExact(valor, "D", out Guid id))
+            {
+                return AlvoDoProcedimentoDeRecurso.DoItem(id);
+            }
+            if (tipoDeAlvo == TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem)
+            {
+                return AlvoDoProcedimentoDeRecurso.DaArea(valor);
+            }
+        }
+
+        return leitor.Malformado<AlvoDoProcedimentoDeRecurso?>(pathAlvo, "o alvo deve ser um item de avaliação, por identificador, ou uma área do ENEM, por código.");
+    }
 }

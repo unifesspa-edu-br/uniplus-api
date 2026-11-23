@@ -4,12 +4,15 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Persistence;
 
 /// <summary>
 /// A leitura dos procedimentos de recurso do envelope recusa o tipo de decisão fora do vocabulário sem repetir o texto
@@ -33,6 +36,31 @@ public sealed class LeituraDosProcedimentosDeRecursoTests
             .Contain("fase.procedimentos[0].tipoDeDecisao")
             .And.Contain(TipoDoMotivoInformado.RotulosAceitosEmTexto)
             .And.NotContain(TipoEscrito);
+    }
+
+    [Fact]
+    public void Ler_ComAmbosOsAlvos_RestauraOsProcedimentos()
+    {
+        ProcedimentosDeRecurso original = ColunaDosProcedimentosDeRecursoTests.Procedimentos();
+        JsonObject pai = new() { ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(original) };
+        LeitorEnvelope leitor = new();
+
+        ProcedimentosDeRecurso? lidos = LeituraDosProcedimentosDeRecurso.Ler(leitor, pai, "fase", CodigosDoProcedimentoDeRecurso.DaFase);
+
+        leitor.Falhou.Should().BeFalse();
+        lidos!.MesmoConteudo(original).Should().BeTrue();
+    }
+
+    [Fact]
+    public void AlvoComTipoDesconhecido_RecusaEnvelopeMalformado()
+    {
+        JsonObject pai = PaiComUmProcedimentoDoTipo(TipoMotivoDeDecisao.Classificacao.Codigo());
+        pai["procedimentos"]![0]!["alvo"] = new JsonObject { ["tipo"] = "desconhecido", ["valor"] = "x" };
+        LeitorEnvelope leitor = new();
+
+        LeituraDosProcedimentosDeRecurso.Ler(leitor, pai, "fase", CodigosDoProcedimentoDeRecurso.DaFase);
+
+        leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     private static JsonObject PaiComUmProcedimentoDoTipo(string tipoDeDecisao) =>
