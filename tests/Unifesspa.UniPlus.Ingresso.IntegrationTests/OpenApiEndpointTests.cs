@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures;
 /// <summary>
 /// Confere o endpoint <c>/openapi/ingresso.json</c>: a API em execução gera a especificação OpenAPI 3.x do
 /// módulo Ingresso, e o teste a compara com o contrato gravado em <c>contracts/openapi.ingresso.json</c>.
-/// Para regerar o contrato, rodar com <c>UPDATE_OPENAPI_BASELINE=1</c> definido.
+/// A divergência produz um arquivo para revisão.
 /// </summary>
 public sealed class OpenApiEndpointTests : IClassFixture<IngressoApiFactory>
 {

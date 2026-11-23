@@ -145,21 +145,9 @@ public sealed class RegrasDasDescricoesDeErrosTests
         DocumentoDeDescricoesDeErros documento = Documento(Entrada(), Entrada(OutroCodigo));
         string foraDeOrdem = documento.SerializarEmOrdem().Replace(OutroCodigo, TerceiroCodigo, StringComparison.Ordinal);
 
-        string[] falhas = DescricoesDeErrosPublicadasTests.ConferirConteudo(foraDeOrdem, [Codigo, TerceiroCodigo], null);
+        string[] falhas = DescricoesDeErrosPublicadasTests.ConferirConteudo(foraDeOrdem, [Codigo, TerceiroCodigo]);
 
-        falhas.Should().ContainSingle().Which.Should().Contain(DescricoesDeErrosPublicadasTests.VariavelDeReformatacao);
-    }
-
-    [Fact]
-    public void ConferirConteudo_AoReformatar_PreservaTextosECodigoSemDescricao()
-    {
-        string original = Documento(Entrada()).SerializarEmOrdem();
-        string? gravado = null;
-
-        string[] falhas = DescricoesDeErrosPublicadasTests.ConferirConteudo(original.Trim(), [Codigo, OutroCodigo], texto => gravado = texto);
-
-        gravado.Should().Be(original);
-        falhas.Should().Equal($"{OutroCodigo}: código sem descrição.");
+        falhas.Should().ContainSingle().Which.Should().Contain("resultado obtido:");
     }
 
     [Theory]
@@ -168,7 +156,7 @@ public sealed class RegrasDasDescricoesDeErrosTests
     [InlineData("""{"versaoDoFormato":1,"descricoes":[],"campoExtra":"texto"}""", "campo fora do formato")]
     public void ConferirConteudo_QuandoFormatoNaoEValido_IndicaRegraSemTexto(string conteudo, string regra)
     {
-        string[] falhas = DescricoesDeErrosPublicadasTests.ConferirConteudo(conteudo, [], null);
+        string[] falhas = DescricoesDeErrosPublicadasTests.ConferirConteudo(conteudo, []);
 
         falhas.Should().Contain(falha => falha.Contains(regra, StringComparison.Ordinal));
     }

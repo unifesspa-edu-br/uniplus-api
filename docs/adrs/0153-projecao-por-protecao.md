@@ -271,3 +271,7 @@ O valor da mensagem do registro de acesso deixa de ser JSON com JSON Schema e pa
 ## Emenda (2026-11-22) — projeto de testes
 
 A classificação das colunas é conferida em `Unifesspa.UniPlus.Contratos.UnitTests`; a convenção de namespace dos DTOs é conferida na revisão.
+
+## Emenda — aprovação das referências
+
+Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).

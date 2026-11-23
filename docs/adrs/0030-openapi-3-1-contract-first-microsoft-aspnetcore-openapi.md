@@ -26,7 +26,7 @@ A umbrella ([ADR-0022](0022-contrato-rest-canonico-umbrella.md), princípio 6) j
 
 ## Opções consideradas
 
-- **A. `Microsoft.AspNetCore.OpenApi` (built-in .NET 10) + um spec por módulo + pipeline de pós-processamento** (transformers + Spectral + Redocly bundle + drift check) committando o spec em `contracts/openapi.<modulo>.json`.
+- **A. `Microsoft.AspNetCore.OpenApi` (built-in .NET 10) + um spec por módulo + pipeline de pós-processamento** (transformers + Spectral + conferência das referências) committando o spec em `contracts/openapi.<modulo>.json`.
 - **B. `Swashbuckle.AspNetCore`** — gerador legado, manutenção comunitária pós-.NET 10.
 - **C. `NSwag`** — gerador code-first com codegen integrado.
 - **D. Contract-first puro com `openapi.yaml` autorado à mão** — código gerado a partir do spec.
@@ -52,7 +52,7 @@ Na prática, isso entrega contract-first com 95% do rigor e 30% do custo de manu
 - **`Microsoft.AspNetCore.OpenApi` 1.x** (.NET 10) — registrado por módulo: `services.AddOpenApi("selecao")`, `services.AddOpenApi("ingresso")`. Cada módulo expõe o próprio documento em `/openapi/{documentName}.json`.
 - **`Microsoft.OpenApi` 1.6+** — para os transformers programáticos (`IOpenApiDocumentTransformer`, `IOpenApiOperationTransformer`, `IOpenApiSchemaTransformer`).
 - **Spectral** (Stoplight CLI) — lint do spec committed com ruleset Uni+ versionado em `tools/spectral/.spectral.yaml`.
-- **`redocly-cli`** — bundle do spec (resolve `$ref` cross-file e produz key ordering canônico) + validação OpenAPI 3.1 estrita.
+- **Esquemas compartilhados** — a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) define a conferência entre documentos de módulos.
 - **`Microsoft.OpenApi.Kiota`** — codegen de cliente .NET para consumo cross-módulo interno e SDKs futuros.
 - **`@openapitools/openapi-generator-cli`** — codegen de cliente Angular consumido pelo `uniplus-web`.
 
@@ -62,8 +62,8 @@ Na prática, isso entrega contract-first com 95% do rigor e 30% do custo de manu
 2. **Extração do spec por módulo.** Spawn efêmero hits `/openapi/selecao.json` e `/openapi/ingresso.json` capturando o spec gerado de cada módulo.
 3. **Aplicação dos transformers Uni+** (ver "Transformers requeridos" abaixo).
 4. **Lint via Spectral** com ruleset Uni+ (ver "Regras Spectral mínimas" abaixo). Falha o PR em violação.
-5. **Bundle via `redocly-cli`** — resolve `$ref` cross-file (ex.: `ProblemDetails` em `contracts/shared.openapi.json` referenciado por todos os módulos) e produz key ordering canônico.
-6. **Drift check.** Compara spec gerado+enriquecido+bundled com `contracts/openapi.<modulo>.json` committed. Diff → PR falha. Dev regenera e commita.
+5. **Esquemas compartilhados** — a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) determina definições nos documentos dos módulos e a comparação entre elas.
+6. **Drift check.** Compara spec gerado e enriquecido com `contracts/openapi.<modulo>.json` committed. Diff → PR falha. Dev regenera e commita.
 7. **Codegen .NET.** Kiota gera `Unifesspa.UniPlus.Selecao.Client` e `Unifesspa.UniPlus.Ingresso.Client`.
 8. **Codegen Angular.** `openapi-generator-cli` gera `@uniplus/api-selecao-client` e `@uniplus/api-ingresso-client`.
 9. **Publicação no portal.** No merge para main, specs são pushados para `uniplus-developers` onde Docusaurus + Redoc renderizam por módulo.
@@ -72,7 +72,7 @@ Na prática, isso entrega contract-first com 95% do rigor e 30% do custo de manu
 
 Três transformers cobrem a reflexão das ADRs irmãs no spec:
 
-1. **`UniPlusDocumentTransformer` (`IOpenApiDocumentTransformer`)** — injeta `info.title`, `info.description`, `info.contact`, `info.license` em pt-BR; popula `servers[]` com URLs por ambiente; injeta `tags` agrupadas por subdomínio Uni+; declara componentes shared (`ProblemDetails`, `Cursor`, `_links`, paginação) via `$ref` para `contracts/shared.openapi.json`.
+1. **`UniPlusDocumentTransformer` (`IOpenApiDocumentTransformer`)** — injeta `info.title`, `info.description`, `info.contact`, `info.license` em pt-BR; popula `servers[]` com URLs por ambiente; injeta `tags` agrupadas por subdomínio Uni+; declara componentes compartilhados conforme a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md).
 2. **`UniPlusOperationTransformer` (`IOpenApiOperationTransformer`)** — injeta exemplos de request/response a partir de `contracts/examples/<modulo>/<resource>/<operacao>.json`; popula extensões custom `x-uniplus-norma`, `x-uniplus-legal-reference`, `x-uniplus-rn-numero` a partir de atributos em controllers; declara responses padrão (RFC 9457 ProblemDetails para 4xx/5xx, vendor media types para 2xx); injeta headers padrão (`Sunset`, `Deprecation`, `Link`) em operações cuja versão de recurso esteja em fase deprecated.
 3. **`UniPlusSchemaTransformer` (`IOpenApiSchemaTransformer`)** — enriquece descrições de schema a partir de XML doc comments em pt-BR; aplica regex de validação no schema do `code` (`^[a-z]+(\.[a-z_]+)+$`); marca campos opcionais vs requeridos conforme metadados de validação.
 
@@ -82,7 +82,7 @@ O ruleset Uni+ em `tools/spectral/.spectral.yaml` enforça:
 
 1. **`uniplus-pt-br-descriptions`** — `info.description`, `tags[].description`, `paths.*.*.summary` e `paths.*.*.description` devem existir e estar em pt-BR (heurística: presença de caracteres com diacrítico ou de stopwords como "de", "para", "com" indica pt-BR; ausência total de minúsculas em alfabeto latino estendido falha).
 2. **`uniplus-error-code-regex`** — toda response `4xx`/`5xx` referencia `ProblemDetails` shared; o campo `code` no schema tem `pattern: ^[a-z]+(\.[a-z_]+)+$`.
-3. **`uniplus-problem-details-ref-reuse`** — `ProblemDetails` é definido apenas em `contracts/shared.openapi.json` e referenciado via `$ref` por todos os módulos; definição inline em endpoint individual falha.
+3. **Esquemas compartilhados** — a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) determina a comparação das definições nos documentos dos módulos.
 4. **`uniplus-deprecated-needs-sunset`** — toda operação com `deprecated: true` declara header `Sunset` (timestamp HTTP-date) na response e atributo custom `x-uniplus-sunset-iso` no nível da operação.
 
 Regras adicionais entram conforme padrões de erro recorrentes aparecem em PR review; cada nova regra é documentada no próprio arquivo do ruleset.
@@ -91,7 +91,7 @@ Regras adicionais entram conforme padrões de erro recorrentes aparecem em PR re
 
 - **`contracts/openapi.selecao.json`** — Selecao: `Edital`, `Inscricao`, `Classificacao`, etc.
 - **`contracts/openapi.ingresso.json`** — Ingresso: `Chamada`, `Convocacao`, `Matricula`, etc.
-- **`contracts/shared.openapi.json`** — types compartilhados (`ProblemDetails`, `Cursor`, `_links`, paginação envelopes) referenciados via `$ref` pelos módulos. O bundle do `redocly-cli` inlined essas definições nas cópias distribuídas.
+- **Esquemas compartilhados** — definidos nos documentos dos módulos e comparados conforme a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md).
 - Módulos futuros (Auxílio Estudantil, Pesquisa) seguem o mesmo padrão de path.
 
 ### Spike gate dia-1 da implementação
@@ -121,14 +121,14 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 - **Code é fonte de verdade do spec gerado, spec committed é contrato binding, drift check é guardião.** PR review verifica comportamento e contrato no mesmo lugar.
 - **Per-module specs alinham com modular monolith.** Owners controlam contrato do próprio módulo independentemente.
 - **Spectral ruleset enforça house style.** Qualidade de spec é gated em CI, não aspiracional.
-- **Pipeline composable.** Cada passo (extract, transform, lint, bundle, drift check, codegen) é independentemente scriptável e substituível.
+- **Pipeline composable.** Cada passo (extract, transform, lint, drift check, codegen) é independentemente scriptável e substituível.
 - **Codegen .NET + Angular** sem trancar em toolchain monolítica.
 
 ### Negativas
 
 - **Spec quality reflete code quality.** XML doc comments, atributos, exemplos em fixture viram artefatos de primeira classe — precisam do mesmo rigor de revisão que o código.
 - **Pipeline é infra CI não-trivial.** ~5-7 passos com tratamento de erro. Setup inicial leva tempo desproporcional ao valor entregue por slice — amortizado nas demais.
-- **Coordenação de shared types.** `contracts/shared.openapi.json` precisa permanecer backward-compatível; mudança ali ripples para todos os módulos. Adições requerem PR separado com revisão explícita do impacto cross-módulo.
+- **Coordenação de tipos compartilhados.** Mudanças nos esquemas dos módulos seguem a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) e exigem revisão do impacto entre módulos.
 - **`Microsoft.AspNetCore.OpenApi` é mais novo que Swashbuckle.** Documentação e Stack Overflow mais finos; time vai encontrar edge cases que requerem ler código fonte do pacote.
 
 ### Neutras
@@ -141,7 +141,7 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 - **Risco:** built-in não suporta vendor media types per-resource corretamente no spec gerado.
   **Mitigação:** spike dia-1 (descrito acima); fallback é `Microsoft.OpenApi` programmatic authoring.
 - **Risco:** drift check falha repetidamente em mudanças cosméticas (key ordering, whitespace), virando ruído de CI.
-  **Mitigação:** `redocly-cli bundle` normaliza key ordering antes do drift check; whitespace é normalizado na comparação.
+  **Mitigação:** A comparação dos documentos gerados segue a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md).
 - **Risco:** consumidor confuso sobre qual spec consumir para qual operação.
   **Mitigação:** landing page do portal mapeia módulos a specs; cada `info.title`/`info.description` declara claramente o escopo do módulo.
 - **Risco:** pipeline lento degrada developer velocity.
@@ -158,7 +158,7 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 
 - [ADR-0022](0022-contrato-rest-canonico-umbrella.md) — umbrella (princípio 6: padrões abertos).
 - [ADR-0015](0015-rest-contract-first-com-openapi.md) — princípio contract-first; esta ADR completa o tooling.
-- [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — `ProblemDetails` declarado em `contracts/shared.openapi.json` com extensions reflectidas no spec.
+- [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — `ProblemDetails` declarado nos documentos dos módulos, conforme a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md).
 - [ADR-0024](0024-mapeamento-domain-error-http.md) — `code` regex enforçado pelo Spectral.
 - [ADR-0025](0025-wire-formato-sucesso-body-direto.md) — body direto refletido nos schemas de response 2xx.
 - [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — cursor opaco e `Link` header documentados no spec.
@@ -169,3 +169,7 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 - [Spectral — OpenAPI linter](https://github.com/stoplightio/spectral).
 - [Redocly CLI](https://redocly.com/docs/cli).
 - [@openapitools/openapi-generator-cli](https://www.npmjs.com/package/@openapitools/openapi-generator-cli).
+
+## Emenda — aprovação das referências
+
+Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).

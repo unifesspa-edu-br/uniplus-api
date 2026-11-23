@@ -6,7 +6,6 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// Guarda o arquivo de seed do calendário de dias úteis
@@ -127,12 +126,7 @@ public sealed class SeedCalendarioDiasUteisTests
 
     private static DatasetSeed Carregar()
     {
-        // Path.Combine descarta os segmentos anteriores quando um deles é enraizado.
-        // O precedente é OpenApiEndpointTests.ResolveRepoPath, que valida o mesmo.
-        Path.IsPathRooted(CaminhoRelativo).Should().BeFalse(
-            "o caminho do seed é relativo à diretório do repositório");
-
-        string caminho = Path.Combine(LocalizadorDaSolucao.Locate(), CaminhoRelativo);
+        string caminho = Path.Join(AppContext.BaseDirectory, CaminhoRelativo);
 
         File.Exists(caminho).Should().BeTrue($"o seed do calendário de dias úteis precisa existir em {CaminhoRelativo}");
 

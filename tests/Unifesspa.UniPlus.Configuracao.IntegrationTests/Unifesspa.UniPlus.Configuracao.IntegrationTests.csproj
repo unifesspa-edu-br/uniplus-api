@@ -42,4 +42,8 @@
     <Content Include="Sementes/Fixtures/*.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.configuracao.json" Link="contracts/openapi.configuracao.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

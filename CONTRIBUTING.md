@@ -889,7 +889,11 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 - Usar **Bogus** para dados de teste (nomes, CPFs, endereços fictícios)
 - Usar **Testcontainers** para testes de integração (PostgreSQL, Redis, Kafka)
 - Nunca usar dados reais de candidatos em testes
-- Testes de arquitetura usam só regras declarativas do **ArchUnitNET** (e reflexão sobre assinaturas onde ele não alcança); nada de regex sobre o fonte, leitor de IL próprio ou árvore do Roslyn no teste — ver [orientação para revisão](orientacao-para-revisao.md), que também lista o que é conferido só na revisão
+- Testes de arquitetura usam só regras declarativas do **ArchUnitNET**; nada de regex sobre o fonte, leitor de IL próprio ou árvore do Roslyn no teste — ver [orientação para revisão](orientacao-para-revisao.md), que também lista o que é conferido só na revisão
+
+### Aprovação de referências de teste
+
+Execute `dotnet test <projeto> --filter <teste>`. Se o resultado divergir, o teste falha e informa o caminho do arquivo obtido em uma pasta exclusiva sob o diretório temporário. Compare com `git diff --no-index <aprovado> <obtido>`; na primeira criação, revise o arquivo inteiro. Após aprovar a diferença, execute na raiz do repositório o comando `cp` mostrado na falha e execute novamente o teste com compilação, para atualizar a cópia na saída. Uma redução da classificação de proteção requer aprovação de proteção de dados; descrições de erros são escritas por pessoas.
 
 ---
 

@@ -14,15 +14,7 @@ internal static class SeedDosTiposDeAto
 {
     public static TipoAtoPublicadoView Tipo(string codigo)
     {
-        string? pasta = AppContext.BaseDirectory;
-        while (pasta is not null && !File.Exists(Path.Join(pasta, "seeds", "seed-tipos-ato.json")))
-        {
-            pasta = Path.GetDirectoryName(pasta);
-        }
-
-        pasta.Should().NotBeNull("o seed dos tipos de ato fica na raiz do repositório");
-
-        using JsonDocument seed = JsonDocument.Parse(File.ReadAllText(Path.Join(pasta!, "seeds", "seed-tipos-ato.json")));
+        using JsonDocument seed = JsonDocument.Parse(File.ReadAllText(Path.Join(AppContext.BaseDirectory, "seeds", "seed-tipos-ato.json")));
         JsonElement linha = seed.RootElement.EnumerateArray().Single(l => l.GetProperty("codigo").GetString() == codigo);
 
         return new TipoAtoPublicadoView(

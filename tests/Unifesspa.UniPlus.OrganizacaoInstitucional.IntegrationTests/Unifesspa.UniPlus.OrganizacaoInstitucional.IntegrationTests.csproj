@@ -29,4 +29,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.organizacao.json" Link="contracts/openapi.organizacao.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

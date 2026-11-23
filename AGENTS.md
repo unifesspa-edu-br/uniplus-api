@@ -26,10 +26,7 @@ command rewrites every public test class to `internal` and breaks the build with
 `xUnit1000: Test classes must be public`. See `CONTRIBUTING.md`.
 Use Docker for PostgreSQL, Redis, Kafka, MinIO, and Keycloak. Use
 `dotnet restore UniPlus.slnx --force-evaluate` only when intentionally updating
-NuGet versions or lockfiles. Regenerate OpenAPI baselines with
-`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`. Regenerate
-`contracts/codigos-de-erro.json` with
-`UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Contratos.UnitTests --filter "FullyQualifiedName~CodigosDeErroPublicados"`.
+NuGet versions or lockfiles. Approve changed reference files using the procedure in `CONTRIBUTING.md`.
 
 ## Coding Style & Naming Conventions
 Follow `.editorconfig`: four spaces, LF, UTF-8, final newline, file-scoped

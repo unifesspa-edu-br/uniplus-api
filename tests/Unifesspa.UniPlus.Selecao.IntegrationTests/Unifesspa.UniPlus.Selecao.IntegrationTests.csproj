@@ -99,4 +99,8 @@
     <Compile Include="../Shared/FakeConferenciaEnderecoGeo.cs" Link="FakeConferenciaEnderecoGeo.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.selecao.json" Link="contracts/openapi.selecao.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

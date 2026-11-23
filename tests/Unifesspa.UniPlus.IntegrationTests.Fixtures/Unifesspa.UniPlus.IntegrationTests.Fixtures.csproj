@@ -42,4 +42,12 @@
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/ResultadoDeConferencia.cs" Link="ResultadoDeConferencia.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../docker/keycloak/realm-e2e-tests.json" Link="docker/keycloak/realm-e2e-tests.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

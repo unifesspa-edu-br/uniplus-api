@@ -59,27 +59,23 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
     private readonly IContainer _container;
     private HttpClient? _httpClient;
 
-    public KeycloakContainerFixture()
-    {
-        string realmExportHostPath = ResolveRealmExportHostPath();
+    public KeycloakContainerFixture() => _container = CriarContainer();
 
-        _container = new ContainerBuilder(Image)
+    private static IContainer CriarContainer() =>
+        new ContainerBuilder(Image)
             .WithPortBinding(KeycloakHttpPort, true)
             .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
             .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
             .WithEnvironment("KC_HEALTH_ENABLED", "true")
             .WithEnvironment("KC_HOSTNAME_STRICT", "false")
             .WithEnvironment("KC_HTTP_ENABLED", "true")
-            .WithBindMount(realmExportHostPath, RealmExportContainerPath)
+            .WithBindMount(ResolveRealmExportHostPath(), RealmExportContainerPath)
             .WithCommand("start-dev", "--import-realm")
-            .WithWaitStrategy(
-                Wait.ForUnixContainer()
-                    .UntilHttpRequestIsSucceeded(request => request
-                        .ForPort(KeycloakHttpPort)
-                        .ForPath($"/realms/{RealmName}/.well-known/openid-configuration")
-                        .ForStatusCode(HttpStatusCode.OK)))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request => request
+                .ForPort(KeycloakHttpPort)
+                .ForPath($"/realms/{RealmName}/.well-known/openid-configuration")
+                .ForStatusCode(HttpStatusCode.OK)))
             .Build();
-    }
 
     /// <summary>URL base do Keycloak no host (inclui porta efêmera publicada).</summary>
     public Uri BaseAddress => new($"http://{_container.Hostname}:{_container.GetMappedPublicPort(KeycloakHttpPort)}");
@@ -113,7 +109,28 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
 
-        using HttpRequestMessage request = new(HttpMethod.Post, TokenEndpoint)
+        using HttpRequestMessage request = CriarRequisicaoDeToken(username, password, clientId);
+
+        using HttpResponseMessage response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        TokenResponse? payload = await response.Content.ReadFromJsonAsync<TokenResponse>().ConfigureAwait(false);
+        return ObterToken(payload, username);
+    }
+
+    private static string ObterToken(TokenResponse? payload, string username)
+    {
+        if (payload is null || string.IsNullOrWhiteSpace(payload.AccessToken))
+        {
+            throw new InvalidOperationException(
+                $"Resposta de token inválida do Keycloak para usuário '{username}'.");
+        }
+
+        return payload.AccessToken;
+    }
+
+    private HttpRequestMessage CriarRequisicaoDeToken(string username, string password, string clientId) =>
+        new(HttpMethod.Post, TokenEndpoint)
         {
             Content = new FormUrlEncodedContent(new[]
             {
@@ -124,22 +141,6 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
                 new KeyValuePair<string, string>("password", password),
             }),
         };
-
-        using HttpResponseMessage response = await HttpClient.SendAsync(request).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-
-        TokenResponse? payload = await response.Content
-            .ReadFromJsonAsync<TokenResponse>()
-            .ConfigureAwait(false);
-
-        if (payload is null || string.IsNullOrWhiteSpace(payload.AccessToken))
-        {
-            throw new InvalidOperationException(
-                $"Resposta de token inválida do Keycloak para usuário '{username}'.");
-        }
-
-        return payload.AccessToken;
-    }
 
     public async Task InitializeAsync()
     {
@@ -152,32 +153,8 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
         await _container.DisposeAsync().ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Resolve o caminho absoluto do realm sintético de testes (<c>realm-e2e-tests.json</c>) caminhando
-    /// para cima a partir do diretório de testes até encontrar a raiz do repositório (marcada por
-    /// <c>UniPlus.slnx</c>). O canônico <c>realm-export.json</c> é deliberadamente ignorado — ele é
-    /// fonte de verdade para dev/homologação/produção e não deve ser carregado em testes E2E.
-    /// </summary>
-    private static string ResolveRealmExportHostPath()
-    {
-        const string RealmFileName = "realm-e2e-tests.json";
-
-        DirectoryInfo? current = new(AppContext.BaseDirectory);
-        while (current is not null)
-        {
-            string candidate = Path.Combine(current.FullName, "docker", "keycloak", RealmFileName);
-            if (File.Exists(candidate) && File.Exists(Path.Combine(current.FullName, "UniPlus.slnx")))
-            {
-                return candidate;
-            }
-
-            current = current.Parent;
-        }
-
-        throw new FileNotFoundException(
-            $"Não foi possível localizar 'docker/keycloak/{RealmFileName}' subindo a partir do diretório "
-            + "de testes. Verifique se o teste está rodando dentro da árvore do repositório uniplus-api.");
-    }
+    private static string ResolveRealmExportHostPath() =>
+        Path.Join(AppContext.BaseDirectory, "docker", "keycloak", "realm-e2e-tests.json");
 
     [SuppressMessage(
         "Performance",

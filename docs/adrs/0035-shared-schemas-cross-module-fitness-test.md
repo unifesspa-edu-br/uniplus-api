@@ -51,9 +51,11 @@ public void Schemas_Compartilhados_Devem_Ser_ByteEquivalentes()
     // 1. Carrega contracts/openapi.{selecao,ingresso}.json
     // 2. Calcula intersection de nomes em components.schemas
     // 3. Asserts byte-equivalência com SerializeCanonical (WriteIndented = true)
-    // 4. Mensagem inclui o comando de fix (UPDATE_OPENAPI_BASELINE=1 …)
+    // 4. Em caso de divergência, informa os nomes dos schemas divergentes.
 }
 ```
+
+A comparação entre schemas informa os nomes divergentes. Para atualizar uma referência OpenAPI, execute o teste que compara o documento gerado com a referência: ele informa o caminho do resultado e o comando `cp`. Revise a diferença antes de executar o comando.
 
 A intersection é computada dinamicamente — a regra captura schemas adicionais sem mudança de código quando o time mover novos tipos para shared (Cursor envelopes, `_links`, paginated responses).
 

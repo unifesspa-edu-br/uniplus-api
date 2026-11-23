@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
+using Unifesspa.UniPlus.TestSupport;
 
 /// <summary>
 /// Fitness functions da classificação de proteção declarada no modelo (ADR-0153): toda coluna mapeada de
@@ -18,8 +19,6 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 /// </summary>
 public sealed class ClassificacaoDeProtecaoDoModeloTests
 {
-    private const string AtualizarArquivoEnvVar = "UPDATE_ARQUIVO_CLASSIFICACAO_PROTECAO";
-
     // Os modelos são construídos uma vez por execução: cada DbContext custa um OnModelCreating completo.
     private static readonly Lazy<IReadOnlyList<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)>> Modelos = new(Analisar);
 
@@ -47,17 +46,13 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
     {
         string atual = string.Concat(Modelos.Value.Select(c => $"# {c.Contexto}\n{c.Conteudo}\n"));
 
-        if (Environment.GetEnvironmentVariable(AtualizarArquivoEnvVar) == "1")
+        string caminho = ArquivoDaClassificacaoDeProtecao.Caminho();
+        string? versionado = File.Exists(caminho) ? ArquivoDaClassificacaoDeProtecao.LerTexto() : null;
+        if (!string.Equals(atual, versionado, StringComparison.Ordinal))
         {
-            ArquivoDaClassificacaoDeProtecao.Regravar(atual);
+            string resultado = ResultadoDeConferencia.Gravar(Path.GetFileName(caminho), atual);
+            atual.Should().Be(versionado, $"confira a mudança e obtenha aprovação de proteção de dados em caso de rebaixamento; {ResultadoDeConferencia.Mensagem(resultado, "tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/ClassificacaoDeProtecaoDoModelo.txt")}");
         }
-
-        string versionado = ArquivoDaClassificacaoDeProtecao.LerTexto();
-
-        atual.Should().Be(
-            versionado,
-            $"a classificação de uma coluna mudou: confira a diferença, obtenha a aprovação da proteção de dados se for rebaixamento "
-            + $"e regenere o arquivo com {AtualizarArquivoEnvVar}=1.");
     }
 
     private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Conteudo)> Analisar()

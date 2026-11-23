@@ -22,4 +22,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.portal.json" Link="contracts/openapi.portal.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

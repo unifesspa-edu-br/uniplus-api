@@ -78,4 +78,8 @@
     <Compile Include="../Shared/EnumsDeCodigoDeContratoDeTeste.cs" Link="EnumsDeCodigoDeContratoDeTeste.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../seeds/seed-tipos-ato.json" Link="seeds/seed-tipos-ato.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

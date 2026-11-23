@@ -30,4 +30,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.autorizacao.json" Link="contracts/openapi.autorizacao.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

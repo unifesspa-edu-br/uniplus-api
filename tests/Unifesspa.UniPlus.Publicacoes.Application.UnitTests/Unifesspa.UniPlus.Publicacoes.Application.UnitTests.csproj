@@ -25,8 +25,11 @@
     <Compile Include="../Shared/TipoAtoPublicadoDeTeste.cs" Link="TipoAtoPublicadoDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/ResolvedorFusoDeTeste.cs" Link="ResolvedorFusoDeTeste.cs" />
-    <Compile Include="../Shared/LocalizadorDaSolucao.cs" Link="LocalizadorDaSolucao.cs" />
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../seeds/seed-tipos-ato.json" Link="seeds/seed-tipos-ato.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

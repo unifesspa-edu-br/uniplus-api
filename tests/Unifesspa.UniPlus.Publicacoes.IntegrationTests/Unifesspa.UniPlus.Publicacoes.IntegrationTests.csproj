@@ -38,4 +38,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../contracts/openapi.publicacoes.json" Link="contracts/openapi.publicacoes.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

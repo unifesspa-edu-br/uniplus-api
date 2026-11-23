@@ -40,7 +40,7 @@ Acrescentar chave **ou** um stub virar conteúdo real são mudanças de forma. N
 
 A fixture compara **byte a byte**. Um teste de política falha o build quando a `schema_version` corrente não tem fixture correspondente — **bumpar sem congelar a forma nova é impossível**.
 
-**Consequência:** o envelope ganha o gate que o OpenAPI não dá. A regeneração é explícita (`UPDATE_ENVELOPE_FIXTURE=1`), e o diff da fixture entra no PR — a mudança do envelope passa a ser **visível na revisão**, que é todo o ponto.
+**Consequência:** o envelope ganha a conferência que o OpenAPI não dá. O teste informa o resultado obtido em caso de divergência e a aprovação é explícita; o diff da fixture entra no PR — a mudança do envelope fica **visível na revisão**, que é todo o ponto.
 
 ### D3 — A fixture normaliza ids gerados, e só isso
 
@@ -311,3 +311,7 @@ commits em que ela é introduzida; D1 e E2.1 não mudam.
 ## Emenda 5 (2026-11-21) — códigos de contrato no conteúdo congelado
 
 Os valores migrados para o catálogo da ADR-0176 são escritos pelo código declarado em cada membro. A mudança da forma publicável exige nova versão do esquema e atualização das referências. Enquanto não houver uso real, a versão corrente não conserva conversão da forma anterior.
+
+## Emenda — aprovação das referências
+
+Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).
