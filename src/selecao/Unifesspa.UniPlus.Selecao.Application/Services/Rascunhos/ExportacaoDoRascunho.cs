@@ -11,7 +11,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// documento exportado, salvo de volta, nomeie a mesma unidade ainda que o código tenha mudado depois. O descritivo cujo
 /// cadastro não resolve é omitido.
 /// </summary>
-public sealed class ExportacaoDoRascunho(IUnidadeReader unidades, DescricaoDoDocumentoDoRascunho descricao)
+public sealed class ExportacaoDoRascunho(
+    IUnidadeReader unidades,
+    DescricaoDoDocumentoDoRascunho descricao,
+    ResolucaoDosModelosCitados resolucao)
 {
     private const int PosicaoDoIdNaRaiz = 2;
 
@@ -24,7 +27,17 @@ public sealed class ExportacaoDoRascunho(IUnidadeReader unidades, DescricaoDoDoc
         OmitirNomesDeMunicipiosAusentes(documento);
         await DescreverUnidadeAdministradoraAsync(documento, rascunho.UnidadeAdministradoraOrigemId, cancellationToken).ConfigureAwait(false);
         await descricao.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        await DescreverModelosAsync(rascunho.Id, documento, cancellationToken).ConfigureAwait(false);
         return documento;
+    }
+
+    private async Task DescreverModelosAsync(Guid donoId, JsonObject documento, CancellationToken cancellationToken)
+    {
+        ResultadoDosModelosCitados resultado = await resolucao.ResolverAsync(donoId, documento, cancellationToken).ConfigureAwait(false);
+        if (ExigenciasDoDocumento.Lista(documento) is JsonArray exigencias)
+        {
+            resultado.DescreverNo(exigencias);
+        }
     }
 
     private static void OmitirNomesDeMunicipiosAusentes(JsonObject documento)

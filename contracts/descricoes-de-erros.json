@@ -18214,12 +18214,14 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma exigência pode citar um modelo de documento cadastrado no processo. O modelo citado não foi\nencontrado: ou não existe, ou pertence a outro processo, e um processo só usa os modelos que\nsão dele.",
-        "A conferência acontece na montagem de cada exigência, depois da conferência de forma e depois\ndas conferências do tipo de documento, das condições e das bases legais da própria exigência."
+        "Ao salvar o rascunho, a citação não resolvida gera diagnóstico com o ponteiro `/documentosExigidos/exigencias/{i}/modeloId`; a publicação recusa a configuração enquanto a causa persistir. Ao importar em outro rascunho, envie o arquivo novamente para o novo dono e atualize a citação.",
+        "Ao salvar o rascunho, o modelo citado é procurado diretamente no cadastro. Na montagem de cada\nexigência, a conferência do modelo vem depois das conferências de forma, tipo de documento,\ncondições e bases legais da própria exigência."
       ],
       "comoResolver": [
         "Cadastre o modelo neste processo e cite o identificador dele, ou retire a referência ao modelo\nda exigência. Depois, envie a definição de novo."
       ],
       "ondeAparece": [
+        "Gravação do rascunho do processo seletivo",
         "Definição de documentos exigidos do processo seletivo"
       ]
     },
@@ -21283,13 +21285,15 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O modelo de documento chega ao processo em três passos: o início do envio, que devolve uma URL de\nenvio; o envio do arquivo direto ao armazenamento, sem passar pela API; e a confirmação, em que o\nservidor lê o arquivo, confere o conteúdo e guarda o modelo como imutável. O modelo existe, mas\nestá no primeiro ou no segundo passo: ainda não foi confirmado.",
-        "Só o modelo confirmado tem conteúdo conferido e pode ser usado. A recusa vem em duas operações:",
+        "Ao salvar o rascunho, o modelo pendente gera diagnóstico com o ponteiro `/documentosExigidos/exigencias/{i}/modeloId`; a publicação recusa a configuração enquanto a causa persistir. Ao importar em outro rascunho, envie o arquivo novamente para o novo dono e atualize a citação.",
+        "Só o modelo confirmado tem conteúdo conferido e pode ser usado. A recusa aparece nas operações seguintes:",
         "- na **consulta do acesso** ao modelo, que não entrega um link de leitura para um arquivo que não\n  passou pela conferência;\n- na **definição de documentos exigidos**, quando uma exigência cita o modelo: o modelo precisa\n  existir neste processo (senão a recusa é\n  [`modelo_nao_encontrado`](/erros/uniplus.selecao.documento_exigido.modelo_nao_encontrado)) e,\n  além disso, estar confirmado. Dentro da exigência, essa conferência vem depois das de idade\n  máxima de emissão e de formatos permitidos."
       ],
       "comoResolver": [
         "Confirme o envio do modelo e repita a operação. Se o envio ficou pendente além do prazo, o registro\né removido pelo sistema e a confirmação responde\n[`nao_encontrado`](/erros/uniplus.selecao.modelo_de_documento.nao_encontrado): inicie um novo envio.\nSe a confirmação recusar por falta do arquivo no armazenamento\n([`objeto_nao_encontrado`](/erros/uniplus.selecao.modelo_de_documento.objeto_nao_encontrado)),\nenvie o arquivo à URL e confirme de novo."
       ],
       "ondeAparece": [
+        "Gravação do rascunho do processo seletivo",
         "Consulta do acesso ao modelo de documento",
         "Definição de documentos exigidos do processo seletivo"
       ]
