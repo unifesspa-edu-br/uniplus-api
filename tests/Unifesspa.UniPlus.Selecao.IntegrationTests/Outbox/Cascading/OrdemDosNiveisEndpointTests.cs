@@ -29,6 +29,8 @@ public sealed class OrdemDosNiveisEndpointTests(CascadingFixture ambienteDeTeste
         string[] congelados = await LerNiveisCongeladosAsync(cenario);
         rotulos.Should().Equal("Não atende", "Completo", "Parcial");
         consultada.Avaliacao.EscalaDeAtendimento!.Select(n => n.Rotulo).Should().Equal(rotulos);
+        consultada.Avaliacao.EscalaDeAtendimento!.Select(n => n.Chave).Should().Equal("nivel_nao_atende", "nivel_completo", "nivel_parcial");
+        consultada.Avaliacao.ItensDeAvaliacao.Single().Chave.Should().Be("item");
         congelados.Should().Equal(rotulos);
     }
 
@@ -67,6 +69,13 @@ public sealed class OrdemDosNiveisEndpointTests(CascadingFixture ambienteDeTeste
         VersaoConfiguracao versao = await contexto.Set<VersaoConfiguracao>().SingleAsync(v => v.ProcessoSeletivoId == cenario.Ctx.ProcessoId);
         JsonNode envelope = JsonNode.Parse(versao.ConfiguracaoCongelada)!;
         JsonNode etapa = envelope["etapas"]!.AsArray().Single(e => e!["nome"]!.GetValue<string>() == "Redação")!;
+        ConferirChavesCongeladas(etapa);
         return [.. etapa["escalaDeAtendimento"]!.AsArray().Select(n => n!["rotulo"]!.GetValue<string>())];
+    }
+    private static void ConferirChavesCongeladas(JsonNode etapa)
+    {
+        etapa["itensDeAvaliacao"]![0]!["chave"]!.GetValue<string>().Should().Be("item");
+        etapa["escalaDeAtendimento"]!.AsArray().Select(n => n!["chave"]!.GetValue<string>())
+            .Should().Equal("nivel_nao_atende", "nivel_completo", "nivel_parcial");
     }
 }

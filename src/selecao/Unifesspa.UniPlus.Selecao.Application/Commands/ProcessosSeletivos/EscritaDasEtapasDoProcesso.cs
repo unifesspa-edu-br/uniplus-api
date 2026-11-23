@@ -36,7 +36,7 @@ internal static class EscritaDasEtapasDoProcesso
         [.. (input.ItensDeAvaliacao ?? []).Select(static i => new ItemDeAvaliacaoDeclarado(i.Id, i.Rotulo, i.PontuacaoMaxima))];
 
     public static List<NivelDeAtendimento> NiveisDeclarados(EtapaProcessoInput input) =>
-        [.. (input.EscalaDeAtendimento ?? []).Select(static n => new NivelDeAtendimento(n.Rotulo, n.Fracao))];
+        [.. (input.EscalaDeAtendimento ?? []).Select(static n => new NivelDeAtendimento(n.Rotulo, n.Fracao) { Chave = ChaveLocal.Criar(n.Chave).IsSuccess ? ChaveLocal.Criar(n.Chave).Value : default })];
 
     /// <summary>
     /// Como a etapa do payload declara a avaliação da nota, com a forma e a regra de consolidação que a

@@ -51,7 +51,7 @@ internal static class ProjecaoDaEtapaDoProcesso
     private static AvaliacaoDaEtapaDto ProjetarAvaliacao(EtapaProcesso etapa) => new(
         etapa.FormaDeAvaliacao.ToCodigo(),
         etapa.RegraConsolidacao is { } consolidacao ? ProjecaoDoProcessoSeletivo.Referencia(consolidacao) : null,
-        [.. etapa.ItensDeAvaliacao.Select(i => new ItemDeAvaliacaoDto(i.Id, i.Rotulo, i.PontuacaoMaxima, i.Ordem))],
+        [.. etapa.ItensDeAvaliacao.Select(i => new ItemDeAvaliacaoDto(i.Id, i.Rotulo, i.PontuacaoMaxima, i.Ordem, i.Chave.Valor))],
         ProjetarEscala(etapa));
 
     private static PublicacoesDaEtapaDto ProjetarPublicacoes(EtapaProcesso etapa) => new(
@@ -74,7 +74,7 @@ internal static class ProjecaoDaEtapaDoProcesso
 
     private static NivelDeAtendimentoDto[]? ProjetarEscala(EtapaProcesso etapa) =>
         etapa.EscalaDeAtendimento is { } escala
-            ? [.. escala.Select(n => new NivelDeAtendimentoDto(n.Rotulo, n.Fracao, n.Ordem))]
+            ? [.. escala.Select(n => new NivelDeAtendimentoDto(n.Rotulo, n.Fracao, n.Ordem, n.Chave.Valor))]
             : null;
 
     // O código do ato âncora acompanha a leitura: sem ele, o cliente teria de cruzar o id do produto à

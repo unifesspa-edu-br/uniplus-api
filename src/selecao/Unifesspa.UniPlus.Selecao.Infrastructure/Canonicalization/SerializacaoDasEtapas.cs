@@ -96,6 +96,8 @@ internal static class SerializacaoDasEtapas
         new([.. etapa.ItensDeAvaliacao.Select(static i => (JsonNode)new JsonObject
         {
             ["id"] = JsonValue.Create(i.Id),
+            ["chave"] = i.Chave.Valor,
+            ["ordem"] = i.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(i.Rotulo),
             ["pontuacaoMaxima"] = HashCanonicalComputer.SerializeDecimalCanonical(i.PontuacaoMaxima, EscritaCanonica.EscalaPadrao),
         })]);
@@ -104,6 +106,8 @@ internal static class SerializacaoDasEtapas
         etapa.EscalaDeAtendimento is { } escala
             ? new JsonArray([.. escala.Select(static n => (JsonNode)new JsonObject
             {
+                ["chave"] = n.Chave.Valor,
+                ["ordem"] = n.Ordem,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(n.Rotulo),
                 ["fracao"] = HashCanonicalComputer.SerializeDecimalCanonical(n.Fracao, EscritaCanonica.EscalaPadrao),
             })])

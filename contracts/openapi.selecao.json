@@ -6669,7 +6669,7 @@
           "ProcessoSeletivo"
         ],
         "summary": "Substitui as etapas e as bancas do processo",
-        "description": "Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo n\u00E3o traz deixa de existir no processo. A regra de delibera\u00E7\u00E3o de uma banca \u00E9 opcional neste pedido, e a banca que a omite apaga a regra que j\u00E1 estava gravada. A obrigatoriedade da regra de delibera\u00E7\u00E3o \u00E9 conferida na publica\u00E7\u00E3o. Para preservar a chave da etapa, devolva o id de cada etapa que permanece. A chave da etapa nova vem na releitura pelo GET.",
+        "description": "Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo n\u00E3o traz deixa de existir no processo. A regra de delibera\u00E7\u00E3o de uma banca \u00E9 opcional neste pedido, e a banca que a omite apaga a regra que j\u00E1 estava gravada. A obrigatoriedade da regra de delibera\u00E7\u00E3o \u00E9 conferida na publica\u00E7\u00E3o. Para preservar as chaves, devolva o id de cada etapa, item e banca que permanece e a chave de cada n\u00EDvel que permanece. As chaves novas v\u00EAm na releitura pelo GET.",
         "parameters": [
           {
             "name": "id",
@@ -22963,10 +22963,14 @@
           "id",
           "rotulo",
           "pontuacaoMaxima",
-          "ordem"
+          "ordem",
+          "chave"
         ],
         "type": "object",
         "properties": {
+          "chave": {
+            "type": "string"
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -24106,10 +24110,14 @@
         "required": [
           "rotulo",
           "fracao",
-          "ordem"
+          "ordem",
+          "chave"
         ],
         "type": "object",
         "properties": {
+          "chave": {
+            "type": "string"
+          },
           "rotulo": {
             "type": "string"
           },
@@ -24130,6 +24138,13 @@
         ],
         "type": "object",
         "properties": {
+          "chave": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Informe a chave do n\u00EDvel que permanece."
+          },
           "rotulo": {
             "type": "string"
           },

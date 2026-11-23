@@ -188,7 +188,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
         EtapaProcesso etapa = new() { Id = id, Chave = chave };
         etapa.DefinirIdentificacaoECarater(identificacao);
-        etapa.DefinirLancamentoDaNota(avaliacao);
+        etapa.DefinirLancamentoDaNota(avaliacao, reidratada: true);
         etapa.SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(etapa._itensDeAvaliacao, itens ?? []));
 
         return etapa;
@@ -227,7 +227,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         FaseCodigo = normalizada.FaseCodigo;
     }
 
-    private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
+    private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao, bool reidratada = false)
     {
         Peso = avaliacao.Peso;
         NotaMinima = avaliacao.NotaMinima;
@@ -235,8 +235,10 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         PassoDoLancamento = avaliacao.PassoDoLancamento;
         FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
         RegraConsolidacao = avaliacao.RegraConsolidacao;
-        FilhasDoAgregado.Substituir(_escalaDeAtendimento, (avaliacao.EscalaDeAtendimento ?? [])
-            .Select(static (nivel, posicao) => nivel! with { Rotulo = nivel.Rotulo.Trim(), Ordem = posicao + 1 }));
+        IEnumerable<NivelDeAtendimento> niveis = reidratada
+            ? (avaliacao.EscalaDeAtendimento ?? []).Select(static (nivel, posicao) => nivel! with { Ordem = posicao + 1 })
+            : ReconciliacaoDosNiveisDeAtendimento.Reconciliar(_escalaDeAtendimento, avaliacao.EscalaDeAtendimento);
+        FilhasDoAgregado.Substituir(_escalaDeAtendimento, niveis);
     }
 
     private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, AvaliacaoDeclaradaDaEtapa avaliacao)

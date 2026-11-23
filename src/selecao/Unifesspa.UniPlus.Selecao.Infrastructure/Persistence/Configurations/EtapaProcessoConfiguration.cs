@@ -150,6 +150,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             nivel.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico do nível.");
             nivel.HasKey("Id");
             nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
+            nivel.Property(n => n.Chave)
+                .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+                .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Chave local estável do nível na etapa.");
+            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_chave");
             nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
             nivel.Property(n => n.Fracao).HasPrecision(5, 4).IsRequired().HasComment("Fração da pontuação do item atribuída ao nível.");
             // A unicidade da ordem e do rótulo é adiada pelo script de restrições para permitir trocas.

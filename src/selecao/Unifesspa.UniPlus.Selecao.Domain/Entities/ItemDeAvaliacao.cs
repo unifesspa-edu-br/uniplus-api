@@ -22,6 +22,8 @@ public sealed class ItemDeAvaliacao : EntityBase
     public const string RotuloDuplicado = "ItemDeAvaliacao.RotuloDuplicado";
     public const string IdDuplicado = "ItemDeAvaliacao.IdDuplicado";
 
+    public ChaveLocal Chave { get; private set; }
+
     public Guid EtapaProcessoId { get; private set; }
 
     public string Rotulo { get; private set; } = string.Empty;
@@ -33,15 +35,17 @@ public sealed class ItemDeAvaliacao : EntityBase
 
     private ItemDeAvaliacao() { }
 
-    internal static ItemDeAvaliacao Criar(ItemDeAvaliacaoDeclarado declarado)
+    internal static ItemDeAvaliacao Criar(ChaveLocal chave, ItemDeAvaliacaoDeclarado declarado)
     {
         ArgumentNullException.ThrowIfNull(declarado);
 
-        return new ItemDeAvaliacao { Rotulo = declarado.Rotulo.Trim(), PontuacaoMaxima = declarado.PontuacaoMaxima };
+        return new ItemDeAvaliacao { Chave = chave, Rotulo = declarado.Rotulo.Trim(), PontuacaoMaxima = declarado.PontuacaoMaxima };
     }
 
+    internal static ItemDeAvaliacao Adotar(ChaveLocal chave, ItemDeAvaliacaoDeclarado declarado) => Criar(chave, declarado);
+
     /// <summary>Reidrata o item preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static ItemDeAvaliacao Reidratar(Guid id, string rotulo, decimal pontuacaoMaxima)
+    public static ItemDeAvaliacao Reidratar(ChaveLocal chave, Guid id, string rotulo, decimal pontuacaoMaxima)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rotulo);
         if (id == Guid.Empty)
@@ -49,7 +53,7 @@ public sealed class ItemDeAvaliacao : EntityBase
             throw new ArgumentException("O item reidratado deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return new ItemDeAvaliacao { Id = id, Rotulo = rotulo.Trim(), PontuacaoMaxima = pontuacaoMaxima };
+        return new ItemDeAvaliacao { Chave = chave, Id = id, Rotulo = rotulo.Trim(), PontuacaoMaxima = pontuacaoMaxima };
     }
 
     /// <summary>Troca rótulo e pontuação preservando a linha: o id é a identidade do critério.</summary>
