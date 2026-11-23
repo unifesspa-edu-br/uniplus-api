@@ -54,11 +54,12 @@ public sealed class DocumentosDaInscricaoTests
         new([], new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), [new DocumentoAusente(alternativas, ocorrencia)]);
 
     private static DocumentoExigido Documento(string codigo, string nome) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.NewGuid(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.NewGuid(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 }

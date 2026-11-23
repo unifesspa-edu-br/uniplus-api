@@ -140,12 +140,13 @@ internal static class ProcessoComDuasExigenciasDeTeste
 
     private static DocumentoExigido ExigenciaDeInscricao(FaseCronograma fase, string codigo, string nome) =>
         DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + codigo.ToLowerInvariant()).Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null)).Value!;
 
     private static DadosEdital DadosDoEdital() =>
         DadosEdital.Criar(

@@ -31,6 +31,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// <summary>A exigência comprova um fato que nenhum formulário do processo coleta.</summary>
     public const string FatoComprovadoForaDoProcesso = "DocumentoExigido.FatoComprovadoForaDoProcesso";
 
+    public ChaveLocal Chave { get; private set; }
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>Fase do cronograma do mesmo processo em que o documento é exigido — NOT NULL (Story #554).</summary>
@@ -171,54 +173,49 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private static string? NormalizarConsequencia(string? consequenciaIndeferimento) =>
         string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento.Trim();
 
-    public static Result<DocumentoExigido> Criar(
-        CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento, AplicabilidadeDaExigencia aplicabilidade,
-        IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
+    public static Result<DocumentoExigido> Criar(ChaveLocal chave, DocumentoExigidoDeclarado declarado)
     {
-        ExigirPartes(tipo, momento, aplicabilidade, indeferimento, requisitos);
-        ExigirIdentificadores(tipo, momento);
-        List<FieldError> erros = ValidarFormaBasica(aplicabilidade.Tipo, indeferimento.Consequencia,
-            aplicabilidade.Condicoes.Count, momento.Finalidade, fatosComprovados);
-        erros.AddRange(RequisitosDoDocumento.ValidarTamanho(requisitos.TamanhoMaximoBytes));
+        ExigirPartes(declarado);
+        ExigirIdentificadores(declarado.Tipo, declarado.Momento);
+        List<FieldError> erros = ValidarFormaBasica(declarado.Aplicabilidade.Tipo, declarado.Indeferimento.Consequencia,
+            declarado.Aplicabilidade.Condicoes.Count, declarado.Momento.Finalidade, declarado.FatosComprovados);
+        erros.AddRange(RequisitosDoDocumento.ValidarTamanho(declarado.Requisitos.TamanhoMaximoBytes));
         if (erros.Count > 0)
         {
             return Result<DocumentoExigido>.ValidationFailure(erros);
         }
 
-        DocumentoExigido documento = new(tipo, momento, aplicabilidade, indeferimento, requisitos, fatosComprovados);
-        documento.VincularPartes(aplicabilidade, indeferimento);
+        DocumentoExigido documento = new(chave, declarado);
+        documento.VincularPartes(declarado.Aplicabilidade, declarado.Indeferimento);
         return Result<DocumentoExigido>.Success(documento);
     }
 
-    public static DocumentoExigido Reidratar(
-        Guid id, CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento, AplicabilidadeDaExigencia aplicabilidade,
-        IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
+    public static DocumentoExigido Reidratar(ChaveLocal chave, Guid id, DocumentoExigidoDeclarado declarado)
     {
-        ExigirPartes(tipo, momento, aplicabilidade, indeferimento, requisitos);
+        ExigirPartes(declarado);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A exigência reidratada deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        DocumentoExigido documento = new(tipo, momento, aplicabilidade, indeferimento, requisitos, fatosComprovados) { Id = id };
-        documento.ConsequenciaIndeferimento = indeferimento.Consequencia;
-        documento.VincularPartes(aplicabilidade, indeferimento);
+        DocumentoExigido documento = new(chave, declarado) { Id = id };
+        documento.ConsequenciaIndeferimento = declarado.Indeferimento.Consequencia;
+        documento.VincularPartes(declarado.Aplicabilidade, declarado.Indeferimento);
         return documento;
     }
 
-    private DocumentoExigido(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento,
-        AplicabilidadeDaExigencia aplicabilidade, IndeferimentoDoDocumento indeferimento,
-        RequisitosDoDocumento requisitos, IReadOnlyList<string>? fatosComprovados)
+    private DocumentoExigido(ChaveLocal chave, DocumentoExigidoDeclarado declarado)
     {
-        ExigidoNaFaseId = momento.FaseId;
-        ExigidoNaEtapaId = momento.EtapaId;
-        Finalidade = momento.Finalidade;
-        CopiarTipo(tipo);
-        FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []];
-        Aplicabilidade = aplicabilidade.Tipo;
-        Obrigatorio = indeferimento.Obrigatorio;
-        ConsequenciaIndeferimento = NormalizarConsequencia(indeferimento.Consequencia);
-        Requisitos = requisitos;
+        Chave = chave;
+        ExigidoNaFaseId = declarado.Momento.FaseId;
+        ExigidoNaEtapaId = declarado.Momento.EtapaId;
+        Finalidade = declarado.Momento.Finalidade;
+        CopiarTipo(declarado.Tipo);
+        FatosComprovados = [.. declarado.FatosComprovados?.Select(static f => f.Trim()) ?? []];
+        Aplicabilidade = declarado.Aplicabilidade.Tipo;
+        Obrigatorio = declarado.Indeferimento.Obrigatorio;
+        ConsequenciaIndeferimento = NormalizarConsequencia(declarado.Indeferimento.Consequencia);
+        Requisitos = declarado.Requisitos;
     }
 
     private void CopiarTipo(CopiaDoTipoDeDocumento tipo)
@@ -245,17 +242,17 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         }
     }
 
-    private static void ExigirPartes(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento,
-        AplicabilidadeDaExigencia aplicabilidade, IndeferimentoDoDocumento indeferimento, RequisitosDoDocumento requisitos)
+    private static void ExigirPartes(DocumentoExigidoDeclarado declarado)
     {
-        ArgumentNullException.ThrowIfNull(tipo);
-        ArgumentNullException.ThrowIfNull(momento);
-        ArgumentNullException.ThrowIfNull(aplicabilidade);
-        ArgumentNullException.ThrowIfNull(indeferimento);
-        ArgumentNullException.ThrowIfNull(requisitos);
-        ArgumentNullException.ThrowIfNull(aplicabilidade.Condicoes, nameof(aplicabilidade));
-        ArgumentNullException.ThrowIfNull(indeferimento.BasesLegais, nameof(indeferimento));
-        ExigirTipo(tipo);
+        ArgumentNullException.ThrowIfNull(declarado);
+        ArgumentNullException.ThrowIfNull(declarado.Tipo, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Momento, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Aplicabilidade, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Indeferimento, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Requisitos, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Aplicabilidade.Condicoes, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Indeferimento.BasesLegais, nameof(declarado));
+        ExigirTipo(declarado.Tipo);
     }
 
     private static void ExigirIdentificadores(CopiaDoTipoDeDocumento tipo, MomentoDaExigencia momento)

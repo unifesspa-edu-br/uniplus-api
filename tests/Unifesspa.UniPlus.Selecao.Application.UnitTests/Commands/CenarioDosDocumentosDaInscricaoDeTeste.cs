@@ -62,13 +62,14 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
     public IArquivoDoCandidatoStorage Armazenamento { get; } = Substitute.For<IArquivoDoCandidatoStorage>();
     public IUnitOfWork UnidadeDeTrabalho { get; } = Substitute.For<IUnitOfWork>();
 
-    internal static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(false, null, []),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null),
-        null).Value!;
+    internal static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     public Inscricao Rascunho(params string[] dependentes)
     {

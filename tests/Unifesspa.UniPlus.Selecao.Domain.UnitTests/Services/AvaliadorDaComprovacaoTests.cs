@@ -240,17 +240,18 @@ public sealed class AvaliadorDaComprovacaoTests
         resultado.Value!.SituacoesPorRegra[grupoSemPossibilidadeDeCumprimento.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
         resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
     }
-    private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(FaseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. condicoes.SelectMany(static (c, clausula) => new[]
+    private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(FaseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. condicoes.SelectMany(static (c, clausula) => new[]
             {
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
-            })]),
-        new IndeferimentoDoDocumento(true, "REMOVE_VANTAGEM", []),
-        new RequisitosDoDocumento(Qualquer, null, null, null, null),
-        null).Value!;
+            })]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, "REMOVE_VANTAGEM", []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
     private static Dictionary<string, FatoResolvido> FatoNaoAplicavel(string codigo) =>
         new(StringComparer.Ordinal) { [codigo] = FatoResolvido.NaoAplicavel() };
 

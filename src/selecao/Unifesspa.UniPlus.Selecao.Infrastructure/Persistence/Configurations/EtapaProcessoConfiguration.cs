@@ -37,10 +37,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.Id).ValueGeneratedNever().HasComment("Identificador da etapa.");
         builder.Property(e => e.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
-            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
-            .HasComment("Chave local estável da etapa no processo seletivo.");
+            .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Chave })
-            .IsUnique().HasDatabaseName("ux_etapas_processo_processo_chave");
+            .IsUnique().HasDatabaseName("ux_etapas_processo_processo_chave_local");
         builder.Property(e => e.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a etapa pertence.");
         builder.Property(e => e.Ordem).IsRequired().HasComment("Posição da etapa no processo, a partir de um.");
 
@@ -155,8 +155,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
             nivel.Property(n => n.Chave)
                 .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
-                .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Chave local estável do nível na etapa.");
-            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_chave");
+                .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
+            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_chave_local");
             nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
             nivel.Property(n => n.Fracao).HasPrecision(5, 4).IsRequired().HasComment("Fração da pontuação do item atribuída ao nível.");
             // A unicidade da ordem e do rótulo é adiada pelo script de restrições para permitir trocas.

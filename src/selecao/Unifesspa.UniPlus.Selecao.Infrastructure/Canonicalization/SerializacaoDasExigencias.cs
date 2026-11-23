@@ -104,6 +104,7 @@ internal static class SerializacaoDasExigencias
 
     private static JsonObject SerializarIdentificacaoDaExigencia(DocumentoExigido exigencia) => new()
     {
+        ["chave"] = exigencia.Chave.Valor,
         ["tipoDocumentoOrigemId"] = exigencia.TipoDocumentoOrigemId,
         ["tipoDocumentoCodigo"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCodigo),
         ["tipoDocumentoNome"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoNome),

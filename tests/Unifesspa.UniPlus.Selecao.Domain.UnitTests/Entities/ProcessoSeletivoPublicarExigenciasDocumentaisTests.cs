@@ -157,30 +157,33 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
         resultado.Error.Message.Should().Contain("Base legal das exigências documentais");
     }
 
-    private static DocumentoExigido ExigenciaCondicionalVaziaObrigatoria(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
-        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-        null).Value!;
+    private static DocumentoExigido ExigenciaCondicionalVaziaObrigatoria(Guid exigidoNaFaseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 
-    private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-        null).Value!;
+    private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(
         "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
-    private static DocumentoExigido ExigenciaObrigatoriaCom(Guid exigidoNaFaseId, params DocumentoExigidoBaseLegal[] basesLegais) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, basesLegais),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-        null).Value!;
+    private static DocumentoExigido ExigenciaObrigatoriaCom(Guid exigidoNaFaseId, params DocumentoExigidoBaseLegal[] basesLegais) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, basesLegais))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 }

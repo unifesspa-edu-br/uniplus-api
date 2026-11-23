@@ -173,13 +173,14 @@ public sealed class ExigenciasDeFasePosteriorTests
     private static string FatoDe(FinalidadeFormulario finalidade) => $"FATO_DA_{finalidade}".ToUpperInvariant();
 
     private static DocumentoExigido ExigenciaDoFato(FaseCronograma fase, string fato) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid faseId) =>
         FormularioProcesso.Criar(

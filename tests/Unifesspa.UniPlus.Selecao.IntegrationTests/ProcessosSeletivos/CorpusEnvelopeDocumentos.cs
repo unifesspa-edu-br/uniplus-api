@@ -64,13 +64,14 @@ internal static class CorpusEnvelopeDocumentos
         Guid id, Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo,
         string tipoDocumentoNome, string tipoDocumentoCategoria, bool obrigatorio) =>
         DocumentoExigido.Reidratar(
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipoDocumentoCodigo.ToLowerInvariant()).Value!,
             id,
-            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(obrigatorio, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
-            null);
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(obrigatorio, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),
+                null));
 
     /// <summary>
     /// Id fixo de produto — como o das etapas e o das fases, ele entra no envelope, e sortear

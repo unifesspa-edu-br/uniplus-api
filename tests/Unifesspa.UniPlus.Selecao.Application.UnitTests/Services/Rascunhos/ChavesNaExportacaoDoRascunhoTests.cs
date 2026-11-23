@@ -13,7 +13,8 @@ public sealed class ChavesNaExportacaoDoRascunhoTests
             { "identificacao": { "nome": "Processo de exemplo" },
               "cronograma": { "fases": [{ "chave": "fase_inscricao", "bancasRequeridas": [{ "chave": "banca_fase" }] }] },
               "etapas": [{ "chave": "etapa_prova", "bancas": [{ "chave": "banca_etapa" }], "itensDeAvaliacao": [{ "chave": "item_redacao" }],
-                "escalaDeAtendimento": [{ "chave": "nivel_atende" }] }] }
+                "escalaDeAtendimento": [{ "chave": "nivel_atende" }] }],
+              "documentosExigidos": { "exigencias": [{ "chave": "exigencia_identidade_2" }] } }
             """;
 
     [Fact]
@@ -30,5 +31,16 @@ public sealed class ChavesNaExportacaoDoRascunhoTests
         exportado["etapas"]![0]!["chave"]!.GetValue<string>().Should().Be("etapa_prova");
         exportado["etapas"]![0]!["itensDeAvaliacao"]![0]!["chave"]!.GetValue<string>().Should().Be("item_redacao");
         exportado["etapas"]![0]!["escalaDeAtendimento"]![0]!["chave"]!.GetValue<string>().Should().Be("nivel_atende");
+    }
+
+    [Fact]
+    public async Task Exportar_RascunhoComExigencia_PreservaAChave()
+    {
+        CenarioDoRascunho cenario = new();
+        RascunhoDeProcessoSeletivo rascunho = cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, Documento);
+
+        JsonObject exportado = await cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
+
+        exportado["documentosExigidos"]!["exigencias"]![0]!["chave"]!.GetValue<string>().Should().Be("exigencia_identidade_2");
     }
 }

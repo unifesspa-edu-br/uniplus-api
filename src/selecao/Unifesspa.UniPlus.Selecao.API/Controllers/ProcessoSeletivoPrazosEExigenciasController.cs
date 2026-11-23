@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     }
 
     /// <summary>Substitui as regras de comprovação e os documentos exigidos do processo.</summary>
-    /// <remarks>Omitir prazoDeEmissao ou validade apaga a respectiva escolha. Para cada opção, informe o código devolvido pela API.</remarks>
+    /// <remarks>Devolva a chave da exigência que permanece; a chave da exigência nova vem na releitura pelo GET. Omitir prazoDeEmissao ou validade apaga a respectiva escolha. Para cada opção, informe o código devolvido pela API.</remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/documentos-exigidos")]
     [RequiresIdempotencyKey]

@@ -50,7 +50,7 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
         Guid etapaId = await GravarEtapaAsync([new("Completo", 1m)]);
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
         Func<Task> inserir = () => contexto.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO selecao.niveis_de_atendimento_da_etapa (etapa_processo_id, chave, rotulo, fracao, ordem)
+            INSERT INTO selecao.niveis_de_atendimento_da_etapa (etapa_processo_id, chave_local, rotulo, fracao, ordem)
             VALUES ({etapaId}, 'nivel_inserido', {rotulo}, {fracao}, 2)
             """);
         (await inserir.Should().ThrowAsync<PostgresException>()).Which.ConstraintName.Should().Be(restricao);

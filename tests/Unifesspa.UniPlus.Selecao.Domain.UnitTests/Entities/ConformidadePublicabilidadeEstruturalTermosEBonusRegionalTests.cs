@@ -135,13 +135,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
-    private static DocumentoExigido ExigenciaPorMunicipioDeParauapebas(Guid faseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!]),
-        new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-        null).Value!;
+    private static DocumentoExigido ExigenciaPorMunicipioDeParauapebas(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_BONUS", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 
     [Fact(DisplayName = "Redefinir o bônus recusa tirar da área um município citado por exigência viva")]
     public void DefinirBonusRegional_MunicipioCitadoPorExigencia_Recusa()

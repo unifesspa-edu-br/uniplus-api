@@ -31,6 +31,24 @@ public sealed class RecopiarAoCongelarTests
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
     }
 
+    [Fact]
+    public void RecopiarAoCongelar_ProtecaoAlterada_PreservaChaveDaExigencia()
+    {
+        FaseCronograma fase = FaseDeInscricao();
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: fase);
+        DocumentoExigido exigencia = ExigenciaSensivel(processo, fase);
+        ChaveLocal chave = exigencia.Chave;
+        ProtecaoVigenteDasExigencias protecao = new(new Dictionary<string, ClassificacaoDeProtecao>(),
+            new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.Pessoal }, new HashSet<string>(), new HashSet<Guid>());
+
+        Result resultado = processo.RecopiarAoCongelar(new(new Dictionary<string, CopiaDoItemNoCatalogo>(),
+            new HashSet<string>(), new Dictionary<Guid, UnidadeResponsavelSnapshot>(), protecao));
+
+        resultado.IsSuccess.Should().BeTrue();
+        exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
+        exigencia.Chave.Should().Be(chave);
+    }
+
     private static CopiasDoCongelamento CopiasComCatalogoIncoerente(FatoColetado item, UnidadeResponsavelSnapshot renomeada, DocumentoExigido exigencia) => new(
         new Dictionary<string, CopiaDoItemNoCatalogo>
         {
@@ -54,13 +72,14 @@ public sealed class RecopiarAoCongelarTests
 
     private static DocumentoExigido ExigenciaSensivel(ProcessoSeletivo processo, FaseCronograma fase)
     {
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel)),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        DocumentoExigido exigencia = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel)))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         return processo.DocumentosExigidos.Single();

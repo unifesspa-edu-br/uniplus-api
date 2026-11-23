@@ -87,14 +87,14 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
         await context.SaveChangesAsync();
-
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_laudo").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(true, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
+                null)).Value!;
         return (context, inscricao.Id, laudo);
     }
 

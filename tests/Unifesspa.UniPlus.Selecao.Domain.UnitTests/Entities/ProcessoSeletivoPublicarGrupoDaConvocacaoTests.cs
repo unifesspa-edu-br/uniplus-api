@@ -41,16 +41,17 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
             .Should().BeTrue("o convocado em AC não é o da cota, cuja ação de indeferimento é reclassificar");
     }
 
-    private static DocumentoExigido ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(Guid faseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HETEROIDENTIFICACAO", "Parecer de heteroidentificação", "ETNICO_RACIAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
+    private static DocumentoExigido ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HETEROIDENTIFICACAO", "Parecer de heteroidentificação", "ETNICO_RACIAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [
                 CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("LB_PPI")).Value!,
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
-            ]),
-        new IndeferimentoDoDocumento(false, "ELIMINA", [BaseLegalResolvidaQualquer()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-        null).Value!;
+            ]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA", [BaseLegalResolvidaQualquer()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     [Fact(DisplayName = "Cláusula que cita a modalidade de concorrência e o grupo da convocação alcança as duas")]
     public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()

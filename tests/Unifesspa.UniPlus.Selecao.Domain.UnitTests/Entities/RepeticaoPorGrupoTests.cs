@@ -39,13 +39,14 @@ public sealed class RepeticaoPorGrupoTests
         .ComCampos(FatoColetadoDeTeste.Coletando("SOB_GUARDA", 0).ComRotulo("Sob guarda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
         .Construir();
 
-    private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, finalidade),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, []),
-        new RequisitosDoDocumento(Qualquer, null, null, null, null),
-        null).Value!;
+    private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     /// <summary>Processo com inscrição e habilitação, e o grupo da composição familiar no formulário da habilitação.</summary>
     private static (ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Habilitacao) Processo()

@@ -73,12 +73,13 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
     }
 
     private static DocumentoExigido ExigenciaDoLaudo() => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(false, null, []),
-        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
-        null).Value!;
+        Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_laudo").Value!,
+        new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(false, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
+            null)).Value!;
 
     private async Task GravarAsync(string bucket, string chave)
     {

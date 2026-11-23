@@ -21,7 +21,7 @@ internal static class LeituraDasExigencias
 {
     private static readonly string[] ChavesDaExigencia =
     [
-        "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
+        "exigenciaId", "chave", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
         "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "dadosComprovados", "exigidoNaFaseId",
         "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaIndeferimento",
         "condicoes", "basesLegais", "prazoDeEmissao", "validade", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
@@ -40,7 +40,9 @@ internal static class LeituraDasExigencias
             return [];
         }
 
-        return LeituraDeItens.Ler(leitor, array, "documentosExigidos.exigencias", LerExigencia) ?? [];
+        IReadOnlyList<DocumentoExigido> exigencias = LeituraDeItens.Ler(leitor, array, "documentosExigidos.exigencias", LerExigencia) ?? [];
+        ChavesNoEnvelope.ExigirUnicas(leitor, exigencias.Select(static exigencia => exigencia.Chave), "documentosExigidos.exigencias");
+        return exigencias;
     }
 
     private static DocumentoExigido? LerExigencia(LeitorEnvelope leitor, JsonObject item, string path)
@@ -111,13 +113,14 @@ internal static class LeituraDasExigencias
         ClassificacaoDeProtecao classificacaoProtecao,
         FinalidadeFormulario? finalidade,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
-            d.ExigenciaId,
+            d.Chave!.Value, d.ExigenciaId,
+            new DocumentoExigidoDeclarado(
             new CopiaDoTipoDeDocumento(d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo, d.TipoDocumentoNome, d.TipoDocumentoCategoria, new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal)),
             new MomentoDaExigencia(d.ExigidoNaFaseId, d.ExigidoNaEtapaId, finalidade),
             new AplicabilidadeDaExigencia(d.Aplicabilidade, c.Condicoes),
             new IndeferimentoDoDocumento(d.Obrigatorio, d.ConsequenciaIndeferimento, c.BasesLegais),
             new RequisitosDoDocumento(c.FormatosPermitidos, d.TamanhoMaximoBytes, c.Modelo, c.PrazoDeEmissao, c.Validade),
-            c.FatosComprovados);
+            c.FatosComprovados));
 
     private sealed record ComplementosDaExigencia(
         IReadOnlyList<string> FatosComprovados,
@@ -146,6 +149,7 @@ internal static class LeituraDasExigencias
     private static DeclaracaoDaExigencia LerIdentificacaoDaExigencia(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         ExigenciaId = leitor.Identificador(item, "exigenciaId", path),
+        Chave = ChavesNoEnvelope.Ler(leitor, item, path),
         TipoDocumentoOrigemId = leitor.Identificador(item, "tipoDocumentoOrigemId", path),
         TipoDocumentoCodigo = leitor.TextoNaoVazio(item, "tipoDocumentoCodigo", path, LimitesDoEnvelope.TipoDocumentoCodigo),
         TipoDocumentoNome = leitor.TextoNaoVazio(item, "tipoDocumentoNome", path, LimitesDoEnvelope.TipoDocumentoNome),
@@ -158,6 +162,8 @@ internal static class LeituraDasExigencias
     private sealed record DeclaracaoDaExigencia
     {
         public Guid ExigenciaId { get; init; }
+
+        public ChaveLocal? Chave { get; init; }
 
         public Guid TipoDocumentoOrigemId { get; init; }
 

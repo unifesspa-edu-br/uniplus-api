@@ -19,13 +19,14 @@ public sealed class ValidadorBaseLegalExigenciasTests
 
     private static DocumentoExigido Exigencia(
         bool obrigatorio, string? consequenciaIndeferimento, params DocumentoExigidoBaseLegal[] basesLegais) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     [Fact(DisplayName = "CA-03: processo sem exigência que determina resultado é trivialmente satisfeito (semântica vazia)")]
     public void TodasResolvidas_SemExigenciaQueDeterminaResultado_RetornaTrue()

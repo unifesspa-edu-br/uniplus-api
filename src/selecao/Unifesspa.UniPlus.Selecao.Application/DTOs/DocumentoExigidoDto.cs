@@ -27,7 +27,11 @@ public sealed record DocumentoExigidoDto(
     AplicabilidadeDaExigenciaDto Aplicabilidade,
     IndeferimentoDoDocumentoDto Indeferimento,
     RequisitosDoDocumentoDto Requisitos,
-    IReadOnlyList<string> FatosComprovados);
+    IReadOnlyList<string> FatosComprovados)
+{
+    /// <summary>Chave local que identifica a exigência no processo.</summary>
+    public required string Chave { get; init; }
+}
 
 /// <summary>O tipo de documento do catálogo, copiado por valor na exigência; só <see cref="Id"/> volta no PUT.</summary>
 public sealed record TipoDocumentoDaExigenciaDto(

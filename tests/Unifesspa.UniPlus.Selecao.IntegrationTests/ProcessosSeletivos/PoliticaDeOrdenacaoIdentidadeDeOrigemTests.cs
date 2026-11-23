@@ -216,25 +216,27 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     private static RegraDeComprovacao RegraDeDocumentoSemGrupo(FaseCronograma fase)
     {
         DocumentoExigido documento = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "REGRA_ZETA", "Documento sem grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_regra_zeta").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "REGRA_ZETA", "Documento sem grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null)).Value!;
         return RegraDeComprovacao.CriarRegraDeDocumento(documento, 1).Value!;
     }
 
     private static RegraDeComprovacao RegraDeDocumentoComIdentidade(FaseCronograma fase, int idDocumento, int idDaRegra, int ordem, string codigo)
     {
         DocumentoExigido documento = DocumentoExigido.Reidratar(
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + codigo.ToLowerInvariant()).Value!,
             IdFixo(idDocumento),
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, "Documento do grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null);
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, "Documento do grupo", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null));
         return RegraDeComprovacao.ReidratarRegraDeDocumento(IdFixo(idDaRegra), ordem, documento, RegraDeComprovacao.QuantidadeMinimaPadrao, null, null);
     }
 

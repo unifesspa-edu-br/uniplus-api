@@ -123,6 +123,7 @@ public sealed record RequisitosDoDocumentoInput(
 /// <param name="Aplicabilidade">A quem a exigência se aplica e sob qual gatilho.</param>
 /// <param name="Indeferimento">A obrigatoriedade, a consequência do indeferimento e as bases legais.</param>
 /// <param name="Requisitos">O que restringe o arquivo enviado.</param>
+/// <param name="Chave">A chave devolvida pela leitura identifica a exigência a preservar.</param>
 /// <param name="FatosComprovados">
 /// Códigos dos fatos do próprio processo que o documento comprova; só eles contam para conferir a proteção do
 /// tipo de documento, e o fato que apenas aciona a exigência pelo gatilho não entra. A publicação recusa a
@@ -134,7 +135,8 @@ public sealed record ItemDocumentoExigidoInput(
     AplicabilidadeDaExigenciaInput? Aplicabilidade,
     IndeferimentoDoDocumentoInput? Indeferimento,
     RequisitosDoDocumentoInput? Requisitos,
-    IReadOnlyList<string>? FatosComprovados = null);
+    IReadOnlyList<string>? FatosComprovados = null,
+    string? Chave = null);
 
 /// <summary>
 /// Como as apresentações da mesma exigência se distinguem, na forma do <see cref="DistincaoDasApresentacoes"/>

@@ -19,13 +19,14 @@ public sealed class ArquivoDaApresentacaoTests
     private const long MegaByte = 1024 * 1024;
 
     private static DocumentoExigido Exigencia(
-        IReadOnlyList<(string Formato, int? Teto)>? formatos = null, int? tamanhoMaximoBytes = null) => DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes, null, null, null),
-            null).Value!;
+        IReadOnlyList<(string Formato, int? Teto)>? formatos = null, int? tamanhoMaximoBytes = null) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static Result<ArquivoDaApresentacao> Iniciar(DocumentoExigido exigencia, string? tipoDeMidia, long tamanhoBytes) =>
         ArquivoDaApresentacao.IniciarPendente(

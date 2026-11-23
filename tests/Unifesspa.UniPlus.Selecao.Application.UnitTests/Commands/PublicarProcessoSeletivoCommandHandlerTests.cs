@@ -46,14 +46,15 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivoConformeBuilder.Criar("PS Metadado de Fato", out faseId);
 
     private static DocumentoExigido ExigenciaComGatilhoPorFato(Guid faseId, string fato) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!]),
-            new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar(
-                "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar(
+                "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(
         Id: Guid.CreateVersion7(),

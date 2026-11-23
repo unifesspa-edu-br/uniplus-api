@@ -28,13 +28,14 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, finalidade),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(false, null, []),
-        new RequisitosDoDocumento(Qualquer, null, null, null, null),
-        null).Value!;
+    private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static BaseLegalDaComprovacao BaseLegal(StatusBaseLegal status) =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;

@@ -248,13 +248,15 @@ internal static class EnvelopeDeReferencia
     /// populado). Sem o segundo, a variante populada daquele bloco não teria cobertura alguma.
     /// </remarks>
     private static DocumentoExigido DocumentoExigidoDeReferencia(Guid exigidoNaFaseId) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(TipoDocumentoFixo, "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [GatilhoDaModalidade(), GatilhoDaCorRaca()]),
-            new IndeferimentoDoDocumento(true, "ELIMINA", [BaseLegalDaResolucao()]),
-            new RequisitosDoDocumento(FormatosPdfComTetoEJpegSemTeto(), 5_000_000, ModeloDeDeclaracaoDeResidencia(), PrazoDeNoventaDias(), ValidadeNoFimDasInscricoes()),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComChave(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_comprovante_residencia").Value!)
+            .ComTipo(new CopiaDoTipoDeDocumento(TipoDocumentoFixo, "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [GatilhoDaModalidade(), GatilhoDaCorRaca()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, "ELIMINA", [BaseLegalDaResolucao()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPdfComTetoEJpegSemTeto(), 5_000_000, ModeloDeDeclaracaoDeResidencia(), PrazoDeNoventaDias(), ValidadeNoFimDasInscricoes()))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static PrazoDeEmissao PrazoDeNoventaDias() => new PrazoDeEmissaoBuilder().Construir();
 

@@ -38,13 +38,14 @@ public sealed class GrafoDependenciaConjuntaTests
         ]).Value!;
 
     private static DocumentoExigido ExigenciaGatilhadaPor(string fato) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]),
-            new IndeferimentoDoDocumento(false, null, []),
-            new RequisitosDoDocumento(Qualquer, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static Result<GrafoDependenciaConjunta> Construir(
         IReadOnlyCollection<FatoColetado>? fatos = null,

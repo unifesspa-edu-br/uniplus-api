@@ -96,13 +96,14 @@ public sealed class RecusasDaPublicacaoTests
         }
     }
 
-    private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoDeMaioridade()]),
-        new IndeferimentoDoDocumento(true, null, [BaseLegalDaLeiDeCotas()]),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()),
-        null).Value!;
+    private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoDeMaioridade()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalDaLeiDeCotas()]))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static CondicaoGatilho CondicaoDeMaioridade() => CondicaoGatilho.Criar(
         0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;

@@ -161,13 +161,14 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }
 
-    private static DocumentoExigido ExigenciaQueComprovaBaixaRenda(Guid faseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, []),
-        new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-        ["BAIXA_RENDA"]).Value!;
+    private static DocumentoExigido ExigenciaQueComprovaBaixaRenda(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(["BAIXA_RENDA"])
+            .Criar().Value!;
 
     [Fact(DisplayName = "O fato pendente que uma exigência apenas comprova continua vínculo novo: coletá-lo num campo novo do formulário é recusado")]
     public async Task Handle_FatoPendenteSoComprovadoPorExigencia_ColetaNovaERecusada()

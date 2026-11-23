@@ -27,13 +27,14 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
         _fixture = fixture;
     }
 
-    private static DocumentoExigido Documento(Guid faseId) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(faseId, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, []),
-        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-        null).Value!;
+    private static DocumentoExigido Documento(Guid faseId, string chave) => DocumentoExigido.Criar(
+        Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(chave).Value!,
+        new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(faseId, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null)).Value!;
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
@@ -73,12 +74,12 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
     {
         RegraDeComprovacao grupoDeTodosOsItens = RegraDeComprovacao.CriarGrupo(
             FormaDeComprovacao.TodosOsItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!]).Value!;
+            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_2"), 1).Value!]).Value!;
         BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
         return RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [grupoDeTodosOsItens, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!]).Value!;
+            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [grupoDeTodosOsItens, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_3"), 1).Value!]).Value!;
     }
 
     private async Task PersistirAsync(ProcessoSeletivo processo)
@@ -167,7 +168,7 @@ ConsultaDasRestricoesDeOrdem,
     {
         for (int tentativa = 1; tentativa <= 3; tentativa++)
         {
-            RegraDeComprovacao grupoDeTodosOsItens = GrupoComDoisDocumentos(faseId);
+            RegraDeComprovacao grupoDeTodosOsItens = GrupoComDoisDocumentos(faseId, tentativa);
 
             Result definirResult = processo.DefinirDocumentosExigidos([grupoDeTodosOsItens]);
             definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
@@ -181,11 +182,11 @@ ConsultaDasRestricoesDeOrdem,
     }
 
 
-    private static RegraDeComprovacao GrupoComDoisDocumentos(Guid faseId)
+    private static RegraDeComprovacao GrupoComDoisDocumentos(Guid faseId, int tentativa)
     {
         RegraDeComprovacao grupoDeTodosOsItens = RegraDeComprovacao.CriarGrupo(
             FormaDeComprovacao.TodosOsItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!]).Value!;
+            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_2"), 1).Value!]).Value!;
 
         return grupoDeTodosOsItens;
     }

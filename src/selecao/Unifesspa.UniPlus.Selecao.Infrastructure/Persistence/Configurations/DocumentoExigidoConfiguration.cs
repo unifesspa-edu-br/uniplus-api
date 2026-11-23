@@ -71,6 +71,12 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
     private static void ConfigurarColunasDaExigencia(EntityTypeBuilder<DocumentoExigido> builder)
     {
+        builder.Property(d => d.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
+        builder.HasIndex(d => new { d.ProcessoSeletivoId, d.Chave })
+            .IsUnique().HasDatabaseName("ux_documentos_exigidos_processo_chave_local");
         builder.Property(d => d.ProcessoSeletivoId).HasComment("Processo seletivo que faz a exigência.");
         builder.Property(d => d.CreatedAt).HasComment("Data e hora em que a exigência foi criada.");
         builder.Property(d => d.UpdatedAt).HasComment("Data e hora da última alteração da exigência.");

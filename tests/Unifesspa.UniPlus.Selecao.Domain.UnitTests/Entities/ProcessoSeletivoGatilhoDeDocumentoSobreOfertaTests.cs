@@ -57,13 +57,14 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
 
     private static DocumentoExigido ExigenciaCondicionada(
         Guid faseId, TipoDeDocumento tipoDocumento, CondicaoGatilho condicao) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumento.Codigo, tipoDocumento.Nome, tipoDocumento.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumento.Codigo, tipoDocumento.Nome, tipoDocumento.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static ProcessoSeletivo ProcessoComModalidadeCitadaPelaExigencia(TipoDeDocumento tipoDocumento, string fato)
     {

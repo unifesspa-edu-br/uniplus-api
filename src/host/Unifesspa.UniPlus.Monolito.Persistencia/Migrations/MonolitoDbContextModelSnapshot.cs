@@ -11209,8 +11209,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("chave")
-                        .HasComment("Chave local estável da banca no processo seletivo.");
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11245,7 +11245,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ix_bancas_da_etapa_processo_seletivo_id_chave");
+                        .HasDatabaseName("ux_bancas_da_etapa_processo_chave_local");
 
                     b.ToTable("bancas_da_etapa", "selecao");
                 });
@@ -11261,8 +11261,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("chave")
-                        .HasComment("Chave local estável da banca no processo seletivo.");
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11297,7 +11297,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ix_bancas_requeridas_processo_seletivo_id_chave");
+                        .HasDatabaseName("ux_bancas_requeridas_processo_chave_local");
 
                     b.ToTable("bancas_requeridas", "selecao");
                 });
@@ -11651,7 +11651,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da condição da exigência.");
 
                     b.Property<int>("Clausula")
                         .HasColumnType("integer")
@@ -12542,6 +12543,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("aplicabilidade")
                         .HasComment("A quem a exigência se aplica: 1 para todos os candidatos, 2 só para quem atende às condições da exigência.");
 
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
+
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -12645,8 +12653,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ExigidoNaFaseId")
                         .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
 
-                    b.HasIndex("ProcessoSeletivoId")
-                        .HasDatabaseName("ix_documentos_exigidos_processo_seletivo_id");
+                    b.HasIndex("ProcessoSeletivoId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ux_documentos_exigidos_processo_chave_local");
 
                     b.ToTable("documentos_exigidos", "selecao", t =>
                         {
@@ -12660,13 +12669,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da base legal da exigência.");
 
                     b.Property<string>("Abrangencia")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("abrangencia");
+                        .HasColumnName("abrangencia")
+                        .HasComment("Abrangência da base legal.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12675,24 +12686,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("DocumentoExigidoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("documento_exigido_id");
+                        .HasColumnName("documento_exigido_id")
+                        .HasComment("Exigência de documento à qual a base legal pertence.");
 
                     b.Property<string>("Observacao")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
-                        .HasColumnName("observacao");
+                        .HasColumnName("observacao")
+                        .HasComment("Observação sobre a base legal, quando informada.");
 
                     b.Property<string>("Referencia")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("referencia");
+                        .HasColumnName("referencia")
+                        .HasComment("Referência da base legal da exigência.");
 
                     b.Property<string>("Situacao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("situacao");
+                        .HasColumnName("situacao")
+                        .HasComment("Situação da base legal.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12705,7 +12720,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("DocumentoExigidoId")
                         .HasDatabaseName("ix_documentos_exigidos_base_legal_documento_exigido_id");
 
-                    b.ToTable("documentos_exigidos_base_legal", "selecao");
+                    b.ToTable("documentos_exigidos_base_legal", "selecao", t =>
+                        {
+                            t.HasComment("Bases legais das exigências de documentos.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
@@ -12796,8 +12814,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("chave")
-                        .HasComment("Chave local estável da etapa no processo seletivo.");
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12894,10 +12912,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ux_etapas_processo_processo_chave");
+                        .HasDatabaseName("ux_etapas_processo_processo_chave_local");
 
                     b.HasIndex("ProcessoSeletivoId", "Ordem")
-                        .IsUnique()
                         .HasDatabaseName("ix_etapas_processo_processo_seletivo_id_ordem");
 
                     b.ToTable("etapas_processo", "selecao", t =>
@@ -12934,8 +12951,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("chave")
-                        .HasComment("Chave local estável da fase no processo seletivo.");
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -13056,7 +13073,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ux_fases_cronograma_processo_chave");
+                        .HasDatabaseName("ux_fases_cronograma_processo_chave_local");
 
                     b.HasIndex("ProcessoSeletivoId", "FaseCanonicaOrigemId")
                         .IsUnique()
@@ -13550,8 +13567,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("chave")
-                        .HasComment("Chave local estável do item na etapa.");
+                        .HasColumnName("chave_local")
+                        .HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13594,7 +13611,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("EtapaProcessoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ux_itens_avaliacao_etapa_chave");
+                        .HasDatabaseName("ux_itens_avaliacao_etapa_chave_local");
 
                     b.ToTable("itens_de_avaliacao_da_etapa", "selecao", t =>
                         {
@@ -19638,7 +19655,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_bancas_da_etapa_etapas_processo_etapa_processo_id_processo_");
+                        .HasConstraintName("fk_bancas_da_etapa_etapa");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
                         {
@@ -19769,7 +19786,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_bancas_requeridas_fases_cronograma_fase_cronograma_id_proce");
+                        .HasConstraintName("fk_bancas_requeridas_fase");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
                         {
@@ -20836,8 +20853,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
-                                .HasColumnName("chave")
-                                .HasComment("Chave local estável do nível na etapa.");
+                                .HasColumnName("chave_local")
+                                .HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
 
                             b1.Property<Guid>("EtapaProcessoId")
                                 .HasColumnType("uuid")
@@ -20867,7 +20884,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.HasIndex("EtapaProcessoId", "Chave")
                                 .IsUnique()
-                                .HasDatabaseName("ux_niveis_atendimento_etapa_chave");
+                                .HasDatabaseName("ux_niveis_atendimento_etapa_chave_local");
 
                             b1.ToTable("niveis_de_atendimento_da_etapa", "selecao", t =>
                                 {

@@ -43,13 +43,14 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
 
     private static DocumentoExigido Exigencia(
         Guid faseId, string tipo, ClassificacaoDeProtecao protecao, string[]? comprova = null, CondicaoGatilho[]? gatilho = null) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.De(protecao)),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(gatilho is { Length: > 0 } ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilho ?? []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(Qualquer, null, null, null, null),
-            comprova).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.De(protecao)))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(gatilho is { Length: > 0 } ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilho ?? []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos(comprova)
+            .Criar().Value!;
 
     private static ProcessoSeletivo Processo(params Func<Guid, DocumentoExigido>[] exigencias)
     {
@@ -157,13 +158,14 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     [Fact(DisplayName = "Fatos comprovados repetidos ou em branco são recusados na forma da exigência")]
     public void FatosComprovadosInvalidos_RecusaNaForma()
     {
-        Result<DocumentoExigido> repetido = DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(Qualquer, null, null, null, null),
-            [FatoSensivel, FatoSensivel]);
+        Result<DocumentoExigido> repetido = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
+            .ComFatos([FatoSensivel, FatoSensivel])
+            .Criar();
 
         repetido.IsFailure.Should().BeTrue();
         repetido.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(DocumentoExigido.FatosComprovadosInvalidos);

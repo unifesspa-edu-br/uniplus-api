@@ -124,13 +124,14 @@ internal static class CenarioDeConformidadeLegal
 
     internal static DocumentoExigido ExigenciaGeral(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, Guid? tipoDocumentoOrigemId = null, bool obrigatorio = true) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(exigidoNaFaseId, null, null),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(obrigatorio, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, null))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     internal static DocumentoExigido ExigenciaCondicionalPorModalidade(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null,

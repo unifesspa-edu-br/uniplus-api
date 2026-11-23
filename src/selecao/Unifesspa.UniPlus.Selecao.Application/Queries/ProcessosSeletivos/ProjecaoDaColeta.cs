@@ -152,7 +152,8 @@ internal static class ProjecaoDaColeta
         new IndeferimentoDoDocumentoDto(
             documento.Obrigatorio, documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)]),
         ProjetarRequisitos(documento),
-        [.. documento.FatosComprovados]);
+        [.. documento.FatosComprovados])
+    { Chave = documento.Chave.Valor };
 
     private static MomentoDaExigenciaDto ProjetarMomento(DocumentoExigido documento) => new(
         documento.ExigidoNaFaseId,

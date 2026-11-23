@@ -66,20 +66,22 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
     private static DocumentoExigido DocumentoDeRgSemObrigatoriedade(FaseCronograma fase) =>
         DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_rg").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+                null)).Value!;
     private static DocumentoExigido ComprovanteDeRendaComModelo(FaseCronograma fase) =>
         DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
-            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeDocumento.Docx, new string('e', 64))),
-            null).Value!;
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_comprovante_renda").Value!,
+            new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
+                new MomentoDaExigencia(fase.Id, null, FinalidadeFormulario.Inscricao),
+                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+                new IndeferimentoDoDocumento(false, null, []),
+                RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeDocumento.Docx, new string('e', 64))),
+                null)).Value!;
 
     private static void DefinirGrupoDeComposicaoFamiliar(ProcessoSeletivo processo) =>
         processo.DefinirItens([], grupos:

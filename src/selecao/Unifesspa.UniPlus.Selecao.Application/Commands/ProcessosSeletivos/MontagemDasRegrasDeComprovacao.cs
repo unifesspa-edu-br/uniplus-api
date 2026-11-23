@@ -71,7 +71,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         return erros.Count > 0;
     }
 
-    private static void ConstruirRegra(RegraInformadaConferida regra, int ordem, Result<MontagemDoDocumentoExigido.Partes>? partes,
+    private void ConstruirRegra(RegraInformadaConferida regra, int ordem, Result<MontagemDoDocumentoExigido.Partes>? partes,
         List<RegraDeComprovacao> itens, RegrasMontadas destino)
     {
         Result<RegraDeComprovacao> resultado = partes is null ? CriarGrupo(regra.Entrada, ordem, regra.Declaracao, itens)
@@ -87,9 +87,9 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         }
     }
 
-    private static Result<RegraDeComprovacao> CriarRegraDocumento(RegraInformadaConferida regra, int ordem, MontagemDoDocumentoExigido.Partes partes)
+    private Result<RegraDeComprovacao> CriarRegraDocumento(RegraInformadaConferida regra, int ordem, MontagemDoDocumentoExigido.Partes partes)
     {
-        Result<DocumentoExigido> documento = MontagemDoDocumentoExigido.Criar(regra.Entrada.Documento!, partes);
+        Result<DocumentoExigido> documento = documentos.Criar(regra.Entrada.Documento!, partes);
         if (documento.IsFailure)
         {
             return Result<RegraDeComprovacao>.ValidationFailure([.. documento.Errors.Select(e => (e with { Field = e.Field ?? "" }).NoCaminhoDe("documento"))]);

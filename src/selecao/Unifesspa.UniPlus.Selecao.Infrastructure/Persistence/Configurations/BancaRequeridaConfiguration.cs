@@ -23,9 +23,9 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
         builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
         builder.Property(b => b.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
-            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
-            .HasComment("Chave local estável da banca no processo seletivo.");
-        builder.HasIndex("ProcessoSeletivoId", nameof(BancaRequerida.Chave)).IsUnique();
+            .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
+        builder.HasIndex("ProcessoSeletivoId", nameof(BancaRequerida.Chave)).IsUnique().HasDatabaseName("ux_bancas_requeridas_processo_chave_local");
         builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da banca.");
         builder.Property(b => b.FaseCronogramaId).HasComment("Identificador da fase à qual a banca pertence.");
 

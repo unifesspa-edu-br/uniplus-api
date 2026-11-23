@@ -13,4 +13,5 @@ internal sealed record ContextoDaMontagemDasExigencias(
     ProcessoSeletivo Processo,
     ITipoDocumentoReader TiposDeDocumento,
     IReadOnlyDictionary<Guid, ModeloDeDocumento> Modelos,
-    FatosDoGatilho? Fatos);
+    FatosDoGatilho? Fatos,
+    ReconhecimentoDasExigencias Reconhecimento);

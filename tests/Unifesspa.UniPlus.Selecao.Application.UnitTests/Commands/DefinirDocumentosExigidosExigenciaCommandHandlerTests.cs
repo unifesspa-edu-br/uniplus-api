@@ -164,6 +164,21 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         ConferirBasesLegaisDistintasPorExigencia(cenario.Processo);
     }
 
+    [Fact]
+    public async Task Handle_DuasExigenciasDoMesmoTipo_FormaChavesDistintas()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase();
+        ItemDocumentoExigidoDeTeste item = cenario.ItemGeral();
+        DefinirDocumentosExigidosCommand comando = new(cenario.Processo.Id,
+            [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir(), RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
+
+        Result resultado = await HandleAsync(cenario.Mocks, comando);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        cenario.Processo.DocumentosExigidos.Select(static documento => documento.Chave.Valor)
+            .Should().Equal("exigencia_identidade", "exigencia_identidade_2");
+    }
+
     private static TipoDocumentoView LaudoMedico(Guid tipoDocumentoId) =>
         new(tipoDocumentoId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true);
 

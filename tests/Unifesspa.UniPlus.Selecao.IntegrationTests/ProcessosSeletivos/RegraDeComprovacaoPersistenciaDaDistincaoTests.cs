@@ -60,10 +60,11 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
         new PublicacoesDaFase([], false, null), []).Value!;
 
     private static DocumentoExigido Documento(Guid fase) => DocumentoExigido.Criar(
-        new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(fase, null, null),
-        new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, []),
-        RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
-        null).Value!;
+        Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_identidade").Value!,
+        new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
+            new MomentoDaExigencia(fase, null, null),
+            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
+            new IndeferimentoDoDocumento(true, null, []),
+            RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
+            null)).Value!;
 }

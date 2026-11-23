@@ -150,13 +150,14 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
-        DocumentoExigido.Criar(
-            new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, finalidade),
-            new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, []),
-            new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, modelo, null, null),
-            null).Value!;
+        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, finalidade))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, modelo, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
@@ -191,13 +192,14 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         internal static ExigenciasComArquivoEnviado Novas()
         {
-            DocumentoExigido laudo = DocumentoExigido.Criar(
-                new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(FaseDaInscricao.Id, null, FinalidadeFormulario.Inscricao),
-                new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(true, null, []),
-                new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000, null, null, null),
-                null).Value!;
+            DocumentoExigido laudo = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .ComMomento(new MomentoDaExigencia(FaseDaInscricao.Id, null, FinalidadeFormulario.Inscricao))
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000, null, null, null))
+            .ComFatos(null)
+            .Criar().Value!;
             ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
 
             return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), arquivo);
