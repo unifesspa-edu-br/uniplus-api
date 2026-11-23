@@ -7557,6 +7557,11 @@
       "titulo": "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.versao_nao_encontrada",
+      "status": 404,
+      "titulo": "Versão do processo seletivo não encontrada"
+    },
+    {
       "codigo": "uniplus.selecao.produto_da_etapa.ato_nao_encontrado_no_catalogo",
       "status": 422,
       "titulo": "O tipo de ato declarado pela etapa não tem versão vigente no catálogo de Publicações"

@@ -37,11 +37,19 @@ internal sealed class FormaLidaDoEsquema
             string.Join('|', localizacoes),
             _ => new FormaDoNo(
                 localizacoes,
+                [.. trechos.SelectMany(TiposDe).Distinct(StringComparer.Ordinal)],
                 trechos.Any(static trecho => trecho.DeclaraVerdadeiro("readOnly")),
                 ParteDe(trechos),
                 () => PropriedadesDe(trechos),
                 () => ItensDe(trechos)));
     }
+
+    private static IEnumerable<string> TiposDe(TrechoDoEsquema trecho) => trecho.PalavraChave("type") switch
+    {
+        JsonValue valor when valor.TryGetValue(out string? tipo) => [tipo],
+        JsonArray tipos => tipos.OfType<JsonValue>().Select(static valor => valor.GetValue<string>()),
+        _ => [],
+    };
 
     private Dictionary<string, FormaDoNo> PropriedadesDe(IReadOnlyList<TrechoDoEsquema> trechos) =>
         trechos.SelectMany(static trecho => PropriedadesDeclaradas(trecho))

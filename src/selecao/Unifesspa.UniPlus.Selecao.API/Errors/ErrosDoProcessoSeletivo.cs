@@ -35,6 +35,7 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.impedido_por_inscricao_no_processo", "Impedido de atuar no processo seletivo")),
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
+        new("ProcessoSeletivo.VersaoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.versao_nao_encontrada", "Versão do processo seletivo não encontrada")),
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
     ];

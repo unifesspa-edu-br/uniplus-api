@@ -128,7 +128,23 @@
       "description": "Bancas que a etapa exige. Cada uma tem uma chave local.",
       "type": "array",
       "items": {
-        "$ref": "bancas.schema.json"
+        "allOf": [
+          {
+            "$ref": "bancas.schema.json"
+          }
+        ],
+        "properties": {
+          "categoriasDocumentoCodigos": {
+            "title": "Candidatos atendidos",
+            "description": "Não existe na banca da etapa: só a banca da fase define candidatos atendidos por categoria.",
+            "not": {}
+          },
+          "categoriasDocumentoNomes": {
+            "title": "Nomes dos candidatos atendidos",
+            "description": "Não existe na banca da etapa: só a banca da fase define candidatos atendidos por categoria.",
+            "not": {}
+          }
+        }
       }
     },
     "recursos": {

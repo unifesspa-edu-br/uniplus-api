@@ -38,6 +38,28 @@ public sealed class FormaLidaDoEsquemaTests
     public void NoComReferencia_TemLocalizacoesDoPontoEDoDestino() =>
         Em("etapas/[]").Localizacoes.Should().Equal("documento.schema.json#/properties/etapas/items", "etapas.schema.json#");
 
+    [Theory]
+    [InlineData("identificacao/nome", "string", false, false)]
+    [InlineData("taxaDeInscricao/valor", "number", true, false)]
+    [InlineData("versao", "integer", true, false)]
+    [InlineData("publicadoEm", "string", false, false)]
+    public void TipoDeclarado_EReconhecido(string caminho, string tipo, bool numerico, bool aceitaNulo)
+    {
+        FormaDoNo forma = Em(caminho);
+        forma.TiposDeclarados.Should().Contain(tipo);
+        forma.Numerico.Should().Be(numerico);
+        forma.AceitaNulo.Should().Be(aceitaNulo);
+    }
+
+    [Fact]
+    public void TiposEmLista_SaoReconhecidos()
+    {
+        FormaDoNo forma = Em("distribuicaoVagas/[]/referenciaDemograficaCodigo");
+        forma.TiposDeclarados.Should().Equal("string", "null");
+        forma.Numerico.Should().BeFalse();
+        forma.AceitaNulo.Should().BeTrue();
+    }
+
     [Theory(DisplayName = "A parte que exige chave sai do esquema com o tipo e o escopo da chave")]
     [InlineData("etapas/[]", "etapa", EscopoDaChave.Documento)]
     [InlineData("cronograma/fases/[]", "fase", EscopoDaChave.Documento)]

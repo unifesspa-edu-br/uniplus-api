@@ -5,14 +5,14 @@ using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 /// <summary>Monta, para os testes, a forma que o esquema entregaria: valores, objetos com propriedades e listas.</summary>
 internal static class FormaDeTeste
 {
-    public static FormaDoNo Valor(bool somenteLeitura = false) =>
-        new([], somenteLeitura, parte: null, static () => new Dictionary<string, FormaDoNo>(), static () => null);
+    public static FormaDoNo Valor(bool somenteLeitura = false, params string[] tiposDeclarados) =>
+        new([], tiposDeclarados, somenteLeitura, parte: null, static () => new Dictionary<string, FormaDoNo>(), static () => null);
 
     public static FormaDoNo Objeto(Dictionary<string, FormaDoNo> propriedades, ParteComChave? parte = null) =>
-        new([], somenteLeitura: false, parte, () => propriedades, static () => null);
+        new([], ["object"], somenteLeitura: false, parte, () => propriedades, static () => null);
 
     public static FormaDoNo Lista(FormaDoNo itens) =>
-        new([], somenteLeitura: false, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
+        new([], ["array"], somenteLeitura: false, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
 
     /// <summary>
     /// O documento de teste: raiz com <c>id</c> só de leitura; <c>etapas</c> com chave no documento, cada uma com <c>itens</c> de

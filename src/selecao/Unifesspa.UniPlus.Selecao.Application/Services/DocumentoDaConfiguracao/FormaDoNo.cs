@@ -12,16 +12,19 @@ public sealed class FormaDoNo
 
     public FormaDoNo(
         IReadOnlyList<string> localizacoes,
+        IReadOnlyList<string> tiposDeclarados,
         bool somenteLeitura,
         ParteComChave? parte,
         Func<IReadOnlyDictionary<string, FormaDoNo>> propriedades,
         Func<FormaDoNo?> itens)
     {
         ArgumentNullException.ThrowIfNull(localizacoes);
+        ArgumentNullException.ThrowIfNull(tiposDeclarados);
         ArgumentNullException.ThrowIfNull(propriedades);
         ArgumentNullException.ThrowIfNull(itens);
 
         Localizacoes = localizacoes;
+        TiposDeclarados = tiposDeclarados;
         SomenteLeitura = somenteLeitura;
         Parte = parte;
         _propriedades = new Lazy<IReadOnlyDictionary<string, FormaDoNo>>(propriedades);
@@ -30,6 +33,15 @@ public sealed class FormaDoNo
 
     /// <summary>Os pontos do esquema que formam o nó, na ordem em que são expandidos.</summary>
     public IReadOnlyList<string> Localizacoes { get; }
+
+    /// <summary>Os tipos declarados nos trechos expandidos do ponto.</summary>
+    public IReadOnlyList<string> TiposDeclarados { get; }
+
+    public bool Numerico => TiposDeclarados.Contains("number", StringComparer.Ordinal) || TiposDeclarados.Contains("integer", StringComparer.Ordinal);
+
+    public bool AceitaNumeroMasNaoTexto => Numerico && !TiposDeclarados.Contains("string", StringComparer.Ordinal);
+
+    public bool AceitaNulo => TiposDeclarados.Contains("null", StringComparer.Ordinal);
 
     /// <summary>Verdadeiro quando o esquema marca o ponto como só de leitura: a importação o ignora.</summary>
     public bool SomenteLeitura { get; }
