@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="../../BannedSymbols.txt" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -21,15 +23,9 @@
     <!-- Os fixtures são projetos próprios: só as DLLs da raiz, do intermediário e do alvo carregado chegam ao diretório de
          saída. O alvo ausente é construído, mas nunca copiado. -->
     <Compile Remove="Fixtures/**" />
-    <ProjectReference Include="Fixtures/Raiz/Raiz.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
-    <ProjectReference Include="Fixtures/Intermediario/Intermediario.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
-    <ProjectReference Include="Fixtures/AlvoCarregado/AlvoCarregado.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
-    <ProjectReference Include="Fixtures/AlvoAusente/AlvoAusente.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="Fixtures/Raiz/Raiz.csproj" />
+    <ProjectReference Include="Fixtures/AlvoAusente/AlvoAusente.csproj" Private="false" />
   </ItemGroup>
-
-  <Target Name="CopiarOsAssembliesDosFixtures" AfterTargets="CopyFilesToOutputDirectory">
-    <Copy SourceFiles="@(AssemblyDeFixture)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-  </Target>
 
   <ItemGroup>
     <Using Include="Xunit" />
