@@ -8,10 +8,15 @@ using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoD
 
 /// <summary>
 /// A forma errada é recusada com o caminho da propriedade: tipo, instante, limite de tamanho, propriedade desconhecida e
-/// identificador interno no lugar do código; e o esquema descreve cada propriedade.
+/// identificador interno no lugar do código; o esquema descreve cada propriedade e só a exigência cita por
+/// identificador o modelo de documento enviado ao rascunho.
 /// </summary>
 public sealed class FormaDoEsquemaDaConfiguracaoTests
 {
+    // A exigência cita o modelo enviado ao próprio rascunho pelo identificador devolvido no envio;
+    // é a única referência gravável a registro fora do documento (regra de identidade da ADR-0172).
+    private const string ReferenciaAoModeloDaExigencia = "exigencias.schema.json/exigencia/modeloId";
+
     [Fact(DisplayName = "A data de início da fase como número é recusada com o caminho da propriedade")]
     public void InicioDaFaseComoNumero_ApontaOCaminho()
     {
@@ -175,13 +180,14 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
         }
     }
 
-    [Fact(DisplayName = "Nenhuma propriedade do esquema é referência por identificador interno")]
-    public void Esquema_NaoTemReferenciaPorIdentificadorInterno()
+    [Fact(DisplayName = "Só a exigência cita por identificador o modelo de documento enviado ao rascunho")]
+    public void Esquema_SoExigenciaCitaModeloEnviadoPorIdentificador()
     {
-        string[] referencias = [.. ArquivosDoEsquema.SelectMany(static arquivo => NomesDePropriedades(Esquema(arquivo)))
-            .Where(static nome => nome.EndsWith("Id", StringComparison.Ordinal) || nome.EndsWith("Ids", StringComparison.Ordinal))];
+        string[] referencias = [.. ArquivosDoEsquema.SelectMany(static arquivo => SubesquemasNomeados(Esquema(arquivo), arquivo))
+            .Select(static par => par.Caminho)
+            .Where(static caminho => caminho.EndsWith("Id", StringComparison.Ordinal) || caminho.EndsWith("Ids", StringComparison.Ordinal))];
 
-        referencias.Should().BeEmpty();
+        referencias.Should().Equal(ReferenciaAoModeloDaExigencia);
     }
 
     [Fact(DisplayName = "Toda propriedade e toda definição do esquema tem título e descrição")]
@@ -209,9 +215,6 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
             : proprio;
         return string.IsNullOrWhiteSpace(texto) ? null : texto;
     }
-
-    private static IEnumerable<string> NomesDePropriedades(JsonNode no) => SubesquemasNomeados(no, "#")
-        .Select(static par => par.Caminho.Split('/')[^1]).Where(static nome => !nome.StartsWith('#'));
 
     private static IEnumerable<(string Caminho, JsonNode No)> SubesquemasNomeados(JsonNode no, string caminho) =>
         Filhos(no, caminho).SelectMany(par => SubesquemasNomeados(par.No, par.Caminho).Prepend(par))

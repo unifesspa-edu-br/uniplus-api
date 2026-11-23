@@ -19172,6 +19172,12 @@
             "type": "integer",
             "minimum": 1
           },
+          "modeloId": {
+            "title": "Identificador do modelo de documento",
+            "description": "Identificador devolvido no envio do modelo de documento ao mesmo rascunho ou processo.",
+            "type": "string",
+            "format": "uuid"
+          },
           "modelo": {
             "title": "Modelo do documento",
             "description": "Modelo de documento que a exig\u00EAncia oferece ao candidato, descrito na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque o modelo \u00E9 um arquivo enviado em separado.",
