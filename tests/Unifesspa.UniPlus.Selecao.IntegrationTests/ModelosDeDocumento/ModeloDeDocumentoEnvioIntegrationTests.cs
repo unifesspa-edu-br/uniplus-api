@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -66,5 +67,38 @@ public sealed class ModeloDeDocumentoEnvioIntegrationTests : IClassFixture<Proce
         confirmar.Value!.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(odt)));
         confirmar.Value.NomeArquivo.Should().Be("Declaração de pertencimento quilombola.odt");
         (await envio.BaixarPeloAcessoAsync(iniciar.ModeloDeDocumentoId)).Should().Equal(odt);
+    }
+    [Fact(DisplayName = "O rascunho sem processo permite envio, confirmação e leitura")]
+    public async Task Enviar_RascunhoSemProcesso_ConfirmaEAcessa()
+    {
+        byte[] conteudo = ArquivosDeModeloDeTeste.Odt();
+        await using EnvioDoModeloDeDocumento envio = await EnvioDoModeloDeDocumento.NovoDeRascunhoAsync(_dbFixture, _storage);
+        IniciarEnvioDoModeloDeDocumentoDto inicio = await envio.IniciarEEnviarAsync(conteudo, "Declaração");
+
+        Result<ModeloDeDocumentoDto> confirmacao = await envio.ConfirmarAsync(inicio.ModeloDeDocumentoId);
+
+        confirmacao.IsSuccess.Should().BeTrue(confirmacao.Error?.Message);
+        (await envio.BaixarPeloAcessoAsync(inicio.ModeloDeDocumentoId)).Should().Equal(conteudo);
+    }
+    [Fact]
+    public async Task Iniciar_RascunhoComFormatoNaoEditavel_Recusa()
+    {
+        await using EnvioDoModeloDeDocumento envio = await EnvioDoModeloDeDocumento.NovoDeRascunhoAsync(_dbFixture, _storage);
+
+        Result<IniciarEnvioDoModeloDeDocumentoDto> resultado = await envio.TentarIniciarAsync("PDF");
+
+        resultado.Error!.Code.Should().Be(ModeloDeDocumentoErrorCodes.FormatoNaoEditavel);
+    }
+
+    [Fact]
+    public async Task Confirmar_RascunhoComArquivoAcimaDoLimite_Recusa()
+    {
+        await using EnvioDoModeloDeDocumento envio = await EnvioDoModeloDeDocumento.NovoDeRascunhoAsync(_dbFixture, _storage);
+        byte[] conteudo = new byte[ModeloDeDocumento.TamanhoMaximoBytes + 1];
+        IniciarEnvioDoModeloDeDocumentoDto inicio = await envio.IniciarEEnviarAsync(conteudo, "Declaração");
+
+        Result<ModeloDeDocumentoDto> resultado = await envio.ConfirmarAsync(inicio.ModeloDeDocumentoId);
+
+        resultado.Error!.Code.Should().Be(ModeloDeDocumentoErrorCodes.TamanhoExcedido);
     }
 }

@@ -18,29 +18,33 @@ public static class ObterAcessoModeloDeDocumentoQueryHandler
 {
     public static async Task<Result<AcessoModeloDeDocumentoDto>> Handle(
         ObterAcessoModeloDeDocumentoQuery query,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnidadeDonaDoProcesso donos,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IArquivoArmazenadoStorage storage,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(donos);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(clock);
 
-        // O processo excluído logicamente preserva a linha, e os modelos continuam apontando para
-        // ele: a visibilidade do processo é decidida antes, não deduzida do modelo.
-        if (!await processoSeletivoRepository.ExisteAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
+        if (await donos.DoProcessoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
         {
-            return Result<AcessoModeloDeDocumentoDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<AcessoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(query.ProcessoSeletivoId));
         }
 
+        return await ObterDoProcessoAsync(query, modeloDeDocumentoRepository, storage, clock, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<AcessoModeloDeDocumentoDto>> ObterDoProcessoAsync(
+        ObterAcessoModeloDeDocumentoQuery query, IModeloDeDocumentoRepository modelos,
+        IArquivoArmazenadoStorage storage, TimeProvider clock, CancellationToken cancellationToken)
+    {
         // Modelo de outro processo recebe a mesma recusa do inexistente: separar as duas
         // confirmaria a existência de um id colhido em outro lugar.
-        ModeloDeDocumento? modelo = await modeloDeDocumentoRepository
+        ModeloDeDocumento? modelo = await modelos
             .ObterPorIdAsync(query.ModeloDeDocumentoId, cancellationToken)
             .ConfigureAwait(false);
         if (modelo is null || modelo.ProcessoSeletivoId != query.ProcessoSeletivoId)
@@ -49,6 +53,12 @@ public static class ObterAcessoModeloDeDocumentoQueryHandler
                 ModeloDeDocumentoErrorCodes.NaoEncontrado, "Modelo de documento não encontrado neste Processo Seletivo."));
         }
 
+        return await AcessarConfirmadoAsync(modelo, storage, clock, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<AcessoModeloDeDocumentoDto>> AcessarConfirmadoAsync(
+        ModeloDeDocumento modelo, IArquivoArmazenadoStorage storage, TimeProvider clock, CancellationToken cancellationToken)
+    {
         if (modelo.Situacao != StatusArquivoEnviado.Confirmado || modelo.ObjectKeyConfirmado is null)
         {
             return Result<AcessoModeloDeDocumentoDto>.Failure(new DomainError(

@@ -14,15 +14,14 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
-/// Handler de <see cref="IniciarEnvioDoModeloDeDocumentoCommand"/>: confere que o processo existe,
-/// cria o registro pendente e devolve a URL de PUT. Enviar o modelo não é configuração do processo
-/// — o que a muda é vincular o modelo a uma exigência —, então não passa pela trava de mutação.
+/// Inicia o envio para o rascunho ou processo existente, sem bloquear o dono. O modelo pendente criado
+/// em paralelo com a exclusão do rascunho fica sem dono e é removido quando vence, pela rotina dos pendentes vencidos.
 /// </summary>
 public static class IniciarEnvioDoModeloDeDocumentoCommandHandler
 {
     public static async Task<Result<IniciarEnvioDoModeloDeDocumentoDto>> Handle(
         IniciarEnvioDoModeloDeDocumentoCommand command,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnidadeDonaDoProcesso donos,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IArquivoArmazenadoStorage storage,
         IUnitOfWork unitOfWork,
@@ -30,18 +29,25 @@ public static class IniciarEnvioDoModeloDeDocumentoCommandHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(donos);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
 
-        if (!await processoSeletivoRepository.ExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<IniciarEnvioDoModeloDeDocumentoDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", "Processo Seletivo não encontrado."));
-        }
+        return await donos.DoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null
+            ? Result<IniciarEnvioDoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            : await IniciarAsync(command, modeloDeDocumentoRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<IniciarEnvioDoModeloDeDocumentoDto>> IniciarAsync(
+        IniciarEnvioDoModeloDeDocumentoCommand command,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IArquivoArmazenadoStorage storage,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         Result<ModeloDeDocumento> pendente = ModeloDeDocumento.IniciarPendente(
             command.ProcessoSeletivoId, command.NomeArquivo, command.Formato, clock, PrazosDoArquivoEnviado.Envio);
         if (pendente.IsFailure)
@@ -49,8 +55,13 @@ public static class IniciarEnvioDoModeloDeDocumentoCommandHandler
             return Result<IniciarEnvioDoModeloDeDocumentoDto>.ValidationFailure(pendente.Errors);
         }
 
-        ModeloDeDocumento modelo = pendente.Value!;
+        return await GravarPendenteAsync(pendente.Value!, modeloDeDocumentoRepository, storage, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<IniciarEnvioDoModeloDeDocumentoDto>> GravarPendenteAsync(
+        ModeloDeDocumento modelo, IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IArquivoArmazenadoStorage storage, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         // A URL sai antes de persistir: se o storage falhar, nada é gravado, e o retry com a mesma
         // Idempotency-Key não deixa um pendente órfão.
         string urlUpload = await storage

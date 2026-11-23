@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ModelosDeDocumento;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ModelosDeDocumento;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -24,6 +25,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class EnvioDoModeloDeDocumentoHandlersTests
 {
+    private readonly IUnidadeDonaDoProcesso _donos = Substitute.For<IUnidadeDonaDoProcesso>();
+    private readonly IRascunhoDeProcessoSeletivoRepository _rascunhos = Substitute.For<IRascunhoDeProcessoSeletivoRepository>();
+    private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IModeloDeDocumentoRepository _modelos = Substitute.For<IModeloDeDocumentoRepository>();
     private readonly IArquivoArmazenadoStorage _storage = Substitute.For<IArquivoArmazenadoStorage>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
@@ -32,6 +36,8 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
 
     public EnvioDoModeloDeDocumentoHandlersTests()
     {
+        _donos.DoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(Guid.CreateVersion7());
+        _rascunhos.BloquearCompartilhadoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
         _modelos.ObterPorIdAsync(_modelo.Id, Arg.Any<CancellationToken>()).Returns(_modelo);
         _modelos.TentarReivindicarConfirmacaoAsync(_modelo.Id, Arg.Any<CancellationToken>()).Returns(true);
     }
@@ -39,12 +45,9 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
     [Fact(DisplayName = "O início com formato não editável é recusado sem gerar URL nem gravar")]
     public async Task Iniciar_FormatoNaoEditavel_RecusaSemStorage()
     {
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        processos.ExisteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
-
         Result<IniciarEnvioDoModeloDeDocumentoDto> resultado = await IniciarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new IniciarEnvioDoModeloDeDocumentoCommand(Guid.CreateVersion7(), "Autodeclaração", "PDF"),
-            processos, _modelos, _storage, _unitOfWork, TimeProvider.System, CancellationToken.None);
+            _donos, _modelos, _storage, _unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(ModeloDeDocumentoErrorCodes.FormatoNaoEditavel);
         await _storage.DidNotReceiveWithAnyArgs().GerarUrlUploadAsync(default!, default!, default, default);
@@ -101,16 +104,14 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
     [Fact(DisplayName = "O acesso ao modelo pendente é recusado; ao confirmado, assina a cópia selada")]
     public async Task Acesso_SoDoConfirmado()
     {
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        processos.ExisteAsync(_modelo.ProcessoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
         _storage.GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns("https://storage.local/modelo");
         ObterAcessoModeloDeDocumentoQuery query = new(_modelo.ProcessoSeletivoId, _modelo.Id);
 
         Result<AcessoModeloDeDocumentoDto> pendente = await ObterAcessoModeloDeDocumentoQueryHandler.Handle(
-            query, processos, _modelos, _storage, TimeProvider.System, CancellationToken.None);
+            query, _donos, _modelos, _storage, TimeProvider.System, CancellationToken.None);
         _modelo.Confirmar(10, new string('a', 64), TimeProvider.System);
         Result<AcessoModeloDeDocumentoDto> confirmado = await ObterAcessoModeloDeDocumentoQueryHandler.Handle(
-            query, processos, _modelos, _storage, TimeProvider.System, CancellationToken.None);
+            query, _donos, _modelos, _storage, TimeProvider.System, CancellationToken.None);
 
         pendente.Error!.Code.Should().Be(ModeloDeDocumentoErrorCodes.NaoConfirmado);
         confirmado.IsSuccess.Should().BeTrue();
@@ -126,5 +127,6 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
     private Task<Result<ModeloDeDocumentoDto>> ConfirmarAsync() =>
         ConfirmarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new ConfirmarEnvioDoModeloDeDocumentoCommand(_modelo.ProcessoSeletivoId, _modelo.Id),
+            new BloqueioCompartilhadoDoProcessoSeletivo(_rascunhos, _processos),
             _modelos, _storage, _unitOfWork, TimeProvider.System, CancellationToken.None);
 }
