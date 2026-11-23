@@ -21,6 +21,4 @@ internal static class AssembliesAlcancados
             .ToHashSet(StringComparer.Ordinal);
     }
 
-    internal static ReflectionAssembly DoDiretorioDeSaida(string nome) =>
-        ReflectionAssembly.LoadFrom(Path.Join(AppContext.BaseDirectory, $"{nome}.dll"));
 }

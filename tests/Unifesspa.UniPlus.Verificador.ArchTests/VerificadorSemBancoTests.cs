@@ -32,7 +32,9 @@ public sealed class VerificadorSemBancoTests
     [Fact(DisplayName = "A regra reprova a referência proibida de um assembly intermediário cujo alvo está carregado")]
     public void Regra_AlvoProibidoCarregadoNoIntermediario_ReprovaPeloNome()
     {
-        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(AssembliesAlcancados.DoDiretorioDeSaida("Unifesspa.UniPlus.Verificador.Sintetico"));
+        File.Exists(Path.Join(AppContext.BaseDirectory, "Npgsql.Sintetico.dll")).Should().BeTrue();
+
+        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(typeof(Sintetico.Raiz).Assembly);
 
         ProibidosEm(alcancados).Should().Contain("Npgsql.Sintetico");
     }
@@ -42,7 +44,7 @@ public sealed class VerificadorSemBancoTests
     {
         File.Exists(Path.Join(AppContext.BaseDirectory, "Microsoft.EntityFrameworkCore.Sintetico.dll")).Should().BeFalse();
 
-        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(AssembliesAlcancados.DoDiretorioDeSaida("Unifesspa.UniPlus.Verificador.Sintetico"));
+        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(typeof(Sintetico.Raiz).Assembly);
 
         ProibidosEm(alcancados).Should().Contain("Microsoft.EntityFrameworkCore.Sintetico");
     }
