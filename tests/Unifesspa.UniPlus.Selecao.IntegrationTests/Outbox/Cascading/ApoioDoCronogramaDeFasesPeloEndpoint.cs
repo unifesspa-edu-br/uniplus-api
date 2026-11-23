@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -68,6 +69,15 @@ internal static class ApoioDoCronogramaDeFasesPeloEndpoint
         ProcessoSeletivoDto? processo = await resposta.Content
             .ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false);
         return processo!;
+    }
+
+    internal static async Task<JsonNode> LerProcessoComoJsonAsync(HttpClient cliente, Guid processoId)
+    {
+        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}", UriKind.Relative));
+        Autenticar(pedido);
+        using HttpResponseMessage resposta = await cliente.SendAsync(pedido).ConfigureAwait(false);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        return JsonNode.Parse(await resposta.Content.ReadAsStringAsync().ConfigureAwait(false))!;
     }
 
     internal static async Task<ErroDoProblema[]> LerErrosDoProblemaAsync(

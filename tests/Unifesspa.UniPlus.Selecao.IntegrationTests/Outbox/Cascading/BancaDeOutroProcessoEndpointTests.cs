@@ -20,53 +20,64 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
 [Collection(CascadingCollection.Name)]
-public sealed class BancaDeOutroProcessoEndpointTests(CascadingFixture fixture)
+public sealed class BancaDeOutroProcessoEndpointTests(CascadingFixture ambienteDeTeste)
 {
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task Definir_BancaDeOutroProcesso_CriaNovaSemAlterarOriginal(bool etapa)
     {
-        await CatalogosDoEnvelopeFechado.SemearTipoDeAtoResultadoPreliminarAsync(fixture.Factory);
-        Guid destino = await SemearProcessoAsync(etapa);
-        Guid origem = await SemearProcessoAsync(etapa);
-        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogoOrigem = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(fixture.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
-        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogoDestino = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(fixture.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
-        using HttpClient cliente = fixture.Factory.CreateClient();
-        JsonArray declaracaoOrigem = Declaracao(etapa, catalogoOrigem);
-        JsonArray declaracaoDestino = Declaracao(etapa, catalogoDestino);
-        Banca(declaracaoOrigem, etapa)["regraDeDeliberacao"]!["integrantes"] = 5;
-        Banca(declaracaoOrigem, etapa)["regraDeDeliberacao"]!["quorum"] = 3;
-
-        JsonNode respostaOrigem = await EnviarAsync(cliente, origem, declaracaoOrigem, etapa);
-        Guid idOriginal = Banca(respostaOrigem, etapa)["id"]!.GetValue<Guid>();
-        JsonNode bancaOriginalNoBanco = await LerBancaNoBancoAsync(origem, idOriginal, etapa);
-        Banca(declaracaoDestino, etapa)["id"] = idOriginal;
-
-        JsonNode respostaDestino = await EnviarAsync(cliente, destino, declaracaoDestino, etapa);
-        ConferirResposta(respostaDestino, etapa, idOriginal, catalogoDestino.TipoBancaId);
-        JsonNode.DeepEquals(bancaOriginalNoBanco, await LerBancaNoBancoAsync(origem, idOriginal, etapa)).Should().BeTrue();
+        using HttpClient cliente = ambienteDeTeste.Factory.CreateClient();
+        (Guid origem, Guid idOriginal) = await GravarBancaOriginalAsync(cliente, etapa);
+        JsonNode bancaOriginal = await LerBancaNoBancoAsync(origem, idOriginal, etapa);
+        (Guid destino, Guid tipoId) = await GravarCopiaDaBancaEmOutroProcessoAsync(cliente, etapa, idOriginal);
+        JsonNode processoLido = await LerProcessoComoJsonAsync(cliente, destino);
+        ConferirBancaNova(processoLido, etapa, idOriginal, tipoId);
+        JsonNode.DeepEquals(bancaOriginal, await LerBancaNoBancoAsync(origem, idOriginal, etapa)).Should().BeTrue();
     }
 
-    private static void ConferirResposta(JsonNode resposta, bool etapa, Guid idOriginal, Guid tipoId)
+    private async Task<(Guid ProcessoId, Guid BancaId)> GravarBancaOriginalAsync(HttpClient cliente, bool etapa)
     {
-        JsonNode banca = Banca(resposta, etapa);
+        await CatalogosDoEnvelopeFechado.SemearTipoDeAtoResultadoPreliminarAsync(ambienteDeTeste.Factory);
+        Guid processoId = await SemearProcessoAsync(etapa);
+        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(ambienteDeTeste.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
+        JsonArray declaracao = Declaracao(etapa, catalogos);
+        Banca(declaracao, etapa)["regraDeDeliberacao"]!["integrantes"] = 5;
+        Banca(declaracao, etapa)["regraDeDeliberacao"]!["quorum"] = 3;
+        await GravarAsync(cliente, processoId, declaracao, etapa);
+        JsonNode processo = await LerProcessoComoJsonAsync(cliente, processoId);
+        return (processoId, Banca(processo[etapa ? "etapas" : "cronogramaFases"]!, etapa)["id"]!.GetValue<Guid>());
+    }
+
+    private async Task<(Guid ProcessoId, Guid TipoBancaId)> GravarCopiaDaBancaEmOutroProcessoAsync(HttpClient cliente, bool etapa, Guid idOriginal)
+    {
+        Guid processoId = await SemearProcessoAsync(etapa);
+        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(ambienteDeTeste.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
+        JsonArray declaracao = Declaracao(etapa, catalogos);
+        Banca(declaracao, etapa)["id"] = idOriginal;
+        await GravarAsync(cliente, processoId, declaracao, etapa);
+        return (processoId, catalogos.TipoBancaId);
+    }
+
+    private static void ConferirBancaNova(JsonNode processoLido, bool etapa, Guid idOriginal, Guid tipoId)
+    {
+        JsonNode banca = Banca(processoLido[etapa ? "etapas" : "cronogramaFases"]!, etapa);
         banca["id"]!.GetValue<Guid>().Should().NotBeEmpty().And.NotBe(idOriginal);
         banca["tipoBancaOrigemId"]!.GetValue<Guid>().Should().Be(tipoId);
         banca["regraDeDeliberacao"]!["integrantes"]!.GetValue<int>().Should().Be(3);
         banca["regraDeDeliberacao"]!["quorum"]!.GetValue<int>().Should().Be(2);
-        resposta.ToJsonString().Should().NotContain(idOriginal.ToString());
+        processoLido.ToJsonString().Should().NotContain(idOriginal.ToString());
     }
 
     private async Task<Guid> SemearProcessoAsync(bool etapa)
     {
         if (etapa)
         {
-            (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(fixture.Factory, nameof(BancaDeOutroProcessoEndpointTests));
+            (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(ambienteDeTeste.Factory, nameof(BancaDeOutroProcessoEndpointTests));
             return processoId;
         }
 
-        return await SemearProcessoEmRascunhoAsync(fixture.Factory, nameof(BancaDeOutroProcessoEndpointTests), OrigemCandidatos.InscricaoPropria);
+        return await SemearProcessoEmRascunhoAsync(ambienteDeTeste.Factory, nameof(BancaDeOutroProcessoEndpointTests), OrigemCandidatos.InscricaoPropria);
     }
 
     private static JsonArray Declaracao(bool etapa, CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos)
@@ -89,7 +100,7 @@ public sealed class BancaDeOutroProcessoEndpointTests(CascadingFixture fixture)
 
     private static JsonNode Banca(JsonNode declaracao, bool etapa) => declaracao[1]![etapa ? "bancas" : "bancasRequeridas"]![0]!;
 
-    private static async Task<JsonNode> EnviarAsync(HttpClient cliente, Guid processoId, JsonArray declaracao, bool etapa)
+    private static async Task GravarAsync(HttpClient cliente, Guid processoId, JsonArray declaracao, bool etapa)
     {
         using HttpRequestMessage pedido = new(HttpMethod.Put, new Uri($"/api/selecao/processos-seletivos/{processoId}/{(etapa ? "etapas" : "cronograma-fases")}", UriKind.Relative))
         {
@@ -100,13 +111,12 @@ public sealed class BancaDeOutroProcessoEndpointTests(CascadingFixture fixture)
         pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         using HttpResponseMessage resposta = await cliente.SendAsync(pedido);
         string corpo = await resposta.Content.ReadAsStringAsync();
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        return JsonNode.Parse(corpo)!;
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, corpo);
     }
 
     private async Task<JsonNode> LerBancaNoBancoAsync(Guid processoId, Guid bancaId, bool etapa)
     {
-        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope escopo = ambienteDeTeste.Factory.Services.CreateAsyncScope();
         UniPlusDbContext banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         if (etapa)
         {

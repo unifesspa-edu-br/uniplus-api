@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Application.Commands.ProcessosSeletivos;
 
 using Contracts.Requests;
@@ -29,10 +27,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
@@ -62,7 +56,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(IReadOnlyList<FaseCronogramaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -71,9 +65,9 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
         [FromBody] IReadOnlyList<FaseCronogramaInput> fases,
         CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<FaseCronogramaDto>> resultado = await _commandBus.Send(
+        Result resultado = await _commandBus.Send(
             new DefinirCronogramaFasesCommand(id, fases), cancellationToken);
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Substitui as regras de comprovação e os documentos exigidos do processo.</summary>

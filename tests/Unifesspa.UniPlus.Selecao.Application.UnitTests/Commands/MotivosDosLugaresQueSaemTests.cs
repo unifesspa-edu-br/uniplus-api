@@ -81,10 +81,10 @@ public sealed class MotivosDosLugaresQueSaemTests
     {
         IProcessoSeletivoRepository repositorio = RepositorioDe(processo);
 
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await DefinirEtapasCommandHandler.Handle(
+        Result resultado = await DefinirEtapasCommandHandler.Handle(
             new DefinirEtapasCommand(processo.Id, [etapa]),
             repositorio, DefinicaoDasEtapasComMotivos(repositorio, _motivos), _unitOfWork, TimeProvider.System, CancellationToken.None);
-        return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
+        return resultado;
     }
 
     private static IProcessoSeletivoRepository RepositorioDe(ProcessoSeletivo processo)

@@ -131,6 +131,19 @@ internal static class PayloadsDoEnvelopeFechado
         new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Definitivo },
     ];
 
+    internal static JsonObject RegraDeRecursoAncoradaNoResultado() => new()
+    {
+        ["regraCodigo"] = RegraPrazoRecursoCodigo.AncoradoEmAto,
+        ["regraVersao"] = "v1",
+        ["prazoValor"] = 1.1m,
+        ["prazoUnidade"] = "horas",
+        ["atoAncoraCodigo"] = CodigoAtoResultado,
+        ["admiteInstanciaSuperior"] = true,
+        ["prazoSegundaInstanciaValor"] = 2.1234m,
+        ["prazoSegundaInstanciaUnidade"] = "horas",
+        ["efeitoSuspensivo"] = "semEfeitoSuspensivo",
+    };
+
     internal static object BancaDoTipo(Guid tipoBancaId) => new
     {
         tipoBancaId,

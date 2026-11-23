@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Application.Commands.ProcessosSeletivos;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
@@ -30,10 +28,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
@@ -65,7 +59,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação.")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(IReadOnlyList<EtapaProcessoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -74,9 +68,9 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
         [FromBody] IReadOnlyList<EtapaProcessoInput> etapas,
         CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<EtapaProcessoDto>> resultado = await _commandBus.Send(
+        Result resultado = await _commandBus.Send(
             new DefinirEtapasCommand(id, etapas), cancellationToken);
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -144,7 +138,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// (quantidade calculada por modalidade — Lei 12.711 na reserva federal,
     /// fixa no institucional) é materializado na mesma operação pelo serviço
     /// de cálculo, e devolvido no corpo da resposta — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
-    /// (preview sem persistir) e o <c>GET</c> do processo devolvem.
+    /// (pré-visualização sem persistir) e o <c>GET</c> do processo devolvem.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/distribuicao-vagas")]
@@ -167,14 +161,14 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// <summary>
     /// Calcula, sem persistir, o quadro de vagas por modalidade que o
     /// <see cref="DefinirDistribuicaoVagas"/> produziria para o mesmo
-    /// payload — preview para o admin conferir/ajustar
+    /// corpo da requisição — pré-visualização para o admin conferir/ajustar
     /// as vagas ofertadas base, o percentual da reserva legal ou as modalidades antes de confirmar a gravação real.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Despachado via <see cref="_queryBus"/>, não <see cref="_commandBus"/>:
     /// é uma leitura (CQRS), nunca uma mutação. POST é só o veículo — o
-    /// payload (Guids em lista, quadro declarado) é grande demais para
+    /// corpo da requisição (Guids em lista, quadro declarado) é grande demais para
     /// querystring de um GET idiomático. Por isso não leva
     /// <c>[RequiresIdempotencyKey]</c> (reservado a mutação com efeito
     /// cumulativo, ADR-0027).
@@ -182,14 +176,14 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// <para>
     /// <b>Ids do corpo da resposta são efêmeros</b> — gerados em memória para
     /// a simulação, nunca gravados; não referenciam nenhum recurso real e
-    /// mudam a cada chamada, mesmo com o mesmo payload.
+    /// mudam a cada chamada, mesmo com o mesmo corpo da requisição.
     /// </para>
     /// <para>
     /// <b>Cada oferta é validada isoladamente</b> — as mesmas invariantes que
     /// <c>ConfiguracaoDistribuicaoVagas.Criar</c> aplica por item. Invariantes
     /// de nível de agregado, que só <see cref="DefinirDistribuicaoVagas"/>
     /// verifica com a lista inteira do processo (ex.: oferta duplicada entre
-    /// itens do payload, <c>AcaoQuandoIndeferido</c> inconsistente entre
+    /// itens do corpo da requisição, <c>AcaoQuandoIndeferido</c> inconsistente entre
     /// ofertas do mesmo processo), não são checadas aqui — só apareceriam no
     /// PUT real. Decisão de escopo, não lacuna.
     /// </para>

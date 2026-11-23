@@ -40,7 +40,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
 
     private readonly CascadingFixture _fixture;
 
-    public UnidadeResponsavelPorFaseEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public UnidadeResponsavelPorFaseEndpointTests(CascadingFixture ambienteDeTeste) => _fixture = ambienteDeTeste;
 
     [Fact(DisplayName = "Fases com unidades diferentes gravam a cópia de cada uma, e a leitura devolve id, sigla e nome por fase")]
     public async Task FasesComUnidadesDiferentes_GravamEDevolvemACopiaDeCadaUma()
@@ -51,7 +51,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
 
         HttpResponseMessage resposta = await ctx.PutCronogramaAsync(ceps.Id, cga.Id);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await AfirmarCopiasGravadasAsync(ctx, ceps, cga);
         await AfirmarCopiasLidasPelaApiAsync(ctx, ceps, cga);
     }
@@ -63,7 +63,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
 
         HttpResponseMessage resposta = await ctx.PutCronogramaAsync(null, null);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
         lidas.Should().OnlyContain(f => f.Cronograma.UnidadeResponsavel == null);
     }
@@ -97,7 +97,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     {
         Contexto ctx = await SemearAsync(nameof(MudancaNoCadastroDepoisDeDefinir_NaoAlteraACopiaDaFase));
         Unidade cga = await ctx.SemearUnidadeAsync("CGA", "Centro de Gestão Acadêmica");
-        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await ctx.RenomearUnidadeAsync(cga.Id, $"{cga.Sigla}X", "Centro de Gestão Acadêmica (renomeado)");
 
@@ -110,10 +110,10 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     {
         Contexto ctx = await SemearAsync(nameof(DefinirDeNovo_NoRascunho_AtualizaACopiaDaUnidade));
         Unidade cga = await ctx.SemearUnidadeAsync("CGA", "Centro de Gestão Acadêmica");
-        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ctx.RenomearUnidadeAsync(cga.Id, $"{cga.Sigla}X", "Centro de Gestão Acadêmica (renomeado)");
 
-        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
         lidas[0].Cronograma.UnidadeResponsavel!.Nome.Should().Be("Centro de Gestão Acadêmica (renomeado)");
@@ -125,7 +125,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     {
         Contexto ctx = await SemearAsync(nameof(DefinirDeNovo_NoRascunho_UnidadeExcluidaDepois_Recusa));
         Unidade cga = await ctx.SemearUnidadeAsync("CGA", "Centro de Gestão Acadêmica");
-        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ctx.ExcluirUnidadeAsync(cga.Id);
 
         HttpResponseMessage resposta = await ctx.PutCronogramaAsync(cga.Id, null);

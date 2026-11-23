@@ -82,7 +82,7 @@ public sealed class CronogramaFasesRecusasEndpointTests
 
     private readonly CascadingFixture _fixture;
 
-    public CronogramaFasesRecusasEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public CronogramaFasesRecusasEndpointTests(CascadingFixture ambienteDeTeste) => _fixture = ambienteDeTeste;
 
     [Fact(DisplayName = "Duas fases mal declaradas devolvem 422 com as DUAS violações em errors[], cada uma com o seu campo")]
     public async Task DuasFasesMalDeclaradas_422ComOsDoisErrosECampos()
@@ -177,7 +177,7 @@ public sealed class CronogramaFasesRecusasEndpointTests
 
         using HttpResponseMessage resposta = await EnviarCronogramaAsync(api.CreateClient(), processoId, fases);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "A publicação aceita o processo cuja fase de data definida na execução declara só a data final, e a leitura devolve a fase sem início")]

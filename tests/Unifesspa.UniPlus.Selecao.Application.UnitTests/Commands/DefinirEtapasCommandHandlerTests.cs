@@ -54,24 +54,6 @@ public sealed class DefinirEtapasCommandHandlerTests
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O sucesso devolve a etapa gravada com o identificador gerado")]
-    public async Task Handle_EtapaValida_DevolveEtapaGravada()
-    {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = RepositorioCom(processo);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        DefinirEtapasCommand command = new(processo.Id, [EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)]);
-
-        Result<IReadOnlyList<EtapaProcessoDto>> result = await DefinirEtapasCommandHandler.Handle(
-            command, repository, new CadastrosDeApoioDeDefinirEtapas().Definicao(ReaderPadrao(), repository), unitOfWork, TimeProvider.System, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue();
-        EtapaProcessoDto etapa = result.Value!.Should().ContainSingle().Subject;
-        etapa.Id.Should().Be(processo.Etapas.Single().Id).And.NotBeEmpty();
-        etapa.Identificacao.Nome.Should().Be(processo.Etapas.Single().Nome);
-        await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
     [Fact(DisplayName = "Handle com Id de etapa existente atualiza a MESMA instância (preserva etapa_ref)")]
     public async Task Handle_ComIdExistente_AtualizaMesmaInstancia()
     {
@@ -132,7 +114,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].notaMaxima", "etapas[1].notaMinima"]);
     }
 
-    [Fact(DisplayName = "Handle com o mesmo Id de etapa repetido no payload é recusado")]
+    [Fact(DisplayName = "Handle com o mesmo Id de etapa repetido no corpo da requisição é recusado")]
     public async Task Handle_ComIdEtapaRepetido_Recusa()
     {
         EtapaProcesso etapaOriginal = EtapaDeProvaObjetiva("Prova Objetiva");

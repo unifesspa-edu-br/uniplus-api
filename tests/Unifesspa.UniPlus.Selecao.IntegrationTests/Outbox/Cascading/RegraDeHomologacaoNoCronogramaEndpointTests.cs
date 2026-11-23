@@ -39,7 +39,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
 
     private readonly CascadingFixture _fixture;
 
-    public RegraDeHomologacaoNoCronogramaEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public RegraDeHomologacaoNoCronogramaEndpointTests(CascadingFixture ambienteDeTeste) => _fixture = ambienteDeTeste;
 
     [Fact(DisplayName = "A regra declarada é gravada com a fase e a leitura do processo a devolve com o resultado e a condição")]
     public async Task RegraDeclarada_GravaEDevolveNaLeitura()
@@ -48,7 +48,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
 
         HttpResponseMessage resposta = await PutAsync(processoId, Regra(Condicao()));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         RegraDeHomologacaoDto? lida = (await LerFaseAsync(processoId)).Publicacoes.RegraDeHomologacao;
         lida!.ResultadoAtoCodigo.Should().Be(ResultadoDaFase);
         CondicaoDeHomologacaoDto condicao = lida.Alternativas.Single().Condicoes.Single();
@@ -59,11 +59,11 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
     public async Task PutSemRegra_RemoveARegraGravada()
     {
         Guid processoId = await SemearAsync();
-        (await PutAsync(processoId, Regra(Condicao()))).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await PutAsync(processoId, Regra(Condicao()))).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage resposta = await PutAsync(processoId, regra: null);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await LerFaseAsync(processoId)).Publicacoes.RegraDeHomologacao.Should().BeNull();
     }
 

@@ -16,12 +16,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using static PassosDoEnvelopeFechado;
 
 [Collection(CascadingCollection.Name)]
-public sealed class OrdemDosNiveisEndpointTests(CascadingFixture fixture)
+public sealed class OrdemDosNiveisEndpointTests(CascadingFixture ambienteDeTeste)
 {
     [Fact]
     public async Task DefinirNiveis_ConsultaEEnvelope_MantemMesmaOrdem()
     {
-        Cenario cenario = await PrepararAsync(fixture.Factory);
+        Cenario cenario = await PrepararAsync(ambienteDeTeste.Factory);
         await ConfigurarTodasAsDimensoesAsync(cenario);
         string[] rotulos = await DefinirEscalaAsync(cenario);
         EtapaProcessoDto consultada = (await cenario.Ctx.ObterProcessoAsync()).Etapas.Single(e => e.Id == cenario.RedacaoId);
@@ -36,10 +36,9 @@ public sealed class OrdemDosNiveisEndpointTests(CascadingFixture fixture)
     {
         JsonArray etapas = EtapasComEscala(cenario);
         using HttpResponseMessage resposta = await cenario.Ctx.PutEtapasAsync([.. etapas.Select(e => (object)e!)]);
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        JsonArray gravadas = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsArray();
-        JsonNode etapa = gravadas.Single(e => e!["id"]!.GetValue<Guid>() == cenario.RedacaoId)!;
-        return [.. etapa["avaliacao"]!["escalaDeAtendimento"]!.AsArray().Select(n => n!["rotulo"]!.GetValue<string>())];
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+        EtapaProcessoDto etapa = (await cenario.Ctx.ObterProcessoAsync()).Etapas.Single(e => e.Id == cenario.RedacaoId);
+        return [.. etapa.Avaliacao.EscalaDeAtendimento!.Select(n => n.Rotulo)];
     }
 
     private static JsonArray EtapasComEscala(Cenario cenario)
