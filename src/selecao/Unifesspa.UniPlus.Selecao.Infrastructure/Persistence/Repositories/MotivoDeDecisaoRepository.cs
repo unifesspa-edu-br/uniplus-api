@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -68,6 +69,17 @@ public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    public async Task<IReadOnlyList<MotivoDeDecisao>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<(string Codigo, string? Complemento)> codigos, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+        CodigoMotivoDecisao[] validos = [.. codigos.Select(static par => CodigoMotivoDecisao.Criar(par.Codigo))
+            .Where(static resultado => resultado.IsSuccess).Select(static resultado => resultado.Value!)];
+        List<MotivoDeDecisao> encontrados = await _context.MotivosDeDecisao.AsNoTracking()
+            .Where(motivo => motivo.Ativo && validos.Contains(motivo.Codigo)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return [.. encontrados.Where(motivo => codigos.Contains((motivo.Codigo.Valor, motivo.Tipo.Codigo())))];
     }
 
     public async Task<bool> CodigoExisteAsync(TipoMotivoDeDecisao tipo, string codigo, CancellationToken cancellationToken = default)

@@ -8,11 +8,13 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -61,6 +63,8 @@ public sealed class ExportacaoDoRascunhoTests
         JsonObject exportado = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
 
         exportado["identificacao"]!["unidadeAdministradoraCodigo"]!.GetValue<string>().Should().Be(CodigoNovoDaUnidade);
+        exportado["identificacao"]!["unidadeAdministradoraNome"]!.GetValue<string>().Should().Be(CenarioDoRascunho.Ceps.Nome);
+        await _cenario.Unidades.Received(1).ObterPorIdAsync(rascunho.UnidadeAdministradoraOrigemId, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Salvar o documento exportado depois que o código da unidade mudou é aceito, sem recusar o acesso à unidade")]
@@ -100,5 +104,113 @@ public sealed class ExportacaoDoRascunhoTests
 
         recusado.IsFailure.Should().BeTrue();
         recusado.Errors.Select(static causa => causa.Error.Code).Should().Contain(DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite);
+    }
+
+    private const string DocumentoComFases = """
+        { "identificacao": { "unidadeAdministradoraCodigo": "CEPS", "tipoProcessoCodigo": "SISU" },
+          "cronograma": { "fases": [ { "unidadeResponsavelCodigo": "CGA", "chave": "a" },
+            { "unidadeResponsavelCodigo": "CGA", "chave": "b" }, { "unidadeResponsavelCodigo": "AUSENTE" } ] } }
+        """;
+
+    [Fact(DisplayName = "Cada cadastro citado é consultado uma vez por código e o nome entra ao lado do código")]
+    public async Task Exportar_CadastrosCitados_ConsultaCodigosDistintosEEscreveAoLado()
+    {
+        _cenario.Tipos.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(
+            new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Seleção Exemplo", null));
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, DocumentoComFases);
+        JsonObject documento = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
+        JsonArray fases = documento["cronograma"]!["fases"]!.AsArray();
+        fases[0]!.AsObject().Select(static propriedade => propriedade.Key).Should().Equal(
+            "unidadeResponsavelCodigo", "unidadeResponsavelNome", "unidadeResponsavelSigla", "chave");
+        fases[1]!["unidadeResponsavelNome"]!.GetValue<string>().Should().Be(CenarioDoRascunho.Cga.Nome);
+        fases[2]!["unidadeResponsavelNome"].Should().BeNull();
+        await _cenario.Unidades.Received(1).ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>());
+        await _cenario.Unidades.Received(1).ObterPorCodigoAsync("AUSENTE", Arg.Any<CancellationToken>());
+        await _cenario.Tipos.Received(1).ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O descritivo que o esquema não declara só de leitura não é escrito")]
+    public async Task Exportar_AtributosNaoDeclaradosOuEditaveis_OmiteAtributos()
+    {
+        _cenario.Esquema.Forma.Returns(FormaSemDescritivoSomenteLeitura());
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, DocumentoComFases);
+
+        JsonObject documento = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
+
+        JsonObject fase = documento["cronograma"]!["fases"]!.AsArray()[0]!.AsObject();
+        fase["unidadeResponsavelNome"].Should().BeNull();
+        fase["unidadeResponsavelSigla"].Should().BeNull();
+    }
+
+    private static FormaDoNo FormaSemDescritivoSomenteLeitura() =>
+        FormaDeTeste.Objeto(new()
+        {
+            ["cronograma"] = FormaDeTeste.Objeto(new()
+            {
+                ["fases"] = FormaDeTeste.Lista(FormaDeTeste.Objeto(new()
+                {
+                    ["unidadeResponsavelCodigo"] = FormaDeTeste.Valor(),
+                    ["unidadeResponsavelNome"] = FormaDeTeste.Valor(),
+                }))
+            }),
+        });
+
+    [Fact]
+    public async Task Exportar_ExigenciasComTiposCitados_ConsultaEmLoteEDescreveCadaUma()
+    {
+        TipoDocumentoView tipo = TipoDeDocumento("DIPLOMA", "Diploma", ClassificacaoDeProtecao.Pessoal);
+        TipoDocumentoView outro = TipoDeDocumento("CERTIDAO", "Certidão", ClassificacaoDeProtecao.Sensivel);
+        _cenario.TiposDeDocumento.ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { tipo, outro });
+        JsonArray exigencias = await ExportarExigencias("""
+            [{"tipoDocumentoCodigo":"DIPLOMA","chave":"a"},{"tipoDocumentoCodigo":"CERTIDAO"},{"tipoDocumentoCodigo":"DIPLOMA"}]
+            """);
+
+        ConferirDescricao(exigencias[0]!.AsObject(), tipo, "PESSOAL");
+        ConferirDescricao(exigencias[1]!.AsObject(), outro, "SENSIVEL");
+        ConferirDescricao(exigencias[2]!.AsObject(), tipo, "PESSOAL");
+        await _cenario.TiposDeDocumento.Received(1).ListarVivosPorCodigosAsync(
+            Arg.Is<IReadOnlyCollection<string>>(codigos => codigos.Count == 2 && codigos.Contains("DIPLOMA") && codigos.Contains("CERTIDAO")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Exportar_TipoSemCadastro_OmiteAtributos()
+    {
+        JsonArray exigencias = await ExportarExigencias("""[{"tipoDocumentoCodigo":"AUSENTE"}]""");
+
+        exigencias[0]!.AsObject().Select(static propriedade => propriedade.Key).Should().Equal("tipoDocumentoCodigo");
+        await _cenario.TiposDeDocumento.Received(1).ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Exportar_ExigenciaSemCodigo_NaoConsultaTipos()
+    {
+        await ExportarExigencias("""[{"chave":"a"}]""");
+
+        await _cenario.TiposDeDocumento.DidNotReceive().ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    private async Task<JsonArray> ExportarExigencias(string exigencias)
+    {
+        string conteudo = $$"""{ "documentosExigidos": { "exigencias": {{exigencias}} } }""";
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, conteudo);
+        JsonObject documento = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
+        return documento["documentosExigidos"]!["exigencias"]!.AsArray();
+    }
+
+    private static TipoDocumentoView TipoDeDocumento(string codigo, string nome, ClassificacaoDeProtecao classificacao) =>
+        new(Guid.CreateVersion7(), codigo, nome, "ACADEMICO", classificacao, "Análise da inscrição", "OBRIGACAO_LEGAL", true);
+
+    private static void ConferirDescricao(JsonObject exigencia, TipoDocumentoView tipo, string classificacao)
+    {
+        exigencia.Select(static propriedade => propriedade.Key).Take(6).Should().Equal(
+            "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria", "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal");
+        exigencia["tipoDocumentoNome"]!.GetValue<string>().Should().Be(tipo.Nome);
+        exigencia["tipoDocumentoCategoria"]!.GetValue<string>().Should().Be(tipo.Categoria);
+        exigencia["classificacaoProtecao"]!.GetValue<string>().Should().Be(classificacao);
+        exigencia["finalidadeTratamento"]!.GetValue<string>().Should().Be(tipo.FinalidadeTratamento);
+        exigencia["hipoteseLegal"]!.GetValue<string>().Should().Be(tipo.HipoteseLegal);
+        exigencia["fatosComprovados"].Should().BeNull();
     }
 }

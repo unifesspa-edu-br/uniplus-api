@@ -17,11 +17,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class FaixaDeDataDoEsquemaTests
@@ -48,7 +50,11 @@ public sealed class FaixaDeDataDoEsquemaTests
         JsonObject documento = DocumentoDoFormulario(processo);
         DocumentoDoRascunho conteudo = DocumentoDoRascunho.Criar(documento.ToJsonString(), null).Value!;
         RascunhoDeProcessoSeletivo rascunho = RascunhoDeProcessoSeletivo.Criar(Guid.NewGuid(), conteudo).Value!;
-        ExportacaoDoRascunho exportacao = new(Substitute.For<IUnidadeReader>(), Substitute.For<ITipoProcessoReader>());
+        IUnidadeReader unidades = Substitute.For<IUnidadeReader>();
+        DescricaoDoDocumentoDoRascunho descricao = new(
+            new EsquemaDoDocumentoDaConfiguracao(),
+            [new DescricaoDeUnidades(unidades), new DescricaoDeTiposDeProcesso(Substitute.For<ITipoProcessoReader>())]);
+        ExportacaoDoRascunho exportacao = new(unidades, descricao);
         return await exportacao.ExportarAsync(rascunho, CancellationToken.None);
     }
 

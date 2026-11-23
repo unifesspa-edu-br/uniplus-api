@@ -34,6 +34,10 @@ public sealed class FormaLidaDoEsquemaTests
     [InlineData("etapas/[]/chave")]
     public void CampoEditavel_NaoEMarcado(string caminho) => Em(caminho).SomenteLeitura.Should().BeFalse();
 
+    [Fact(DisplayName = "O nó referido traz as localizações do ponto e do destino na ordem de expansão")]
+    public void NoComReferencia_TemLocalizacoesDoPontoEDoDestino() =>
+        Em("etapas/[]").Localizacoes.Should().Equal("documento.schema.json#/properties/etapas/items", "etapas.schema.json#");
+
     [Theory(DisplayName = "A parte que exige chave sai do esquema com o tipo e o escopo da chave")]
     [InlineData("etapas/[]", "etapa", EscopoDaChave.Documento)]
     [InlineData("cronograma/fases/[]", "fase", EscopoDaChave.Documento)]
