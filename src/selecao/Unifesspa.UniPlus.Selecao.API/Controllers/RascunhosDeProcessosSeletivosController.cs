@@ -147,7 +147,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// <remarks>
     /// Os campos <c>readOnly</c> enviados e o <c>id</c> da raiz são ignorados: vale o rascunho da rota. Toda parte que o
     /// esquema exige com <c>chave</c> a traz; a parte sem <c>chave</c> recusa o salvamento (422), no ponteiro da chave que
-    /// falta. Para conservar as referências entre partes do documento (decisões, fatos, produtos), o cliente devolve a
+    /// falta. Para conservar as referências entre partes do documento (decisões, dados, publicações previstas), o cliente devolve a
     /// <c>chave</c> de cada parte como a exportação a trouxe; a chave é escolhida por quem cria a parte e não muda ao
     /// renomear nem ao reordenar, e a referência a uma chave que não existe mais vira diagnóstico. A forma inválida recusa o
     /// documento inteiro sem substituir o anterior. A unidade administradora pode
