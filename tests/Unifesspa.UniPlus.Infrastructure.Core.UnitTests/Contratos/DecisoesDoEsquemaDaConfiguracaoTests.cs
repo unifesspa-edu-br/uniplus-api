@@ -65,21 +65,30 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     public void Motivo_NoLugar_Valida()
     {
         JsonNode naFase = Documento("""
-            { "faseChave": "homologacao", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA_ACIMA_DO_LIMITE", "descricao": "Renda acima do limite",
-              "sentido": "DESFAVORAVEL", "justificativaDaInclusao": "Motivo previsto no edital retificado", "versaoDoEditalDeEntrada": 2 }
+            { "faseChave": "homologacao", "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA_ACIMA_DO_LIMITE", "descricao": "Renda acima do limite",
+              "sentido": "DESFAVORAVEL", "sentidoRotulo": "desfavorável", "justificativaDaInclusao": "Motivo previsto no edital retificado", "versaoDoEditalDeEntrada": 2 }
             """);
-        JsonNode naEtapa = Documento("""{ "etapaChave": "etapa_prova_objetiva", "tipoCodigo": "CLASSIFICACAO", "codigo": "NOTA_ZERADA" }""");
+        JsonNode naEtapa = Documento("""{ "etapaChave": "etapa_prova_objetiva", "tipoDeDecisaoCodigo": "CLASSIFICACAO", "codigo": "NOTA_ZERADA" }""");
 
         CaminhosComErro(naFase, Motivo).Should().BeEmpty();
         CaminhosComErro(naEtapa, Motivo).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O rótulo do sentido é só de leitura e opcional")]
+    public void Motivo_RotuloDoSentido_EReadOnlyEOpcional()
+    {
+        JsonNode esquema = Esquema(Motivo);
+
+        esquema["properties"]!["sentidoRotulo"]!["readOnly"]!.GetValue<bool>().Should().BeTrue();
+        esquema["required"]!.AsArray().Select(static item => item!.GetValue<string>()).Should().NotContain("sentidoRotulo");
+    }
+
     [Fact(DisplayName = "O motivo sem lugar ou com fase e etapa juntas é recusado, e a chave e a versão de entrada seguem o formato")]
     public void Motivo_ComLugarInvalido_Recusa()
     {
-        JsonNode semLugar = Documento("""{ "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
-        JsonNode comOsDois = Documento("""{ "faseChave": "homologacao", "etapaChave": "prova", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
-        JsonNode foraDoFormato = Documento("""{ "faseChave": "Homologação", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA", "versaoDoEditalDeEntrada": 0 }""");
+        JsonNode semLugar = Documento("""{ "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
+        JsonNode comOsDois = Documento("""{ "faseChave": "homologacao", "etapaChave": "prova", "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
+        JsonNode foraDoFormato = Documento("""{ "faseChave": "Homologação", "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA", "versaoDoEditalDeEntrada": 0 }""");
 
         CaminhosComErro(semLugar, Motivo).Should().Contain("");
         CaminhosComErro(comOsDois, Motivo).Should().Contain("");
@@ -89,9 +98,9 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "O motivo sem tipo, com código fora do formato, tipo desconhecido e sentido inválido é recusado com o caminho")]
     public void Motivo_ForaDoFormato_Recusa()
     {
-        JsonNode motivo = Documento("""{ "faseChave": "homologacao", "tipoCodigo": "SORTEIO", "codigo": "renda", "sentido": "NEUTRO", "justificativaDaInclusao": "" }""");
+        JsonNode motivo = Documento("""{ "faseChave": "homologacao", "tipoDeDecisaoCodigo": "SORTEIO", "codigo": "renda", "sentido": "NEUTRO", "justificativaDaInclusao": "" }""");
 
-        CaminhosComErro(motivo, Motivo).Should().Contain(["/tipoCodigo", "/codigo", "/sentido", "/justificativaDaInclusao"]);
+        CaminhosComErro(motivo, Motivo).Should().Contain(["/tipoDeDecisaoCodigo", "/codigo", "/sentido", "/justificativaDaInclusao"]);
         CaminhosComErro(Documento("""{ "faseChave": "homologacao", "codigo": "RENDA" }"""), Motivo).Should().Contain("");
     }
 
@@ -141,7 +150,7 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "cronograma": { "fases": [ { "chave": "homologacao", "tipoFaseCodigo": "HOMOLOGACAO_INSCRICOES", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES"],
                 "regraDeHomologacao": { "resultadoAtoCodigo": "RESULTADO_INSCRICOES_HOMOLOGADAS", "alternativas": [] }, "assinantes": ["conta-1"] } ] },
-              "motivosDeDecisao": [ { "faseChave": "homologacao", "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_NO_INEP" } ] }
+              "motivosDeDecisao": [ { "faseChave": "homologacao", "tipoDeDecisaoCodigo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_NO_INEP" } ] }
             """);
 
         CaminhosComErro(documento).Should().BeEmpty();

@@ -8424,6 +8424,147 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/prova-presencial": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirProvaPresencialRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirProvaPresencialRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirProvaPresencialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/opcoes-de-curso": {
       "put": {
         "tags": [
@@ -13899,7 +14040,8 @@
           "documentosExigidos",
           "atendimento",
           "taxaInscricao",
-          "retificacao"
+          "retificacao",
+          "provaPresencial"
         ],
         "type": "object",
         "properties": {
@@ -14002,6 +14144,9 @@
                 "$ref": "#/components/schemas/RetificacaoCertameDto"
               }
             ]
+          },
+          "provaPresencial": {
+            "$ref": "#/components/schemas/ProvaPresencialCertameDto"
           },
           "situacao": {
             "oneOf": [
@@ -15727,6 +15872,24 @@
           }
         }
       },
+      "DefinirProvaPresencialRequest": {
+        "required": [
+          "temProvaPresencial",
+          "municipios"
+        ],
+        "type": "object",
+        "properties": {
+          "temProvaPresencial": {
+            "type": "boolean"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MunicipioDeProvaInformado"
+            }
+          }
+        }
+      },
       "DefinirReferenciaTemporalFatosRequest": {
         "required": [
           "tipo",
@@ -16203,10 +16366,10 @@
             "description": "Condi\u00E7\u00F5es, recursos e tipos de defici\u00EAncia que o processo atende. Ausente no rascunho que ainda n\u00E3o decidiu o atendimento.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoAtendimento"
           },
-          "bonusRegional": {
-            "title": "B\u00F4nus regional",
-            "description": "Declara\u00E7\u00E3o de que o processo aplica ou n\u00E3o o b\u00F4nus regional e, se aplica, a regra e a base legal. Ausente no rascunho que ainda n\u00E3o decidiu.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoBonusRegional"
+          "fada": {
+            "title": "Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA)",
+            "description": "Declara\u00E7\u00E3o de que o processo aplica ou n\u00E3o o Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) e, se aplica, a regra e a base legal. Ausente no rascunho que ainda n\u00E3o decidiu.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoFada"
           },
           "importacao": {
             "title": "Importa\u00E7\u00E3o do resultado",
@@ -16215,7 +16378,7 @@
           },
           "provaPresencial": {
             "title": "Prova presencial",
-            "description": "Declara\u00E7\u00E3o de que o processo tem ou n\u00E3o prova presencial e, se tem, dos munic\u00EDpios de aplica\u00E7\u00E3o. Ausente no rascunho que ainda n\u00E3o a declarou.",
+            "description": "Declara\u00E7\u00E3o de que o processo tem ou n\u00E3o prova presencial e, se tem, dos munic\u00EDpios de prova. Ausente no rascunho que ainda n\u00E3o a declarou.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoProvaPresencial"
           },
           "motivosDeDecisao": {
@@ -16443,138 +16606,6 @@
               "desfavoravel",
               "novaVotacao"
             ]
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoBonusRegional": {
-        "title": "B\u00F4nus regional",
-        "description": "O acr\u00E9scimo na nota do candidato que cumpre a base legal do b\u00F4nus regional. O processo declara que aplica o b\u00F4nus e cita a regra do cat\u00E1logo e a base legal pelo c\u00F3digo, ou declara que n\u00E3o o aplica.",
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "aplica"
-        ],
-        "properties": {
-          "aplica": {
-            "title": "Aplica o b\u00F4nus",
-            "description": "Verdadeiro quando o processo aplica o b\u00F4nus regional. Falso pro\u00EDbe os demais campos.",
-            "type": "boolean"
-          },
-          "regra": {
-            "title": "Regra do b\u00F4nus",
-            "description": "Regra do cat\u00E1logo que calcula o b\u00F4nus.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
-          },
-          "fator": {
-            "title": "Fator",
-            "description": "Fator multiplicativo aplicado \u00E0 nota do candidato eleg\u00EDvel. Maior que zero, at\u00E9 99,9999.",
-            "type": "number",
-            "multipleOf": 0.0001,
-            "exclusiveMinimum": 0,
-            "maximum": 99.9999
-          },
-          "teto": {
-            "title": "Teto",
-            "description": "Acr\u00E9scimo m\u00E1ximo que o b\u00F4nus pode dar, quando houver. Maior que zero, at\u00E9 99,9999.",
-            "type": "number",
-            "multipleOf": 0.0001,
-            "exclusiveMinimum": 0,
-            "maximum": 99.9999
-          },
-          "codigoDoDadoDeElegibilidade": {
-            "title": "Fato de elegibilidade",
-            "description": "C\u00F3digo do fato que decide quem recebe o b\u00F4nus, quando o processo o declara, de 1 a 60 caracteres.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo",
-            "maxLength": 60
-          },
-          "baseLegalBonusRegionalCodigo": {
-            "title": "Base legal",
-            "description": "C\u00F3digo est\u00E1vel da base legal do b\u00F4nus regional no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 100 caracteres.",
-            "type": "string",
-            "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
-          },
-          "tipoInstrumento": {
-            "title": "Tipo do instrumento",
-            "description": "Tipo do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
-            "type": "string",
-            "maxLength": 30,
-            "readOnly": true
-          },
-          "identificacao": {
-            "title": "Identifica\u00E7\u00E3o",
-            "description": "Identifica\u00E7\u00E3o do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
-            "type": "string",
-            "maxLength": 500,
-            "readOnly": true
-          },
-          "descricao": {
-            "title": "Descri\u00E7\u00E3o",
-            "description": "Descri\u00E7\u00E3o da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
-            "type": "string",
-            "maxLength": 2000,
-            "readOnly": true
-          },
-          "municipios": {
-            "title": "Munic\u00EDpios",
-            "description": "Munic\u00EDpios que a base legal contempla. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoBonusRegionalMunicipio"
-            },
-            "readOnly": true
-          }
-        },
-        "if": {
-          "properties": {
-            "aplica": {
-              "const": true
-            }
-          }
-        },
-        "then": {
-          "required": [
-            "regra",
-            "fator",
-            "baseLegalBonusRegionalCodigo"
-          ]
-        },
-        "else": {
-          "properties": {
-            "regra": false,
-            "fator": false,
-            "teto": false,
-            "codigoDoDadoDeElegibilidade": false,
-            "baseLegalBonusRegionalCodigo": false,
-            "tipoInstrumento": false,
-            "identificacao": false,
-            "descricao": false,
-            "municipios": false
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoBonusRegionalMunicipio": {
-        "title": "Munic\u00EDpio",
-        "description": "Um munic\u00EDpio contemplado pela base legal.",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "codigoIbge": {
-            "title": "C\u00F3digo IBGE",
-            "description": "C\u00F3digo do munic\u00EDpio no IBGE, com 7 d\u00EDgitos.",
-            "type": "string",
-            "pattern": "^[0-9]{7}$"
-          },
-          "nome": {
-            "title": "Nome",
-            "description": "Nome do munic\u00EDpio.",
-            "type": "string",
-            "maxLength": 150
-          },
-          "uf": {
-            "title": "UF",
-            "description": "Sigla da unidade federativa.",
-            "type": "string",
-            "pattern": "^[A-Z]{2}$"
           }
         }
       },
@@ -18728,6 +18759,138 @@
           }
         }
       },
+      "DocumentoDaConfiguracaoFada": {
+        "title": "Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA)",
+        "description": "O Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA): o acr\u00E9scimo na nota do candidato que cumpre a base legal. O processo declara que aplica o FADA e cita a regra do cat\u00E1logo e a base legal pelo c\u00F3digo, ou declara que n\u00E3o o aplica.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "aplica"
+        ],
+        "properties": {
+          "aplica": {
+            "title": "Aplica o FADA",
+            "description": "Verdadeiro quando o processo aplica o Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA). Falso pro\u00EDbe os demais campos.",
+            "type": "boolean"
+          },
+          "regra": {
+            "title": "Regra do FADA",
+            "description": "Regra do cat\u00E1logo que calcula o FADA.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "fator": {
+            "title": "Fator",
+            "description": "Fator multiplicativo aplicado \u00E0 nota do candidato eleg\u00EDvel. Maior que zero, at\u00E9 99,9999.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "exclusiveMinimum": 0,
+            "maximum": 99.9999
+          },
+          "teto": {
+            "title": "Teto",
+            "description": "Acr\u00E9scimo m\u00E1ximo que o FADA pode dar, quando houver. Maior que zero, at\u00E9 99,9999.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "exclusiveMinimum": 0,
+            "maximum": 99.9999
+          },
+          "codigoDoDadoDeElegibilidade": {
+            "title": "Fato de elegibilidade",
+            "description": "C\u00F3digo do fato que decide quem recebe o FADA, quando o processo o declara, de 1 a 60 caracteres.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo",
+            "maxLength": 60
+          },
+          "baseLegalCodigo": {
+            "title": "Base legal",
+            "description": "C\u00F3digo est\u00E1vel da base legal do FADA no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 100 caracteres.",
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
+          },
+          "tipoInstrumento": {
+            "title": "Tipo do instrumento",
+            "description": "Tipo do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 30,
+            "readOnly": true
+          },
+          "identificacao": {
+            "title": "Identifica\u00E7\u00E3o",
+            "description": "Identifica\u00E7\u00E3o do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 500,
+            "readOnly": true
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o",
+            "description": "Descri\u00E7\u00E3o da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 2000,
+            "readOnly": true
+          },
+          "municipios": {
+            "title": "Munic\u00EDpios",
+            "description": "Munic\u00EDpios que a base legal contempla. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFadaMunicipio"
+            },
+            "readOnly": true
+          }
+        },
+        "if": {
+          "properties": {
+            "aplica": {
+              "const": true
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "regra",
+            "fator",
+            "baseLegalCodigo"
+          ]
+        },
+        "else": {
+          "properties": {
+            "regra": false,
+            "fator": false,
+            "teto": false,
+            "codigoDoDadoDeElegibilidade": false,
+            "baseLegalCodigo": false,
+            "tipoInstrumento": false,
+            "identificacao": false,
+            "descricao": false,
+            "municipios": false
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFadaMunicipio": {
+        "title": "Munic\u00EDpio",
+        "description": "Um munic\u00EDpio contemplado pela base legal.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigoIbge": {
+            "title": "C\u00F3digo IBGE",
+            "description": "C\u00F3digo do munic\u00EDpio no IBGE, com 7 d\u00EDgitos.",
+            "type": "string",
+            "pattern": "^[0-9]{7}$"
+          },
+          "nome": {
+            "title": "Nome",
+            "description": "Nome do munic\u00EDpio.",
+            "type": "string",
+            "maxLength": 150
+          },
+          "uf": {
+            "title": "UF",
+            "description": "Sigla da unidade federativa.",
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        }
+      },
       "DocumentoDaConfiguracaoFormulario": {
         "title": "Formul\u00E1rio do processo",
         "description": "O formul\u00E1rio de uma finalidade: as p\u00E1ginas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no m\u00E1ximo um formul\u00E1rio no processo. Um formul\u00E1rio comporta no m\u00E1ximo 200 itens, contando itens, grupos e subitens.",
@@ -19185,13 +19348,13 @@
       },
       "DocumentoDaConfiguracaoImportacao": {
         "title": "Importa\u00E7\u00E3o do resultado",
-        "description": "O que o processo de resultado importado declara da importa\u00E7\u00E3o: os relat\u00F3rios que importa, cada um pelo leiaute e pela vers\u00E3o, e a primeira fase depois da importa\u00E7\u00E3o, em que o formul\u00E1rio coleta o que o arquivo n\u00E3o traz.",
+        "description": "O que o processo de resultado importado declara da importa\u00E7\u00E3o: os relat\u00F3rios que importa, cada um pelo formato e pela vers\u00E3o, e a primeira fase depois da importa\u00E7\u00E3o, em que o formul\u00E1rio coleta o que o arquivo n\u00E3o traz.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "relatorios": {
             "title": "Relat\u00F3rios",
-            "description": "Relat\u00F3rios que o processo importa. Nenhum leiaute se repete.",
+            "description": "Relat\u00F3rios que o processo importa. Nenhum formato se repete.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoImportacaoRelatorio"
@@ -19206,26 +19369,26 @@
       },
       "DocumentoDaConfiguracaoImportacaoRelatorio": {
         "title": "Relat\u00F3rio importado",
-        "description": "Um relat\u00F3rio que o processo importa, pelo leiaute que ele segue.",
+        "description": "Um relat\u00F3rio que o processo importa, pelo formato que ele segue.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "leiauteCodigo": {
-            "title": "Leiaute",
-            "description": "C\u00F3digo do leiaute do arquivo no cat\u00E1logo de leiautes.",
+          "formatoCodigo": {
+            "title": "Formato",
+            "description": "C\u00F3digo do formato do arquivo no cat\u00E1logo de formatos.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
           },
-          "leiauteVersao": {
-            "title": "Vers\u00E3o do leiaute",
-            "description": "Vers\u00E3o do leiaute do arquivo.",
+          "formatoVersao": {
+            "title": "Vers\u00E3o do formato",
+            "description": "Vers\u00E3o do formato do arquivo.",
             "type": "string",
             "minLength": 1,
             "maxLength": 16
           }
         },
         "required": [
-          "leiauteCodigo",
-          "leiauteVersao"
+          "formatoCodigo",
+          "formatoVersao"
         ]
       },
       "DocumentoDaConfiguracaoItemDoFormulario": {
@@ -19389,7 +19552,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "tipoCodigo",
+          "tipoDeDecisaoCodigo",
           "codigo"
         ],
         "oneOf": [
@@ -19415,7 +19578,7 @@
             "description": "Chave da etapa em que o motivo vale. Exatamente um entre a fase e a etapa.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
-          "tipoCodigo": {
+          "tipoDeDecisaoCodigo": {
             "title": "Tipo de decis\u00E3o",
             "description": "Tipo de decis\u00E3o a que o motivo pertence.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
@@ -19445,6 +19608,12 @@
               "FAVORAVEL",
               "DESFAVORAVEL"
             ],
+            "readOnly": true
+          },
+          "sentidoRotulo": {
+            "title": "R\u00F3tulo do sentido",
+            "description": "R\u00F3tulo atual do sentido do motivo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
             "readOnly": true
           },
           "justificativaDaInclusao": {
@@ -19553,7 +19722,7 @@
             "type": "boolean"
           },
           "municipios": {
-            "title": "Munic\u00EDpios de aplica\u00E7\u00E3o",
+            "title": "Munic\u00EDpios de prova",
             "description": "Munic\u00EDpios em que a prova \u00E9 aplicada, cada um pelo c\u00F3digo do IBGE. Vazio sem prova presencial.",
             "type": "array",
             "items": {
@@ -19577,7 +19746,7 @@
         }
       },
       "DocumentoDaConfiguracaoProvaPresencialMunicipio": {
-        "title": "Munic\u00EDpio de aplica\u00E7\u00E3o",
+        "title": "Munic\u00EDpio de prova",
         "description": "Um munic\u00EDpio em que a prova \u00E9 aplicada: o c\u00F3digo do IBGE \u00E9 a autoridade, e a UF \u00E9 a do prefixo do c\u00F3digo.",
         "type": "object",
         "additionalProperties": false,
@@ -19591,6 +19760,13 @@
             "description": "C\u00F3digo do munic\u00EDpio no IBGE, com 7 d\u00EDgitos e o prefixo de uma unidade federativa.",
             "type": "string",
             "pattern": "^(1[1-7]|2[1-9]|3[1-3]|35|4[1-3]|5[0-3])[0-9]{5}$"
+          },
+          "nome": {
+            "title": "Nome do munic\u00EDpio",
+            "description": "Nome do munic\u00EDpio no Geo, copiado na \u00FAltima publica\u00E7\u00E3o ou retifica\u00E7\u00E3o; vazio antes da primeira. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 150,
+            "readOnly": true
           },
           "uf": {
             "title": "UF",
@@ -24124,6 +24300,68 @@
           }
         }
       },
+      "MunicipioDeProvaCertameDto": {
+        "required": [
+          "codigoIbge",
+          "uf",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
+      "MunicipioDeProvaDto": {
+        "required": [
+          "codigoIbge",
+          "uf",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MunicipioDeProvaInformado": {
+        "required": [
+          "codigoIbge",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "uf": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "NivelDeAtendimentoDto": {
         "required": [
           "rotulo",
@@ -25890,6 +26128,7 @@
           "bonusRegional",
           "aplicaBonusRegional",
           "opcoesDeCurso",
+          "provaPresencial",
           "cascata",
           "criteriosDesempate",
           "classificacao",
@@ -25980,6 +26219,16 @@
               },
               {
                 "$ref": "#/components/schemas/OpcoesDeCursoDto"
+              }
+            ]
+          },
+          "provaPresencial": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProvaPresencialDto"
               }
             ]
           },
@@ -26324,6 +26573,42 @@
           },
           "hipoteseLegal": {
             "type": "string"
+          }
+        }
+      },
+      "ProvaPresencialCertameDto": {
+        "required": [
+          "temProvaPresencial",
+          "municipios"
+        ],
+        "type": "object",
+        "properties": {
+          "temProvaPresencial": {
+            "type": "boolean"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MunicipioDeProvaCertameDto"
+            }
+          }
+        }
+      },
+      "ProvaPresencialDto": {
+        "required": [
+          "temProvaPresencial",
+          "municipios"
+        ],
+        "type": "object",
+        "properties": {
+          "temProvaPresencial": {
+            "type": "boolean"
+          },
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MunicipioDeProvaDto"
+            }
           }
         }
       },

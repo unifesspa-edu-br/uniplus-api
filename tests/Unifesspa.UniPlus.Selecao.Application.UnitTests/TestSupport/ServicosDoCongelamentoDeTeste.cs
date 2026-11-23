@@ -283,7 +283,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDeConformidadeLegal ConformidadeLegal() =>
         new(ObrigatoriedadesLegais, Modalidades, TiposDocumento, TiposEtapa, TiposDeficiencia, RegrasDesempate);
 
-    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos);
+    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos, Microsoft.Extensions.Options.Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = LimiteDeMunicipios }));
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
@@ -294,7 +294,13 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao());
 
     public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
-        new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, CadastrosDaConfiguracao(), Operacao());
+        new(Catalogos(), Recopia(), MunicipiosNoGeo(), FusoDaConferencia ?? Fuso, CadastrosDaConfiguracao(), Operacao());
+
+    public IConferenciaEnderecoGeo Geo { get; } = Substitute.For<IConferenciaEnderecoGeo>();
+
+    public int LimiteDeMunicipios { get; set; } = 100;
+
+    public ConferenciaDosMunicipiosNoGeo MunicipiosNoGeo() => new(Geo, Microsoft.Extensions.Options.Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = LimiteDeMunicipios }));
 
     public MontagemDoCongelamento Montagem() => new(Canonicalizer, Usuario);
 
@@ -322,8 +328,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public AvaliacaoDaConformidade Avaliacao() => new(
         new LeituraDaVersaoPublicadaDoPainel(Repositorio, Codecs),
         new LeituraDosCadastrosDoPainel(
-            Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos),
-        Catalogos());
+            Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos, MunicipiosNoGeo()),
+        Catalogos(), Microsoft.Extensions.Options.Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = LimiteDeMunicipios }));
 
     public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
         ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);

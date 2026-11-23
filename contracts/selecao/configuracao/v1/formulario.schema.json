@@ -37,6 +37,14 @@
       "maxLength": 60,
       "readOnly": true
     },
+    "modeloOrigemNome": {
+      "title": "Nome do modelo de origem",
+      "description": "Nome do modelo de formulário de que o formulário partiu, guardado no processo. Ausente quando não há modelo de origem. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "readOnly": true
+    },
     "paginas": {
       "title": "Páginas",
       "description": "Seções e blocos do formulário, na ordem de apresentação.",

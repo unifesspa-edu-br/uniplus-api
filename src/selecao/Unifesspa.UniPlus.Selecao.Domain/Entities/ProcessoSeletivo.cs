@@ -5,6 +5,7 @@ using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
@@ -18,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -158,6 +160,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Bônus regional (UNI-REQ-0015); só existe quando o processo declara que o aplica.</summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
 
+    public DeclaracaoDaProvaPresencial? ProvaPresencial { get; private set; }
+
     /// <summary>Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="BonusRegional"/>.</summary>
     public bool? AplicaBonusRegional { get; private set; }
 
@@ -187,14 +191,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// A configuração como está agora, com cópias das coleções: uma mutação posterior da raiz não altera a declaração tirada.
     /// </summary>
-    public ConfiguracaoDeclarada Declaracao() => new(
+    public ConfiguracaoDeclarada Declaracao() => Declaracao([]);
+
+    public ConfiguracaoDeclarada Declaracao(IReadOnlyList<MotivoDeDecisaoDeclarado> motivos) => new(
         new IdentidadeDoProcessoDeclarada(Nome, OrigemCandidatos, IdentificadorLegivel, TipoProcesso, UnidadeAdministradora),
         new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemCanonicaDaConfiguracao.Fases(_cronogramaFases)]),
         new AvaliacaoDeclarada([.. OrdemCanonicaDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
         new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaBonusRegional, BonusRegional, Cascata, AtendimentoEspecializado),
         new ExigenciasDeclaradas([.. _documentosExigidos], [.. _regrasDeComprovacao]),
         new ColetaDeclarada([.. _campos], [.. _gruposColetados], [.. _formularios], [.. _termosExigidos], [.. _opcoesDeclaradas], [.. _regrasDerivacao], ReferenciaTemporalFatos),
-        new DivulgacaoETaxaDeclaradas(ConfiguracaoDivulgacao, ConfiguracaoTaxaInscricao));
+        new DivulgacaoETaxaDeclaradas(ConfiguracaoDivulgacao, ConfiguracaoTaxaInscricao))
+    { ProvaPresencial = ProvaPresencial, MotivosDeDecisao = [.. motivos] };
 
     public static ProcessoSeletivo Criar(
         string nome,
@@ -264,6 +271,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Editar(
             () => RegrasDoBonusRegional.Recusa(Declaracao(), aplica, bonus).Com((aplica, bonus)),
             declaracao => (BonusRegional, AplicaBonusRegional) = (Vincular(declaracao.bonus), declaracao.aplica));
+
+    public Result DefinirProvaPresencial(bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios) =>
+        Editar(() => DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial, municipios, limiteDeMunicipios),
+            declaracao => ProvaPresencial = declaracao);
 
     /// <summary>Define ou remove a divulgação pública (UNI-REQ-0050); nula volta ao padrão minimizado, que é publicável.</summary>
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>
@@ -377,7 +388,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             AplicarMudanca);
     }
 
-    /// <summary>Refaz a cópia dos itens, a das unidades das fases e a proteção das exigências, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
+    /// <summary>Refaz a cópia dos itens, a das unidades das fases, a proteção das exigências e os nomes dos municípios de prova vindos do Geo, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
     public Result RecopiarAoCongelar(CopiasDoCongelamento copias)
     {
         ArgumentNullException.ThrowIfNull(copias);
@@ -387,6 +398,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             RecopiarUnidadesDasFases(copias.UnidadesVivas);
             AplicarProtecaoVigente(copias.ProtecaoVigente);
+            ProvaPresencial = ProvaPresencial?.ComNomesDoGeo(copias.MunicipiosDoGeo);
         }
 
         return itens;

@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 /// <summary>
 /// O que a camada de aplicação leu dos cadastros vivos, uma vez e como valor, para julgar a configuração: o domínio não
@@ -74,6 +75,10 @@ public sealed class CadastrosDaConfiguracao
     /// obrigatória para que nenhum caminho que julga a configuração esqueça de informá-la.
     /// </summary>
     public required PrecedenciasDosCadastros Precedencias { get; init; }
+
+    public required MunicipiosConferidosNoGeo MunicipiosDoGeo { get; init; }
+
+    public int LimiteDeMunicipiosDeProva { get; init; } = 100;
 
     /// <summary>O que os formulários coletaram nas versões publicadas; nulo antes da primeira publicação.</summary>
     public FatosDasVersoesPublicadas? FatosDasVersoesPublicadas { get; }

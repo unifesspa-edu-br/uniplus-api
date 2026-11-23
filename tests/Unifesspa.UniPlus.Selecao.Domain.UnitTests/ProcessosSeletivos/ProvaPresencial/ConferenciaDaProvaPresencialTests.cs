@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 /// <summary>
 /// O que a publicação exige da declaração de prova presencial (UNI-REQ-0407, ADR-0090): a declaração
 /// existe, o processo com prova presencial tem município, e todo município foi conferido no Geo. O
-/// Geo fora do ar é uma só causa, e nunca vale como município conferido.
+/// Município desconhecido nunca vale como conferido.
 /// </summary>
 public sealed class ConferenciaDaProvaPresencialTests
 {
@@ -17,14 +17,11 @@ public sealed class ConferenciaDaProvaPresencialTests
     private const string Xinguara = "1508159";
 
     private static DeclaracaoDaProvaPresencial ComProva(params string[] codigos) => DeclaracaoDaProvaPresencial.Declarar(
-        temProvaPresencial: true, [.. codigos.Select(static codigo => new MunicipioDeAplicacaoInformado(codigo, ReferenciaCidadeGeo.UfDoCodigoIbge(codigo)))], limiteDeMunicipios: 100).Value!;
-
-    private static ResultadoDoMunicipioNoGeo Recusado(string codigo) => ResultadoDoMunicipioNoGeo.Recusado(
-        new DomainError(codigo, "O Geo não confirma o município."));
+        temProvaPresencial: true, [.. codigos.Select(static codigo => new MunicipioDeProvaInformado(codigo, ReferenciaCidadeGeo.UfDoCodigoIbge(codigo)))], limiteDeMunicipios: 100).Value!;
 
     [Fact(DisplayName = "Sem declaração, o processo está por declarar")]
     public void SemDeclaracao_PorDeclarar() =>
-        ConferenciaDaProvaPresencial.Conferir(null, MunicipiosConferidosNoGeo.Nenhum).Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        ConferenciaDaProvaPresencial.Conferir(null, MunicipiosConferidosNoGeo.Nenhum, 100).Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Field = "provaPresencial",
             Error = new { Code = ProvaPresencialErrorCodes.PorDeclarar },
@@ -33,12 +30,12 @@ public sealed class ConferenciaDaProvaPresencialTests
     [Fact(DisplayName = "Sem prova presencial, não há município a conferir")]
     public void SemProva_NadaAConferir() =>
         ConferenciaDaProvaPresencial.Conferir(
-            DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial: false, [], 100).Value!, MunicipiosConferidosNoGeo.Nenhum)
+            DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial: false, [], 100).Value!, MunicipiosConferidosNoGeo.Nenhum, 100)
             .Should().BeEmpty();
 
     [Fact(DisplayName = "Com prova presencial e sem município, a publicação é recusada")]
     public void ComProva_SemMunicipio_Recusa() =>
-        ConferenciaDaProvaPresencial.Conferir(ComProva(), MunicipiosConferidosNoGeo.Nenhum).Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        ConferenciaDaProvaPresencial.Conferir(ComProva(), MunicipiosConferidosNoGeo.Nenhum, 100).Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Field = "provaPresencial.municipios",
             Error = new { Code = ProvaPresencialErrorCodes.SemMunicipio },
@@ -53,50 +50,61 @@ public sealed class ConferenciaDaProvaPresencialTests
             [Xinguara] = ResultadoDoMunicipioNoGeo.Conferido("Xinguara"),
         });
 
-        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos).Should().BeEmpty();
+        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos, 100).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O município que o Geo recusa leva o erro do Geo, na posição dele")]
-    public void MunicipioRecusadoNoGeo_LevaOErroDoGeo()
+    [Fact(DisplayName = "O município que o Geo recusa leva o código da prova presencial, na posição dele")]
+    public void MunicipioRecusadoNoGeo_LevaOCodigoDaProva()
     {
         MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(new Dictionary<string, ResultadoDoMunicipioNoGeo>
         {
             [Marabá] = ResultadoDoMunicipioNoGeo.Conferido("Marabá"),
-            [Xinguara] = Recusado("ConferenciaEnderecoGeo.MunicipioNaoEncontrado"),
+            [Xinguara] = ResultadoDoMunicipioNoGeo.NaoConferido,
         });
 
-        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos).Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos, 100).Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             Field = "provaPresencial.municipios[1].codigoIbge",
-            Error = new { Code = "ConferenciaEnderecoGeo.MunicipioNaoEncontrado" },
+            Error = new { Code = ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo },
         });
     }
 
-    [Fact(DisplayName = "Com o Geo fora do ar, os municípios não conferidos são uma só causa, nunca aceitos")]
-    public void GeoForaDoAr_UmaSoCausa()
+    [Fact(DisplayName = "Cada município desconhecido tem uma causa na posição correspondente")]
+    public void MunicipiosDesconhecidos_DuasPosicoes_DuasCausasEmOrdem()
     {
         MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(new Dictionary<string, ResultadoDoMunicipioNoGeo>
         {
-            [Marabá] = ResultadoDoMunicipioNoGeo.Conferido("Marabá"),
+            [Xinguara] = ResultadoDoMunicipioNoGeo.Conferido("Xinguara"),
         });
-
-        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara, "3550308"), conferidos).Should().ContainSingle().Which.Should().BeEquivalentTo(new
-        {
-            Field = "provaPresencial.municipios",
-            Error = new { Code = ProvaPresencialErrorCodes.MunicipiosNaoConferidosNoGeo },
-        });
+        IReadOnlyList<FieldError> recusas = ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara, "3550308"), conferidos, 100);
+        recusas.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("provaPresencial.municipios[0].codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo),
+            ("provaPresencial.municipios[2].codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo));
+        recusas[0].Error.Message.Should().Be("O Geo não confirmou o município de prova: confira o código do IBGE e a UF informados.");
     }
 
-    [Fact(DisplayName = "O município recusado e o não conferido se acumulam, cada um com a sua causa")]
-    public void RecusadoENaoConferido_Acumulam()
+    [Fact(DisplayName = "Município desconhecido e UF divergente são recusados pela posição")]
+    public void DesconhecidoERecusado_AcumulamEmOrdem()
     {
         MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(new Dictionary<string, ResultadoDoMunicipioNoGeo>
         {
-            [Marabá] = Recusado("ConferenciaEnderecoGeo.MunicipioDivergente"),
+            [Xinguara] = ResultadoDoMunicipioNoGeo.NaoConferido,
         });
+        IReadOnlyList<FieldError> recusas = ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos, 100);
+        recusas.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("provaPresencial.municipios[0].codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo),
+            ("provaPresencial.municipios[1].codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo));
+        recusas.Count.Should().NotBe(0);
+    }
 
-        ConferenciaDaProvaPresencial.Conferir(ComProva(Marabá, Xinguara), conferidos).Select(static erro => erro.Error.Code)
-            .Should().BeEquivalentTo(["ConferenciaEnderecoGeo.MunicipioDivergente", ProvaPresencialErrorCodes.MunicipiosNaoConferidosNoGeo]);
+    [Fact]
+    public void Conferir_LimiteReduzido_RecusaSomenteAcimaDoLimite()
+    {
+        DeclaracaoDaProvaPresencial declaracao = ComProva(Marabá, Xinguara);
+        MunicipiosConferidosNoGeo conferidos = Conjunto((Marabá, "Marabá"), (Xinguara, "Xinguara"));
+        ConferenciaDaProvaPresencial.Conferir(declaracao, conferidos, 2).Should().BeEmpty();
+        ConferenciaDaProvaPresencial.Conferir(declaracao, MunicipiosConferidosNoGeo.Nenhum, 1)
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
     }
 
     [Fact(DisplayName = "O nome que o Geo devolveu fica disponível para o congelamento")]
@@ -111,17 +119,15 @@ public sealed class ConferenciaDaProvaPresencialTests
         conferidos.NomeConferido(Xinguara).Should().BeNull();
     }
 
-    [Theory(DisplayName = "O município conferido sem nome, e o recusado sem erro, não existem")]
+    [Theory(DisplayName = "O município conferido sem nome não existe")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
     public void ResultadoSemConteudo_NaoExiste(string? nome)
     {
         Action conferidoSemNome = () => ResultadoDoMunicipioNoGeo.Conferido(nome!);
-        Action recusadoSemErro = () => ResultadoDoMunicipioNoGeo.Recusado(null!);
 
         conferidoSemNome.Should().Throw<ArgumentException>();
-        recusadoSemErro.Should().Throw<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "A conferência não muda quando quem a forneceu altera o dicionário depois")]
@@ -130,7 +136,7 @@ public sealed class ConferenciaDaProvaPresencialTests
         Dictionary<string, ResultadoDoMunicipioNoGeo> origem = new() { [Marabá] = ResultadoDoMunicipioNoGeo.Conferido("Marabá") };
         MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(origem);
 
-        origem[Marabá] = Recusado("ConferenciaEnderecoGeo.MunicipioNaoEncontrado");
+        origem[Marabá] = ResultadoDoMunicipioNoGeo.NaoConferido;
         origem[Xinguara] = ResultadoDoMunicipioNoGeo.Conferido("Xinguara");
 
         conferidos.NomeConferido(Marabá).Should().Be("Marabá");

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/bonus-regional.schema.json",
-  "title": "Bônus regional",
-  "description": "O acréscimo na nota do candidato que cumpre a base legal do bônus regional. O processo declara que aplica o bônus e cita a regra do catálogo e a base legal pelo código, ou declara que não o aplica.",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/fada.schema.json",
+  "title": "Fator de Atenuação das Desigualdades de Acesso (FADA)",
+  "description": "O Fator de Atenuação das Desigualdades de Acesso (FADA): o acréscimo na nota do candidato que cumpre a base legal. O processo declara que aplica o FADA e cita a regra do catálogo e a base legal pelo código, ou declara que não o aplica.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,13 +10,13 @@
   ],
   "properties": {
     "aplica": {
-      "title": "Aplica o bônus",
-      "description": "Verdadeiro quando o processo aplica o bônus regional. Falso proíbe os demais campos.",
+      "title": "Aplica o FADA",
+      "description": "Verdadeiro quando o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA). Falso proíbe os demais campos.",
       "type": "boolean"
     },
     "regra": {
-      "title": "Regra do bônus",
-      "description": "Regra do catálogo que calcula o bônus.",
+      "title": "Regra do FADA",
+      "description": "Regra do catálogo que calcula o FADA.",
       "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
     },
     "fator": {
@@ -29,7 +29,7 @@
     },
     "teto": {
       "title": "Teto",
-      "description": "Acréscimo máximo que o bônus pode dar, quando houver. Maior que zero, até 99,9999.",
+      "description": "Acréscimo máximo que o FADA pode dar, quando houver. Maior que zero, até 99,9999.",
       "type": "number",
       "multipleOf": 0.0001,
       "exclusiveMinimum": 0,
@@ -37,13 +37,13 @@
     },
     "codigoDoDadoDeElegibilidade": {
       "title": "Fato de elegibilidade",
-      "description": "Código do fato que decide quem recebe o bônus, quando o processo o declara, de 1 a 60 caracteres.",
+      "description": "Código do fato que decide quem recebe o FADA, quando o processo o declara, de 1 a 60 caracteres.",
       "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo",
       "maxLength": 60
     },
-    "baseLegalBonusRegionalCodigo": {
+    "baseLegalCodigo": {
       "title": "Base legal",
-      "description": "Código estável da base legal do bônus regional no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 100 caracteres.",
+      "description": "Código estável da base legal do FADA no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 100 caracteres.",
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
     },
@@ -117,7 +117,7 @@
     "required": [
       "regra",
       "fator",
-      "baseLegalBonusRegionalCodigo"
+      "baseLegalCodigo"
     ]
   },
   "else": {
@@ -126,7 +126,7 @@
       "fator": false,
       "teto": false,
       "codigoDoDadoDeElegibilidade": false,
-      "baseLegalBonusRegionalCodigo": false,
+      "baseLegalCodigo": false,
       "tipoInstrumento": false,
       "identificacao": false,
       "descricao": false,

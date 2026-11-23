@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
@@ -43,6 +45,10 @@ public sealed class ConfiguracaoDeclarada
     public ColetaDeclarada Coleta { get; }
 
     public DivulgacaoETaxaDeclaradas DivulgacaoETaxa { get; }
+
+    public DeclaracaoDaProvaPresencial? ProvaPresencial { get; internal init; }
+
+    public IReadOnlyList<MotivoDeDecisaoDeclarado> MotivosDeDecisao { get; internal init; } = [];
 
     /// <summary>
     /// Onde cada parte está no documento recebido e as partes que a leitura recusou; a declaração que vem da raiz tem a

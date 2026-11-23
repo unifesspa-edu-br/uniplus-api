@@ -1234,6 +1234,7 @@ selecao.avaliacoes_da_etapa.inscricao_id: Pessoal
 selecao.avaliacoes_da_etapa.nota: Pessoal
 selecao.avaliacoes_da_etapa.oferta_curso_id: Pessoal
 selecao.avaliacoes_da_etapa.situacao: Pessoal
+selecao.bancas_da_etapa.chave_local: Interno
 selecao.bancas_da_etapa.codigo: Interno
 selecao.bancas_da_etapa.created_at: Interno
 selecao.bancas_da_etapa.encerra_recurso_na_primeira_instancia: Interno
@@ -1243,6 +1244,7 @@ selecao.bancas_da_etapa.id: Interno
 selecao.bancas_da_etapa.nome: Interno
 selecao.bancas_da_etapa.papel: Interno
 selecao.bancas_da_etapa.posicao_no_tipo: Interno
+selecao.bancas_da_etapa.processo_seletivo_id: Interno
 selecao.bancas_da_etapa.regra_deliberacao_criterio: Interno
 selecao.bancas_da_etapa.regra_deliberacao_desempate: Interno
 selecao.bancas_da_etapa.regra_deliberacao_encerramento: Interno
@@ -1254,6 +1256,7 @@ selecao.bancas_da_etapa.regra_deliberacao_suplentes: Interno
 selecao.bancas_da_etapa.tipo_banca_origem_id: Interno
 selecao.bancas_da_etapa.tipos_de_decisao_julgados: Interno
 selecao.bancas_da_etapa.updated_at: Interno
+selecao.bancas_requeridas.chave_local: Interno
 selecao.bancas_requeridas.codigo: Interno
 selecao.bancas_requeridas.created_at: Interno
 selecao.bancas_requeridas.encerra_recurso_na_primeira_instancia: Interno
@@ -1263,6 +1266,7 @@ selecao.bancas_requeridas.id: Interno
 selecao.bancas_requeridas.nome: Interno
 selecao.bancas_requeridas.papel: Interno
 selecao.bancas_requeridas.posicao_no_tipo: Interno
+selecao.bancas_requeridas.processo_seletivo_id: Interno
 selecao.bancas_requeridas.regra_deliberacao_criterio: Interno
 selecao.bancas_requeridas.regra_deliberacao_desempate: Interno
 selecao.bancas_requeridas.regra_deliberacao_encerramento: Interno
@@ -1508,6 +1512,7 @@ selecao.documentos_a_publicar.status: Interno
 selecao.documentos_a_publicar.tamanho_bytes: Interno
 selecao.documentos_a_publicar.updated_at: Interno
 selecao.documentos_exigidos.aplicabilidade: Interno
+selecao.documentos_exigidos.chave_local: Interno
 selecao.documentos_exigidos.classificacao_protecao: Interno
 selecao.documentos_exigidos.consequencia_indeferimento: Interno
 selecao.documentos_exigidos.created_at: Interno
@@ -1587,6 +1592,7 @@ selecao.etapas_processo.apuracao_avaliacao_codigo: Interno
 selecao.etapas_processo.apuracao_avaliacao_hash: Interno
 selecao.etapas_processo.apuracao_avaliacao_versao: Interno
 selecao.etapas_processo.carater: Interno
+selecao.etapas_processo.chave_local: Interno
 selecao.etapas_processo.created_at: Interno
 selecao.etapas_processo.emite_parecer_individual: Interno
 selecao.etapas_processo.fase_codigo: Interno
@@ -1611,6 +1617,7 @@ selecao.etapas_processo.tipo_etapa_origem_id: Interno
 selecao.etapas_processo.tipos_de_decisao: Interno
 selecao.etapas_processo.updated_at: Interno
 selecao.fases_cronograma.agrupa_etapas: Interno
+selecao.fases_cronograma.chave_local: Interno
 selecao.fases_cronograma.codigo: Interno
 selecao.fases_cronograma.coleta_inscricao: Interno
 selecao.fases_cronograma.coleta_solicitacao_isencao: Interno
@@ -1724,9 +1731,11 @@ selecao.inscritos_da_importacao.id: Pessoal
 selecao.inscritos_da_importacao.importacao_id: Pessoal
 selecao.inscritos_da_importacao.inscricao_id: Pessoal
 selecao.inscritos_da_importacao.numero_de_inscricao_no_enem: Identificador
+selecao.itens_de_avaliacao_da_etapa.chave_local: Interno
 selecao.itens_de_avaliacao_da_etapa.created_at: Interno
 selecao.itens_de_avaliacao_da_etapa.etapa_processo_id: Interno
 selecao.itens_de_avaliacao_da_etapa.id: Interno
+selecao.itens_de_avaliacao_da_etapa.ordem: Interno
 selecao.itens_de_avaliacao_da_etapa.pontuacao_maxima: Interno
 selecao.itens_de_avaliacao_da_etapa.rotulo: Interno
 selecao.itens_de_avaliacao_da_etapa.updated_at: Interno
@@ -1798,6 +1807,12 @@ selecao.motivos_de_decisao_do_processo.updated_by: Pessoal
 selecao.motivos_de_decisao_do_processo.versao_do_edital_de_entrada: Interno
 selecao.motivos_de_decisao_do_processo.versao_do_edital_de_saida: Interno
 selecao.motivos_de_decisao_do_processo.xmin: Interno
+selecao.municipios_de_prova.codigo_ibge: Publico
+selecao.municipios_de_prova.id: Publico
+selecao.municipios_de_prova.nome: Publico
+selecao.municipios_de_prova.posicao: Publico
+selecao.municipios_de_prova.processo_seletivo_id: Publico
+selecao.municipios_de_prova.uf: Publico
 selecao.municipios_do_fada.codigo_ibge: Interno
 selecao.municipios_do_fada.configuracao_do_fada_id: Interno
 selecao.municipios_do_fada.created_at: Interno
@@ -1805,9 +1820,11 @@ selecao.municipios_do_fada.id: Interno
 selecao.municipios_do_fada.nome: Interno
 selecao.municipios_do_fada.uf: Interno
 selecao.municipios_do_fada.updated_at: Interno
+selecao.niveis_de_atendimento_da_etapa.chave_local: Interno
 selecao.niveis_de_atendimento_da_etapa.etapa_processo_id: Interno
 selecao.niveis_de_atendimento_da_etapa.fracao: Interno
 selecao.niveis_de_atendimento_da_etapa.id: Interno
+selecao.niveis_de_atendimento_da_etapa.ordem: Interno
 selecao.niveis_de_atendimento_da_etapa.rotulo: Interno
 selecao.obrigatoriedades_legais.ato_normativo_url: Interno
 selecao.obrigatoriedades_legais.base_legal: Interno
@@ -1864,6 +1881,7 @@ selecao.processos_seletivos.referencia_temporal_fatos_data: Interno
 selecao.processos_seletivos.referencia_temporal_fatos_fase_id: Interno
 selecao.processos_seletivos.referencia_temporal_fatos_tipo: Interno
 selecao.processos_seletivos.status: Interno
+selecao.processos_seletivos.tem_prova_presencial: Publico
 selecao.processos_seletivos.tipo_processo_codigo: Interno
 selecao.processos_seletivos.tipo_processo_nome: Interno
 selecao.processos_seletivos.tipo_processo_origem_id: Interno

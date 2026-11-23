@@ -94,8 +94,8 @@ public sealed class EsquemaDoDocumentoDaConfiguracaoTests
     [Fact(DisplayName = "O que falha na condição que escolhe o ramo não é causa do documento")]
     public void CondicaoQueNaoVale_NaoGeraCausa() =>
         AvaliarComCabecalho("""
-            "bonusRegional": { "aplica": false, "fator": 1.2 }
-            """).Select(Resumo).Should().Equal(("/bonusRegional/fator", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
+            "fada": { "aplica": false, "fator": 1.2 }
+            """).Select(Resumo).Should().Equal(("/fada/fator", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
 
     [Fact(DisplayName = "As avaliações simultâneas dão o mesmo resultado")]
     public async Task AvaliacoesSimultaneas_DaoOMesmoResultado()

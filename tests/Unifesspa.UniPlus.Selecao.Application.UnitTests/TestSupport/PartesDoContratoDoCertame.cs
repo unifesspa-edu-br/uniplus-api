@@ -29,5 +29,6 @@ internal static class PartesDoContratoDoCertame
         ("atendimento", "atendimento especializado"),
         ("taxaInscricao", "taxa de inscrição"),
         ("retificacao", "retificação"),
+        ("provaPresencial", "prova presencial"),
     ];
 }

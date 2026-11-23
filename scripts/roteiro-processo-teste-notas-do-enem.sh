@@ -311,6 +311,7 @@ main() {
     definir_documentos_exigidos
     documento_do_edital
     divulgar
+    definir_sem_prova_presencial
     publicar
     aguardar_ato_registrado
     conferir_resultado

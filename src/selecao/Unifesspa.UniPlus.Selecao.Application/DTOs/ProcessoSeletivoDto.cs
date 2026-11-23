@@ -34,6 +34,10 @@ public sealed record ProcessoSeletivoDto(
     // Quantos cursos o candidato escolhe na inscrição: read-back administrativo. null = ainda não
     // declarado, o que bloqueia a publicação.
     OpcoesDeCursoDto? OpcoesDeCurso,
+    // Leitura para edição: null é por declarar e impede publicação. Municípios seguem a ordem
+    // declarada; nome é copiado do Geo na última publicação ou retificação e fica null antes
+    // da cópia e a cada nova declaração durante uma retificação.
+    ProvaPresencialDto? ProvaPresencial,
     ConfiguracaoCascataRemanejamentoDto? Cascata,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,

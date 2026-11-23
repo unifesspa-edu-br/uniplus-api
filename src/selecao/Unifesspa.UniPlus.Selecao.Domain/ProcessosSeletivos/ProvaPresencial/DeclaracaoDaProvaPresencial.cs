@@ -13,22 +13,35 @@ public sealed record DeclaracaoDaProvaPresencial
 {
     private const string CampoDosMunicipios = "provaPresencial.municipios";
 
-    private DeclaracaoDaProvaPresencial(bool temProvaPresencial, IReadOnlyList<MunicipioDeAplicacao> municipios)
+    private readonly List<MunicipioDeProva> _municipios = [];
+
+    private DeclaracaoDaProvaPresencial(bool temProvaPresencial)
     {
         TemProvaPresencial = temProvaPresencial;
-        Municipios = municipios;
     }
+
+    private DeclaracaoDaProvaPresencial(bool temProvaPresencial, IEnumerable<MunicipioDeProva> municipios)
+        : this(temProvaPresencial) => _municipios.AddRange(municipios);
 
     public bool TemProvaPresencial { get; }
 
-    /// <summary>Os municípios de aplicação; vazia sem prova presencial, e ainda vazia no rascunho que não os declarou.</summary>
-    public IReadOnlyList<MunicipioDeAplicacao> Municipios { get; }
+    /// <summary>Os municípios de prova; vazia sem prova presencial, e ainda vazia no rascunho que não os declarou.</summary>
+    public IReadOnlyList<MunicipioDeProva> Municipios => [.. _municipios.OrderBy(static m => m.Posicao)];
 
     /// <summary>As declarações são iguais quando têm a mesma prova presencial e os mesmos municípios, na mesma ordem.</summary>
     public bool Equals(DeclaracaoDaProvaPresencial? outra) =>
         outra is not null && TemProvaPresencial == outra.TemProvaPresencial && Municipios.SequenceEqual(outra.Municipios);
 
     public override int GetHashCode() => HashCode.Combine(TemProvaPresencial, Municipios.Count);
+
+    public DeclaracaoDaProvaPresencial ComNomesDoGeo(MunicipiosConferidosNoGeo conferidos)
+    {
+        ArgumentNullException.ThrowIfNull(conferidos);
+        return new(TemProvaPresencial, [.. Municipios.Select(municipio => municipio with
+        {
+            Nome = conferidos.NomeConferido(municipio.CodigoIbge) ?? municipio.Nome,
+        })]);
+    }
 
     /// <summary>
     /// Confere a forma da declaração e acumula as recusas (ADR-0125): sem prova presencial não há município,
@@ -38,55 +51,60 @@ public sealed record DeclaracaoDaProvaPresencial
     /// </summary>
     /// <param name="limiteDeMunicipios">O limite técnico de municípios por processo, que protege a conferência no Geo.</param>
     public static Result<DeclaracaoDaProvaPresencial> Declarar(
-        bool temProvaPresencial, IReadOnlyList<MunicipioDeAplicacaoInformado> municipios, int limiteDeMunicipios)
+        bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios)
     {
         ArgumentNullException.ThrowIfNull(municipios);
 
         List<FieldError> recusas =
         [
-            .. RecusasDaLista(temProvaPresencial, municipios.Count, limiteDeMunicipios),
+            .. RecusasSemProva(temProvaPresencial, municipios.Count),
             .. RecusasDeCadaMunicipio(municipios),
+            .. RecusasAcimaDoLimite(municipios.Count, limiteDeMunicipios),
         ];
         return recusas.Count > 0
             ? Result<DeclaracaoDaProvaPresencial>.ValidationFailure(recusas)
             : Result<DeclaracaoDaProvaPresencial>.Success(new(
                 temProvaPresencial,
-                [.. municipios.Select(static municipio => new MunicipioDeAplicacao(municipio.CodigoIbge!, municipio.Uf!))]));
+                [.. municipios.Select(static (municipio, indice) => new MunicipioDeProva(municipio.CodigoIbge!, municipio.Uf!, null, indice + 1))]));
     }
 
-    private static IEnumerable<FieldError> RecusasDaLista(bool temProvaPresencial, int quantidade, int limiteDeMunicipios)
+    private static IEnumerable<FieldError> RecusasSemProva(bool temProvaPresencial, int quantidade)
     {
         if (!temProvaPresencial && quantidade > 0)
         {
             yield return new FieldError(CampoDosMunicipios, new DomainError(
                 ProvaPresencialErrorCodes.MunicipiosSemProvaPresencial,
-                "O processo não declara prova presencial e não pode declarar municípios de aplicação."));
+                "O processo não declara prova presencial e não pode declarar municípios de prova."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasAcimaDoLimite(int quantidade, int limiteDeMunicipios)
+    {
         if (quantidade > limiteDeMunicipios)
         {
             yield return new FieldError(CampoDosMunicipios, new DomainError(
                 ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite,
-                "O processo declara mais municípios de aplicação do que o limite admite."));
+                "O processo declara mais municípios de prova do que o limite admite."));
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDeCadaMunicipio(IReadOnlyList<MunicipioDeAplicacaoInformado> municipios)
+    private static IEnumerable<FieldError> RecusasDeCadaMunicipio(IReadOnlyList<MunicipioDeProvaInformado> municipios)
     {
         HashSet<string> jaDeclarados = new(StringComparer.Ordinal);
         for (int indice = 0; indice < municipios.Count; indice++)
         {
             string campo = $"{CampoDosMunicipios}[{indice}]";
-            MunicipioDeAplicacaoInformado? municipio = municipios[indice];
-            foreach (FieldError recusa in RecusasDoCodigo(municipio?.CodigoIbge, jaDeclarados, campo)
-                .Concat(RecusasDaUf(municipio?.CodigoIbge, municipio?.Uf, campo)))
+            MunicipioDeProvaInformado? municipio = municipios[indice];
+            foreach (FieldError recusa in RecusasDoCodigo(municipio?.CodigoIbge, campo)
+                .Concat(RecusasDaUf(municipio?.CodigoIbge, municipio?.Uf, campo))
+                .Concat(RecusasDaRepeticao(municipio?.CodigoIbge, jaDeclarados, campo)))
             {
                 yield return recusa;
             }
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigoIbge, HashSet<string> jaDeclarados, string campo)
+    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigoIbge, string campo)
     {
         if (string.IsNullOrWhiteSpace(codigoIbge))
         {
@@ -96,9 +114,13 @@ public sealed record DeclaracaoDaProvaPresencial
         {
             yield return Recusa($"{campo}.codigoIbge", CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido, "O código do IBGE deve ter sete dígitos e o prefixo de uma UF.");
         }
-        else if (!jaDeclarados.Add(codigoIbge))
+    }
+
+    private static IEnumerable<FieldError> RecusasDaRepeticao(string? codigoIbge, HashSet<string> jaDeclarados, string campo)
+    {
+        if (codigoIbge is not null && ReferenciaCidadeGeo.EhCodigoMunicipioValido(codigoIbge) && !jaDeclarados.Add(codigoIbge))
         {
-            yield return Recusa($"{campo}.codigoIbge", ProvaPresencialErrorCodes.MunicipioRepetido, "O município já está declarado como local de prova do processo.");
+            yield return Recusa($"{campo}.codigoIbge", ProvaPresencialErrorCodes.MunicipioRepetido, "O município já está declarado como município de prova do processo.");
         }
     }
 

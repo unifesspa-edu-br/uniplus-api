@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 /// <summary>
 /// A declaração de prova presencial do processo (UNI-REQ-0407): se o processo tem prova presencial e,
-/// só então, os municípios de aplicação, cada um pelo código do IBGE com a UF coerente com o prefixo, sem
+/// só então, os municípios de prova, cada um pelo código do IBGE com a UF coerente com o prefixo, sem
 /// repetição e até o limite técnico. Município de qualquer UF, com ou sem campus, é aceito.
 /// </summary>
 public sealed class DeclaracaoDaProvaPresencialTests
@@ -17,7 +17,7 @@ public sealed class DeclaracaoDaProvaPresencialTests
     private const string Marabá = "1504208";
     private const string Xinguara = "1508159";
 
-    private static MunicipioDeAplicacaoInformado Municipio(string? codigoIbge, string? uf) => new(codigoIbge, uf);
+    private static MunicipioDeProvaInformado Municipio(string? codigoIbge, string? uf) => new(codigoIbge, uf);
 
     [Fact(DisplayName = "Com prova presencial, os municípios de qualquer UF são aceitos, com ou sem campus")]
     public void ComProva_MunicipiosDeQualquerUf_Aceita()
@@ -110,10 +110,20 @@ public sealed class DeclaracaoDaProvaPresencialTests
         });
     }
 
+    [Fact]
+    public void Declarar_MunicipioRepetidoComUfIncoerente_RecusaUfAntesDaRepeticao()
+    {
+        Result<DeclaracaoDaProvaPresencial> resultado = DeclaracaoDaProvaPresencial.Declarar(
+            true, [Municipio(Marabá, "PA"), Municipio(Marabá, "SP")], Limite);
+        resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
+            CidadeReferenciaErrorCodes.UfIncoerente, ProvaPresencialErrorCodes.MunicipioRepetido);
+        resultado.Errors[1].Error.Message.Should().Be("O município já está declarado como município de prova do processo.");
+    }
+
     [Fact(DisplayName = "O limite técnico de municípios é aceito e o seguinte é recusado")]
     public void Limite_AceitaOLimiteERecusaOSeguinte()
     {
-        MunicipioDeAplicacaoInformado[] noLimite = [.. Enumerable.Range(0, 3).Select(static indice => Municipio($"15{indice:00000}", "PA"))];
+        MunicipioDeProvaInformado[] noLimite = [.. Enumerable.Range(0, 3).Select(static indice => Municipio($"15{indice:00000}", "PA"))];
 
         DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial: true, noLimite, limiteDeMunicipios: 3).IsSuccess.Should().BeTrue();
         DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial: true, noLimite, limiteDeMunicipios: 2).Errors.Should()
@@ -137,6 +147,20 @@ public sealed class DeclaracaoDaProvaPresencialTests
             ("provaPresencial.municipios[1].uf", CidadeReferenciaErrorCodes.UfIncoerente),
             ("provaPresencial.municipios[2].codigoIbge", ProvaPresencialErrorCodes.MunicipioRepetido),
         ]);
+    }
+
+    [Fact(DisplayName = "As recusas da declaração seguem a ordem da lista e terminam com o limite")]
+    public void Declarar_RecusasDeListaEItens_SeguemOrdem()
+    {
+        Result<DeclaracaoDaProvaPresencial> resultado = DeclaracaoDaProvaPresencial.Declarar(
+            false, [Municipio("150420", "PA"), Municipio(Marabá, "SP"), Municipio(Marabá, "PA")], 2);
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("provaPresencial.municipios", ProvaPresencialErrorCodes.MunicipiosSemProvaPresencial),
+            ("provaPresencial.municipios[0].codigoIbge", CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido),
+            ("provaPresencial.municipios[1].uf", CidadeReferenciaErrorCodes.UfIncoerente),
+            ("provaPresencial.municipios[2].codigoIbge", ProvaPresencialErrorCodes.MunicipioRepetido),
+            ("provaPresencial.municipios", ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite));
     }
 
     [Fact(DisplayName = "Nenhuma mensagem de recusa reflete o código nem a UF recebidos")]
@@ -167,7 +191,7 @@ public sealed class DeclaracaoDaProvaPresencialTests
     [Fact(DisplayName = "Duas declarações são iguais quando têm a mesma prova presencial e os mesmos municípios, na mesma ordem")]
     public void Igualdade_PelaProvaEPelosMunicipiosEmOrdem()
     {
-        DeclaracaoDaProvaPresencial Declarar(bool prova, params MunicipioDeAplicacaoInformado[] municipios) =>
+        DeclaracaoDaProvaPresencial Declarar(bool prova, params MunicipioDeProvaInformado[] municipios) =>
             DeclaracaoDaProvaPresencial.Declarar(prova, municipios, Limite).Value!;
 
         Declarar(true, Municipio(Marabá, "PA"), Municipio(Xinguara, "PA")).Should().Be(Declarar(true, Municipio(Marabá, "PA"), Municipio(Xinguara, "PA")));

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.TestesCompartilhados;
@@ -58,5 +61,16 @@ public sealed class LimitesDosTiposEmbutidosBatemComOSchemaTests
             coluna.GetMaxLength().Should().Be(64);
             coluna.IsFixedLength().Should().BeTrue();
         }
+    }
+
+    [Fact]
+    public void ProvaPresencial_LimitesDoMunicipio_BatemComOSchema()
+    {
+        using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
+        IEntityType prova = ModeloEmMemoria.EmbutidoDe<ProcessoSeletivo>(contexto, nameof(ProcessoSeletivo.ProvaPresencial));
+        IEntityType municipio = prova.FindNavigation(nameof(DeclaracaoDaProvaPresencial.Municipios))!.TargetEntityType;
+        municipio.FindProperty(nameof(MunicipioDeProva.CodigoIbge))!.GetMaxLength().Should().Be(7);
+        municipio.FindProperty(nameof(MunicipioDeProva.Uf))!.GetMaxLength().Should().Be(2);
+        municipio.FindProperty(nameof(MunicipioDeProva.Nome))!.GetMaxLength().Should().Be(ReferenciaCidadeGeo.NomeMaxLength);
     }
 }

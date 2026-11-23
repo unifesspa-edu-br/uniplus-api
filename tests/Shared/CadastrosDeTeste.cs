@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Os cadastros que o teste entrega à conferência da configuração e ao painel de conformidade.</summary>
@@ -34,7 +35,7 @@ internal static class CadastrosDeTeste
             .ToDictionary(r => (r.Codigo, r.Versao), r => new RegraDoCatalogoCitada(default, r));
         return new CadastrosDaConfiguracao(cadastros.ContagemDePrazos, cadastros.FatosDeModalidade, cadastros.TiposDeAtoUnicos,
             cadastros.Corretores, cadastros.Protecao, cadastros.MotivosEscolhidos, cadastros.FatosDasVersoesPublicadas)
-        { Regras = regras, Precedencias = cadastros.Precedencias, NomesDasFases = cadastros.NomesDasFases };
+        { Regras = regras, MunicipiosDoGeo = cadastros.MunicipiosDoGeo, Precedencias = cadastros.Precedencias, NomesDasFases = cadastros.NomesDasFases };
     }
 
     /// <summary>Os mesmos cadastros, com a precedência entre fases que o cenário declara.</summary>
@@ -44,7 +45,7 @@ internal static class CadastrosDeTeste
 
         return new CadastrosDaConfiguracao(cadastros.ContagemDePrazos, cadastros.FatosDeModalidade, cadastros.TiposDeAtoUnicos,
             cadastros.Corretores, cadastros.Protecao, cadastros.MotivosEscolhidos, cadastros.FatosDasVersoesPublicadas)
-        { Regras = cadastros.Regras, NomesDasFases = cadastros.NomesDasFases, Precedencias = precedencias };
+        { Regras = cadastros.Regras, NomesDasFases = cadastros.NomesDasFases, MunicipiosDoGeo = cadastros.MunicipiosDoGeo, Precedencias = precedencias };
     }
 
     /// <summary>Os cadastros padrão, trocando só o que o cenário declara.</summary>
@@ -63,5 +64,5 @@ internal static class CadastrosDeTeste
             protecao ?? SemProtecaoVigente,
             motivosEscolhidos ?? SemMotivosEscolhidos,
             fatosDasVersoesPublicadas)
-        { Precedencias = PrecedenciasDosCadastros.Lidas([]) };
+        { MunicipiosDoGeo = MunicipiosConferidosNoGeo.Nenhum, Precedencias = PrecedenciasDosCadastros.Lidas([]) };
 }

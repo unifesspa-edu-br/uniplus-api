@@ -19,22 +19,47 @@ internal static class DeclaracoesObrigatoriasDeTeste
     public static void Declarar(ProcessoSeletivo processo, bool bonus = true, bool desempate = true, bool opcoesDeCurso = true)
     {
         ArgumentNullException.ThrowIfNull(processo);
+        DeclararProvaPresencial(processo);
 
+        DeclararOpcoesDeCurso(processo, opcoesDeCurso);
+        DeclararBonus(processo, bonus);
+        if (desempate)
+        {
+            DeclararDesempate(processo);
+        }
+    }
+
+    private static void DeclararOpcoesDeCurso(ProcessoSeletivo processo, bool opcoesDeCurso)
+    {
         if (opcoesDeCurso && processo.NumeroDeOpcoesDeCurso is null)
         {
             ExigirSucesso(processo.DefinirOpcoesDeCurso(1));
         }
+    }
 
+    private static void DeclararBonus(ProcessoSeletivo processo, bool bonus)
+    {
         if (bonus && processo.AplicaBonusRegional is null)
         {
             ExigirSucesso(processo.DefinirBonusRegional(aplica: false, bonus: null));
         }
+    }
 
-        if (desempate && processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && processo.CriteriosDesempate.Count == 0)
+    private static void DeclararDesempate(ProcessoSeletivo processo)
+    {
+        if (processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && processo.CriteriosDesempate.Count == 0)
         {
             ReferenciaRegra regra = ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64));
             CriterioDesempate criterio = CriterioDesempate.Criar(1, regra, new ParametrosDesempateMaiorIdade()).Value!;
             ExigirSucesso(processo.DefinirCriteriosDesempate([criterio]));
+        }
+    }
+
+    private static void DeclararProvaPresencial(ProcessoSeletivo processo)
+    {
+        if (processo.ProvaPresencial is null)
+        {
+            ExigirSucesso(processo.DefinirProvaPresencial(false, [], 100));
         }
     }
 

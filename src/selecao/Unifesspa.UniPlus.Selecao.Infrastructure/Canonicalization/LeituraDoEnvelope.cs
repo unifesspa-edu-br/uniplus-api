@@ -74,6 +74,7 @@ internal static class LeituraDoEnvelope
         {
             Dados = dados,
             HashDocumento = hashDocumento,
+            MotivosDeDecisao = LeituraDosMotivosDeDecisao.Ler(leitor, payload),
             Etapas = LeituraDasEtapas.LerEtapas(leitor, payload),
             Distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload),
             Atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload),

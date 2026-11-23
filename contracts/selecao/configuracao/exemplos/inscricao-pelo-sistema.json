@@ -230,6 +230,7 @@
       {
         "chave": "fase_inscricao",
         "tipoFaseCodigo": "INSCRICAO",
+        "tipoFaseNome": "Inscrição",
         "inicio": "2027-01-10T03:00:00Z",
         "fim": "2027-01-20T02:59:59Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -239,6 +240,7 @@
       {
         "chave": "fase_avaliacao",
         "tipoFaseCodigo": "AVALIACAO",
+        "tipoFaseNome": "Avaliação",
         "inicio": "2027-01-25T11:00:00Z",
         "fim": "2027-01-25T16:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -248,6 +250,7 @@
       {
         "chave": "fase_resultado_final",
         "tipoFaseCodigo": "RESULTADO_FINAL",
+        "tipoFaseNome": "Resultado final",
         "inicio": "2027-02-01T03:00:00Z",
         "fim": "2027-02-15T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -256,10 +259,12 @@
         "publicacoesPrevistas": [
           {
             "atoCodigo": "RESULTADO_FINAL",
+            "atoNome": "Resultado final",
             "papel": "PRELIMINAR"
           },
           {
             "atoCodigo": "RESULTADO_FINAL",
+            "atoNome": "Resultado final",
             "papel": "DEFINITIVO"
           }
         ],
@@ -595,7 +600,7 @@
       }
     ]
   },
-  "bonusRegional": {
+  "fada": {
     "aplica": false
   },
   "provaPresencial": {
@@ -614,7 +619,7 @@
   "motivosDeDecisao": [
     {
       "faseChave": "fase_inscricao",
-      "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES",
+      "tipoDeDecisaoCodigo": "HOMOLOGACAO_DAS_INSCRICOES",
       "codigo": "INSCRICAO_INCOMPLETA",
       "descricao": "Inscrição enviada sem os dados obrigatórios",
       "sentido": "DESFAVORAVEL",
@@ -622,7 +627,7 @@
     },
     {
       "etapaChave": "etapa_prova_objetiva",
-      "tipoCodigo": "CLASSIFICACAO",
+      "tipoDeDecisaoCodigo": "CLASSIFICACAO",
       "codigo": "NOTA_ABAIXO_DO_MINIMO",
       "descricao": "Nota abaixo do mínimo da etapa",
       "sentido": "DESFAVORAVEL",

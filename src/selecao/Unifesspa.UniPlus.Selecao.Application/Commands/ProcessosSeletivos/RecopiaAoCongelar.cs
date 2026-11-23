@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 
@@ -25,7 +26,7 @@ public sealed class RecopiaAoCongelar(IResolvedorDaUnidadeResponsavel unidadeRes
     /// recusa da leitura das versões publicadas, que precede as recusas de itens e unidades, somadas num lote.
     /// </returns>
     internal async Task<Result<RecopiadoAoCongelar>> RecopiarAsync(
-        ProcessoSeletivo processo, CatalogoVivo catalogo, OrigemDoCongelamento origem, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, CatalogoVivo catalogo, OrigemDoCongelamento origem, MunicipiosConferidosNoGeo municipios, CancellationToken cancellationToken)
     {
         Result<FatosDasVersoesPublicadas?> publicadas = await origem
             .FatosJaPublicadosAsync(versoesPublicadas, processo, cancellationToken)
@@ -36,7 +37,7 @@ public sealed class RecopiaAoCongelar(IResolvedorDaUnidadeResponsavel unidadeRes
         }
 
         Result<ProtecaoVigenteDoProcesso> recopia = await RecopiarCopiasEUnidadesAsync(
-            processo, catalogo, publicadas.Value?.FatosJaColetados, origem.CongeladoNaVersaoVigente, cancellationToken)
+            processo, catalogo, publicadas.Value?.FatosJaColetados, origem.CongeladoNaVersaoVigente, municipios, cancellationToken)
             .ConfigureAwait(false);
         return recopia.IsFailure
             ? Result<RecopiadoAoCongelar>.ValidationFailure(recopia.Errors)
@@ -48,6 +49,7 @@ public sealed class RecopiaAoCongelar(IResolvedorDaUnidadeResponsavel unidadeRes
         CatalogoVivo catalogo,
         IReadOnlySet<string>? fatosJaColetados,
         CongeladoNaVersaoVigente? daVersaoVigente,
+        MunicipiosConferidosNoGeo municipios,
         CancellationToken cancellationToken)
     {
         Result<CopiasConferidas> copias = ReconferenciaDasCopiasDoItem.Conferir(processo, catalogo.Fatos, fatosJaColetados);
@@ -63,16 +65,17 @@ public sealed class RecopiaAoCongelar(IResolvedorDaUnidadeResponsavel unidadeRes
         // o que se congela, e a montagem não lê o que o agregado refaz a seguir.
         ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(processo, catalogo.TiposVivos, catalogo.Fatos, daVersaoVigente);
 
-        return Recopiar(processo, copias.Value!, unidades.Value!, protecao);
+        return Recopiar(processo, copias.Value!, unidades.Value!, protecao, municipios);
     }
 
     private static Result<ProtecaoVigenteDoProcesso> Recopiar(
         ProcessoSeletivo processo,
         CopiasConferidas copias,
         IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> unidades,
-        ProtecaoVigenteDoProcesso protecao)
+        ProtecaoVigenteDoProcesso protecao,
+        MunicipiosConferidosNoGeo municipios)
     {
-        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(copias.Copias, copias.FatosJaColetados, unidades, protecao.Exigencias));
+        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(copias.Copias, copias.FatosJaColetados, unidades, protecao.Exigencias, municipios));
 
         return recopiado.IsSuccess
             ? Result<ProtecaoVigenteDoProcesso>.Success(protecao)

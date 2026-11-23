@@ -11,6 +11,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Microsoft.Extensions.Options;
+
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -45,7 +47,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 public sealed class AvaliacaoDaConformidade(
     LeituraDaVersaoPublicadaDoPainel versaoPublicada,
     LeituraDosCadastrosDoPainel cadastros,
-    ConferenciaDoCatalogoEDaProtecao catalogos)
+    ConferenciaDoCatalogoEDaProtecao catalogos,
+    IOptions<ProvaPresencialOptions> options)
 {
     /// <summary>
     /// Item do checklist para a versão publicada que o codec não lê: sem ela não há classificação
@@ -62,7 +65,7 @@ public sealed class AvaliacaoDaConformidade(
         return Projetar(processo, leituras, catalogo, publicada);
     }
 
-    private static ConformidadeProcessoSeletivoDto Projetar(
+    private ConformidadeProcessoSeletivoDto Projetar(
         ProcessoSeletivo processo, LeiturasDoPainel leituras, CatalogoVivo catalogo, VersaoPublicadaNoPainel publicada)
     {
         ItemConformidadeDto[] itens =
@@ -79,7 +82,7 @@ public sealed class AvaliacaoDaConformidade(
 
     // A mesma proteção e a mesma aprovação que a publicação e a retificação avaliam, sobre a mesma leitura dos tipos de
     // documento: o painel não aprova o que elas recusam.
-    private static IEnumerable<ItemConformidadeDto> ItensDoChecklist(
+    private IEnumerable<ItemConformidadeDto> ItensDoChecklist(
         ProcessoSeletivo processo, LeiturasDoPainel leituras, CatalogoVivo catalogo, VersaoPublicadaNoPainel publicada)
     {
         ProtecaoVigenteDasExigencias protecao = ProtecaoVigenteDasExigenciasDoProcesso
@@ -87,7 +90,7 @@ public sealed class AvaliacaoDaConformidade(
 
         CadastrosDaConfiguracao conferidos = new(
             leituras.Contexto, catalogo.FatosDeModalidade, leituras.TiposDeAtoUnicos, leituras.Regras.Corretores, protecao, leituras.MotivosEscolhidos)
-        { Regras = leituras.Regras.Regras, NomesDasFases = catalogo.NomesDasFases, Precedencias = leituras.Precedencias };
+        { Regras = leituras.Regras.Regras, NomesDasFases = catalogo.NomesDasFases, MunicipiosDoGeo = leituras.MunicipiosDoGeo, LimiteDeMunicipiosDeProva = options.Value.LimiteDeMunicipios, Precedencias = leituras.Precedencias };
 
         return ChecklistDeConformidade
             .AvaliarConformidade(processo.Declaracao(), conferidos)

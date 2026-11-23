@@ -22,6 +22,7 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
     [
         "Identificacao", "Conformidade", "Declaracoes", "ReferenciasDeRegra", "Conjunto", "Completude", "Recursos",
         "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "CondicoesDaCanonicalizacao", "MotivosDeDecisao",
+        "ProvaPresencial",
     ];
 
 

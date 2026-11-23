@@ -880,6 +880,14 @@ documento_do_edital() {
     ok "documento do edital confirmado ($DOCUMENTO_EDITAL_ID)"
 }
 
+definir_sem_prova_presencial() {
+    log "Declarar que o processo não tem prova presencial"
+    # A publicação recusa o processo que ainda não declarou se aplica prova
+    # presencial (prova_presencial.por_declarar). O processo de teste não aplica.
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/prova-presencial" '{"temProvaPresencial": false, "municipios": []}' >/dev/null
+    ok "prova presencial declarada: o processo não tem"
+}
+
 publicar() {
     log "Publicar ProcessoSeletivo"
     # Data e ano no fuso America/Belem, como o cronograma — date -u (UTC)
@@ -971,6 +979,7 @@ main() {
     definir_documentos_exigidos
     documento_do_edital
     divulgar
+    definir_sem_prova_presencial
     publicar
     conferir_resultado
 }

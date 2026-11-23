@@ -28,7 +28,7 @@ public static class ValidacaoDoMotivo
         List<FieldError> erros = [];
         CodigoMotivoDecisao? codigo = Coletar(erros, "codigo", CodigoMotivoDecisao.Criar(campos.Codigo));
         string? descricao = Coletar(erros, "descricao", ValidarDescricao(campos.Descricao));
-        TipoMotivoDeDecisao? tipo = ColetarTipo(erros, campos.TipoCodigo);
+        TipoMotivoDeDecisao? tipo = ColetarTipo(erros, campos.TipoDeDecisaoCodigo);
         IPoliticaDoTipoDeMotivo? politica = tipo is { } valido ? PoliticasDosTiposDeMotivo.Do(valido) : null;
         string? subclassificacao = ConferirSubclassificacao(erros, politica, campos.Subclassificacao);
         ConferirSentido(erros, politica, campos.Sentido);
@@ -96,9 +96,9 @@ public static class ValidacaoDoMotivo
         }
     }
 
-    private static TipoMotivoDeDecisao? ColetarTipo(List<FieldError> erros, string? tipoCodigo)
+    private static TipoMotivoDeDecisao? ColetarTipo(List<FieldError> erros, string? tipoDeDecisaoCodigo)
     {
-        Result<TipoMotivoDeDecisao> resultado = TipoDoMotivoInformado.Converter(tipoCodigo);
+        Result<TipoMotivoDeDecisao> resultado = TipoDoMotivoInformado.Converter(tipoDeDecisaoCodigo);
         if (resultado.IsSuccess)
         {
             return resultado.Value;

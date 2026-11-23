@@ -91,6 +91,23 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
+    /// <summary>Substitui a declaração da prova presencial e seus municípios de prova.</summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
+    [HttpPut("{id:guid}/prova-presencial")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> DefinirProvaPresencial(Guid id, [FromBody] DefinirProvaPresencialRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result resultado = await _commandBus.Send(new DefinirProvaPresencialCommand(id, request.TemProvaPresencial, request.Municipios), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
     /// <summary>
     /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). A declaração é obrigatória
     /// para publicar, e o número não pode superar o de ofertas da distribuição de vagas.

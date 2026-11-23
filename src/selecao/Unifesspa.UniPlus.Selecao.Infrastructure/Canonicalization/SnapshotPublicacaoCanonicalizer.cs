@@ -68,6 +68,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProjetarClassificacao(payload, entrada.Processo);
         ProjetarExigenciasEFormularios(payload, entrada);
         ProjetarFatos(payload, entrada);
+        payload["motivosDeDecisao"] = SerializacaoDosMotivosDeDecisao.Serializar(entrada.ConfiguracaoPublicada?.MotivosDeDecisao ?? (entrada.Configuracao ?? entrada.Processo.Declaracao()).MotivosDeDecisao);
 
         return payload;
     }
@@ -141,6 +142,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo);
         payload["divulgacao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao(processo);
         payload["taxaInscricao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarTaxaInscricao(processo);
+        payload["provaPresencial"] = SerializacaoDaProvaPresencial.Serializar(entrada.ConfiguracaoPublicada is { } publicada ? publicada.ProvaPresencial : processo.ProvaPresencial);
     }
 
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)

@@ -30,6 +30,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaPublicacaoEmDiante() =>
     [
+        .. ErrosDaProvaPresencial.Mapeamentos(),
         .. ErrosDoEnvelopeEDaRetificacao.Mapeamentos(),
         .. ErrosDosDocumentosExigidos.Mapeamentos(),
         .. ErrosDaInscricao.Mapeamentos(),

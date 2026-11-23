@@ -17,7 +17,7 @@ public sealed class CidadeDeProvaNosFormulariosTests
     private static readonly FaseCronograma Habilitacao = FaseDeTeste.Criar(2, "HABILITACAO");
 
     private static DeclaracaoDaProvaPresencial Declaracao(bool temProvaPresencial) => DeclaracaoDaProvaPresencial.Declarar(
-        temProvaPresencial, temProvaPresencial ? [new MunicipioDeAplicacaoInformado("1504208", "PA")] : [], 100).Value!;
+        temProvaPresencial, temProvaPresencial ? [new MunicipioDeProvaInformado("1504208", "PA")] : [], 100).Value!;
 
     private static FormularioDeclarado Formulario(string codigo, FaseCronograma fase, bool obrigatorio) =>
         new(CodigoDoFormulario.Criar(codigo).Value!, fase.Id, obrigatorio);

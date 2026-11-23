@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.API.Rotinas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -43,6 +44,10 @@ public static class SelecaoModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         RegistrarContratoHttp(services, configuration);
+        services.AddOptions<ProvaPresencialOptions>()
+            .Bind(configuration.GetSection(ProvaPresencialOptions.SectionName))
+            .Validate(static opcoes => opcoes.LimiteDeMunicipios > 0, "O limite de municípios deve ser positivo.")
+            .ValidateOnStart();
         RegistrarPermissoes(services);
         RegistrarAplicacaoEInfraestrutura(services);
         RegistrarRemocaoDeArquivosPendentes(services, configuration);

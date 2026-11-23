@@ -8,7 +8,10 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ValueObjects;
+
+using Kernel.Results;
 
 using Services;
 
@@ -25,7 +28,8 @@ public sealed class LeituraDosCadastrosDoPainel(
     LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     LeituraDasPrecedenciasDosCadastros precedencias,
-    IMotivoDeDecisaoDoProcessoRepository motivos)
+    IMotivoDeDecisaoDoProcessoRepository motivos,
+    ConferenciaDosMunicipiosNoGeo municipios)
 {
     internal async Task<LeiturasDoPainel> LerAsync(ProcessoSeletivo processo, VersaoPublicadaNoPainel publicada, CancellationToken cancellationToken)
     {
@@ -37,7 +41,8 @@ public sealed class LeituraDosCadastrosDoPainel(
             .LerAsync(publicada.Fases, processo.CronogramaFases, cancellationToken)
             .ConfigureAwait(false);
 
-        return new LeiturasDoPainel(contexto, regras, tipos, escolhidos, lidas);
+        Result<MunicipiosConferidosNoGeo> conferidos = await municipios.ConferirAsync(processo.ProvaPresencial, cancellationToken).ConfigureAwait(false);
+        return new LeiturasDoPainel(contexto, regras, tipos, escolhidos, lidas, conferidos.Value ?? MunicipiosConferidosNoGeo.Nenhum);
     }
 
     private async Task<TiposDeAtoUnicosPorObjeto> LerOsTiposDeAtoUnicosAsync(
@@ -63,4 +68,5 @@ internal sealed record LeiturasDoPainel(
     RegrasCitadasNaConfiguracao Regras,
     TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos,
     MotivosEscolhidos MotivosEscolhidos,
-    PrecedenciasDosCadastros Precedencias);
+    PrecedenciasDosCadastros Precedencias,
+    MunicipiosConferidosNoGeo MunicipiosDoGeo);

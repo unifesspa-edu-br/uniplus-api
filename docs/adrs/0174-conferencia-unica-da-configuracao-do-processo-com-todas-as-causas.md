@@ -71,6 +71,29 @@ Testes de unidade fixam a ordem dos assuntos, a paridade do painel com a confer�
 - Bom, porque a ordem, o texto e a regra de quando deixar de avaliar vivem num lugar só.
 - Ruim, porque muda a primeira causa de alguns estados.
 
+## Emenda 1 (2026-11-23) — prova presencial
+
+Decisão do líder técnico (23/11/2026), com a uniplus-api#2767. O processo declara se tem prova presencial e, se tem, em que municípios a aplica (UNI-REQ-0407). O município é a cidade em que o candidato pode fazer a prova; o local exato, com endereço e sala, sai no ensalamento (UNI-REQ-0042, uniplus-api#2779) e não é conferido aqui. A declaração passa a ser conferida pela conferência única, com todas as causas.
+
+1. **Ordem dos assuntos.** O item 3 passa a terminar assim: "… as condições que a canonicalização exige, os motivos de decisão escolhidos e a prova presencial." No assunto da prova presencial, a ordem é:
+   1. o processo que ainda não declarou (`ProvaPresencial.PorDeclarar`);
+   2. o processo com prova presencial sem município (`ProvaPresencial.SemMunicipio`);
+   3. o processo sem prova presencial que declara município (`ProvaPresencial.MunicipiosSemProvaPresencial`);
+   4. as recusas de cada município, pela posição declarada (a primeira posição é 0): a forma do código do IBGE, a coerência com a UF, o município repetido (`ProvaPresencial.MunicipioRepetido`) e o município que o Geo não conhece ou recusa, por exemplo o de outra UF (`ProvaPresencial.MunicipioNaoConferidoNoGeo`), com um erro por município, no campo `/provaPresencial/municipios/{i}/codigoIbge`;
+   5. por último, a lista acima do limite, que é configuração da API, com o padrão de 100 municípios (`ProvaPresencial.MunicipiosAcimaDoLimite`).
+
+   O processo por declarar não passa pelos demais itens do assunto.
+
+   A gravação da declaração só grava e não lê o Geo. Ela segue a mesma ordem, sem os itens 1 e 2 e sem o Geo: o município declarado sem prova presencial; as recusas de cada município pela posição (forma do código do IBGE, coerência com a UF e município repetido); o limite por último. O processo por declarar (`ProvaPresencial.PorDeclarar`), a falta de município (`ProvaPresencial.SemMunicipio`), o município que o Geo não conhece ou recusa (`ProvaPresencial.MunicipioNaoConferidoNoGeo`) e o Geo indisponível são da conferência, na publicação, na retificação e no painel. O rascunho incompleto é salvo, e a resposta lista o que falta (UNI-REQ-0416).
+
+2. **O Geo entra no valor único dos cadastros.** O item 2 passa a incluir os municípios de prova conferidos no Geo: a aplicação lê o Geo uma vez, no mesmo instante dos demais cadastros, e entrega à conferência, para cada município declarado, se o Geo o conhece e o nome que devolveu. O nome congelado na versão é esse; o nome informado pelo documento não o substitui.
+
+3. **Geo indisponível não é causa da configuração.** Quando o Geo não responde, a publicação e a retificação respondem indisponibilidade (503), e nada é gravado (UNI-REQ-0407). Essa resposta fica fora da ordem dos assuntos, como a conferência do estado no item 3. No painel, com o Geo indisponível, o item da prova presencial fica pendente, e não aprovado.
+
+4. **Painel de conformidade.** O painel ganha o item `prova_presencial`, derivado da mesma conferência que a configuração chama.
+
+Consequência: as primeiras causas não mudam para quem já declarava tudo, porque o assunto novo vem depois dos existentes. A ordem nova tem teste que a registra, e a paridade do painel com a conferência cobre o item novo.
+
 ## Mais informações
 
 - Emendada pela [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md): saem a restauração, o rascunho de retificação aberto e o fechamento da sessão, e a retificação passa a ser conferida só por esta conferência.

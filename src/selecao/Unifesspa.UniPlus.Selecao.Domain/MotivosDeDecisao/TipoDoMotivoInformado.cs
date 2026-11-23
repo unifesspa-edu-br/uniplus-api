@@ -22,16 +22,16 @@ public static class TipoDoMotivoInformado
         MotivoDeDecisaoErrorCodes.TipoInvalido,
         $"O tipo informado não pertence ao vocabulário de decisões. Tipos aceitos: {RotulosAceitosEmTexto}.");
 
-    public static Result<TipoMotivoDeDecisao> Converter(string? tipoCodigo)
+    public static Result<TipoMotivoDeDecisao> Converter(string? tipoDeDecisaoCodigo)
     {
-        if (string.IsNullOrWhiteSpace(tipoCodigo))
+        if (string.IsNullOrWhiteSpace(tipoDeDecisaoCodigo))
         {
             return Falha(
                 MotivoDeDecisaoErrorCodes.TipoObrigatorio,
                 $"Informe o tipo do motivo. Tipos aceitos: {RotulosAceitosEmTexto}.");
         }
 
-        return CatalogoDe<TipoMotivoDeDecisao>.TentarObter(tipoCodigo, out TipoMotivoDeDecisao tipo)
+        return CatalogoDe<TipoMotivoDeDecisao>.TentarObter(tipoDeDecisaoCodigo, out TipoMotivoDeDecisao tipo)
             ? Result<TipoMotivoDeDecisao>.Success(tipo)
             : Result<TipoMotivoDeDecisao>.ValidationFailure([new FieldError(Campo, TipoForaDoVocabulario())]);
     }
