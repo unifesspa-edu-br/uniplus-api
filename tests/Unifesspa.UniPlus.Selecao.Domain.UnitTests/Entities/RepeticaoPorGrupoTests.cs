@@ -25,7 +25,7 @@ public sealed class RepeticaoPorGrupoTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false, bool coletaIsencao = false) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao),
             new DecisoesDeCronogramaDaFase(

@@ -127,7 +127,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
             new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
     }
 
-    private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelProdutoFase? Papel)[] produtos) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelProdutoFase? Papel)[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

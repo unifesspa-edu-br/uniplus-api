@@ -21,7 +21,7 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
         TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-        return EtapaProcesso.Criar(
+        return EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(nome, CaraterEtapa.Ambas, tipo, ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null,

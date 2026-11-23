@@ -31,7 +31,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 
 public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 {
-    private static FaseCronograma FaseDeHomologacao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeHomologacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
@@ -67,7 +67,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente");
     }
 
-    private static FaseCronograma FaseDeHomologacaoNaOrdem2() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeHomologacaoNaOrdem2() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

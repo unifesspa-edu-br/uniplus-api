@@ -170,7 +170,7 @@ AtualizacaoDosFundamentos,
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
-    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),

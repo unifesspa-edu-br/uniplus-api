@@ -212,7 +212,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         (DateTimeOffset? Inicio, DateTimeOffset? Fim, bool EmiteParecer)? janela = null,
         Action<EtapaProcesso>? completar = null)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             Alterar(identificacao, new IdentificacaoDaEtapa("Prova de redação", CaraterEtapa.Ambas, Tipo(OrigemDoTipo), 1, "AVALIACAO")),
             Alterar(avaliacao, new DeclaracaoDaAvaliacaoDaEtapa(1m, null, 10m, null, FormaDeAvaliacao.Humana, null, null)),
             itens ?? [new(null, "Clareza", 5m)]).Value!;

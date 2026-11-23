@@ -96,7 +96,7 @@ internal sealed record ModeloDeEtapa(string Nome)
     /// <summary>A etapa criada pela fábrica e preenchida pelos mesmos comandos da raiz; o conceito não faz parte da entidade.</summary>
     internal EtapaProcesso Criar()
     {
-        Result<EtapaProcesso> criada = EtapaProcesso.Criar(Identificacao(), Avaliacao(), Itens);
+        Result<EtapaProcesso> criada = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, Identificacao(), Avaliacao(), Itens);
         EtapaProcesso etapa = criada.IsSuccess
             ? criada.Value!
             : throw new InvalidOperationException($"O modelo de etapa declara o que a etapa recusa: {string.Join(", ", criada.Errors.Select(static e => e.Error.Code))}.");

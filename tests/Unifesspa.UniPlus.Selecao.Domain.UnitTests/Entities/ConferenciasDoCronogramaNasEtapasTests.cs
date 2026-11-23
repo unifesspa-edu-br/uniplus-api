@@ -166,7 +166,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
                 [codigo] = new(ehResultado, congela),
             });
 
-    private static FaseCronograma FaseComProdutos(params ProdutoDaFase[] produtos) => FaseCronograma.Criar(
+    private static FaseCronograma FaseComProdutos(params ProdutoDaFase[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: true, ColetaSolicitacaoIsencao: false),

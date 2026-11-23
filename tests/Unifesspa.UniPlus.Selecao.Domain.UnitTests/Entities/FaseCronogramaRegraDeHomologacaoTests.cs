@@ -20,7 +20,7 @@ public sealed class FaseCronogramaRegraDeHomologacaoTests
     private static readonly RegraDeHomologacaoDasInscricoes Regra =
         RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);
 
-    private static FaseCronograma FaseCom(RegraDeHomologacaoDasInscricoes? regra, params string?[] tipos) => FaseCronograma.Criar(
+    private static FaseCronograma FaseCom(RegraDeHomologacaoDasInscricoes? regra, params string?[] tipos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

@@ -67,7 +67,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     internal static byte[] BytesDoFragmento(JsonNode fragmento) =>
         PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["x"] = fragmento.DeepClone() });
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -145,7 +145,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar(
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();

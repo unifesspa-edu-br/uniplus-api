@@ -26,7 +26,7 @@ public sealed class AdocaoDoDocumentoLidoTests
     {
         ModeloDeFase invertida = new ModeloDeFase("INSCRICAO", 1).Janela(9, 1);
 
-        FaseCronograma.Criar(invertida.Origem(), invertida.Decisoes(), invertida.Publicacoes(), invertida.Bancas).IsFailure.Should().BeTrue();
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, invertida.Origem(), invertida.Decisoes(), invertida.Publicacoes(), invertida.Bancas).IsFailure.Should().BeTrue();
         FaseCronograma adotada = invertida.Adotada();
 
         adotada.Declaracao().Recusas.Select(static recusa => recusa.Error.Code).Should().Contain("FaseCronograma.JanelaInvertida");
@@ -58,7 +58,7 @@ public sealed class AdocaoDoDocumentoLidoTests
     {
         ModeloDeEtapa semNome = new(string.Empty);
 
-        EtapaProcesso.Criar(semNome.Identificacao(), semNome.Avaliacao(), semNome.Itens).IsFailure.Should().BeTrue();
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, semNome.Identificacao(), semNome.Avaliacao(), semNome.Itens).IsFailure.Should().BeTrue();
         EtapaProcesso adotada = semNome.Adotada();
 
         adotada.Declaracao().Recusas.Select(static recusa => recusa.Error.Code).Should().Contain("EtapaProcesso.NomeObrigatorio");

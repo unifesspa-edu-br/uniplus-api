@@ -71,7 +71,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     }
 
     // A fase criada recusa a declaração dos candidatos atendidos na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
-    private static FaseCronograma FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(BancaRequerida banca) => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(BancaRequerida banca) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
         new DecisoesDeCronogramaDaFase(

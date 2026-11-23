@@ -173,7 +173,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     // duas do mesmo tipo, distinguidas pelos candidatos atendidos. Nenhuma declara a regra de deliberação.
     private static FaseCronograma FaseComBancasSemRegra()
     {
-        Result<FaseCronograma> fase = FaseCronograma.Criar(
+        Result<FaseCronograma> fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), CodigoDaFaseComBancas, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -190,7 +190,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
 
     private static EtapaProcesso EtapaComBancasSemRegra()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 NomeDaEtapaComBancas, CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_DISCURSIVA", "Prova Discursiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

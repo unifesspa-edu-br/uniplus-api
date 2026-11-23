@@ -108,7 +108,7 @@ internal sealed record ViolacaoDeRegra(
             static p => [p.AlgoritmoContagemPrazo]),
     };
 
-    private static EtapaProcesso EtapaSoEliminatoria() => EtapaProcesso.Criar(
+    private static EtapaProcesso EtapaSoEliminatoria() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 

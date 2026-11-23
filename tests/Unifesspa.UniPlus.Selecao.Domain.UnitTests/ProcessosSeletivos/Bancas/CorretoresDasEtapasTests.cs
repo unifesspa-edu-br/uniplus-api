@@ -21,7 +21,7 @@ public sealed class CorretoresDasEtapasTests
     private static readonly ReferenciaRegra CorrecaoIndependente =
         ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64));
 
-    private static EtapaProcesso Etapa(string nome, int ordem, ReferenciaRegra? consolidacao) => EtapaProcesso.Criar(
+    private static EtapaProcesso Etapa(string nome, int ordem, ReferenciaRegra? consolidacao) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
             Nome: nome, Carater: CaraterEtapa.Classificatoria,
             TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

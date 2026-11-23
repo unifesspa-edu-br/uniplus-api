@@ -161,7 +161,7 @@ public sealed class PoliticaDeOrdenacaoTests
             EtapaReidratada(IdFixo(2), "Prova Objetiva", null, tipoEtapa));
     }
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -212,7 +212,7 @@ public sealed class PoliticaDeOrdenacaoTests
     }
 
     private static EtapaProcesso EtapaReidratada(Guid id, string nome, int? ordem, TipoEtapaSnapshot? tipoEtapa = null) =>
-        EtapaProcesso.Reidratar(
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             id,
             new IdentificacaoDaEtapa(
                 Nome: nome,

@@ -54,7 +54,7 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
         return processo;
     }
 
-    private static FaseCronograma Fase() => FaseCronograma.Criar(
+    private static FaseCronograma Fase() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, false, false, false, false),
         new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null), []).Value!;

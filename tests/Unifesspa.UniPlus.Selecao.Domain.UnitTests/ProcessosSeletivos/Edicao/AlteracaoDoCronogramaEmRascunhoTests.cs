@@ -40,7 +40,7 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
     }
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false,
                 PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
@@ -50,7 +50,7 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null), []).Value!;
 
     private static FaseCronograma ComUnidade(FaseCronograma atual, UnidadeResponsavelSnapshot unidade) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas,
                 atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),

@@ -91,7 +91,7 @@ public sealed class EnvelopeCanonicoOrdemDasEtapasPelosTiposTests
 
     private static EtapaProcesso Etapa(params string[] tipos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, Ordem: null, FaseCodigo: "INSCRICAO",
                 TipoEtapa: TipoEtapaSnapshot.Criar(

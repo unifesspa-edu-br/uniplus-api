@@ -93,7 +93,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar(
+            [EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
         FaseCronograma fase = new ModeloDeFase("AVALIACAO", 1) { AgrupaEtapas = true }.Criar();

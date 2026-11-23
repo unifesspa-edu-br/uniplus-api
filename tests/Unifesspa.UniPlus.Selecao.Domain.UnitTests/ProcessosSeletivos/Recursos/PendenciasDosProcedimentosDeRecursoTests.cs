@@ -25,7 +25,7 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
 {
     private static readonly ReferenciaRegra RegraDoPrazo = ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64));
 
-    private static EtapaProcesso EtapaObjetiva() => EtapaProcesso.Criar(
+    private static EtapaProcesso EtapaObjetiva() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
             Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria,
             TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

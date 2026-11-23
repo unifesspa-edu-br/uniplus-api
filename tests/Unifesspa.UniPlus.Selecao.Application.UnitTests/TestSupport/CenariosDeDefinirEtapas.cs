@@ -106,7 +106,7 @@ internal static class CenariosDeDefinirEtapas
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>A etapa classificatória de prova objetiva na ordem 1, de peso 1 e sem faixa de nota.</summary>
-    internal static EtapaProcesso EtapaDeProvaObjetiva(string nome) => EtapaProcesso.Criar(
+    internal static EtapaProcesso EtapaDeProvaObjetiva(string nome) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
@@ -140,7 +140,7 @@ internal static class CenariosDeDefinirEtapas
 
     /// <summary>Etapa do processo com o tipo congelado dado, sem faixa de nota máxima nem fase.</summary>
     internal static EtapaProcesso EtapaDoProcesso(
-        string nome, CaraterEtapa carater, int ordem, TipoEtapaSnapshot tipo, decimal? peso, decimal? notaMinima = null) => EtapaProcesso.Criar(
+        string nome, CaraterEtapa carater, int ordem, TipoEtapaSnapshot tipo, decimal? peso, decimal? notaMinima = null) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: tipo, Ordem: ordem, FaseCodigo: null),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 

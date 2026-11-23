@@ -148,7 +148,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo), idDaBancaQueSubstitui: idDaBancaQueSubstitui);
 
     private static EtapaProcesso NovaEtapaDeTitulos() =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova de títulos", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 

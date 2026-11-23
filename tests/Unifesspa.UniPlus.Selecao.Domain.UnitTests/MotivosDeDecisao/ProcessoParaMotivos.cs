@@ -45,7 +45,7 @@ internal static class ProcessoParaMotivos
     /// <summary>A fase de homologação das inscrições passa a ter a regra de homologação e a não declarar o tipo de decisão dela.</summary>
     internal static void HomologandoSemDeclararOTipo(ProcessoSeletivo processo)
     {
-        FaseCronograma homologacao = FaseCronograma.Criar(
+        FaseCronograma homologacao = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, Inicio: InicioDaHomologacao, Fim: InicioDaHomologacao.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -115,7 +115,7 @@ internal static class ProcessoParaMotivos
         ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva(nome, CaraterEtapa.Classificatoria, peso: 1m, ordem: ordem, faseCodigo: "HOMOLOGACAO_INSCRICOES");
 
     private static FaseCronograma Fase(int ordem, string codigo, DateTimeOffset inicio, bool coletaIsencao, TipoMotivoDeDecisao tipoDeDecisao) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: coletaIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: inicio.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),

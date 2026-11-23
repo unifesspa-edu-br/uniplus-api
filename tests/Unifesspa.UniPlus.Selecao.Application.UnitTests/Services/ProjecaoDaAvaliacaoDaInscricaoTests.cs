@@ -159,7 +159,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             null).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
-        FaseCronograma.Reidratar(
+        FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: false),

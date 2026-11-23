@@ -232,7 +232,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             Etapa("Análise documental", CaraterEtapa.Eliminatoria, null));
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
@@ -241,7 +241,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             bancasRequeridas: []).Value!;
 
     private static FaseCronograma ComUnidade(FaseCronograma atual, UnidadeResponsavelSnapshot unidade) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, unidade),
@@ -249,7 +249,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             [.. atual.BancasRequeridas]).Value!;
 
     private static EtapaProcesso Etapa(string nome, CaraterEtapa carater, decimal? peso) =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 }

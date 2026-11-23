@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTests
 {
     private static FaseCronograma FaseComComplementacao(
-        int ordem, string codigo, bool permiteComplementacao, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
+        int ordem, string codigo, bool permiteComplementacao, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: permiteComplementacao, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: false),

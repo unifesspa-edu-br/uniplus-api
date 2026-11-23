@@ -30,7 +30,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static EtapaProcesso EtapaDeProvaObjetiva(
         string nome, CaraterEtapa carater, int? ordem, decimal? peso, decimal? notaMinima, string? faseCodigo) =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
@@ -115,7 +115,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     private static FaseCronograma FaseQueHomologa(
         PublicacoesDaFase publicacoes, IReadOnlyList<BancaRequerida> bancas, bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false,
-        Guid? faseCanonicaOrigemId = null, bool semUnidadeResponsavel = false) => FaseCronograma.Criar(
+        Guid? faseCanonicaOrigemId = null, bool semUnidadeResponsavel = false) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),

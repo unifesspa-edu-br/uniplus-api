@@ -214,7 +214,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     // Humana, com a banca que a conformidade por item exige: só a quantidade de corretores, lida do cadastro, impede congelar.
     private static EtapaProcesso EtapaQueExigeCorrecaoIndependente()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 Nome: "Redação", Carater: CaraterEtapa.Classificatoria,
                 TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!,
@@ -227,7 +227,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         return etapa;
     }
 
-    private static FaseCronograma FaseComJanelaInvertida() => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseComJanelaInvertida() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "FASE_DA_JANELA", OrigemDataFase.NoEdital, false, false, false, false),
         new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), UnidadesDeTeste.Ceps),
@@ -236,7 +236,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
 
     private static FaseCronograma[] Cronograma() => [FaseDeInscricao(), FasePreliminarComRecurso(), FaseDoResultadoFinal()];
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
@@ -244,7 +244,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static FaseCronograma FasePreliminarComRecurso() => FaseCronograma.Criar(
+    private static FaseCronograma FasePreliminarComRecurso() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), CodigoDaFaseDoRecurso, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -261,7 +261,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
                 ProdutoPreliminar).Value!),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
-    private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

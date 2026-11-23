@@ -48,7 +48,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
     private static EtapaProcesso EtapaCompleta()
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(EtapaId, Identificacao("AVALIACAO"), AvaliacaoHumana(), Itens());
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, EtapaId, Identificacao("AVALIACAO"), AvaliacaoHumana(), Itens());
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
@@ -69,7 +69,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
             RegraConsolidacao: null,
             EscalaDeAtendimento: null);
 
-        return EtapaProcesso.Reidratar(EtapaId, Identificacao(faseCodigo: null), semAvaliacao, itens: null);
+        return EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, EtapaId, Identificacao(faseCodigo: null), semAvaliacao, itens: null);
     }
 
     private static ReferenciaRegra RegraDoPrazo() => ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra);

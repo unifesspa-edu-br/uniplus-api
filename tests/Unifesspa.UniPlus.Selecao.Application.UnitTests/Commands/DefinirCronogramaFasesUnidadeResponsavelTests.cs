@@ -100,7 +100,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS unidade gravada");
         FaseCronograma conforme = processo.CronogramaFases.Single();
-        FaseCronograma comCga = FaseCronograma.Criar(
+        FaseCronograma comCga = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData, conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao,
                 conforme.ColetaSolicitacaoIsencao),

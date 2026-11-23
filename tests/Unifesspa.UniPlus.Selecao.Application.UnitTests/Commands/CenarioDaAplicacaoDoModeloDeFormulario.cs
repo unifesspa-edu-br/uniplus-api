@@ -152,7 +152,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     {
         FaseCronograma[] fases =
         [
-            .. codigos.Select((codigo, i) => FaseCronograma.Criar(
+            .. codigos.Select((codigo, i) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
                 new OrigemCanonicaDaFase(
                     Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: codigo == "INSCRICAO",
                     ColetaSolicitacaoIsencao: false),

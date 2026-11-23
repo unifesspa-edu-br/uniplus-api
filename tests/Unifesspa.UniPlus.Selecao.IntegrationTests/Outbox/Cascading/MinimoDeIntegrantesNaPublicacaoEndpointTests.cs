@@ -114,7 +114,7 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
 
     private static void ComBancaDeRecursosNaEtapa(ProcessoSeletivo processo, ReferenciaRegra consolidacao, int integrantes)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 Nome: "Redação",
                 Carater: CaraterEtapa.Classificatoria,

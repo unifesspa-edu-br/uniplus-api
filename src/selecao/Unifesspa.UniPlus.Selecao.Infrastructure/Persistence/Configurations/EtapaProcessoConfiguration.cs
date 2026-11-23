@@ -35,6 +35,12 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo
         // ao reconfigurar o agregado tracked). Convenção do repo.
         builder.Property(e => e.Id).ValueGeneratedNever().HasComment("Identificador da etapa.");
+        builder.Property(e => e.Chave)
+            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
+            .HasComment("Chave local estável da etapa no processo seletivo.");
+        builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Chave })
+            .IsUnique().HasDatabaseName("ux_etapas_processo_processo_chave");
         builder.Property(e => e.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a etapa pertence.");
         builder.Property(e => e.Ordem).IsRequired().HasComment("Posição da etapa no processo, a partir de um.");
 
@@ -151,8 +157,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         });
         builder.Navigation(e => e.EscalaDeAtendimento).HasField("_escalaDeAtendimento").UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Cada posição da etapa é única no processo.
-        builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Ordem }).IsUnique();
+        // A unicidade da ordem é adiada pelo script de restrições para permitir trocas.
+        builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Ordem });
     }
     private static string CodigosNumericos<TEnum>() where TEnum : struct, Enum =>
         string.Join(", ", Enum.GetValues<TEnum>().Select(static valor => $"{Convert.ToInt32(valor, System.Globalization.CultureInfo.InvariantCulture)} ({valor})"));

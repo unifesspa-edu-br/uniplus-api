@@ -14,7 +14,7 @@ internal static class FaseDeTeste
         bool coletaSolicitacaoIsencao = false,
         bool comDatas = true,
         bool noMesmoMomentoDaAnterior = false) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, comDatas ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, AgrupaEtapas: false,
                 PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),

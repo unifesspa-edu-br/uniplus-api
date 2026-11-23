@@ -5,11 +5,18 @@ using System.Text;
 
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-internal static class FormacaoDeChaveLocal
+public static class FormacaoDeChaveLocal
 {
-    internal static ChaveLocal Formar(string prefixo, string texto, ChavesEmUso chavesEmUso)
+    public static ChaveLocal Formar(string prefixo, string texto, ChavesEmUso chavesEmUso)
     {
-        string baseDaChave = BaseDaChave(prefixo, Normalizar(texto));
+        ArgumentNullException.ThrowIfNull(prefixo);
+        ArgumentNullException.ThrowIfNull(texto);
+        ArgumentNullException.ThrowIfNull(chavesEmUso);
+        return FormarDisponivel(BaseDaChave(prefixo, Normalizar(texto)), chavesEmUso);
+    }
+
+    private static ChaveLocal FormarDisponivel(string baseDaChave, ChavesEmUso chavesEmUso)
+    {
         int numero = 1;
         while (true)
         {

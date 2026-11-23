@@ -19,6 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
 {
     private static FaseCronograma FaseComFim(int ordem, string codigo, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
+        ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: false),

@@ -20,7 +20,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 /// </summary>
 public sealed class ProcessoSeletivoDocumentosExigidosTests
 {
-    private static FaseCronograma FaseQueResponde(bool inscricao, bool isencao) => FaseCronograma.Criar(
+    private static FaseCronograma FaseQueResponde(bool inscricao, bool isencao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: inscricao, ColetaSolicitacaoIsencao: isencao),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

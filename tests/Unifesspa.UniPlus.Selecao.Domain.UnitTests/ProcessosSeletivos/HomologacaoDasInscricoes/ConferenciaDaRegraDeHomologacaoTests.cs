@@ -165,7 +165,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
 
     private static Result<FaseCronograma> FaseComRegra(
         RegraDeHomologacaoDasInscricoes regra, ProdutoDaFase[] produtos, params string?[] tiposDeDecisao) =>
-        FaseCronograma.Criar(Origem(), Decisoes(), new PublicacoesDaFase(produtos, false, null, tiposDeDecisao, regra), []);
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, Origem(), Decisoes(), new PublicacoesDaFase(produtos, false, null, tiposDeDecisao, regra), []);
 
     private static FaseDeclarada Declarar(RegraDeHomologacaoDasInscricoes regra, ProdutoDaFase[] produtos, IReadOnlySet<string> colecoesRecusadas) =>
         FaseDeclarada.Declarar(Guid.CreateVersion7(), Origem(), Decisoes(), Publicando(regra, produtos), [], colecoesRecusadas);

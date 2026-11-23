@@ -211,7 +211,7 @@ public sealed class CronogramaFasesRecusasEndpointTests
     }
 
     // Não coleta inscrição nem isenção e não publica ato: sem resultado definitivo, a data final é o que fecha a fase.
-    private static FaseCronograma FaseDeDataNaExecucaoSoComFim() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeDataNaExecucaoSoComFim() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), CodigoFaseDeDataNaExecucao, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

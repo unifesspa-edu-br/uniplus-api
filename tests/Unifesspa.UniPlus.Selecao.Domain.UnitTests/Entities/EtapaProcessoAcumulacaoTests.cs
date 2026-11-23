@@ -26,7 +26,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     [Fact(DisplayName = "Criar com ordem não positiva falha com OrdemInvalida")]
     public void Criar_OrdemInvalida_Falha()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 0, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -37,7 +37,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     [Fact(DisplayName = "ADR-0125: todas as violações simultâneas acumulam no mesmo lote")]
     public void Criar_ViolacoesSimultaneas_AcumulaTodasNoMesmoLote()
     {
-        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: string.Empty, Carater: CaraterEtapa.Nenhum, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 0, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 0m, NotaMinima: -1m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
@@ -112,7 +112,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     [Fact(DisplayName = "AtualizarDados com dados válidos tem sucesso e substitui os campos")]
     public void AtualizarDados_DadosValidos_Sucesso()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
@@ -131,7 +131,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     [Fact(DisplayName = "AtualizarDados com nome vazio falha e não muda o estado anterior")]
     public void AtualizarDados_NomeVazio_FalhaSemMutarEstado()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 

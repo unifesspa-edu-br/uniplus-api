@@ -125,7 +125,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
         IdentificadoresDeTeste.Novo());
 
-    private static FaseCronograma NovaFase(Guid origemId, IReadOnlyList<string?> tipos) => FaseCronograma.Criar(
+    private static FaseCronograma NovaFase(Guid origemId, IReadOnlyList<string?> tipos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(origemId, "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tipos),
@@ -133,7 +133,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
 
     private static EtapaProcesso NovaEtapa(IReadOnlyList<string?> tipos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Etapa de teste", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirTiposDeDecisao(tipos).IsSuccess.Should().BeTrue();

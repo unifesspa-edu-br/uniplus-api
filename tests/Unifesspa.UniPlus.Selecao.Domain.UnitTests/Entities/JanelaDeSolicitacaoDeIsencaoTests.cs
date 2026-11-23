@@ -185,7 +185,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     }
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
                 ColetaSolicitacaoIsencao: false),
@@ -195,7 +195,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
     private static FaseCronograma FaseDeIsencao(
         DateTimeOffset? inicio, DateTimeOffset? fim, RegraRecursoFase? recurso = null) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "SOLICITACAO_ISENCAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: true),

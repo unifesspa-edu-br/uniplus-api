@@ -73,7 +73,7 @@ internal static class ProcessoBaseDeEnvelope
 
     /// <summary>A fase única do processo mínimo: sem bancas e sem recurso, com um produto definitivo.</summary>
     public static FaseCronograma FaseUnica(string codigo, string produtoCodigo, bool permiteComplementacao) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: permiteComplementacao, ColetaInscricao: true,
                 ColetaSolicitacaoIsencao: false),
@@ -84,7 +84,7 @@ internal static class ProcessoBaseDeEnvelope
 
     private static void DefinirEtapaDeProvaObjetiva(ProcessoSeletivo processo, string faseCodigo) =>
         processo.DefinirEtapas([
-            EtapaProcesso.Criar(
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();

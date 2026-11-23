@@ -164,7 +164,7 @@ internal static class EnvelopeDeReferencia
         FaseCronograma fase = FaseDeInscricao(comBancasExigidasNaPublicacao);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar(
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();
@@ -229,7 +229,7 @@ internal static class EnvelopeDeReferencia
             .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
             .Construir();
 
-    private static FaseCronograma FaseDeInscricao(bool comBancasExigidasNaPublicacao) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao(bool comBancasExigidasNaPublicacao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),

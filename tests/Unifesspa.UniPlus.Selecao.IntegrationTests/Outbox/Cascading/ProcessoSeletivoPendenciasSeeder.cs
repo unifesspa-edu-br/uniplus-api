@@ -51,7 +51,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(db, nome);
 
-        FaseCronograma faseSemUnidade = FaseCronograma.Criar(
+        FaseCronograma faseSemUnidade = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
                 ColetaSolicitacaoIsencao: false),

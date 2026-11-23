@@ -23,7 +23,7 @@ internal static class ProcessoSeletivoConformeBuilder
 {
     public static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
-    private static FaseCronograma FaseDeResultadoFinal(IReadOnlyList<BancaRequerida> bancasRequeridas) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeResultadoFinal(IReadOnlyList<BancaRequerida> bancasRequeridas) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -79,7 +79,7 @@ internal static class ProcessoSeletivoConformeBuilder
     private static void DefinirEtapaDaProvaObjetiva(ProcessoSeletivo processo)
     {
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar(
+            [EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
     }

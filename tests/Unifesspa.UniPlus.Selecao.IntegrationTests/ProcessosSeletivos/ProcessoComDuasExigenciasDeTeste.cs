@@ -101,7 +101,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
 
     private static FaseCronograma DefinirCronograma(ProcessoSeletivo processo)
     {
-        FaseCronograma fase = FaseCronograma.Criar(
+        FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -124,7 +124,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
     }
 
     private static EtapaProcesso ProvaObjetiva() =>
-        EtapaProcesso.Criar(
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 

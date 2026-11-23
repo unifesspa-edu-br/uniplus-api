@@ -136,7 +136,7 @@ internal static class ProcessoComCorrecaoIndependente
         return processo;
     }
 
-    private static EtapaProcesso Entrevista(string nome, int ordem, ReferenciaRegra consolidacao) => EtapaProcesso.Criar(
+    private static EtapaProcesso Entrevista(string nome, int ordem, ReferenciaRegra consolidacao) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
             Nome: nome, Carater: CaraterEtapa.Classificatoria,
             TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("ENTREVISTA"), "ENTREVISTA", "Entrevista", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

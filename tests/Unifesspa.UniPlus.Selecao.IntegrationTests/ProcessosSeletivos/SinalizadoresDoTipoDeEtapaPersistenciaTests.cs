@@ -96,7 +96,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
         new(Peso: peso, NotaMinima: notaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
 
     private static EtapaProcesso NovaEtapa(string nome, CaraterEtapa carater, TipoEtapaSnapshot tipo, int ordem, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
-        EtapaProcesso.Criar(new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: tipo, Ordem: ordem, FaseCodigo: null), declaracao).Value!;
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: tipo, Ordem: ordem, FaseCodigo: null), declaracao).Value!;
 
     private static EtapaProcesso EtapaDeProvaObjetiva(int ordem) =>
         NovaEtapa("Prova", CaraterEtapa.Classificatoria, TipoDeEtapa("PROVA_OBJETIVA", "Prova Objetiva", pontua: true, elimina: true), ordem, Declaracao(peso: 1m, notaMinima: null));

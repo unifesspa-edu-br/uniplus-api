@@ -45,7 +45,7 @@ internal static class CorpusEnvelopeCronograma
     /// Fase 1: coleta inscrição e publica um ato SEM papel — o comunicado de abertura não é
     /// resultado, e publicá-lo não torna a fase produtora.
     /// </summary>
-    internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
+    internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
@@ -67,7 +67,7 @@ internal static class CorpusEnvelopeCronograma
     /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do corpus quando ausente.</param>
     /// <param name="comBancasExigidasNaPublicacao">Opt-in: acrescenta as bancas que a publicação exige e que a golden fixture não tem (homologação das inscrições e 2ª instância).</param>
     internal static FaseCronograma FaseResultadoPreliminarComRecurso(
-        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(
+        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
@@ -188,7 +188,7 @@ internal static class CorpusEnvelopeCronograma
     /// <summary>
     /// Fase 3: não publica ato; tem a data final declarada.
     /// </summary>
-    internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(
+    internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
@@ -212,7 +212,7 @@ internal static class CorpusEnvelopeCronograma
     ];
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
-    internal static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
+    internal static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

@@ -14,7 +14,7 @@ public sealed class EtapaConferidaTests
 {
     private static readonly Guid TipoOrigemId = Guid.CreateVersion7();
 
-    private static EtapaProcesso EtapaExistente(bool exigeCorrecaoIndependente) => EtapaProcesso.Criar(
+    private static EtapaProcesso EtapaExistente(bool exigeCorrecaoIndependente) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
             Nome: "Prova", Carater: CaraterEtapa.Classificatoria,
             TipoEtapa: TipoEtapaSnapshot.Criar(TipoOrigemId, "PROVA", "Prova", true, true, false, exigeCorrecaoIndependente).Value!,

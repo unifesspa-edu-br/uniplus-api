@@ -29,11 +29,11 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
     private static DecisoesDeCronogramaDaFase Cronograma() => new(1, null, null, UnidadesDeTeste.Ceps);
 
     private static Result<FaseCronograma> Criar(IReadOnlyList<string?>? tipos, OrigemDataFase origemData = OrigemDataFase.NaExecucao) =>
-        FaseCronograma.Criar(Origem(origemData), Cronograma(), new PublicacoesDaFase([], false, null, tipos), []);
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, Origem(origemData), Cronograma(), new PublicacoesDaFase([], false, null, tipos), []);
 
     private static FaseCronograma FaseCom(params string?[] tipos) => Criar(tipos).Value!;
 
-    private static FaseCronograma Congelada() => FaseCronograma.Reidratar(
+    private static FaseCronograma Congelada() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(), Origem(), Cronograma(), new PublicacoesDaFase([], false, null), []);
 
     private static (string? Campo, string Codigo)[] Recusas(Result<FaseCronograma> resultado) =>

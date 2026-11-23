@@ -30,7 +30,7 @@ internal static class ApoioEtapaVinculadaAFase
     /// </summary>
     internal static FaseCronograma Fase(
         int ordem, string codigo, DateTimeOffset? inicio = null, DateTimeOffset? fim = null) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
                 ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
@@ -38,7 +38,7 @@ internal static class ApoioEtapaVinculadaAFase
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
-    internal static EtapaProcesso Etapa(string nome, string? faseCodigo, int ordem = 1) => EtapaProcesso.Criar(
+    internal static EtapaProcesso Etapa(string nome, string? faseCodigo, int ordem = 1) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: ordem, FaseCodigo: faseCodigo),
         new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
@@ -70,7 +70,7 @@ internal static class ApoioEtapaVinculadaAFase
         return etapa;
     }
 
-    internal static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(
+    internal static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

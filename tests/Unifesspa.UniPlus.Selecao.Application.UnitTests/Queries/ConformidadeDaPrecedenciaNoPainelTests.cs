@@ -26,7 +26,7 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
     private static ProcessoSeletivo ProcessoComDuasFasesNoMesmoMomento()
     {
         ProcessoSeletivo processo = ComTodosOsItensObrigatorios();
-        FaseCronograma habilitacao = FaseCronograma.Criar(
+        FaseCronograma habilitacao = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps) { NoMesmoMomentoDaAnterior = true },
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

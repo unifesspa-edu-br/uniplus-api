@@ -25,7 +25,7 @@ public sealed class PreliminaresDaMateriaTests
     private static ProdutoDaFase Definitivo(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
 
     private static FaseCronograma Fase(string codigo, params ProdutoDaFase[] produtos) =>
-        FaseCronograma.Criar(
+        FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: Inicio, Fim: Inicio.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
@@ -33,7 +33,7 @@ public sealed class PreliminaresDaMateriaTests
 
     private static EtapaProcesso Etapa(params ProdutoDaEtapa[] produtos)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDaEtapa(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();

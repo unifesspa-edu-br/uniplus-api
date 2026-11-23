@@ -36,7 +36,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
         Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null,
         FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
 
-    private static EtapaProcesso Etapa() => EtapaProcesso.Criar(Identificacao(), Avaliacao()).Value!;
+    private static EtapaProcesso Etapa() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, Identificacao(), Avaliacao()).Value!;
 
     private static EtapaProcesso EtapaCom(params string?[] tipos)
     {
@@ -46,7 +46,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
     }
 
     private static EtapaProcesso Congelada() =>
-        EtapaProcesso.Reidratar(Guid.CreateVersion7(), Identificacao(), Avaliacao(), itens: null);
+        EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, Guid.CreateVersion7(), Identificacao(), Avaliacao(), itens: null);
 
     private static (string? Campo, string Codigo)[] Recusas(Result resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
@@ -128,7 +128,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
     [Fact(DisplayName = "Fase e etapa podem declarar o mesmo tipo, cada uma com o que é seu")]
     public void MesmoTipoNaFaseENaEtapa_EAceito()
     {
-        FaseCronograma fase = FaseCronograma.Criar(
+        FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
                 AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

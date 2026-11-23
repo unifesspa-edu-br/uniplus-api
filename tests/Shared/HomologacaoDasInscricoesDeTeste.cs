@@ -55,7 +55,7 @@ internal static class HomologacaoDasInscricoesDeTeste
     }
 
     /// <summary>A fase que homologa as inscrições de quem importa os candidatos, com o ciclo de recurso completo, na ordem dada.</summary>
-    internal static FaseCronograma FaseQueHomologaComRecurso(int ordem, string codigo = "HOMOLOGACAO_DAS_INSCRICOES", string resultado = "RESULTADO_DA_HOMOLOGACAO") => FaseCronograma.Criar(
+    internal static FaseCronograma FaseQueHomologaComRecurso(int ordem, string codigo = "HOMOLOGACAO_DAS_INSCRICOES", string resultado = "RESULTADO_DA_HOMOLOGACAO") => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

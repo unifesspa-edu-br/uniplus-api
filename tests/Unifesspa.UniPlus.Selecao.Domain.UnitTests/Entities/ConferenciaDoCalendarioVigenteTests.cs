@@ -65,7 +65,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
 
     // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
     // NA_EXECUCAO (issue #1350) — as demais fases deste cronograma seguem sem data.
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
@@ -73,7 +73,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static FaseCronograma FasePreliminarComRecurso(UnidadePrazo unidade) => FaseCronograma.Criar(
+    private static FaseCronograma FasePreliminarComRecurso(UnidadePrazo unidade) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -86,7 +86,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
             EmiteParecerIndividual: false, RegraRecurso: Recurso(unidade)),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
-    private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),

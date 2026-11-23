@@ -30,7 +30,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
 
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static FaseCronograma Inscricao() => FaseCronograma.Criar(
+    private static FaseCronograma Inscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(

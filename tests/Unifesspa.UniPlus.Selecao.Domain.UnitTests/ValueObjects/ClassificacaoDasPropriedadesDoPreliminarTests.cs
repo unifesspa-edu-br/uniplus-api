@@ -18,6 +18,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
 
     internal static readonly Dictionary<string, Classificacao> DaFase = new()
     {
+        [nameof(FaseCronograma.Chave)] = NaoEntra("Identidade local estável da fase."),
         [nameof(FaseCronograma.Id)] = NaoEntra(IdentidadeEAuditoria),
         [nameof(FaseCronograma.CreatedAt)] = NaoEntra(IdentidadeEAuditoria),
         [nameof(FaseCronograma.UpdatedAt)] = NaoEntra(IdentidadeEAuditoria),
@@ -50,6 +51,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
 
     internal static readonly Dictionary<string, Classificacao> DaEtapa = new()
     {
+        [nameof(EtapaProcesso.Chave)] = NaoEntra("Identidade local estável da etapa."),
         [nameof(EtapaProcesso.Id)] = NaoEntra(IdentidadeEAuditoria),
         [nameof(EtapaProcesso.CreatedAt)] = NaoEntra(IdentidadeEAuditoria),
         [nameof(EtapaProcesso.UpdatedAt)] = NaoEntra(IdentidadeEAuditoria),

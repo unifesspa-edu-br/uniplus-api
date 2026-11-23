@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>Os processos de inscrição que os testes publicam: o conjunto básico, os campos próprios e a modalidade que deriva de resposta.</summary>
 internal static class ProcessosDeInscricaoDeTeste
 {
-    private static FaseCronograma FaseDeIsencaoDaTaxa() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeIsencaoDaTaxa() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "ISENCAO_DA_TAXA", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: true),
@@ -27,7 +27,7 @@ internal static class ProcessosDeInscricaoDeTeste
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]),
         bancasRequeridas: []).Value!;
 
-    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -166,7 +166,7 @@ internal static class ProcessosDeInscricaoDeTeste
 
         processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar(
+            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();

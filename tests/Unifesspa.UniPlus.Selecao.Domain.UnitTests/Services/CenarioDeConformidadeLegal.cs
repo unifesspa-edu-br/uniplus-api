@@ -57,7 +57,7 @@ internal static class CenarioDeConformidadeLegal
 
     internal static void DefinirEtapa(ProcessoSeletivo processo, string nome, TipoEtapaSnapshot tipo) =>
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar(
+            [EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
                 new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
 
@@ -110,7 +110,7 @@ internal static class CenarioDeConformidadeLegal
     /// <summary>Define a fase de envio de documentos e uma oferta com a modalidade; devolve o id da fase.</summary>
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
     {
-        FaseCronograma fase = FaseCronograma.Criar(
+        FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "ENVIO_DOCUMENTOS", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: false),

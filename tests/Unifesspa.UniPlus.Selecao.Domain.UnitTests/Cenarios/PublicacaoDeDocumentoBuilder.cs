@@ -19,7 +19,7 @@ internal sealed class PublicacaoDeDocumentoBuilder
     internal PublicacaoDeDocumentoBuilder SemDatas()
     {
         FaseCronograma fase = _processo.CronogramaFases.Single();
-        FaseCronograma semDatas = FaseCronograma.Reidratar(fase.Id,
+        FaseCronograma semDatas = FaseCronograma.Reidratar(fase.Chave, fase.Id,
             new(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new(fase.Ordem, null, null, fase.UnidadeResponsavel),
             new([.. fase.Produtos], fase.EmiteParecerIndividual, fase.RegraRecurso, null, fase.RegraDeHomologacao), [.. fase.BancasRequeridas]);

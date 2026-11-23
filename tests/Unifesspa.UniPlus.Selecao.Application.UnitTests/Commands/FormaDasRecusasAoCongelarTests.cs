@@ -149,7 +149,7 @@ public sealed class FormaDasRecusasAoCongelarTests
     // O conjunto de etapas recusa o preliminar sem definitivo ao ser gravado; o estado violado chega pelo produto declarado depois.
     private static EtapaProcesso EtapaQuePublicaPreliminarSemDefinitivo(ProcessoSeletivo processo)
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
+        EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,

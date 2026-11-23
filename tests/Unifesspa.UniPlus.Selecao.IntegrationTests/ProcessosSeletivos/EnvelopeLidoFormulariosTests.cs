@@ -104,7 +104,7 @@ public sealed class EnvelopeLidoFormulariosTests
         envelope.Retificacao.Motivo.Should().Be("Correção do quadro de vagas do curso de Direito");
     }
 
-    private static FaseCronograma FaseDeHabilitacao(ProcessoSeletivo processo) => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeHabilitacao(ProcessoSeletivo processo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(processo.CronogramaFases.Max(f => f.Ordem) + 1,

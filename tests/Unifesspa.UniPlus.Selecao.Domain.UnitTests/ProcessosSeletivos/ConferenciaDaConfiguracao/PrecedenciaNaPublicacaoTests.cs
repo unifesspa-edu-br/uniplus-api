@@ -25,7 +25,7 @@ public sealed class PrecedenciaNaPublicacaoTests
     private static ProcessoSeletivo ProcessoComSegundaFase(bool marcada, int diaDeInicio = 40)
     {
         ProcessoSeletivo processo = ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme();
-        FaseCronograma habilitacao = FaseCronograma.Criar(
+        FaseCronograma habilitacao = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddDays(diaDeInicio), new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddDays(diaDeInicio + 10), UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = marcada },

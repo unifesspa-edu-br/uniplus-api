@@ -133,7 +133,7 @@ public sealed class FaseCronogramaTests
             "a mensagem descreve a janela na mesma representação em que ela é guardada");
     }
 
-    private static FaseCronograma FaseReidratadaComJanelaEmBelem(DateTimeOffset instanteUtc) => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseReidratadaComJanelaEmBelem(DateTimeOffset instanteUtc) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,

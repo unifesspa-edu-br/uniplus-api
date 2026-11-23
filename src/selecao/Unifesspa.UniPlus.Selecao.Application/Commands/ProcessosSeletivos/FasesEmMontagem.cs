@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Chaves;
 using Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Domain.ValueObjects;
 
@@ -36,6 +37,7 @@ internal sealed class FasesEmMontagem
     private readonly MontagemDosProdutosDaFase _produtos;
     private readonly MontagemDaRegraDeRecursoDaFase _regraDeRecurso;
     private readonly MontagemDaRegraDeHomologacao _regraDeHomologacao;
+    private readonly ChavesEmUso _chaves = new();
     private readonly List<FieldError> _recusas = [];
     private readonly List<FaseCronograma> _fases = [];
 
@@ -53,6 +55,8 @@ internal sealed class FasesEmMontagem
     public async Task<Result<List<FaseCronograma>>> MontarAsync(
         IReadOnlyList<FaseCronogramaInput> fases, CancellationToken cancellationToken)
     {
+        ReservarChaves(fases);
+
         for (int indice = 0; indice < fases.Count; indice++)
         {
             Result interrupcao = await MontarFaseAsync(fases[indice], indice, cancellationToken).ConfigureAwait(false);
@@ -65,6 +69,14 @@ internal sealed class FasesEmMontagem
         return _recusas.Count > 0
             ? Result<List<FaseCronograma>>.ValidationFailure(_recusas)
             : Result<List<FaseCronograma>>.Success(_fases);
+    }
+
+    private void ReservarChaves(IReadOnlyList<FaseCronogramaInput> fases)
+    {
+        foreach (FaseCronograma fase in _fasesGravadas.Where(fase => fases.Any(declarada => declarada.FaseCanonicaId == fase.FaseCanonicaOrigemId)))
+        {
+            _chaves.Adicionar(fase.Chave);
+        }
     }
 
     // As âncoras que o cronograma já tinha antes desta gravação: o cliente devolve o que leu, e uma âncora
@@ -204,12 +216,26 @@ internal sealed class FasesEmMontagem
         RegraRecursoFase? regraRecurso,
         RegraDeHomologacaoDasInscricoes? regraDeHomologacao)
     {
+        ChaveLocal chave = ChaveDaFase(insumos.Canonica);
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            OrigemCanonicaDaFaseDoCadastro.De(insumos.Canonica),
+            chave, OrigemCanonicaDaFaseDoCadastro.De(insumos.Canonica),
             new(input.Ordem, input.Inicio, input.Fim, insumos.Unidade) { NoMesmoMomentoDaAnterior = input.NoMesmoMomentoDaAnterior },
             new(produtos, input.EmiteParecerIndividual, regraRecurso, input.TiposDeDecisao, regraDeHomologacao),
             insumos.Bancas);
         Acumular(fase, indice);
+    }
+
+    private ChaveLocal ChaveDaFase(FaseCanonicaView tipo)
+    {
+        FaseCronograma? existente = _fasesGravadas.FirstOrDefault(fase => fase.FaseCanonicaOrigemId == tipo.Id);
+        if (existente is not null)
+        {
+            return existente.Chave;
+        }
+
+        ChaveLocal chave = FormacaoDeChaveLocal.Formar("fase", tipo.Codigo, _chaves);
+        _chaves.Adicionar(chave);
+        return chave;
     }
 
     private void Acumular(Result<FaseCronograma> fase, int indice)
