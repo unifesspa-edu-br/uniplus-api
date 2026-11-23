@@ -26,6 +26,7 @@ internal static class ProjecaoDaFaseDoCronograma
 
     internal static FaseCronogramaDto ProjetarFase(FaseCronograma fase) => new(
         fase.Id,
+        fase.Chave.Valor,
         fase.Codigo,
         ProjetarFaseCanonica(fase),
         ProjetarCronogramaDaFase(fase),

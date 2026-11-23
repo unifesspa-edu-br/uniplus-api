@@ -56,7 +56,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
     [EndpointSummary("Substitui as etapas e as bancas do processo")]
-    [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação.")]
+    [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação. Para preservar a chave da etapa, devolva o id de cada etapa que permanece. A chave da etapa nova vem na releitura pelo GET.")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

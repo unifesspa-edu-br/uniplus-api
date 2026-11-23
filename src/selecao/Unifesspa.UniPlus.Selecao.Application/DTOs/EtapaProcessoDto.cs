@@ -20,7 +20,11 @@ public sealed record EtapaProcessoDto(
     AvaliacaoDaEtapaDto Avaliacao,
     JanelaDaEtapaDto Janela,
     PublicacoesDaEtapaDto Publicacoes,
-    IReadOnlyList<BancaDaEtapaDto> Bancas);
+    IReadOnlyList<BancaDaEtapaDto> Bancas)
+{
+    /// <summary>Chave local permanente da etapa no processo.</summary>
+    public required string Chave { get; init; }
+}
 
 /// <summary>Quem a etapa é no processo.</summary>
 /// <param name="Nome">O nome editorial da etapa.</param>

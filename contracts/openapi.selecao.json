@@ -6669,7 +6669,7 @@
           "ProcessoSeletivo"
         ],
         "summary": "Substitui as etapas e as bancas do processo",
-        "description": "Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo n\u00E3o traz deixa de existir no processo. A regra de delibera\u00E7\u00E3o de uma banca \u00E9 opcional neste pedido, e a banca que a omite apaga a regra que j\u00E1 estava gravada. A obrigatoriedade da regra de delibera\u00E7\u00E3o \u00E9 conferida na publica\u00E7\u00E3o.",
+        "description": "Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo n\u00E3o traz deixa de existir no processo. A regra de delibera\u00E7\u00E3o de uma banca \u00E9 opcional neste pedido, e a banca que a omite apaga a regra que j\u00E1 estava gravada. A obrigatoriedade da regra de delibera\u00E7\u00E3o \u00E9 conferida na publica\u00E7\u00E3o. Para preservar a chave da etapa, devolva o id de cada etapa que permanece. A chave da etapa nova vem na releitura pelo GET.",
         "parameters": [
           {
             "name": "id",
@@ -9134,6 +9134,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "description": "Para preservar a chave da fase, devolva o tipo de cada fase que permanece. A chave da fase nova vem na releitura pelo GET.",
         "parameters": [
           {
             "name": "id",
@@ -20726,7 +20727,8 @@
           "avaliacao",
           "janela",
           "publicacoes",
-          "bancas"
+          "bancas",
+          "chave"
         ],
         "type": "object",
         "properties": {
@@ -20754,6 +20756,9 @@
             "items": {
               "$ref": "#/components/schemas/BancaDaEtapaDto"
             }
+          },
+          "chave": {
+            "type": "string"
           }
         }
       },
@@ -21137,6 +21142,7 @@
       "FaseCronogramaDto": {
         "required": [
           "id",
+          "chave",
           "codigo",
           "faseCanonica",
           "cronograma",
@@ -21148,6 +21154,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "chave": {
+            "type": "string"
           },
           "codigo": {
             "type": "string"
