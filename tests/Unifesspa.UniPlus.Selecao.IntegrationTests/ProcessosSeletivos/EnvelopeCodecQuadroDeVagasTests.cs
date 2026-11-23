@@ -25,7 +25,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
 
-        JsonObject envelope = Envelope(CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)));
+        JsonObject envelope = Envelope(CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)));
 
         JsonObject distribuicao = envelope["distribuicao"]!.AsArray()[0]!.AsObject();
         distribuicao["percentualDaReservaLegal"].Should().BeNull();
@@ -43,7 +43,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         ConfiguracaoDistribuicaoVagas publicada = processo.DistribuicaoVagas.Single();
         publicada.Quadro.TotalDeVagasDoEdital.Should().Be(VagasOfertadasBaseDoQuadroFixado);
         publicada.Quadro.QuantidadeDe("AC").Should().Be(21, "o motor retirou da ampla as 4 vagas que passavam do total");
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
@@ -73,7 +73,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         ArgumentNullException.ThrowIfNull(caminho);
 
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
         Mutar(adulterado, caminho, valorNovo);
@@ -89,7 +89,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     public void Reidratar_QuantidadeDeclaradaNegativa_Recusa()
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
         Mutar(adulterado, "modalidades.1.quantidadeDeclarada", "-3");

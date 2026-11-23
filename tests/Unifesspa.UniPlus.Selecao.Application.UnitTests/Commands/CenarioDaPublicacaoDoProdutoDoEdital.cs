@@ -35,7 +35,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
         Atos.ListarDocumentosJaUsadosAsync(ProcessoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new HashSet<Guid>());
         Documentos.ListarDoProcessoAsync(ProcessoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(call => ((IReadOnlyCollection<Guid>)call[1]).Where(id => id == Principal.Id).Select(_ => Principal).ToList());
-        Codecs.Capacidades.Returns([new CapacidadeCodec(Versao, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        Codecs.LeAVersao(Versao).Returns(true);
         Usuario.UserId.Returns(ContaId);
         Tipo(Materia, resultado: true);
     }

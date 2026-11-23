@@ -72,7 +72,7 @@ public sealed class MontadorDoComprovanteTests
     private static IRegistroCodecsEnvelope RegistroComVersoes(VersaoConfiguracao primeira, VersaoConfiguracao retificada)
     {
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        registro.Capacidades.Returns([new CapacidadeCodec(primeira.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registro.LeAVersao(primeira.SchemaVersion).Returns(true);
         registro.Reidratar(primeira).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Apelido")])));
         registro.Reidratar(retificada).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Como prefere ser chamada")])));
         return registro;

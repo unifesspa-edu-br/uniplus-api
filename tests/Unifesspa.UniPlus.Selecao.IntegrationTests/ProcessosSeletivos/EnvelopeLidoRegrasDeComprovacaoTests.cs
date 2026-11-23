@@ -22,7 +22,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
     {
         ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia(comBancasExigidasNaPublicacao: true);
         EntradaCanonicalizacao entrada = EntradaDeReferencia(processo);
-        SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
         VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-123");
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, v1, congelado);

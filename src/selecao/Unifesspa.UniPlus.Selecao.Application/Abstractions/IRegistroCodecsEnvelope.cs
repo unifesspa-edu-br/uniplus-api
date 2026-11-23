@@ -67,92 +67,13 @@ public sealed class EnvelopeReidratado
 }
 
 /// <summary>
-/// O que o sistema sabe fazer com uma versão do envelope —
-/// <b>capacidades</b>, não um estado exclusivo.
+/// Lê e reconstrói a versão corrente do envelope, conferindo sua integridade.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Reidratável ⟺ tem encoder E decoder.</b> Encoder sem decoder não reidrata;
-/// decoder sem encoder não <b>prova</b> a fidelidade da reidratação.
-/// </para>
-/// <para>
-/// A versão que <b>emite</b> hoje é uma só, e é outra coisa: quando a <c>1.2</c>
-/// chegar, a <c>1.1</c> perde a emissão corrente mas <b>mantém</b> encoder e decoder —
-/// senão a leitura de um certame retificado antes daquele bump deixaria de ser
-/// verificável.
-/// </para>
-/// </remarks>
-/// <param name="MotivoDaRecusa">
-/// Obrigatório em toda versão que <b>não</b> reidrata: o sistema sabe que ela existe e
-/// diz <b>por que</b> a recusa. Uma versão conhecida que falhasse sem motivo seria
-/// indistinguível de uma desconhecida.
-/// </param>
-public sealed record CapacidadeCodec(
-    string SchemaVersion,
-    bool TemEncoder,
-    bool TemDecoder,
-    string? MotivoDaRecusa)
-{
-    public bool Reidratavel => TemEncoder && TemDecoder;
-}
-
-/// <summary>
-/// Registro de <b>codecs</b> do envelope de congelamento, por versão.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Um <i>decoder</i> por versão não basta. Provar o round-trip de uma <c>1.1</c> exige
-/// <b>recanonicalizá-la com o encoder <c>1.1</c></b> — e o
-/// <see cref="ISnapshotPublicacaoCanonicalizer"/> só emite a versão <b>corrente</b>.
-/// No dia da <c>1.2</c>, verificar a fidelidade da reidratação de uma <c>1.1</c>
-/// ficaria impossível. O encoder de uma versão <b>não é aposentado</b> quando ela
-/// deixa de ser a corrente.
-/// </para>
-/// </remarks>
 public interface IRegistroCodecsEnvelope
 {
-    /// <summary>
-    /// Reconstrói o envelope de uma versão congelada — <b>verificando antes que os
-    /// bytes provam o que dizem provar</b>: hash, algoritmo e coerência com a própria
-    /// linha da <see cref="VersaoConfiguracao"/>. Recebe a versão inteira, e não os
-    /// bytes, porque a <c>schema_version</c> <b>não está dentro deles</b>.
-    /// </summary>
+    /// <summary>Reconstrói a configuração após conferir a evidência congelada.</summary>
     Result<EnvelopeReidratado> Reidratar(VersaoConfiguracao versao);
 
-    /// <summary>
-    /// Recanonicaliza com o encoder <b>daquela</b> versão — não com o corrente. É o que
-    /// torna a prova de fidelidade não-circular.
-    /// </summary>
-    Result<SnapshotCanonico> Recodificar(string schemaVersion, EntradaCanonicalizacao entrada);
-
-    /// <summary>Toda versão que o sistema conhece, com as suas capacidades declaradas.</summary>
-    IReadOnlyList<CapacidadeCodec> Capacidades { get; }
-
-    /// <summary>A versão que o sistema <b>emite</b> hoje — uma só (ADR-0109 D1).</summary>
-    string SchemaVersionDeEmissaoCorrente { get; }
-}
-
-/// <summary>
-/// Perguntas de capacidade que toda leitura de envelope congelado faz antes de tocar nos bytes.
-/// </summary>
-public static class RegistroCodecsEnvelopeExtensions
-{
-    /// <summary>
-    /// A <paramref name="schemaVersion"/> está entre as capacidades que o registro hoje sabe
-    /// <b>LER</b>?
-    /// </summary>
-    /// <remarks>
-    /// Comparação ordinal — <c>SchemaVersion</c> é token, não texto localizável, e <c>"0.0.7"</c>
-    /// não é apelido de <c>"0.0.07"</c> nem de variante de caixa. Vive aqui, e não repetida em cada
-    /// leitura pública, porque uma cópia que envelhecesse sozinha faria dois endpoints discordarem
-    /// sobre o que o sistema sabe ler.
-    /// </remarks>
-    public static bool SabeLer(this IRegistroCodecsEnvelope registroCodecs, string schemaVersion)
-    {
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-
-        return registroCodecs.Capacidades.Any(capacidade =>
-            string.Equals(capacidade.SchemaVersion, schemaVersion, StringComparison.Ordinal)
-            && capacidade.TemDecoder);
-    }
+    /// <summary>Informa se a versão do envelope pode ser lida.</summary>
+    bool LeAVersao(string schemaVersion);
 }

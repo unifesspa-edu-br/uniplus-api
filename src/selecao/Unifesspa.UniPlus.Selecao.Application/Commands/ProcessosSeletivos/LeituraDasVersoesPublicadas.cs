@@ -58,20 +58,10 @@ public sealed class LeituraDasVersoesPublicadas(IProcessoSeletivoRepository proc
             ? Result<EnvelopeReidratado>.Failure(pendencia)
             : registroCodecs.Reidratar(versao);
 
-    // A recusa é nomeada: distingue a versão que o sistema não conhece da que ele conhece e não sabe reconstruir.
-    private DomainError? PendenciaDeReidratacao(VersaoConfiguracao versao) => CapacidadeDa(versao) switch
-    {
-        null => new DomainError(
-            "EnvelopeCodec.VersaoDesconhecida",
-            $"A versão {versao.SchemaVersion} do envelope congelado não está no registro de codecs — não há como reconstruir esta configuração, e {Consequencia(versao)}."),
-        { Reidratavel: false } capacidade => new DomainError(
-            "EnvelopeCodec.VersaoNaoReidratavel",
-            $"A versão {versao.SchemaVersion} do envelope é conhecida, mas não pode ser reidratada ({capacidade.MotivoDaRecusa}) — {Consequencia(versao)}."),
-        _ => null,
-    };
-
-    private CapacidadeCodec? CapacidadeDa(VersaoConfiguracao versao) => registroCodecs.Capacidades
-        .FirstOrDefault(c => string.Equals(c.SchemaVersion, versao.SchemaVersion, StringComparison.Ordinal));
+    private DomainError? PendenciaDeReidratacao(VersaoConfiguracao versao) =>
+        registroCodecs.LeAVersao(versao.SchemaVersion) ? null : new DomainError(
+            ErrosCodecEnvelope.VersaoDesconhecida,
+            $"A versão {versao.SchemaVersion} do envelope congelado não é reconhecida — {Consequencia(versao)}.");
 
     private static string Consequencia(VersaoConfiguracao versao) =>
         $"sem ler a versão {versao.NumeroVersao}, não há como saber que fatos cada formulário coletou em todas as versões publicadas";

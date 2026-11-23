@@ -50,7 +50,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns(_ => _atosDoProcesso.ToList());
         _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(_ => _documentosDoProcesso.ToList());
-        _codecs.Capacidades.Returns([new CapacidadeCodec(Versao, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        _codecs.LeAVersao(Versao).Returns(true);
         _fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.Utc));
         TiposVigentes(Materia, OutraMateria);
     }

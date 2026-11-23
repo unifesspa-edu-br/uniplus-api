@@ -54,7 +54,7 @@ public static class SelecaoInfrastructureRegistration
         // Projeção pública do certame: a tabela cuja existência de linha é a publicidade.
         services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();
         services.AddScoped<ISnapshotPublicacaoCanonicalizer, SnapshotPublicacaoCanonicalizer>();
-        services.AddScoped<IRegistroCodecsEnvelope, RegistroCodecsEnvelope>();
+        services.AddScoped<IRegistroCodecsEnvelope, EnvelopeCodec>();
     }
 
     private static void AddRepositoriosDoModulo(this IServiceCollection services)

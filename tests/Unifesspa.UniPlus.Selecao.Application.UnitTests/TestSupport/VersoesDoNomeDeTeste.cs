@@ -50,9 +50,7 @@ internal static class VersoesDoNomeDeTeste
         params (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope)[] versoes)
     {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        IReadOnlyList<CapacidadeCodec> capacidades =
-            [.. versoes.Select(static v => v.Versao.SchemaVersion).Distinct().Select(static s => new CapacidadeCodec(s, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))];
-        codecs.Capacidades.Returns(capacidades);
+        codecs.LeAVersao(Arg.Is<string>(s => versoes.Any(v => v.Versao.SchemaVersion == s))).Returns(true);
         foreach ((VersaoConfiguracao versao, Result<EnvelopeReidratado> envelope) in versoes)
         {
             codecs.Reidratar(versao).Returns(envelope);

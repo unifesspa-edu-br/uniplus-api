@@ -175,7 +175,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     }
 
     private static SnapshotCanonico Codificar(ProcessoSeletivo processo) =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
     private static EtapaProcesso ProvaObjetivaDe(ProcessoSeletivo processo) =>
         processo.Etapas.Single(static etapa => etapa.Nome == "Prova Objetiva");

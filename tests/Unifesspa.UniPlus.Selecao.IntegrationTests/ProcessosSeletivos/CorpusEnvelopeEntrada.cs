@@ -72,12 +72,12 @@ internal static class CorpusEnvelopeEntrada
     /// </remarks>
     internal static VersaoConfiguracao VersaoDeAbertura(ProcessoSeletivo processo, byte[] bytes, Guid? ato = null) =>
         VersaoConfiguracao.Abrir(
-            processo.Id, new DocumentoCongelado(bytes, Codec.SchemaVersion, Codec.AlgoritmoHash, HashDocumento),
+            processo.Id, new DocumentoCongelado(bytes, SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, HashDocumento),
             atoCriadorId: ato ?? AtoAbertura, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero));
 
     internal static VersaoConfiguracao VersaoDeRetificacao(VersaoConfiguracao anterior, byte[] bytes) =>
         VersaoConfiguracao.Suceder(
-            anterior, new DocumentoCongelado(bytes, Codec.SchemaVersion, Codec.AlgoritmoHash, HashDocumento),
+            anterior, new DocumentoCongelado(bytes, SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, HashDocumento),
             atoCriadorId: AtoRetificador, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
@@ -86,7 +86,7 @@ internal static class CorpusEnvelopeEntrada
     /// </summary>
     internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)
     {
-        SnapshotCanonico snapshot = Codec.Codificar(entrada ?? Entrada(processo));
+        SnapshotCanonico snapshot = Canonicalizador.Canonicalizar(entrada ?? Entrada(processo));
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             new CenarioDeCongelamento { Dados = DadosRicos(), Documento = new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = Ator, Contagem = ContextoRico(), MotivosEscolhidos = MotivosDoProcessoDeTeste.Cobrindo(processo) });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);

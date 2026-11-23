@@ -25,7 +25,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 {
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comRegrasDeComprovacao = false)
     {
-        byte[] originais = CorpusEnvelope.Codec.Codificar(
+        byte[] originais = CorpusEnvelope.Canonicalizador.Canonicalizar(
             CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegrasDeComprovacao))).Bytes;
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de

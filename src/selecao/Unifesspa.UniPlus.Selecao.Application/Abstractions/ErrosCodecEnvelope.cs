@@ -9,9 +9,6 @@ public static class ErrosCodecEnvelope
     /// <summary>Versão fora do registro — o sistema nem sabe que ela existe.</summary>
     public const string VersaoDesconhecida = "EnvelopeCodec.VersaoDesconhecida";
 
-    /// <summary>Versão conhecida, mas sem codec completo — a <c>1.0</c>. Não reidrata parcialmente.</summary>
-    public const string VersaoNaoReidratavel = "EnvelopeCodec.VersaoNaoReidratavel";
-
     /// <summary>O algoritmo de hash persistido não é o que o codec daquela versão declara.</summary>
     public const string AlgoritmoNaoSuportado = "EnvelopeCodec.AlgoritmoNaoSuportado";
 

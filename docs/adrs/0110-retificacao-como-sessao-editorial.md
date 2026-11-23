@@ -11,7 +11,7 @@ informed:
 
 # ADR-0110: A retificação é uma sessão editorial sobre a configuração, não um estado do certame
 
-> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. O que esta ADR decidiu sobre o registro de codecs do envelope (D1, Emenda 2 e a emenda da ADR-0137) segue valendo para a leitura das versões publicadas. Leia o restante como registro histórico, não como contrato.
+> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. A leitura das versões publicadas segue o regime de codec único da Emenda 2 e da emenda da ADR-0137. Leia o restante como registro histórico, não como contrato.
 
 ## Contexto e enunciado do problema
 
@@ -94,9 +94,8 @@ E **uma** versão, separadamente, é a **corrente de emissão**. Quando a forma 
 hash do documento + `RetificacaoDoEdital`** — porque o CA de round-trip precisa de todos eles, não só
 do grafo.
 
-**Fitness tests:** (a) a versão **corrente de emissão** tem encoder **e** decoder; (b) toda versão
-do registro tem as suas capacidades declaradas — nenhuma cai no vazio. Versão registrada sem
-codec **quebra o build**.
+> **Atualização:** o teste do registro e das capacidades foi retirado junto com essa estrutura.
+> O codec único reconhece apenas a versão corrente e confere cada envelope na leitura.
 
 ### D2 — Identidade e auditoria na reidratação
 
@@ -274,6 +273,9 @@ preservação de encoder e decoder para cada versão antes de haver envelope pub
 preservar.
 
 ### E2.1 — Cai o registro de codecs por versão; permanece um único codec vivo
+
+A implementação não mantém catálogo de capacidades nem recodificação por versão. A leitura
+confere a versão corrente, o algoritmo, o hash, a forma canônica e a cobertura dos documentos.
 
 Enquanto não houver produção nem certame publicado, há **um único codec vivo**, reescrito no
 lugar a cada mudança de forma. Não se criam codecs por versão ao lado dele.

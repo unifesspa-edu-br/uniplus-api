@@ -40,7 +40,7 @@ public sealed class ConfiguracaoVigenteDoProcesso(
 
     private Result<ConfiguracaoVigente> Reidratar(VersaoConfiguracao versao)
     {
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
+        if (!registroCodecs.LeAVersao(versao.SchemaVersion))
         {
             return Result<ConfiguracaoVigente>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,

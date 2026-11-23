@@ -66,7 +66,7 @@ public sealed class CascatasDasVersoesPersistidasTests(ProcessoSeletivoDbFixture
 
     private static DocumentoCongelado Congelar(ProcessoSeletivo processo, RetificacaoDoEdital? retificacao = null)
     {
-        Unifesspa.UniPlus.Selecao.Application.Abstractions.SnapshotCanonico snapshot = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
+        Unifesspa.UniPlus.Selecao.Application.Abstractions.SnapshotCanonico snapshot = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
         return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, CorpusEnvelope.HashDocumento);
     }
 

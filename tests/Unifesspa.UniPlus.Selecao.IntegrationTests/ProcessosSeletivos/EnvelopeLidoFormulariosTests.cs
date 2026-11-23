@@ -28,7 +28,7 @@ public sealed class EnvelopeLidoFormulariosTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         DefinirHabilitacao(processo);
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["finalidade"]!.GetValue<string>())
@@ -41,7 +41,7 @@ public sealed class EnvelopeLidoFormulariosTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         DefinirItensComBolsa(processo);
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         JsonObject bolsa = Envelope(congelado)["fatosColetados"]!.AsArray()
@@ -59,7 +59,7 @@ public sealed class EnvelopeLidoFormulariosTests
         processo.DefinirTermos(
             [CorpusEnvelopeEntrada.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))]).IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, versao, congelado);
@@ -75,7 +75,7 @@ public sealed class EnvelopeLidoFormulariosTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         DefinirCamposDeTexto(processo);
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["fatosColetados"]!.AsArray()
@@ -91,8 +91,8 @@ public sealed class EnvelopeLidoFormulariosTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         RetificacaoDoEdital retificacao = new(CorpusEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
 
-        SnapshotCanonico abertura = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
+        SnapshotCanonico abertura = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
 
         VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, abertura.Bytes);
         VersaoConfiguracao v2 = CorpusEnvelopeEntrada.VersaoDeRetificacao(v1, congelado.Bytes);

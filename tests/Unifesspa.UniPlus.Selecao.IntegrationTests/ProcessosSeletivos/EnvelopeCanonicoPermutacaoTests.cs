@@ -69,8 +69,8 @@ public sealed class EnvelopeCanonicoPermutacaoTests
 
         ConferirQueAPermutacaoInverteACadaColecao(direto, permutado);
 
-        SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(direto));
-        SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(permutado));
+        SnapshotCanonico bytesDireto = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(direto));
+        SnapshotCanonico bytesPermutado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(permutado));
 
         ConferirBytesEHashIdenticos(bytesDireto, bytesPermutado);
     }
@@ -88,8 +88,8 @@ public sealed class EnvelopeCanonicoPermutacaoTests
 
         ConferirQueAPermutacaoInverteAListaDeCorRaca();
 
-        SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
-        SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
+        SnapshotCanonico bytesDireto = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
+        SnapshotCanonico bytesPermutado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
 
         bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
             "valoresSelecionaveis[] é ordenado pelo encoder por Ordem/Codigo (D2) — a ordem de entrada da lista " +
@@ -101,8 +101,8 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
 
-        byte[] primeira = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
-        byte[] segunda = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] primeira = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] segunda = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — recanonicalizar sem alteração é estável byte a byte");
     }

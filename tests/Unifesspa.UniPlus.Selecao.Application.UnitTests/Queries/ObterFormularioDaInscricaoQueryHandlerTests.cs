@@ -83,7 +83,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     private static IRegistroCodecsEnvelope RegistroReidratando(EnvelopeReidratado envelope)
     {
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        registro.Capacidades.Returns([new CapacidadeCodec(SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registro.LeAVersao(SchemaVersion).Returns(true);
         registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(envelope));
         return registro;
     }

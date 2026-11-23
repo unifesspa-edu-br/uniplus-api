@@ -28,7 +28,7 @@ public sealed class ResumoDoConteudoCongeladoRicoTests
     [Fact(DisplayName = "Corpus rico, com dois termos exigidos, tem o resumo do conteúdo congelado igual ao literal")]
     public void CorpusRico_ResumoDoConteudoCongelado_IgualAoLiteral()
     {
-        SnapshotCanonico snapshot = CorpusEnvelope.Codec.Codificar(
+        SnapshotCanonico snapshot = CorpusEnvelope.Canonicalizador.Canonicalizar(
             CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico()));
 
         HashCanonicalComputer.ComputeSha256Hex(snapshot.Bytes).Should().Be(ResumoDoCorpusRico);

@@ -108,9 +108,7 @@ internal static class ApoioDoFormularioRenderizavel
     internal static IRegistroCodecsEnvelope CriarRegistroReconhecendo(params string[] schemaVersionsReconhecidas)
     {
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        registro.Capacidades.Returns(schemaVersionsReconhecidas
-            .Select(static v => new CapacidadeCodec(v, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))
-            .ToList());
+        registro.LeAVersao(Arg.Is<string>(s => schemaVersionsReconhecidas.Contains(s))).Returns(true);
         registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(EnvelopeCom()));
         return registro;
     }

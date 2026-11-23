@@ -31,7 +31,7 @@ public sealed class CalendarioCongeladoRoundTripTests
     public void Bloco_CongelaListaPorValor()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         JsonObject bloco = Payload(congelado.Bytes)["calendarioDiasUteis"]!.AsObject();
 
@@ -57,7 +57,7 @@ public sealed class CalendarioCongeladoRoundTripTests
     public void Recanonicalizacao_UsaOCalendarioDoEnvelope()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
@@ -67,14 +67,14 @@ public sealed class CalendarioCongeladoRoundTripTests
         reidratado.Value!.DadosDeCatalogo.CalendarioDiasUteis.Should().NotBeNull(
             "o calendário volta do envelope, e é dele que a recanonicalização parte");
 
-        Recodificar(processo, versao, reidratado.Value).Should().Equal(congelado.Bytes);
+        Recodificar(processo, reidratado.Value).Should().Equal(congelado.Bytes);
     }
 
     [Fact(DisplayName = "Trocado o dataset vigente, a versão publicada continua reproduzindo os mesmos bytes")]
     public void DatasetTrocado_NaoAfetaVersaoPublicada()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
 
         // O cadastro publica um dataset novo: outra origem, outra versão, outro conteúdo.
         byte[] sobDatasetNovo = CodificarComOutroCalendario(processo);
@@ -91,7 +91,7 @@ public sealed class CalendarioCongeladoRoundTripTests
     public void DatasetRemovido_VersaoAindaSeReproduz()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
@@ -102,15 +102,14 @@ public sealed class CalendarioCongeladoRoundTripTests
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
-        Recodificar(processo, versao, reidratado.Value!).Should().Equal(congelado.Bytes,
+        Recodificar(processo, reidratado.Value!).Should().Equal(congelado.Bytes,
             "a lista congelada basta para reproduzir a versão — a origem é rastreio, não dependência");
     }
 
-    private static byte[] Recodificar(ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope) =>
-        CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
+    private static byte[] Recodificar(ProcessoSeletivo processo, EnvelopeReidratado envelope) =>
+        new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
-                envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo)).Value!.Bytes;
+                envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo)).Bytes;
 
     private static void ConferirCalendarioPublicado(ProcessoSeletivo processo, SnapshotCanonico congelado)
     {
@@ -126,7 +125,7 @@ public sealed class CalendarioCongeladoRoundTripTests
             Guid.Parse("01930000-0000-7000-8000-0000000000ff"), "2027",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2027, 1, 1), "NACIONAL", null, null, null).Value!]).Value!;
         EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
-        return CorpusEnvelope.Codec.Codificar(entrada with
+        return CorpusEnvelope.Canonicalizador.Canonicalizar(entrada with
         {
             DadosDeCatalogo = entrada.DadosDeCatalogo with { CalendarioDiasUteis = datasetNovo },
         }).Bytes;

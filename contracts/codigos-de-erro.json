@@ -5524,12 +5524,7 @@
     {
       "codigo": "uniplus.selecao.envelope_codec.versao_desconhecida",
       "status": 422,
-      "titulo": "A versão do envelope congelado não está no registro de codecs"
-    },
-    {
-      "codigo": "uniplus.selecao.envelope_codec.versao_nao_reidratavel",
-      "status": 422,
-      "titulo": "A versão do envelope é conhecida, mas não pode ser reidratada"
+      "titulo": "O sistema não reconhece a versão da configuração publicada"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.ancora_nao_eh_produto_preliminar_da_etapa",

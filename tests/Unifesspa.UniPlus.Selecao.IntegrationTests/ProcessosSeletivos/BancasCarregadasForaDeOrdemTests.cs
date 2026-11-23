@@ -28,7 +28,7 @@ public sealed class BancasCarregadasForaDeOrdemTests
     }
 
     private static byte[] Congelado(ProcessoSeletivo processo) =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
     [Fact(DisplayName = "A fase projeta as bancas requeridas na mesma ordem, qualquer que seja a ordem em que foram carregadas")]
     public void ProjetarFase_BancasRequeridasForaDeOrdem_ProjetaNaMesmaOrdem()

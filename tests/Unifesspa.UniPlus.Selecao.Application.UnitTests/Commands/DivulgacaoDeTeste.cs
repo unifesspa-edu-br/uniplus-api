@@ -129,7 +129,7 @@ internal static class DivulgacaoDeTeste
             configuracao, DadosEdital.Criar("001/2026", InicioDoPeriodo, fimDoPeriodo, Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
-        registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registroCodecs.LeAVersao("0.0.22").Returns(true);
         registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
     }
 }

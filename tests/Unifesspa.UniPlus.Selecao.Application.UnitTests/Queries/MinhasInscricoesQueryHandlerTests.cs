@@ -193,7 +193,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
     private static IRegistroCodecsEnvelope RegistroDas(params (VersaoConfiguracao Versao, EnvelopeReidratado Envelope)[] versoes)
     {
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        registro.Capacidades.Returns([new CapacidadeCodec(SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registro.LeAVersao(SchemaVersion).Returns(true);
         registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(chamada =>
             Result<EnvelopeReidratado>.Success(versoes.Single(v => v.Versao.Id == chamada.Arg<VersaoConfiguracao>().Id).Envelope));
         return registro;

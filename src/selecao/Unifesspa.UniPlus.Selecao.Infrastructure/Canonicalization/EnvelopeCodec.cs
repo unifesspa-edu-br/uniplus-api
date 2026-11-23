@@ -13,21 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O codec do envelope de congelamento — <b>um só</b>. Enquanto não há produção nem certame
-/// congelado, o sistema emite e lê uma forma canônica corrente (ver <see cref="SchemaVersion"/>)
-/// e a evolui livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao
-/// lado. O versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só
-/// quando deixam de ser correntes — volta a valer no primeiro certame publicado em <b>produção</b>,
-/// não em qualquer ambiente (ADR-0137, emenda às ADRs 0109 e 0110): processos de homologação são
-/// descartáveis e recriados quando a forma muda. Até a primeira publicação em produção, a versão
-/// sobe sem manter o codec anterior, e nenhum código legado é mantido.
+/// Lê o envelope corrente, confere sua forma canônica e reconstrói os blocos publicados.
 /// </summary>
-/// <remarks>
-/// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva, e, sendo o único
-/// codec, os dois nunca podem divergir. <c>Decodificar</c> lê os blocos pelas classes <c>Leitura*</c>, uma por
-/// assunto, e confere a coerência entre eles antes de reidratar.
-/// </remarks>
-public sealed class EnvelopeCodec : IEnvelopeCodec
+public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
 {
     private static readonly string[] BlocosReais =
     [
@@ -74,61 +62,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// </summary>
     private static readonly JsonDocumentOptions OpcoesDocumento = new() { AllowDuplicateProperties = false };
 
-    private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
-
-    public string SchemaVersion => SnapshotPublicacaoCanonicalizer.SchemaVersionAtual;
-
-    public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
-
-    public string AlgoritmoHash => Perfil.Algoritmo;
-
-    public bool TemEncoder => true;
-
-    public bool TemDecoder => true;
-
-    public string? MotivoDaRecusa => null;
-
-    /// <summary>
-    /// Delega à projeção viva. A guarda confere que o codec e o canonicalizador declaram a
-    /// mesma versão e o mesmo algoritmo — sendo um sistema só, eles têm de concordar; uma
-    /// divergência aqui é erro de programação (o codec e a emissão saíram de sincronia), não
-    /// um estado alcançável em runtime.
-    /// </summary>
-    public SnapshotCanonico Codificar(EntradaCanonicalizacao entrada)
-    {
-        SnapshotCanonico snapshot = _encoder.Canonicalizar(entrada);
-
-        if (snapshot.SchemaVersion != SchemaVersion || snapshot.AlgoritmoHash != AlgoritmoHash)
-        {
-            throw new InvalidOperationException(
-                $"O codec ({SchemaVersion}/{AlgoritmoHash}) e o canonicalizador ({snapshot.SchemaVersion}/{snapshot.AlgoritmoHash}) " +
-                "declaram versões distintas — o codec e a emissão saíram de sincronia.");
-        }
-
-        return snapshot;
-    }
-
-    /// <summary>
-    /// Parse com duas guardas que o hash sozinho não dá: <b>sem chave duplicada</b> e
-    /// <b>canônico</b>. Reserializar o que foi lido tem de reproduzir os bytes — um
-    /// payload com chaves fora de ordem, com espaços, ou com uma chave repetida (de que
-    /// o parser escolheria uma) não é um envelope canônico, é outra coisa com o mesmo
-    /// hash recomputado por quem o adulterou.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// O <paramref name="perfil"/> é do <b>chamador</b>, não fixo neste método: "estar na
-    /// forma canônica" é uma pergunta que só tem resposta relativa às regras de bytes de um
-    /// perfil, e fixar aqui o perfil corrente impediria testar o parse sob outro perfil (ver
-    /// <c>RegistroCodecsEnvelopePerfilTests</c>) ou reaproveitá-lo caso uma versão futura,
-    /// pós-produção, emita sob perfil distinto — depois de ter passado, corretamente, pelo
-    /// gate do registro.
-    /// </para>
-    /// <para>
-    /// A checagem de forma repete a do <see cref="RegistroCodecsEnvelope"/> de propósito:
-    /// <c>Decodificar</c> é público e chamável direto, sem passar pelo registro.
-    /// </para>
-    /// </remarks>
+    /// <summary>Recusa JSON inválido, chaves repetidas e bytes fora da forma canônica.</summary>
     internal static Result<JsonObject> Parsear(IPerfilCanonico perfil, byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(perfil);
@@ -145,10 +79,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
     private static Result<JsonObject> LerObjeto(byte[] bytes)
     {
-        JsonNode? node;
         try
         {
-            node = JsonNode.Parse(bytes, nodeOptions: null, OpcoesDocumento);
+            return ComoObjeto(JsonNode.Parse(bytes, nodeOptions: null, OpcoesDocumento));
         }
         catch (JsonException excecao)
         {
@@ -156,18 +89,18 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado,
                 $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}");
         }
+    }
 
-        return node is JsonObject payload
+    private static Result<JsonObject> ComoObjeto(JsonNode? node) =>
+        node is JsonObject payload
             ? Result<JsonObject>.Success(payload)
             : Falha(ErrosCodecEnvelope.EnvelopeMalformado, "Os bytes congelados não são um objeto JSON.");
-    }
 
     private static DomainError? ConferirFormaCanonica(IPerfilCanonico perfil, JsonObject payload, byte[] bytes)
     {
-        byte[] recanonicalizado;
         try
         {
-            recanonicalizado = perfil.Serializar(payload);
+            return ConferirIgualdade(perfil.Serializar(payload), bytes);
         }
         catch (PayloadForaDoPerfilCanonicoException excecao)
         {
@@ -175,28 +108,91 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado,
                 $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}");
         }
+    }
 
-        return recanonicalizado.AsSpan().SequenceEqual(bytes)
+    private static DomainError? ConferirIgualdade(byte[] recanonicalizado, byte[] bytes) =>
+        recanonicalizado.AsSpan().SequenceEqual(bytes)
             ? null
             : new DomainError(
                 ErrosCodecEnvelope.IntegridadeViolada,
                 "Os bytes congelados não estão na forma canônica (ADR-0100) — reserializá-los produz bytes distintos.");
-    }
 
     private static Result<JsonObject> Falha(string codigo, string mensagem) =>
         Result<JsonObject>.Failure(new DomainError(codigo, mensagem));
 
-    public Result<EnvelopeReidratado> Decodificar(VersaoConfiguracao versao)
+    public bool LeAVersao(string schemaVersion) =>
+        string.Equals(schemaVersion, SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, StringComparison.Ordinal);
+
+    public Result<EnvelopeReidratado> Reidratar(VersaoConfiguracao versao)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+        if (ConferirVersaoEvidencia(versao) is { } erro)
+        {
+            return Result<EnvelopeReidratado>.Failure(erro);
+        }
+
+        Result<EnvelopeReidratado> lido = Decodificar(versao);
+        return lido.IsFailure ? lido : ConferirCoberturaDosDocumentos(lido.Value!);
+    }
+
+    private DomainError? ConferirVersaoEvidencia(VersaoConfiguracao versao) =>
+        LeAVersao(versao.SchemaVersion)
+            ? ConferirEvidencia(versao)
+            : new DomainError(ErrosCodecEnvelope.VersaoDesconhecida,
+                $"A versão '{versao.SchemaVersion}' do envelope não é reconhecida.");
+
+    private static DomainError? ConferirEvidencia(VersaoConfiguracao versao)
+    {
+        PerfilCanonicoV1 perfil = PerfilCanonicoV1.Instancia;
+        if (!string.Equals(versao.AlgoritmoHash, perfil.Algoritmo, StringComparison.Ordinal))
+        {
+            return new DomainError(ErrosCodecEnvelope.AlgoritmoNaoSuportado,
+                $"A versão de configuração declara o algoritmo '{versao.AlgoritmoHash}', mas o esperado é '{perfil.Algoritmo}'.");
+        }
+
+        return string.Equals(perfil.HashHex(versao.ConfiguracaoCongeladaCanonica), versao.HashConfiguracao, StringComparison.Ordinal)
+            ? null
+            : new DomainError(ErrosCodecEnvelope.IntegridadeViolada, "Os bytes congelados não produzem o hash registrado na versão de configuração.");
+    }
+
+    // Cada exigência precisa estar associada a uma regra de documento na configuração publicada.
+    private static Result<EnvelopeReidratado> ConferirCoberturaDosDocumentos(EnvelopeReidratado envelope)
+    {
+        ConfiguracaoPublicada configuracao = envelope.Configuracao;
+        DocumentoExigido? orfa = ExigenciaSemRegraDeDocumento(configuracao);
+        if (orfa is not null)
+        {
+            return Result<EnvelopeReidratado>.Failure(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "Uma exigência documental não está associada a uma regra de documento na configuração publicada."));
+        }
+
+        return Result<EnvelopeReidratado>.Success(envelope);
+    }
+
+    private static DocumentoExigido? ExigenciaSemRegraDeDocumento(ConfiguracaoPublicada configuracao)
+    {
+        HashSet<Guid> cobertas = [.. configuracao.Exigencias.RegrasDeComprovacao
+            .Where(static n => n.Forma == FormaDeComprovacao.Documento)
+            .Select(static n => n.DocumentoExigidoId!.Value)];
+        return configuracao.Exigencias.DocumentosExigidos.FirstOrDefault(d => !cobertas.Contains(d.Id));
+    }
+
+    private static Result<EnvelopeReidratado> Decodificar(VersaoConfiguracao versao)
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        Result<JsonObject> parse = Parsear(Perfil, versao.ConfiguracaoCongeladaCanonica);
+        Result<JsonObject> parse = Parsear(PerfilCanonicoV1.Instancia, versao.ConfiguracaoCongeladaCanonica);
         if (parse.IsFailure)
         {
             return Result<EnvelopeReidratado>.Failure(parse.Error!);
         }
 
-        JsonObject payload = parse.Value!;
+        return LerBlocos(versao, parse.Value!);
+    }
+
+    private static Result<EnvelopeReidratado> LerBlocos(VersaoConfiguracao versao, JsonObject payload)
+    {
         LeitorEnvelope leitor = new();
 
         bool temRetificacao = payload.ContainsKey("retificacao");

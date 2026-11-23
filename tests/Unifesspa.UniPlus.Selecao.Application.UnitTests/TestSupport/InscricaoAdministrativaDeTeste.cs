@@ -204,8 +204,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     private static IRegistroCodecsEnvelope CodecsQueLem(VersaoConfiguracao versao, EnvelopeReidratado envelope)
     {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        IReadOnlyList<CapacidadeCodec> capacidades = [new CapacidadeCodec(versao.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)];
-        codecs.Capacidades.Returns(capacidades);
+        codecs.LeAVersao(versao.SchemaVersion).Returns(true);
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
 
         return codecs;

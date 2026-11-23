@@ -174,7 +174,7 @@ internal sealed class CenarioDeRetificacaoPublicada
             dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(
                 MetadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = MetadadoCongelado(_congelado) },
                 TiposDeAtoCongelados: _tiposCongelados));
-        _handlers.Codecs.Capacidades.Returns(reidratavel ? [new CapacidadeCodec(_versao.SchemaVersion, true, true, null)] : []);
+        _handlers.Codecs.LeAVersao(_versao.SchemaVersion).Returns(reidratavel);
         _handlers.Codecs.Reidratar(_versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
     }
 

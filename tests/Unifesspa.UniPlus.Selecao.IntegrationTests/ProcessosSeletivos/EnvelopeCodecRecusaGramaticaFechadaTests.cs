@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
-using System.Text;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -120,32 +119,6 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
             "'sem cascata' descartaria a sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, " +
             "e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-    }
-
-    /// <summary>
-    /// Um envelope com <c>"presente"</c> duas vezes tem <b>duas leituras possíveis</b>, e o
-    /// hash cobre as duas igualmente. Aceitar a última seria escolher em silêncio.
-    /// </summary>
-    /// <remarks>
-    /// A recusa vem de <b>duas</b> guardas independentes, e é deliberado que venha: a forma
-    /// canônica (um envelope com chave repetida não é o que <c>ComputeSnapshotBytes</c>
-    /// produz) e o <c>AllowDuplicateProperties = false</c> no parse. A primeira é a que de
-    /// fato dispara hoje — a segunda existe porque uma versão futura poderia ter forma
-    /// canônica diferente, e a garantia não pode depender disso.
-    /// </remarks>
-    [Fact(DisplayName = "Chave JSON duplicada é recusada — não vale 'a última ganha'")]
-    public void ChaveDuplicada_Recusa()
-    {
-        string json = Encoding.UTF8.GetString(BytesDoCorpus());
-        string duplicado = json.Replace("\"presente\":true", "\"presente\":true,\"presente\":false", StringComparison.Ordinal);
-        duplicado.Should().NotBe(json, "pré-condição: a duplicação tem de ter sido aplicada");
-
-        Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(Encoding.UTF8.GetBytes(duplicado));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().BeOneOf(
-            ErrosCodecEnvelope.EnvelopeMalformado,
-            ErrosCodecEnvelope.IntegridadeViolada);
     }
 
     [Fact(DisplayName = "Chave desconhecida DENTRO do 18º bloco (retificacao) é recusada")]

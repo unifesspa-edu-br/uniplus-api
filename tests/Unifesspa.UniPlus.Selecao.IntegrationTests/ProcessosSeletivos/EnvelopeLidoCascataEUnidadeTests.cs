@@ -12,7 +12,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     public void Reidratar_CascataCompleta_ConservaFallbackEDestinos()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
 
@@ -27,7 +27,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     public void Reidratar_CascataAusente_ConservaAAusencia()
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS sem cascata");
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["cascataRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
@@ -40,7 +40,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     public void Recodificar_UnidadeAdministradora_ConservaIdentidadeESigla()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["identidadesUnidade"]!["administradora"]!["origemId"]!.GetValue<Guid>()
             .Should().Be(processo.UnidadeAdministradoraOrigemId);
         ApoioDoEnvelopeCodec.Envelope(congelado)["identidadesUnidade"]!["administradora"]!["sigla"]!.GetValue<string>()

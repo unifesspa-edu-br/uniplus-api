@@ -44,7 +44,7 @@ internal sealed class CenarioDeFormularioPublicado
     // O registro de PRODUÇÃO (não um substituto de teste): a leitura pública real, com
     // Postgres real, tem de passar pelo mesmo gate de versão que o handler usa fora dos
     // testes — reconhecendo hoje somente o codec vivo (ADR-0110 Emenda 2).
-    public static RegistroCodecsEnvelope RegistroCodecs { get; } = new RegistroCodecsEnvelope();
+    public static EnvelopeCodec RegistroCodecs { get; } = new EnvelopeCodec();
 
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 

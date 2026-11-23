@@ -96,7 +96,7 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
     private static (ConfiguracaoDeclarada Declarada, ConfiguracaoPublicada Lida) Ler()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
-        SnapshotCanonico documento = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico documento = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
         ConfiguracaoPublicada lida = ApoioDoEnvelopeCodec.Reidratado(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, documento.Bytes)).Configuracao;
         return (processo.Declaracao(), lida);
     }

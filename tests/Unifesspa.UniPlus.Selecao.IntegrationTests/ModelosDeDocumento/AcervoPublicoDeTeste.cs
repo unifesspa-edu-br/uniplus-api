@@ -94,7 +94,7 @@ internal sealed class AcervoPublicoDeTeste
         new(
             new AtoDoProcessoRepository(context),
             ProcessoSeletivoRepositoryDeTeste.Criar(context),
-            new RegistroCodecsEnvelope(),
+            new EnvelopeCodec(),
             new AcervoDaDivulgacao(
                 new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), AcervoNoBucket(bucket), AcervoDeTeste.Endereco),
             new CertameDivulgadoRepository(context),

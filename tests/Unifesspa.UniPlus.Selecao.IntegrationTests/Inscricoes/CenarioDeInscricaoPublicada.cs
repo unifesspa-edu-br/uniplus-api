@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A montagem que as classes de teste da inscrição sobre o processo publicado compartilham: um processo
 /// publicado e divulgado, servido pelos handlers de inscrição e pelo <see cref="InscricaoRepository"/>
 /// contra Postgres real, com os repositórios de produção (<see cref="ProcessoSeletivoRepository"/>,
-/// <see cref="CertameDivulgadoRepository"/>) e o codec vivo de produção (<see cref="RegistroCodecsEnvelope"/>),
+/// <see cref="CertameDivulgadoRepository"/>) e o codec vivo de produção (<see cref="EnvelopeCodec"/>),
 /// em vez de um grafo fabricado à parte com repositórios substitutos.
 /// </summary>
 internal sealed class CenarioDeInscricaoPublicada
@@ -42,7 +42,7 @@ internal sealed class CenarioDeInscricaoPublicada
 
     public CenarioDeInscricaoPublicada(InscricaoDbFixture fixture) => _fixture = fixture;
 
-    internal static IRegistroCodecsEnvelope RegistroCodecs { get; } = new RegistroCodecsEnvelope();
+    internal static IRegistroCodecsEnvelope RegistroCodecs { get; } = new EnvelopeCodec();
 
     public string StringDeConexao => _fixture.ConnectionString;
 
