@@ -78,13 +78,13 @@ O sentido de um operador depende de um eixo do recurso que o consulta: a cardina
 
 O enum com código de contrato que um cliente precisa listar é publicado como vocabulário, de um só jeito em todos os módulos:
 
-1. A rota é `GET /api/{modulo}/vocabularios/{plural-do-enum}`, o plural do nome do enum sem preposição; rota publicada não muda de nome.
+1. A rota é `GET /api/{modulo}/vocabularios/{plural-do-enum}`. A rota nova usa o plural do nome do enum, sem preposição (ADR-0064). Rota publicada não muda de nome depois da primeira publicação em produção; antes dela, só muda por decisão própria, como `fases-canonicas` para `tipos-de-fase` (emenda 3, item 4). Tirar a preposição não é motivo para mudar: `naturezas-conceito`, `tipos-de-decisao` e `papeis-de-banca` ficam como estão.
 2. Há um controller por assunto, `Vocabularios{DoAssunto}Controller`, com uma ação por vocabulário e a tag `Vocabularios`; não há rota genérica por nome.
 3. Cada vocabulário tem consulta e manipulador próprios, chamados pelo barramento; o manipulador decide o conjunto escolhível por `CatalogoDe<T>.Valores()`.
 4. A resposta é uma lista de `{ codigo, rotulo }` na ordem de declaração do enum, com teste da ordem; `{ codigo, rotulo, descricao }` só quando todo membro tem descrição.
 5. O acesso é anônimo: a lista é fechada e não traz dado de ninguém; a proteção fica na ação que usa o código.
 6. Não há cache.
-7. O dono é o módulo do enum; os enums do projeto de regras (`FormaAceite`, `Ternario`, `EstadoFato`) são servidos pela Configuração.
+7. O dono é o módulo do enum. O enum usado só por um módulo mora nesse módulo e é servido por ele. Todos os enums do projeto de regras compartilhado são servidos pela Configuração.
 
 O campo de texto de um contrato que carrega o código de um desses enums é marcado com `AceitaCodigosDe<T>`, para o contrato apontar o vocabulário.
 
