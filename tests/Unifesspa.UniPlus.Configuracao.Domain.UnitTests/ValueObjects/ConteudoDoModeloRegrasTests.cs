@@ -39,7 +39,7 @@ public sealed class ConteudoDoModeloRegrasTests
             Itens = [Item("RENDA", exibicao: Quando("DO_ITEM"))],
             Grupos = [Grupo("COMPOSICAO", 0, Quando("DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO")))],
             Termos = [Termo("LGPD", exibicao: Quando("DO_TERMO"))],
-            DocumentosExigidos = [Documento("LAUDO", Quando("DO_DOCUMENTO"))],
+            ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", Quando("DO_DOCUMENTO"))),
         };
 
         conteudo.FatosCitados().Should().Equal("DO_ITEM", "DO_CAMPO_DE_GRUPO", "DO_GRUPO", "DA_ETAPA", "DO_TERMO", "DO_DOCUMENTO");
@@ -48,9 +48,32 @@ public sealed class ConteudoDoModeloRegrasTests
     [Fact(DisplayName = "O documento multiplicado por opção cita também o fato das opções")]
     public void FatosCitados_DocumentoPorOpcao_CitaOFatoDasOpcoes()
     {
-        ConteudoDoModelo conteudo = Vazio with { DocumentosExigidos = [Documento("LAUDO", porOpcao: new("MODALIDADE", []))] };
+        ConteudoDoModelo conteudo = Vazio with { ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", porOpcao: new("MODALIDADE", []))) };
 
         conteudo.FatosCitados().Should().Equal("MODALIDADE");
+    }
+
+    [Fact(DisplayName = "O documento dentro de grupo conta como o avulso: o fato da condição e o das opções entram nos fatos citados")]
+    public void FatosCitados_DocumentoDeGrupo_CitaOsFatosDele()
+    {
+        ConteudoDoModelo conteudo = Vazio with
+        {
+            ConjuntoDeDocumentos = ConjuntoComGrupos(
+                GrupoDeDocumentos(1, Documento("RG", Quando("DO_PRIMEIRO")), Documento("LAUDO", porOpcao: new("MODALIDADE", []))),
+                GrupoDeDocumentos(null, Documento("CPF", Quando("DO_SEGUNDO_GRUPO")))),
+        };
+
+        conteudo.FatosCitados().Should().Equal("DO_PRIMEIRO", "MODALIDADE", "DO_SEGUNDO_GRUPO");
+    }
+
+    [Fact(DisplayName = "A condição do documento de grupo é condição de regra do modelo, depois da do documento avulso")]
+    public void CondicoesDasRegras_DocumentoDeGrupo_TrazACondicaoDele()
+    {
+        ConjuntoDeDocumentosDoModelo conjunto = new(
+            [Documento("LAUDO", Quando("DO_AVULSO"))],
+            [GrupoDeDocumentos(2, Documento("RG", Quando("DO_DOCUMENTO_DE_GRUPO")))]);
+
+        (Vazio with { ConjuntoDeDocumentos = conjunto }).CondicoesDasRegras().Select(static c => c.Fato).Should().Equal("DO_AVULSO", "DO_DOCUMENTO_DE_GRUPO");
     }
 
     [Fact(DisplayName = "O modelo sem regras não cita fato")]
@@ -73,7 +96,7 @@ public sealed class ConteudoDoModeloRegrasTests
         Itens = [CampoComRegras()],
         Grupos = [GrupoComRegras()],
         Termos = [TermoComRegras()],
-        DocumentosExigidos = [Documento("LAUDO", Quando("DO_DOCUMENTO"))],
+        ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", Quando("DO_DOCUMENTO"))),
     };
 
     [Fact(DisplayName = "As condições vêm das regras de campos, campos de grupo, grupos, etapas, termos e documentos, nessa ordem")]

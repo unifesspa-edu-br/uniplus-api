@@ -69,7 +69,7 @@ internal static class ConferenciaDoModelo
         return [
             .. ConferirItens(conteudo.Itens, catalogo),
             .. ConferirGrupos(conteudo.Grupos, catalogo),
-            .. ConferirDocumentos(conteudo.Documentos, catalogo),
+            .. ConferirDocumentos(conteudo.Documentos.ComCaminho(), catalogo),
             .. ConferirEtapas(conteudo.Etapas, catalogo),
             .. ConferirTermos(conteudo.Termos, catalogo, versoes, existentes.Termos),
             .. ConferirPressupostos(conteudo.Pressupostos, catalogo),
@@ -100,7 +100,7 @@ internal static class ConferenciaDoModelo
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
             .Concat(campos.SelectMany(static i => i.Regras.Restricoes.SelectMany(static r => r.FatosCitados)))
-            .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
+            .Concat(conteudo.Documentos.ComCaminho().Select(static c => c.Documento.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
@@ -118,8 +118,8 @@ internal static class ConferenciaDoModelo
     ];
 
     private static IEnumerable<FieldError> ConferirDocumentos(
-        IReadOnlyList<(int Indice, DocumentoExigidoDoModelo Documento)> documentos, CatalogoDoModelo catalogo) =>
-        documentos.SelectMany(documento => ConferirDocumento(documento.Documento, $"documentosExigidos[{documento.Indice}]", catalogo));
+        IEnumerable<(string Caminho, DocumentoExigidoDoModelo Documento)> documentos, CatalogoDoModelo catalogo) =>
+        documentos.SelectMany(documento => ConferirDocumento(documento.Documento, documento.Caminho, catalogo));
 
     private static IEnumerable<FieldError> ConferirDocumento(DocumentoExigidoDoModelo documento, string caminho, CatalogoDoModelo catalogo) =>
     [

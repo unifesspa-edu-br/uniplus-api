@@ -75,7 +75,7 @@ public sealed class ConferenciaDoModeloTests
     private List<FieldError> ConferirEntradaQueRecusaEmTodasAsPartes() => Conferir(EntradaQueRecusaEmTodasAsPartes());
 
     private List<FieldError> Conferir(ConteudoDoModeloInput entrada) => ConferenciaDoModelo.Conferir(
-        ConteudoLido.Ler(entrada, _catalogo.Formatos), _catalogo, new Dictionary<Guid, VersaoTermoConsentimentoView>(), _existentes);
+        new LeituraDoConteudo(_catalogo.Formatos).Ler(entrada), _catalogo, new Dictionary<Guid, VersaoTermoConsentimentoView>(), _existentes);
 
     private static ConteudoDoModeloInput EntradaComSubitemQueRecusaRestricoesEImpedimento() => new(
         "Habilitação",
@@ -119,7 +119,7 @@ public sealed class ConferenciaDoModeloTests
         ],
         ["NAO_EXISTE", string.Empty, " CERTIFICADO ", "MAIOR_IDADE"],
         [GrupoQueRecusa()],
-        DocumentosQueRecusam());
+        ConjuntoQueRecusa());
 
     private static Condicoes CitandoFatoInexistente => Citando("NAO_EXISTE");
 
@@ -154,12 +154,21 @@ public sealed class ConferenciaDoModeloTests
             .ExibidoQuando(CitandoFatoInexistente).ComObrigatoriedade("QUANDO", CitandoFatoInexistente)
             .ComCampos(Item("CERTIFICADO", 0), Item("MAIOR_IDADE", 1, "NUMERO")).Construir();
 
+    private static ConjuntoDeDocumentosDoModeloInput ConjuntoQueRecusa() => ConjuntoDeDocumentosDoModeloBuilder.Vazio()
+        .ComDocumentos(DocumentosQueRecusam())
+        .ComGrupos(
+            ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", null, Indeferimento())),
+            ConjuntoDeDocumentosDoModeloBuilder.Grupo(2, new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, Indeferimento()), new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", CitandoFatoInexistente, Indeferimento())))
+        .Construir();
+
     private static DocumentoExigidoDoModeloInput[] DocumentosQueRecusam() =>
     [
-        new(string.Empty, "LAUDO_MEDICO", true, null, "REMOVE_VANTAGEM", []),
-        new("INSCRICAO", "LAUDO_MEDICO", true, CitandoFatoInexistente, "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput("CERTIFICADO", [])),
-        new("INSCRICAO", "LAUDO_MEDICO", true, null, "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput(" NAO_EXISTE ", [])),
+        new(string.Empty, "LAUDO_MEDICO", null, Indeferimento()),
+        new("INSCRICAO", "LAUDO_MEDICO", CitandoFatoInexistente, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput("CERTIFICADO", [])),
+        new("INSCRICAO", "LAUDO_MEDICO", null, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput(" NAO_EXISTE ", [])),
     ];
+
+    private static IndeferimentoDoDocumentoDoModeloInput Indeferimento() => new(true, "REMOVE_VANTAGEM", []);
 
     private static Recusa[] RecusasEsperadas() =>
     [
@@ -194,10 +203,11 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasDosDocumentos() =>
     [
-        FatoInexistenteNoPredicado("documentosExigidos[1].quando"),
-        ("documentosExigidos[1].porOpcao.fatoCodigo", ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
+        FatoInexistenteNoPredicado("conjuntoDeDocumentos.documentosExigidos[1].quando"),
+        ("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.fatoCodigo", ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
             "O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara. Informe um fato que atenda a essa condição."),
-        ("documentosExigidos[2].porOpcao.fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato."),
+        ("conjuntoDeDocumentos.documentosExigidos[2].porOpcao.fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato."),
+        FatoInexistenteNoPredicado("conjuntoDeDocumentos.gruposDeDocumentos[1].documentos[1].quando"),
     ];
 
     private static Recusa[] RecusasDasEtapas() => [FatoInexistenteNoPredicado("etapas[0].exibicao")];

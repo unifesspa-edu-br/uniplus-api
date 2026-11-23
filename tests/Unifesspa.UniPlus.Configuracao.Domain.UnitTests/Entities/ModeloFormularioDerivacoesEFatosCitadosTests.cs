@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -100,7 +101,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
             [(0, CondicaoDnf.Criar(fatoCitado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         ConteudoDoModelo conteudo = Conteudo([Item("CERTIFICADO", 0)]) with
         {
-            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", false, quando, "REMOVE_VANTAGEM", [])],
+            ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)),
         };
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, conteudo);

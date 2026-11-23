@@ -16,18 +16,20 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     [Fact(DisplayName = "O código do tipo de campo é lido como o tipo no item do modelo")]
     public void Ler_CodigoDeclarado_ItemTemOTipo()
     {
-        ConteudoLido lido = ConteudoLido.Ler(Conteudo(Item("SELECAO_MULTIPLA")), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        ConteudoLido lido = leitura.Ler(Conteudo(Item("SELECAO_MULTIPLA")));
 
-        lido.Erros.Should().BeEmpty();
+        leitura.Recusas.Should().BeEmpty();
         lido.Itens.Single().Item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoMultipla);
     }
 
     [Fact(DisplayName = "Tipo de campo ausente é recusado como obrigatório e o item não é lido")]
     public void Ler_TipoAusente_RecusaComoObrigatorio()
     {
-        ConteudoLido lido = ConteudoLido.Ler(Conteudo(Item(null)), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        ConteudoLido lido = leitura.Ler(Conteudo(Item(null)));
 
-        lido.Erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+        leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
         lido.Itens.Should().BeEmpty();
     }
@@ -37,10 +39,10 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     {
         GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("DEPENDENTES", 1).ComRotulo("Dependentes")
             .ComObrigatoriedade("SEMPRE").ComCampos(Item("NENHUMA")).Construir();
-        ConteudoLido lido = ConteudoLido.Ler(
-            new ConteudoDoModeloInput("Habilitação", null, [Item("NENHUMA")], null, null, [grupo]), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        leitura.Ler(new ConteudoDoModeloInput("Habilitação", null, [Item("NENHUMA")], null, null, [grupo]));
 
-        lido.Erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+        leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
             ("grupos[0].subitens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"));
     }
@@ -50,17 +52,19 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     {
         FatoColetadoInput item = Campo("texto").ComObrigatoriedade("TALVEZ").Construir();
 
-        ConteudoLido lido = ConteudoLido.Ler(Conteudo(item), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        leitura.Ler(Conteudo(item));
 
-        lido.Erros.Select(static e => e.Field).Should().Equal("itens[0].apresentacao.tipoRenderizacao", "itens[0].regras.obrigatoriedade");
+        leitura.Recusas.Select(static e => e.Field).Should().Equal("itens[0].apresentacao.tipoRenderizacao", "itens[0].regras.obrigatoriedade");
     }
 
     [Fact(DisplayName = "A apresentação ausente é recusada pelo tipo de campo obrigatório, no caminho dela")]
     public void Ler_ApresentacaoAusente_RecusaOTipoNoCaminhoDaApresentacao()
     {
-        ConteudoLido lido = ConteudoLido.Ler(Conteudo(Campo("BOOLEANO").SemApresentacao().Construir()), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        ConteudoLido lido = leitura.Ler(Conteudo(Campo("BOOLEANO").SemApresentacao().Construir()));
 
-        lido.Erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+        leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
         lido.Itens.Should().BeEmpty();
     }
@@ -68,9 +72,10 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     [Fact(DisplayName = "As regras ausentes são recusadas pela obrigatoriedade inválida, no caminho delas")]
     public void Ler_RegrasAusentes_RecusaAObrigatoriedadeNoCaminhoDasRegras()
     {
-        ConteudoLido lido = ConteudoLido.Ler(Conteudo(Campo("BOOLEANO").SemRegras().Construir()), SemFormatos);
+        LeituraDoConteudo leitura = new(SemFormatos);
+        ConteudoLido lido = leitura.Ler(Conteudo(Campo("BOOLEANO").SemRegras().Construir()));
 
-        lido.Erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+        leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].regras.obrigatoriedade", "ModeloFormulario.ObrigatoriedadeInvalida"));
         lido.Itens.Should().BeEmpty();
     }

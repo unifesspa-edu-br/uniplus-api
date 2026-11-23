@@ -92,7 +92,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         IReadOnlyList<TermoExigidoInput>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
         IReadOnlyList<GrupoColetadoInput>? grupos = null,
-        IReadOnlyList<DocumentoExigidoDoModeloInput>? documentos = null) =>
+        ConjuntoDeDocumentosDoModeloInput? documentos = null) =>
         new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
@@ -103,18 +103,21 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 itens, termos ?? [], pressupostos ?? [], grupos ?? [], documentos));
 
     public static ModeloFormularioView ModeloComDocumentos(params DocumentoExigidoDoModeloInput[] documentos) =>
+        ModeloComConjunto(ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documentos));
+
+    public static ModeloFormularioView ModeloComConjunto(ConjuntoDeDocumentosDoModeloInput conjunto) =>
         Modelo(
             FinalidadeFormulario.Inscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "SELECAO_MULTIPLA")],
-            documentos: documentos);
+            documentos: conjunto);
 
     public static DocumentoExigidoDoModeloInput DocumentoDoModelo(string tipo, string condicao) =>
-        new("INSCRICAO", tipo, Obrigatorio: false,
+        new("INSCRICAO", tipo,
             [[
                 new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true)),
                 new CondicaoPrecondicaoInput("CONDICAO_ATENDIMENTO", "IGUAL", JsonSerializer.SerializeToElement(condicao)),
             ]],
-            "REMOVE_VANTAGEM", []);
+            new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
 
     public static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
         EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
@@ -148,13 +151,18 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
 
     /// <summary>O cronograma do processo com as fases dos códigos; só a de inscrição coleta inscrição. Devolve a primeira.</summary>
-    public FaseCronograma FaseDoCronograma(params string[] codigos)
+    public FaseCronograma FaseDoCronograma(params string[] codigos) => FasesDoCronograma(static codigo => codigo == "INSCRICAO", codigos);
+
+    /// <summary>O cronograma do processo com as fases dos códigos, todas coletando inscrição. Devolve a primeira.</summary>
+    public FaseCronograma FasesQueColetamInscricao(params string[] codigos) => FasesDoCronograma(static _ => true, codigos);
+
+    private FaseCronograma FasesDoCronograma(Func<string, bool> coletaInscricao, string[] codigos)
     {
         FaseCronograma[] fases =
         [
             .. codigos.Select((codigo, i) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
                 OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                    Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: codigo == "INSCRICAO",
+                    Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao(codigo),
                     ColetaSolicitacaoIsencao: false)),
                 new DecisoesDeCronogramaDaFase(i + 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

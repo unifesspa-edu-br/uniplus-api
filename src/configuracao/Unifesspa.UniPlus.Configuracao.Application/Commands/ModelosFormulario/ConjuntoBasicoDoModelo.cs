@@ -20,9 +20,10 @@ public static class ConjuntoBasicoDoModelo
     public static ConteudoDoModelo Mesclar(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, string> formatos)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
+        ArgumentNullException.ThrowIfNull(formatos);
         ConteudoDoModeloInput entrada = conteudo.ParaEntrada();
         (ConteudoDoModeloInput? mesclado, _) = ComASecaoDosDadosBasicos(entrada, FinalidadeFormulario.Inscricao, entrada);
-        return ConteudoLido.Ler(mesclado, formatos).ParaConteudo();
+        return new LeituraDoConteudo(formatos).Ler(mesclado).ParaConteudo();
     }
 
     /// <summary>

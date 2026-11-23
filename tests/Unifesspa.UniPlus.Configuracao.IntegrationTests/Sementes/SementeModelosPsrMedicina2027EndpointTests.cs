@@ -61,7 +61,7 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
 
     private static async Task<JsonObject> ObterPeloCodigoAsync(HttpClient client, string codigo)
     {
-        HttpResponseMessage lista = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso={SementePsrMedicina2027.TipoProcessoCodigo}");
+        HttpResponseMessage lista = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso={SementePsrMedicina2027.TipoProcessoCodigo}&limit=100");
         lista.StatusCode.Should().Be(HttpStatusCode.OK);
         JsonNode listados = JsonNode.Parse(await lista.Content.ReadAsStringAsync())!;
         return await ObterAsync(client, Unico(listados, "codigo", codigo)["id"]!.GetValue<Guid>());

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -40,7 +41,7 @@ public static class ModeloFormularioMapping
             [.. conteudo.Termos.Select(TermoParaLeitura)],
             conteudo.Pressupostos,
             [.. conteudo.Grupos.Select(GrupoParaLeitura)],
-            [.. conteudo.Documentos.Select(DocumentoParaLeitura)]);
+            conteudo.Documentos.ParaLeitura());
     }
 
     private static EtapaFormularioDto EtapaParaLeitura(EtapaDoModelo etapa) => new(
@@ -56,16 +57,6 @@ public static class ModeloFormularioMapping
     private static GrupoDoModeloDto GrupoParaLeitura(GrupoDoModelo grupo) => new(
         grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias.ToDto(), grupo.Regras.ToDto(),
         [.. grupo.Subitens.Select(ItemParaLeitura)]);
-
-    private static DocumentoExigidoDoModeloDto DocumentoParaLeitura(DocumentoExigidoDoModelo documento) => new(
-        documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, documento.Quando is { } quando ? LeituraDeRegras.ToDto(quando) : null,
-        documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaLeitura)], PorOpcaoParaLeitura(documento.PorOpcao));
-
-    private static BaseLegalDoModeloDto BaseLegalParaLeitura(BaseLegalDoDocumentoDoModelo baseLegal) =>
-        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);
-
-    private static ExigenciaPorOpcaoDto? PorOpcaoParaLeitura(ExigenciaPorOpcao? porOpcao) =>
-        porOpcao is null ? null : new ExigenciaPorOpcaoDto(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);
 
     /// <summary>O modelo na forma do leitor entre módulos, com o conteúdo na forma de entrada da escrita.</summary>
     public static ModeloFormularioView ToView(this ModeloFormulario modelo)
@@ -93,7 +84,7 @@ public static class ModeloFormularioMapping
             [.. conteudo.Termos.Select(TermoParaEntrada)],
             conteudo.Pressupostos,
             [.. conteudo.Grupos.Select(GrupoParaEntrada)],
-            [.. conteudo.Documentos.Select(DocumentoParaEntrada)]);
+            conteudo.Documentos.ParaEntrada());
     }
 
     private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
@@ -109,14 +100,4 @@ public static class ModeloFormularioMapping
     private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
         grupo.Codigo, grupo.Ordem, grupo.Rotulo, EntradaDeRegras.ParaEntrada(grupo.Ocorrencias), EntradaDeRegras.ParaEntrada(grupo.Regras),
         [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.EtapaCodigo);
-
-    private static DocumentoExigidoDoModeloInput DocumentoParaEntrada(DocumentoExigidoDoModelo documento) => new(
-        documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, EntradaDeRegras.ParaEntrada(documento.Quando),
-        documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaEntrada)], PorOpcaoParaEntrada(documento.PorOpcao));
-
-    private static BaseLegalDoModeloInput BaseLegalParaEntrada(BaseLegalDoDocumentoDoModelo baseLegal) =>
-        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);
-
-    private static ExigenciaPorOpcaoInput? PorOpcaoParaEntrada(ExigenciaPorOpcao? porOpcao) =>
-        porOpcao is null ? null : new ExigenciaPorOpcaoInput(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);
 }

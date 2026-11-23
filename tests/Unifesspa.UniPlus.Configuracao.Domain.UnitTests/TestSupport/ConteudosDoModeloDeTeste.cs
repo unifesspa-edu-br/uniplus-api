@@ -29,6 +29,25 @@ internal static class ConteudosDoModeloDeTeste
     public static TermoDoModelo Termo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null) =>
         new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));
 
-    public static DocumentoExigidoDoModelo Documento(string tipo, PredicadoDnf? quando = null, ExigenciaPorOpcao? porOpcao = null) =>
-        new("INSCRICAO", tipo, false, quando, "REMOVE_VANTAGEM", [], porOpcao);
+    public static DocumentoExigidoDoModelo Documento(
+        string tipo, PredicadoDnf? quando = null, ExigenciaPorOpcao? porOpcao = null, RequisitosDoDocumentoDoModelo? requisitos = null) =>
+        new("INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []),
+            requisitos ?? RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos, porOpcao);
+
+    public static ConjuntoDeDocumentosDoModelo Conjunto(params DocumentoExigidoDoModelo[] documentos) => new(documentos, []);
+
+    public static ConjuntoDeDocumentosDoModelo ConjuntoComGrupos(params GrupoDeDocumentosDoModelo[] grupos) => new([], grupos);
+
+    public static GrupoDeDocumentosDoModelo GrupoDeDocumentos(int? quantidadeMinima, params DocumentoExigidoDoModelo[] documentos) =>
+        new(quantidadeMinima, null, documentos);
+
+    /// <summary>Os requisitos que contam o prazo de emissão e a validade a partir do início de duas fases do cronograma.</summary>
+    public static RequisitosDoDocumentoDoModelo RequisitosAPartirDasFases(string fasePrazo, string faseValidade) => new(
+        new PrazoDeEmissaoDoModelo(
+            EscolhaDoPrazoDeEmissao.ComPrazo, 90, UnidadeDoPrazoDeEmissao.Dias,
+            new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.InicioDaFase, fasePrazo, null), EfeitoNaAnaliseDoDocumento.RecusarDocumento),
+        new ValidadeDoDocumentoDoModelo(
+            EscolhaDaValidade.ExigeDocumentoValido,
+            new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.FimDaFase, faseValidade, null),
+            EfeitoNaAnaliseDoDocumento.AceitarComAviso));
 }

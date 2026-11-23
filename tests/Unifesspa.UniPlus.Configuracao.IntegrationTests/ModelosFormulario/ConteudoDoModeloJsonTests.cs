@@ -68,6 +68,86 @@ public sealed class ConteudoDoModeloJsonTests
         ConteudoDoModeloJson.Serializar(conteudo).Should().Be(JsonDocumentoLegadoRegravado);
     }
 
+    [Fact(DisplayName = "O documento gravado sem as chaves do prazo de emissão e da validade é lido como ainda não escolhido")]
+    public void Desserializar_DocumentoSemPrazoENemValidade_LeComoAindaNaoEscolhido()
+    {
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(JsonDocumentoLegado);
+
+        conteudo.Documentos.DocumentosExigidos.Single().Requisitos.Should().Be(RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
+    }
+
+    [Fact(DisplayName = "O conteúdo gravado sem a chave dos grupos de documentos é lido como nenhum grupo e regravado com a lista vazia")]
+    public void Desserializar_SemGruposDeDocumentos_LeComoListaVazia()
+    {
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(JsonDocumentoLegado);
+
+        conteudo.Documentos.GruposDeDocumentos.Should().BeEmpty();
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Contain("\"gruposDeDocumentos\":[]");
+    }
+
+    [Fact(DisplayName = "O grupo de documentos volta do JSON com a quantidade, a consequência e os documentos dele")]
+    public void Desserializar_GrupoDeDocumentos_RemontaOGrupo()
+    {
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(JsonCompleto);
+
+        GrupoDeDocumentosDoModelo grupo = conteudo.Documentos.GruposDeDocumentos.Single();
+        grupo.QuantidadeMinima.Should().Be(2);
+        grupo.Indeferimento!.Consequencia.Should().Be("ELIMINA");
+        grupo.Documentos.Should().ContainSingle().Which.TipoDocumentoCodigo.Should().Be("CERTIDAO");
+    }
+
+    [Fact(DisplayName = "O grupo sem quantidade e sem consequência é gravado com nulo e volta sem quantidade e sem indeferimento")]
+    public void Desserializar_GrupoSemQuantidadeENemConsequencia_VoltaIdenticoAoSerGravado()
+    {
+        string json = JsonDocumentoLegadoRegravado.Replace(
+            "\"gruposDeDocumentos\":[]",
+            $"\"gruposDeDocumentos\":[{{\"quantidadeMinima\":null,\"consequenciaIndeferimento\":null,\"basesLegais\":[],\"documentos\":[{DocumentoMinimoJson}]}}]",
+            StringComparison.Ordinal);
+
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(json);
+
+        GrupoDeDocumentosDoModelo grupo = conteudo.Documentos.GruposDeDocumentos.Single();
+        grupo.QuantidadeMinima.Should().BeNull();
+        grupo.Indeferimento.Should().BeNull();
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Be(json);
+    }
+
+    [Fact(DisplayName = "O prazo de emissão e a validade escolhidos voltam do JSON com a fase pelo código e a data específica")]
+    public void Desserializar_PrazoEValidadeEscolhidos_RemontaOsRequisitos()
+    {
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(JsonCompleto);
+
+        conteudo.Documentos.DocumentosExigidos.Single().Requisitos.Should().Be(RequisitosCompletos());
+    }
+
+    [Fact(DisplayName = "Sem prazo e sem exigir validade, o JSON grava as escolhas com os detalhes nulos e volta idêntico")]
+    public void Desserializar_SemPrazoESemValidade_VoltaIdenticoAoSerGravado()
+    {
+        string json = JsonDocumentoLegadoRegravado.Replace(
+            "\"prazoDeEmissao\":null,\"validade\":null", $"\"prazoDeEmissao\":{PrazoSemPrazoJson},\"validade\":{ValidadeNaoExigidaJson}", StringComparison.Ordinal);
+
+        ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(json);
+
+        conteudo.Documentos.DocumentosExigidos.Single().Requisitos.Should().Be(new RequisitosDoDocumentoDoModelo(
+            new PrazoDeEmissaoDoModelo(EscolhaDoPrazoDeEmissao.SemPrazo, null, null, null, null),
+            new ValidadeDoDocumentoDoModelo(EscolhaDaValidade.NaoExigeDocumentoValido, null, null)));
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Be(json);
+    }
+
+    [Theory(DisplayName = "O código do prazo de emissão ou da validade que o catálogo não declara é dado corrompido e lança")]
+    [InlineData("\"escolha\":\"COM_PRAZO\"", "\"escolha\":\"PRAZO_INEXISTENTE\"")]
+    [InlineData("\"unidade\":\"DIAS\"", "\"unidade\":\"semanas\"")]
+    [InlineData("\"tipo\":\"INICIO_DA_FASE\"", "\"tipo\":\"inicio\"")]
+    [InlineData("\"efeitoDoVencimento\":\"ACEITAR_COM_AVISO\"", "\"efeitoDoVencimento\":\"aceitar\"")]
+    public void Desserializar_CodigoDeRequisitoForaDoCatalogo_Lanca(string codigo, string corrompido)
+    {
+        string json = JsonCompleto.Replace(codigo, corrompido, StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(json);
+
+        ler.Should().Throw<ArgumentException>();
+    }
+
     [Theory(DisplayName = "A exigência por opção ausente, ou presente e que não é um objeto, é lida como ausente")]
     [InlineData("")]
     [InlineData(",\"porOpcao\":\"MEDICINA\"")]
@@ -179,8 +259,14 @@ public sealed class ConteudoDoModeloJsonTests
     private const string GrupoFamiliaJson =
         $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
 
+    private const string PrazoCompletoJson =
+        """{"escolha":"COM_PRAZO","valor":90,"unidade":"DIAS","referencia":{"tipo":"INICIO_DA_FASE","data":null,"faseCodigo":"HABILITACAO"},"efeitoForaDoPrazo":"RECUSAR_DOCUMENTO"}""";
+
+    private const string ValidadeCompletaJson =
+        """{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2027-02-01","faseCodigo":null},"efeitoDoVencimento":"ACEITAR_COM_AVISO"}""";
+
     private const string DocumentoCertidaoJson =
-        """{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
+        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
         """{"fatoCodigo":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
@@ -194,26 +280,35 @@ public sealed class ConteudoDoModeloJsonTests
     private const string GrupoFamiliaMinimoJson =
         $$"""{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[{{ItemParentescoJson}}]}""";
 
+    private const string PrazoSemPrazoJson =
+        """{"escolha":"SEM_PRAZO","valor":null,"unidade":null,"referencia":null,"efeitoForaDoPrazo":null}""";
+
+    private const string ValidadeNaoExigidaJson =
+        """{"escolha":"NAO_EXIGE_DOCUMENTO_VALIDO","referencia":null,"efeitoDoVencimento":null}""";
+
     private const string DocumentoMinimoJson =
-        """{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[],"porOpcao":null}""";
+        """{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[],"prazoDeEmissao":null,"validade":null,"porOpcao":null}""";
+
+    private const string GrupoDeDocumentosJson =
+        $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
 
     private const string JsonCompleto =
-        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","etapas":[{{EtapaDadosJson}},{{EtapaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}]}""";
+        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","etapas":[{{EtapaDadosJson}},{{EtapaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
 
     private const string JsonMinimo =
-        $$"""{"titulo":null,"etapas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}]}""";
+        $$"""{"titulo":null,"etapas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
         """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"fatoCodigo":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
 
     private const string JsonLegadoRegravado =
-        $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[]}""";
+        $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";
 
     private const string JsonDocumentoLegado =
         """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
 
     private const string JsonDocumentoLegadoRegravado =
-        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"porOpcao":null}]}""";
+        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":null,"validade":null,"porOpcao":null}],"gruposDeDocumentos":[]}""";
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição \"Medicina\" <2027>",
@@ -224,7 +319,8 @@ public sealed class ConteudoDoModeloJsonTests
             new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))))],
         ["COR_RACA"],
         [GrupoCompleto()],
-        [DocumentoCompleto()]);
+        new ConjuntoDeDocumentosDoModelo(
+            [DocumentoCompleto()], [new GrupoDeDocumentosDoModelo(2, new IndeferimentoDoGrupoDeDocumentosDoModelo("ELIMINA", []), [DocumentoCompleto()])]));
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
@@ -234,7 +330,8 @@ public sealed class ConteudoDoModeloJsonTests
         [],
         [new GrupoDoModelo(
             "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
-        [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
+        new ConjuntoDeDocumentosDoModelo(
+            [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "INDEFERIMENTO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
 
     private static EtapaDoModelo EtapaCompleta() => new(
         "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
@@ -260,9 +357,21 @@ public sealed class ConteudoDoModeloJsonTests
         [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)]);
 
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
-        "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",
-        [new BaseLegalDoDocumentoDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoDocumentoDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)],
+        "HABILITACAO", "CERTIDAO", Quando("QUILOMBOLA", true),
+        new IndeferimentoDoDocumentoDoModelo(
+            false, "PERDA_DA_VAGA",
+            [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)]),
+        RequisitosCompletos(),
         new ExigenciaPorOpcao("OPCAO_DE_CURSO", ["MEDICINA", "ODONTOLOGIA"]));
+
+    private static RequisitosDoDocumentoDoModelo RequisitosCompletos() => new(
+        new PrazoDeEmissaoDoModelo(
+            EscolhaDoPrazoDeEmissao.ComPrazo, 90, UnidadeDoPrazoDeEmissao.Dias,
+            new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.InicioDaFase, "HABILITACAO", null), EfeitoNaAnaliseDoDocumento.RecusarDocumento),
+        new ValidadeDoDocumentoDoModelo(
+            EscolhaDaValidade.ExigeDocumentoValido,
+            new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.DataEspecifica, null, new DateOnly(2027, 2, 1)),
+            EfeitoNaAnaliseDoDocumento.AceitarComAviso));
 
     private static PredicadoDnf Quando(string fato, bool valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

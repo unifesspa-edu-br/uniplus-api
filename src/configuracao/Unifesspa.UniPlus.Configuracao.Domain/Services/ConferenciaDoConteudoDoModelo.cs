@@ -222,13 +222,11 @@ public static class ConferenciaDoConteudoDoModelo
     /// <summary>O documento do conjunto padrão cita só o que o modelo coleta, como o termo.</summary>
     private static FieldError? ConferirCitacoesDosDocumentos(ConteudoDoModelo conteudo, DependenciasDoFormulario dependencias)
     {
-        for (int i = 0; i < conteudo.Documentos.Count; i++)
+        foreach ((string caminho, DocumentoExigidoDoModelo documento) in conteudo.Documentos.ComCaminho())
         {
-            DocumentoExigidoDoModelo documento = conteudo.Documentos[i];
             if (documento.FatosCitados.FirstOrDefault(f => dependencias.Conferir(f, DependenciasDoFormulario.PosicaoDosTermos) is not null) is { } citado)
             {
-                string campo = CaminhoDaCitacao(documento, citado);
-                return new FieldError($"documentosExigidos[{i}].{campo}", new DomainError(
+                return new FieldError($"{caminho}.{CaminhoDaCitacao(documento, citado)}", new DomainError(
                     GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
                     "O documento exigido usa um dado que o modelo não coleta, não calcula e não recebe de outro formulário."));
             }

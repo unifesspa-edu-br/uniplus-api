@@ -29,22 +29,24 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         }
 
         Result aplicada = processo.AplicarModeloDeFormulario(plano.Value!.Copia);
-        if (aplicada.IsFailure)
-        {
-            return Result<AplicacaoDeModeloDto>.ValidationFailure([.. aplicada.Errors.Select(plano.Value.Indices.RecusaDoAgregado)]);
-        }
+        return aplicada.IsFailure
+            ? Result<AplicacaoDeModeloDto>.ValidationFailure([.. aplicada.Errors.Select(plano.Value.Indices.RecusaDoAgregado)])
+            : await CopiarDocumentosEGravarAsync(plano.Value, cancellationToken).ConfigureAwait(false);
+    }
 
-        // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a recusa de
-        // um documento desfaz a aplicação inteira.
-        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, plano.Value.Copia.Finalidade, cadastros.Documentos)
-            .CopiarAsync(modelo.Conteudo.DocumentosExigidos ?? [], plano.Value.Catalogo, cancellationToken).ConfigureAwait(false);
+    // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a recusa de
+    // um documento desfaz a aplicação inteira.
+    private async Task<Result<AplicacaoDeModeloDto>> CopiarDocumentosEGravarAsync(PlanoDaAplicacaoDoModelo plano, CancellationToken cancellationToken)
+    {
+        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, plano.Copia.Finalidade, cadastros.Documentos)
+            .CopiarAsync(modelo.Conteudo.ConjuntoDeDocumentos ?? new ConjuntoDeDocumentosDoModeloInput(null, null), plano.Catalogo, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
             return RecusaDosDocumentos(documentos);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<AplicacaoDeModeloDto>.Success(plano.Value.Relatorio.ParaDto(modelo.Finalidade));
+        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(modelo.Finalidade));
     }
 
     // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do handler,

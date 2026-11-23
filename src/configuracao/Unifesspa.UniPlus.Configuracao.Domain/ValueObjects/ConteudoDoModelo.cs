@@ -21,10 +21,10 @@ public sealed record ConteudoDoModelo(
     IReadOnlyList<TermoDoModelo> Termos,
     IReadOnlyList<string> Pressupostos,
     IReadOnlyList<GrupoDoModelo> Grupos,
-    IReadOnlyList<DocumentoExigidoDoModelo>? DocumentosExigidos = null)
+    ConjuntoDeDocumentosDoModelo? ConjuntoDeDocumentos = null)
 {
     /// <summary>O conjunto padrão de documentos exigidos que a aplicação do modelo copia para o processo; ausente é nenhum.</summary>
-    public IReadOnlyList<DocumentoExigidoDoModelo> Documentos => DocumentosExigidos ?? [];
+    public ConjuntoDeDocumentosDoModelo Documentos => ConjuntoDeDocumentos ?? ConjuntoDeDocumentosDoModelo.Nenhum;
 
     /// <summary>
     /// O conteúdo como o avaliador de formulário o lê: cada seção, na ordem, com os seus itens e grupos
@@ -65,7 +65,7 @@ public sealed record ConteudoDoModelo(
             .Concat(Grupos.SelectMany(static g => g.FatosCitados))
             .Concat(Etapas.SelectMany(static e => e.FatosCitados))
             .Concat(Termos.SelectMany(static t => t.FatosCitados))
-            .Concat(Documentos.SelectMany(static d => d.FatosCitados));
+            .Concat(Documentos.FatosCitados());
 
     /// <summary>As condições de todas as regras do modelo, com fato, operador e valor.</summary>
     public IEnumerable<CondicaoDnf> CondicoesDasRegras() =>
@@ -76,7 +76,7 @@ public sealed record ConteudoDoModelo(
             .Concat(Grupos.SelectMany(static g => SemCaminho(g.Predicados())))
             .Concat(Etapas.SelectMany(static e => SemCaminho(e.Predicados())))
             .Concat(Termos.SelectMany(static t => SemCaminho(t.Predicados())))
-            .Concat(Documentos.SelectMany(static d => SemCaminho(d.Predicados())))
+            .Concat(SemCaminho(Documentos.Predicados()))
             .OfType<PredicadoDnf>();
 
     private static IEnumerable<PredicadoDnf?> SemCaminho(IEnumerable<PredicadoNaEntrada> predicados) => predicados.Select(static p => p.Predicado);
@@ -96,7 +96,7 @@ public sealed record ConteudoDoModelo(
         [.. (Termos ?? []).Select(static t => t with { Codigo = TextoGravavel.CodigoNaFormaGravada(t.Codigo) })],
         [.. (Pressupostos ?? []).Select(static p => TextoGravavel.CodigoNaFormaGravada(p))],
         [.. (Grupos ?? []).Select(GrupoNaFormaGravada)],
-        [.. (DocumentosExigidos ?? []).Select(DocumentoNaFormaGravada)]);
+        Documentos.NaFormaGravada());
 
     /// <summary>
     /// O conteúdo na ordem em que é gravado: etapas, itens, grupos, campos de grupo e termos na ordem
@@ -109,7 +109,7 @@ public sealed record ConteudoDoModelo(
         Termos = [.. Termos.OrderBy(static t => t.Ordem)],
         Grupos = [.. Grupos.OrderBy(static g => g.Ordem)
             .Select(static g => g with { Subitens = [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ComRestricoesEmOrdem)] })],
-        DocumentosExigidos = Documentos,
+        ConjuntoDeDocumentos = Documentos,
     };
 
     /// <summary>
@@ -147,23 +147,14 @@ public sealed record ConteudoDoModelo(
         Subitens = [.. (grupo.Subitens ?? []).Select(CampoNaFormaGravada)],
     };
 
-    private static DocumentoExigidoDoModelo DocumentoNaFormaGravada(DocumentoExigidoDoModelo documento) => documento with
-    {
-        FaseCodigo = TextoGravavel.CodigoNaFormaGravada(documento.FaseCodigo),
-        TipoDocumentoCodigo = TextoGravavel.CodigoNaFormaGravada(documento.TipoDocumentoCodigo),
-        PorOpcao = documento.PorOpcao is { } porOpcao
-            ? new ExigenciaPorOpcao(
-                TextoGravavel.CodigoNaFormaGravada(porOpcao.FatoCodigo), [.. porOpcao.Exceto.Select(static v => TextoGravavel.CodigoNaFormaGravada(v))])
-            : null,
-    };
-
     private IEnumerable<(string Campo, string? Texto)> TextosDoConteudo() =>
         new (string, string?)[] { ("titulo", Titulo) }
             .Concat(Etapas.SelectMany(TextosDaEtapa))
             .Concat(Itens.SelectMany(static (item, i) => TextosDoCampo($"itens[{i}]", item)))
             .Concat(Grupos.SelectMany(TextosDoGrupo))
             .Concat(Termos.SelectMany(TextosDoTermo))
-            .Concat(Documentos.SelectMany(TextosDoDocumento))
+            .Concat(Documentos.ComCaminho().SelectMany(static c => TextosDoDocumento(c.Documento, c.Caminho)))
+            .Concat(Documentos.GruposDeDocumentos.SelectMany(TextosDoGrupoDeDocumentos))
             .Concat(Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDaEtapa(EtapaDoModelo etapa, int indice) =>
@@ -188,18 +179,25 @@ public sealed record ConteudoDoModelo(
         new (string, string?)[] { ($"termos[{indice}].codigo", termo.Codigo) }
             .Concat(TextosDosPredicados($"termos[{indice}]", termo.Predicados()));
 
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoDocumento(DocumentoExigidoDoModelo documento, int indice)
-    {
-        string caminho = $"documentosExigidos[{indice}]";
-        return new (string, string?)[]
-            {
-                ($"{caminho}.faseCodigo", documento.FaseCodigo), ($"{caminho}.tipoDocumentoCodigo", documento.TipoDocumentoCodigo),
-                ($"{caminho}.consequenciaIndeferimento", documento.ConsequenciaIndeferimento),
-            }
-            .Concat(TextosDosPredicados(caminho, documento.Predicados()))
-            .Concat(TextosDaExigenciaPorOpcao($"{caminho}.porOpcao", documento.PorOpcao))
-            .Concat(documento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.basesLegais[{j}]", b)));
-    }
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupoDeDocumentos(GrupoDeDocumentosDoModelo grupo, int indice) =>
+        grupo.Indeferimento is { } indeferimento
+            ? TextosDoIndeferimentoDoGrupo($"{ConjuntoDeDocumentosDoModelo.CaminhoDoGrupo(indice)}.indeferimento", indeferimento)
+            : [];
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoIndeferimentoDoGrupo(string caminho, IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento) =>
+        indeferimento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.basesLegais[{j}]", b))
+            .Prepend(($"{caminho}.consequencia", (string?)indeferimento.Consequencia));
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoDocumento(DocumentoExigidoDoModelo documento, string caminho) =>
+        new (string, string?)[]
+        {
+            ($"{caminho}.faseCodigo", documento.FaseCodigo), ($"{caminho}.tipoDocumentoCodigo", documento.TipoDocumentoCodigo),
+            ($"{caminho}.indeferimento.consequencia", documento.Indeferimento.Consequencia),
+        }
+        .Concat(TextosDosPredicados(caminho, documento.Predicados()))
+        .Concat(documento.Requisitos.TextosDasReferencias(caminho))
+        .Concat(TextosDaExigenciaPorOpcao($"{caminho}.porOpcao", documento.PorOpcao))
+        .Concat(documento.Indeferimento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.indeferimento.basesLegais[{j}]", b)));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDaExigenciaPorOpcao(string caminho, ExigenciaPorOpcao? porOpcao)
     {
@@ -212,7 +210,7 @@ public sealed record ConteudoDoModelo(
             .Prepend(($"{caminho}.fatoCodigo", porOpcao.FatoCodigo));
     }
 
-    private static (string Campo, string? Texto)[] TextosDaBaseLegal(string caminho, BaseLegalDoDocumentoDoModelo baseLegal) =>
+    private static (string Campo, string? Texto)[] TextosDaBaseLegal(string caminho, BaseLegalDoModelo baseLegal) =>
         new (string, string?)[]
         {
             ($"{caminho}.referencia", baseLegal.Referencia), ($"{caminho}.abrangencia", baseLegal.Abrangencia),
