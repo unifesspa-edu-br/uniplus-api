@@ -268,8 +268,8 @@ internal static class LeituraDosFormularios
         }
 
         Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-            d.Codigo, d.Ordem, EstruturaFormulario.TipoDoToken(d.Tipo), EstruturaFormulario.BlocoDoToken(d.Bloco), d.Titulo, d.Descricao, d.Aviso,
-            exibicao);
+            new EtapaEstrutura(d.Codigo, d.Ordem, EstruturaFormulario.TipoDoToken(d.Tipo), EstruturaFormulario.BlocoDoToken(d.Bloco)),
+            d.Titulo, d.Descricao, d.Aviso, exibicao);
         return etapa.IsFailure ? leitor.Propagar<EtapaFormulario?>(etapa.Error!) : etapa.Value;
     }
 

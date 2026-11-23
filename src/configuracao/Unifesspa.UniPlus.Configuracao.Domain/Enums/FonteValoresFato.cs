@@ -42,4 +42,7 @@ public enum FonteValoresFato
     /// processo, independentemente do atendimento especializado (UNI-REQ-0012).
     /// </summary>
     TiposDeficiencia,
+
+    /// <summary>Os municípios declarados para a prova presencial, pelo código IBGE.</summary>
+    MunicipiosProvaPresencial,
 }

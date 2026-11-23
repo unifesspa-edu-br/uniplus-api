@@ -158,7 +158,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
 
     [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]
     public void Bloco_ComExibicao_Recusa() =>
-        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null,
+        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
@@ -169,9 +169,9 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     private static IReadOnlyList<EtapaFormulario> EtapasComSecaoCondicionada() =>
         [
             FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-            EtapaFormulario.Criar("RENDA", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda", null, null,
+            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Renda", null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("REGIME_DE_VAGA", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!)]).Value!).Value!,
-            EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
 }

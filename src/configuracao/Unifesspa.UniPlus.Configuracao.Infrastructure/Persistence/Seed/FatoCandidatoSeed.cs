@@ -62,8 +62,7 @@ public static class FatoCandidatoSeed
     private const string PontoResolucaoResultadoFinal = "RESULTADO_FINAL";
 
     /// <summary>
-    /// Todo fato semeado trata o dado por cumprimento de obrigação legal: a Lei nº 12.711/2012 e
-    /// o edital regem cada um deles (LGPD, art. 7º, II, e art. 11, II, a).
+    /// Hipótese legal padrão dos fatos semeados (LGPD, art. 7º, II, e art. 11, II, a).
     /// </summary>
     public const HipoteseLegalTratamento HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
@@ -84,12 +83,6 @@ public static class FatoCandidatoSeed
 
     internal const string FinalidadeIsencaoDaTaxa =
         "Análise do pedido de isenção da taxa de inscrição do processo seletivo.";
-
-    private const string FinalidadeIdentificacao =
-        "Identificação do candidato no processo seletivo.";
-
-    private const string FinalidadeComunicacao =
-        "Comunicação com o candidato sobre o processo seletivo.";
 
     internal const string FinalidadeImportacaoDeNotasDoEnem =
         "Importação das notas do ENEM da edição escolhida pelo candidato, na classificação do processo seletivo.";
@@ -253,59 +246,7 @@ public static class FatoCandidatoSeed
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{CandidatoComoMembro.FatoParentesco}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
-        // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
-        // os contatos do candidato. A UF do RG e a naturalidade têm as UFs e os municípios do Geo
-        // como opções; o órgão emissor do RG, uma lista fechada, e o nome do órgão que falta nela. O
-        // nome social é pessoal na consulta administrativa, como os demais (ADR-0082, ADR-0153).
-        // O nome civil vem do login (gov.br) e é igual ao do token: não passa por regra de formato.
-        DadoBasico(27, "NOME", "Nome", "Nome civil do candidato, como vem do login gov.br.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
-        DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", "Se o candidato deseja ser identificado pelo nome social no processo seletivo.", DominioFato.Booleano, FinalidadeIdentificacao),
-        DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", "Nome pelo qual o candidato prefere ser identificado e que aparece no lugar do nome civil.", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.NomePessoa),
-        DadoBasico(30, "CPF", "CPF", "Número do CPF do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Cpf,
-            classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(31, "RG_NUMERO", "Número do RG", "Número do RG do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre,
-            classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", "Órgão que emitiu o RG do candidato, entre os de uma lista fechada.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(56, "RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor do RG", "O órgão emissor do RG que não está na lista.", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.Livre),
-        DadoBasico(33, "RG_DATA_EMISSAO", "Data de emissão do RG", "Data em que o RG do candidato foi emitido.", DominioFato.Data, FinalidadeIdentificacao),
-        DadoBasico(51, "PASSAPORTE_NUMERO", "Número do passaporte", "Número do passaporte do candidato.", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.Livre, classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(52, "RNM_NUMERO", "Número do Registro Nacional Migratório (RNM)", "Número do Registro Nacional Migratório (RNM) do candidato.", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.Livre, classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(36, "NOME_MAE", "Nome da mãe", "Nome da mãe do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
-        DadoBasico(37, "NOME_PAI", "Nome do pai", "Nome do pai do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
-        // Sexo civil, identidade de gênero e orientação sexual (uniplus-developers#316): vocabulários
-        // normativos declarados pelo candidato. A identidade de gênero e a orientação sexual são
-        // dados pessoais sensíveis (LGPD, art. 5º, II) e se gravam com cifra individual.
-        DadoBasico(57, "SEXO_CIVIL", "Sexo civil", "Sexo que consta do registro civil do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(58, "IDENTIDADE_GENERO", "Identidade de gênero", "Identidade de gênero que o candidato declara.", DominioFato.Categorico, FinalidadeIdentificacao,
-            fonte: FonteValoresFato.Global, classificacao: ClassificacaoDeProtecao.Sensivel),
-        DadoBasico(59, "ORIENTACAO_SEXUAL", "Orientação sexual", "Orientação sexual que o candidato declara.", DominioFato.Categorico, FinalidadeIdentificacao,
-            fonte: FonteValoresFato.Global, classificacao: ClassificacaoDeProtecao.Sensivel),
-        DadoBasico(38, "ESTADO_CIVIL", "Estado civil", "Estado civil do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(39, "EMAIL", "E-mail", "Endereço de e-mail para comunicação com o candidato.", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
-        DadoBasico(40, "TELEFONE", "Telefone", "Telefone, com DDD, para comunicação com o candidato.", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
-        DadoBasico(41, "RG_UF", "UF de emissão do RG", "Unidade da Federação que emitiu o RG do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
-        DadoBasico(42, "NATURALIDADE_UF", "UF de nascimento", "Unidade da Federação em que o candidato nasceu.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
-        DadoBasico(43, "NATURALIDADE_MUNICIPIO", "Município de nascimento", "Município em que o candidato nasceu.", DominioFato.Categorico, FinalidadeIdentificacao,
-            fonte: FonteValoresFato.GeoMunicipio),
-
-        // O tipo de localidade da residência, perguntado antes do endereço, e o nome da aldeia, da
-        // comunidade tradicional ou do quilombo de quem mora em um deles.
-        DadoBasico(44, "TIPO_ENDERECO", "Tipo de localidade", "Tipo de localidade em que o candidato reside, perguntado antes do endereço.", DominioFato.Categorico, FinalidadeResidencia, fonte: FonteValoresFato.Global),
-        DadoBasico(45, "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", "Nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.", DominioFato.Texto, FinalidadeResidencia,
-            formato: FormatoTexto.Livre),
-
-        // A origem escolar em duas perguntas (UNI-REQ-0148): vocabulários normativos, de que o egresso
-        // de escola pública deriva.
-        DadoBasico(46, OrigemEscolar.FatoFormaDeConclusao, "Forma de conclusão do ensino médio",
-            "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM.", DominioFato.Categorico,
-            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global),
-        DadoBasico(47, OrigemEscolar.FatoOndeCursou, "Onde cursou o ensino médio",
-            "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo.", DominioFato.Categorico,
-            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global),
+        .. DadosBasicosDoCandidatoSeed.Itens,
 
         // A renda declarada no pedido de isenção da taxa, conhecida na fase dele, que a condição da Lei nº 12.799/2013 cita
         // ao lado da origem escolar (UNI-REQ-0149).
@@ -323,6 +264,12 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{EdicaoDoEnem.Fato}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeImportacaoDeNotasDoEnem),
+
+        new(SeedId(61), "CIDADE_DE_PROVA", "Cidade de prova", "Cidade de prova escolhida pelo candidato entre as cidades de aplicação da prova.",
+            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosProvaPresencial,
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CIDADE_DE_PROVA",
+            ClassificacaoDeProtecao.Pessoal, "Organização da aplicação da prova presencial do processo seletivo.",
+            HipoteseLegal: HipoteseLegalTratamento.ExecucaoPoliticasPublicas),
 
         // A condição de indígena é dado próprio, e não só um valor da cor ou raça: exige declaração de
         // pertencimento e passa só por análise de documentos, sem heteroidentificação (UNI-REQ-0147).
@@ -363,19 +310,7 @@ public static class FatoCandidatoSeed
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
     ];
 
-    /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>
-    private static FatoCandidatoSeedItem DadoBasico(
-        int n,
-        string codigo,
-        string nome,
-        string descricao,
-        DominioFato dominio,
-        string finalidade,
-        FonteValoresFato? fonte = null,
-        FormatoTexto? formato = null,
-        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
-        new(SeedId(n), codigo, nome, descricao, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
-            PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{codigo}", classificacao, finalidade, Formato: formato);
+
 }
 
 /// <summary>
@@ -400,4 +335,5 @@ public sealed record FatoCandidatoSeedItem(
     EscopoFato Escopo = EscopoFato.Candidato,
     FormatoTexto? Formato = null,
     IReadOnlyList<RegraDerivacao>? RegrasPadrao = null,
-    ComponenteDeExibicao? ComponenteExibicao = null);
+    ComponenteDeExibicao? ComponenteExibicao = null,
+    HipoteseLegalTratamento HipoteseLegal = FatoCandidatoSeed.HipoteseLegal);

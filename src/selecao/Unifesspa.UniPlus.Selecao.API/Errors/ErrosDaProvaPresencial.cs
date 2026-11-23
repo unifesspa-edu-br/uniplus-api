@@ -15,5 +15,7 @@ internal static class ErrosDaProvaPresencial
         new(ProvaPresencialErrorCodes.MunicipioRepetido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prova_presencial.municipio_repetido", "Município de prova repetido")),
         new(ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prova_presencial.municipios_acima_do_limite", "Limite de municípios de prova excedido")),
         new(ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prova_presencial.municipio_nao_conferido_no_geo", "Município de prova não encontrado no Geo")),
+        new(ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prova_presencial.inscricao_sem_cidade_de_prova", "Cidade de prova ausente no formulário")),
+        new(ProvaPresencialErrorCodes.CidadeDeProvaSemProvaPresencial, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.prova_presencial.cidade_de_prova_sem_prova_presencial", "Cidade de prova sem prova presencial")),
     ];
 }

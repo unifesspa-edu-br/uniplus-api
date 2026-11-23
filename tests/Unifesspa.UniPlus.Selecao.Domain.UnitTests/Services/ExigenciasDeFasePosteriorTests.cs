@@ -185,7 +185,7 @@ public sealed class ExigenciasDeFasePosteriorTests
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid faseId) =>
         FormularioProcesso.Criar(
             finalidade, faseId, null,
-            [EtapaFormulario.Criar("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!]).Value!;
+            [EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

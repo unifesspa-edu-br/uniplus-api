@@ -29,7 +29,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// </param>
 /// <param name="FonteValores">
 /// De onde vêm os valores de um categórico (ADR-0136) — token canônico (GLOBAL, PROCESSO,
-/// MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO, TIPOS_DEFICIENCIA), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
+/// MODALIDADE, MUNICIPIOS_BONUS, MUNICIPIOS_PROVA_PRESENCIAL, GEO_UF, GEO_MUNICIPIO, TIPOS_DEFICIENCIA), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
 /// nunca pelo código do fato.
 /// </param>
 /// <param name="Ativo">

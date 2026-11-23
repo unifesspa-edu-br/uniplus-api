@@ -245,9 +245,9 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
     [
-        EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-        EtapaFormulario.Criar("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Cotas", null, null, Cita("EGRESSO")).Value!,
-        EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Cotas", null, null, Cita("EGRESSO")).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
     ]).Value!;
 
     [Fact(DisplayName = "Seção com exibição é nó do grafo: o fato citado vem antes dela, e ela antes dos seus campos")]
@@ -296,10 +296,10 @@ public sealed class GrafoDependenciaConjuntaTests
     {
         FormularioProcesso inscricao = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
         [
-            EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-            EtapaFormulario.Criar("AVISO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Aviso", null, null, Cita("EGRESSO")).Value!,
-            EtapaFormulario.Criar("FINAL", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Final", null, null).Value!,
-            EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("AVISO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Aviso", null, null, Cita("EGRESSO")).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("FINAL", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Final", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ]).Value!;
 
         GrafoDependenciaConjunta grafo = Construir(

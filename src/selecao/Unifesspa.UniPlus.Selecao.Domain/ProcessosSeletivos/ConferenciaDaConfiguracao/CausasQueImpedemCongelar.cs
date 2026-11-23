@@ -44,7 +44,11 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
         new(NomeDoAssunto.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
         new(NomeDoAssunto.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
-        new(NomeDoAssunto.ProvaPresencial, static c => ConferenciaDaProvaPresencial.Conferir(c.Configuracao.ProvaPresencial, c.Cadastros.MunicipiosDoGeo, c.Cadastros.LimiteDeMunicipiosDeProva)),
+        new(NomeDoAssunto.ProvaPresencial, static c =>
+        [
+            .. ConferenciaDaProvaPresencial.Conferir(c.Configuracao.ProvaPresencial, c.Cadastros.MunicipiosDoGeo, c.Cadastros.LimiteDeMunicipiosDeProva),
+            .. CidadeDeProvaNosFormularios.Conferir(c.Configuracao),
+        ]),
     ];
 
     internal static IReadOnlyList<FieldError> De(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>

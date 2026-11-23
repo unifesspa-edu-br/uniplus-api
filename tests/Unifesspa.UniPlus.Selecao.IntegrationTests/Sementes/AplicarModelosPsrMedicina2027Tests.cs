@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
@@ -53,6 +54,17 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
         AfirmarDocumentosDoAtendimento(processo);
         AfirmarCamposDoBonusEDoAtendimento(processo);
+    }
+
+    [Fact]
+    public async Task ModeloComProva_Aplicado_AtendeConferenciaDaCidadeDeProva()
+    {
+        ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoComProva);
+        processo.DefinirProvaPresencial(true, [new("1504208", "PA")], 100).IsSuccess.Should().BeTrue();
+
+        processo.Campos.Should().ContainSingle(static c => c.FatoCodigo == "CIDADE_DE_PROVA")
+            .Which.OrigemValores.Should().Be(OrigemValoresColeta.MunicipiosDaProvaPresencial);
+        CidadeDeProvaNosFormularios.Conferir(processo.Declaracao()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A inscrição sem prova e a habilitação são aplicadas ao processo PSR que oferta atendimento, sem pergunta de atendimento nem documento do atendimento")]

@@ -395,7 +395,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, FaseCronograma fase) =>
         FormularioProcesso.Criar(
             finalidade, fase.Id, null,
-            [EtapaFormulario.Criar("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!]).Value!;
+            [EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

@@ -34,7 +34,7 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// caminhos (publicação nova e retificação) pela MESMA forma.
 /// </para>
 /// <para>
-/// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072, ADR-0136). O
+/// Origens para o valor de um fato categórico coletado (UNI-REQ-0072, ADR-0136). O
 /// catálogo de fonte GLOBAL (COR_RACA, SEXO, NACIONALIDADE — <c>ValoresDominioDeclarados</c>) é
 /// filtrado: entram os valores ativos e os desativados que uma condição do processo já cita, porque
 /// desativar recusa só vínculo novo (ADR-0136). Para as demais, decide a origem copiada para o
@@ -42,7 +42,7 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// publicação: as opções do PRÓPRIO processo, pela mesma leitura que valida predicado
 /// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>); ou os municípios do bônus regional, com o código
 /// IBGE como valor, "Município/UF" como rótulo e a ordem alfabética de nome de
-/// <c>VocabularioDeFatos.MunicipiosDoBonus</c>.
+/// <c>VocabularioDeFatos.MunicipiosDoBonus</c>; ou os municípios da prova presencial, na ordem declarada.
 /// </para>
 /// <para>
 /// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler, o mesmo
@@ -163,6 +163,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             {
                 OrigemValoresColeta.OpcoesDoProcesso => Result<ValoresDoCampo>.Success(OpcoesDoProcesso(fato)),
                 OrigemValoresColeta.MunicipiosDoBonus => Result<ValoresDoCampo>.Success(MunicipiosDoBonus()),
+                OrigemValoresColeta.MunicipiosDaProvaPresencial => Result<ValoresDoCampo>.Success(MunicipiosDaProvaPresencial()),
                 OrigemValoresColeta.UnidadesFederativas => Result<ValoresDoCampo>.Success(UnidadesFederativas()),
                 _ => DoCatalogo(fato, fatoNoCatalogo),
             };
@@ -172,6 +173,10 @@ internal static class ResolvedorValoresSelecionaveisCongelados
 
         private ValoresDoCampo MunicipiosDoBonus() =>
             [.. VocabularioDeFatos.MunicipiosDoBonus(processo)
+                .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))];
+
+        private ValoresDoCampo MunicipiosDaProvaPresencial() =>
+            [.. (processo.ProvaPresencial?.Municipios ?? [])
                 .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))];
 
         private static ValoresDoCampo UnidadesFederativas() =>

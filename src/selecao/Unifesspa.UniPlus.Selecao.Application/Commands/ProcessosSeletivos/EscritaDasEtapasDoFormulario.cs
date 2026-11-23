@@ -56,10 +56,11 @@ internal static class EscritaDasEtapasDoFormulario
 
     private static Result<EtapaFormulario> CriarEtapa(EtapaFormularioInput entrada, PredicadoDnf? exibicao) =>
         EtapaFormulario.Criar(
-            entrada.Codigo,
-            entrada.Ordem,
-            EstruturaFormulario.TipoDoToken(entrada.Tipo),
-            EstruturaFormulario.BlocoDoToken(entrada.Bloco),
+            new EtapaEstrutura(
+                entrada.Codigo,
+                entrada.Ordem,
+                EstruturaFormulario.TipoDoToken(entrada.Tipo),
+                EstruturaFormulario.BlocoDoToken(entrada.Bloco)),
             entrada.Apresentacao?.Titulo ?? string.Empty,
             entrada.Apresentacao?.Descricao,
             entrada.Apresentacao?.Aviso,

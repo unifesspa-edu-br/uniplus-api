@@ -70,7 +70,7 @@ public sealed class FormulariosPorFinalidadeTests
 
     [Fact(DisplayName = "Aviso da etapa acima do limite é recusado no próprio campo")]
     public void Etapa_AvisoLongo_RecusaNoCampoAviso() =>
-        EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, new string('a', 2001))
+        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, new string('a', 2001))
             .Errors.Should().ContainSingle().Which.Field.Should().Be("apresentacao.aviso");
 
     [Theory(DisplayName = "Item em bloco de sistema ou em etapa inexistente é recusado na definição")]
@@ -97,7 +97,7 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
-        EtapaFormulario soSecao = EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!;
+        EtapaFormulario soSecao = EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!;
 
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), [soSecao])
             .Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
@@ -113,8 +113,8 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        EtapaFormulario outraSecao = EtapaFormulario.Criar("OUTRA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Outra", null, null).Value!;
-        EtapaFormulario revisao = EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!;
+        EtapaFormulario outraSecao = EtapaFormulario.Criar(new EtapaEstrutura("OUTRA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Outra", null, null).Value!;
+        EtapaFormulario revisao = EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!;
 
         processo.DefinirFormulario(
                 FinalidadeFormulario.Inscricao, processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId, null,

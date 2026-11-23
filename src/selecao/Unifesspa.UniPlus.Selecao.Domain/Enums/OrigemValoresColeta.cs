@@ -19,4 +19,7 @@ public enum OrigemValoresColeta
 
     /// <summary>As opções são as unidades federativas (fonte <c>GEO_UF</c>), enumeradas sem consultar o Geo.</summary>
     UnidadesFederativas = 3,
+
+    /// <summary>As opções são os municípios da prova presencial do processo.</summary>
+    MunicipiosDaProvaPresencial = 4,
 }

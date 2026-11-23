@@ -28,6 +28,7 @@ internal static class VocabularioDeFatos
     private const string FonteProcesso = "PROCESSO";
     private const string FonteModalidade = "MODALIDADE";
     private const string FonteMunicipiosBonus = "MUNICIPIOS_BONUS";
+    private const string FonteMunicipiosProvaPresencial = OrigemValoresColetaCodigo.MunicipiosDaProvaPresencial;
     private const string FonteGeoUf = DominioDoCatalogo.FonteGeoUf;
     private const string FonteGeoMunicipio = DominioDoCatalogo.FonteGeoMunicipio;
     private const string FonteTiposDeficiencia = DominioDoCatalogo.FonteTiposDeficiencia;
@@ -55,7 +56,7 @@ internal static class VocabularioDeFatos
     private static TipoDominioFato? ClassificarCategorico(string? fonteValores) => fonteValores switch
     {
         FonteGlobal or FonteTiposDeficiencia => TipoDominioFato.CategoricoEstatico,
-        FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteGeoUf or FonteGeoMunicipio => TipoDominioFato.CategoricoDinamico,
+        FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteMunicipiosProvaPresencial or FonteGeoUf or FonteGeoMunicipio => TipoDominioFato.CategoricoDinamico,
         _ => null,
     };
 
@@ -214,6 +215,7 @@ internal static class VocabularioDeFatos
         {
             { Dominio: DominioCategorico, FonteValores: FonteProcesso } => OrigemValoresColeta.OpcoesDoProcesso,
             { Dominio: DominioCategorico, FonteValores: FonteMunicipiosBonus } => OrigemValoresColeta.MunicipiosDoBonus,
+            { Dominio: DominioCategorico, FonteValores: FonteMunicipiosProvaPresencial } => OrigemValoresColeta.MunicipiosDaProvaPresencial,
             { Dominio: DominioCategorico, FonteValores: FonteGeoUf } => OrigemValoresColeta.UnidadesFederativas,
             _ => OrigemValoresColeta.Catalogo,
         };
@@ -233,7 +235,7 @@ internal static class VocabularioDeFatos
 
     /// <summary>
     /// O domínio de cada fato categórico dinâmico do catálogo neste processo: as opções que o
-    /// processo declara, as modalidades que ele oferta, os municípios do bônus regional ou, nos
+    /// processo declara, as modalidades que ele oferta, os municípios do bônus regional e da prova presencial ou, nos
     /// derivados de residência, as UFs e os municípios do Geo. Uma condição que cite o fato é
     /// validada contra esse conjunto, nunca contra um catálogo global. O agregado sobre grupo
     /// repetível não tem opções próprias: as do processo são as do fato de membro.
@@ -257,7 +259,7 @@ internal static class VocabularioDeFatos
             {
                 FonteProcesso => OpcoesDeclaradasPeloProcesso(processo, fato),
                 FonteModalidade => DominioDeValores.OfertadoPeloProcesso(processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)),
-                FonteMunicipiosBonus => DominioDeValores.OfertadoPeloProcesso(MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge)),
+                FonteMunicipiosBonus or FonteMunicipiosProvaPresencial => DominioDosMunicipios(processo, fato.FonteValores),
                 FonteGeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
 
                 // Os municípios vêm do Geo, que o servidor não enumera: a condição cita um código
@@ -265,6 +267,11 @@ internal static class VocabularioDeFatos
                 FonteGeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
                 _ => null,
             };
+
+    private static DominioDeValores DominioDosMunicipios(ProcessoSeletivo processo, string fonte) =>
+        DominioDeValores.OfertadoPeloProcesso(fonte == FonteMunicipiosBonus
+            ? MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge)
+            : (processo.ProvaPresencial?.Municipios ?? []).Select(static m => m.CodigoIbge));
 
     private static DominioDeValores OpcoesDeclaradasPeloProcesso(ProcessoSeletivo processo, FatoCandidatoView fato) =>
         DominioDeValores.OfertadoPeloProcesso(

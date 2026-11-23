@@ -16,7 +16,7 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.Seme
 
 /// <summary>
 /// O conteúdo dos modelos de formulário do edital de Medicina 2027: a inscrição, com e sem prova, que
-/// partem das mesmas partes e diferem só pelo atendimento especializado, e a habilitação. É construído
+/// partem das mesmas partes e diferem pela cidade de prova e pelo atendimento especializado, e a habilitação. É construído
 /// pelos records do domínio; <see cref="ModeloFormulario.Criar"/> o confere ao gravar.
 /// </summary>
 internal static class ModelosDaSementePsrMedicina2027
@@ -26,6 +26,7 @@ internal static class ModelosDaSementePsrMedicina2027
     private const string ReservaDeVagas = "RESERVA_DE_VAGAS";
     private const string Fator = "FATOR_ATENUACAO";
     private const string Atendimento = "ATENDIMENTO_ESPECIALIZADO";
+    private const string CidadeDeProva = "CIDADE_DE_PROVA";
     private const string Conclusao = "CONCLUSAO_ENSINO_MEDIO";
     private const string Familia = "COMPOSICAO_FAMILIAR";
 
@@ -93,6 +94,7 @@ internal static class ModelosDaSementePsrMedicina2027
         .. CamposDeConcorrenciaPorCota(),
         .. CamposDeRenda(),
         .. comProva ? CamposDoAtendimento() : Array.Empty<ItemDoModelo>(),
+        .. comProva ? [Campo(CidadeDeProva, 121, CidadeDeProva, "Em qual cidade você fará a prova?", TipoRenderizacao.SelecaoUnica, null)] : Array.Empty<ItemDoModelo>(),
     ];
 
     private static EtapaDoModelo[] EtapasDaInscricao(bool comProva) =>
@@ -102,9 +104,10 @@ internal static class ModelosDaSementePsrMedicina2027
         Secao(Fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
         Secao(ReservaDeVagas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
         .. comProva ? [SecaoDoAtendimento()] : Array.Empty<EtapaDoModelo>(),
-        Bloco("MODALIDADES", 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
-        Bloco("DOCUMENTOS", 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-        Bloco("REVISAO", 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+        .. comProva ? [Secao(CidadeDeProva, 6, "Cidade de prova", "Escolha a cidade onde você fará a prova.")] : Array.Empty<EtapaDoModelo>(),
+        Bloco("MODALIDADES", comProva ? 7 : 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
+        Bloco("DOCUMENTOS", comProva ? 8 : 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+        Bloco("REVISAO", comProva ? 9 : 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
     ];
 
     private static ItemDoModelo[] CamposDoEnemEDaEscolaridade() =>

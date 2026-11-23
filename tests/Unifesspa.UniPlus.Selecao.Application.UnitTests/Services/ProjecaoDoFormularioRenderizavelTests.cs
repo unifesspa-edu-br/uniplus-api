@@ -206,8 +206,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         FormularioProcesso.Criar(
             finalidade, null, null,
             [
-                EtapaFormulario.Criar(Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
-                EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura(Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
     private static FatoColetado Campo(

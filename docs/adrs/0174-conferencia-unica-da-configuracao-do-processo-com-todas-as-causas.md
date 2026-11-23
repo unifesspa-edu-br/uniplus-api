@@ -98,3 +98,7 @@ Consequência: as primeiras causas não mudam para quem já declarava tudo, porq
 
 - Emendada pela [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md): saem a restauração, o rascunho de retificação aberto e o fechamento da sessão, e a retificação passa a ser conferida só por esta conferência.
 - [ADR-0110](0110-retificacao-como-sessao-editorial.md), [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md), [ADR-0167](0167-servicos-de-aplicacao-com-dependencia-no-construtor-e-orquestrador-do-congelamento.md), [ADR-0173](0173-regras-da-configuracao-sobre-declaracoes-parciais.md).
+
+## Emenda (2026-11-23) — cidade de prova nos formulários
+
+A prova presencial é o último assunto da conferência, depois dos motivos de decisão. Após a conferência da declaração e dos municípios, a conferência exige a cidade de prova no formulário de inscrição quando há prova presencial e recusa o campo em qualquer formulário quando não há prova presencial. Enquanto a prova estiver por declarar, somente a falta da declaração é apontada. O painel usa a mesma regra no item `cidade_de_prova_nos_formularios`.

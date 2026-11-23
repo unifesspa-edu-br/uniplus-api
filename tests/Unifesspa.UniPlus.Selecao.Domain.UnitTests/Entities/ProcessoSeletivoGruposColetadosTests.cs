@@ -119,7 +119,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         EtapaFormulario[] semADeDados =
         [
             FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ];
 
         Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados);
