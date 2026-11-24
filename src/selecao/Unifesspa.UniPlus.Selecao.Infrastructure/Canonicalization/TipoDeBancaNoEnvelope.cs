@@ -31,6 +31,9 @@ internal static class TipoDeBancaNoEnvelope
         banca["exigeDuasOuMaisBancas"] = tipo.ExigeDuasOuMaisBancas;
         banca["encerraRecursoNaPrimeiraInstancia"] = tipo.EncerraRecursoNaPrimeiraInstancia;
         banca[CampoDosTiposDeDecisao] = TiposDeDecisaoNoEnvelope.Serializar(tipo.TiposDeDecisaoJulgados);
+        TiposDeDecisaoNoEnvelope.AcrescentarContexto(banca, CampoDosTiposDeDecisao, tipo.TiposDeDecisaoJulgados);
+        ContextoDosRotulos.Acrescentar(banca, "codigo", tipo.Codigo);
+        ContextoDosRotulos.Acrescentar(banca, "papel", tipo.Papel);
     }
 
     internal static TipoDeBancaCopiado? Ler(LeitorEnvelope leitor, JsonObject banca, string path)

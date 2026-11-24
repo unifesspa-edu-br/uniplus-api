@@ -65,7 +65,7 @@ public sealed class FaixaDeDataDoEsquemaTests
         JsonArray itens = new([.. dados.Select(dado => (JsonNode)new JsonObject
         {
             ["codigoDoDado"] = dado!["codigoDoDado"]!.DeepClone(),
-            ["restricoes"] = dado["restricoes"]!.DeepClone(),
+            ["restricoes"] = SemContexto(dado["restricoes"]!.DeepClone()),
         })]);
         return new JsonObject
         {
@@ -116,4 +116,23 @@ public sealed class FaixaDeDataDoEsquemaTests
 
         Esquema.Evaluate(JsonSerializer.SerializeToElement(restricao)).IsValid.Should().Be(valido);
     }
+
+    // O rascunho é escrito por quem edita e não traz o contexto de rótulos que só o congelado registra.
+    private static JsonNode SemContexto(JsonNode no)
+    {
+        foreach (JsonNode filho in Filhos(no))
+        {
+            SemContexto(filho);
+        }
+
+        (no as JsonObject)?.Remove("contexto");
+        return no;
+    }
+
+    private static JsonNode[] Filhos(JsonNode no) => no switch
+    {
+        JsonObject objeto => [.. objeto.Select(static par => par.Value).OfType<JsonNode>()],
+        JsonArray lista => [.. lista.OfType<JsonNode>()],
+        _ => [],
+    };
 }

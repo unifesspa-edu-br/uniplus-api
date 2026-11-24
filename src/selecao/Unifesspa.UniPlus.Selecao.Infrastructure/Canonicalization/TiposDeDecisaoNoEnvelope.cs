@@ -14,7 +14,14 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 internal static class TiposDeDecisaoNoEnvelope
 {
     internal static JsonArray Serializar(IReadOnlyList<TipoMotivoDeDecisao> tipos) =>
-        new([.. tipos.Select(static tipo => tipo.Codigo()).Order(StringComparer.Ordinal).Select(static codigo => (JsonNode)codigo)]);
+        new([.. EmOrdemDoEnvelope(tipos).Select(static tipo => (JsonNode)tipo.Codigo())]);
+
+    /// <summary>Grava no contexto do lugar os rótulos dos tipos, na ordem dos códigos escritos por <see cref="Serializar"/>.</summary>
+    internal static void AcrescentarContexto(JsonObject lugar, string campo, IReadOnlyList<TipoMotivoDeDecisao> tipos) =>
+        ContextoDosRotulos.AcrescentarLista(lugar, campo, EmOrdemDoEnvelope(tipos));
+
+    private static IEnumerable<TipoMotivoDeDecisao> EmOrdemDoEnvelope(IReadOnlyList<TipoMotivoDeDecisao> tipos) =>
+        tipos.OrderBy(static tipo => tipo.Codigo(), StringComparer.Ordinal);
 
     /// <summary>
     /// Lê os tipos como o envelope os escreve: do vocabulário, sem repetição e em ordem. A forma que a escrita

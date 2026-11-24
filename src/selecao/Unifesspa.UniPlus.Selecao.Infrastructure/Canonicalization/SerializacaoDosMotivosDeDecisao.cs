@@ -14,19 +14,25 @@ internal static class SerializacaoDosMotivosDeDecisao
             .ThenBy(static m => HashCanonicalComputer.NormalizeNfc(m.Codigo), StringComparer.Ordinal)
             .ThenBy(static m => TipoDoLugar(m.Lugar), StringComparer.Ordinal)
             .ThenBy(static m => IdDoLugar(m.Lugar))
-            .Select(SerializarMotivo)]);
+            .Select(static m => (JsonNode)SerializarMotivo(m))]);
 
-    private static JsonNode SerializarMotivo(MotivoDeDecisaoDeclarado motivo) => new JsonObject
+    private static JsonObject SerializarMotivo(MotivoDeDecisaoDeclarado motivo)
     {
-        ["tipoDeDecisaoCodigo"] = motivo.Tipo.Codigo(),
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(motivo.Codigo),
-        ["lugar"] = SerializarLugar(motivo.Lugar),
-        ["descricao"] = HashCanonicalComputer.NormalizeNfc(motivo.Descricao),
-        ["subclassificacao"] = Normalizar(motivo.Subclassificacao),
-        ["sentido"] = motivo.Sentido.Codigo(),
-        ["versaoDoEditalDeEntrada"] = motivo.VersaoDeEntrada,
-        ["justificativaDaInclusao"] = Normalizar(motivo.JustificativaDaInclusao),
-    };
+        JsonObject objeto = new()
+        {
+            ["tipoDeDecisaoCodigo"] = motivo.Tipo.Codigo(),
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(motivo.Codigo),
+            ["lugar"] = SerializarLugar(motivo.Lugar),
+            ["descricao"] = HashCanonicalComputer.NormalizeNfc(motivo.Descricao),
+            ["subclassificacao"] = Normalizar(motivo.Subclassificacao),
+            ["sentido"] = motivo.Sentido.Codigo(),
+            ["versaoDoEditalDeEntrada"] = motivo.VersaoDeEntrada,
+            ["justificativaDaInclusao"] = Normalizar(motivo.JustificativaDaInclusao),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "tipoDeDecisaoCodigo", motivo.Tipo);
+        ContextoDosRotulos.Acrescentar(objeto, "sentido", motivo.Sentido);
+        return objeto;
+    }
 
     // A identidade armazenada preserva o lugar até que o documento passe a usar a chave da fase ou etapa.
     private static JsonObject SerializarLugar(LugarDaDecisao lugar) => new()

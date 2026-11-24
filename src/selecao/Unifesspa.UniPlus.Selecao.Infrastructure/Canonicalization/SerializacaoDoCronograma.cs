@@ -25,11 +25,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class SerializacaoDoCronograma
 {
-    internal static JsonObject SerializarCronogramaFases(ProcessoSeletivo processo) => new()
+    internal static JsonObject SerializarCronogramaFases(ProcessoSeletivo processo)
     {
-        ["origemCandidatos"] = processo.OrigemCandidatos.Codigo(),
-        ["fases"] = SerializarFasesCronograma(processo),
-    };
+        JsonObject objeto = new() { ["origemCandidatos"] = processo.OrigemCandidatos.Codigo(), ["fases"] = SerializarFasesCronograma(processo) };
+        ContextoDosRotulos.Acrescentar(objeto, "origemCandidatos", processo.OrigemCandidatos);
+        return objeto;
+    }
 
     private static JsonArray SerializarFasesCronograma(ProcessoSeletivo processo) =>
         new([.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)
@@ -51,6 +52,7 @@ internal static class SerializacaoDoCronograma
         item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
         item["tipoFaseNome"] = HashCanonicalComputer.NormalizeNfc(fase.TipoFaseNome);
         item["origemData"] = fase.OrigemData.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "origemData", fase.OrigemData);
         item["agrupaEtapas"] = fase.AgrupaEtapas;
         item["permiteComplementacao"] = fase.PermiteComplementacao;
         item["coletaInscricao"] = fase.ColetaInscricao;
@@ -72,6 +74,7 @@ internal static class SerializacaoDoCronograma
         item["emiteParecerIndividual"] = fase.EmiteParecerIndividual;
         item["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null;
         item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(fase.TiposDeDecisao);
+        TiposDeDecisaoNoEnvelope.AcrescentarContexto(item, "tiposDeDecisao", fase.TiposDeDecisao);
         item[RegraDeHomologacaoNoEnvelope.Chave] = fase.RegraDeHomologacao is { } regraDeHomologacao
             ? RegraDeHomologacaoNoEnvelope.Serializar(regraDeHomologacao)
             : null;
@@ -89,12 +92,19 @@ internal static class SerializacaoDoCronograma
     {
         IOrderedEnumerable<ProdutoDaFase> ordenados = OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos);
 
-        return new JsonArray([.. ordenados.Select(static p => (JsonNode)new JsonObject
+        return new JsonArray([.. ordenados.Select(static p => (JsonNode)SerializarProduto(p))]);
+    }
+
+    private static JsonObject SerializarProduto(ProdutoDaFase produto)
+    {
+        JsonObject objeto = new()
         {
-            ["id"] = p.Id,
-            ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-            ["papel"] = p.Papel?.Codigo(),
-        })]);
+            ["id"] = produto.Id,
+            ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(produto.AtoCodigo),
+            ["papel"] = produto.Papel?.Codigo(),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "papel", produto.Papel);
+        return objeto;
     }
 
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
@@ -140,7 +150,17 @@ internal static class SerializacaoDoCronograma
         ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(regraRecurso.Procedimentos),
     };
 
-    internal static JsonObject SerializarParametrosRegraPrazoRecurso(ParametrosRegraPrazoRecurso parametros) => new()
+    internal static JsonObject SerializarParametrosRegraPrazoRecurso(ParametrosRegraPrazoRecurso parametros)
+    {
+        JsonObject objeto = ParametrosDoPrazo(parametros);
+        ContextoDosRotulos.Acrescentar(objeto, "prazoUnidade", parametros.PrazoDeInterposicao.Unidade);
+        ContextoDosRotulos.Acrescentar(objeto, "prazoSegundaInstanciaUnidade", parametros.PrazoDaSegundaInstancia?.Unidade);
+        ContextoDosRotulos.Acrescentar(objeto, "efeitoSuspensivo", parametros.EfeitoSuspensivo);
+        ContextoDosRotulos.Acrescentar(objeto, "guardaDaVaga", parametros.GuardaDaVaga);
+        return objeto;
+    }
+
+    private static JsonObject ParametrosDoPrazo(ParametrosRegraPrazoRecurso parametros) => new()
     {
         ["prazoValor"] = Valor(parametros.PrazoDeInterposicao),
         ["prazoUnidade"] = parametros.PrazoDeInterposicao.Unidade.Codigo(),

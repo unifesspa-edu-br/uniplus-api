@@ -50,12 +50,17 @@ internal static class SerializacaoDaClassificacao
         _ => throw new InvalidOperationException($"Variante de {nameof(ParametrosCriterioDesempate)} não reconhecida: {parametros.GetType()}."),
     };
 
-    private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao) => new()
+    private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao)
     {
-        ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
-        ["operador"] = condicao.Operador.Codigo(),
-        ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
-    };
+        JsonObject objeto = new()
+        {
+            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
+            ["operador"] = condicao.Operador.Codigo(),
+            ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor)
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "operador", condicao.Operador);
+        return objeto;
+    }
 
     private static JsonObject SerializarAreasDoDesempate(IEnumerable<string> areas) => new()
     {

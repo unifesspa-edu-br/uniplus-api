@@ -41,12 +41,19 @@ internal static class SerializacaoDosPredicados
     }
 
     private static JsonArray SerializarClausula(IGrouping<int, LinhaDoPredicado> clausula) =>
-        EscritaCanonica.OrdenarPorConteudo(clausula.Select(static c => new JsonObject
+        EscritaCanonica.OrdenarPorConteudo(clausula.Select(SerializarCondicao));
+
+    private static JsonObject SerializarCondicao(LinhaDoPredicado condicao)
+    {
+        JsonObject objeto = new()
         {
-            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
-            ["operador"] = c.Operador.Codigo(),
-            ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
-        }));
+            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
+            ["operador"] = condicao.Operador.Codigo(),
+            ["valor"] = SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "operador", condicao.Operador);
+        return objeto;
+    }
 
     internal static JsonNode? SerializarValorDeAtomo(Operador operador, JsonElement valor)
     {

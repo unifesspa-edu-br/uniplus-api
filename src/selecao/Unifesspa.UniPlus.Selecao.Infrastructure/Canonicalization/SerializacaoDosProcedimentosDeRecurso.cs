@@ -14,18 +14,28 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class SerializacaoDosProcedimentosDeRecurso
 {
     internal static JsonArray Serializar(ProcedimentosDeRecurso procedimentos) =>
-        new([.. procedimentos.Itens.Select(static p => (JsonNode)new JsonObject
-        {
-            ["tipoDeDecisao"] = p.TipoDeDecisao.Codigo(),
-            ["alvo"] = SerializarAlvo(p.Alvo),
-            ["regra"] = EscritaCanonica.SerializarReferenciaRegra(p.Regra),
-        })]);
+        new([.. procedimentos.Itens.Select(static p => (JsonNode)SerializarProcedimento(p))]);
 
-    private static JsonObject? SerializarAlvo(AlvoDoProcedimentoDeRecurso? alvo) => alvo is null
-        ? null
-        : new JsonObject
+    private static JsonObject SerializarProcedimento(ProcedimentoDeRecursoDeclarado procedimento)
+    {
+        JsonObject objeto = new()
         {
-            ["tipo"] = alvo.Tipo.Codigo(),
-            ["valor"] = alvo.Valor,
+            ["tipoDeDecisao"] = procedimento.TipoDeDecisao.Codigo(),
+            ["alvo"] = SerializarAlvo(procedimento.Alvo),
+            ["regra"] = EscritaCanonica.SerializarReferenciaRegra(procedimento.Regra),
         };
+        ContextoDosRotulos.Acrescentar(objeto, "tipoDeDecisao", procedimento.TipoDeDecisao);
+        return objeto;
+    }
+
+    private static JsonObject? SerializarAlvo(AlvoDoProcedimentoDeRecurso? alvo)
+    {
+        if (alvo is null)
+        {
+            return null;
+        }
+        JsonObject objeto = new() { ["tipo"] = alvo.Tipo.Codigo(), ["valor"] = alvo.Valor };
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", alvo.Tipo);
+        return objeto;
+    }
 }

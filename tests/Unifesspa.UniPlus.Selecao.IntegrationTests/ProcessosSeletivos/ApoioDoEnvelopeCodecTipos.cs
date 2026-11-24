@@ -41,8 +41,9 @@ internal static class ApoioDoEnvelopeCodecTipos
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
         adulterar(envelope);
 
-        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
-        adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
+        PerfilCanonicoV1.Instancia.Serializar(envelope).Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
+        // Os rótulos acompanham o código escrito; a adulteração troca só o código, e a leitura decide por ele.
+        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(ContextoDosRotulos.SemContexto(envelope).AsObject());
 
         VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, adulterados);
         return ExemploDeEnvelope.Registro.Reidratar(versao);

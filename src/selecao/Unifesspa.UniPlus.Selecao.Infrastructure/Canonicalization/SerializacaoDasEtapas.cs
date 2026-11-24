@@ -59,6 +59,7 @@ internal static class SerializacaoDasEtapas
         item["chave"] = etapa.Chave.Valor;
         item["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome);
         item["carater"] = etapa.Carater.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "carater", etapa.Carater);
         item["tipoEtapa"] = SerializarTipoEtapa(etapa);
         item["ordem"] = etapa.Ordem;
         item["faseCodigo"] = etapa.FaseCodigo;
@@ -71,6 +72,7 @@ internal static class SerializacaoDasEtapas
         item["notaMaxima"] = SerializarDecimalOpcional(etapa.NotaMaxima);
         item["passoDoLancamento"] = SerializarDecimalOpcional(etapa.PassoDoLancamento);
         item["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "formaDeAvaliacao", etapa.FormaDeAvaliacao);
         item["regraDeApuracaoDaAvaliacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null;
         item["itensDeAvaliacao"] = SerializarItensDeAvaliacao(etapa);
         item["escalaDeAtendimento"] = SerializarEscalaDeAtendimento(etapa);
@@ -88,6 +90,7 @@ internal static class SerializacaoDasEtapas
         item["recursos"] = SerializarRecursos(etapa);
         item["publicacoesPrevistas"] = SerializarProdutos(etapa);
         item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(etapa.TiposDeDecisao);
+        TiposDeDecisaoNoEnvelope.AcrescentarContexto(item, "tiposDeDecisao", etapa.TiposDeDecisao);
     }
 
     private static string? SerializarDecimalOpcional(decimal? valor) =>
@@ -133,23 +136,37 @@ internal static class SerializacaoDasEtapas
 
     private static JsonArray SerializarRecursos(EtapaProcesso etapa) =>
         new([.. etapa.Recursos
-            .Select(static r => (JsonNode)new JsonObject
-            {
-                ["eventoInicialDoPrazo"] = r.Ancora.Codigo(),
-                ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
-                ["parametros"] = SerializacaoDoCronograma.SerializarParametrosRegraPrazoRecurso(r.Parametros),
-                ["publicacaoDeReferenciaId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
-                ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(r.Procedimentos),
-            })]);
+            .Select(static r => (JsonNode)SerializarRecurso(r))]);
+
+    private static JsonObject SerializarRecurso(RecursoDaEtapa recurso)
+    {
+        JsonObject objeto = new()
+        {
+            ["eventoInicialDoPrazo"] = recurso.Ancora.Codigo(),
+            ["regra"] = EscritaCanonica.SerializarReferenciaRegra(recurso.Regra),
+            ["parametros"] = SerializacaoDoCronograma.SerializarParametrosRegraPrazoRecurso(recurso.Parametros),
+            ["publicacaoDeReferenciaId"] = recurso.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(recurso.ProdutoAncoraId),
+            ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(recurso.Procedimentos),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "eventoInicialDoPrazo", recurso.Ancora);
+        return objeto;
+    }
 
     private static JsonArray SerializarProdutos(EtapaProcesso etapa) =>
         new([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos)
-            .Select(static p => (JsonNode)new JsonObject
-            {
-                ["id"] = JsonValue.Create(p.Id),
-                ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-                ["papel"] = p.Papel?.Codigo(),
-            })]);
+            .Select(static p => (JsonNode)SerializarProduto(p))]);
+
+    private static JsonObject SerializarProduto(ProdutoDaEtapa produto)
+    {
+        JsonObject objeto = new()
+        {
+            ["id"] = JsonValue.Create(produto.Id),
+            ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(produto.AtoCodigo),
+            ["papel"] = produto.Papel?.Codigo(),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "papel", produto.Papel);
+        return objeto;
+    }
 
     private static JsonObject SerializarTipoEtapa(EtapaProcesso etapa) => new()
     {

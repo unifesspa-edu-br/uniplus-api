@@ -39,12 +39,19 @@ internal static class SerializacaoDaDivulgacaoEDaTaxa
             return new JsonObject { ["presente"] = false };
         }
 
-        return new JsonObject
+        return SerializarTaxaDeclarada(taxa);
+    }
+
+    private static JsonObject SerializarTaxaDeclarada(ConfiguracaoTaxaInscricao taxa)
+    {
+        JsonObject bloco = new()
         {
             ["presente"] = true,
             ["cobra"] = taxa.Cobra,
             ["valor"] = taxa.Valor is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, ConfiguracaoTaxaInscricao.ValorEscala) : null,
             ["fundamentos"] = new JsonArray([.. taxa.Fundamentos.Select(static f => (JsonNode)f.Codigo())]),
         };
+        ContextoDosRotulos.AcrescentarLista(bloco, "fundamentos", taxa.Fundamentos);
+        return bloco;
     }
 }
