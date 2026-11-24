@@ -223,8 +223,8 @@ public sealed class ColunasParaBuscaDaUnidadeTests : IClassFixture<UnidadeDbFixt
                 EF.Property<string>(u, UnidadeConfiguration.NomeParaBusca),
                 EF.Property<string>(u, UnidadeConfiguration.SiglaParaBusca),
                 EF.Property<string>(u, UnidadeConfiguration.CodigoParaBusca),
-                EF.Property<string>(u, UnidadeConfiguration.SlugParaBusca),
-                EF.Property<string?>(u, UnidadeConfiguration.AliasParaBusca)))
+                EF.Property<string>(u, UnidadeConfiguration.IdentificadorNoEnderecoWebParaBusca),
+                EF.Property<string?>(u, UnidadeConfiguration.ApelidoParaBusca)))
             .SingleAsync();
     }
 

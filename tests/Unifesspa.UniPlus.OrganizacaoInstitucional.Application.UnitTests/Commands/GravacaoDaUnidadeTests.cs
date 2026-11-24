@@ -154,9 +154,9 @@ public sealed class GravacaoDaUnidadeTests
         await _cadastro.Gravacao.GravarAtualizacaoAsync(unidade, command, Agora, CancellationToken.None);
 
         unidade.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Slug && h.Valor == "ceps" && h.VigenciaFim == new DateOnly(2026, 3, 15));
+            h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.Valor == "ceps" && h.VigenciaFim == new DateOnly(2026, 3, 15));
         unidade.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Slug && h.Valor == "ceps-unifesspa" && h.VigenciaFim == null);
+            h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.Valor == "ceps-unifesspa" && h.VigenciaFim == null);
     }
 
     [Fact(DisplayName = "Falha ao salvar a atualização propaga sem invalidar o cache")]

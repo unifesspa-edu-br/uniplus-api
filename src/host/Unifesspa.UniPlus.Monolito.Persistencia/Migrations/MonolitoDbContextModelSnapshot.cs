@@ -10116,15 +10116,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Alias")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("alias");
+                        .HasColumnName("apelido")
+                        .HasComment("Nome pelo qual a unidade também é conhecida; opcional e pode se repetir entre unidades.");
 
-                    b.Property<string>("AliasParaBusca")
+                    b.Property<string>("ApelidoParaBusca")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("alias_para_busca")
-                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(alias)", true)
-                        .HasComment("Forma normalizada de alias (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .HasColumnName("apelido_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(apelido)", true)
+                        .HasComment("Forma normalizada de apelido (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
                         .UseCollation("C");
 
                     b.Property<string>("CidadeCodigoIbge")
@@ -10184,6 +10185,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("deleted_by")
                         .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
+                    b.Property<string>("IdentificadorNoEnderecoWebParaBusca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("identificador_no_endereco_web_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(identificador_no_endereco_web)", true)
+                        .HasComment("Forma normalizada de identificador_no_endereco_web (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted")
@@ -10225,17 +10236,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("slug");
-
-                    b.Property<string>("SlugParaBusca")
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("slug_para_busca")
-                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(slug)", true)
-                        .HasComment("Forma normalizada de slug (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
-                        .UseCollation("C");
+                        .HasColumnName("identificador_no_endereco_web")
+                        .HasComment("Texto que identifica a unidade no endereço de página da web; único entre as unidades ativas.");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -10275,13 +10277,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_unidades");
 
                     b.HasIndex("Alias")
-                        .HasDatabaseName("ix_unidades_alias");
+                        .HasDatabaseName("ix_unidades_apelido");
 
-                    b.HasIndex("AliasParaBusca")
-                        .HasDatabaseName("ix_unidades_alias_para_busca_trgm");
+                    b.HasIndex("ApelidoParaBusca")
+                        .HasDatabaseName("ix_unidades_apelido_para_busca_trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("AliasParaBusca"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("AliasParaBusca"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("ApelidoParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("ApelidoParaBusca"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("Codigo")
                         .IsUnique()
@@ -10293,6 +10295,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("CodigoParaBusca"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("CodigoParaBusca"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("IdentificadorNoEnderecoWebParaBusca")
+                        .HasDatabaseName("ix_unidades_identificador_no_endereco_web_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("IdentificadorNoEnderecoWebParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("IdentificadorNoEnderecoWebParaBusca"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("NomeParaBusca")
                         .HasDatabaseName("ix_unidades_nome_para_busca_trgm");
@@ -10313,14 +10321,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_unidades_slug_vivo")
+                        .HasDatabaseName("ux_unidades_identificador_no_endereco_web_ativos")
                         .HasFilter("is_deleted = false");
-
-                    b.HasIndex("SlugParaBusca")
-                        .HasDatabaseName("ix_unidades_slug_para_busca_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SlugParaBusca"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SlugParaBusca"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("UnidadeSuperiorId")
                         .HasDatabaseName("ix_unidades_superior_id");
@@ -10351,9 +10353,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("TipoIdentificador")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("tipo_identificador");
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo do identificador cujo histórico a linha registra. Códigos: IDENTIFICADOR_NO_ENDERECO_WEB, SIGLA, CODIGO, APELIDO.");
 
                     b.Property<Guid>("UnidadeId")
                         .HasColumnType("uuid")
@@ -10384,7 +10387,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("UnidadeId", "TipoIdentificador", "VigenciaInicio")
                         .HasDatabaseName("ix_identificadores_da_unidade_unidade_tipo_inicio");
 
-                    b.ToTable("identificadores_da_unidade", "organizacao");
+                    b.ToTable("identificadores_da_unidade", "organizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_identificadores_da_unidade_tipo", "tipo IN ('IDENTIFICADOR_NO_ENDERECO_WEB', 'SIGLA', 'CODIGO', 'APELIDO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AnexoDoAto", b =>

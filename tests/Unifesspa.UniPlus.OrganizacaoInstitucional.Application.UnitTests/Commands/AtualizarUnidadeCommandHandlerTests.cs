@@ -64,6 +64,6 @@ public sealed class AtualizarUnidadeCommandHandlerTests
             CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(unidade.Id) with { Slug = "ceps-unifesspa" });
 
         unidade.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Slug && h.VigenciaFim == new DateOnly(2026, 3, 15));
+            h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.VigenciaFim == new DateOnly(2026, 3, 15));
     }
 }

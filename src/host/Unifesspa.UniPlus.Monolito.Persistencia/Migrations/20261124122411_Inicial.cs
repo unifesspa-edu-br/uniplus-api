@@ -1349,8 +1349,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
-                    alias = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    slug = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    apelido = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, comment: "Nome pelo qual a unidade também é conhecida; opcional e pode se repetir entre unidades."),
+                    identificador_no_endereco_web = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Texto que identifica a unidade no endereço de página da web; único entre as unidades ativas."),
                     sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     unidade_superior_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1363,11 +1363,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: true, comment: "UF da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
-                    alias_para_busca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, computedColumnSql: "plataforma.normalizar_para_comparacao(alias)", stored: true, comment: "Forma normalizada de alias (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    apelido_para_busca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, computedColumnSql: "plataforma.normalizar_para_comparacao(apelido)", stored: true, comment: "Forma normalizada de apelido (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     codigo_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(codigo)", stored: true, comment: "Forma normalizada de codigo (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    identificador_no_endereco_web_para_busca = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(identificador_no_endereco_web)", stored: true, comment: "Forma normalizada de identificador_no_endereco_web (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     nome_para_busca = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, comment: "Forma normalizada de nome (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     sigla_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(sigla)", stored: true, comment: "Forma normalizada de sigla (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
-                    slug_para_busca = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(slug)", stored: true, comment: "Forma normalizada de slug (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
@@ -2923,7 +2923,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     unidade_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_identificador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    tipo = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Tipo do identificador cujo histórico a linha registra. Códigos: IDENTIFICADOR_NO_ENDERECO_WEB, SIGLA, CODIGO, APELIDO."),
                     valor = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
                     vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
@@ -2934,6 +2934,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_identificadores_da_unidade", x => x.id);
+                    table.CheckConstraint("ck_identificadores_da_unidade_tipo", "tipo IN ('IDENTIFICADOR_NO_ENDERECO_WEB', 'SIGLA', 'CODIGO', 'APELIDO')");
                     table.ForeignKey(
                         name: "fk_identificadores_da_unidade_unidades_unidade_id",
                         column: x => x.unidade_id,
@@ -6682,7 +6683,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_identificadores_da_unidade_unidade_tipo_inicio",
                 schema: "organizacao",
                 table: "identificadores_da_unidade",
-                columns: new[] { "unidade_id", "tipo_identificador", "vigencia_inicio" });
+                columns: new[] { "unidade_id", "tipo", "vigencia_inicio" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_implantacoes_das_permissoes_sequencia",
@@ -7548,16 +7549,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "pedido_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidades_alias",
+                name: "ix_unidades_apelido",
                 schema: "organizacao",
                 table: "unidades",
-                column: "alias");
+                column: "apelido");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidades_alias_para_busca_trgm",
+                name: "ix_unidades_apelido_para_busca_trgm",
                 schema: "organizacao",
                 table: "unidades",
-                column: "alias_para_busca")
+                column: "apelido_para_busca")
                 .Annotation("Npgsql:IndexMethod", "gin")
                 .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
@@ -7576,6 +7577,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_unidades_identificador_no_endereco_web_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "identificador_no_endereco_web_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_unidades_nome_para_busca_trgm",
@@ -7602,26 +7611,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidades_slug_para_busca_trgm",
-                schema: "organizacao",
-                table: "unidades",
-                column: "slug_para_busca")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_unidades_slug_vivo",
-                schema: "organizacao",
-                table: "unidades",
-                column: "slug",
-                unique: true,
-                filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_unidades_superior_id",
                 schema: "organizacao",
                 table: "unidades",
                 column: "unidade_superior_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_unidades_identificador_no_endereco_web_ativos",
+                schema: "organizacao",
+                table: "unidades",
+                column: "identificador_no_endereco_web",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ux_vagas_ofertadas_configuracao_modalidade",
