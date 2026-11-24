@@ -34,7 +34,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
     private static void ConfigurarRestricoes(TableBuilder<RegraDeComprovacao> t)
     {
         t.HasCheckConstraint(
-            "ck_regras_comprovacao_forma_coerente",
+            "ck_regras_de_comprovacao_forma_coerente",
             "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
             "(forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL " +
             "AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
@@ -72,7 +72,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         builder.HasOne<RegraDeComprovacao>()
             .WithMany(n => n.Itens)
             .HasForeignKey(n => n.RegraQueContemId)
-            .HasConstraintName("fk_regras_comprovacao_grupo")
+            .HasConstraintName("fk_regras_de_comprovacao_grupo")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Navigation(n => n.Itens)
@@ -100,7 +100,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         builder.HasMany(n => n.BasesLegais)
             .WithOne()
             .HasForeignKey(b => b.RegraDeComprovacaoId)
-            .HasConstraintName("fk_bases_legais_comprovacao_regra")
+            .HasConstraintName("fk_bases_legais_da_comprovacao_regra")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(n => n.BasesLegais)

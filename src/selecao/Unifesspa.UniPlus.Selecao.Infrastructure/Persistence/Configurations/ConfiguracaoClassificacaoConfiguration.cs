@@ -30,6 +30,8 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
         builder.ToTable("configuracoes_classificacao");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.HasIndex(c => c.ProcessoSeletivoId).IsUnique()
+            .HasDatabaseName("ux_configuracoes_classificacao_processo_seletivo_id");
 
         builder.OwnsOne(c => c.RegraCalculo, regra => regra.ConfigurarReferenciaRegra("regra_calculo"));
         builder.Navigation(c => c.RegraCalculo).IsRequired();

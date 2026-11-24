@@ -43,7 +43,7 @@ public sealed class RegraDerivacaoConfiguradaConfiguration : IEntityTypeConfigur
         builder.HasMany(r => r.Condicoes)
             .WithOne()
             .HasForeignKey(c => c.RegraDerivacaoConfiguradaId)
-            .HasConstraintName("fk_condicoes_calculo_regra_de_calculo")
+            .HasConstraintName("fk_condicoes_do_calculo_dos_dados_regra_de_calculo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(r => r.Condicoes)

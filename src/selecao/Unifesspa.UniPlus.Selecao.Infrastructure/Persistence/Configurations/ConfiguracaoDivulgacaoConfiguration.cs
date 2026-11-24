@@ -31,6 +31,8 @@ internal sealed class ConfiguracaoDivulgacaoConfiguration : IEntityTypeConfigura
         builder.ToTable("configuracoes_divulgacao");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.HasIndex(c => c.ProcessoSeletivoId).IsUnique()
+            .HasDatabaseName("ux_configuracoes_divulgacao_processo_seletivo_id");
 
         // campos_publicos: lista de strings serializada como jsonb. SEM DEFAULT: uma lista vazia
         // é estado que ConfiguracaoDivulgacao.Criar nunca produz (viola o piso e a não-vacuidade

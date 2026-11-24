@@ -41,9 +41,9 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
     }
 
     [Theory]
-    [InlineData("Inválido", -0.1, "ck_niveis_atendimento_fracao_entre_0_e_1")]
-    [InlineData("Inválido", 1.2, "ck_niveis_atendimento_fracao_entre_0_e_1")]
-    [InlineData("   ", 0.5, "ck_niveis_atendimento_rotulo_preenchido")]
+    [InlineData("Inválido", -0.1, "ck_niveis_de_atendimento_da_etapa_fracao_entre_0_e_1")]
+    [InlineData("Inválido", 1.2, "ck_niveis_de_atendimento_da_etapa_fracao_entre_0_e_1")]
+    [InlineData("   ", 0.5, "ck_niveis_de_atendimento_da_etapa_rotulo_preenchido")]
     [InlineData("Completo", 0.5, "uq_niveis_atendimento_etapa_rotulo")]
     public async Task InserirNivel_ComDadosInvalidos_BancoRecusa(string rotulo, decimal fracao, string restricao)
     {

@@ -24,7 +24,8 @@ public sealed class AtendimentoEspecializadoConfiguration : IEntityTypeConfigura
         builder.Property(o => o.Id).ValueGeneratedNever();
 
         // Um contêiner de atendimento por processo.
-        builder.HasIndex(o => o.ProcessoSeletivoId).IsUnique();
+        builder.HasIndex(o => o.ProcessoSeletivoId).IsUnique()
+            .HasDatabaseName("ux_atendimentos_especializados_processo_seletivo_id");
 
         builder.HasMany(o => o.Condicoes)
             .WithOne()

@@ -30,8 +30,8 @@ internal static class ProvaPresencialOwnedConfiguration
         municipio.HasKey("Id");
         municipio.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo que declara o município de prova.");
         ConfigurarColunasDoMunicipio(municipio);
-        municipio.HasIndex("ProcessoSeletivoId", nameof(MunicipioDeProva.Posicao)).IsUnique().HasDatabaseName("ix_municipios_de_prova_processo_posicao");
-        municipio.HasIndex("ProcessoSeletivoId", nameof(MunicipioDeProva.CodigoIbge)).IsUnique().HasDatabaseName("ix_municipios_de_prova_processo_codigo_ibge");
+        municipio.HasIndex("ProcessoSeletivoId", nameof(MunicipioDeProva.Posicao)).IsUnique().HasDatabaseName("ux_municipios_de_prova_processo_posicao");
+        municipio.HasIndex("ProcessoSeletivoId", nameof(MunicipioDeProva.CodigoIbge)).IsUnique().HasDatabaseName("ux_municipios_de_prova_processo_codigo_ibge");
     }
 
     private static void ConfigurarColunasDoMunicipio(OwnedNavigationBuilder<DeclaracaoDaProvaPresencial, MunicipioDeProva> municipio)

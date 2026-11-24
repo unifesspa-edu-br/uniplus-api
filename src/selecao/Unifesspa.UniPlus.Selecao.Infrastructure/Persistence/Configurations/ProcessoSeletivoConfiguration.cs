@@ -84,7 +84,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasIndex(p => p.IdentificadorLegivel)
             .IsUnique()
             .HasFilter("identificador_legivel IS NOT NULL")
-            .HasDatabaseName("ix_processos_seletivos_identificador_legivel");
+            .HasDatabaseName("ux_processos_seletivos_identificador_legivel");
         builder.Ignore(p => p.TipoProcessoOrigemId);
         builder.OwnsOne(p => p.TipoProcesso, tipo =>
         {

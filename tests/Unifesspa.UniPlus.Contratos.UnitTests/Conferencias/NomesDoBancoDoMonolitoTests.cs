@@ -1,22 +1,20 @@
-namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Persistence;
+namespace Unifesspa.UniPlus.Contratos.UnitTests.SolutionRules;
 
 using AwesomeAssertions;
 
-public sealed class NomesDoBancoDeConfiguracaoTests
+using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+
+public sealed class NomesDoBancoDoMonolitoTests
 {
-    private readonly NomesDoBanco _nomes = new("configuracao");
+    private readonly NomesDoBanco _nomes = new();
 
     [Fact]
-    public void Indices_Prefixo_DeveConterOTipoEATabela()
-    {
-        string[] infratores = _nomes.IndicesComPrefixoInvalido();
-        infratores.Should().BeEmpty("nomes infratores: {0}", string.Join(", ", infratores));
-    }
+    public void Modelo_ComTabelas_DeveEncontrarTabelas() => _nomes.Tabelas().Should().NotBeEmpty();
 
     [Fact]
-    public void Restricoes_Prefixo_DeveConterOTipoEATabela()
+    public void Nomes_Prefixo_DeveConterOTipoEATabela()
     {
-        string[] infratores = _nomes.RestricoesComPrefixoInvalido();
+        string[] infratores = _nomes.PrefixosInvalidos();
         infratores.Should().BeEmpty("nomes infratores: {0}", string.Join(", ", infratores));
     }
 
@@ -37,7 +35,7 @@ public sealed class NomesDoBancoDeConfiguracaoTests
     [Fact]
     public void Tabelas_Tamanho_NaoDeveExceder30Caracteres()
     {
-        string[] infratores = _nomes.TabelasLongas();
+        string[] infratores = _nomes.Tabelas().Where(nome => nome.Length > 30).ToArray();
         infratores.Should().BeEmpty("nomes infratores: {0}", string.Join(", ", infratores));
     }
 }

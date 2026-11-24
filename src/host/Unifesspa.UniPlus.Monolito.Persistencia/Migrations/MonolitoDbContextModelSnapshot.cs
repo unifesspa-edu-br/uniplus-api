@@ -232,20 +232,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("OrdemNoHistorico")
                         .IsUnique()
-                        .HasDatabaseName("ux_bases_da_permissao_ordem");
+                        .HasDatabaseName("ux_bases_da_permissao_concedida_ordem");
 
                     b.HasIndex("PerfilId", "ConcessaoId")
                         .HasDatabaseName("ix_bases_da_permissao_concedida_perfil_concessao");
 
                     b.HasIndex("ConcessaoId", "Codigo", "OrdemNoHistorico")
                         .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_bases_da_permissao_concessao_codigo");
+                        .HasDatabaseName("ix_bases_da_permissao_concedida_concessao_codigo");
 
                     b.ToTable("bases_da_permissao_concedida", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_bases_da_permissao_origem", "origem IN ('MIGRACAO', 'SAIDA', 'LIBERACAO', 'CONCILIACAO')");
+                            t.HasCheckConstraint("ck_bases_da_permissao_concedida_origem", "origem IN ('MIGRACAO', 'SAIDA', 'LIBERACAO', 'CONCILIACAO')");
 
-                            t.HasCheckConstraint("ck_bases_da_permissao_saida", "(origem = 'SAIDA') = (classificacao IS NULL AND de_unidade IS NULL)");
+                            t.HasCheckConstraint("ck_bases_da_permissao_concedida_saida", "(origem = 'SAIDA') = (classificacao IS NULL AND de_unidade IS NULL)");
                         });
                 });
 
@@ -1018,7 +1018,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("VersaoId")
                         .IsUnique()
-                        .HasDatabaseName("ux_documentos_da_versao_vivo")
+                        .HasDatabaseName("ux_documentos_da_versao_ativos")
                         .HasFilter("situacao <> 'RECUSADO'");
 
                     b.HasIndex("PerfilId", "VersaoId")
@@ -1760,22 +1760,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId")
                         .IsUnique()
-                        .HasDatabaseName("ux_pedidos_ativo_unico")
+                        .HasDatabaseName("ux_pedidos_de_concessao_ativo_unico")
                         .HasFilter("situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'AGUARDANDO_GESTOR', 'AGUARDANDO_PROTECAO_DE_DADOS')");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId"), false);
 
                     b.ToTable("pedidos_de_concessao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
+                            t.HasCheckConstraint("ck_pedidos_de_concessao_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
 
-                            t.HasCheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'APROVADO'");
+                            t.HasCheckConstraint("ck_pedidos_de_concessao_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'APROVADO'");
 
-                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
+                            t.HasCheckConstraint("ck_pedidos_de_concessao_decisao_com_beneficiario", "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_pedidos_encerramento", "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
+                            t.HasCheckConstraint("ck_pedidos_de_concessao_encerramento", "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_pedidos_termo_completo", "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
+                            t.HasCheckConstraint("ck_pedidos_de_concessao_termo_completo", "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
                         });
                 });
 
@@ -3118,7 +3118,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_bases_legais_do_fada_codigo_vivo")
+                        .HasDatabaseName("ux_bases_legais_do_fada_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("TipoInstrumento")
@@ -3301,7 +3301,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Sigla")
                         .IsUnique()
-                        .HasDatabaseName("ix_campus_sigla_vivo")
+                        .HasDatabaseName("ux_campus_sigla_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("campus", "configuracao", t =>
@@ -3382,7 +3382,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_categorias_de_documento_codigo_vivo")
+                        .HasDatabaseName("ux_categorias_de_documento_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("Ordem", "Codigo")
@@ -3554,7 +3554,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_condicoes_de_atendimento_codigo_vivo")
+                        .HasDatabaseName("ux_condicoes_de_atendimento_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("condicoes_de_atendimento", "configuracao", t =>
@@ -3657,7 +3657,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_cursos_codigo_vivo")
+                        .HasDatabaseName("ux_cursos_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("NomeOrdenacao", "Codigo", "Id")
@@ -3841,7 +3841,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_de_fase_codigo_vivo")
+                        .HasDatabaseName("ux_tipos_de_fase_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("tipos_de_fase", "configuracao", t =>
@@ -6690,7 +6690,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_modalidades_codigo_vivo")
+                        .HasDatabaseName("ux_modalidades_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("modalidades", "configuracao", t =>
@@ -6960,7 +6960,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_modelos_formulario_codigo");
+                        .HasDatabaseName("ux_modelos_formulario_codigo");
 
                     b.HasIndex("TipoProcessoCodigo", "Finalidade", "Ativo")
                         .HasDatabaseName("ix_modelos_formulario_tipo_finalidade_ativo");
@@ -7089,7 +7089,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_ofertas_de_curso_codigo_vivo")
+                        .HasDatabaseName("ux_ofertas_de_curso_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("LocalOfertaId")
@@ -7197,7 +7197,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Resolucao", "GrupoCurso")
                         .IsUnique()
-                        .HasDatabaseName("ix_pesos_por_area_do_enem_resolucao_grupo_vivo")
+                        .HasDatabaseName("ux_pesos_por_area_do_enem_resolucao_grupo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("pesos_por_area_do_enem", "configuracao", t =>
@@ -7273,7 +7273,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("AntecessoraCodigo", "SucessoraCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_precedencias_entre_fases_par_vivo")
+                        .HasDatabaseName("ux_precedencias_entre_fases_par_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("precedencias_entre_fases", "configuracao", t =>
@@ -7394,12 +7394,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_recursos_de_acessibilidade_codigo_vivo")
+                        .HasDatabaseName("ux_recursos_de_acessibilidade_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("Nome")
                         .IsUnique()
-                        .HasDatabaseName("ix_recursos_de_acessibilidade_nome_vivo")
+                        .HasDatabaseName("ux_recursos_de_acessibilidade_nome_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("recursos_de_acessibilidade", "configuracao", t =>
@@ -7484,7 +7484,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("CensoReferencia")
                         .IsUnique()
-                        .HasDatabaseName("ix_referencias_demograficas_censo_vivo")
+                        .HasDatabaseName("ux_referencias_demograficas_censo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("referencias_demograficas", "configuracao", t =>
@@ -7594,7 +7594,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_termos_de_consentimento_codigo_vivo")
+                        .HasDatabaseName("ux_termos_de_consentimento_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("Nome")
@@ -7746,7 +7746,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_de_banca_codigo_vivo")
+                        .HasDatabaseName("ux_tipos_de_banca_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("tipos_de_banca", "configuracao", t =>
@@ -7848,7 +7848,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_conceito_codigo");
+                        .HasDatabaseName("ux_tipos_conceito_codigo");
 
                     b.ToTable("tipos_conceito", "configuracao", t =>
                         {
@@ -7931,12 +7931,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_de_deficiencia_codigo_vivo")
+                        .HasDatabaseName("ux_tipos_de_deficiencia_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("Nome")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_de_deficiencia_nome_vivo")
+                        .HasDatabaseName("ux_tipos_de_deficiencia_nome_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("tipos_de_deficiencia", "configuracao", t =>
@@ -8059,7 +8059,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_de_documento_codigo_vivo")
+                        .HasDatabaseName("ux_tipos_de_documento_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("tipos_de_documento", "configuracao", t =>
@@ -9274,7 +9274,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_etapa_codigo");
+                        .HasDatabaseName("ux_tipos_etapa_codigo");
 
                     b.ToTable("tipos_etapa", "configuracao", t =>
                         {
@@ -9350,7 +9350,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_tipos_processo_codigo");
+                        .HasDatabaseName("ux_tipos_processo_codigo");
 
                     b.ToTable("tipos_processo", "configuracao");
                 });
@@ -9542,7 +9542,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("IdDiscenteSigaa")
                         .IsUnique()
-                        .HasDatabaseName("ix_vinculos_de_discentes_id_discente_sigaa");
+                        .HasDatabaseName("ux_vinculos_de_discentes_id_discente_sigaa");
 
                     b.ToTable("vinculos_de_discentes", "discentes", t =>
                         {
@@ -9695,7 +9695,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("EditalId", "Numero")
                         .IsUnique()
-                        .HasDatabaseName("ix_chamadas_edital_id_numero");
+                        .HasDatabaseName("ux_chamadas_edital_id_numero");
 
                     b.ToTable("chamadas", "ingresso", t =>
                         {
@@ -10088,7 +10088,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("RegistroVivoSentinela")
                         .IsUnique()
-                        .HasDatabaseName("ix_instituicoes_instituicao_unica_vivo")
+                        .HasDatabaseName("ux_instituicoes_instituicao_unica_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("UnidadeRaizId")
@@ -10289,7 +10289,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_unidades_codigo_vivo")
+                        .HasDatabaseName("ux_unidades_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("CodigoParaBusca")
@@ -10312,7 +10312,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("Sigla")
                         .IsUnique()
-                        .HasDatabaseName("ix_unidades_sigla_vivo")
+                        .HasDatabaseName("ux_unidades_sigla_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("SiglaParaBusca")
@@ -10663,7 +10663,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_tipos_de_ato_publicado");
 
                     b.HasIndex("Codigo")
-                        .HasDatabaseName("ix_tipos_de_ato_publicado_codigo_vivo")
+                        .HasDatabaseName("ix_tipos_de_ato_publicado_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("tipos_de_ato_publicado", "publicacoes", t =>
@@ -11134,7 +11134,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_atendimentos_especializados_processo_seletivo_id");
+                        .HasDatabaseName("ux_atendimentos_especializados_processo_seletivo_id");
 
                     b.ToTable("atendimentos_especializados", "selecao");
                 });
@@ -12060,7 +12060,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_configuracoes_do_fada_processo_seletivo_id");
+                        .HasDatabaseName("ux_configuracoes_do_fada_processo_seletivo_id");
 
                     b.ToTable("configuracoes_do_fada", "selecao", t =>
                         {
@@ -12211,7 +12211,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_configuracoes_classificacao_processo_seletivo_id");
+                        .HasDatabaseName("ux_configuracoes_classificacao_processo_seletivo_id");
 
                     b.ToTable("configuracoes_classificacao", "selecao");
                 });
@@ -12372,7 +12372,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_configuracoes_divulgacao_processo_seletivo_id");
+                        .HasDatabaseName("ux_configuracoes_divulgacao_processo_seletivo_id");
 
                     b.ToTable("configuracoes_divulgacao", "selecao");
                 });
@@ -12421,7 +12421,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProcessoSeletivoId")
                         .IsUnique()
-                        .HasDatabaseName("ix_configuracoes_taxa_inscricao_processo_seletivo_id");
+                        .HasDatabaseName("ux_configuracoes_taxa_inscricao_processo_seletivo_id");
 
                     b.ToTable("configuracoes_taxa_inscricao", "selecao", t =>
                         {
@@ -12942,7 +12942,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo")
-                        .HasComment("O que a etapa é. Códigos: SECAO, BLOCO.");
+                        .HasComment("O que a página é. Códigos: SECAO, BLOCO.");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
@@ -12956,21 +12956,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_etapas_formulario");
+                        .HasName("pk_paginas_do_formulario");
 
                     b.HasIndex("FormularioProcessoId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_etapas_formulario_formulario_codigo");
+                        .HasDatabaseName("ux_paginas_do_formulario_formulario_codigo");
 
                     b.HasIndex("FormularioProcessoId", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_etapas_formulario_formulario_ordem");
+                        .HasDatabaseName("ux_paginas_do_formulario_formulario_ordem");
 
-                    b.ToTable("etapas_formulario", "selecao", t =>
+                    b.ToTable("paginas_do_formulario", "selecao", t =>
                         {
-                            t.HasCheckConstraint("ck_etapas_formulario_bloco", "bloco IS NULL OR bloco IN ('COMPROVACAO_DOCUMENTAL', 'MODALIDADES_CALCULADAS', 'REVISAO_E_ACEITE')");
+                            t.HasCheckConstraint("ck_paginas_do_formulario_bloco", "bloco IS NULL OR bloco IN ('COMPROVACAO_DOCUMENTAL', 'MODALIDADES_CALCULADAS', 'REVISAO_E_ACEITE')");
 
-                            t.HasCheckConstraint("ck_etapas_formulario_tipo", "tipo IN ('SECAO', 'BLOCO')");
+                            t.HasCheckConstraint("ck_paginas_do_formulario_tipo", "tipo IN ('SECAO', 'BLOCO')");
                         });
                 });
 
@@ -13301,8 +13301,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("EtapaCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("etapa_codigo")
-                        .HasComment("Código da etapa do formulário, quando houver.");
+                        .HasColumnName("pagina_codigo")
+                        .HasComment("Código da página do formulário, quando houver.");
 
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
@@ -13589,8 +13589,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("EtapaCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("etapa_codigo")
-                        .HasComment("Código da etapa do formulário, quando houver.");
+                        .HasColumnName("pagina_codigo")
+                        .HasComment("Código da página do formulário, quando houver.");
 
                     b.Property<string>("Exibicao")
                         .HasColumnType("jsonb")
@@ -13799,7 +13799,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("EtapaProcessoId", "Chave")
                         .IsUnique()
-                        .HasDatabaseName("ux_itens_avaliacao_etapa_chave_local");
+                        .HasDatabaseName("ux_itens_de_avaliacao_da_etapa_chave_local");
 
                     b.ToTable("itens_de_avaliacao_da_etapa", "selecao", t =>
                         {
@@ -14794,7 +14794,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("IdentificadorLegivel")
                         .IsUnique()
-                        .HasDatabaseName("ix_processos_seletivos_identificador_legivel")
+                        .HasDatabaseName("ux_processos_seletivos_identificador_legivel")
                         .HasFilter("identificador_legivel IS NOT NULL");
 
                     b.ToTable("processos_seletivos", "selecao", t =>
@@ -15654,9 +15654,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("regras_de_comprovacao", "selecao", t =>
                         {
-                            t.HasCheckConstraint("ck_regras_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
-
                             t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
 
                             t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
 
@@ -16702,13 +16702,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("DecisaoId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_eventos_de_bloqueio_decisao_da_retomada");
+                        .HasConstraintName("fk_eventos_de_bloqueio_do_perfil_decisao_da_retomada");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DesativacaoDoPerfil", null)
                         .WithMany()
                         .HasForeignKey("DesativacaoId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_eventos_de_bloqueio_desativacao");
+                        .HasConstraintName("fk_eventos_de_bloqueio_do_perfil_desativacao");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", null)
                         .WithMany("Eventos")
@@ -16721,19 +16721,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("SuspensaoId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_eventos_de_bloqueio_suspensao");
+                        .HasConstraintName("fk_eventos_de_bloqueio_do_perfil_suspensao");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
                         .WithMany()
                         .HasForeignKey("VersaoQueEntrouId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_eventos_de_bloqueio_versao_que_entrou");
+                        .HasConstraintName("fk_eventos_de_bloqueio_do_perfil_versao_que_entrou");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
                         .WithMany()
                         .HasForeignKey("VersaoVigenteId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_eventos_de_bloqueio_versao_vigente");
+                        .HasConstraintName("fk_eventos_de_bloqueio_do_perfil_versao_vigente");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Instalacao", b =>
@@ -16897,7 +16897,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.HasKey("PedidoDeConcessaoId");
 
                             b1.HasIndex("Situacao")
-                                .HasDatabaseName("ix_pedidos_situacao");
+                                .HasDatabaseName("ix_pedidos_de_concessao_situacao");
 
                             b1.ToTable("pedidos_de_concessao", "autorizacao");
 
@@ -17000,7 +17000,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.HasKey("PedidoDeConcessaoId");
 
                             b1.HasIndex("Emissor", "ContaId")
-                                .HasDatabaseName("ix_pedidos_solicitante");
+                                .HasDatabaseName("ix_pedidos_de_concessao_solicitante");
 
                             b1.ToTable("pedidos_de_concessao", "autorizacao");
 
@@ -18723,15 +18723,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.HasIndex("TipoConceitoId", "Codigo")
                                 .IsUnique()
-                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_codigo");
+                                .HasDatabaseName("ux_opcoes_do_tipo_de_conceito_codigo");
 
                             b1.HasIndex("TipoConceitoId", "Posicao")
                                 .IsUnique()
-                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_posicao");
+                                .HasDatabaseName("ux_opcoes_do_tipo_de_conceito_posicao");
 
                             b1.HasIndex("TipoConceitoId", "Rotulo")
                                 .IsUnique()
-                                .HasDatabaseName("ix_opcoes_do_tipo_de_conceito_rotulo");
+                                .HasDatabaseName("ux_opcoes_do_tipo_de_conceito_rotulo");
 
                             b1.ToTable("opcoes_do_tipo_de_conceito", "configuracao", t =>
                                 {
@@ -19593,7 +19593,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.HasIndex("Valor")
                                 .IsUnique()
-                                .HasDatabaseName("ix_convocacoes_protocolo");
+                                .HasDatabaseName("ux_convocacoes_protocolo");
 
                             b1.ToTable("convocacoes", "ingresso");
 
@@ -20174,7 +20174,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("RegraDeComprovacaoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_bases_legais_comprovacao_regra");
+                        .HasConstraintName("fk_bases_legais_da_comprovacao_regra");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>
@@ -20234,7 +20234,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("RegraDerivacaoConfiguradaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_condicoes_calculo_regra_de_calculo");
+                        .HasConstraintName("fk_condicoes_do_calculo_dos_dados_regra_de_calculo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
@@ -21050,7 +21050,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FormularioProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_etapas_formulario_formulario_processo");
+                        .HasConstraintName("fk_paginas_do_formulario_formulario_processo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
@@ -21144,20 +21144,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.HasIndex("EtapaProcessoId", "Chave")
                                 .IsUnique()
-                                .HasDatabaseName("ux_niveis_atendimento_etapa_chave_local");
+                                .HasDatabaseName("ux_niveis_de_atendimento_da_etapa_chave_local");
 
                             b1.ToTable("niveis_de_atendimento_da_etapa", "selecao", t =>
                                 {
                                     t.HasComment("Níveis de atendimento usados na avaliação dos itens da etapa.");
 
-                                    t.HasCheckConstraint("ck_niveis_atendimento_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
+                                    t.HasCheckConstraint("ck_niveis_de_atendimento_da_etapa_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
 
-                                    t.HasCheckConstraint("ck_niveis_atendimento_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
+                                    t.HasCheckConstraint("ck_niveis_de_atendimento_da_etapa_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
                                 });
 
                             b1.WithOwner()
                                 .HasForeignKey("EtapaProcessoId")
-                                .HasConstraintName("fk_niveis_atendimento_etapa");
+                                .HasConstraintName("fk_niveis_de_atendimento_da_etapa_etapa");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.TipoEtapaSnapshot", "TipoEtapa", b1 =>
@@ -21646,11 +21646,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                                     b2.HasIndex("ProcessoSeletivoId", "CodigoIbge")
                                         .IsUnique()
-                                        .HasDatabaseName("ix_municipios_de_prova_processo_codigo_ibge");
+                                        .HasDatabaseName("ux_municipios_de_prova_processo_codigo_ibge");
 
                                     b2.HasIndex("ProcessoSeletivoId", "Posicao")
                                         .IsUnique()
-                                        .HasDatabaseName("ix_municipios_de_prova_processo_posicao");
+                                        .HasDatabaseName("ux_municipios_de_prova_processo_posicao");
 
                                     b2.ToTable("municipios_de_prova", "selecao", t =>
                                         {
@@ -22052,7 +22052,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany("Itens")
                         .HasForeignKey("RegraQueContemId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_regras_comprovacao_grupo");
+                        .HasConstraintName("fk_regras_de_comprovacao_grupo");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DistincaoDasApresentacoes", "Distincao", b1 =>
                         {

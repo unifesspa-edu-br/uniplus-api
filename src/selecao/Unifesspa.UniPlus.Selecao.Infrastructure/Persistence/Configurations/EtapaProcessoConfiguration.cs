@@ -149,17 +149,17 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             nivel.ToTable("niveis_de_atendimento_da_etapa", tabela =>
             {
                 tabela.HasComment("Níveis de atendimento usados na avaliação dos itens da etapa.");
-                tabela.HasCheckConstraint("ck_niveis_atendimento_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
-                tabela.HasCheckConstraint("ck_niveis_atendimento_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
+                tabela.HasCheckConstraint("ck_niveis_de_atendimento_da_etapa_fracao_entre_0_e_1", "fracao BETWEEN 0 AND 1");
+                tabela.HasCheckConstraint("ck_niveis_de_atendimento_da_etapa_rotulo_preenchido", "char_length(btrim(rotulo)) > 0");
             });
-            nivel.WithOwner().HasForeignKey("EtapaProcessoId").HasConstraintName("fk_niveis_atendimento_etapa");
+            nivel.WithOwner().HasForeignKey("EtapaProcessoId").HasConstraintName("fk_niveis_de_atendimento_da_etapa_etapa");
             nivel.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico do nível.");
             nivel.HasKey("Id");
             nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
             nivel.Property(n => n.Chave)
                 .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
                 .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
-            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_atendimento_etapa_chave_local");
+            nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_de_atendimento_da_etapa_chave_local");
             nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
             nivel.Property(n => n.Fracao).HasPrecision(5, 4).IsRequired().HasComment("Fração da pontuação do item atribuída ao nível.");
             // A unicidade da ordem e do rótulo é adiada pelo script de restrições para permitir trocas.
