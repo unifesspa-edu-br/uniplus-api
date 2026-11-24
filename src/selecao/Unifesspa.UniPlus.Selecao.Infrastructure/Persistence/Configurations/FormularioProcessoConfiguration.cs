@@ -41,7 +41,7 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.HasMany(f => f.Etapas)
             .WithOne()
             .HasForeignKey(e => e.FormularioProcessoId)
-            .HasConstraintName("fk_etapas_formulario_formulario_processo")
+            .HasConstraintName("fk_paginas_do_formulario_formulario_processo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.Etapas).UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -57,10 +57,10 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("etapas_formulario", t =>
+        builder.ToTable("paginas_do_formulario", t =>
         {
-            t.HasCheckConstraint("ck_etapas_formulario_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoEtapaFormulario>()})");
-            t.HasCheckConstraint("ck_etapas_formulario_bloco", $"bloco IS NULL OR bloco IN ({SqlDosCodigosDeContrato.Lista<BlocoSistema>()})");
+            t.HasCheckConstraint("ck_paginas_do_formulario_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoEtapaFormulario>()})");
+            t.HasCheckConstraint("ck_paginas_do_formulario_bloco", $"bloco IS NULL OR bloco IN ({SqlDosCodigosDeContrato.Lista<BlocoSistema>()})");
         });
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
@@ -68,7 +68,7 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
         builder.Property(e => e.Codigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
         builder.Property(e => e.Tipo).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
-            .HasComment($"O que a etapa é. {ComentarioDosCodigosDeContrato.Codigos<TipoEtapaFormulario>()}");
+            .HasComment($"O que a página é. {ComentarioDosCodigosDeContrato.Codigos<TipoEtapaFormulario>()}");
         builder.Property(e => e.Bloco).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
             .HasComment($"O bloco que o sistema monta; nulo na seção. {ComentarioDosCodigosDeContrato.Codigos<BlocoSistema>()}");
         builder.Property(e => e.Titulo).HasMaxLength(FormaDaEtapa.TituloMaxLength).IsRequired();
@@ -83,9 +83,9 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
 
         builder.HasIndex(e => new { e.FormularioProcessoId, e.Codigo })
             .IsUnique()
-            .HasDatabaseName("ux_etapas_formulario_formulario_codigo");
+            .HasDatabaseName("ux_paginas_do_formulario_formulario_codigo");
         builder.HasIndex(e => new { e.FormularioProcessoId, e.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_etapas_formulario_formulario_ordem");
+            .HasDatabaseName("ux_paginas_do_formulario_formulario_ordem");
     }
 }
