@@ -345,16 +345,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "plataforma",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    scope = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    endpoint = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    idempotency_key = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    body_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da chave de idempotência."),
+                    escopo = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "Quem agiu: a conta autenticada, no formato user:{conta}. A chave só vale dentro desse escopo."),
+                    rota = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Operação pedida, no formato MÉTODO /modelo/da/rota (modelo da rota, não o endereço com os valores)."),
+                    chave = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "Chave de idempotência enviada pelo cliente no cabeçalho Idempotency-Key, sem alteração."),
+                    resumo_do_corpo = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo SHA-256 do corpo do pedido, em hexadecimal; serve para detectar a mesma chave usada com outro corpo."),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição."),
-                    response_status = table.Column<int>(type: "integer", nullable: true),
-                    response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
-                    encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    situacao_http_da_resposta = table.Column<int>(type: "integer", nullable: true, comment: "Código de situação HTTP da resposta guardada; vazio enquanto a operação ainda executa."),
+                    cabecalhos_da_resposta = table.Column<string>(type: "jsonb", nullable: true, comment: "Cabeçalhos da resposta guardada (Content-Type e Location), em JSON; vazio enquanto a operação executa."),
+                    corpo_da_resposta_cifrado = table.Column<byte[]>(type: "bytea", nullable: true, comment: "Corpo da resposta guardado cifrado, devolvido igual quando o pedido se repete; vazio enquanto a operação executa."),
+                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante a partir do qual a chave deixa de valer e pode ser descartada."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro.")
                 },
                 constraints: table =>
@@ -6116,16 +6116,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "limpar_apos");
 
             migrationBuilder.CreateIndex(
-                name: "ix_chaves_de_idempotencia_expires_at",
+                name: "ix_chaves_de_idempotencia_expira_em",
                 schema: "plataforma",
                 table: "chaves_de_idempotencia",
-                column: "expires_at");
+                column: "expira_em");
 
             migrationBuilder.CreateIndex(
-                name: "ux_chaves_de_idempotencia_scope_endpoint_key",
+                name: "ux_chaves_de_idempotencia_escopo_rota_chave",
                 schema: "plataforma",
                 table: "chaves_de_idempotencia",
-                columns: new[] { "scope", "endpoint", "idempotency_key" },
+                columns: new[] { "escopo", "rota", "chave" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
