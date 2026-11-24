@@ -33,7 +33,7 @@ internal static class RegrasDasEtapas
     /// </summary>
     internal static bool AusenciaNaEtapaDoEnem(ParametrosRegraEliminacao parametros, IEnumerable<EtapaProcesso> etapas) =>
         parametros is ParametrosEliminacaoPorAusenciaNaEtapa ausencia
-        && etapas.Any(e => e.Id == ausencia.EtapaRef && e.DeclaraNotaDoEnem);
+        && etapas.Any(e => e.Id == ausencia.EtapaId && e.DeclaraNotaDoEnem);
 
     internal static DomainError AusenciaNaEtapaDoEnemRecusada() => new(
         "ProcessoSeletivo.AusenciaNaEtapaDoEnem",
@@ -87,11 +87,11 @@ internal static class RegrasDasEtapas
     {
         foreach (CriterioDesempate criterio in configuracao.Avaliacao.CriteriosDesempate)
         {
-            if (criterio.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && !novosIds.Contains(parametros.EtapaRef))
+            if (criterio.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && !novosIds.Contains(parametros.EtapaId))
             {
                 return new DomainError(
                     "ProcessoSeletivo.EtapaReferenciadaPorDesempate",
-                    $"A etapa {parametros.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate.");
+                    $"A etapa {parametros.EtapaId} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate.");
             }
         }
 
@@ -211,12 +211,12 @@ internal static class RegrasDasEtapas
         [.. configuracao.Avaliacao.Etapas.SelectMany(etapa => EliminacoesPorNotaMinimaDaEtapa(configuracao, etapa.Id).Select(parametros => (etapa.Id, parametros.NotaMinima)))]);
 
     internal static bool EtapaReferenciadaPorDesempate(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
-        configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && parametros.EtapaRef == etapaId);
+        configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && parametros.EtapaId == etapaId);
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
     internal static IEnumerable<ParametrosEliminacaoPorNotaMinimaNaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
         (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? [])
             .Select(static regra => regra.Parametros)
             .OfType<ParametrosEliminacaoPorNotaMinimaNaEtapa>()
-            .Where(parametros => parametros.EtapaRef == etapaId);
+            .Where(parametros => parametros.EtapaId == etapaId);
 }

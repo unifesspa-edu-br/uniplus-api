@@ -11,7 +11,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public readonly record struct CriterioDesempateInformado(int Ordem, ParametrosCriterioDesempate? Parametros)
 {
     /// <summary>A etapa que o critério compara, quando é o de maior nota na etapa.</summary>
-    public Guid? EtapaCitada => Parametros is ParametrosDesempateMaiorNotaEtapa porEtapa ? porEtapa.EtapaRef : null;
+    public Guid? EtapaCitada => Parametros is ParametrosDesempateMaiorNotaEtapa porEtapa ? porEtapa.EtapaId : null;
 
     public bool ComparaAreaDoEnem => Parametros is ParametrosDesempateMaiorNotaAreaEnem;
 

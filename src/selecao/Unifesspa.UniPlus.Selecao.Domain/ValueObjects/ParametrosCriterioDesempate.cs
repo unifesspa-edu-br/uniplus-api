@@ -47,7 +47,8 @@ public abstract record ParametrosCriterioDesempate
 }
 
 /// <summary>Ordena o subgrupo pela nota da etapa referenciada (deve existir no mesmo processo).</summary>
-public sealed record ParametrosDesempateMaiorNotaEtapa(Guid EtapaRef) : ParametrosCriterioDesempate
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ParametrosDesempateMaiorNotaEtapa([property: JsonRequired] Guid EtapaId) : ParametrosCriterioDesempate
 {
     public override RegraDeDesempate RegraCorrespondente() => RegraDeDesempate.MaiorNotaNaEtapa;
 }

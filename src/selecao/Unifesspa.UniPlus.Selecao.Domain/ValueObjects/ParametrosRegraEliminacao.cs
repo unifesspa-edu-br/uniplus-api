@@ -48,7 +48,8 @@ public abstract record ParametrosRegraEliminacao
 }
 
 /// <summary>Elimina quando a nota da etapa referenciada é menor que <see cref="NotaMinima"/>. A etapa deve existir no mesmo processo.</summary>
-public sealed record ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid EtapaRef, decimal NotaMinima) : ParametrosRegraEliminacao
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ParametrosEliminacaoPorNotaMinimaNaEtapa([property: JsonRequired] Guid EtapaId, decimal NotaMinima) : ParametrosRegraEliminacao
 {
     public override RegraDeEliminacaoPorCalculo RegraCorrespondente() => RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa;
 
@@ -58,7 +59,7 @@ public sealed record ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid EtapaRef, dec
 
     public override bool ExigeEnem() => false;
 
-    public override Guid? EtapaReferenciada() => EtapaRef;
+    public override Guid? EtapaReferenciada() => EtapaId;
 }
 
 /// <summary>
@@ -66,13 +67,14 @@ public sealed record ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid EtapaRef, dec
 /// mesmo processo e não pode ser a do ENEM, cuja ausência é a
 /// <see cref="ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem"/>.
 /// </summary>
-public sealed record ParametrosEliminacaoPorAusenciaNaEtapa(Guid EtapaRef) : ParametrosRegraEliminacao
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ParametrosEliminacaoPorAusenciaNaEtapa([property: JsonRequired] Guid EtapaId) : ParametrosRegraEliminacao
 {
     public override RegraDeEliminacaoPorCalculo RegraCorrespondente() => RegraDeEliminacaoPorCalculo.AusenciaNaEtapa;
 
     public override bool ExigeEnem() => false;
 
-    public override Guid? EtapaReferenciada() => EtapaRef;
+    public override Guid? EtapaReferenciada() => EtapaId;
 }
 
 /// <summary>

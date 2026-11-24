@@ -41,7 +41,7 @@ internal static class ProjecaoDaClassificacao
     private static ParametrosDoCriterioDesempateDto ProjetarParametrosDoDesempate(ParametrosCriterioDesempate parametros) =>
         parametros switch
         {
-            ParametrosDesempateMaiorNotaEtapa etapa => new(etapa.EtapaRef, null, null, null, null, null),
+            ParametrosDesempateMaiorNotaEtapa etapa => new(etapa.EtapaId, null, null, null, null, null),
             ParametrosDesempateIdoso idoso => new(null, idoso.IdadeMinima, null, null, null, null),
             ParametrosDesempatePredicadoFato predicado => new(
                 null, null,
@@ -84,8 +84,8 @@ internal static class ProjecaoDaClassificacao
 
         return regra.Parametros switch
         {
-            ParametrosEliminacaoPorNotaMinimaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, parametros.NotaMinima, null, null),
-            ParametrosEliminacaoPorAusenciaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, null, null, null),
+            ParametrosEliminacaoPorNotaMinimaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaId, parametros.NotaMinima, null, null),
+            ParametrosEliminacaoPorAusenciaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaId, null, null, null),
             ParametrosEliminacaoPorCorteEmAreaDoEnem parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, parametros.Minimo, parametros.AreaCodigo),
             _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null, null),
         };

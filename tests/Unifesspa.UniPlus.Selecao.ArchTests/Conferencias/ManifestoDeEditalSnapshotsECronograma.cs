@@ -71,7 +71,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // ZERO-EM-AREA serializam como `{}`). Uma propriedade nova aqui, esquecida nos dois
         // switches, é invisível: o envelope não muda, a fixture não muda, o serialização e leitura fica
         // verde — e o campo some no primeiro descarte.
-        [typeof(ParametrosDesempateMaiorNotaEtapa)] = (["EtapaRef"], []),
+        [typeof(ParametrosDesempateMaiorNotaEtapa)] = (["EtapaId"], []),
         [typeof(ParametrosDesempateMaiorIdade)] = ([], []),
         [typeof(ParametrosDesempateIdoso)] = (["IdadeMinima"], []),
         [typeof(ParametrosDesempatePredicadoFato)] = (["Condicao"], []),
@@ -80,11 +80,11 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // reusado literalmente pela variante acima — mesmo cuidado de propriedade
         // esquecida se aplica aqui.
         [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
-        [typeof(ParametrosEliminacaoPorNotaMinimaNaEtapa)] = (["EtapaRef", "NotaMinima"], []),
+        [typeof(ParametrosEliminacaoPorNotaMinimaNaEtapa)] = (["EtapaId", "NotaMinima"], []),
         [typeof(ParametrosEliminacaoPorCorteEmAreaDoEnem)] = (["AreaCodigo", "Minimo"], []),
         [typeof(ParametrosEliminacaoPorZeroEmAreaDoEnem)] = ([], []),
         [typeof(ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem)] = ([], []),
-        [typeof(ParametrosEliminacaoPorAusenciaNaEtapa)] = (["EtapaRef"], []),
+        [typeof(ParametrosEliminacaoPorAusenciaNaEtapa)] = (["EtapaId"], []),
 
         // Cronograma de fases — o eixo temporal do certame.
         [typeof(ChaveLocal)] = (["Valor"], []),
