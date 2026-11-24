@@ -132,6 +132,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_banca_com_regra_de_deliberacao",
         "cronograma_banca_com_o_minimo_de_integrantes",
         "prova_presencial",
+        "cidade_de_prova_nos_formularios",
         "motivos_escolhidos_ativos_no_cadastro",
         "motivos_escolhidos_de_tipo_declarado_pelo_lugar",
         "motivos_cobrem_as_decisoes_do_processo",
