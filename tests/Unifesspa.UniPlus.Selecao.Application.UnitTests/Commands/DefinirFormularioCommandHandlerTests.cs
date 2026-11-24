@@ -29,8 +29,21 @@ public sealed class DefinirFormularioCommandHandlerTests
         Result result = await DefinirAsync(
             processo, FinalidadeFormulario.Inscricao, faseId: null, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
-        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
-            "o gate de estado e concorrência sai antes da validação das etapas");
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Processo inexistente mantém o erro sem campo")]
+    public async Task Handle_ProcessoInexistente_RetornaErroSemCampo()
+    {
+        DefinirFormularioCommand command = new(Guid.NewGuid(), FinalidadeFormulario.Habilitacao, null, null, []);
+
+        Result result = await DefinirFormularioCommandHandler.Handle(
+            command, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 
     [Fact(DisplayName = "Título, fase e etapa inválidos saem juntos na mesma recusa")]
@@ -71,6 +84,19 @@ public sealed class DefinirFormularioCommandHandlerTests
             ("titulo", EstruturaFormularioErrorCodes.TituloTamanho),
             ("etapas", "EstruturaFormulario.BlocoExigidoAusente"),
         ]);
+    }
+
+    [Fact(DisplayName = "A segunda etapa inválida é recusada no caminho enviado")]
+    public async Task Handle_SegundaEtapaInvalida_RecusaNoCaminhoDasEtapas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
+
+        Result result = await DefinirAsync(processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, null,
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 0).Construir(),
+            EntradaDaEtapaFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir());
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
+            .Contain(("etapas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
     }
 
     [Fact(DisplayName = "Criar o formulário de inscrição põe a seção dos dados básicos em primeiro, com os itens dela")]

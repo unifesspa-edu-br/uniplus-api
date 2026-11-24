@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.UnitTests.Formularios;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -28,6 +29,17 @@ public sealed class EstruturaFormularioTests
         EstruturaFormulario.ValidarEtapas(
             finalidade, [Bloco(BlocoSistema.ModalidadesCalculadas, 0), Bloco(BlocoSistema.RevisaoEAceite, 1)])
             .Should().ContainSingle().Which.Error.Code.Should().Be(esperado);
+
+    [Fact(DisplayName = "A segunda página sem identificação do bloco aponta o caminho da página")]
+    public void ValidarEtapas_SegundaPaginaSemBloco_ApontaPagina()
+    {
+        EtapaEstrutura[] paginas = [Secao("DADOS", 0), new("BLOCO", 1, TipoEtapaFormulario.Bloco, null)];
+
+        IReadOnlyList<FieldError> recusas = EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, paginas);
+
+        recusas.Should().ContainSingle(e => e.Error.Code == EstruturaFormularioErrorCodes.BlocoNaoAdmitido)
+            .Which.Field.Should().Be("etapas[1].bloco");
+    }
 
     [Fact(DisplayName = "Sem a revisão e aceite, o formulário é recusado")]
     public void ValidarEtapas_SemRevisao() =>

@@ -241,7 +241,7 @@ public static class ConjuntoBasicoDaInscricao
             ? []
             :
             [
-                new($"etapas[{indice}]", new DomainError(
+                new($"{EstruturaFormulario.CaminhoDasEtapas}[{indice}]", new DomainError(
                     EstruturaFormularioErrorCodes.SecaoReservadaAlterada,
                     $"A seção {CodigoDaSecao} é a dos dados básicos do candidato e não pode ser alterada.")),
             ];

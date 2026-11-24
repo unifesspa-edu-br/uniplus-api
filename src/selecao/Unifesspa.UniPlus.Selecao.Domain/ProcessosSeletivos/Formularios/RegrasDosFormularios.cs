@@ -28,7 +28,14 @@ public static class RegrasDosFormularios
             return Result<PlanoDoFormulario>.ValidationFailure(recusas);
         }
 
-        // A conferência acima já recusou o que a fábrica recusaria.
+        return MontarPlano(configuracao, finalidade, faseId, titulo, etapas, existente, itensIniciais);
+    }
+
+    private static Result<PlanoDoFormulario> MontarPlano(
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid? faseId, string? titulo,
+        IReadOnlyList<EtapaFormulario> etapas, FormularioProcesso? existente, IReadOnlyList<FatoColetado>? itensIniciais)
+    {
+        // A conferência anterior já recusou o que a fábrica recusaria.
         FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
         Result itens = itensIniciais is null
             ? Result.Success()
@@ -71,10 +78,7 @@ public static class RegrasDosFormularios
         ArgumentNullException.ThrowIfNull(etapas);
 
         List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (finalidade is { } declarada && faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(configuracao, declarada, fase) is { } recusaDaFase)
-        {
-            recusas.Add(new("faseId", recusaDaFase));
-        }
+        AcrescentarRecusaDaFase(recusas, configuracao, finalidade, faseId);
 
         if (etapasCompletas && finalidade is { } formulario)
         {
@@ -84,6 +88,15 @@ public static class RegrasDosFormularios
         return recusas;
     }
 
+    private static void AcrescentarRecusaDaFase(
+        List<FieldError> recusas, ConfiguracaoDeclarada configuracao, FinalidadeFormulario? finalidade, Guid? faseId)
+    {
+        if (finalidade is { } declarada && faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(configuracao, declarada, fase) is { } recusa)
+        {
+            recusas.Add(new("faseId", recusa));
+        }
+    }
+
     private static List<FieldError> RecusasDasEtapas(
         ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
@@ -91,19 +104,21 @@ public static class RegrasDosFormularios
         List<FieldError> recusas = [.. EstruturaFormulario.ValidarEtapas(finalidade, estrutura)];
         if (recusas.Count == 0)
         {
-            // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os deixariam fora de
-            // seção, e a mensagem nomeia o item. Estrutura recusada suspende só esta conferência.
-            recusas.AddRange(EstruturaFormulario
-                .ValidarItens(
-                    estrutura,
-                    itensDaCriacao is null ? ItensDaFinalidade(configuracao, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
-                    secaoObrigatoria: false)
-                .Select(static recusa => recusa with { Field = "etapas" }));
+            recusas.AddRange(RecusasDosItens(configuracao, finalidade, estrutura, itensDaCriacao));
         }
 
         recusas.AddRange(RecusasDeExibicao(configuracao, finalidade, etapas, itensDaCriacao));
         return recusas;
     }
+
+    // Os itens não estão no corpo do formulário; a recusa aponta as etapas e nomeia o item.
+    private static IEnumerable<FieldError> RecusasDosItens(
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaEstrutura> estrutura, IReadOnlyList<FatoColetado>? itensDaCriacao) =>
+        EstruturaFormulario.ValidarItens(
+            estrutura,
+            itensDaCriacao is null ? ItensDaFinalidade(configuracao, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
+            secaoObrigatoria: false)
+        .Select(static recusa => recusa with { Field = EstruturaFormulario.CaminhoDasEtapas });
 
     // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais ou,
     // na criação, com os que o formulário recebe ao nascer.
@@ -117,15 +132,19 @@ public static class RegrasDosFormularios
         GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade).Select(static g => g.ParaGrafo())];
         for (int indice = 0; indice < etapas.Count; indice++)
         {
-            DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-                etapasDoGrafo[indice],
-                GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
-                dependencias);
-            if (recusa is not null)
+            if (RecusaDaExibicao(indice, etapasDoGrafo, itensDoGrafo, gruposDoGrafo, dependencias) is { } recusa)
             {
-                yield return new FieldError($"etapas[{indice}].exibicao", recusa);
+                yield return recusa;
             }
         }
+    }
+
+    private static FieldError? RecusaDaExibicao(
+        int indice, EtapaDoGrafo[] etapas, ItemDoGrafo[] itens, GrupoDoGrafo[] grupos, DependenciasDoFormulario dependencias)
+    {
+        DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDaEtapa(
+            etapas[indice], GrafoDoFormulario.PosicaoDaEtapa(etapas[indice], etapas, itens, grupos), dependencias);
+        return recusa is null ? null : new FieldError($"{EstruturaFormulario.CaminhoDasEtapas}[{indice}].exibicao", recusa);
     }
 
     internal static DomainError? RecusaDaFaseDoFormulario(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid faseId)

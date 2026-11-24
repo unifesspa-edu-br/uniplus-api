@@ -55,6 +55,9 @@ public sealed record ItemEstrutura(string FatoCodigo, int Ordem, string? EtapaCo
 /// </summary>
 public static class EstruturaFormulario
 {
+    /// <summary>Nome da propriedade das etapas nos pedidos que recebem o formulário; muda junto com o nome dela no pedido.</summary>
+    public const string CaminhoDasEtapas = "etapas";
+
     /// <summary>Os blocos que a finalidade admite: as modalidades calculadas só fazem sentido na inscrição.</summary>
     public static IReadOnlySet<BlocoSistema> BlocosAdmitidos(FinalidadeFormulario finalidade) => finalidade switch
     {
@@ -87,7 +90,7 @@ public static class EstruturaFormulario
     private static IEnumerable<FieldError> ConferirEtapa(IReadOnlyList<EtapaEstrutura> etapas, int posicao, IReadOnlySet<BlocoSistema> admitidos)
     {
         EtapaEstrutura etapa = etapas[posicao];
-        string campo = $"etapas[{posicao}]";
+        string campo = $"{CaminhoDasEtapas}[{posicao}]";
         IEnumerable<EtapaEstrutura> anteriores = etapas.Take(posicao);
         FieldError?[] recusas =
         [
@@ -122,12 +125,12 @@ public static class EstruturaFormulario
         HashSet<BlocoSistema> blocos = [.. etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Bloco).Select(static e => e.Bloco).OfType<BlocoSistema>().Where(admitidos.Contains)];
         foreach (BlocoSistema exigido in BlocosExigidos().Where(b => !blocos.Contains(b)).Order())
         {
-            yield return Recusa("etapas", EstruturaFormularioErrorCodes.BlocoExigidoAusente, $"O formulário precisa do bloco {exigido.Codigo()}.");
+            yield return Recusa(CaminhoDasEtapas, EstruturaFormularioErrorCodes.BlocoExigidoAusente, $"O formulário precisa do bloco {exigido.Codigo()}.");
         }
 
         if (blocos.Contains(BlocoSistema.RevisaoEAceite) && etapas.MaxBy(static e => e.Ordem)?.Bloco != BlocoSistema.RevisaoEAceite)
         {
-            yield return Recusa("etapas", EstruturaFormularioErrorCodes.RevisaoEAceiteForaDoFim, "A revisão e aceite é sempre a última etapa do formulário.");
+            yield return Recusa(CaminhoDasEtapas, EstruturaFormularioErrorCodes.RevisaoEAceiteForaDoFim, "A revisão e aceite é sempre a última etapa do formulário.");
         }
     }
 

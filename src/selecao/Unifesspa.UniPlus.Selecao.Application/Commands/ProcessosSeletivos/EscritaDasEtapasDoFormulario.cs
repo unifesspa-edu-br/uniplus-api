@@ -29,7 +29,7 @@ internal static class EscritaDasEtapasDoFormulario
     public static EtapasDoFormularioLidas Ler(IReadOnlyList<EtapaFormularioInput?> entradas)
     {
         ArgumentNullException.ThrowIfNull(entradas);
-        List<EtapaLida> lidas = [.. entradas.Select((entrada, i) => LerEtapa(entrada, $"etapas[{i}]"))];
+        List<EtapaLida> lidas = [.. entradas.Select((entrada, i) => LerEtapa(entrada, $"{EstruturaFormulario.CaminhoDasEtapas}[{i}]"))];
         return new EtapasDoFormularioLidas(
             [.. lidas.Select(static l => l.Etapa).OfType<EtapaFormulario>()],
             [.. lidas.Select(static l => l.Exibicao)],
@@ -89,7 +89,7 @@ internal static class EscritaDasEtapasDoFormulario
                 && (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(exibicao.FatosCitados, contexto.Fatos)
                     ?? PredicadoDnfValidador.Validar(exibicao, contexto.Vocabulario, null, contexto.DominiosDinamicos).Error) is { } semantica)
             {
-                yield return new($"etapas[{i}].exibicao", semantica);
+                yield return new($"{EstruturaFormulario.CaminhoDasEtapas}[{i}].exibicao", semantica);
             }
         }
     }
