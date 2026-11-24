@@ -275,7 +275,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         return publicarResult.Value!;

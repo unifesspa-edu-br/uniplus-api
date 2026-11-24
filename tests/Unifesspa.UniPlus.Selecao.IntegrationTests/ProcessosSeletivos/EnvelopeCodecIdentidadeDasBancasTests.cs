@@ -92,15 +92,15 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
     [Fact(DisplayName = "Trocar a ordem de duas bancas do mesmo tipo, com os mesmos ids, muda os bytes canônicos")]
     public void PosicaoNoTipo_FazParteDoConteudoCongelado()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         BancaDaEtapa primeira = objetiva.Bancas.First();
         objetiva.DefinirBancas([.. objetiva.Bancas.Select(ComOMesmoId), OutraDoMesmoTipo(primeira)]);
         BancaDaEtapa segunda = objetiva.Bancas.Single(b => b.Id != primeira.Id && b.Tipo.Codigo == primeira.Tipo.Codigo);
-        byte[] naOrdemDeChegada = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] naOrdemDeChegada = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
 
         objetiva.DefinirBancas([ComOMesmoId(segunda), .. objetiva.Bancas.Where(b => b.Id != segunda.Id).Select(ComOMesmoId)]);
-        byte[] comAsDoMesmoTipoTrocadas = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] comAsDoMesmoTipoTrocadas = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
 
         segunda.PosicaoNoTipo.Should().Be(1);
         comAsDoMesmoTipoTrocadas.Should().NotEqual(naOrdemDeChegada);
@@ -113,8 +113,8 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
     }
 
     private static byte[] Codificar(int variante, bool permutar = false) =>
-        CorpusEnvelope.Canonicalizador.Canonicalizar(
-            CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(variante: variante, permutar: permutar))).Bytes;
+        ExemploDeEnvelope.Canonicalizador.Canonicalizar(
+            ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico(variante: variante, permutar: permutar))).Bytes;
 
     private static BancaDaEtapa ComOMesmoId(BancaDaEtapa banca) =>
         BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id);

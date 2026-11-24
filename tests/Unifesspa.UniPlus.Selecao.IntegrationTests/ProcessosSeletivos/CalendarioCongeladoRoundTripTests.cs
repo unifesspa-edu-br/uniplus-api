@@ -30,14 +30,14 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "O bloco congela a lista inteira de dias, não uma referência ao dataset")]
     public void Bloco_CongelaListaPorValor()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
 
         JsonObject bloco = Payload(congelado.Bytes)["calendarioDiasUteis"]!.AsObject();
 
         bloco["presente"]!.GetValue<bool>().Should().BeTrue();
         bloco["diasNaoUteis"]!.AsArray().Should().HaveCount(4,
-            "o corpus congela uma data de cada abrangência — nacional, estadual, municipal e institucional");
+            "o exemplo congela uma data de cada abrangência — nacional, estadual, municipal e institucional");
 
         // origemId e versaoDataset ficam como rastreio da procedência. O que reproduz a contagem
         // é a lista ao lado deles.
@@ -56,12 +56,12 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "A recanonicalização usa o calendário do envelope — o catálogo vivo não é consultado")]
     public void Recanonicalizacao_UsaOCalendarioDoEnvelope()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        ExemploDeEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
         reidratado.Value!.DadosDeCatalogo.CalendarioDiasUteis.Should().NotBeNull(
@@ -73,8 +73,8 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "Trocado o dataset vigente, a versão publicada continua reproduzindo os mesmos bytes")]
     public void DatasetTrocado_NaoAfetaVersaoPublicada()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
 
         // O cadastro publica um dataset novo: outra origem, outra versão, outro conteúdo.
         byte[] sobDatasetNovo = CodificarComOutroCalendario(processo);
@@ -90,16 +90,16 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "Removido o dataset da origem, a versão publicada ainda reproduz os bytes congelados")]
     public void DatasetRemovido_VersaoAindaSeReproduz()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        ExemploDeEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // Nada aqui consulta cadastro nenhum: a reidratação parte só dos bytes persistidos. É
         // essa ausência que o cenário prova — com o dataset removido da origem, um envelope que
         // guardasse apenas a referência não teria de onde recuperar a lista.
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
         Recodificar(processo, reidratado.Value!).Should().Equal(congelado.Bytes,
@@ -113,8 +113,8 @@ public sealed class CalendarioCongeladoRoundTripTests
 
     private static void ConferirCalendarioPublicado(ProcessoSeletivo processo, SnapshotCanonico congelado)
     {
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
+        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
         reidratado.Value!.DadosDeCatalogo.CalendarioDiasUteis!.VersaoDataset.Should().Be("2026");
         reidratado.Value.DadosDeCatalogo.CalendarioDiasUteis.DiasNaoUteis.Should().HaveCount(4);
     }
@@ -124,8 +124,8 @@ public sealed class CalendarioCongeladoRoundTripTests
         CalendarioDiasUteisCongelado datasetNovo = CalendarioDiasUteisCongelado.Criar(
             Guid.Parse("01930000-0000-7000-8000-0000000000ff"), "2027",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2027, 1, 1), "NACIONAL", null, null, null).Value!]).Value!;
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
-        return CorpusEnvelope.Canonicalizador.Canonicalizar(entrada with
+        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo);
+        return ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada with
         {
             DadosDeCatalogo = entrada.DadosDeCatalogo with { CalendarioDiasUteis = datasetNovo },
         }).Bytes;

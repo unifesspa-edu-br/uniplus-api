@@ -18,15 +18,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
 
-internal static class CorpusEnvelopeCronograma
+internal static class ExemploDeEnvelopeCronograma
 {
     /// <summary>
     /// O último instante das inscrições: o limite exclusivo de seis casas, que a escrita do envelope tem de
@@ -64,7 +64,7 @@ internal static class CorpusEnvelopeCronograma
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
-    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do corpus quando ausente.</param>
+    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do exemplo quando ausente.</param>
     /// <param name="comBancasExigidasNaPublicacao">Opt-in: acrescenta as bancas que a publicação exige e que a golden fixture não tem (homologação das inscrições e 2ª instância).</param>
     internal static FaseCronograma FaseResultadoPreliminarComRecurso(
         int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_resultado_preliminar").Value!,
@@ -78,26 +78,26 @@ internal static class CorpusEnvelopeCronograma
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
                 TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
-                RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
+                RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoExemplo()),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar, comBancasExigidasNaPublicacao, variante));
 
     /// <summary>
     /// Duas alternativas, a primeira com duas condições, sem e com enquadramento, na ordem que não é a alfabética dos
     /// motivos: a escrita do envelope preserva a ordem declarada. Cada condição aponta o motivo desfavorável que a publicação confere.
     /// </summary>
-    internal static RegraDeHomologacaoDasInscricoes RegraDeHomologacaoDoCorpus() => RegraDeHomologacaoDasInscricoes.Declarar(
+    internal static RegraDeHomologacaoDasInscricoes RegraDeHomologacaoDoExemplo() => RegraDeHomologacaoDasInscricoes.Declarar(
         "RESULTADO_CLASSIFICACAO",
         [
             AlternativaDeCondicoes.Declarar([
                 CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2026, "MOTIVO_Z_SEM_RETORNO_DO_INEP", null).Value!,
-                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_A_SEM_RETORNO_DO_INEP", EnquadramentoDoCorpus()).Value!,
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_A_SEM_RETORNO_DO_INEP", EnquadramentoDoExemplo()).Value!,
             ]).Value!,
             AlternativaDeCondicoes.Declarar([
                 CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2024, "MOTIVO_M_SEM_RETORNO_DO_INEP", null).Value!,
             ]).Value!,
         ]);
 
-    private static PredicadoDnf EnquadramentoDoCorpus() => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    private static PredicadoDnf EnquadramentoDoExemplo() => PredicadoDnf.CriarDeCondicoesAgrupadas(
         [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
 
     internal static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
@@ -153,7 +153,7 @@ internal static class CorpusEnvelopeCronograma
             [],
             BancasDeTeste.Regra());
 
-    // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do corpus só é
+    // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do exemplo só é
     // publicável com a banca de análise de recursos declarada.
     internal static BancaRequerida BancaDeAnaliseDeRecursos(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(ChaveLocal.Criar("banca_fase_4").Value,
@@ -177,9 +177,9 @@ internal static class CorpusEnvelopeCronograma
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
             ProdutoId(2, 2, variante),
-            ProcedimentosDoCorpusDaFase()).Value!;
+            ProcedimentosDoExemploDaFase()).Value!;
 
-    private static ProcedimentosDeRecurso ProcedimentosDoCorpusDaFase() => ProcedimentosDeRecurso.De(
+    private static ProcedimentosDeRecurso ProcedimentosDoExemploDaFase() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
         ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.Recorrecao, '8')),
@@ -199,14 +199,14 @@ internal static class CorpusEnvelopeCronograma
             Produtos: [],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
-            TiposDeDecisao: tiposDeDecisao ?? TiposDaFaseFinalDoCorpus),
+            TiposDeDecisao: tiposDeDecisao ?? TiposDaFaseFinalDoExemplo),
         bancasRequeridas: []);
 
     /// <summary>
     /// Fase sem recurso, com os tipos declarados fora de ordem: o envelope os escreve em ordem alfabética. Inclui o da isenção
-    /// da taxa, que o corpus, por cobrar taxa com fundamentos de isenção, precisa que alguma fase declare para ser publicado.
+    /// da taxa, que o exemplo, por cobrar taxa com fundamentos de isenção, precisa que alguma fase declare para ser publicado.
     /// </summary>
-    private static readonly string[] TiposDaFaseFinalDoCorpus =
+    private static readonly string[] TiposDaFaseFinalDoExemplo =
     [
         TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.GabaritoDaProva.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo(),
     ];

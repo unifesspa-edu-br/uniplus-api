@@ -36,12 +36,12 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     public void Decoder_NaoPerdeCampo_BaseadoEmEnem()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, "classificacao.baseadoEmEnem", "True");
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
         EnvelopeReidratado reidratado = Reidratado(versao);
         reidratado.Configuracao.Avaliacao.Classificacao!.BaseadoEmEnem.Should().BeTrue();
         byte[] recodificados = RecodificarClassificacaoLida(processo, versao, reidratado);
@@ -64,10 +64,10 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     public void Decoder_LeBaseadoEmEnemFalso()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        ExemploDeEnvelopeEntrada.Publicar(processo);
 
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
+        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         reidratado.Value!.Configuracao.Avaliacao.Classificacao!.BaseadoEmEnem.Should().BeFalse();
@@ -81,7 +81,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoMinimo(Classificacao(resolucao.Normalize(NormalizationForm.FormD)), etapaDeNotaDoEnem: false);
         processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(resolucao.Normalize(NormalizationForm.FormC));
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!]).IsSuccess.Should().BeTrue();
-        EnvelopeReidratado lido = Conferir(processo, CorpusEnvelopeEntrada.Entrada(processo));
+        EnvelopeReidratado lido = Conferir(processo, ExemploDeEnvelopeEntrada.Entrada(processo));
         lido.Configuracao.Avaliacao.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(resolucao.Normalize(NormalizationForm.FormC));
         lido.Configuracao.Avaliacao.Classificacao!.QuadroPesoAreaEnem.Should().HaveCount(4);
     }
@@ -91,10 +91,10 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoMinimo(Classificacao(QuadroPesoAreaEnemDeTeste.Resolucao), etapaDeNotaDoEnem: true);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!]).IsSuccess.Should().BeTrue();
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
+        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
         Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue();
-        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Avaliacao.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue();
     }
 
@@ -104,7 +104,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         DefinirOpcoesDeTeste(processo);
         EntradaCanonicalizacao entrada = EntradaComOpcoesDeTeste(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
         processo.DefinirItens([]).IsSuccess.Should().BeTrue();
         EnvelopeReidratado lido = Conferir(processo, entrada, congelado);
         lido.Configuracao.Coleta.OpcoesDeclaradas.Where(o => o.FatoCodigo == "FATO_OPCAO_DE_TESTE")
@@ -113,16 +113,16 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
     private static EnvelopeReidratado Conferir(ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico? congelado = null)
     {
-        SnapshotCanonico snapshot = congelado ?? CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
-        return FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, snapshot.Bytes), snapshot);
+        SnapshotCanonico snapshot = congelado ?? ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
+        return FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, snapshot.Bytes), snapshot);
     }
 
     private static ConfiguracaoClassificacao Classificacao(string resolucao) => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-        RegraArredondamento = CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+        RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+        RegraArredondamento = ExemploDeEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+        RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
         BaseadoEmEnem = true,
         ResolucaoPesoAreaEnem = resolucao,
         QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
@@ -142,12 +142,12 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     }
 
 
-    /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
+    /// <summary>Exemplo mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
     private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
         ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
-            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+            RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
+            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
             BaseadoEmEnem = baseadoEmEnem,
         }).Value!, etapaDeNotaDoEnem: false);
 
@@ -202,7 +202,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             {
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, '1'),
+                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, '1'),
                 Modalidades = [
                 ModalidadeAmpla(),
             ]
@@ -243,9 +243,9 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     }
 
     private static EntradaCanonicalizacao EntradaComOpcoesDeTeste(ProcessoSeletivo processo) =>
-        CorpusEnvelopeEntrada.Entrada(processo) with
+        ExemploDeEnvelopeEntrada.Entrada(processo) with
         {
-            DadosDeCatalogo = CorpusEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
+            DadosDeCatalogo = ExemploDeEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
             {
                 ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
                 { ["FATO_OPCAO_DE_TESTE"] = [new("2025", "Opção 2025", 0), new("2024", "Opção 2024", 1)] }),

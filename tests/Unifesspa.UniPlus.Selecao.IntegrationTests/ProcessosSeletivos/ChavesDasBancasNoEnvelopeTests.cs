@@ -14,7 +14,7 @@ public sealed class ChavesDasBancasNoEnvelopeTests
     [Fact]
     public void Reidratar_BancasDoDocumento_PreservaAsChaves()
     {
-        byte[] bytes = VersoesDoEnvelopeDeTeste.BytesDoCorpus();
+        byte[] bytes = VersoesDoEnvelopeDeTeste.BytesDoExemplo();
         Result<EnvelopeReidratado> resultado = VersoesDoEnvelopeDeTeste.ReidratarComoAbertura(bytes);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

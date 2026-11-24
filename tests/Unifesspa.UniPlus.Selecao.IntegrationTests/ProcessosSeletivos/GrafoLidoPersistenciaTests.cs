@@ -14,9 +14,9 @@ public sealed class GrafoLidoPersistenciaTests(ProcessoSeletivoDbFixture fixture
     [Fact]
     public async Task Persistir_GrafoInteiroLido_ConservaVinculosEBytes()
     {
-        ProcessoSeletivo origem = CorpusEnvelopeProcessoRico.ProcessoRico(1);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(origem));
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(origem, congelado.Bytes);
+        ProcessoSeletivo origem = ExemploDeEnvelopeProcessoRico.ProcessoRico(1);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(origem));
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(origem, congelado.Bytes);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(versao);
         ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(origem, lido.Configuracao);
         await GravarAsync(candidata);

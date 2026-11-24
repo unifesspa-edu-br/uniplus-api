@@ -16,22 +16,22 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
 
-internal static class CorpusEnvelopeDadosDoEdital
+internal static class ExemploDeEnvelopeDadosDoEdital
 {
     /// <summary>
     /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela
     /// que a publicação passou a projetá-lo (issue #1350).
     /// </summary>
     /// <remarks>
-    /// Antes desta issue o corpus declarava o fim em 15/04 enquanto a fase fechava em 20/03 — 26
+    /// Antes desta issue o exemplo declarava o fim em 15/04 enquanto a fase fechava em 20/03 — 26
     /// dias de divergência, que era exatamente o estado que a issue tornou impossível. Manter a
     /// fixture naquele formato congelaria a prova de um certame que o sistema não produz mais.
     /// </remarks>
@@ -128,7 +128,7 @@ internal static class CorpusEnvelopeDadosDoEdital
     ];
 
     /// <summary>
-    /// O grupo repetível do corpus rico (UNI-REQ-0146): exibido por um fato do candidato, com um
+    /// O grupo repetível do exemplo rico (UNI-REQ-0146): exibido por um fato do candidato, com um
     /// campo exibido pelo campo anterior da mesma ocorrência — o decoder remonta o grupo, as regras
     /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
     /// o máximo nulo; o grupo inclui o candidato, identificado pelo parentesco.
@@ -164,14 +164,14 @@ internal static class CorpusEnvelopeDadosDoEdital
         .Construir();
 
     /// <summary>
-    /// Calendário congelado do corpus rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>
-    /// de propósito: um corpus só com feriado nacional deixaria as três formas territoriais sem
+    /// Calendário congelado do exemplo rico (UNI-REQ-0080). Traz <b>uma data de cada abrangência</b>
+    /// de propósito: um exemplo só com feriado nacional deixaria as três formas territoriais sem
     /// golden, e a recusa de combinação inválida no decoder passaria a ser provada apenas por
     /// mutação, nunca por artefato.
     /// </summary>
     /// <remarks>
-    /// O id é fixo, como os demais ids do corpus: gerado a cada execução, a golden fixture rica
-    /// não teria como existir. A data municipal é de Marabá, a localidade regente do corpus.
+    /// O id é fixo, como os demais ids do exemplo: gerado a cada execução, a golden fixture rica
+    /// não teria como existir. A data municipal é de Marabá, a localidade regente do exemplo.
     /// </remarks>
     internal static CalendarioDiasUteisCongelado CalendarioRico() =>
         CalendarioDiasUteisCongelado.Criar(
@@ -184,7 +184,7 @@ internal static class CorpusEnvelopeDadosDoEdital
                 DiaNaoUtilCongelado.Criar(new DateOnly(2026, 10, 28), "INSTITUCIONAL", null, null, null).Value!,
             ]).Value!;
 
-    /// <summary>Contexto do corpus: o calendário rico, com o fuso reconhecido.</summary>
+    /// <summary>Contexto do exemplo: o calendário rico, com o fuso reconhecido.</summary>
     internal static ContextoDeContagemDePrazos ContextoRico() =>
         new(CalendarioRico(), FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 }

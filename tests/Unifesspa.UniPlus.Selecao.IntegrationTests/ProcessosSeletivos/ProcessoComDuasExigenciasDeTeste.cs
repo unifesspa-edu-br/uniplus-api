@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Um processo publicável com duas exigências documentais de inscrição, e a publicação dele sobre um
 /// envelope adulterado: é o cenário que precisa de um encoder real produzindo o bloco
-/// <c>documentosExigidos</c>, que o processo rico do corpus não popula.
+/// <c>documentosExigidos</c>, que o processo rico do exemplo não popula.
 /// </summary>
 internal static class ProcessoComDuasExigenciasDeTeste
 {
@@ -159,7 +159,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = "testes", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = "testes", Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         return publicacao.Value!;

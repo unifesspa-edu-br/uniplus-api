@@ -19,13 +19,13 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
     [Fact]
     public void Reidratar_MetadadoCongelado_ConservaOBindingSemCatalogoVivo()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         MetadadoFatoCongelado metadado = new("COR_RACA", "CATEGORICO", "DECLARADO", "ESCALAR", "INSCRICAO",
             "CAMPO_FORMULARIO:COR_RACA", ["VALOR_CONGELADO"], null);
         EntradaCanonicalizacao entrada = EntradaComMetadado(processo, metadado);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].Should().BeEquivalentTo(metadado);
     }
 
@@ -34,26 +34,26 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
     {
         const string FusoCongelado = "America/Manaus";
         FusoCongelado.Should().NotBe(FusoInstitucional.ZoneId);
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo) with { FusoHorario = FusoCongelado });
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo) with { FusoHorario = FusoCongelado });
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.FusoHorario.Should().Be(FusoCongelado);
     }
 
     [Fact]
     public void Reidratar_ValoresEstaticosEDoProcesso_ConservaConteudoEOrdem()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         DefinirCondicaoDeAtendimento(processo);
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos())
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(ExemploDeEnvelopeDadosDoEdital.ValoresSelecionaveisRicos())
         {
             ["CONDICAO_ATENDIMENTO"] = [new("LACTANTE", "Lactante", 0), new(AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1)],
         };
         EntradaCanonicalizacao entrada = EntradaComValores(processo, valores);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(entrada);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ConferirValores(lido.DadosDeCatalogo.ValoresSelecionaveisCongelados!);
     }
 
@@ -81,9 +81,9 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         valores.Should().ContainKey("RENDA");
     }
     private static EntradaCanonicalizacao EntradaComMetadado(ProcessoSeletivo processo, MetadadoFatoCongelado metadado) =>
-        CorpusEnvelopeEntrada.Entrada(processo) with
+        ExemploDeEnvelopeEntrada.Entrada(processo) with
         {
-            DadosDeCatalogo = CorpusEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
+            DadosDeCatalogo = ExemploDeEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
             {
                 MetadadosFatosCongelados = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal) { ["COR_RACA"] = metadado },
             },
@@ -91,9 +91,9 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
 
     private static EntradaCanonicalizacao EntradaComValores(
         ProcessoSeletivo processo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) =>
-        CorpusEnvelopeEntrada.Entrada(processo) with
+        ExemploDeEnvelopeEntrada.Entrada(processo) with
         {
-            DadosDeCatalogo = CorpusEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
+            DadosDeCatalogo = ExemploDeEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
             {
                 ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(valores),
             },

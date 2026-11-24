@@ -15,16 +15,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
 
 /// <summary>
-/// Corpus da reidratação — agregados <b>ricos</b>, com ids fixos e valores
+/// Exemplo da reidratação — agregados <b>ricos</b>, com ids fixos e valores
 /// deliberadamente <b>não-default</b>.
 /// </summary>
 /// <remarks>
@@ -37,7 +37,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Corpu
 /// <para>
 /// <b>Todo valor aqui é não-default por desenho.</b> Um decoder que esquecesse um campo
 /// e o deixasse cair no default (<c>null</c>, <c>0</c>, string vazia) produziria bytes
-/// distintos dos congelados — e é exatamente isso que o round-trip acusa. Um corpus de
+/// distintos dos congelados — e é exatamente isso que o round-trip acusa. Um exemplo de
 /// valores default tornaria o esquecimento invisível.
 /// </para>
 /// <para>
@@ -47,7 +47,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Corpu
 /// então a volatilidade delas não vaza para os bytes.
 /// </para>
 /// </remarks>
-internal static class CorpusEnvelope
+internal static class ExemploDeEnvelope
 {
     internal static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
     internal static readonly EnvelopeCodec Registro = new();
@@ -105,17 +105,17 @@ internal static class CorpusEnvelope
     internal static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
 
     /// <summary>ContaId do publicador — evidência forense, não input de negócio.</summary>
-    internal const string Ator = "corpus-tests";
+    internal const string Ator = "exemplo-tests";
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     /// <summary>
-    /// Convenção de contagem do corpus. Como as demais referências daqui, o hash é semente
+    /// Convenção de contagem do exemplo. Como as demais referências daqui, o hash é semente
     /// fixa e não o do rol vivo — o codec e o round-trip nunca consultam o catálogo, e o
     /// que precisa ser estável é o byte congelado.
     /// </summary>
-    internal static ReferenciaRegra AlgoritmoDeContagemDoCorpus() =>
+    internal static ReferenciaRegra AlgoritmoDeContagemDoExemplo() =>
         Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, '8');
 
     /// <summary>
@@ -140,7 +140,7 @@ internal static class CorpusEnvelope
     /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story
     /// #928, §7.5): o mesmo conjunto de itens, apresentado ao agregado em ordem física
     /// inversa, tem de produzir bytes canônicos idênticos — a projeção ordena tudo por
-    /// chave determinística antes de serializar. Compartilhado por toda coleção do corpus
+    /// chave determinística antes de serializar. Compartilhado por toda coleção do exemplo
     /// que declara <c>permutar</c>: etapas, distribuição de vagas, critérios de desempate,
     /// cronograma de fases, fatos coletados, regras de derivação, destinos da cascata
     /// (dentro de uma mesma origem) e as regras de comprovação e seus itens.

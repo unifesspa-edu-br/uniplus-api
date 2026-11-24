@@ -105,7 +105,7 @@ internal static class EnvelopeDeReferencia
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), ApresentacaoDosPressupostos: CorpusEnvelopeEntrada.ApresentacaoRica, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), ApresentacaoDosPressupostos: ExemploDeEnvelopeEntrada.ApresentacaoRica, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) — a matriz
@@ -192,7 +192,7 @@ internal static class EnvelopeDeReferencia
     private static void DefinirFormularioEDerivacao(ProcessoSeletivo processo)
     {
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)])
+        processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
@@ -205,8 +205,8 @@ internal static class EnvelopeDeReferencia
         ]).IsSuccess.Should().BeTrue();
     }
 
-    // O corpus BASE declara "não cobra" (issue #1112): a combinação do CA-08 complementar ao
-    // corpus RICO ("cobra com fundamentos").
+    // O exemplo BASE declara "não cobra" (issue #1112): a combinação do CA-08 complementar ao
+    // exemplo RICO ("cobra com fundamentos").
     private static void DefinirTaxaDeInscricao(ProcessoSeletivo processo)
     {
         processo.DefinirTaxaInscricao(
@@ -236,7 +236,7 @@ internal static class EnvelopeDeReferencia
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
-        bancasRequeridas: comBancasExigidasNaPublicacao ? [CorpusEnvelopeCronograma.BancaDeHomologacaoDasInscricoes()] : []).Value!;
+        bancasRequeridas: comBancasExigidasNaPublicacao ? [ExemploDeEnvelopeCronograma.BancaDeHomologacaoDasInscricoes()] : []).Value!;
 
     /// <summary>
     /// Exigência CONDICIONAL rica — todas as 12 dimensões da forma 1.2 preenchidas, para que a

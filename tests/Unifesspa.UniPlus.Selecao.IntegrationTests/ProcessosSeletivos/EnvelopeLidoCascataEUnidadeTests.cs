@@ -11,10 +11,10 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     [Fact]
     public void Reidratar_CascataCompleta_ConservaFallbackEDestinos()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
 
         lido.Configuracao.Vagas.Cascata.Should().NotBeNull();
         lido.Configuracao.Vagas.Cascata!.FallbackCodigo.Should().Be("AC");
@@ -27,11 +27,11 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     public void Reidratar_CascataAusente_ConservaAAusencia()
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS sem cascata");
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["cascataRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
 
         lido.Configuracao.Vagas.Cascata.Should().BeNull();
     }
@@ -39,15 +39,15 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     [Fact]
     public void Recodificar_UnidadeAdministradora_ConservaIdentidadeESigla()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["identidadesUnidade"]!["administradora"]!["origemId"]!.GetValue<Guid>()
             .Should().Be(processo.UnidadeAdministradoraOrigemId);
         ApoioDoEnvelopeCodec.Envelope(congelado)["identidadesUnidade"]!["administradora"]!["sigla"]!.GetValue<string>()
             .Should().Be(processo.UnidadeAdministradora.Sigla);
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(processo, lido.Configuracao);
         candidata.UnidadeAdministradoraOrigemId.Should().Be(processo.UnidadeAdministradoraOrigemId);
         candidata.UnidadeAdministradora.Sigla.Should().Be(processo.UnidadeAdministradora.Sigla);

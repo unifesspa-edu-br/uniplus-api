@@ -68,7 +68,7 @@ public sealed class EnvelopeCodecRecusaDivulgacaoTests
     [Fact(DisplayName = "issue #563 (CA-12): justificativa em NFD real é recusada pelo gate universal de forma canônica, antes de o decoder da versão rodar")]
     public void Divulgacao_JustificativaEmNfdReal_Recusa()
     {
-        byte[] originais = BytesDoCorpus();
+        byte[] originais = BytesDoExemplo();
         JsonObject envelope = EnvelopeDosBytes(originais);
         envelope["divulgacao"]!.AsObject()["justificativa"] = $"Divulgac{(char)0x0327}a{(char)0x0303}o real";
 

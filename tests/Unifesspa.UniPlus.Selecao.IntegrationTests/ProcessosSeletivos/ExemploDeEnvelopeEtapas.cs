@@ -17,18 +17,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
 
-internal static class CorpusEnvelopeEtapas
+internal static class ExemploDeEnvelopeEtapas
 {
     // A objetiva carrega o recurso da ETAPA com os dois casos que o envelope congela: o prazo da 2ª
-    // instância declarado e o evento que inicia o prazo por CIÊNCIA, cujo produto é ausente. Sem isto no corpus, o
+    // instância declarado e o evento que inicia o prazo por CIÊNCIA, cujo produto é ausente. Sem isto no exemplo, o
     // round-trip não exercitaria recurso de etapa nenhum.
     internal static EtapaProcesso EtapaObjetiva(int variante, bool permutar)
     {
@@ -87,7 +87,7 @@ internal static class CorpusEnvelopeEtapas
             ParametrosDoRecursoDeTeste.Declarados(
                 3m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(1m, UnidadePrazo.DiasUteis)),
             ProdutoDaObjetivaId(1, variante),
-            ProcedimentosDoCorpusSemAlvo()).Value!;
+            ProcedimentosDoExemploSemAlvo()).Value!;
 
     // Segunda janela ancorada em ato, num produto DIFERENTE do primeiro — é o par que a
     // ordenação das janelas recursais precisa desempatar. Ela ordena pela chave do
@@ -100,15 +100,15 @@ internal static class CorpusEnvelopeEtapas
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             ParametrosDoRecursoDeTeste.Declarados(5.0000m, UnidadePrazo.DiasUteis),
             ProdutoDaObjetivaId(3, variante),
-            ProcedimentosDoCorpusComAlvos()).Value!;
+            ProcedimentosDoExemploComAlvos()).Value!;
 
-    private static ProcedimentosDeRecurso ProcedimentosDoCorpusSemAlvo() => ProcedimentosDeRecurso.De(
+    private static ProcedimentosDeRecurso ProcedimentosDoExemploSemAlvo() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
     ]);
 
     // Fora da ordem canônica de propósito: a coleção a normaliza, e o hash não pode depender da ordem de entrada.
-    private static ProcedimentosDeRecurso ProcedimentosDoCorpusComAlvos() => ProcedimentosDeRecurso.De(
+    private static ProcedimentosDeRecurso ProcedimentosDoExemploComAlvos() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
@@ -127,7 +127,7 @@ internal static class CorpusEnvelopeEtapas
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             ParametrosDoRecursoDeTeste.Declarados(48.0000m, UnidadePrazo.Horas),
             Guid.Empty,
-            ProcedimentosDoCorpusSemAlvo()).Value!;
+            ProcedimentosDoExemploSemAlvo()).Value!;
 
     internal static EtapaProcesso EtapaRedacao(int variante) =>
         EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_redacao").Value!,

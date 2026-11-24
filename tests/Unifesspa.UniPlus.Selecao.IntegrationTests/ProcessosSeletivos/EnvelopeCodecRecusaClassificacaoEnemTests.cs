@@ -170,7 +170,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     [Fact(DisplayName = "Envelope que coleta a edição do ENEM com classificação sem ENEM é recusado pela regra da publicação")]
     public void EdicaoDoEnemSemClassificacaoEnem_Recusa()
     {
-        byte[] bytes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
+        byte[] bytes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
 
         Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(bytes);
 
@@ -181,9 +181,9 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
 
     private static ProcessoSeletivo ProcessoComClassificacaoSemEnem()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, CorpusEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, ExemploDeEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
         Result definir = processo.DefinirClassificacao(ClassificacaoSemEnem());
         definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
 
@@ -193,8 +193,8 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+            RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
         }).Value!;
 
     /// <summary>
@@ -205,7 +205,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     private static Result<EnvelopeReidratado> ReidratarComNaoCaractere(Action<JsonObject, string> adulterar)
     {
         const string Marcador = "MARCADOR-DO-NAO-CARACTERE";
-        JsonObject envelope = EnvelopeDosBytes(BytesDoCorpus());
+        JsonObject envelope = EnvelopeDosBytes(BytesDoExemplo());
         adulterar(envelope, "Texto" + Marcador);
 
         string comMarcador = Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(envelope));

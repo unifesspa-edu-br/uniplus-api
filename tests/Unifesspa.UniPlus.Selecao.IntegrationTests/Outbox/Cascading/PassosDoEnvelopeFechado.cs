@@ -151,7 +151,7 @@ internal static class PassosDoEnvelopeFechado
     }
 
     // Passos 5 e 5b — bônus regional e taxa de inscrição: publicar sem declarar cobrança é
-    // recusado, e o corpus declara "não cobra".
+    // recusado, e o exemplo declara "não cobra".
     internal static async Task DeclararBonusETaxaAsync(Cenario c)
     {
         Guid baseLegalId = await SemearBaseLegalBonusRegionalAsync(c.Api);
@@ -202,7 +202,7 @@ internal static class PassosDoEnvelopeFechado
     }
 
     // Passo 14 — GET /conformidade: projeção HTTP do lista de conferência, não conferência independente. A publicação
-    // do passo 15 só devolve 204 porque todos os gates já estão satisfeitos, então o corpus rico
+    // do passo 15 só devolve 204 porque todos os gates já estão satisfeitos, então o exemplo rico
     // continua com todos os itens ok: a ampliação do lista de conferência não pode criar falso vermelho aqui.
     internal static async Task ConferirChecklistVerdeAsync(Cenario c)
     {
@@ -216,7 +216,7 @@ internal static class PassosDoEnvelopeFechado
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
         conformidade.Itens.Select(i => i.Codigo).Should().BeEquivalentTo(
             ItensEsperadosDoChecklist,
-            "o conjunto exato de itens que este corpus produz — remover um item do lista de conferência, ou acrescentar um item indevido marcado ok, muda este conjunto");
+            "o conjunto exato de itens que este exemplo produz — remover um item do lista de conferência, ou acrescentar um item indevido marcado ok, muda este conjunto");
     }
 
     // Passo 15 — publicar. A publicação em si é 204; o ato ainda NÃO existe em Publicações neste
