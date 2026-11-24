@@ -27,6 +27,23 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
 {
     private readonly CenarioDaAplicacaoDoModeloDeFormulario _cenario = new();
 
+    [Fact(DisplayName = "Página inválida do modelo gravado é recusada no caminho do modelo")]
+    public async Task Handle_PaginaInvalidaDoModelo_RecusaNoCaminhoDasPaginas()
+    {
+        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, []);
+        EtapaFormularioInput[] etapas =
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 0).Construir(),
+            EntradaDaEtapaFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir(),
+        ];
+        modelo = modelo with { Conteudo = modelo.Conteudo with { Etapas = etapas } };
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
+            .Contain(("modelo.etapas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
+    }
+
     [Fact(DisplayName = "Modelo inexistente é recusado no campo do modelo")]
     public async Task Handle_ModeloInexistente_Recusa()
     {

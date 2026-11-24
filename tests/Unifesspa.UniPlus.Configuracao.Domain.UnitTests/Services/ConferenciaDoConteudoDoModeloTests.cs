@@ -91,6 +91,17 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         Codigos(erros).Should().Equal(EstruturaFormularioErrorCodes.EtapaTituloInvalido);
     }
 
+    [Fact(DisplayName = "Código de etapa repetido é recusado no índice do conteúdo")]
+    public void Etapas_CodigoRepetido_RecusaNoIndiceDoConteudo()
+    {
+        ConteudoDoModelo conteudo = Conteudo() with { Etapas = [Etapa(), Etapa() with { Ordem = 1 }, Revisao with { Ordem = 2 }] };
+
+        List<FieldError> erros = Conferir(conteudo);
+
+        erros.Select(static e => (e.Field, e.Error.Code)).Should()
+            .Contain(("conteudo.etapas[1].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado));
+    }
+
     [Fact(DisplayName = "A forma de cada item é recusada no índice dele")]
     public void Item_RecusaNoIndice()
     {
