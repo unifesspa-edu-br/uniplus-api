@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -185,6 +186,6 @@ public sealed class OfertaCursoCriacaoEndpointTests
         unidadeOfertante.GetProperty("origemId").GetGuid().Should().Be(unidadeId);
         unidadeOfertante.GetProperty("sigla").GetString().Should().Be("FACEEL");
         unidadeOfertante.GetProperty("nome").GetString().Should().Be("Unidade FACEEL");
-        unidadeOfertante.GetProperty("tipo").GetString().Should().Be(nameof(TipoUnidade.Centro));
+        unidadeOfertante.GetProperty("tipo").GetString().Should().Be(TipoUnidade.Centro.Codigo());
     }
 }
