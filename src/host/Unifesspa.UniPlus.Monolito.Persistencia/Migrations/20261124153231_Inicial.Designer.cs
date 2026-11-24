@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261124131858_Inicial")]
+    [Migration("20261124153231_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -11137,6 +11137,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("identificador_legivel_do_processo");
 
+                    b.Property<string>("IdentificadorNoEnderecoWebDaUnidadeAdministradora")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("identificador_no_endereco_web_da_unidade_administradora")
+                        .HasComment("Identificador no endereço web da unidade administradora copiado da versão divulgada, usado na chave do documento no acervo.");
+
                     b.Property<string>("ItemDoEdital")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -11175,12 +11182,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("PublicadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("publicado_em");
-
-                    b.Property<string>("SlugDaUnidadeAdministradora")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("slug_da_unidade_administradora");
 
                     b.Property<string>("TipoCodigo")
                         .IsRequired()
@@ -21799,6 +21800,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("unidade_administradora_codigo")
                                 .HasComment("Cópia do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
+                            b1.Property<string>("IdentificadorNoEnderecoWeb")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("unidade_administradora_identificador_no_endereco_web")
+                                .HasComment("Cópia do identificador no endereço web da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(250)
@@ -21813,19 +21821,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("unidade_administradora_sigla")
                                 .HasComment("Cópia da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
-                            b1.Property<string>("Slug")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
-                                .HasColumnName("unidade_administradora_slug")
-                                .HasComment("Cópia do identificador usado no endereço da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
-
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(30)
                                 .HasColumnType("character varying(30)")
                                 .HasColumnName("unidade_administradora_tipo")
-                                .HasComment("Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro.");
+                                .HasComment("Código do tipo da unidade administradora copiado na criação: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO ou OUTRO.");
 
                             b1.HasKey("ProcessoSeletivoId");
 

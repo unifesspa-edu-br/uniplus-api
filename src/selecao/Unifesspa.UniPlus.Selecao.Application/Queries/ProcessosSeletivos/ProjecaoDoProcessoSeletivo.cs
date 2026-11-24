@@ -52,7 +52,7 @@ internal static class ProjecaoDoProcessoSeletivo
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,
         processo.UnidadeAdministradora.Sigla,
-        processo.UnidadeAdministradora.Slug,
+        processo.UnidadeAdministradora.IdentificadorNoEnderecoWeb,
         processo.UnidadeAdministradora.Nome,
         processo.UnidadeAdministradora.Tipo,
         processo.UnidadeAdministradora.CidadeCodigoIbge,

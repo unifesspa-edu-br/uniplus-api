@@ -41,8 +41,8 @@ internal static class DocumentoLidoDeTeste
         ["CGA"] = Unidade(UnidadesDeTeste.Cga, "cga"),
     };
 
-    private static UnidadeCitada Unidade(UnidadeResponsavelSnapshot modelo, string slug) =>
-        new(modelo.OrigemId, UnidadeAdministradoraSnapshot.Criar(modelo.Sigla, modelo.Sigla, slug, modelo.Nome, "ADMINISTRATIVA").Value!);
+    private static UnidadeCitada Unidade(UnidadeResponsavelSnapshot modelo, string identificadorNoEnderecoWeb) =>
+        new(modelo.OrigemId, UnidadeAdministradoraSnapshot.Criar(modelo.Sigla, modelo.Sigla, identificadorNoEnderecoWeb, modelo.Nome, "ADMINISTRATIVA").Value!);
 
     private static Dictionary<string, OrigemCanonicaDaFase> FasesCanonicas() => new()
     {

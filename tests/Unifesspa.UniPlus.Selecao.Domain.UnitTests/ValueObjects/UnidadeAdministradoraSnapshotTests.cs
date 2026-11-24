@@ -18,7 +18,7 @@ public sealed class UnidadeAdministradoraSnapshotTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");
         resultado.Value!.Codigo.Should().Be("CEPS");
-        resultado.Value!.Slug.Should().Be("ceps");
+        resultado.Value!.IdentificadorNoEnderecoWeb.Should().Be("ceps");
         resultado.Value!.Nome.Should().Be("Centro de Processos Seletivos");
         resultado.Value!.Tipo.Should().Be("ADMINISTRATIVA");
     }
@@ -46,14 +46,14 @@ public sealed class UnidadeAdministradoraSnapshotTests
         semCodigo.Should().Throw<ArgumentException>().WithParameterName("codigo");
     }
 
-    [Theory(DisplayName = "Sigla, slug, nome ou tipo em branco é defeito de quem chama e lança, sem código público")]
+    [Theory(DisplayName = "Sigla, identificador no endereço web, nome ou tipo em branco é defeito de quem chama e lança, sem código público")]
     [InlineData("sigla", "", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA")]
-    [InlineData("slug", "CEPS", "  ", "Centro de Processos Seletivos", "ADMINISTRATIVA")]
+    [InlineData("identificadorNoEnderecoWeb", "CEPS", "  ", "Centro de Processos Seletivos", "ADMINISTRATIVA")]
     [InlineData("nome", "CEPS", "ceps", "", "ADMINISTRATIVA")]
     [InlineData("tipo", "CEPS", "ceps", "Centro de Processos Seletivos", " ")]
-    public void Criar_CampoObrigatorioEmBranco_Lanca(string campo, string sigla, string slug, string nome, string tipo)
+    public void Criar_CampoObrigatorioEmBranco_Lanca(string campo, string sigla, string identificadorNoEnderecoWeb, string nome, string tipo)
     {
-        Action criar = () => UnidadeAdministradoraSnapshot.Criar(sigla, "COD", slug, nome, tipo);
+        Action criar = () => UnidadeAdministradoraSnapshot.Criar(sigla, "COD", identificadorNoEnderecoWeb, nome, tipo);
 
         criar.Should().Throw<ArgumentException>().WithParameterName(campo);
     }

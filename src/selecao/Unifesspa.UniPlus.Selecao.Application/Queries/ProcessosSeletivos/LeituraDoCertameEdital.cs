@@ -40,7 +40,7 @@ internal static class LeituraDoCertameEdital
     /// </summary>
     /// <remarks>
     /// A chave é a da ADR-0132 para o acervo de editais. O processo entra pelo identificador legível
-    /// e a unidade pelo slug, ambos congelados na publicação; o slug é chave do caminho, não campo
+    /// e a unidade pelo identificador no endereço web, ambos congelados na publicação; esse identificador é chave do caminho, não campo
     /// do contrato. O nome de apresentação usa os mesmos segmentos legíveis, para o arquivo baixado
     /// dizer de qual certame e de qual ato é.
     /// </remarks>
@@ -53,7 +53,7 @@ internal static class LeituraDoCertameEdital
 
         edital = null;
         if (!PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
-            || !TentarSlugDaUnidade(envelope, out string unidade)
+            || !TentarIdentificadorNoEnderecoWebDaUnidade(envelope, out string unidade)
             || !TentarDocumentoDoEdital(envelope, out Guid documentoEditalId, out string hashSha256)
             || string.IsNullOrWhiteSpace(unidade)
             || string.IsNullOrWhiteSpace(hashSha256)
@@ -68,12 +68,12 @@ internal static class LeituraDoCertameEdital
         return true;
     }
 
-    private static bool TentarSlugDaUnidade(JsonObject envelope, out string unidade)
+    private static bool TentarIdentificadorNoEnderecoWebDaUnidade(JsonObject envelope, out string unidade)
     {
         unidade = string.Empty;
         return PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identidadesUnidade"), out JsonObject? unidades)
             && PrimitivasDaProjecao.TentarObjeto(unidades, "administradora", out JsonObject? administradora)
-            && PrimitivasDaProjecao.TentarTexto(administradora, "slug", out unidade);
+            && PrimitivasDaProjecao.TentarTexto(administradora, "identificadorNoEnderecoWeb", out unidade);
     }
 
     private static bool TentarDocumentoDoEdital(JsonObject envelope, out Guid documentoEditalId, out string hashSha256)
@@ -202,7 +202,7 @@ internal static class LeituraDoCertameEdital
             return false;
         }
 
-        // O identificador de origem e o slug ficam fora: são chave de integração com o cadastro
+        // O identificador de origem e o identificador no endereço web ficam fora: são chave de integração com o cadastro
         // institucional, não informação que o edital comunica ao candidato.
         unidade = new UnidadeAdministradoraCertameDto(sigla, nome, tipo, cidadeNome, cidadeUf);
         return true;

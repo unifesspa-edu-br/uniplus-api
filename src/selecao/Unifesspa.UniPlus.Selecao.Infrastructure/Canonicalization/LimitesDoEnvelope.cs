@@ -200,8 +200,8 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.Codigo</c> — espelha <c>UnidadeConfiguration.Codigo</c>.</summary>
     public const int UnidadeAdministradoraCodigo = 50;
 
-    /// <summary><c>UnidadeAdministradoraSnapshot.Slug</c> — espelha <c>UnidadeConfiguration.Slug</c>.</summary>
-    public const int UnidadeAdministradoraSlug = 64;
+    /// <summary><c>UnidadeAdministradoraSnapshot.IdentificadorNoEnderecoWeb</c> — espelha o limite do identificador no endereço web da unidade de origem.</summary>
+    public const int UnidadeAdministradoraIdentificadorNoEnderecoWeb = 64;
 
     /// <summary><c>UnidadeAdministradoraSnapshot.Nome</c> — espelha <c>UnidadeConfiguration.Nome</c>.</summary>
     public const int UnidadeAdministradoraNome = 250;

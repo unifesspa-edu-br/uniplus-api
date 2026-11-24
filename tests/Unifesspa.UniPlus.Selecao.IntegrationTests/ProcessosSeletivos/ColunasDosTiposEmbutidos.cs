@@ -16,7 +16,7 @@ internal static class ColunasDosTiposEmbutidos
         [nameof(LimitesDoEnvelope.TipoEtapaNome)] = (typeof(TipoEtapaSnapshot), [nameof(TipoEtapaSnapshot.Nome)], false),
         [nameof(LimitesDoEnvelope.UnidadeAdministradoraSigla)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.Sigla)], false),
         [nameof(LimitesDoEnvelope.UnidadeAdministradoraCodigo)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.Codigo)], false),
-        [nameof(LimitesDoEnvelope.UnidadeAdministradoraSlug)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.Slug)], false),
+        [nameof(LimitesDoEnvelope.UnidadeAdministradoraIdentificadorNoEnderecoWeb)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.IdentificadorNoEnderecoWeb)], false),
         [nameof(LimitesDoEnvelope.UnidadeAdministradoraNome)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.Nome)], false),
         [nameof(LimitesDoEnvelope.UnidadeAdministradoraTipo)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.Tipo)], false),
         [nameof(LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge)] = (typeof(UnidadeAdministradoraSnapshot), [nameof(UnidadeAdministradoraSnapshot.CidadeCodigoIbge)], false),

@@ -44,7 +44,7 @@ public sealed class AtoDoProcesso : EntityBase
     public const int NumeroMaxLength = 60;
     public const int AssinanteMaxLength = 200;
     public const int MotivoDaCorrecaoMaxLength = 1000;
-    public const int SlugDaUnidadeAdministradoraMaxLength = 100;
+    public const int IdentificadorNoEnderecoWebDaUnidadeAdministradoraMaxLength = 64;
     public const int IdentificadorLegivelMaxLength = 200;
     public const int ContaIdMaxLength = 255;
 
@@ -71,7 +71,7 @@ public sealed class AtoDoProcesso : EntityBase
     public DateTimeOffset PublicadoEm { get; private set; }
 
     public string Assinante { get; private set; } = string.Empty;
-    public string SlugDaUnidadeAdministradora { get; private set; } = string.Empty;
+    public string IdentificadorNoEnderecoWebDaUnidadeAdministradora { get; private set; } = string.Empty;
     public string IdentificadorLegivelDoProcesso { get; private set; } = string.Empty;
 
     /// <summary>
@@ -195,7 +195,7 @@ public sealed class AtoDoProcesso : EntityBase
         DataDoAto = declarado.DataDoAto,
         PublicadoEm = publicadoEm,
         Assinante = declarado.Assinante,
-        SlugDaUnidadeAdministradora = declarado.SlugDaUnidadeAdministradora,
+        IdentificadorNoEnderecoWebDaUnidadeAdministradora = declarado.IdentificadorNoEnderecoWebDaUnidadeAdministradora,
         IdentificadorLegivelDoProcesso = declarado.IdentificadorLegivelDoProcesso,
         ItemDoEdital = declarado.ItemDoEdital?.Chave,
     };
@@ -226,7 +226,7 @@ public sealed class AtoDoProcesso : EntityBase
         GuardarTexto(novo.TipoCodigo, TipoCodigoMaxLength, nameof(novo.TipoCodigo));
         GuardarTexto(novo.TipoNome, TipoNomeMaxLength, nameof(novo.TipoNome));
         GuardarTexto(novo.Assinante, AssinanteMaxLength, nameof(novo.Assinante));
-        GuardarTexto(novo.SlugDaUnidadeAdministradora, SlugDaUnidadeAdministradoraMaxLength, nameof(novo.SlugDaUnidadeAdministradora));
+        GuardarTexto(novo.IdentificadorNoEnderecoWebDaUnidadeAdministradora, IdentificadorNoEnderecoWebDaUnidadeAdministradoraMaxLength, nameof(novo.IdentificadorNoEnderecoWebDaUnidadeAdministradora));
         GuardarTexto(novo.IdentificadorLegivelDoProcesso, IdentificadorLegivelMaxLength, nameof(novo.IdentificadorLegivelDoProcesso));
     }
 

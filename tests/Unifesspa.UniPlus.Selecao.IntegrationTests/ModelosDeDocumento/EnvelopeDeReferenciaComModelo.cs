@@ -20,7 +20,7 @@ internal static class EnvelopeDeReferenciaComModelo
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["identificadorLegivel"] = identificador;
-        envelope["identidadesUnidade"]!["administradora"]!["slug"] = AcervoPublicoDeTeste.UnidadeDoEnvelope;
+        envelope["identidadesUnidade"]!["administradora"]!["identificadorNoEnderecoWeb"] = AcervoPublicoDeTeste.UnidadeDoEnvelope;
         envelope["hashesEdital"] = HashesDoEdital(editalId, hashDoEdital, anexos ?? []);
         ApontarOModelo(envelope, modelo);
 

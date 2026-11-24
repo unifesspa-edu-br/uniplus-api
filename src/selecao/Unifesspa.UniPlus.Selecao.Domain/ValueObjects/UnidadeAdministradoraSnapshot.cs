@@ -30,11 +30,11 @@ public sealed record UnidadeAdministradoraSnapshot
 {
     private UnidadeAdministradoraSnapshot() { }
 
-    private UnidadeAdministradoraSnapshot(string sigla, string codigo, string slug, string nome, string tipo, CidadeCopiadaDaUnidade cidade)
+    private UnidadeAdministradoraSnapshot(string sigla, string codigo, string identificadorNoEnderecoWeb, string nome, string tipo, CidadeCopiadaDaUnidade cidade)
     {
         Sigla = sigla;
         Codigo = codigo;
-        Slug = slug;
+        IdentificadorNoEnderecoWeb = identificadorNoEnderecoWeb;
         Nome = nome;
         Tipo = tipo;
         CidadeCodigoIbge = cidade.CodigoIbge;
@@ -44,7 +44,7 @@ public sealed record UnidadeAdministradoraSnapshot
 
     public string Sigla { get; private set; } = string.Empty;
     public string Codigo { get; private set; } = string.Empty;
-    public string Slug { get; private set; } = string.Empty;
+    public string IdentificadorNoEnderecoWeb { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
     public string Tipo { get; private set; } = string.Empty;
     public string? CidadeCodigoIbge { get; private set; }
@@ -52,11 +52,11 @@ public sealed record UnidadeAdministradoraSnapshot
     public string? CidadeUf { get; private set; }
 
     /// <summary>
-    /// Sigla, código, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa
+    /// Sigla, código, identificador no endereço web, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa
     /// a um cliente, e lançam <see cref="ArgumentException"/>. A referência de cidade é a que pode falhar como resultado.
     /// </summary>
     public static Result<UnidadeAdministradoraSnapshot> Criar(
-        string sigla, string codigo, string slug, string nome, string tipo, CidadeCopiadaDaUnidade? cidade = null)
+        string sigla, string codigo, string identificadorNoEnderecoWeb, string nome, string tipo, CidadeCopiadaDaUnidade? cidade = null)
     {
         CidadeCopiadaDaUnidade informada = cidade ?? CidadeCopiadaDaUnidade.Ausente;
         Result cidadeValidacao = informada.Validar();
@@ -66,7 +66,7 @@ public sealed record UnidadeAdministradoraSnapshot
         }
 
         return Result<UnidadeAdministradoraSnapshot>.Success(new UnidadeAdministradoraSnapshot(
-            Obrigatorio(sigla), Obrigatorio(codigo), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), informada.Normalizada()));
+            Obrigatorio(sigla), Obrigatorio(codigo), Obrigatorio(identificadorNoEnderecoWeb), Obrigatorio(nome), Obrigatorio(tipo), informada.Normalizada()));
     }
 
     private static string Obrigatorio(string? valor, [CallerArgumentExpression(nameof(valor))] string? campo = null)

@@ -115,12 +115,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasComment("Cópia da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Codigo).HasColumnName("unidade_administradora_codigo").HasMaxLength(50).IsRequired()
                 .HasComment("Cópia do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
-            u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
-                .HasComment("Cópia do identificador usado no endereço da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.IdentificadorNoEnderecoWeb).HasColumnName("unidade_administradora_identificador_no_endereco_web").HasMaxLength(64).IsRequired()
+                .HasComment("Cópia do identificador no endereço web da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Nome).HasColumnName("unidade_administradora_nome").HasMaxLength(250).IsRequired()
                 .HasComment("Cópia do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Tipo).HasColumnName("unidade_administradora_tipo").HasMaxLength(30).IsRequired()
-                .HasComment("Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro.");
+                .HasComment("Código do tipo da unidade administradora copiado na criação: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO ou OUTRO.");
 
             // Cidade da Unidade administradora: cópia opcional, tudo ou nada. É obrigatória para
             // processo novo, conforme CriarProcessoSeletivoCommandHandler.
@@ -366,8 +366,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Ignore(p => p.RegrasDeComprovacaoSemGrupo);
     }
 
-    // Valor inválido no banco indica corrupção: falha alto ao reidratar, como o conversor do
-    // slug da unidade administradora.
+    // Falha ao ler um valor inválido do banco para preservar a integridade do identificador legível.
     private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<IdentificadorLegivel, string> IdentificadorLegivelConverter =
         new(
             identificador => identificador.Valor,

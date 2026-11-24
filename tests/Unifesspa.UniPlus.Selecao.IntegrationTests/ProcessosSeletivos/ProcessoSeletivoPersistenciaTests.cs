@@ -205,7 +205,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
                 status, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
                 unidade_administradora_origem_id,
-                unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
+                unidade_administradora_sigla, unidade_administradora_identificador_no_endereco_web, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
                 {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
@@ -315,7 +315,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     private static void ConferirAUnidadeDoCepsEmMaraba(UnidadeAdministradoraSnapshot unidade)
     {
         unidade.Sigla.Should().Be("CEPS");
-        unidade.Slug.Should().Be("ceps");
+        unidade.IdentificadorNoEnderecoWeb.Should().Be("ceps");
         unidade.Nome.Should().Be("Centro de Processos Seletivos");
         unidade.Tipo.Should().Be("ADMINISTRATIVA");
         unidade.CidadeCodigoIbge.Should().Be("1504208");

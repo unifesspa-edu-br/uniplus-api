@@ -84,7 +84,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoExemplo() =>
         UnidadeAdministradoraSnapshot.Criar(
             "CEPS",
-            "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+            "CEPS", "ceps", "Centro de Processos Seletivos", "PRO_REITORIA",
             new CidadeCopiadaDaUnidade("1504208", "Marabá", "PA")).Value!;
 
     // O exemplo tem fase com regra de recurso, e o prazo de interposição corre sobre dia

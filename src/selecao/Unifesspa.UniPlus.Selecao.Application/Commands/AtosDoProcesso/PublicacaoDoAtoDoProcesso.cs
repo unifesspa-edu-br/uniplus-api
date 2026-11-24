@@ -139,7 +139,7 @@ public sealed class PublicacaoDoAtoDoProcesso(
             Numero: ato.Dados.Numero,
             DataDoAto: ato.Dados.DataDoAto,
             Assinante: ato.Dados.Assinante,
-            SlugDaUnidadeAdministradora: versaoDivulgada.SlugDaUnidadeAdministradora,
+            IdentificadorNoEnderecoWebDaUnidadeAdministradora: versaoDivulgada.IdentificadorNoEnderecoWebDaUnidadeAdministradora,
             IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
             DocumentoPrincipalId: ato.Documentos.Principal.Id,
             Anexos: [.. ato.Documentos.Anexos.Select(static a => new AnexoDeclarado(a.Documento.Id, a.Nome))]);

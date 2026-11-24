@@ -259,7 +259,7 @@ public sealed class AcervoDaDivulgacao
     {
         string chave = ChaveNoAcervoPublico.DoEdital(
             ato.DataDoAto.Year,
-            ato.SlugDaUnidadeAdministradora,
+            ato.IdentificadorNoEnderecoWebDaUnidadeAdministradora,
             ato.TipoCodigo,
             ato.IdentificadorLegivelDoProcesso,
             ato.Id,

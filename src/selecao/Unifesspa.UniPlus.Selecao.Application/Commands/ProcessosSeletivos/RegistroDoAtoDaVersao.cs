@@ -46,7 +46,7 @@ internal static class RegistroDoAtoDaVersao
                 Numero: dados.Numero,
                 DataDoAto: ato.DataDoAto,
                 Assinante: ato.Assinante,
-                SlugDaUnidadeAdministradora: processo.UnidadeAdministradora.Slug,
+                IdentificadorNoEnderecoWebDaUnidadeAdministradora: processo.UnidadeAdministradora.IdentificadorNoEnderecoWeb,
                 IdentificadorLegivelDoProcesso: processo.IdentificadorLegivel!.Value.Valor,
                 DocumentoPrincipalId: documentoEditalId,
                 Anexos: [.. dados.Anexos.Select(static a => new AnexoDeclarado(a.DocumentoId, a.NomeArquivo))],

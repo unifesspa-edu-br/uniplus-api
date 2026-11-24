@@ -55,7 +55,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
                 && p.Status == StatusProcesso.Rascunho
                 && p.UnidadeAdministradoraOrigemId == UnidadeId
                 && p.UnidadeAdministradora.Sigla == "CEPS"
-                && p.UnidadeAdministradora.Slug == "ceps"
+                && p.UnidadeAdministradora.IdentificadorNoEnderecoWeb == "ceps"
                 && p.UnidadeAdministradora.Nome == "Centro de Processos Seletivos"
                 && p.UnidadeAdministradora.Tipo == "ADMINISTRATIVA"
                 && p.UnidadeAdministradora.CidadeCodigoIbge == "1504208"
