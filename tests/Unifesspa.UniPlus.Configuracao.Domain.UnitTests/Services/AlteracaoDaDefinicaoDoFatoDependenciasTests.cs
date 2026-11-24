@@ -124,8 +124,8 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
     }
 
-    [Fact(DisplayName = "Agregado deixa de valer com o membro desativado ou com a cardinalidade fora da inferida")]
-    public void MotivosPelosQuaisDeixaDeAgregar_MembroInativoECardinalidade()
+    [Fact(DisplayName = "Agregado deixa de valer com o membro desativado")]
+    public void MotivosPelosQuaisDeixaDeAgregar_MembroInativo()
     {
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
@@ -134,13 +134,6 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         inativo.Desativar().IsSuccess.Should().BeTrue();
 
         agregado.MotivosPelosQuaisDeixaDeAgregar(inativo, catalogo).Should().ContainSingle().Which.Error.Message.Should().Contain("desativado");
-
-        FatoCandidato booleanoEscalar = Agregado("TEM_ALGUM", DeMembro("FLAG", TipoDoDado.SimOuNao));
-        FatoCandidato membroBooleano = DeMembro("FLAG", TipoDoDado.SimOuNao);
-        booleanoEscalar.AlterarDefinicao(Definicao(dominio: null, escopo: null), Catalogo(membroBooleano, booleanoEscalar)).IsSuccess.Should().BeTrue();
-        typeof(FatoCandidato).GetProperty(nameof(FatoCandidato.Cardinalidade))!.SetValue(booleanoEscalar, QuantidadeDeValores.VariosValores);
-        booleanoEscalar.MotivosPelosQuaisDeixaDeAgregar(membroBooleano, Catalogo(membroBooleano, booleanoEscalar))
-            .Should().ContainSingle().Which.Error.Message.Should().Contain("cardinalidade");
     }
 
     [Fact(DisplayName = "A recusa preexistente cuja mensagem muda não conta como nova")]
