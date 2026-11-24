@@ -103,6 +103,6 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
         // igualdade sobre o campo cifrado, pois o módulo não precisa buscar por CPF).
         builder.HasIndex(v => v.IdDiscenteSigaa)
             .IsUnique()
-            .HasDatabaseName("ix_vinculos_de_discentes_id_discente_sigaa");
+            .HasDatabaseName("ux_vinculos_de_discentes_id_discente_sigaa");
     }
 }
