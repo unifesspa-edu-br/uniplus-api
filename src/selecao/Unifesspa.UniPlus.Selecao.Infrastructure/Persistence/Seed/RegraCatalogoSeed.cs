@@ -178,7 +178,7 @@ public static class RegraCatalogoSeed
         // criterio_remanejamento — sequência legal de redirecionamento das cotas federais
         new(SeedId(19), "REMANEJ-CASCATA-LEI-12711", VersaoV1, TipoRegra.CriterioRemanejamento,
             """
-            {"fallbackCodigo":"AC","ordens":[
+            {"destinoFinalCodigo":"AC","ordens":[
               {"origem":"LB_PPI","destinos":["LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
               {"origem":"LB_Q","destinos":["LB_PPI","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
               {"origem":"LB_PCD","destinos":["LB_PPI","LB_Q","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},

@@ -29,17 +29,17 @@ internal static class ApoioDaCascataDeRemanejamento
 
     internal static RegraCatalogo RegraCascataValida() => RegraCatalogo.Criar(
         RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
+        Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static RegraCatalogo RegraComDuasOrigens() => RegraCatalogo.Criar(
         RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
+        Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static RegraCatalogo RegraComOrigemRepetida() => RegraCatalogo.Criar(
         RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
+        Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static void ConfigurarRegra(Mocks mocks, RegraCatalogo regra) =>
