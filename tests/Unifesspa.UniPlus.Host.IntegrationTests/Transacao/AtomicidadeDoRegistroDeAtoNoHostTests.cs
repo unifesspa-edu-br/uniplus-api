@@ -50,7 +50,7 @@ public sealed class AtomicidadeDoRegistroDeAtoNoHostTests : IClassFixture<HostCo
         execucao.Resultado!.IsSuccess.Should().BeTrue(execucao.Resultado.Error?.Message);
         (await ConsultasDaTransacaoNoBanco.MotivosAsync(_servicos, comando.Codigo)).Should().Be(1);
         (await ConsultasDaTransacaoNoBanco.AtosAsync(_servicos, comando.AtoId)).Should().Be(1);
-        (await ConsultasDaTransacaoNoBanco.VagasDoObjetoAsync(_servicos, comando.ObjetoId)).Should().Be(1);
+        (await ConsultasDaTransacaoNoBanco.ExclusividadesDeAtosDoObjetoAsync(_servicos, comando.ObjetoId)).Should().Be(1);
         (await ConsultasDaTransacaoNoBanco.TransacaoDoMotivoAsync(_servicos, comando.Codigo))
             .Should().Be(await ConsultasDaTransacaoNoBanco.TransacaoDoAtoAsync(_servicos, comando.AtoId), "a Seleção e o ato foram gravados pela mesma transação");
         await PedidosDeConcessaoTestBase.AguardarAsync(
@@ -84,7 +84,7 @@ public sealed class AtomicidadeDoRegistroDeAtoNoHostTests : IClassFixture<HostCo
 
         execucao.Resultado!.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
         await ConferirSemNadaAsync(intruso, execucao);
-        (await ConsultasDaTransacaoNoBanco.VagasDoObjetoAsync(_servicos, ocupante.ObjetoId)).Should().Be(1, "só a vaga do ocupante existe");
+        (await ConsultasDaTransacaoNoBanco.ExclusividadesDeAtosDoObjetoAsync(_servicos, ocupante.ObjetoId)).Should().Be(1, "só a vaga do ocupante existe");
     }
 
     private static RegistrarAtoPelaPorta Retificando(RegistrarAtoPelaPorta raiz) =>

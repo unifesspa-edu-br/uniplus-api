@@ -21,7 +21,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
     private const string IndiceDoIdentificadorLegivelDivulgado = "ux_certames_divulgados_identificador_legivel";
-    private const string IndiceDaVagaDoObjeto = "ux_vagas_de_linhagem_objeto_tipo";
+    private const string IndiceDaExclusividadeDeAtos = "ux_exclusividades_de_atos_objeto_tipo";
 
     private static readonly DomainError AtoJaRetificado = new("AtoNormativo.AtoJaRetificado", "O ato EDITAL nº 1/2026 já foi retificado.");
 
@@ -111,7 +111,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
     public async Task ConflitoReconhecidoPelaPorta_DevolveARecusaDaPorta(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
-        Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade(IndiceDaVagaDoObjeto);
+        Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade(IndiceDaExclusividadeDeAtos);
         cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(violacao);
         cenario.Servicos.Registro.TraduzirConflitoDaGravacao(violacao).Returns(AtoJaRetificado);
 

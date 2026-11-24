@@ -1,4 +1,4 @@
--- Raiz da cadeia de retificação de um ato: sobe até quem não emenda ninguém.
+-- Ato inicial da cadeia de retificação de um ato: sobe até quem não emenda ninguém.
 --
 -- A aciclicidade não é dada pelo que já existe. A chave estrangeira de ato_retificado_id é verificada ao fim do
 -- comando, não a cada linha: um único INSERT com duas linhas (A retificando B, B retificando A) passa. O CHECK de
@@ -6,7 +6,7 @@
 -- uma vez gravado, seria irreparável (UPDATE e DELETE estão bloqueados) e faria qualquer travessia girar para sempre.
 -- A função detecta o ciclo pela marcação dos visitados: um teto de profundidade confundiria uma cadeia longa e
 -- legítima com corrupção.
-CREATE OR REPLACE FUNCTION publicacoes.fn_raiz_da_cadeia(p_ato_id uuid)
+CREATE OR REPLACE FUNCTION publicacoes.fn_ato_inicial_da_cadeia(p_ato_id uuid)
 RETURNS uuid
 LANGUAGE plpgsql
 STABLE
@@ -42,14 +42,14 @@ BEGIN
 END;
 $$;
 
--- A cadeia de todo ato registrado termina numa raiz, verificado no fim da transação, quando as linhas do comando
+-- A cadeia de todo ato registrado termina num ato inicial, verificado no fim da transação, quando as linhas do comando
 -- inteiro já existem. É este trigger, e não a chave estrangeira, que barra o INSERT multi-linha cíclico.
 CREATE OR REPLACE FUNCTION publicacoes.fn_atos_normativos_cadeia_aciclica()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    PERFORM publicacoes.fn_raiz_da_cadeia(NEW.id);
+    PERFORM publicacoes.fn_ato_inicial_da_cadeia(NEW.id);
     RETURN NEW;
 END;
 $$;

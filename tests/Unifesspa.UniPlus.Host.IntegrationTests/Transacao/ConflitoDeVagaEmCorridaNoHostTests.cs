@@ -65,7 +65,7 @@ public sealed class ConflitoDeVagaEmCorridaNoHostTests : IClassFixture<HostComHa
         (await ConsultasDaTransacaoNoBanco.AtosAsync(_servicos, segunda.AtoId)).Should().Be(0);
         (await ConsultasDaTransacaoNoBanco.MotivosAsync(_servicos, segunda.Codigo)).Should().Be(0);
         (await ConsultasDaTransacaoNoBanco.EnvelopesDoEventoAsync(_servicos, segunda.Codigo)).Should().Be(0);
-        (await ConsultasDaTransacaoNoBanco.VagasDoObjetoAsync(_servicos, primeira.ObjetoId)).Should().Be(1, "só a vaga da primeira existe");
+        (await ConsultasDaTransacaoNoBanco.ExclusividadesDeAtosDoObjetoAsync(_servicos, primeira.ObjetoId)).Should().Be(1, "só a vaga da primeira existe");
     }
 
     private static RegistrarAtoPelaPorta NovoRegistro(Guid objeto, string tipo, string prefixo) =>
