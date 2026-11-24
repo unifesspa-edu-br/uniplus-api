@@ -19,9 +19,9 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 /// </summary>
 /// <remarks>
 /// Story #585 — valida ponta-a-ponta o invariante singleton da
-/// <c>Instituicao</c>: índice único parcial sobre a coluna sentinela
+/// <c>Instituicao</c>: índice único parcial sobre a coluna instituicao_unica
 /// (<c>WHERE is_deleted = false</c>), soft-delete liberando o slot, FK intra-banco
-/// <c>unidade_raiz_id → unidade(id)</c> e audit trail.
+/// <c>reitoria_id → unidade(id)</c> e audit trail.
 /// </remarks>
 [SuppressMessage(
     "Performance",

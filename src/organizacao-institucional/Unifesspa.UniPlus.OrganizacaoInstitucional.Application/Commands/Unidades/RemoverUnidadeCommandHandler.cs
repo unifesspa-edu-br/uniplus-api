@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 /// unidade viva, ou se for a raiz (reitoria) de uma Instituição viva.
 /// </summary>
 /// <remarks>
-/// O bloqueio por <c>instituicao.unidade_raiz_id</c> preserva a integridade do
+/// O bloqueio por <c>instituicoes.reitoria_id</c> preserva a integridade do
 /// vínculo da Instituição com a reitoria: uma Unidade referenciada
 /// como raiz não pode ser removida enquanto a Instituição viva apontar para ela.
 /// A conferência é de <see cref="ConferenciaDoCadastroDaUnidade"/> e a gravação, de <see cref="GravacaoDaUnidade"/>.

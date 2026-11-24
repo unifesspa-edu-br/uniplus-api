@@ -1055,14 +1055,14 @@ organizacao.instituicoes.endereco_numero: Interno
 organizacao.instituicoes.endereco_origem: Interno
 organizacao.instituicoes.id: Interno
 organizacao.instituicoes.igc: Interno
+organizacao.instituicoes.instituicao_unica: Interno
 organizacao.instituicoes.is_deleted: Interno
 organizacao.instituicoes.mantenedora: Interno
 organizacao.instituicoes.nome: Interno
 organizacao.instituicoes.organizacao_academica: Interno
-organizacao.instituicoes.registro_vivo_sentinela: Interno
+organizacao.instituicoes.reitoria_id: Interno
 organizacao.instituicoes.sigla: Interno
 organizacao.instituicoes.situacao: Interno
-organizacao.instituicoes.unidade_raiz_id: Interno
 organizacao.instituicoes.updated_at: Interno
 organizacao.instituicoes.updated_by: Pessoal
 organizacao.instituicoes.website: Interno

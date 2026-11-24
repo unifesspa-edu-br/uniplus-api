@@ -2982,8 +2982,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     endereco_nivel_resolucao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     endereco_origem = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     endereco_display_atualizado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    unidade_raiz_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    registro_vivo_sentinela = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    reitoria_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Unidade do tipo reitoria à qual a instituição está vinculada; opcional."),
+                    instituicao_unica = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true, comment: "Sempre verdadeiro; com o índice único entre as instituições ativas, garante que exista uma só instituição ativa."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -2999,10 +2999,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_instituicoes_cidade_obrigatoria_com_endereco", "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
                     table.CheckConstraint("ck_instituicoes_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
                     table.CheckConstraint("ck_instituicoes_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
-                    table.CheckConstraint("ck_instituicoes_singleton_sentinela", "registro_vivo_sentinela = true");
+                    table.CheckConstraint("ck_instituicoes_instituicao_unica", "instituicao_unica = true");
                     table.ForeignKey(
-                        name: "fk_instituicoes_unidade_unidade_raiz_id",
-                        column: x => x.unidade_raiz_id,
+                        name: "fk_instituicoes_unidade_reitoria_id",
+                        column: x => x.reitoria_id,
                         principalSchema: "organizacao",
                         principalTable: "unidades",
                         principalColumn: "id",
@@ -6753,18 +6753,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "cidade_codigo_ibge");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instituicoes_singleton_vivo",
+                name: "ix_instituicoes_instituicao_unica_vivo",
                 schema: "organizacao",
                 table: "instituicoes",
-                column: "registro_vivo_sentinela",
+                column: "instituicao_unica",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instituicoes_unidade_raiz_id",
+                name: "ix_instituicoes_reitoria_id",
                 schema: "organizacao",
                 table: "instituicoes",
-                column: "unidade_raiz_id");
+                column: "reitoria_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_itens_da_revisao_concessao",

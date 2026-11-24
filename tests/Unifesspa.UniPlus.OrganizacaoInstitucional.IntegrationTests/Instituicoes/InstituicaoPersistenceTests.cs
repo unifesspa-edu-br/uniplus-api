@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure
 /// Integração ponta-a-ponta da Story #585 contra Postgres real. Cobre os
 /// cenários de persistência da <see cref="Instituicao"/> singleton: índice único
 /// parcial sentinela (no máximo uma viva), soft-delete liberando o slot, audit
-/// trail e FK intra-banco <c>unidade_raiz_id → unidade(id)</c>.
+/// trail e FK intra-banco <c>reitoria_id → unidade(id)</c>.
 /// </summary>
 public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFixture>
 {
@@ -132,8 +132,8 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.InstituicaoSingletonVivo);
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex).Should().Be(RestricoesDoBanco.InstituicaoSingletonVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.InstituicaoUnicaViva);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex).Should().Be(RestricoesDoBanco.InstituicaoUnicaViva);
     }
 
     [Fact(DisplayName = "CHECK constraint impede gravar a sentinela como false (singleton constante no banco)")]
@@ -144,9 +144,9 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         await _fixture.GravarAsync(AdminA, instituicao);
 
         await _fixture.ConferirQueOBancoRecusaPorCheckAsync(
-            $"UPDATE organizacao.instituicoes SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}",
-            "ck_instituicoes_singleton_sentinela",
-            "a CHECK constraint ck_instituicoes_singleton_sentinela só admite a sentinela true");
+            $"UPDATE organizacao.instituicoes SET instituicao_unica = false WHERE id = {instituicao.Id}",
+            "ck_instituicoes_instituicao_unica",
+            "a CHECK constraint ck_instituicoes_instituicao_unica só admite a sentinela true");
     }
 
     [Fact(DisplayName = "Soft-delete mantém a Instituição removida na trilha com a auditoria da exclusão")]
@@ -195,7 +195,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             .Should().BeFalse("registro removido não conta para o limite singleton");
     }
 
-    [Fact(DisplayName = "FK unidade_raiz_id aceita vínculo com Unidade do tipo reitoria")]
+    [Fact(DisplayName = "FK reitoria_id aceita vínculo com Unidade do tipo reitoria")]
     public async Task Fk_UnidadeRaizReitoria_Aceita()
     {
         await LimparInstituicoesAsync();

@@ -23,14 +23,14 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        // CHECK fixa a sentinela como verdadeiramente constante no banco: sem ela,
-        // qualquer caminho de escrita (SQL de carga, correção manual) poderia gravar
-        // registro_vivo_sentinela = false e burlar o índice único parcial — duas
+        // CHECK fixa a coluna instituicao_unica como verdadeiramente constante no banco:
+        // sem ela, qualquer caminho de escrita (SQL de carga, correção manual) poderia
+        // gravar instituicao_unica = false e burlar o índice único parcial — duas
         // Instituições vivas (uma true, uma false) passariam. Com o CHECK, a coluna
-        // só admite true, então o índice único parcial garante de fato o singleton.
+        // só admite true, então o índice único parcial garante de fato uma só Instituição.
         builder.ToTable("instituicoes", t =>
         {
-            t.HasCheckConstraint("ck_instituicoes_singleton_sentinela", "registro_vivo_sentinela = true");
+            t.HasCheckConstraint("ck_instituicoes_instituicao_unica", "instituicao_unica = true");
 
             // CHECK de coerência cidade↔CEP (ADR-0096): NULL-safe — a cidade
             // da sede é opcional, mas quando há endereço o domínio garante a cidade
@@ -98,10 +98,14 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.Property(i => i.CreatedBy).HasMaxLength(255);
         builder.Property(i => i.UpdatedBy).HasMaxLength(255);
 
-        // Vínculo com a Unidade raiz (reitoria): FK intra-banco (ADR-0054).
+        // Vínculo com a reitoria (Unidade raiz): FK intra-banco (ADR-0054).
         // Restrict no banco — a remoção lógica da Unidade é barrada pelo handler
         // (UnidadeErrorCodes.RemocaoBloqueadaPorInstituicao); o RESTRICT cobre o
         // DELETE físico residual.
+        builder.Property(i => i.UnidadeRaizId)
+            .HasColumnName("reitoria_id")
+            .HasComment("Unidade do tipo reitoria à qual a instituição está vinculada; opcional.");
+
         builder.HasOne<Unidade>()
             .WithMany()
             .HasForeignKey(i => i.UnidadeRaizId)
@@ -109,21 +113,22 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(i => i.UnidadeRaizId)
-            .HasDatabaseName("ix_instituicoes_unidade_raiz_id");
+            .HasDatabaseName("ix_instituicoes_reitoria_id");
 
-        // Salvaguarda física do singleton: a sentinela é uma propriedade real
+        // Salvaguarda física de uma só Instituição: a coluna é uma propriedade real
         // sempre true (a entidade a inicializa), então o EF grava true de forma
         // confiável — diferente de uma shadow bool, que o EF gravaria como o
         // default CLR (false) e violaria o CHECK. HasDefaultValue cobre inserts
         // crus que omitam a coluna.
         builder.Property(i => i.RegistroVivoSentinela)
-            .HasColumnName("registro_vivo_sentinela")
+            .HasColumnName("instituicao_unica")
+            .HasComment("Sempre verdadeiro; com o índice único entre as instituições ativas, garante que exista uma só instituição ativa.")
             .HasDefaultValue(true);
 
         builder.HasIndex(i => i.RegistroVivoSentinela)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.InstituicaoSingletonVivo);
+            .HasDatabaseName(RestricoesDoBanco.InstituicaoUnicaViva);
 
         // Índice de relatório/filtro pela cidade da sede (ADR-0090).
         builder.HasIndex(i => i.CidadeCodigoIbge)

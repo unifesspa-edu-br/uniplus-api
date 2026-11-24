@@ -7,7 +7,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 /// </summary>
 public static class RestricoesDoBanco
 {
-    public const string InstituicaoSingletonVivo = "ix_instituicoes_singleton_vivo";
+    public const string InstituicaoUnicaViva = "ix_instituicoes_instituicao_unica_vivo";
 
     public const string UnidadeSlugVivo = "ux_unidades_identificador_no_endereco_web_ativos";
 
