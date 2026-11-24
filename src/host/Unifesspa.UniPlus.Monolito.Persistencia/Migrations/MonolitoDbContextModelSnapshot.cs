@@ -11358,26 +11358,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da categoria julgada.");
 
                     b.Property<Guid>("BancaRequeridaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("banca_requerida_id");
+                        .HasColumnName("banca_requerida_id")
+                        .HasComment("Identificador da banca que julga a categoria.");
 
                     b.Property<Guid>("CategoriaDocumentoOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("categoria_documento_origem_id");
+                        .HasColumnName("categoria_documento_origem_id")
+                        .HasComment("Identificador da categoria de documento de origem.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Código da categoria de documento.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasComment("Data e hora de criação do registro.");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome")
+                        .HasComment("Nome da categoria de documento.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11391,7 +11402,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_categorias_julgadas_codigo");
 
-                    b.ToTable("categorias_julgadas", "selecao");
+                    b.ToTable("categorias_julgadas", "selecao", t =>
+                        {
+                            t.HasComment("Categorias de documento julgadas por uma banca.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CertameDivulgado", b =>
@@ -13035,23 +13049,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("tipo_fase_nome")
                         .HasComment("Nome do tipo de fase copiado do cadastro ao definir o cronograma.");
 
-                    b.Property<string>("UnidadeResponsavelNome")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)")
-                        .HasColumnName("unidade_responsavel_nome")
-                        .HasComment("Nome da unidade responsável, copiado quando definida.");
-
-                    b.Property<Guid?>("UnidadeResponsavelOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("unidade_responsavel_origem_id")
-                        .HasComment("Identificador da unidade responsável, copiado quando definida.");
-
-                    b.Property<string>("UnidadeResponsavelSigla")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("unidade_responsavel_sigla")
-                        .HasComment("Sigla da unidade responsável, copiada quando definida.");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
@@ -13088,6 +13085,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasComment("Fases e períodos do cronograma de cada processo seletivo.");
 
                             t.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+
+                            t.HasCheckConstraint("ck_fases_cronograma_unidade_completa", "(unidade_responsavel_origem_id IS NULL AND unidade_responsavel_codigo IS NULL AND unidade_responsavel_sigla IS NULL AND unidade_responsavel_nome IS NULL) OR (unidade_responsavel_origem_id IS NOT NULL AND unidade_responsavel_codigo IS NOT NULL AND unidade_responsavel_sigla IS NOT NULL AND unidade_responsavel_nome IS NOT NULL)");
                         });
                 });
 
@@ -20970,6 +20969,49 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_fases_cronograma_processo_seletivo_processo_seletivo_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeResponsavelSnapshot", "UnidadeResponsavel", b1 =>
+                        {
+                            b1.Property<Guid>("FaseCronogramaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("unidade_responsavel_codigo")
+                                .HasComment("Código da unidade responsável no cadastro, copiado ao salvar a fase.");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(250)
+                                .HasColumnType("character varying(250)")
+                                .HasColumnName("unidade_responsavel_nome")
+                                .HasComment("Nome da unidade responsável, copiado quando definida.");
+
+                            b1.Property<Guid>("OrigemId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("unidade_responsavel_origem_id")
+                                .HasComment("Identificador da unidade responsável, copiado quando definida.");
+
+                            b1.Property<string>("Sigla")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("unidade_responsavel_sigla")
+                                .HasComment("Sigla da unidade responsável, copiada quando definida.");
+
+                            b1.HasKey("FaseCronogramaId");
+
+                            b1.ToTable("fases_cronograma", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FaseCronogramaId")
+                                .HasConstraintName("fk_fases_cronograma_fases_cronograma_id");
+                        });
+
+                    b.Navigation("UnidadeResponsavel");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FatoColetado", b =>

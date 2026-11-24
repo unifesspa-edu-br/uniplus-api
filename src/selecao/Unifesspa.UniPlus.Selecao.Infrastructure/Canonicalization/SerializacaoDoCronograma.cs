@@ -49,6 +49,7 @@ internal static class SerializacaoDoCronograma
     {
         item["tipoFaseOrigemId"] = fase.FaseCanonicaOrigemId;
         item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
+        item["tipoFaseNome"] = HashCanonicalComputer.NormalizeNfc(fase.TipoFaseNome);
         item["origemData"] = fase.OrigemData.ToString();
         item["agrupaEtapas"] = fase.AgrupaEtapas;
         item["permiteComplementacao"] = fase.PermiteComplementacao;
@@ -127,6 +128,7 @@ internal static class SerializacaoDoCronograma
         {
             ["categoriaDocumentoOrigemId"] = c.CategoriaDocumentoOrigemId,
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(c.Codigo),
+            ["nome"] = HashCanonicalComputer.NormalizeNfc(c.Nome),
         })]);
     }
 

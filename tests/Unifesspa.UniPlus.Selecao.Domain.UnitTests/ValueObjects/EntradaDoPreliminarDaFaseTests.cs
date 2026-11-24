@@ -158,8 +158,8 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Guid renda = Guid.Parse("0197d6f0-4444-7000-8000-000000000001");
         Guid raca = Guid.Parse("0197d6f0-4444-7000-8000-000000000002");
 
-        Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(renda, "RENDA")])]).EntradaDoPreliminar()
-            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(raca, "RACA")])]).EntradaDoPreliminar());
+        Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(renda, "RENDA", "RENDA")])]).EntradaDoPreliminar()
+            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(raca, "RACA", "RACA")])]).EntradaDoPreliminar());
     }
 
     [Fact(DisplayName = "A ordem em que as bancas são declaradas não muda a entrada")]
@@ -187,7 +187,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Func<PublicacoesDaFase, PublicacoesDaFase>? publicacoes = null,
         IReadOnlyList<BancaRequerida>? bancas = null) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            Alterar(origem, new OrigemCanonicaDaFase(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false)),
+            Alterar(origem, OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false))),
             Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), UnidadesDeTeste.Ceps)),
             Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar)], false, null)),
             bancas ?? []).Value!;

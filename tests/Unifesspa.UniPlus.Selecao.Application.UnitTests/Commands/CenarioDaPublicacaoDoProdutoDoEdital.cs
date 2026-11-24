@@ -68,7 +68,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     // O que a versão publicada congelou do tipo do item; o catálogo vivo (Tipos) só diz que o tipo existe.
-    public TipoDeAtoCongelado Congelado { get; set; } = new(Materia, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+    public TipoDeAtoCongelado Congelado { get; set; } = new(Materia, Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
 
     public DocumentoAPublicar Principal { get; } = Documento();
     public List<AtoDoProcesso> AtosDoProcesso { get; } = [];
@@ -135,8 +135,8 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
 
     public static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

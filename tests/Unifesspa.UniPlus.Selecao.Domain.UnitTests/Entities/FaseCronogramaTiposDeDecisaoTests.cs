@@ -22,9 +22,9 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
     private const string Isencao = "ISENCAO_DA_TAXA";
     private const string Heteroidentificacao = "HETEROIDENTIFICACAO";
 
-    private static OrigemCanonicaDaFase Origem(OrigemDataFase origemData = OrigemDataFase.NaExecucao) => new(
+    private static OrigemCanonicaDaFase Origem(OrigemDataFase origemData = OrigemDataFase.NaExecucao) => OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
         Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", origemData,
-        AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
+        AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
 
     private static DecisoesDeCronogramaDaFase Cronograma() => new(1, null, null, UnidadesDeTeste.Ceps);
 

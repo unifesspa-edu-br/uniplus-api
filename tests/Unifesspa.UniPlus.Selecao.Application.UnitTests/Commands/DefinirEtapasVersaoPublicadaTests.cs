@@ -25,7 +25,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
     public async Task Handle_TipoJaDeclaradoQueOCatalogoPassouACongelar_AceitaPelaClassificacaoCongelada()
     {
         CenarioDaVersaoPublicada cenario = CenarioDaVersaoPublicada.Publicando(
-            new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+            new TipoDeAtoCongelado(Resultado, Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 
         Result resultado = await cenario.DefinirUmProdutoDefinitivoAsync(CatalogoQueCongelaOResultado());
 
@@ -36,7 +36,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
     public async Task Handle_TipoNovoEmProcessoPublicado_ConfereOCatalogo()
     {
         CenarioDaVersaoPublicada cenario = CenarioDaVersaoPublicada.Publicando(
-            new TipoDeAtoCongelado("OUTRO_ATO", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false));
+            new TipoDeAtoCongelado("OUTRO_ATO", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false));
 
         Result resultado = await cenario.DefinirUmProdutoDefinitivoAsync(CatalogoQueCongelaOResultado());
 

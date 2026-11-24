@@ -62,9 +62,9 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal FaseCronograma Criar() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!, Origem(), Decisoes(), Publicacoes(), Bancas).Value!;
 
-    internal OrigemCanonicaDaFase Origem() => new(
+    internal OrigemCanonicaDaFase Origem() => OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
         OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao)
-    { Nome = Nome };
+    { Nome = Nome });
 
     internal DecisoesDeCronogramaDaFase Decisoes() =>
         new(Ordem, Inicio, Fim, ComUnidade ? UnidadeResponsavel : null) { NoMesmoMomentoDaAnterior = NoMesmoMomentoDaAnterior };

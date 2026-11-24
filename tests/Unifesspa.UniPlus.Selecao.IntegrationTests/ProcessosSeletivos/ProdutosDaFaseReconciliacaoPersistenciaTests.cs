@@ -145,9 +145,9 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<ProdutoDaFase> produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 OrigemId: faseCanonicaOrigemId, Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false),
+                ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

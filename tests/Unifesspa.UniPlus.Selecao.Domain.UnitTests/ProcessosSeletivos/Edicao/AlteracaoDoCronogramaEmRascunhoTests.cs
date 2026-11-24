@@ -41,9 +41,9 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false,
-                PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+                PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(
                 ordem, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
@@ -51,9 +51,9 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
 
     private static FaseCronograma ComUnidade(FaseCronograma atual, UnidadeResponsavelSnapshot unidade) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas,
-                atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
+                atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao)),
             new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, unidade),
             new PublicacoesDaFase([.. atual.Produtos], atual.EmiteParecerIndividual, atual.RegraRecurso),
             [.. atual.BancasRequeridas]).Value!;

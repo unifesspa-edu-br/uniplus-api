@@ -15,7 +15,7 @@ internal static class ApoioFaseCronograma
     internal static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))]);
 
     internal static ReferenciaRegra RegraAncorada() =>
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
@@ -29,9 +29,9 @@ internal static class ApoioFaseCronograma
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false),
+                ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
             bancasRequeridas ?? []);

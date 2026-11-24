@@ -78,7 +78,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
 
         return TiposDeAtoUnicosPorObjeto.ParaOperacao(
             leitura.Unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes,
-            tipoDoAtoDaOperacao.UnicoPorObjeto, tipoDoAtoDaOperacao.Nome);
+            tipoDoAtoDaOperacao.UnicoPorObjeto, tipoDoAtoDaOperacao.Nome, leitura.Nomes);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
             processo, ocupados, null, hoje, jaCongelados, cancellationToken)
             .ConfigureAwait(false);
 
-        return TiposDeAtoUnicosPorObjeto.ParaChecklist(leitura.Unicos, ocupados, leitura.Classificacoes);
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(leitura.Unicos, ocupados, leitura.Classificacoes, leitura.Nomes);
     }
 
     internal static ClassificacaoDoTipoDeAto ClassificacaoDe(TipoAtoPublicadoView tipo) =>
@@ -129,6 +129,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
         }
 
         leitura.Classificacoes[tipoDaOperacao.Codigo] = ClassificacaoDe(tipoDaOperacao);
+        leitura.Nomes[tipoDaOperacao.Codigo] = tipoDaOperacao.Nome;
     }
 
     private async Task<IReadOnlyList<string>> TiposOcupadosAsync(IReadOnlyList<Guid> atosDaLinhagem, CancellationToken cancellationToken) =>
@@ -177,26 +178,30 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
         Dictionary<string, ClassificacaoDoTipoDeAto> classificacoes = vigentes
             .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
             .ToDictionary(static grupo => grupo.Key, static grupo => ClassificacaoDe(grupo.First()), StringComparer.Ordinal);
-        LeituraDoCatalogo leitura = new(unicos, classificacoes);
+        Dictionary<string, string> nomes = vigentes
+            .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
+            .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Nome, StringComparer.Ordinal);
+        LeituraDoCatalogo leitura = new(unicos, classificacoes, nomes);
         PrevalecerOsJaCongelados(leitura, jaCongelados);
 
         return leitura;
     }
 
-    // O nome do tipo congelado não viaja no envelope: a recusa o cita pelo código.
     private static void PrevalecerOsJaCongelados(LeituraDoCatalogo leitura, IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados)
     {
         foreach (TipoDeAtoCongelado congelado in jaCongelados.Values)
         {
             leitura.Classificacoes[congelado.Codigo] = congelado.Classificacao;
+            leitura.Nomes[congelado.Codigo] = congelado.Nome;
             if (congelado.UnicoPorObjeto)
             {
-                leitura.Unicos[congelado.Codigo] = congelado.Codigo;
+                leitura.Unicos[congelado.Codigo] = congelado.Nome;
             }
         }
     }
 
     private sealed record LeituraDoCatalogo(
         Dictionary<string, string> Unicos,
-        Dictionary<string, ClassificacaoDoTipoDeAto> Classificacoes);
+        Dictionary<string, ClassificacaoDoTipoDeAto> Classificacoes,
+        Dictionary<string, string> Nomes);
 }

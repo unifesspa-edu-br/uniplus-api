@@ -171,9 +171,9 @@ AtualizacaoDosFundamentos,
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static FaseCronograma FaseConforme() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false),
+            ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(

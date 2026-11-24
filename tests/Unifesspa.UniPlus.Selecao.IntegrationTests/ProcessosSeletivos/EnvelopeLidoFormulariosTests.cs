@@ -105,8 +105,8 @@ public sealed class EnvelopeLidoFormulariosTests
     }
 
     private static FaseCronograma FaseDeHabilitacao(ProcessoSeletivo processo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital,
-            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital,
+            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(processo.CronogramaFases.Max(f => f.Ordem) + 1,
             new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)], false, null), []).Value!;

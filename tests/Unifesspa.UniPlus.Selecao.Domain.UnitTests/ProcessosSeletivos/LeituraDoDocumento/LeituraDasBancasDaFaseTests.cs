@@ -29,7 +29,7 @@ public sealed class LeituraDasBancasDaFaseTests
         banca.Chave.Valor.Should().Be("banca_recursos");
         banca.Tipo.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos);
         banca.Tipo.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia, "a banca guarda a cópia do tipo que o cadastro tinha ao ser lida");
-        banca.CandidatosAtendidos.Should().ContainSingle();
+        banca.CandidatosAtendidos.Should().ContainSingle().Which.Nome.Should().Be("Identidade");
         lidos.Origem.PartesRecusadas.Should().BeEmpty();
     }
 

@@ -73,7 +73,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     // A fase criada recusa a declaração dos candidatos atendidos na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
     private static FaseCronograma FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(BancaRequerida banca) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
-        new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false)),
         new DecisoesDeCronogramaDaFase(
             1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
@@ -90,7 +90,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     {
         BancaRequerida comCandidatosDeclarados = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(Tipo),
-            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA", "RENDA")], BancasDeTeste.Regra());
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(comCandidatosDeclarados));
 
         Pendencia(processo)!.Code.Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");

@@ -77,7 +77,7 @@ internal static class LeituraDosFormularios
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(bloco, "finalidade", path));
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
-        (Guid? modeloId, string? modeloCodigo) = LerModeloDeOrigem(leitor, bloco, path);
+        (Guid? modeloId, string? modeloCodigo, string? modeloNome) = LerModeloDeOrigem(leitor, bloco, path);
         IReadOnlyList<EtapaFormulario> etapas = LerEtapasDoFormulario(leitor, bloco, path);
         JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
         if (leitor.Falhou)
@@ -86,11 +86,11 @@ internal static class LeituraDosFormularios
         }
 
         return CriarFormulario(leitor, path, finalidadeAnterior, termos,
-            new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, etapas, itensDeTermo));
+            new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, etapas, itensDeTermo));
     }
 
     private sealed record DeclaracaoFormulario(
-        FinalidadeFormulario Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo,
+        FinalidadeFormulario Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
         IReadOnlyList<EtapaFormulario> Etapas, JsonArray Termos);
 
     private static FormularioProcesso? CriarFormulario(
@@ -101,7 +101,7 @@ internal static class LeituraDosFormularios
             return leitor.Recusar<FormularioProcesso?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
         }
 
-        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(d.Finalidade, d.FaseId, d.Titulo, d.Etapas, d.ModeloId, d.ModeloCodigo);
+        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(d.Finalidade, d.FaseId, d.Titulo, d.Etapas, d.ModeloId, d.ModeloCodigo, d.ModeloNome);
         if (formulario.IsFailure)
         {
             return leitor.Propagar<FormularioProcesso?>(formulario.Error!);
@@ -172,17 +172,25 @@ internal static class LeituraDosFormularios
         return true;
     }
 
-    internal static (Guid? Id, string? Codigo) LerModeloDeOrigem(LeitorEnvelope leitor, JsonObject bloco, string path)
+    internal static (Guid? Id, string? Codigo, string? Nome) LerModeloDeOrigem(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         if (leitor.ObjetoOpcional(bloco, "modeloOrigem", path) is not { } modelo)
         {
-            return (null, null);
+            return (null, null, null);
         }
 
         string pathModelo = $"{path}.modeloOrigem";
-        leitor.ExigirChaves(modelo, pathModelo, "id", "codigo");
-        return (leitor.Identificador(modelo, "id", pathModelo), leitor.TextoOpcional(modelo, "codigo", pathModelo, LimitesDoEnvelope.CodigoModeloDeFormulario));
+        leitor.ExigirChaves(modelo, pathModelo, "id", "codigo", "nome");
+        Guid id = leitor.Identificador(modelo, "id", pathModelo);
+        string? codigo = leitor.TextoOpcional(modelo, "codigo", pathModelo, LimitesDoEnvelope.CodigoModeloDeFormulario);
+        string? nome = leitor.TextoOpcional(modelo, "nome", pathModelo, LimitesDoEnvelope.NomeModeloDeFormulario);
+        return !leitor.Falhou && !OrigemCoerente(codigo, nome)
+            ? leitor.Recusar<(Guid?, string?, string?)>($"'{pathModelo}' exige código e nome preenchidos ou ambos nulos.")
+            : (id, codigo, nome);
     }
+
+    private static bool OrigemCoerente(string? codigo, string? nome) =>
+        (codigo is null && nome is null) || (!string.IsNullOrWhiteSpace(codigo) && !string.IsNullOrWhiteSpace(nome));
 
     internal static IReadOnlyList<EtapaFormulario> LerEtapasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
     {

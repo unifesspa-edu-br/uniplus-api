@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/OrigensCanonicasDeTeste.cs" Link="OrigensCanonicasDeTeste.cs" />
     <Compile Include="../Shared/ConfiguracaoPublicadaDeTeste.cs" Link="ConfiguracaoPublicadaDeTeste.cs" />
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />

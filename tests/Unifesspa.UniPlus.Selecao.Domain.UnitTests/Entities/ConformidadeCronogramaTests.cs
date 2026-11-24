@@ -31,7 +31,7 @@ public sealed class ConformidadeCronogramaTests
         bool coletaInscricao = false,
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao)),
             new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []);

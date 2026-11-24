@@ -81,9 +81,9 @@ public sealed class FatoDeElegibilidadeGateTests
     }
 
     private static FaseCronograma FaseDoCronograma() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: FormularioProcesso.CodigoFaseHabilitacao, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

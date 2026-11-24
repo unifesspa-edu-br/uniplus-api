@@ -41,9 +41,9 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     /// <summary>A fase que coleta a inscrição, agrupa as etapas e publica o resultado que homologa as inscrições.</summary>
     internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao),
+            ColetaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao)),
         new DecisoesDeCronogramaDaFase(
             Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(

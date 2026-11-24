@@ -34,7 +34,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
     public async Task Handle_TipoNovoEmProcessoPublicado_ConfereOCatalogo()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho()
-            .ComVersaoPublicadaQueCongelou(new TipoDeAtoCongelado("OUTRO_ATO", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false))
+            .ComVersaoPublicadaQueCongelou(new TipoDeAtoCongelado("OUTRO_ATO", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false))
             .ComTipoDeAto(TipoAtoDaClassificacao() with { CongelaConfiguracao = true });
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
@@ -132,7 +132,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
     }
 
     private static TipoDeAtoCongelado ClassificacaoCongeladaComoComum() =>
-        new(AtoDaClassificacao, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+        new(AtoDaClassificacao, Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
 
     private static (CenarioDoCronogramaDeFases Cenario, FaseCronogramaInput SemAncora, FaseCronogramaInput ComAncora) CenarioDaAncora()
     {

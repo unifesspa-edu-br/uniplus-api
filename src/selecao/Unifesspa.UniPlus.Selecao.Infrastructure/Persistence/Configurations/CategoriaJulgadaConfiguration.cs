@@ -24,12 +24,14 @@ public sealed class CategoriaJulgadaConfiguration : IEntityTypeConfiguration<Cat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("categorias_julgadas");
+        builder.ToTable("categorias_julgadas", tabela => tabela.HasComment("Categorias de documento julgadas por uma banca."));
         builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.Property(c => c.Id).ValueGeneratedNever().HasComment("Identificador da categoria julgada.");
+        builder.Property(c => c.BancaRequeridaId).HasComment("Identificador da banca que julga a categoria.");
 
-        builder.Property(c => c.CategoriaDocumentoOrigemId).IsRequired();
-        builder.Property(c => c.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(c => c.CategoriaDocumentoOrigemId).IsRequired().HasComment("Identificador da categoria de documento de origem.");
+        builder.Property(c => c.Codigo).HasMaxLength(CodigoMaxLength).IsRequired().HasComment("Código da categoria de documento.");
+        builder.Property(c => c.Nome).HasMaxLength(200).IsRequired().HasComment("Nome da categoria de documento.");
 
         // A mesma categoria declarada uma única vez por banca. A rejeição no domínio é
         // check-then-act não-atômico, e esta constraint é a defesa atômica — mesmo padrão

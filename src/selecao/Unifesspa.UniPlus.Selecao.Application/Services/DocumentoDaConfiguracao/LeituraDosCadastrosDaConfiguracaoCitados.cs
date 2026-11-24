@@ -74,5 +74,5 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
         codigos.Count == 0
             ? new Dictionary<string, CategoriaDeDocumentoCitada>()
             : (await categoriasDeDocumento.ListarVivasPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false))
-                .ToDictionary(static categoria => categoria.Codigo, static categoria => new CategoriaDeDocumentoCitada(categoria.Id, categoria.Codigo), StringComparer.Ordinal);
+                .ToDictionary(static categoria => categoria.Codigo, static categoria => new CategoriaDeDocumentoCitada(categoria.Id, categoria.Codigo, categoria.Nome), StringComparer.Ordinal);
 }

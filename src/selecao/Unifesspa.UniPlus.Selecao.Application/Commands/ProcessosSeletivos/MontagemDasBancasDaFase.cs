@@ -85,7 +85,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros, Chave
                 return CategoriaNaoEncontrada($"{campo}.categoriasDocumentoIds[{posicao}]");
             }
 
-            atendidos.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo));
+            atendidos.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo, categoria.Nome));
         }
 
         return Result<List<CategoriaJulgada>>.Success(atendidos);

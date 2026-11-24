@@ -166,7 +166,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
                 [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Preliminar), ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
-                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: true, EhResultado: true, CongelaConfiguracao: false));
+                new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: true, EhResultado: true, CongelaConfiguracao: false));
 
         ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
             processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", false, UnicoPorObjeto: false, false, true));
@@ -180,7 +180,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
                 [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
-                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+                new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 
         ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
             processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", CongelaConfiguracao: true, false, false, true));
@@ -194,7 +194,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
                 [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
-                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+                new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
         codecs.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
             Result<EnvelopeReidratado>.Failure(new DomainError("Envelope.SchemaNaoSuportado", "A versão do envelope não é suportada.")));
 
@@ -286,8 +286,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
 
     private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos, resultado: produtos[0].AtoCodigo),
         bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;

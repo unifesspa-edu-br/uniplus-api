@@ -40,6 +40,7 @@ internal static class SerializacaoDoEdital
             .Select(static t => (JsonNode?)new JsonObject
             {
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(t.Codigo),
+                ["nome"] = HashCanonicalComputer.NormalizeNfc(t.Nome),
                 ["unicoPorObjeto"] = t.UnicoPorObjeto,
                 ["ehResultado"] = t.EhResultado,
                 ["congelaConfiguracao"] = t.CongelaConfiguracao,

@@ -81,7 +81,7 @@ public sealed record MetadadoFatoCongelado(
 /// <param name="UnicoPorObjeto">Se o tipo sai uma só vez no processo seletivo.</param>
 /// <param name="EhResultado">Se o tipo é classificado como resultado.</param>
 /// <param name="CongelaConfiguracao">Se publicar o tipo cria uma versão da configuração.</param>
-public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool EhResultado, bool CongelaConfiguracao)
+public sealed record TipoDeAtoCongelado(string Codigo, string Nome, bool UnicoPorObjeto, bool EhResultado, bool CongelaConfiguracao)
 {
     /// <summary>O que decide se o tipo pode ser item de resultado.</summary>
     public ClassificacaoDoTipoDeAto Classificacao => new(EhResultado, CongelaConfiguracao);

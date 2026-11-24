@@ -17,7 +17,7 @@ public sealed class ItensDaFaseNoCronogramaTests
     private static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))]);
 
     [Fact(DisplayName = "A âncora do recurso na fase fica verde quando o prazo ancora num preliminar da própria fase")]
     public void ItemDaAncoraDoRecurso_AncoradoNoPreliminar_FicaVerde()

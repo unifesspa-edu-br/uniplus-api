@@ -35,7 +35,7 @@ public sealed class UnidadeResponsavelNoEnvelopeTests
     public void EnvelopeCompleto_UnidadeResponsavel_RestauraTodosOsValores()
     {
         EntradaCanonicalizacao entrada = ExemploDeConfiguracao.Entrada();
-        TipoDeAtoCongelado ato = new("RESULTADO_CLASSIFICACAO", true, true, false);
+        TipoDeAtoCongelado ato = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", true, true, false);
         entrada = entrada with { DadosDeCatalogo = new(TiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado> { [ato.Codigo] = ato }) };
         entrada.Processo.DefinirTaxaInscricao(ConfiguracaoTaxaInscricao.Criar(false, null, null).Value!).IsSuccess.Should().BeTrue();
         UnidadeResponsavelSnapshot esperada = entrada.Processo.CronogramaFases.Single().UnidadeResponsavel!;

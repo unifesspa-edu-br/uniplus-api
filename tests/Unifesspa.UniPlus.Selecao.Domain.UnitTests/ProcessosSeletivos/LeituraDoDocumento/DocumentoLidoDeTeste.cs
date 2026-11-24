@@ -27,7 +27,7 @@ internal static class DocumentoLidoDeTeste
         TiposDeProcesso = new Dictionary<string, TipoProcessoSnapshot> { ["SiSU"] = TiposDeProcessoDeTeste.SiSU },
         FasesCanonicas = FasesCanonicas(),
         TiposDeBanca = new Dictionary<string, TipoDeBancaCopiado> { ["ANALISE_RECURSOS"] = TiposDeBancaCopiadosDeTeste.DeRecursos() },
-        CategoriasDeDocumento = new Dictionary<string, CategoriaDeDocumentoCitada> { ["IDENTIDADE"] = new(Guid.CreateVersion7(), "IDENTIDADE") },
+        CategoriasDeDocumento = new Dictionary<string, CategoriaDeDocumentoCitada> { ["IDENTIDADE"] = new(Guid.CreateVersion7(), "IDENTIDADE", "Identidade") },
         Localidades = new Dictionary<string, LocalidadeRegente> { ["1504208"] = LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value! },
         Regras = Regras(),
         TiposDeAto = new HashSet<string>(StringComparer.Ordinal) { AtoDoResultado, AtoDoDefinitivo },
@@ -103,7 +103,7 @@ internal static class DocumentoLidoDeTeste
         [.. lidos.Origem.PartesRecusadas.Select(static parte => parte.Causa.Error.Message)];
 
     private static OrigemCanonicaDaFase FaseCanonica(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
 
     private static RegraDoCatalogoCitada Regra(TipoRegra tipo, string codigo) => new(tipo, ReferenciaRegra.De(codigo, "v1", Hash));
 }

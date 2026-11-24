@@ -228,7 +228,7 @@ public sealed class ConferenciaDasBancasTests
     public void Itens_CandidatosAtendidosEmBancaDeRecursos_SoOItemDosCandidatosAtendidosVermelho()
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
-            TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
+            TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA", "RENDA")], BancasDeTeste.Regra());
         CronogramaDoProcesso cronograma = Fases(QueHomologa(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comCandidatosAtendidos] }));
 
         ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, Etapas(), NenhumLido).Where(static item => !item.Ok).Select(static item => item.Codigo)
