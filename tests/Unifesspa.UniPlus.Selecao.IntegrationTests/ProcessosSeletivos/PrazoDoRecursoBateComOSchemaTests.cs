@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.TestesCompartilhados;
 
 using Xunit;
 
@@ -29,30 +30,45 @@ public sealed class PrazoDoRecursoBateComOSchemaTests
         nameof(ParametrosRegraPrazoRecurso.PrazoDaSegundaInstancia),
     ];
 
-    [Fact(DisplayName = "Os prazos do recurso da fase têm a precisão e a escala que o decodificador do envelope lê")]
-    public void PrazosDaFase_BatemComOSchema()
+    public static TheoryData<int> PrecisaoDoPrazo
+    {
+        get
+        {
+            TheoryData<int> dados = [];
+            foreach (EntradaDeConfrontoDoLimite entrada in QuadroDeConfrontoDosLimites.Entradas.Where(entrada => entrada.Nome == nameof(LimitesDoEnvelope.PrecisaoPrazo)))
+            {
+                dados.Add(entrada.Valor);
+            }
+            return dados;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecisaoDoPrazo))]
+    public void PrazosDaFase_BatemComOSchema(int precisao)
     {
         using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
 
-        ConferirOsPrazos(ModeloEmMemoria.EmbutidoDe<RegraRecursoFase>(contexto, nameof(RegraRecursoFase.Parametros)));
+        ConferirOsPrazos(ModeloEmMemoria.EmbutidoDe<RegraRecursoFase>(contexto, nameof(RegraRecursoFase.Parametros)), precisao);
     }
 
-    [Fact(DisplayName = "Os prazos do recurso da etapa têm a precisão e a escala que o decodificador do envelope lê")]
-    public void PrazosDaEtapa_BatemComOSchema()
+    [Theory]
+    [MemberData(nameof(PrecisaoDoPrazo))]
+    public void PrazosDaEtapa_BatemComOSchema(int precisao)
     {
         using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
 
-        ConferirOsPrazos(ModeloEmMemoria.EmbutidoDe<RecursoDaEtapa>(contexto, nameof(RecursoDaEtapa.Parametros)));
+        ConferirOsPrazos(ModeloEmMemoria.EmbutidoDe<RecursoDaEtapa>(contexto, nameof(RecursoDaEtapa.Parametros)), precisao);
     }
 
-    private static void ConferirOsPrazos(IEntityType parametros)
+    private static void ConferirOsPrazos(IEntityType parametros, int precisao)
     {
         foreach (string prazo in PrazosDoRecurso)
         {
             IProperty coluna = parametros.GetNavigations().Single(n => n.Name == prazo).TargetEntityType
                 .FindProperty(nameof(PrazoDoRecurso.Valor))!;
 
-            coluna.GetPrecision().Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {prazo}");
+            coluna.GetPrecision().Should().Be(precisao, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {prazo}");
             coluna.GetScale().Should().Be(EscalaDoPrazo, $"uma coluna com menos casas arredonda {prazo} em silêncio, e a prova de ida e volta não enxerga arredondamento");
         }
     }

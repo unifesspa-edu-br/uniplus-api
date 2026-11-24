@@ -2,23 +2,26 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.TestesCompartilhados;
 
 using Xunit;
 
-// Confronta só o limite do nome do tipo de ato com a coluna. Não detecta uma constante nova de
-// LimitesDoEnvelope que fique sem confronto: essa conferência automática ainda não existe.
 public sealed class ConstantesDeLimiteDoEnvelopeTests
 {
-    [Fact]
-    public void NomeDoTipoDeAto_LimiteDoEnvelope_IgualAoDaColuna()
+    public static TheoryData<string, string?> LimitesSemColuna
     {
-        using UniPlusDbContext contexto = ModeloEmMemoria.Contexto();
-        int? limiteDaColuna = contexto.Model.FindEntityType(typeof(TipoAtoPublicado))!
-            .FindProperty(nameof(TipoAtoPublicado.Nome))!.GetMaxLength();
-
-        LimitesDoEnvelope.TipoAtoNome.Should().Be(limiteDaColuna);
+        get
+        {
+            TheoryData<string, string?> dados = [];
+            foreach (EntradaDeConfrontoDoLimite entrada in QuadroDeConfrontoDosLimites.Entradas.Where(entrada => entrada.Classe == ClasseDeConfrontoDoLimite.SemColuna))
+            {
+                dados.Add(entrada.Nome, entrada.Motivo);
+            }
+            return dados;
+        }
     }
+
+    [Theory]
+    [MemberData(nameof(LimitesSemColuna))]
+    public void LimiteSemColuna_TemMotivo(string nome, string? motivo) => motivo.Should().NotBeNullOrWhiteSpace(nome);
 }

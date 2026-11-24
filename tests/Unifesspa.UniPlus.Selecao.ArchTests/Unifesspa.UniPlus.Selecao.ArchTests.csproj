@@ -36,6 +36,9 @@
   <ItemGroup>
     <!-- O gate do fuso (issue #1376) exercita o próprio helper: um offset fixo disfarçado dentro
          dele passaria em todos os arquivos-alvo, porque todos usam datas de 2026. -->
+    <Compile Include="../Shared/QuadroDeConfrontoDosLimites.cs" Link="QuadroDeConfrontoDosLimites.cs" />
+    <Compile Include="../Shared/EntradaDeConfrontoDoLimite.cs" Link="EntradaDeConfrontoDoLimite.cs" />
+    <Compile Include="../Shared/ClasseDeConfrontoDoLimite.cs" Link="ClasseDeConfrontoDoLimite.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
