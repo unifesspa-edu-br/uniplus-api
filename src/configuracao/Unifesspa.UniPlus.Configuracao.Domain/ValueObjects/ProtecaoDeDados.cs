@@ -23,9 +23,9 @@ public readonly record struct ProtecaoDeDados(
     /// classificação.
     /// </summary>
     public static Result<ProtecaoDeDados> Validar(
-        ClassificacaoDeProtecao? classificacao,
+        CodigoInformado<ClassificacaoDeProtecao> classificacao,
         string? finalidade,
-        HipoteseLegalTratamento? hipotese,
+        CodigoInformado<HipoteseLegalTratamento> hipotese,
         RecusasDaProtecao recusas,
         Func<ClassificacaoDeProtecao, DomainError?>? restricaoDaClassificacao = null)
     {
@@ -41,18 +41,19 @@ public readonly record struct ProtecaoDeDados(
         List<FieldError> erros = [.. conferencias.OfType<FieldError>()];
         return erros.Count > 0
             ? Result<ProtecaoDeDados>.ValidationFailure(erros)
-            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao!.Value, finalidadeNormalizada, hipotese!.Value));
+            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao.Valor!.Value, finalidadeNormalizada, hipotese.Valor!.Value));
     }
 
     private static FieldError? RecusaDaClassificacao(
-        ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas,
+        CodigoInformado<ClassificacaoDeProtecao> classificacao, RecusasDaProtecao recusas,
         Func<ClassificacaoDeProtecao, DomainError?>? restricao)
     {
-        DomainError? erro = classificacao is null
-            ? new(recusas.ClassificacaoObrigatoria, $"Classificação de proteção de dados {recusas.Sujeito} é obrigatória.")
-            : !NaEscala(classificacao)
-                ? new(recusas.ClassificacaoInvalida, $"Classificação de proteção de dados {recusas.Sujeito} fora do vocabulário fechado.")
-                : restricao?.Invoke(classificacao.Value);
+        DomainError? erro = classificacao switch
+        {
+            { Informado: false } => new(recusas.ClassificacaoObrigatoria, $"Classificação de proteção de dados {recusas.Sujeito} é obrigatória."),
+            { Valor: null } => new(recusas.ClassificacaoInvalida, $"Classificação de proteção de dados {recusas.Sujeito} fora do vocabulário fechado."),
+            { Valor: { } conhecida } => restricao?.Invoke(conhecida),
+        };
         return erro is null ? null : new FieldError("classificacaoProtecao", erro);
     }
 
@@ -67,20 +68,22 @@ public readonly record struct ProtecaoDeDados(
     }
 
     private static FieldError? RecusaDaHipotese(
-        HipoteseLegalTratamento? hipotese, ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas)
+        CodigoInformado<HipoteseLegalTratamento> hipotese, CodigoInformado<ClassificacaoDeProtecao> classificacao, RecusasDaProtecao recusas)
     {
-        DomainError? erro = hipotese is null
-            ? new(recusas.HipoteseObrigatoria, $"Hipótese legal de tratamento {recusas.Sujeito} é obrigatória.")
-            : !Enum.IsDefined(hipotese.Value)
-                ? new(recusas.HipoteseInvalida, $"Hipótese legal de tratamento {recusas.Sujeito} fora do vocabulário fechado.")
-                : NaEscala(classificacao) && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese.Value, classificacao!.Value)
-                    ? new(recusas.HipoteseIncompativel, "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.")
-                    : null;
+        DomainError? erro = hipotese switch
+        {
+            { Informado: false } => new(recusas.HipoteseObrigatoria, $"Hipótese legal de tratamento {recusas.Sujeito} é obrigatória."),
+            { Valor: null } => new(recusas.HipoteseInvalida, $"Hipótese legal de tratamento {recusas.Sujeito} fora do vocabulário fechado."),
+            { Valor: { } conhecida } => RecusaDaHipoteseNaClassificacao(conhecida, classificacao, recusas),
+        };
         return erro is null ? null : new FieldError("hipoteseLegal", erro);
     }
 
-    private static bool NaEscala(ClassificacaoDeProtecao? classificacao) =>
-        classificacao is { } valor && Enum.IsDefined(valor);
+    private static DomainError? RecusaDaHipoteseNaClassificacao(
+        HipoteseLegalTratamento hipotese, CodigoInformado<ClassificacaoDeProtecao> classificacao, RecusasDaProtecao recusas) =>
+        classificacao.Valor is { } escala && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, escala)
+            ? new(recusas.HipoteseIncompativel, "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.")
+            : null;
 }
 
 /// <summary>

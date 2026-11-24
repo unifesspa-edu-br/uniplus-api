@@ -1,53 +1,34 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Único lugar em que o token de um eixo do fato vira o enum, no cadastro e na alteração. Ausente,
-/// vazio ou só espaços é "não informado" (<see langword="null"/>); o token preenchido que não é do
-/// vocabulário vira <see cref="ForaDoVocabulario"/>, valor que não existe no enum e que o agregado
-/// recusa como inválido no próprio campo. A comparação é feita após <c>Trim()</c>.
+/// Único lugar em que o código de um eixo do fato vira o enum, no cadastro e na alteração. Ausente,
+/// vazio ou só espaços é ausente; o código preenchido que não é do vocabulário é desconhecido, e o
+/// agregado o recusa no próprio campo. O corte dos espaços das pontas é feito aqui, antes da leitura.
 /// </summary>
 internal static class TokensDoFato
 {
-    /// <summary>O que o token preenchido e desconhecido vira: nenhum enum o define.</summary>
-    internal const int ForaDoVocabulario = -1;
+    internal static CodigoInformado<TipoDoDado> Dominio(string? token) => Ler<TipoDoDado>(token);
 
-    internal static TipoDoDado? Dominio(string? token) => Ler<TipoDoDado>(token, CatalogoDe<TipoDoDado>.TentarObter);
+    internal static CodigoInformado<QuantidadeDeValores> Cardinalidade(string? token) => Ler<QuantidadeDeValores>(token);
 
-    internal static QuantidadeDeValores? Cardinalidade(string? token) =>
-        Ler<QuantidadeDeValores>(token, CatalogoDe<QuantidadeDeValores>.TentarObter);
+    internal static CodigoInformado<FonteValoresFato> Fonte(string? token) => Ler<FonteValoresFato>(token);
 
-    internal static FonteValoresFato? Fonte(string? token) => Ler<FonteValoresFato>(token, CatalogoDe<FonteValoresFato>.TentarObter);
+    internal static CodigoInformado<FormatoTexto> Formato(string? token) => Ler<FormatoTexto>(token);
 
-    internal static FormatoTexto? Formato(string? token) => Ler<FormatoTexto>(token, FormatosTexto.TryAnalisar);
+    internal static CodigoInformado<ComponenteDeExibicao> Componente(string? token) => Ler<ComponenteDeExibicao>(token);
 
-    internal static ComponenteDeExibicao? Componente(string? token) =>
-        Ler<ComponenteDeExibicao>(token, ComponentesDeExibicao.TryAnalisar);
+    internal static CodigoInformado<EscopoFato> Escopo(string? token) => Ler<EscopoFato>(token);
 
-    internal static EscopoFato? Escopo(string? token) => Ler<EscopoFato>(token, EscoposFato.TryAnalisar);
+    internal static CodigoInformado<ClassificacaoDeProtecao> Classificacao(string? token) => Ler<ClassificacaoDeProtecao>(token);
 
-    internal static ClassificacaoDeProtecao? Classificacao(string? token) =>
-        Ler<ClassificacaoDeProtecao>(token, ClassificacoesDeProtecao.TryAnalisar);
+    internal static CodigoInformado<HipoteseLegalTratamento> HipoteseLegal(string? token) => Ler<HipoteseLegalTratamento>(token);
 
-    internal static HipoteseLegalTratamento? HipoteseLegal(string? token) =>
-        Ler<HipoteseLegalTratamento>(token, CatalogoDe<HipoteseLegalTratamento>.TentarObter);
-
-    private delegate bool Analisador<T>(string? token, out T valor)
-        where T : struct, Enum;
-
-    private static T? Ler<T>(string? token, Analisador<T> analisar)
-        where T : struct, Enum
-    {
-        string? normalizado = token?.Trim();
-        if (string.IsNullOrEmpty(normalizado))
-        {
-            return null;
-        }
-
-        return analisar(normalizado, out T valor) ? valor : (T)Enum.ToObject(typeof(T), ForaDoVocabulario);
-    }
+    private static CodigoInformado<T> Ler<T>(string? token)
+        where T : struct, Enum =>
+        CodigoInformado<T>.Ler(token?.Trim());
 }

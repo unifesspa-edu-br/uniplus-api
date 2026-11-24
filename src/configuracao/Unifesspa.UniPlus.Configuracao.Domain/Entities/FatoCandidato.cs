@@ -157,7 +157,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         Codigo = descritivo.Codigo;
         Nome = descritivo.Nome;
         Descricao = descritivo.Descricao ?? string.Empty;
-        ComponenteExibicao = descritivo.ComponenteExibicao;
+        ComponenteExibicao = descritivo.ComponenteExibicao.Valor;
         Origem = origem;
         Binding = binding;
         AplicarEixos(eixos);
@@ -200,7 +200,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// ajuste recomendado ou reprovado volta a pendente, porque a decisão pode ter sido sobre qualquer campo. Os
     /// eixos têm a alteração própria, <see cref="AlterarDefinicao"/>.
     /// </summary>
-    public Result AlterarDescritivo(string nome, string? descricao, ComponenteDeExibicao? componenteExibicao)
+    public Result AlterarDescritivo(string nome, string? descricao, CodigoInformado<ComponenteDeExibicao> componenteExibicao)
     {
         Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> descritivo =
             ValidarDescritivo(nome, descricao, componenteExibicao);

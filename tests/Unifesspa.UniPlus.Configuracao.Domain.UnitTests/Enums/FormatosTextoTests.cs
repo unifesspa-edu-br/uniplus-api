@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Enums;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -17,9 +18,9 @@ public sealed class FormatosTextoTests
     {
         // O vocabulário vive aqui e a conferência, no projeto de regras: um formato novo sem a
         // conferência derrubaria a montagem do formulário que o usa.
-        foreach (FormatoTexto formato in Enum.GetValues<FormatoTexto>().Where(static f => f != FormatoTexto.Nenhum))
+        foreach (FormatoTexto formato in CatalogoDe<FormatoTexto>.Valores())
         {
-            Action conferir = () => _ = new FormatoDeTexto(FormatosTexto.ParaTokenCanonico(formato));
+            Action conferir = () => _ = new FormatoDeTexto(formato.Codigo());
 
             conferir.Should().NotThrow($"o formato {formato} tem de ter conferência na avaliação");
         }

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -15,10 +16,10 @@ public sealed class ClassificacaoRecomendadaTests
 {
     [Theory(DisplayName = "A recomendação ausente e a fora da escala são recusadas uma vez no campo classificacaoRecomendada")]
     [InlineData(null)]
-    [InlineData((ClassificacaoDeProtecao)0)]
-    [InlineData((ClassificacaoDeProtecao)(-1))]
-    public void ConferirClassificacaoRecomendada_Invalida_RecusaUmaVez(ClassificacaoDeProtecao? recomendada) =>
-        AprovacaoDaProtecao.ConferirClassificacaoRecomendada(recomendada).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+    [InlineData("")]
+    [InlineData("INEXISTENTE")]
+    public void ConferirClassificacaoRecomendada_Invalida_RecusaUmaVez(string? codigo) =>
+        AprovacaoDaProtecao.ConferirClassificacaoRecomendada(CodigoInformado<ClassificacaoDeProtecao>.Ler(codigo)).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "classificacaoRecomendada" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
 
     [Fact(DisplayName = "A recomendação da escala é aceita")]

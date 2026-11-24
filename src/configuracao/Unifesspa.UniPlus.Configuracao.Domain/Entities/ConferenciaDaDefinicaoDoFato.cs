@@ -43,52 +43,48 @@ internal static class ConferenciaDaDefinicaoDoFato
     /// </summary>
     internal static void ConferirEixosDeValor(
         List<FieldError> erros,
-        TipoDoDado? tipo,
-        QuantidadeDeValores? quantidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato)
+        CodigoInformado<TipoDoDado> tipo,
+        CodigoInformado<QuantidadeDeValores> quantidade,
+        CodigoInformado<FonteValoresFato> fonteValores,
+        CodigoInformado<FormatoTexto> formato)
     {
-        bool tipoValido = ConferirTipoDoDado(erros, tipo);
+        bool tipoValido = RegistrarRecusa(erros, "dominio", RecusaDoDominio(tipo));
         ConferirQuantidadeDeValores(erros, quantidade);
 
         if (tipoValido)
         {
-            ConferirFonteDosValores(erros, tipo == TipoDoDado.Opcao, fonteValores);
-            ConferirFormato(erros, tipo == TipoDoDado.Texto, formato);
+            ConferirFonteDosValores(erros, tipo.Valor == TipoDoDado.Opcao, fonteValores);
+            ConferirFormato(erros, tipo.Valor == TipoDoDado.Texto, formato);
         }
     }
 
-    private static bool ConferirTipoDoDado(List<FieldError> erros, TipoDoDado? tipo)
+    // O tipo do dado ausente é obrigatório e o desconhecido é inválido; o conhecido não tem recusa aqui.
+    private static (string Codigo, string Mensagem)? RecusaDoDominio(CodigoInformado<TipoDoDado> tipo) => tipo switch
     {
-        (string Codigo, string Mensagem)? recusa = tipo switch
-        {
-            null => (FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório."),
-            { } informado when !Enum.IsDefined(informado) => (FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado."),
-            _ => null,
-        };
+        { Informado: false } => (FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório."),
+        { Desconhecido: true } => (FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado."),
+        _ => null,
+    };
 
-        return RegistrarRecusa(erros, "dominio", recusa);
-    }
-
-    private static void ConferirQuantidadeDeValores(List<FieldError> erros, QuantidadeDeValores? quantidade)
+    private static void ConferirQuantidadeDeValores(List<FieldError> erros, CodigoInformado<QuantidadeDeValores> quantidade)
     {
         (string Codigo, string Mensagem)? recusa = quantidade switch
         {
-            null => (FatoCandidatoErrorCodes.CardinalidadeObrigatoria, "Cardinalidade do fato é obrigatória."),
-            { } informada when !Enum.IsDefined(informada) => (FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado."),
+            { Informado: false } => (FatoCandidatoErrorCodes.CardinalidadeObrigatoria, "Cardinalidade do fato é obrigatória."),
+            { Desconhecido: true } => (FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado."),
             _ => null,
         };
 
         RegistrarRecusa(erros, "cardinalidade", recusa);
     }
 
-    private static void ConferirFonteDosValores(List<FieldError> erros, bool ehOpcao, FonteValoresFato? fonteValores)
+    private static void ConferirFonteDosValores(List<FieldError> erros, bool ehOpcao, CodigoInformado<FonteValoresFato> fonteValores)
     {
         (string Codigo, string Mensagem)? recusa = (ehOpcao, fonteValores) switch
         {
-            (true, var fonte) when fonte is null || !Enum.IsDefined(fonte.Value) =>
+            (true, { Valor: null }) =>
                 (FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fato categórico precisa declarar a fonte dos seus valores."),
-            (false, not null) =>
+            (false, { Informado: true }) =>
                 (FatoCandidatoErrorCodes.FonteValoresForaDeCategorico, "Só fato categórico declara a fonte dos seus valores."),
             _ => null,
         };
@@ -96,13 +92,13 @@ internal static class ConferenciaDaDefinicaoDoFato
         RegistrarRecusa(erros, "fonteValores", recusa);
     }
 
-    private static void ConferirFormato(List<FieldError> erros, bool ehTexto, FormatoTexto? formato)
+    private static void ConferirFormato(List<FieldError> erros, bool ehTexto, CodigoInformado<FormatoTexto> formato)
     {
         (string Codigo, string Mensagem)? recusa = (ehTexto, formato) switch
         {
-            (true, var informado) when informado is null or FormatoTexto.Nenhum || !Enum.IsDefined(informado.Value) =>
+            (true, { Valor: null }) =>
                 (FatoCandidatoErrorCodes.FormatoObrigatorio, "Fato de domínio texto precisa declarar o formato."),
-            (false, not null) =>
+            (false, { Informado: true }) =>
                 (FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato."),
             _ => null,
         };
@@ -120,16 +116,16 @@ internal static class ConferenciaDaDefinicaoDoFato
         return recusa is null;
     }
 
-    internal static void ConferirEscopo(List<FieldError> erros, EscopoFato escopo)
+    internal static void ConferirEscopo(List<FieldError> erros, CodigoInformado<EscopoFato> escopo)
     {
-        if (escopo == EscopoFato.Nenhum || !Enum.IsDefined(escopo))
+        if (escopo.Valor is null)
         {
             erros.Add(new("escopo", new DomainError(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.")));
         }
     }
 
     internal static Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> ValidarDescritivo(
-        string nome, string? descricao, ComponenteDeExibicao? componente)
+        string nome, string? descricao, CodigoInformado<ComponenteDeExibicao> componente)
     {
         List<FieldError> erros = [];
         string nomeNormalizado = ConferirNome(erros, nome);
@@ -138,7 +134,7 @@ internal static class ConferenciaDaDefinicaoDoFato
 
         return erros.Count > 0
             ? Result<(string, string, ComponenteDeExibicao?)>.ValidationFailure(erros)
-            : Result<(string, string, ComponenteDeExibicao?)>.Success((nomeNormalizado, descricaoNormalizada, componente));
+            : Result<(string, string, ComponenteDeExibicao?)>.Success((nomeNormalizado, descricaoNormalizada, componente.Valor));
     }
 
     private static string ConferirNome(List<FieldError> erros, string? nome)
@@ -169,9 +165,9 @@ internal static class ConferenciaDaDefinicaoDoFato
         return normalizada;
     }
 
-    private static void ConferirComponente(List<FieldError> erros, ComponenteDeExibicao? componente)
+    private static void ConferirComponente(List<FieldError> erros, CodigoInformado<ComponenteDeExibicao> componente)
     {
-        (string Codigo, string Mensagem)? recusa = componente is { } informado && (informado == ComponenteDeExibicao.Nenhum || !Enum.IsDefined(informado))
+        (string Codigo, string Mensagem)? recusa = componente.Desconhecido
             ? (FatoCandidatoErrorCodes.ComponenteExibicaoInvalido, "Componente de exibição do fato fora do vocabulário fechado.")
             : null;
 
@@ -182,13 +178,12 @@ internal static class ConferenciaDaDefinicaoDoFato
     /// O tipo do dado que o derivado por regra aceita, no cadastro e na alteração: ausente é obrigatório,
     /// fora do vocabulário é inválido e o válido que não é sim ou não nem opção não tem regra.
     /// </summary>
-    internal static bool ConferirDominioDoDerivado(List<FieldError> erros, TipoDoDado? tipo)
+    internal static bool ConferirDominioDoDerivado(List<FieldError> erros, CodigoInformado<TipoDoDado> tipo)
     {
-        (string Codigo, string Mensagem)? recusa = tipo switch
+        (string Codigo, string Mensagem)? recusa = tipo.Valor switch
         {
             TipoDoDado.SimOuNao or TipoDoDado.Opcao => null,
-            null => (FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório."),
-            { } informado when !Enum.IsDefined(informado) => (FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado."),
+            null => RecusaDoDominio(tipo),
             _ => (FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico, "Fato derivado por regra é booleano ou categórico."),
         };
 
@@ -206,7 +201,10 @@ internal static class ConferenciaDaDefinicaoDoFato
         FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
     internal static Result<ProtecaoDeDados> ValidarProtecao(
-        TipoDoDado? tipo, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento? hipotese) =>
+        TipoDoDado? tipo,
+        CodigoInformado<ClassificacaoDeProtecao> classificacao,
+        string finalidade,
+        CodigoInformado<HipoteseLegalTratamento> hipotese) =>
         ProtecaoDeDados.Validar(
             classificacao, finalidade, hipotese, RecusasDaProtecaoDoFato,
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e

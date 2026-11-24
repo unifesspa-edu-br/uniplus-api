@@ -42,9 +42,9 @@ internal static class RedefinicaoDoFatoDeSistema
         ForaDoVocabularioFechado(definicao.FonteValores, "fonteValores", FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fonte dos valores do fato fora do vocabulário fechado."),
         ForaDoVocabularioFechado(definicao.Formato, "formato", FatoCandidatoErrorCodes.FormatoObrigatorio, "Formato do fato fora do vocabulário fechado."));
 
-    private static FieldError? ForaDoVocabularioFechado<T>(T? informado, string campo, string codigo, string mensagem)
+    private static FieldError? ForaDoVocabularioFechado<T>(CodigoInformado<T> informado, string campo, string codigo, string mensagem)
         where T : struct, Enum =>
-        informado is { } valor && !Enum.IsDefined(valor) ? new FieldError(campo, new DomainError(codigo, mensagem)) : null;
+        informado.Desconhecido ? new FieldError(campo, new DomainError(codigo, mensagem)) : null;
 
     private static bool TocaNaDefinicao(DefinicaoDoFato definicao, EixosDaDefinicao atuais) =>
         Difere(definicao.Dominio, atuais.Dominio)
@@ -55,7 +55,7 @@ internal static class RedefinicaoDoFatoDeSistema
         || (!string.IsNullOrWhiteSpace(definicao.PontoResolucao)
             && !string.Equals(definicao.PontoResolucao.Trim(), atuais.PontoResolucao, StringComparison.Ordinal));
 
-    private static bool Difere<T>(T? informado, T? atual)
-        where T : struct =>
-        informado is not null && !Nullable.Equals(informado, atual);
+    private static bool Difere<T>(CodigoInformado<T> informado, T? atual)
+        where T : struct, Enum =>
+        informado.Informado && !Nullable.Equals(informado.Valor, atual);
 }

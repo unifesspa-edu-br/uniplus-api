@@ -152,7 +152,7 @@ public static class VocabularioDoCatalogo
             fato.Origem,
             fato.Binding,
             fato.FonteValores,
-            EscoposFato.ParaTokenCanonico(fato.Escopo),
+            fato.Escopo.Codigo(),
             fato.Ativo,
             [.. ValoresDe(fato, porCodigo).Select(static valor => new ValorDoCatalogo(valor.Codigo, valor.Ativo))],
             fato.Aprovacao.EstaAprovada);
@@ -267,8 +267,8 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(fatos);
         return fatos
-            .Where(static fato => fato.Formato is { } formato && formato != FormatoTexto.Nenhum)
-            .ToDictionary(static fato => fato.Codigo, static fato => FormatosTexto.ParaTokenCanonico(fato.Formato!.Value), StringComparer.Ordinal);
+            .Where(static fato => fato.Formato is not null)
+            .ToDictionary(static fato => fato.Codigo, static fato => fato.Formato!.Value.Codigo(), StringComparer.Ordinal);
     }
 
     /// <summary>

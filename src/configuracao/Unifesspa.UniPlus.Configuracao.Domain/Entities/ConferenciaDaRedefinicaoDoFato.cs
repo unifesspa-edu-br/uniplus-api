@@ -35,7 +35,7 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
     private QuantidadeDeValores? _cardinalidade;
     private FonteValoresFato? _fonteValores;
     private FormatoTexto? _formato;
-    private EscopoFato _escopo;
+    private EscopoFato? _escopo;
     private bool _eixosDeValorValidos = true;
 
     // Só o domínio aplicável confere a proteção mínima: o recusado (fora do vocabulário, ou texto num
@@ -93,7 +93,7 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
             _eixosDeValorValidos ? _fonteValores : atuais.FonteValores,
             _eixosDeValorValidos ? _formato : atuais.Formato,
             ponto.IsSuccess ? ponto.Value! : atuais.PontoResolucao,
-            _erros.Any(static e => e.Field == "escopo") ? null : _escopo,
+            _escopo,
             protecao.IsSuccess ? protecao.Value.Classificacao : atuais.Classificacao,
             protecao.IsSuccess ? protecao.Value.Finalidade : atuais.Finalidade,
             protecao.IsSuccess ? protecao.Value.Hipotese : atuais.Hipotese);
@@ -106,18 +106,18 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
 
     private void RecusarEixosDoAgregado()
     {
-        RecusarSeInformado("dominio", _definicao.Dominio is not null, MensagemDoAgregado);
-        RecusarSeInformado("cardinalidade", _definicao.Cardinalidade is not null, MensagemDoAgregado);
-        RecusarSeInformado("fonteValores", _definicao.FonteValores is not null, MensagemDoAgregado);
-        RecusarSeInformado("formato", _definicao.Formato is not null, MensagemDoAgregado);
-        RecusarSeInformado("escopo", _definicao.Escopo is not null, MensagemDoAgregado);
+        RecusarSeInformado("dominio", _definicao.Dominio.Informado, MensagemDoAgregado);
+        RecusarSeInformado("cardinalidade", _definicao.Cardinalidade.Informado, MensagemDoAgregado);
+        RecusarSeInformado("fonteValores", _definicao.FonteValores.Informado, MensagemDoAgregado);
+        RecusarSeInformado("formato", _definicao.Formato.Informado, MensagemDoAgregado);
+        RecusarSeInformado("escopo", _definicao.Escopo.Informado, MensagemDoAgregado);
     }
 
     private void ConferirEixos()
     {
-        _dominio = _definicao.Dominio;
-        _escopo = _definicao.Escopo ?? EscopoFato.Nenhum;
-        ConferirEscopo(_erros, _escopo);
+        _dominio = _definicao.Dominio.Valor;
+        _escopo = _definicao.Escopo.Valor;
+        ConferirEscopo(_erros, _definicao.Escopo);
         if (_fato.DerivadoPorRegra)
         {
             ConferirEixosDoDerivado();
@@ -132,23 +132,23 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
 
     private void ConferirEixosDoDerivado()
     {
-        RecusarSeInformado("cardinalidade", _definicao.Cardinalidade is not null, MensagemDoDerivado);
-        RecusarSeInformado("fonteValores", _definicao.FonteValores is not null, MensagemDoDerivado);
-        RecusarSeInformado("formato", _definicao.Formato is not null, MensagemDoDerivado);
+        RecusarSeInformado("cardinalidade", _definicao.Cardinalidade.Informado, MensagemDoDerivado);
+        RecusarSeInformado("fonteValores", _definicao.FonteValores.Informado, MensagemDoDerivado);
+        RecusarSeInformado("formato", _definicao.Formato.Informado, MensagemDoDerivado);
         (_cardinalidade, _fonteValores) = EixosInferidosDoDerivado(_dominio);
         _formato = null;
-        _eixosDeValorValidos = _dominioAplicavel = ConferirDominioDoDerivado(_erros, _dominio);
+        _eixosDeValorValidos = _dominioAplicavel = ConferirDominioDoDerivado(_erros, _definicao.Dominio);
     }
 
     private void ConferirEixosDeValorInformados()
     {
-        _cardinalidade = _definicao.Cardinalidade;
-        _fonteValores = _definicao.FonteValores;
-        _formato = _definicao.Formato;
+        _cardinalidade = _definicao.Cardinalidade.Valor;
+        _fonteValores = _definicao.FonteValores.Valor;
+        _formato = _definicao.Formato.Valor;
         int antes = _erros.Count;
-        ConferirEixosDeValor(_erros, _dominio, _cardinalidade, _fonteValores, _formato);
+        ConferirEixosDeValor(_erros, _definicao.Dominio, _definicao.Cardinalidade, _definicao.FonteValores, _definicao.Formato);
         _eixosDeValorValidos = _erros.Count == antes;
-        _dominioAplicavel = _dominio is { } tipo && Enum.IsDefined(tipo);
+        _dominioAplicavel = _dominio is not null;
     }
 
     // Os valores do catálogo só existem no categórico de fonte global: o eixo novo que não os

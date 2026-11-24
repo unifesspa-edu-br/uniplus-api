@@ -2,10 +2,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public static class CriarFatoDerivadoCommandHandler
@@ -36,7 +34,7 @@ public static class CriarFatoDerivadoCommandHandler
                 FonteValores: null,
                 Formato: null,
                 command.PontoResolucao,
-                TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
+                TokensDoFato.Escopo(command.Escopo),
                 TokensDoFato.Classificacao(command.ClassificacaoProtecao),
                 command.FinalidadeTratamento,
                 TokensDoFato.HipoteseLegal(command.HipoteseLegal)));

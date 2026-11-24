@@ -89,18 +89,18 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
     {
         FatoCandidato derivado = Derivado("PERFIL");
         FatoCandidato declarado = Declarado("TEM_RENDA");
-        const TipoDoDado foraDoVocabulario = (TipoDoDado)(-1);
+        CodigoInformado<TipoDoDado> foraDoVocabulario = CodigoInformado<TipoDoDado>.Ler("INEXISTENTE");
 
-        derivado.AlterarDefinicao(Definicao(foraDoVocabulario, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
+        derivado.AlterarDefinicao(Definicao(classificacao: ClassificacaoDeProtecao.Publico) with { Dominio = foraDoVocabulario }, Catalogo(derivado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
         derivado.AlterarDefinicao(Definicao(TipoDoDado.Texto, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
             .Errors.Select(static e => e.Field).Should().Equal("dominio");
-        declarado.AlterarDefinicao(Definicao(foraDoVocabulario, QuantidadeDeValores.ValorUnico, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(declarado))
+        declarado.AlterarDefinicao(Definicao(cardinalidade: QuantidadeDeValores.ValorUnico, classificacao: ClassificacaoDeProtecao.Publico) with { Dominio = foraDoVocabulario }, Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
     }
 
-    [Fact(DisplayName = "Recusa que já existia antes da alteração não a trava; a que a alteração causa, sim")]
-    public void RecusaPreexistente_NaoBloqueia_RecusaNova_Bloqueia()
+    [Fact(DisplayName = "Recusa do derivado que já existia antes da alteração não a trava")]
+    public void RecusaPreexistenteDoDerivado_NaoBloqueia()
     {
         // A precedência passou a pôr a inscrição antes da habilitação depois que a regra foi aceita.
         FatoCandidato renda = Declarado("TEM_RENDA", ponto: "HABILITACAO");
@@ -110,7 +110,11 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
 
         derivado.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao, ponto: "INSCRICAO", finalidade: "Outra finalidade."), comPrecedencia)
             .IsSuccess.Should().BeTrue("a recusa de ponto já existia e a alteração não a causa");
+    }
 
+    [Fact(DisplayName = "Recusa do agregado que já existia antes da alteração não a trava; a que a alteração causa, sim")]
+    public void RecusaPreexistenteDoAgregado_NaoBloqueia_RecusaNova_Bloqueia()
+    {
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA", ponto: "HABILITACAO");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro, ponto: "HABILITACAO", precedencias: InscricaoAntesDeHabilitacao);
         CatalogoDeFatos catalogoDoAgregado = new([membro, agregado], InscricaoAntesDeHabilitacao);
@@ -139,7 +143,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
             .Should().ContainSingle().Which.Error.Message.Should().Contain("cardinalidade");
     }
 
-    [Fact(DisplayName = "A recusa preexistente cuja mensagem muda não conta como nova; o motivo do agregado tem identidade estável")]
+    [Fact(DisplayName = "A recusa preexistente cuja mensagem muda não conta como nova")]
     public void DiferencaDeRecusas_ComparaPorCampoECodigo_NaoPelaMensagem()
     {
         FieldError antes = new("pontoResolucao", new DomainError("X.Ponto", "resolve em INSCRICAO"), "regras[0].A");
@@ -150,7 +154,11 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
 
         DiferencaDeRecusas.Novas([mesmaComOutroTexto, outroCodigo, outroFatoCitado, outraRegra], [antes])
             .Should().Equal(outroCodigo, outroFatoCitado, outraRegra);
+    }
 
+    [Fact(DisplayName = "O motivo do agregado tem identidade estável")]
+    public void MotivoDoAgregado_TemCodigoECampoEstaveis()
+    {
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
         FatoCandidato inativo = DeMembro("CATEGORIA_RENDA");
@@ -194,12 +202,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato a = Declarado("FATO_A");
         FatoCandidato derivado = Derivado("PERFIL");
         derivado.DefinirRegrasPadrao([Booleana(("FATO_A", true))], Catalogo(a, derivado)).IsSuccess.Should().BeTrue();
-        PrecedenciaFase[] precedencias =
-        [
-            PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!,
-            PrecedenciaFase.Criar("INSCRICAO", "RESULTADO_FINAL", permiteSobreposicao: false, []).Value!,
-        ];
-        CatalogoDeFatos catalogo = new([a, derivado], precedencias);
+        CatalogoDeFatos catalogo = CatalogoComInscricaoAntesDeHabilitacaoEDoResultadoFinal(a, derivado);
         a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "HABILITACAO"), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> antes = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
@@ -271,7 +274,11 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato declarado = Declarado("TEM_RENDA");
 
         declarado.AlterarDefinicao(
-                DeDeclarado(TipoDoDado.SimOuNao, classificacao: (ClassificacaoDeProtecao)(-1), hipotese: (HipoteseLegalTratamento)(-1)),
+                DeDeclarado(TipoDoDado.SimOuNao) with
+                {
+                    ClassificacaoProtecao = CodigoInformado<ClassificacaoDeProtecao>.Ler("INEXISTENTE"),
+                    HipoteseLegal = CodigoInformado<HipoteseLegalTratamento>.Ler("INEXISTENTE"),
+                },
                 Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
@@ -279,4 +286,12 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
                 ("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalInvalida),
             ]);
     }
+
+    private static CatalogoDeFatos CatalogoComInscricaoAntesDeHabilitacaoEDoResultadoFinal(params FatoCandidato[] fatos) =>
+        new(
+            fatos,
+            [
+                PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!,
+                PrecedenciaFase.Criar("INSCRICAO", "RESULTADO_FINAL", permiteSobreposicao: false, []).Value!,
+            ]);
 }

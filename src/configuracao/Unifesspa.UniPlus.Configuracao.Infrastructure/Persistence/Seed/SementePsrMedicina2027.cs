@@ -294,8 +294,8 @@ public static class SementePsrMedicina2027
     /// </summary>
     private static Dictionary<string, string> FormatosDoCatalogo() =>
         FatoCandidatoSeed.Itens
-            .Where(static f => f.Formato is { } formato && formato != FormatoTexto.Nenhum)
-            .ToDictionary(static f => f.Codigo, static f => FormatosTexto.ParaTokenCanonico(f.Formato!.Value), StringComparer.Ordinal)
+            .Where(static f => f.Formato is not null)
+            .ToDictionary(static f => f.Codigo, static f => f.Formato!.Value.Codigo(), StringComparer.Ordinal)
             .Concat(VocabularioDoCatalogo.Formatos(Construir(Fatos).Select(static c => c.Fato)))
             .ToDictionary(StringComparer.Ordinal);
 
@@ -329,9 +329,9 @@ public static class SementePsrMedicina2027
         ("origem", Texto(fato.Origem.Codigo())),
         ("quantidade_de_valores", Texto(fato.Cardinalidade.Codigo())),
         ("fonte_das_opcoes", Texto(fato.FonteValores?.Codigo())),
-        ("formato", Texto(fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null)),
+        ("formato", Texto(fato.Formato?.Codigo())),
         ("fase_de_disponibilidade", Texto(fato.PontoResolucao)), ("fonte_do_valor", Texto(fato.Binding)),
-        ("escopo", Texto(EscoposFato.ParaTokenCanonico(fato.Escopo))),
+        ("escopo", Texto(fato.Escopo.Codigo())),
         ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
         ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
         ("hipotese_legal", Texto(fato.HipoteseLegal.Codigo())),

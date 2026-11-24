@@ -300,7 +300,7 @@ public sealed class TipoDocumentoTests
     // ── Proteção do documento ──────────────────────────────────────────────────
 
     private static Result<TipoDocumento> CriarComProtecao(
-        ClassificacaoDeProtecao? classificacao, string? finalidade, HipoteseLegalTratamento? hipotese) =>
+        CodigoInformado<ClassificacaoDeProtecao> classificacao, string? finalidade, CodigoInformado<HipoteseLegalTratamento> hipotese) =>
         TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(Codigo, Nome, null, Categoria, null, null, null, classificacao, finalidade, hipotese));
 
     [Fact(DisplayName = "Criar sem classificação, finalidade e hipótese legal recusa os três como proteção obrigatória")]
@@ -350,7 +350,7 @@ public sealed class TipoDocumentoTests
     public void Criar_ForaDoVocabulario_Recusa()
     {
         Result<TipoDocumento> resultado = CriarComProtecao(
-            (ClassificacaoDeProtecao)(-1), "Comprovação documental.", (HipoteseLegalTratamento)(-1));
+            CodigoInformado<ClassificacaoDeProtecao>.Ler("INEXISTENTE"), "Comprovação documental.", CodigoInformado<HipoteseLegalTratamento>.Ler("INEXISTENTE"));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             ("classificacaoProtecao", TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida),

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -29,8 +28,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <strong>total</strong>: o código é chave natural imutável de uma linha que nunca é removida.
 /// </para>
 /// <para>
-/// Os enums são persistidos como código de contrato UPPER_SNAKE por value converter (falha ao ler
-/// um código desconhecido), cada um com um CHECK que restringe o texto ao domínio fechado.
+/// Os enums são persistidos pelo código de contrato, pela conversão padrão dos enums de contrato (falha
+/// ao ler um código desconhecido), cada um com um CHECK que restringe o texto ao domínio fechado.
 /// <c>ponto_resolucao</c>/<c>binding</c> (ADR-0116) são referência por valor, sem FK.
 /// </para>
 /// </remarks>
@@ -110,9 +109,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     private static void ConfigurarComponenteEDominio(EntityTypeBuilder<FatoCandidato> builder)
     {
         // componente de exibição: anulável — sem declaração vale o padrão que a consulta resolve.
-        builder.Property(f => f.ComponenteExibicao)
-            .HasConversion(ComponenteExibicaoConverter)
-            .HasMaxLength(CodigoDeContratoMaxLength);
+        builder.Property(f => f.ComponenteExibicao).HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(f => f.Dominio).HasColumnName("tipo")
             .HasMaxLength(CodigoDeContratoMaxLength)
@@ -124,8 +121,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.Origem).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
         builder.Property(f => f.Cardinalidade).HasColumnName("quantidade_de_valores")
             .HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
-        builder.Property(f => f.Escopo)
-            .HasConversion(EscopoConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
+        builder.Property(f => f.Escopo).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
     }
 
     private static void ConfigurarFonteEFormato(EntityTypeBuilder<FatoCandidato> builder)
@@ -135,9 +131,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             .HasMaxLength(FonteValoresMaxLength);
 
         // formato (ADR-0136): anulável — só o fato de domínio texto tem formato.
-        builder.Property(f => f.Formato)
-            .HasConversion(FormatoConverter)
-            .HasMaxLength(CodigoDeContratoMaxLength);
+        builder.Property(f => f.Formato).HasMaxLength(CodigoDeContratoMaxLength);
     }
 
     // Proteção de dados (ADR-0136): classificação na escala da ADR-0081, finalidade e
@@ -281,15 +275,4 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             CreatedAt = seedCriadoEm,
         });
     }
-
-    // ── Conversores/comparadores ──────────────────────────────────────────────
-
-    private static readonly ValueConverter<ComponenteDeExibicao, string> ComponenteExibicaoConverter =
-        new(componente => ComponentesDeExibicao.ParaTokenCanonico(componente), codigo => ComponentesDeExibicao.Analisar(codigo));
-
-    private static readonly ValueConverter<FormatoTexto, string> FormatoConverter =
-        new(formato => FormatosTexto.ParaTokenCanonico(formato), codigo => FormatosTexto.Analisar(codigo));
-
-    private static readonly ValueConverter<EscopoFato, string> EscopoConverter =
-        new(escopo => EscoposFato.ParaTokenCanonico(escopo), codigo => EscoposFato.Analisar(codigo));
 }

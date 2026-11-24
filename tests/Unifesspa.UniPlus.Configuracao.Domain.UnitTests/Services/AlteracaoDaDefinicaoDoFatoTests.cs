@@ -22,22 +22,13 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Services.FatoDeTest
 /// </summary>
 public sealed class AlteracaoDaDefinicaoDoFatoTests
 {
-    [Fact(DisplayName = "Fato declarado troca domínio, fonte, escopo, ponto de resolução e proteção; código, origem e vínculo ficam")]
+    [Fact(DisplayName = "Fato declarado troca domínio, fonte, escopo, ponto de resolução e proteção")]
     public void Declarado_TrocaOsEixos()
     {
-        FatoCandidato fato = Declarado("TEM_RENDA");
+        FatoCandidato fato = DeclaradoComEixosTrocados();
 
-        Result resultado = fato.AlterarDefinicao(
-            Definicao(TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, FonteValoresFato.Catalogo, ponto: "HABILITACAO",
-                escopo: EscopoFato.MembroGrupo, classificacao: ClassificacaoDeProtecao.Sensivel, finalidade: " Nova finalidade "),
-            Catalogo(fato));
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         fato.Should().BeEquivalentTo(new
         {
-            Codigo = "TEM_RENDA",
-            Origem = OrigemFato.Declarado,
-            Binding = "CAMPO_FORMULARIO:TEM_RENDA",
             Dominio = TipoDoDado.Opcao,
             Cardinalidade = QuantidadeDeValores.VariosValores,
             FonteValores = FonteValoresFato.Catalogo,
@@ -47,6 +38,15 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             FinalidadeTratamento = "Nova finalidade",
         });
     }
+
+    [Fact(DisplayName = "Fato declarado mantém o código, a origem e o vínculo quando troca os eixos")]
+    public void Declarado_TrocaOsEixos_MantemCodigoOrigemEVinculo() =>
+        DeclaradoComEixosTrocados().Should().BeEquivalentTo(new
+        {
+            Codigo = "TEM_RENDA",
+            Origem = OrigemFato.Declarado,
+            Binding = "CAMPO_FORMULARIO:TEM_RENDA",
+        });
 
     [Fact(DisplayName = "Derivado por regra troca o domínio e infere a cardinalidade e a fonte dele")]
     public void Derivado_TrocaODominio()
@@ -67,27 +67,24 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         });
     }
 
-    [Fact(DisplayName = "Agregado troca só o ponto de resolução e a proteção; domínio, fonte e escopo continuam os do membro")]
-    public void Agregado_TrocaPontoEProtecao()
-    {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
-        FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
+    [Fact(DisplayName = "Agregado troca o ponto de resolução e a proteção")]
+    public void Agregado_TrocaPontoEProtecao() =>
+        AgregadoComPontoEProtecaoTrocados().Should().BeEquivalentTo(new
+        {
+            PontoResolucao = "HABILITACAO",
+            ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
+            Binding = "RESUMO_DE_GRUPO:CATEGORIA_RENDA",
+        });
 
-        Result resultado = agregado.AlterarDefinicao(
-            Definicao(dominio: null, ponto: "HABILITACAO", classificacao: ClassificacaoDeProtecao.Sensivel, escopo: null), Catalogo(membro, agregado));
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        agregado.Should().BeEquivalentTo(new
+    [Fact(DisplayName = "Agregado mantém o domínio, a fonte e o escopo do membro quando troca o ponto e a proteção")]
+    public void Agregado_TrocaPontoEProtecao_MantemEixosDoMembro() =>
+        AgregadoComPontoEProtecaoTrocados().Should().BeEquivalentTo(new
         {
             Dominio = TipoDoDado.Opcao,
             Cardinalidade = QuantidadeDeValores.VariosValores,
             FonteValores = FonteValoresFato.Catalogo,
             Escopo = EscopoFato.Candidato,
-            PontoResolucao = "HABILITACAO",
-            ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
-            Binding = "RESUMO_DE_GRUPO:CATEGORIA_RENDA",
         });
-    }
 
     [Fact(DisplayName = "Fato de sistema recusa a alteração dos eixos")]
     public void Sistema_Recusa()
@@ -108,11 +105,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     {
         FatoCandidato fato = Declarado("TEM_RENDA");
 
-        Result resultado = fato.AlterarDefinicao(
-            new DefinicaoDoFato(
-                TipoDoDado.Texto, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, FormatoTexto.Nenhum, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoDeProtecao.Publico, Finalidade, HipoteseLegalTratamento.Consentimento),
-            Catalogo(fato));
+        Result resultado = fato.AlterarDefinicao(DefinicaoComEixosIncoerentes(), Catalogo(fato));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -169,12 +162,10 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             ]);
     }
 
-    [Fact(DisplayName = "Domínio ou fonte que não comporta os valores cadastrados é recusado no campo do eixo")]
-    public void Declarado_ComValores_RecusaDominioEFonteQueNaoOsComportam()
+    [Fact(DisplayName = "Domínio que não comporta os valores cadastrados é recusado no campo do eixo")]
+    public void Declarado_ComValores_RecusaDominioQueNaoOsComporta()
     {
-        FatoCandidato fato = Declarado("TIPO_RENDA", TipoDoDado.Opcao, FonteValoresFato.Catalogo);
-        fato.AdicionarValorDominio("RURAL", "Rural", 0, ativo: true).IsSuccess.Should().BeTrue();
-        fato.DesativarValor("RURAL").IsSuccess.Should().BeTrue();
+        FatoCandidato fato = DeclaradoComValorDesativado();
 
         fato.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
@@ -182,6 +173,13 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
                 Field = "dominio",
                 Error = new { Code = FatoCandidatoErrorCodes.DominioNaoComportaOsValores },
             }, "o valor desativado continua no fato, porque o código nunca é removido");
+    }
+
+    [Fact(DisplayName = "Fonte que não comporta os valores cadastrados é recusada no campo do eixo")]
+    public void Declarado_ComValores_RecusaFonteQueNaoOsComporta()
+    {
+        FatoCandidato fato = DeclaradoComValorDesativado();
+
         fato.AlterarDefinicao(Definicao(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.OpcoesDoProcesso), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
@@ -201,5 +199,43 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("dominio");
         derivado.Dominio.Should().Be(TipoDoDado.SimOuNao);
+    }
+
+    private static FatoCandidato DeclaradoComEixosTrocados()
+    {
+        FatoCandidato fato = Declarado("TEM_RENDA");
+
+        Result resultado = fato.AlterarDefinicao(
+            Definicao(TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, FonteValoresFato.Catalogo, ponto: "HABILITACAO",
+                escopo: EscopoFato.MembroGrupo, classificacao: ClassificacaoDeProtecao.Sensivel, finalidade: " Nova finalidade "),
+            Catalogo(fato));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        return fato;
+    }
+
+    private static FatoCandidato AgregadoComPontoEProtecaoTrocados()
+    {
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
+        FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
+
+        Result resultado = agregado.AlterarDefinicao(
+            Definicao(dominio: null, ponto: "HABILITACAO", classificacao: ClassificacaoDeProtecao.Sensivel, escopo: null), Catalogo(membro, agregado));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        return agregado;
+    }
+
+    private static DefinicaoDoFato DefinicaoComEixosIncoerentes() =>
+        new(
+            TipoDoDado.Texto, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato,
+            ClassificacaoDeProtecao.Publico, Finalidade, HipoteseLegalTratamento.Consentimento);
+
+    private static FatoCandidato DeclaradoComValorDesativado()
+    {
+        FatoCandidato fato = Declarado("TIPO_RENDA", TipoDoDado.Opcao, FonteValoresFato.Catalogo);
+        fato.AdicionarValorDominio("RURAL", "Rural", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.DesativarValor("RURAL").IsSuccess.Should().BeTrue();
+        return fato;
     }
 }
