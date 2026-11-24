@@ -70,7 +70,7 @@ public sealed class TipoDocumentoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
 
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        (pg.SqlState, pg.ConstraintName).Should().Be(("23505", RestricoesDoBanco.TipoDeDocumentoCodigoVivo));
+        (pg.SqlState, pg.ConstraintName).Should().Be(("23505", RestricoesDoBanco.TipoDeDocumentoCodigoAtivos));
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]

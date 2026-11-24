@@ -152,7 +152,7 @@ public sealed class ModeloFormularioPersistenceTests
         Func<Task> gravar = async () => await segundo.SaveChangesAsync();
 
         DbUpdateException ex = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
-        ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which.ConstraintName.Should().Be("ix_modelos_formulario_codigo");
+        ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which.ConstraintName.Should().Be("ux_modelos_formulario_codigo");
     }
 
     private async Task GravarAsync(ModeloFormulario modelo)

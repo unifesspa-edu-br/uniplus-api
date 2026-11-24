@@ -60,13 +60,13 @@ internal sealed class RecursoAcessibilidadeConfiguration
         builder.HasIndex(r => r.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoAtivos);
 
         // Unicidade do nome entre recursos vivos (índice parcial) — um recurso vivo
         // por nome; soft-delete libera o slot para recriação.
         builder.HasIndex(r => r.Nome)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeNomeVivo);
+            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeNomeAtivos);
     }
 }

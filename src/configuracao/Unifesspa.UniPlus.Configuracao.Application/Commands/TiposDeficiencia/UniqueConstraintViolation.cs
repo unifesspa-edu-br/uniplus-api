@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 
 /// <summary>
 /// Helper para mapear violações 23505 dos índices únicos parciais do tipo de
-/// deficiência — <c>ix_tipos_de_deficiencia_codigo_vivo</c> e
-/// <c>ix_tipos_de_deficiencia_nome_vivo</c> — para o <c>DomainError</c> apropriado.
+/// deficiência — <c>ux_tipos_de_deficiencia_codigo_ativos</c> e
+/// <c>ux_tipos_de_deficiencia_nome_ativos</c> — para o <c>DomainError</c> apropriado.
 /// Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no inner
 /// exception — o shape é estável na API pública do <c>Npgsql.PostgresException</c>.
 /// A inspeção do tipo da exceção por <see cref="System.Type.FullName"/> evita
@@ -26,9 +26,9 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string CodigoConstraint = RestricoesDoBanco.TipoDeDeficienciaCodigoVivo;
+    private const string CodigoConstraint = RestricoesDoBanco.TipoDeDeficienciaCodigoAtivos;
 
-    private const string NomeConstraint = RestricoesDoBanco.TipoDeDeficienciaNomeVivo;
+    private const string NomeConstraint = RestricoesDoBanco.TipoDeDeficienciaNomeAtivos;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

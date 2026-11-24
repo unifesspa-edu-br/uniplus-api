@@ -134,7 +134,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         builder.HasIndex(m => m.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.ModalidadeCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.ModalidadeCodigoAtivos);
     }
 
     /// <summary>

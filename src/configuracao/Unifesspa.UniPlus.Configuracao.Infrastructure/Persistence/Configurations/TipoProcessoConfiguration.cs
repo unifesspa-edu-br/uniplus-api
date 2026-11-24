@@ -41,7 +41,7 @@ internal sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoP
         // A unicidade abrange também itens inativos: código de domínio nunca é reutilizado.
         builder.HasIndex(tipo => tipo.Codigo)
             .IsUnique()
-            .HasDatabaseName("ix_tipos_processo_codigo");
+            .HasDatabaseName("ux_tipos_processo_codigo");
         builder.HasIndex(tipo => tipo.Ativo)
             .HasDatabaseName("ix_tipos_processo_ativo");
     }

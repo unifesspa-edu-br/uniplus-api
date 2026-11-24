@@ -55,7 +55,7 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
         builder.Property(modelo => modelo.UpdatedBy).HasMaxLength(255).HasComment("Identificação de quem atualizou o modelo.");
 
         // O código é chave natural imutável e nunca reutilizado: o modelo é desativado, não apagado.
-        builder.HasIndex(modelo => modelo.Codigo).IsUnique().HasDatabaseName("ix_modelos_formulario_codigo");
+        builder.HasIndex(modelo => modelo.Codigo).IsUnique().HasDatabaseName("ux_modelos_formulario_codigo");
         builder.HasIndex(modelo => new { modelo.TipoProcessoCodigo, modelo.Finalidade, modelo.Ativo })
             .HasDatabaseName("ix_modelos_formulario_tipo_finalidade_ativo");
     }

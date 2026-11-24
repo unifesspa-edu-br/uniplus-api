@@ -66,7 +66,7 @@ internal sealed class CampusConfiguration : IEntityTypeConfiguration<Campus>
         builder.HasIndex(c => c.Sigla)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_campus_sigla_vivo");
+            .HasDatabaseName("ux_campus_sigla_ativos");
 
         // Índice de relatório/filtro pela cidade (ADR-0090).
         builder.HasIndex(c => c.CidadeCodigoIbge)

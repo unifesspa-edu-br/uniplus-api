@@ -33,7 +33,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
         ConfigurarValores(builder);
 
         // A unicidade abrange também os tipos desativados: o código nunca é reutilizado.
-        builder.HasIndex(tipo => tipo.Codigo).IsUnique().HasDatabaseName("ix_tipos_conceito_codigo");
+        builder.HasIndex(tipo => tipo.Codigo).IsUnique().HasDatabaseName("ux_tipos_conceito_codigo");
         builder.HasIndex(tipo => tipo.Ativo).HasDatabaseName("ix_tipos_conceito_ativo");
     }
 

@@ -134,6 +134,6 @@ internal sealed class PesoAreaEnemConfiguration
         builder.HasIndex(p => new { p.Resolucao, p.GrupoCurso })
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.PesoPorAreaDoEnemResolucaoGrupoVivo);
+            .HasDatabaseName(RestricoesDoBanco.PesoPorAreaDoEnemResolucaoGrupoAtivos);
     }
 }

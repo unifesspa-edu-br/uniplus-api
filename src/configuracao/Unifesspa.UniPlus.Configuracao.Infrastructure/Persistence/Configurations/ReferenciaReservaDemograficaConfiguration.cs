@@ -73,6 +73,6 @@ internal sealed class ReferenciaReservaDemograficaConfiguration
         builder.HasIndex(r => r.CensoReferencia)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.ReferenciaDemograficaCensoVivo);
+            .HasDatabaseName(RestricoesDoBanco.ReferenciaDemograficaCensoAtivos);
     }
 }

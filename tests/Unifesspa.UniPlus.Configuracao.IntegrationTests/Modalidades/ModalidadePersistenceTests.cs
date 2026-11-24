@@ -93,7 +93,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.ModalidadeCodigoVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.ModalidadeCodigoAtivos);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]

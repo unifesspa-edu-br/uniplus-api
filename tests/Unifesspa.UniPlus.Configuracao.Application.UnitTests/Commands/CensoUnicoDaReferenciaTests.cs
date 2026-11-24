@@ -92,7 +92,7 @@ public sealed class CensoUnicoDaReferenciaTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ReferenciaDemograficaCensoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ReferenciaDemograficaCensoAtivos)));
 
         Result resultado = await CensoUnicoDaReferencia.GravarAsync(_unitOfWork, CancellationToken.None);
 

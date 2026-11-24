@@ -68,13 +68,13 @@ internal sealed class TipoDeficienciaConfiguration
         builder.HasIndex(t => t.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaCodigoAtivos);
 
         // Unicidade do nome entre tipos vivos (índice parcial) — um tipo vivo por
         // nome; soft-delete libera o slot para recriação.
         builder.HasIndex(t => t.Nome)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaNomeVivo);
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaNomeAtivos);
     }
 }

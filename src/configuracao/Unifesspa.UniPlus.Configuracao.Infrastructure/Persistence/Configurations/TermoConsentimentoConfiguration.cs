@@ -113,7 +113,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         builder.HasIndex(t => t.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.TermoDeConsentimentoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.TermoDeConsentimentoCodigoAtivos);
 
         builder.HasIndex(t => t.Nome)
             .HasFilter("is_deleted = false")

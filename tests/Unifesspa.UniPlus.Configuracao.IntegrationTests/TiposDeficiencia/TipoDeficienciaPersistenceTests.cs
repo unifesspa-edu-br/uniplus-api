@@ -85,7 +85,7 @@ public sealed class TipoDeficienciaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaCodigoVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaCodigoAtivos);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo tipo vivo com mesmo nome")]
@@ -109,7 +109,7 @@ public sealed class TipoDeficienciaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaNomeVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaNomeAtivos);
     }
 
     [Fact(DisplayName = "Código e nome distintos são aceitos")]

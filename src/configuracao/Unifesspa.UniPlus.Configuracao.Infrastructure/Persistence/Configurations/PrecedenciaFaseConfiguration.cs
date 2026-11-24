@@ -54,7 +54,7 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
         builder.HasIndex(p => new { p.AntecessoraCodigo, p.SucessoraCodigo })
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.PrecedenciaEntreFasesParVivo);
+            .HasDatabaseName(RestricoesDoBanco.PrecedenciaEntreFasesParAtivos);
 
         builder.HasData(MaterializarSeed());
     }

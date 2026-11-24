@@ -77,7 +77,7 @@ public static class CriarFaseCanonicaCommandHandler
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return false;
         }
-        catch (Exception ex) when (UniqueConstraintViolation.EhConflito(ex, RestricoesDoBanco.FaseCanonicaCodigoVivo))
+        catch (Exception ex) when (UniqueConstraintViolation.EhConflito(ex, RestricoesDoBanco.FaseCanonicaCodigoAtivos))
         {
             // Sem descartar, a entidade Added continua rastreada e qualquer SaveChanges
             // posterior no mesmo escopo repete a inserção fora deste catch — a mesma

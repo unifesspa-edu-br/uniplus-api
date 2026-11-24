@@ -97,7 +97,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         builder.HasIndex(f => f.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.FaseCanonicaCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.FaseCanonicaCodigoAtivos);
     }
 
     // Os sinalizadores são um valor da fase, gravado como as quatro colunas da própria linha (table

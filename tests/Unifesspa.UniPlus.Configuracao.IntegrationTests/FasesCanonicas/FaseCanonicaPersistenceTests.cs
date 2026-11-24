@@ -69,7 +69,7 @@ public sealed class FaseCanonicaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.FaseCanonicaCodigoVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.FaseCanonicaCodigoAtivos);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]

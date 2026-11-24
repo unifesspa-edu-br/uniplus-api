@@ -62,7 +62,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
         builder.HasIndex(e => e.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.BaseLegalBonusRegionalCodigoAtivos);
 
         builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("ix_bases_legais_do_fada_tipo_instrumento");
     }

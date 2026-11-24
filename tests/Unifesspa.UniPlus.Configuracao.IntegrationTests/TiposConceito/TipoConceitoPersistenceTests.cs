@@ -92,7 +92,7 @@ public sealed class TipoConceitoPersistenceTests
 
         PostgresException erro = await GravarEsperandoRecusa(Novo(Categorico("A", "B"), primeiro.Codigo));
 
-        (erro.SqlState, erro.ConstraintName).Should().Be(("23505", "ix_tipos_conceito_codigo"));
+        (erro.SqlState, erro.ConstraintName).Should().Be(("23505", "ux_tipos_conceito_codigo"));
     }
 
     [Fact(DisplayName = "O código de um tipo desativado continua reservado")]
@@ -104,7 +104,7 @@ public sealed class TipoConceitoPersistenceTests
 
         PostgresException erro = await GravarEsperandoRecusa(Novo(Numerico(), primeiro.Codigo));
 
-        erro.ConstraintName.Should().Be("ix_tipos_conceito_codigo");
+        erro.ConstraintName.Should().Be("ux_tipos_conceito_codigo");
     }
 
     [Fact(DisplayName = "O banco recusa escala numérica com o mínimo no máximo ou acima dele")]

@@ -90,7 +90,7 @@ public sealed class CriarTipoConceitoCommandHandlerTests
     public async Task Handle_CorridaNoIndiceUnico_TraduzEDescartaRastreamento()
     {
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
-            .ThrowsAsync(new DbUpdateException("violação sintética de teste", PostgresExceptionFactory.Create("23505", "ix_tipos_conceito_codigo")));
+            .ThrowsAsync(new DbUpdateException("violação sintética de teste", PostgresExceptionFactory.Create("23505", "ux_tipos_conceito_codigo")));
 
         Result<Guid> resultado = await Criar(TiposConceitoDeTeste.CriarNumerico());
 

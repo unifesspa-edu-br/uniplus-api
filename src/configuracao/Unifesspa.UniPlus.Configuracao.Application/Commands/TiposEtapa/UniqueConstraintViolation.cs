@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
 internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
-    private const string Constraint = "ix_tipos_etapa_codigo";
+    private const string Constraint = "ux_tipos_etapa_codigo";
 
     public static bool EhConflitoDeCodigo(Exception exception)
     {

@@ -33,7 +33,7 @@ public sealed class CodigoDaBaseLegalPersistenceTests
         Func<Task> segunda = () => Gravar(identificacao);
 
         DbUpdateException violacao = (await segunda.Should().ThrowAsync<DbUpdateException>()).Which;
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.BaseLegalBonusRegionalCodigoAtivos);
     }
 
     [Fact(DisplayName = "O código de uma base legal removida pode ser reaproveitado por uma nova")]
@@ -58,7 +58,7 @@ public sealed class CodigoDaBaseLegalPersistenceTests
 
         falhas.Count(f => f is null).Should().Be(1);
         Exception barrada = falhas.Single(f => f is not null)!;
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(barrada).Should().Be(RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(barrada).Should().Be(RestricoesDoBanco.BaseLegalBonusRegionalCodigoAtivos);
     }
 
     private static string IdentificacaoUnica() => $"Portaria Teste {Guid.NewGuid():N}";

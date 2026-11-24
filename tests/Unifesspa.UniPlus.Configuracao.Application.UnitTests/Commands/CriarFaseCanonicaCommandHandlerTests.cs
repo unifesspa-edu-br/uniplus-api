@@ -177,7 +177,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.FaseCanonicaCodigoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.FaseCanonicaCodigoAtivos)));
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             Comando(), _repository, _unidadeReader, _unitOfWork, CancellationToken.None);

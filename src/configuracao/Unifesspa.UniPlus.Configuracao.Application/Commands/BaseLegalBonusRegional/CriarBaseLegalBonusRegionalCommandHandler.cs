@@ -63,7 +63,7 @@ public static class CriarBaseLegalBonusRegionalCommandHandler
             return Result<Guid>.Success(entity.Id);
         }
         catch (Exception exception) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(exception)
-            == RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo)
+            == RestricoesDoBanco.BaseLegalBonusRegionalCodigoAtivos)
         {
             // Sem descartar, a inserção continua rastreada e o SaveChanges do outbox a repete fora deste catch (500 em vez de 409).
             unitOfWork.DescartarAlteracoesNaoSalvas();

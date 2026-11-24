@@ -122,7 +122,7 @@ public sealed class AtualizarTipoConceitoCommandHandlerTests
     public async Task Handle_ViolacaoUnicaDeOutroIndice_Propaga()
     {
         TipoConceito tipo = TipoExistente(TiposConceitoDeTeste.Numerico());
-        PostgresException violacao = new("índice único violado", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: "ix_tipos_conceito_codigo");
+        PostgresException violacao = new("índice único violado", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: "ux_tipos_conceito_codigo");
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException("outra violação única", violacao));
 

@@ -54,7 +54,7 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
         builder.HasIndex(b => b.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.TipoDeBancaCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.TipoDeBancaCodigoAtivos);
     }
 
     // A atuação é um valor do tipo de banca, gravado como as quatro colunas da própria linha (table splitting). O papel é

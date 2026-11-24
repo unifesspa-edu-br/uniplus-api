@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarCategoriaDocumentoCommandHandlerTests
 {
-    private const string CodigoVivoConstraint = RestricoesDoBanco.CategoriaDeDocumentoCodigoVivo;
+    private const string CodigoVivoConstraint = RestricoesDoBanco.CategoriaDeDocumentoCodigoAtivos;
 
     private readonly ICategoriaDocumentoRepository _repository = Substitute.For<ICategoriaDocumentoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();

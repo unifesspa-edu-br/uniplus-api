@@ -89,7 +89,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.CondicaoDeAtendimentoCodigoVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CondicaoDeAtendimentoCodigoAtivos);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
