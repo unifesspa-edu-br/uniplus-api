@@ -9,7 +9,7 @@ public sealed class CatalogoDeTests
     [Fact(DisplayName = "O membro devolve o código, o rótulo e a descrição que declarou")]
     public void Membro_DevolveOQueDeclarou()
     {
-        Cor.Azul.Codigo().Should().Be("azul");
+        Cor.Azul.Codigo().Should().Be("AZUL");
         Cor.Azul.Rotulo().Should().Be("Azul");
         Cor.Azul.Descricao().Should().Be("A cor do céu.");
     }
@@ -20,11 +20,11 @@ public sealed class CatalogoDeTests
 
     [Fact(DisplayName = "O código não vem do nome do membro")]
     public void Codigo_NaoVemDoNomeDoMembro() =>
-        Cor.VerdeClaro.Codigo().Should().Be("verde_claro").And.NotBe(nameof(Cor.VerdeClaro));
+        Cor.VerdeClaro.Codigo().Should().Be("VERDE_CLARO").And.NotBe(nameof(Cor.VerdeClaro));
 
     [Fact(DisplayName = "Os códigos declarados vêm na ordem dos membros")]
     public void Todos_NaOrdemDosMembros() =>
-        CatalogoDe<Cor>.Todos().Select(static d => d.Codigo).Should().Equal("azul", "verde_claro");
+        CatalogoDe<Cor>.Todos().Select(static d => d.Codigo).Should().Equal("AZUL", "VERDE_CLARO");
 
     [Fact(DisplayName = "Os valores vêm na ordem em que o enum os declara, e não na ordem numérica")]
     public void Valores_NaOrdemDeclarada()
@@ -54,8 +54,8 @@ public sealed class CatalogoDeTests
             .Should().Throw<CodigosDeContratoInvalidosException>();
 
     [Theory(DisplayName = "O código exato devolve o valor")]
-    [InlineData("azul", Cor.Azul)]
-    [InlineData("verde_claro", Cor.VerdeClaro)]
+    [InlineData("AZUL", Cor.Azul)]
+    [InlineData("VERDE_CLARO", Cor.VerdeClaro)]
     public void TentarObter_CodigoExato_DevolveOValor(string codigo, Cor esperado)
     {
         CatalogoDe<Cor>.TentarObter(codigo, out Cor valor).Should().BeTrue();
@@ -68,15 +68,15 @@ public sealed class CatalogoDeTests
     [InlineData("")]
     [InlineData("roxo")]
     [InlineData("Azul")]
-    [InlineData("AZUL")]
-    [InlineData(" azul")]
-    [InlineData("azul ")]
+    [InlineData("azul")]
+    [InlineData(" AZUL")]
+    [InlineData("AZUL ")]
     public void TentarObter_CodigoQueNaoExiste_DevolveFalsoSemLancar(string? codigo) =>
         CatalogoDe<Cor>.TentarObter(codigo, out _).Should().BeFalse();
 
     [Fact(DisplayName = "Obter devolve o valor do código válido")]
     public void Obter_CodigoValido_DevolveOValor() =>
-        CatalogoDe<Cor>.Obter("verde_claro").Should().Be(Cor.VerdeClaro);
+        CatalogoDe<Cor>.Obter("VERDE_CLARO").Should().Be(Cor.VerdeClaro);
 
     [Fact(DisplayName = "Obter lança quando o código não existe, sem repetir o código recebido")]
     public void Obter_CodigoInexistente_Lanca() =>
@@ -99,7 +99,7 @@ public sealed class CatalogoDeTests
         ComBaseUlong foraDoEnum = (ComBaseUlong)(ulong.MaxValue - 1);
 
         FluentActions.Invoking(() => foraDoEnum.Codigo()).Should().Throw<ArgumentOutOfRangeException>();
-        ComBaseUlong.Grande.Codigo().Should().Be("grande");
+        ComBaseUlong.Grande.Codigo().Should().Be("GRANDE");
     }
 
     [Fact(DisplayName = "Código nulo no enum inválido derruba a consulta, como qualquer outro código")]

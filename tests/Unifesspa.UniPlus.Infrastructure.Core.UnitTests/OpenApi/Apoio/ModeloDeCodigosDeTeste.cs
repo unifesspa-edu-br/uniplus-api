@@ -14,19 +14,19 @@ public static class ModeloDeCodigosDeTeste
     [DescricaoDoContrato("Em que fase o processo está, para todos os códigos.")]
     public enum Fase
     {
-        [CodigoDeContrato("inscricao", "Inscrição", Descricao = "A pessoa ainda pode se inscrever.")]
+        [CodigoDeContrato("INSCRICAO", "Inscrição", Descricao = "A pessoa ainda pode se inscrever.")]
         Inscricao = 1,
 
-        [CodigoDeContrato("resultado", "Resultado", Descricao = "O resultado já saiu.")]
+        [CodigoDeContrato("RESULTADO", "Resultado", Descricao = "O resultado já saiu.")]
         Resultado = 2,
     }
 
     public enum Turno
     {
-        [CodigoDeContrato("manha", "Manhã", Descricao = "Aulas de manhã.")]
+        [CodigoDeContrato("MANHA", "Manhã", Descricao = "Aulas de manhã.")]
         Manha = 1,
 
-        [CodigoDeContrato("noite", "Noite")]
+        [CodigoDeContrato("NOITE", "Noite")]
         Noite = 2,
     }
 

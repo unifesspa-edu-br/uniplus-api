@@ -9,7 +9,7 @@ public sealed class CodigoComRotuloTests
 {
     public enum Fase
     {
-        [CodigoDeContrato("inscricao", "Inscrição")]
+        [CodigoDeContrato("INSCRICAO", "Inscrição")]
         Inscricao = 1,
     }
 
@@ -18,7 +18,7 @@ public sealed class CodigoComRotuloTests
     {
         CodigoComRotulo<Fase> codigo = CodigoComRotulo<Fase>.De(Fase.Inscricao, "Período de inscrição");
 
-        codigo.Codigo.Should().Be("inscricao");
+        codigo.Codigo.Should().Be("INSCRICAO");
         codigo.Rotulo.Should().Be("Período de inscrição");
     }
 

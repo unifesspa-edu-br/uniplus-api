@@ -13,10 +13,10 @@ public sealed class CodigoComDescricaoTests
 
     public enum Fase
     {
-        [CodigoDeContrato("inscricao", "Inscrição", Descricao = "A pessoa ainda pode se inscrever.")]
+        [CodigoDeContrato("INSCRICAO", "Inscrição", Descricao = "A pessoa ainda pode se inscrever.")]
         Inscricao = 1,
 
-        [CodigoDeContrato("resultado", "Resultado")]
+        [CodigoDeContrato("RESULTADO", "Resultado")]
         Resultado = 2,
     }
 
@@ -25,7 +25,7 @@ public sealed class CodigoComDescricaoTests
     {
         CodigoComDescricao<Fase> codigo = CodigoComDescricao<Fase>.De(Fase.Inscricao);
 
-        codigo.Codigo.Should().Be("inscricao");
+        codigo.Codigo.Should().Be("INSCRICAO");
         codigo.Rotulo.Should().Be("Inscrição");
         codigo.Descricao.Should().Be("A pessoa ainda pode se inscrever.");
     }
@@ -52,7 +52,7 @@ public sealed class CodigoComDescricaoTests
         JsonElement json = JsonSerializer.SerializeToElement(CodigoComDescricao<Fase>.De(Fase.Inscricao), OpcoesDaResposta);
 
         json.EnumerateObject().Select(static p => (p.Name, Valor: p.Value.GetString())).Should().Equal(
-            ("codigo", "inscricao"),
+            ("codigo", "INSCRICAO"),
             ("rotulo", "Inscrição"),
             ("descricao", "A pessoa ainda pode se inscrever."));
     }

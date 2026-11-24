@@ -29,8 +29,8 @@ internal static class ExecutavelComEnumsDefeituosos
         PersistedAssemblyBuilder montador = new(new AssemblyName($"Executavel.{Guid.NewGuid():N}"), typeof(object).Assembly);
         ModuleBuilder modulo = montador.DefineDynamicModule("principal");
 
-        DefinirEnum(modulo, EnumComCodigoRepetido, ("Primeiro", "igual"), ("Segundo", "igual"));
-        DefinirEnum(modulo, EnumComCodigoAusente, ("Declarado", "declarado"), ("Sem", null));
+        DefinirEnum(modulo, EnumComCodigoRepetido, ("Primeiro", "IGUAL"), ("Segundo", "IGUAL"));
+        DefinirEnum(modulo, EnumComCodigoAusente, ("Declarado", "DECLARADO"), ("Sem", null));
 
         using MemoryStream fluxo = new();
         montador.Save(fluxo);

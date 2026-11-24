@@ -22,20 +22,20 @@ public sealed class CodigoDeContratoNoComplexoAninhadoIntegrationTests(BancoDeTu
     private const string PreferidasDoInterno = "Material_Rodape_Preferidas";
 
     private const string ComFormatoDoExternoInvalido =
-        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'inexistente', 'em_sala', ARRAY[]::text[])";
+        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'inexistente', 'EM_SALA', ARRAY[]::text[])";
 
     private const string ComFormatoDoInternoInvalido =
-        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'em_sala', 'inexistente', ARRAY[]::text[])";
+        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'EM_SALA', 'inexistente', ARRAY[]::text[])";
 
     private const string ComAlternativaInvalida =
-        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{AlternativaDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'em_sala', 'em_sala', 'inexistente', ARRAY[]::text[])";
+        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{AlternativaDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'EM_SALA', 'EM_SALA', 'inexistente', ARRAY[]::text[])";
 
     private const string ComPreferidaInvalida =
-        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'em_sala', 'em_sala', ARRAY['em_sala', 'inexistente']::text[])";
+        $"INSERT INTO {Tabela} (id, \"{FormatoDoExterno}\", \"{FormatoDoInterno}\", \"{PreferidasDoInterno}\") VALUES (@id, 'EM_SALA', 'EM_SALA', ARRAY['EM_SALA', 'inexistente']::text[])";
 
     [Theory(DisplayName = "O enum do complexo e do complexo aninhado é gravado como o código declarado, e não como o nome nem o número")]
-    [InlineData(FormatoDeAula.Presencial, "em_sala")]
-    [InlineData(FormatoDeAula.Remoto, "a_distancia")]
+    [InlineData(FormatoDeAula.Presencial, "EM_SALA")]
+    [InlineData(FormatoDeAula.Remoto, "A_DISTANCIA")]
     public async Task EscalarNosDoisNiveis_GravadoComoOCodigoDeContrato(FormatoDeAula formato, string codigoEsperado)
     {
         Guid id = await GravarAsync(OfertaCom(formato, formato));
@@ -56,7 +56,7 @@ public sealed class CodigoDeContratoNoComplexoAninhadoIntegrationTests(BancoDeTu
         oferta.Material.Rodape.Alternativa = FormatoDeAula.Remoto;
         Guid id = await GravarAsync(oferta);
 
-        (await LerColunaAsync<string>(AlternativaDoInterno, id)).Should().Be("a_distancia");
+        (await LerColunaAsync<string>(AlternativaDoInterno, id)).Should().Be("A_DISTANCIA");
     }
 
     [Fact(DisplayName = "O escalar opcional vazio do complexo aninhado é `NULL` e volta ausente na leitura da entidade")]
@@ -75,7 +75,7 @@ public sealed class CodigoDeContratoNoComplexoAninhadoIntegrationTests(BancoDeTu
         oferta.Material.Rodape.Preferidas = [FormatoDeAula.Remoto, FormatoDeAula.Presencial];
         Guid id = await GravarAsync(oferta);
 
-        (await LerColunaAsync<string[]>(PreferidasDoInterno, id)).Should().Equal("a_distancia", "em_sala");
+        (await LerColunaAsync<string[]>(PreferidasDoInterno, id)).Should().Equal("A_DISTANCIA", "EM_SALA");
     }
 
     [Fact(DisplayName = "As colunas do complexo aninhado têm o nome do caminho, são texto, e a da coleção é `text[]`")]

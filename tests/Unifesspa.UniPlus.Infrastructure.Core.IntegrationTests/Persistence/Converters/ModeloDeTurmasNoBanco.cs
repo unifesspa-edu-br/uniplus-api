@@ -9,10 +9,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 // O código declarado difere do nome e do número do membro, para que o texto gravado diga qual dos três foi escrito.
 public enum FormatoDeAula
 {
-    [CodigoDeContrato("em_sala", "Em sala")]
+    [CodigoDeContrato("EM_SALA", "Em sala")]
     Presencial = 1,
 
-    [CodigoDeContrato("a_distancia", "À distância")]
+    [CodigoDeContrato("A_DISTANCIA", "À distância")]
     Remoto = 2,
 }
 

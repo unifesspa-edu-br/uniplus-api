@@ -23,17 +23,17 @@ public sealed class CodigoDeContratoNoBancoIntegrationTests(BancoDeTurmasFixture
     private const string TiposDasColunas = $"SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = '{Tabela}'";
 
     private const string ComModalidadeInvalida =
-        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'inexistente', NULL, ARRAY['em_sala']::text[])";
+        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'inexistente', NULL, ARRAY['EM_SALA']::text[])";
 
     private const string ComAlternativaInvalida =
-        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'em_sala', 'inexistente', ARRAY['em_sala']::text[])";
+        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'EM_SALA', 'inexistente', ARRAY['EM_SALA']::text[])";
 
     private const string ComPreferidaInvalida =
-        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'em_sala', NULL, ARRAY['em_sala', 'inexistente']::text[])";
+        $"INSERT INTO {Tabela} (id, modalidade, alternativa, preferidas) VALUES (@id, 'EM_SALA', NULL, ARRAY['EM_SALA', 'inexistente']::text[])";
 
     [Theory(DisplayName = "O escalar é gravado como o código declarado, e não como o nome nem o número do membro")]
-    [InlineData(FormatoDeAula.Presencial, "em_sala")]
-    [InlineData(FormatoDeAula.Remoto, "a_distancia")]
+    [InlineData(FormatoDeAula.Presencial, "EM_SALA")]
+    [InlineData(FormatoDeAula.Remoto, "A_DISTANCIA")]
     public async Task Escalar_GravadoComoOCodigoDeContrato(FormatoDeAula formato, string codigoEsperado)
     {
         Guid id = await GravarAsync(new Turma { Modalidade = formato });
@@ -49,7 +49,7 @@ public sealed class CodigoDeContratoNoBancoIntegrationTests(BancoDeTurmasFixture
     {
         Guid id = await GravarAsync(new Turma { Modalidade = FormatoDeAula.Presencial, Alternativa = FormatoDeAula.Remoto });
 
-        (await LerColunaAsync<string>(AlternativaGravada, id)).Should().Be("a_distancia");
+        (await LerColunaAsync<string>(AlternativaGravada, id)).Should().Be("A_DISTANCIA");
     }
 
     [Fact(DisplayName = "O escalar opcional vazio é gravado como `NULL` e volta ausente na leitura da entidade")]
@@ -70,7 +70,7 @@ public sealed class CodigoDeContratoNoBancoIntegrationTests(BancoDeTurmasFixture
             Preferidas = [FormatoDeAula.Remoto, FormatoDeAula.Presencial],
         });
 
-        (await LerColunaAsync<string[]>(PreferidasGravadas, id)).Should().Equal("a_distancia", "em_sala");
+        (await LerColunaAsync<string[]>(PreferidasGravadas, id)).Should().Equal("A_DISTANCIA", "EM_SALA");
     }
 
     [Fact(DisplayName = "As colunas do enum com código são texto, e a da coleção é `text[]`")]

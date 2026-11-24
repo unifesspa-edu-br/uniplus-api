@@ -10,22 +10,22 @@ public sealed class CodigoDeContratoValueConverterTests
     private readonly CodigoDeContratoValueConverter<FormatoDeAula> _conversor = new();
 
     [Theory(DisplayName = "A escrita devolve o código declarado no membro, e não o nome dele")]
-    [InlineData(FormatoDeAula.Presencial, "em_sala")]
-    [InlineData(FormatoDeAula.Remoto, "a_distancia")]
+    [InlineData(FormatoDeAula.Presencial, "EM_SALA")]
+    [InlineData(FormatoDeAula.Remoto, "A_DISTANCIA")]
     public void ConvertToProvider_EnumComCodigo_DevolveOCodigoDeclarado(FormatoDeAula formato, string codigoEsperado) =>
         _conversor.ConvertToProvider(formato).Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "A leitura devolve o valor do código declarado")]
-    [InlineData("em_sala", FormatoDeAula.Presencial)]
-    [InlineData("a_distancia", FormatoDeAula.Remoto)]
+    [InlineData("EM_SALA", FormatoDeAula.Presencial)]
+    [InlineData("A_DISTANCIA", FormatoDeAula.Remoto)]
     public void ConvertFromProvider_CodigoDeclarado_DevolveOValor(string codigo, FormatoDeAula formatoEsperado) =>
         _conversor.ConvertFromProvider(codigo).Should().Be(formatoEsperado);
 
     [Theory(DisplayName = "A leitura de código que o enum não declara falha, sem valor substituto e sem repetir o código")]
     [InlineData("inexistente")]
     [InlineData("Presencial")]
-    [InlineData("EM_SALA")]
-    [InlineData(" em_sala")]
+    [InlineData("HIBRIDO")]
+    [InlineData(" EM_SALA")]
     public void ConvertFromProvider_CodigoQueOEnumNaoDeclara_Lanca(string codigo) =>
         FluentActions.Invoking(() => _conversor.ConvertFromProvider(codigo))
             .Should().Throw<ArgumentException>().Which.Message.Should().Contain(nameof(FormatoDeAula)).And.NotContain(codigo);

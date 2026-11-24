@@ -15,10 +15,10 @@ internal static class FixturesDeConversorJson
 {
     internal enum EstadoComCodigo
     {
-        [CodigoDeContrato("em_analise", "Em análise")]
+        [CodigoDeContrato("EM_ANALISE", "Em análise")]
         EmAnalise = 4,
 
-        [CodigoDeContrato("concluido", "Concluído")]
+        [CodigoDeContrato("CONCLUIDO", "Concluído")]
         Concluido = 8,
     }
 
@@ -31,7 +31,7 @@ internal static class FixturesDeConversorJson
     [JsonConverter(typeof(JsonStringEnumConverter))]
     internal enum EstadoComCodigoEConversorNoTipo
     {
-        [CodigoDeContrato("rascunho", "Rascunho")]
+        [CodigoDeContrato("RASCUNHO", "Rascunho")]
         Rascunho = 1,
     }
 

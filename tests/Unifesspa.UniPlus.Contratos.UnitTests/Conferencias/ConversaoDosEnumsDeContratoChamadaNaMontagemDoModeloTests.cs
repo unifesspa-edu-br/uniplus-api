@@ -44,7 +44,7 @@ public sealed class ConversaoDosEnumsDeContratoChamadaNaMontagemDoModeloTests
     {
         IProperty propriedade = modelo.FindEntityType(typeof(ExemploDeOferta))!.FindProperty(nameof(ExemploDeOferta.Modalidade))!;
         propriedade.GetValueConverter().Should().NotBeNull();
-        propriedade.GetValueConverter()!.ConvertToProvider(ModalidadeDeOferta.Presencial).Should().Be("em_sala");
+        propriedade.GetValueConverter()!.ConvertToProvider(ModalidadeDeOferta.Presencial).Should().Be("EM_SALA");
     }
 
     public sealed class ExemploDeOferta

@@ -50,8 +50,8 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência de vários assemblies junta numa só exceção os defeitos de todos eles")]
     public void ConferirEnumsDe_VariosAssemblies_JuntaOsDefeitosDosDois()
     {
-        Assembly primeiro = AssemblyComUmEnum("Alfa", ("a", "A", 1), ("a", "B", 2));
-        Assembly segundo = AssemblyComUmEnum("Beta", ("x", "X", 1), ("y", "X", 2));
+        Assembly primeiro = AssemblyComUmEnum("Alfa", ("A", "A", 1), ("A", "B", 2));
+        Assembly segundo = AssemblyComUmEnum("Beta", ("X", "X", 1), ("Y", "X", 2));
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([primeiro, segundo]))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
@@ -72,7 +72,7 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência do enum com códigos válidos não lança")]
     public void ConferirEnumsDe_EnumValido_NaoLanca()
     {
-        Assembly assembly = AssemblyComUmEnum("Valido", ("a", "A", 1), ("b", "B", 2));
+        Assembly assembly = AssemblyComUmEnum("Valido", ("A", "A", 1), ("B", "B", 2));
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly])).Should().NotThrow();
     }
@@ -133,8 +133,8 @@ public sealed class EnumsDeContratoTests
     {
         ModuleBuilder modulo = EnumsCriadosEmExecucao.NovoModulo();
 
-        EnumsCriadosEmExecucao.Definir(modulo, "Primeiro", ("a", "A", 1), ("a", "B", 2));
-        EnumsCriadosEmExecucao.Definir(modulo, "Segundo", ("x", "X", 1), ("y", "X", 2));
+        EnumsCriadosEmExecucao.Definir(modulo, "Primeiro", ("A", "A", 1), ("A", "B", 2));
+        EnumsCriadosEmExecucao.Definir(modulo, "Segundo", ("X", "X", 1), ("Y", "X", 2));
 
         return modulo.Assembly;
     }

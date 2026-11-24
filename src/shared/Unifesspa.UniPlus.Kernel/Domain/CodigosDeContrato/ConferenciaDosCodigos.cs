@@ -1,12 +1,13 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// A conferência dos códigos de um enum: cada membro, na ordem em que o enum o declara, é conferido, e cada defeito é
 /// acumulado com o nome do membro responsável.
 /// </summary>
-internal sealed class ConferenciaDosCodigos
+internal sealed partial class ConferenciaDosCodigos
 {
     private readonly string _tipo;
     private readonly List<string> _defeitos = [];
@@ -93,18 +94,38 @@ internal sealed class ConferenciaDosCodigos
         {
             _defeitos.Add($"{quem}: o código está vazio.");
 
-            return;
+            if (string.IsNullOrEmpty(codigo))
+            {
+                return;
+            }
         }
 
         ConferirEspacoDoCodigo(quem, codigo);
+        ConferirFormatoDoCodigo(quem, codigo);
         ConferirRepeticaoDoCodigo(quem, codigo);
     }
+
+    private void ConferirFormatoDoCodigo(string quem, string codigo)
+    {
+        if (codigo.Length > 80)
+        {
+            _defeitos.Add($"{quem}: o código deve ter até 80 caracteres.");
+        }
+
+        if (!FormatoDoCodigo().IsMatch(codigo))
+        {
+            _defeitos.Add($"{quem}: o código deve começar por letra maiúscula e conter apenas letras maiúsculas, dígitos e sublinhado simples entre partes, sem acento nem hífen.");
+        }
+    }
+
+    [GeneratedRegex(@"\A[A-Z][A-Z0-9]*(_[A-Z0-9]+)*\z")]
+    private static partial Regex FormatoDoCodigo();
 
     private void ConferirEspacoDoCodigo(string quem, string codigo)
     {
         if (codigo != codigo.Trim())
         {
-            _defeitos.Add($"{quem}: o código '{codigo}' tem espaço no começo ou no fim.");
+            _defeitos.Add($"{quem}: o código tem espaço no começo ou no fim.");
         }
     }
 
@@ -112,7 +133,7 @@ internal sealed class ConferenciaDosCodigos
     {
         if (!_codigos.TryAdd(codigo, quem))
         {
-            _defeitos.Add($"{quem}: o código '{codigo}' já é de {_codigos[codigo]}.");
+            _defeitos.Add($"{quem}: o código já é de {_codigos[codigo]}.");
         }
     }
 
