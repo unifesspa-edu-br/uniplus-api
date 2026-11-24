@@ -52,7 +52,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     public string NomeArquivo { get; private set; } = string.Empty;
     public FormatoDeDocumento Formato { get; private set; }
     public string ObjectKey { get; private set; } = string.Empty;
-    public StatusArquivoEnviado Status { get; private set; }
+    public StatusArquivoEnviado Situacao { get; private set; }
     public DateTimeOffset ExpiraEm { get; private set; }
     public long? TamanhoBytes { get; private set; }
     public string? HashSha256 { get; private set; }
@@ -166,7 +166,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
             Finalidade = finalidade,
             NomeArquivo = nome,
             Formato = formato,
-            Status = StatusArquivoEnviado.Pendente,
+            Situacao = StatusArquivoEnviado.Pendente,
             ExpiraEm = expiraEm,
         };
         documento.ObjectKey = $"selecao/documentos-a-publicar/{processoSeletivoId:D}/{documento.Id:D}.{documento.Extensao}";
@@ -185,14 +185,14 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
 
-        if (Status != StatusArquivoEnviado.Pendente)
+        if (Situacao != StatusArquivoEnviado.Pendente)
         {
             return Result.Failure(StatusInvalidoParaConfirmacao);
         }
 
         TamanhoBytes = tamanhoBytes;
         HashSha256 = hashSha256;
-        Status = StatusArquivoEnviado.Confirmado;
+        Situacao = StatusArquivoEnviado.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
         ObjectKeyConfirmado = ChaveDaCopiaGravada;
         return Result.Success();

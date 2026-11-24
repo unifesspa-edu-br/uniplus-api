@@ -1509,7 +1509,7 @@ selecao.documentos_a_publicar.nome_arquivo: Interno
 selecao.documentos_a_publicar.object_key: Interno
 selecao.documentos_a_publicar.object_key_confirmado: Interno
 selecao.documentos_a_publicar.processo_seletivo_id: Interno
-selecao.documentos_a_publicar.status: Interno
+selecao.documentos_a_publicar.situacao: Interno
 selecao.documentos_a_publicar.tamanho_bytes: Interno
 selecao.documentos_a_publicar.updated_at: Interno
 selecao.documentos_exigidos.aplicabilidade: Interno
@@ -1776,7 +1776,7 @@ selecao.modelos_de_documento.nome_arquivo: Interno
 selecao.modelos_de_documento.object_key: Interno
 selecao.modelos_de_documento.object_key_confirmado: Interno
 selecao.modelos_de_documento.processo_seletivo_id: Interno
-selecao.modelos_de_documento.status: Interno
+selecao.modelos_de_documento.situacao: Interno
 selecao.modelos_de_documento.tamanho_bytes: Interno
 selecao.modelos_de_documento.updated_at: Interno
 selecao.motivos_de_decisao.ativo: Interno

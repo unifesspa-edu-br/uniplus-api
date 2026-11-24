@@ -23,7 +23,7 @@ public static class DocumentoAPublicarMapping
             Finalidade: CodigoComRotulo<FinalidadeDoDocumento>.De(documento.Finalidade),
             NomeArquivo: documento.NomeArquivo,
             TipoDeMidia: documento.TipoDeMidia,
-            Status: CodigoComRotulo<StatusArquivoEnviado>.De(documento.Status),
+            Status: CodigoComRotulo<StatusArquivoEnviado>.De(documento.Situacao),
             CriadoEm: documento.CreatedAt,
             ExpiraEm: documento.ExpiraEm,
             TamanhoBytes: documento.TamanhoBytes,

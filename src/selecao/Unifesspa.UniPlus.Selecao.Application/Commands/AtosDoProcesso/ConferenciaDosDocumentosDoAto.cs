@@ -76,7 +76,7 @@ public sealed class ConferenciaDosDocumentosDoAto(
     private static DomainError? ConferirEnvio(DocumentoAPublicar? documento) => documento switch
     {
         null => new(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado, "Documento não encontrado ou não pertence a este processo."),
-        { Status: not StatusArquivoEnviado.Confirmado } => new(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
+        { Situacao: not StatusArquivoEnviado.Confirmado } => new(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
             "Somente um documento confirmado pode ser referenciado no ato."),
         { Finalidade: not FinalidadeDoDocumento.DocumentoDeAto } => new(AtoDoProcessoErrorCodes.DocumentoNaoEnviadoComoDocumentoDeAto,
             "Somente um documento enviado para um ato pode ser o principal ou o anexo de um ato."),

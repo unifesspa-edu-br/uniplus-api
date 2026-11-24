@@ -8,6 +8,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
@@ -142,9 +143,9 @@ public sealed class ConfirmacaoDoDocumentoDoRascunhoConcorrenciaIntegrationTests
         await conexao.OpenAsync();
         await using NpgsqlTransaction transacao = await conexao.BeginTransactionAsync();
         await using NpgsqlCommand comando = new(
-            "SELECT status FROM selecao.documentos_a_publicar WHERE id = @id FOR UPDATE NOWAIT", conexao, transacao);
+            "SELECT situacao FROM selecao.documentos_a_publicar WHERE id = @id FOR UPDATE NOWAIT", conexao, transacao);
         comando.Parameters.AddWithValue("id", documentoId);
 
-        ((string)(await comando.ExecuteScalarAsync())!).Should().Be("PENDENTE");
+        ((string)(await comando.ExecuteScalarAsync())!).Should().Be(StatusArquivoEnviado.Pendente.Codigo());
     }
 }

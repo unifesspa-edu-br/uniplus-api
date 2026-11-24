@@ -34,7 +34,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
     public string NomeArquivo { get; private set; } = string.Empty;
     public FormatoDeDocumento Formato { get; private set; }
     public string ObjectKey { get; private set; } = string.Empty;
-    public StatusArquivoEnviado Status { get; private set; }
+    public StatusArquivoEnviado Situacao { get; private set; }
     public DateTimeOffset ExpiraEm { get; private set; }
     public long? TamanhoBytes { get; private set; }
     public string? HashSha256 { get; private set; }
@@ -115,7 +115,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
             ProcessoSeletivoId = processoSeletivoId,
             NomeArquivo = nome,
             Formato = formato,
-            Status = StatusArquivoEnviado.Pendente,
+            Situacao = StatusArquivoEnviado.Pendente,
             ExpiraEm = expiraEm,
         };
         modelo.ObjectKey = $"selecao/modelos-de-documento/{processoSeletivoId:D}/{modelo.Id:D}.{modelo.Extensao}";
@@ -132,14 +132,14 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
 
-        if (Status != StatusArquivoEnviado.Pendente)
+        if (Situacao != StatusArquivoEnviado.Pendente)
         {
             return Result.Failure(StatusInvalidoParaConfirmacao);
         }
 
         TamanhoBytes = tamanhoBytes;
         HashSha256 = hashSha256;
-        Status = StatusArquivoEnviado.Confirmado;
+        Situacao = StatusArquivoEnviado.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
         ObjectKeyConfirmado = ChaveDaCopiaGravada;
         return Result.Success();

@@ -20,7 +20,7 @@ public sealed record ModeloDaExigencia(Guid ModeloId, string NomeArquivo, Format
     {
         ArgumentNullException.ThrowIfNull(modelo);
 
-        return modelo.Status == StatusArquivoEnviado.Confirmado && modelo.HashSha256 is { } hash
+        return modelo.Situacao == StatusArquivoEnviado.Confirmado && modelo.HashSha256 is { } hash
             ? Result<ModeloDaExigencia>.Success(new ModeloDaExigencia(modelo.Id, modelo.NomeArquivo, modelo.Formato, hash))
             : Result<ModeloDaExigencia>.Failure(new DomainError(
                 ModeloDeDocumentoErrorCodes.NaoConfirmado,

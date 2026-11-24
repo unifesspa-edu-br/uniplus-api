@@ -22,7 +22,7 @@ public static class ModeloDeDocumentoMapping
             ProcessoSeletivoId: modelo.ProcessoSeletivoId,
             NomeArquivo: modelo.NomeArquivo,
             Formato: CodigoComRotulo<FormatoDeDocumento>.De(modelo.Formato),
-            Status: CodigoComRotulo<StatusArquivoEnviado>.De(modelo.Status),
+            Status: CodigoComRotulo<StatusArquivoEnviado>.De(modelo.Situacao),
             CriadoEm: modelo.CreatedAt,
             ExpiraEm: modelo.ExpiraEm,
             TamanhoBytes: modelo.TamanhoBytes,

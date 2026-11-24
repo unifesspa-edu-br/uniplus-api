@@ -35,7 +35,7 @@ public static class ConferenciaDoDocumentoDoEdital
                 NaoEncontrado, $"Documento {documentoId} não encontrado ou não pertence a este processo."));
         }
 
-        if (documento.Status != StatusArquivoEnviado.Confirmado)
+        if (documento.Situacao != StatusArquivoEnviado.Confirmado)
         {
             return Result<DocumentoAPublicar>.Failure(new DomainError(
                 NaoConfirmado, $"Somente um documento confirmado pode ser referenciado {usoDoDocumento}."));

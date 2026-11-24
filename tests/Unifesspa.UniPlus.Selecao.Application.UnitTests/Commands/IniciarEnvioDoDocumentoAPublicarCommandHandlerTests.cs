@@ -40,7 +40,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         resultado.Value!.UrlUpload.Should().Be(new Uri(UrlAssinada));
         resultado.Value.ContentTypeExigido.Should().Be(tipoDeMidia);
         await _cenario.Documentos.Received(1).AdicionarAsync(
-            Arg.Is<DocumentoAPublicar>(d => d.ProcessoSeletivoId == _cenario.ProcessoId && d.Status == StatusArquivoEnviado.Pendente), Arg.Any<CancellationToken>());
+            Arg.Is<DocumentoAPublicar>(d => d.ProcessoSeletivoId == _cenario.ProcessoId && d.Situacao == StatusArquivoEnviado.Pendente), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Com dono, grava o pendente na unidade de trabalho")]

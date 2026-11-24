@@ -234,7 +234,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
     {
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         DocumentoAPublicar pendente = await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documentoId);
-        pendente.Status.Should().Be(StatusArquivoEnviado.Pendente);
+        pendente.Situacao.Should().Be(StatusArquivoEnviado.Pendente);
         (await _storage.ObterInfoAsync(pendente.ChaveDaCopiaGravada, CancellationToken.None)).Should().NotBeNull();
         return pendente;
     }
@@ -268,7 +268,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
     private async Task ConferirPendenteComACopiaJaGravadaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string chaveDaCopia)
     {
         DocumentoAPublicar documento = await envio.Context.DocumentosAPublicar.FirstAsync(d => d.Id == documentoId);
-        documento.Status.Should().Be(StatusArquivoEnviado.Pendente);
+        documento.Situacao.Should().Be(StatusArquivoEnviado.Pendente);
         documento.HashSha256.Should().BeNull();
         documento.ObjectKeyConfirmado.Should().BeNull();
         (await _storage.ObterInfoAsync(chaveDaCopia, CancellationToken.None)).Should().NotBeNull();
