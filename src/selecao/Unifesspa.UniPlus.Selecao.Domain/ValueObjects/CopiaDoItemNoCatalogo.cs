@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Text;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -40,7 +42,7 @@ public sealed record CopiaDoItemNoCatalogo(
                 "Classificação de proteção de dados fora do vocabulário fechado."));
         }
 
-        if (FormaDoItem.TextoOpcional(ComponenteExibicao) is { } componente && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componente))
+        if (FormaDoItem.TextoOpcional(ComponenteExibicao) is { } componente && !CatalogoDe<ComponenteDeExibicao>.TentarObter(componente, out _))
         {
             yield return new("componenteExibicao", new DomainError(
                 FatoColetadoErrorCodes.ComponenteExibicaoInvalido,

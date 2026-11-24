@@ -85,6 +85,6 @@ internal static class LeituraDosFatosDerivados
     private static string? CampoForaDoVocabulario(FatoDerivadoCongelado fato) =>
         !ClassificacoesDeProtecao.TryAnalisar(fato.ClassificacaoProtecao, out _) ? "classificacaoProtecao"
         : !CatalogoDe<HipoteseLegalTratamento>.TentarObter(fato.HipoteseLegal, out _) ? "hipoteseLegal"
-        : fato.ComponenteExibicao is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(fato.ComponenteExibicao) ? "componenteExibicao"
+        : fato.ComponenteExibicao is not null && !CatalogoDe<ComponenteDeExibicao>.TentarObter(fato.ComponenteExibicao, out _) ? "componenteExibicao"
         : null;
 }
