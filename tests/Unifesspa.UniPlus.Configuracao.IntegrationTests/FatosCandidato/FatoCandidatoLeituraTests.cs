@@ -58,7 +58,7 @@ public sealed class FatoCandidatoLeituraTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await new FatoCandidatoReader(ctx).ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(58);
+        views.Should().HaveCount(59);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
         ConferirCorRaca(views.Single(v => v.Codigo == "COR_RACA"));
         ConferirFaixaEtaria(views.Single(v => v.Codigo == "FAIXA_ETARIA"));
