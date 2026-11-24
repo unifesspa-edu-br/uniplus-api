@@ -29,6 +29,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// recebe o vocabulário como dado — por isso vive separada desta factory.
 /// </para>
 /// </remarks>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record CondicaoDnf
 {
     /// <remarks>
@@ -49,7 +50,10 @@ public sealed record CondicaoDnf
         Valor = valor;
     }
 
-    public string Fato { get; }
+    [JsonPropertyName("codigoDoDado")]
+    [JsonInclude]
+    [JsonRequired]
+    public string Fato { get; private init; }
 
     public Operador Operador { get; }
 

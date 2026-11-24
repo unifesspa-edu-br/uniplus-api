@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A forma gravada de um predicado: lista de cláusulas, cada uma lista de condições
-/// <c>{fato, operador, valor}</c>. A leitura remonta o predicado pelas factories do domínio e falha
+/// <c>{codigoDoDado, operador, valor}</c>. A leitura remonta o predicado pelas factories do domínio e falha
 /// alto se o conteúdo gravado não as satisfaz.
 /// </summary>
 internal static class PredicadoDnfGravado
@@ -24,7 +24,7 @@ internal static class PredicadoDnfGravado
         for (int i = 0; i < clausulas.Count; i++)
         {
             linhas.AddRange(clausulas[i].Select(c =>
-                (i, Exigir(CondicaoDnf.Criar(c.Fato, CatalogoDe<Operador>.Obter(c.Operador), c.Valor)))));
+                (i, Exigir(CondicaoDnf.Criar(c.CodigoDoDado, CatalogoDe<Operador>.Obter(c.Operador), c.Valor)))));
         }
 
         return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(linhas));
@@ -35,5 +35,5 @@ internal static class PredicadoDnfGravado
             ? resultado.Value!
             : throw new InvalidOperationException($"Predicado gravado inválido: {resultado.Error!.Message}");
 
-    internal sealed record CondicaoGravada(string Fato, string Operador, JsonElement Valor);
+    internal sealed record CondicaoGravada(string CodigoDoDado, string Operador, JsonElement Valor);
 }

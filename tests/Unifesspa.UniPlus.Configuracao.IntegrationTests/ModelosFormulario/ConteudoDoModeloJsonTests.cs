@@ -252,16 +252,16 @@ public sealed class ConteudoDoModeloJsonTests
     }
 
     private const string EtapaDadosJson =
-        """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":"Dados do candidato","aviso":"Confira os dados","exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]]}""";
+        """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":"Dados do candidato","aviso":"Confira os dados","exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]]}""";
 
     private const string EtapaRevisaoJson =
         """{"codigo":"REVISAO","ordem":1,"tipo":"BLOCO","bloco":"REVISAO_E_ACEITE","titulo":"Revis\u00E3o","descricao":null,"aviso":null,"exibicao":null}""";
 
     private const string ItemRendaJson =
-        """{"codigoDoDado":"RENDA","ordem":1,"etapaCodigo":"DADOS","rotulo":"Renda familiar","tipoDeCampo":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
+        """{"codigoDoDado":"RENDA","ordem":1,"etapaCodigo":"DADOS","rotulo":"Renda familiar","tipoDeCampo":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
 
     private const string TermoUsoJson =
-        """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]}}""";
+        """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]}}""";
 
     private const string ItemParentescoJson =
         """{"codigoDoDado":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
@@ -270,7 +270,7 @@ public sealed class ConteudoDoModeloJsonTests
         """{"codigoDoDado":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string GrupoFamiliaJson =
-        $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
+        $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
 
     private const string PrazoCompletoJson =
         """{"escolha":"COM_PRAZO","valor":90,"unidade":"DIAS","referencia":{"tipo":"INICIO_DA_FASE","data":null,"faseCodigo":"HABILITACAO"},"efeitoForaDoPrazo":"RECUSAR_DOCUMENTO"}""";
@@ -279,7 +279,7 @@ public sealed class ConteudoDoModeloJsonTests
         """{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2027-02-01","faseCodigo":null},"efeitoDoVencimento":"ACEITAR_COM_AVISO"}""";
 
     private const string DocumentoCertidaoJson =
-        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
+        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
         """{"codigoDoDado":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";

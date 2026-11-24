@@ -12,10 +12,21 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class OperadorNoModeloDaSelecaoTests
 {
+    [Theory]
+    [InlineData("""[[{"fato":"IDADE","operador":"IGUAL","valor":18}]]""")]
+    [InlineData("""[[{"codigoDoDado":"IDADE","fato":"IDADE","operador":"IGUAL","valor":18}]]""")]
+    public void LeituraDoPredicadoGravado_ComChaveAntiga_LancaExcecao(string json)
+    {
+        FluentActions.Invoking(() => ConversoresDeRegras.PredicadoObrigatorio.ConvertFromProvider(json))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("*chave 'fato' não é aceita; use 'codigoDoDado'*");
+    }
+
     public static TheoryData<Type> EntidadesComOperador => new()
     {
         typeof(CondicaoGatilho),
@@ -76,8 +87,12 @@ public sealed class OperadorNoModeloDaSelecaoTests
         CondicaoDnf condicao = CondicaoDnf.Criar("IDADE", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
 
-        conversor.ConvertToProvider(new ParametrosDesempatePredicadoFato(condicao))
-            .Should().Be("""{"$tipo":"predicadoFato","condicao":{"fato":"IDADE","operador":"MAIOR_IGUAL","valor":18}}""");
+        string gravado = (string)conversor.ConvertToProvider(new ParametrosDesempatePredicadoFato(condicao))!;
+        gravado.Should().Be("""{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","operador":"MAIOR_IGUAL","valor":18}}""");
+        ParametrosDesempatePredicadoFato lido = conversor.ConvertFromProvider(gravado).Should().BeOfType<ParametrosDesempatePredicadoFato>().Subject;
+        lido.Condicao.Fato.Should().Be("IDADE");
+        lido.Condicao.Operador.Should().Be(Operador.MaiorIgual);
+        lido.Condicao.Valor.GetInt32().Should().Be(18);
     }
 
     [Fact(DisplayName = "O critério de desempate por fato não lê o operador gravado como número")]
@@ -85,7 +100,32 @@ public sealed class OperadorNoModeloDaSelecaoTests
     {
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
 
-        FluentActions.Invoking(() => conversor.ConvertFromProvider("""{"$tipo":"predicadoFato","condicao":{"fato":"IDADE","operador":3,"valor":18}}"""))
+        FluentActions.Invoking(() => conversor.ConvertFromProvider("""{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","operador":3,"valor":18}}"""))
             .Should().Throw<JsonException>();
+    }
+
+    [Theory(DisplayName = "A leitura do critério recusa a chave antiga ou a ausência do código do dado")]
+    [InlineData("""{"$tipo":"condicaoSobreDado","condicao":{"fato":"IDADE","operador":"MAIOR_IGUAL","valor":18}}""")]
+    [InlineData("""{"$tipo":"condicaoSobreDado","condicao":{"operador":"MAIOR_IGUAL","valor":18}}""")]
+    [InlineData("""{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","fato":"IDADE","operador":"MAIOR_IGUAL","valor":18}}""")]
+    public void LeituraDosParametros_ComChaveAntigaOuCodigoDoDadoAusente_Recusa(string json)
+    {
+        ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
+
+        FluentActions.Invoking(() => conversor.ConvertFromProvider(json)).Should().Throw<JsonException>();
+    }
+
+    [Fact(DisplayName = "A leitura do critério aceita o código do dado")]
+    public void LeituraDosParametros_ComCodigoDoDado_DevolveACondicao()
+    {
+        ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
+
+        ParametrosDesempatePredicadoFato parametros = conversor.ConvertFromProvider(
+            """{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","operador":"MAIOR_IGUAL","valor":18}}""")
+            .Should().BeOfType<ParametrosDesempatePredicadoFato>().Subject;
+
+        parametros.Condicao.Fato.Should().Be("IDADE");
+        parametros.Condicao.Operador.Should().Be(Operador.MaiorIgual);
+        parametros.Condicao.Valor.GetInt32().Should().Be(18);
     }
 }

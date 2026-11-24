@@ -38,7 +38,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 [JsonDerivedType(typeof(ParametrosDesempateMaiorNotaEtapa), "maiorNotaEtapa")]
 [JsonDerivedType(typeof(ParametrosDesempateMaiorIdade), "maiorIdade")]
 [JsonDerivedType(typeof(ParametrosDesempateIdoso), "idoso")]
-[JsonDerivedType(typeof(ParametrosDesempatePredicadoFato), "predicadoFato")]
+[JsonDerivedType(typeof(ParametrosDesempatePredicadoFato), "condicaoSobreDado")]
 [JsonDerivedType(typeof(ParametrosDesempateMaiorNotaAreaEnem), "maiorNotaAreaEnem")]
 public abstract record ParametrosCriterioDesempate
 {

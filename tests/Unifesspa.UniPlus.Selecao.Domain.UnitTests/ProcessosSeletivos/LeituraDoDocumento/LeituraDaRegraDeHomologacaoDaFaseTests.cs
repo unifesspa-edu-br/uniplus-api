@@ -42,7 +42,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     [Fact(DisplayName = "O enquadramento válido entra na condição, montado pelo predicado do domínio")]
     public void Enquadramento_Valido_EntraNaCondicao()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"fato\":\"cota\",\"operador\":\"IGUAL\",\"valor\":\"A\"}]]"))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"codigoDoDado\":\"cota\",\"operador\":\"IGUAL\",\"valor\":\"A\"}]]"))));
 
         lidos.Cronograma.CronogramaFases.Single().RegraDeHomologacao!.Alternativas.Single().Condicoes.Single().Enquadramento.Should().NotBeNull();
         lidos.Origem.PartesRecusadas.Should().BeEmpty();
@@ -60,7 +60,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     [Fact(DisplayName = "A condição do enquadramento que o domínio recusa é recusada no mesmo campo")]
     public void Enquadramento_ComCondicaoIncoerente_ApontaOCampo()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"fato\":\"cota\",\"operador\":\"ALGUM_DE\",\"valor\":\"A\"}]]"))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"codigoDoDado\":\"cota\",\"operador\":\"ALGUM_DE\",\"valor\":\"A\"}]]"))));
 
         PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento/0/0/valor", "CondicaoDnf.FormaIncoerenteComOperador"));
     }
@@ -68,7 +68,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     [Theory(DisplayName = "O documento indica a posição e a propriedade recusada")]
     [InlineData("[[]]", "/0", "PredicadoDnf.FormaJsonInvalida", "Cada cláusula é uma lista não vazia de condições.")]
     [InlineData("[[null]]", "/0/0", "PredicadoDnf.FormaJsonInvalida", "Cada condição tem fato, operador e valor.")]
-    [InlineData("[[{\"fato\":\"X\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"X\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"X\",\"operador\":\"INVALIDO\",\"valor\":true}]]", "/1/1/operador", "CondicaoDnf.OperadorInvalido", "O operador informado não é reconhecido.")]
+    [InlineData("[[{\"codigoDoDado\":\"X\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"X\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"X\",\"operador\":\"INVALIDO\",\"valor\":true}]]", "/1/1/operador", "CondicaoDnf.OperadorInvalido", "O operador informado não é reconhecido.")]
     public void Enquadramento_Recusado_LocalizaNoDocumento(string json, string sufixo, string codigo, string mensagem)
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento(json))));

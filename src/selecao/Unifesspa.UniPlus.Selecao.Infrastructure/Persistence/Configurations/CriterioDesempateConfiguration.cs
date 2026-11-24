@@ -43,8 +43,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         // do System.Text.Json exige o discriminador "$tipo" como a PRIMEIRA
         // propriedade do objeto. O tipo "jsonb" do Postgres normaliza/reordena as
         // chaves (por tamanho, depois alfabeticamente) na escrita — uma variante
-        // com uma propriedade mais curta que "$tipo" (5 chars), como
-        // ParametrosDesempatePredicadoFato.Fato (4 chars), reordenaria "fato" para antes
+        // com uma propriedade mais curta que "$tipo" (5 caracteres), poderia reordená-la para antes
         // de "$tipo", quebrando a leitura com NotSupportedException. O tipo "json"
         // preserva o texto exatamente como escrito (sem reordenar), evitando o
         // problema — sem custo aqui, já que esta coluna nunca é consultada via
