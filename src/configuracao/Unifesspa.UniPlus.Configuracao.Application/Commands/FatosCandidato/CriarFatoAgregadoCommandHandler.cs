@@ -49,5 +49,5 @@ public static class CriarFatoAgregadoCommandHandler
                 Escopo: null,
                 TokensDoFato.Classificacao(command.ClassificacaoProtecao),
                 command.FinalidadeTratamento,
-                TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma));
+                TokensDoFato.HipoteseLegal(command.HipoteseLegal)));
 }

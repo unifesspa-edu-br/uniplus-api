@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -39,7 +40,7 @@ internal static class ProtecaoDoCatalogoMapping
             tipo.Nome,
             ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao),
             tipo.FinalidadeTratamento,
-            HipotesesLegaisTratamento.ParaTokenCanonico(tipo.HipoteseLegal),
+            tipo.HipoteseLegal.Codigo(),
             tipo.Aprovacao.ToDto());
     }
 
@@ -53,7 +54,7 @@ internal static class ProtecaoDoCatalogoMapping
             fato.Nome,
             ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
             fato.FinalidadeTratamento,
-            HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
+            fato.HipoteseLegal.Codigo(),
             fato.Aprovacao.ToDto());
     }
 
@@ -68,7 +69,7 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o item, a proteção, o circuito e o que o tipo pede ao candidato.
         return new DetalheDaProtecaoDoCatalogoDto(
             TipoDocumento, tipo.Id, tipo.Codigo.Valor, tipo.Nome, tipo.Descricao,
-            ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao), HipotesesLegaisTratamento.ParaTokenCanonico(tipo.HipoteseLegal), tipo.FinalidadeTratamento,
+            ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao), tipo.HipoteseLegal.Codigo(), tipo.FinalidadeTratamento,
             tipo.Aprovacao.ToDto(),
             Fato: null,
             new DetalheDoTipoDeDocumentoDto(tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb),
@@ -87,7 +88,7 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o item, a proteção, o circuito e o que é o fato.
         return new DetalheDaProtecaoDoCatalogoDto(
             Fato, fato.Id, fato.Codigo, fato.Nome, fato.Descricao,
-            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao), HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal), fato.FinalidadeTratamento,
+            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao), fato.HipoteseLegal.Codigo(), fato.FinalidadeTratamento,
             fato.Aprovacao.ToDto(),
             fato.ToDetalheDoFato(),
             TipoDocumento: null,
@@ -102,7 +103,7 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o ato, a proteção que ele retratou e os fundamentos da decisão.
         return new AtoDaProtecaoDto(
             AtosDaProtecao.ParaTokenCanonico(ato.Ato), ato.Instante, ato.AtorNome, ato.Ciclo.Numero,
-            ClassificacoesDeProtecao.ParaTokenCanonico(ato.ClassificacaoProtecao), HipotesesLegaisTratamento.ParaTokenCanonico(ato.HipoteseLegal), ato.FinalidadeTratamento,
+            ClassificacoesDeProtecao.ParaTokenCanonico(ato.ClassificacaoProtecao), ato.HipoteseLegal.Codigo(), ato.FinalidadeTratamento,
             Token(ato.ClassificacaoRecomendada), ato.Justificativa, ato.DianteDeManifestacaoDesfavoravel);
     }
 

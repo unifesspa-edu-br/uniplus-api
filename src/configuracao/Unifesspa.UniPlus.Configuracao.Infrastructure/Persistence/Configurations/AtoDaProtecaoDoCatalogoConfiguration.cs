@@ -50,8 +50,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
             .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired();
         builder.Property(a => a.HipoteseLegal)
-            .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
-            .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
+            .HasMaxLength(40)
             .IsRequired();
         builder.Property(a => a.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(a => a.Ciclo).HasConversion(ManifestacaoDaProtecaoConversores.Ciclo).IsRequired();

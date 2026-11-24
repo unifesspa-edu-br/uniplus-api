@@ -34,7 +34,7 @@ internal static class TokensDoFato
         Ler<ClassificacaoDeProtecao>(token, ClassificacoesDeProtecao.TryAnalisar);
 
     internal static HipoteseLegalTratamento? HipoteseLegal(string? token) =>
-        Ler<HipoteseLegalTratamento>(token, HipotesesLegaisTratamento.TryAnalisar);
+        Ler<HipoteseLegalTratamento>(token, CatalogoDe<HipoteseLegalTratamento>.TentarObter);
 
     private delegate bool Analisador<T>(string? token, out T valor)
         where T : struct, Enum;

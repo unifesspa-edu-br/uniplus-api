@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 [Collection(ConfiguracaoDbCollection.Name)]
 public sealed class TipoDocumentoReaderPorCodigosTests(ConfiguracaoDbFixture fixture) : IAsyncLifetime

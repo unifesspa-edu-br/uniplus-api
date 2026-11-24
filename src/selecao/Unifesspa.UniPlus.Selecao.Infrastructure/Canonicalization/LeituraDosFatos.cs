@@ -178,7 +178,7 @@ internal static class LeituraDosFatos
     private sealed record ComponentesDoFato(RegrasDoCampo Regras, IReadOnlyList<ValorDominioDeclaradoCongelado>? ValoresSelecionaveis);
 
     private static string? VocabularioForaDoCatalogo(DeclaracaoDoFato d, string path) =>
-        !DominioDoCatalogo.HipotesesLegais.Contains(d.Copia.HipoteseLegal)
+        !CatalogoDe<HipoteseLegalTratamento>.TentarObter(d.Copia.HipoteseLegal, out _)
             ? $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais."
         : d.Copia.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim())
             ? $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio."

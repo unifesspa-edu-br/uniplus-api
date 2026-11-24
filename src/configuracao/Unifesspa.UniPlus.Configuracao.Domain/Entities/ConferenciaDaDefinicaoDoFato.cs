@@ -206,7 +206,7 @@ internal static class ConferenciaDaDefinicaoDoFato
         FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
     internal static Result<ProtecaoDeDados> ValidarProtecao(
-        TipoDoDado? tipo, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento hipotese) =>
+        TipoDoDado? tipo, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento? hipotese) =>
         ProtecaoDeDados.Validar(
             classificacao, finalidade, hipotese, RecusasDaProtecaoDoFato,
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e

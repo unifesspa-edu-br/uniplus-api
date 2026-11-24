@@ -11,10 +11,9 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public sealed class VocabulariosCongeladosNaSelecaoTests
 {
-    [Fact(DisplayName = "Os tokens de hipótese legal e componente de exibição que a Seleção valida são os do catálogo")]
+    [Fact(DisplayName = "Os tokens de componente de exibição que a Seleção valida são os do catálogo")]
     public void TokensCompartilhados_BatemComOsEnumsDoCatalogo()
     {
-        DominioDoCatalogo.HipotesesLegais.Should().BeEquivalentTo(HipotesesLegaisTratamento.TokensCanonicos);
         DominioDoCatalogo.ComponentesDeExibicao.Should().BeEquivalentTo(ComponentesDeExibicao.TokensCanonicos);
     }
 }

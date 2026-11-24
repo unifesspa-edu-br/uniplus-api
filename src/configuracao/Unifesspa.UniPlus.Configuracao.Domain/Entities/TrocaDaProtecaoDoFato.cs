@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
 
@@ -21,7 +22,7 @@ internal static class TrocaDaProtecaoDoFato
     /// O fato não muda quando há recusa. Quem chama decide o que a troca faz com a aprovação.
     /// </summary>
     internal static Result Trocar(
-        FatoCandidato fato, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento hipotese, CatalogoDeFatos catalogo)
+        FatoCandidato fato, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento? hipotese, CatalogoDeFatos catalogo)
     {
         Result<ProtecaoDeDados> protecao = ValidarProtecao(fato.Dominio, classificacao, finalidade, hipotese);
         if (protecao.IsFailure)

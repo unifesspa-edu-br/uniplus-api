@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// O que a gestão declara de um tipo de documento, em criação e em edição, ainda como chega: qualquer campo pode estar
@@ -27,4 +28,4 @@ public sealed record DeclaracaoDoTipoDocumento(
     string? TipoEquivalente,
     ClassificacaoDeProtecao? ClassificacaoProtecao,
     string? FinalidadeTratamento,
-    HipoteseLegalTratamento HipoteseLegal);
+    HipoteseLegalTratamento? HipoteseLegal);

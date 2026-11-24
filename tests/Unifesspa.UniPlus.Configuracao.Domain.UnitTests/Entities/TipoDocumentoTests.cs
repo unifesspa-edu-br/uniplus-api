@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class TipoDocumentoTests
 {
@@ -299,13 +300,13 @@ public sealed class TipoDocumentoTests
     // ── Proteção do documento ──────────────────────────────────────────────────
 
     private static Result<TipoDocumento> CriarComProtecao(
-        ClassificacaoDeProtecao? classificacao, string? finalidade, HipoteseLegalTratamento hipotese) =>
+        ClassificacaoDeProtecao? classificacao, string? finalidade, HipoteseLegalTratamento? hipotese) =>
         TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(Codigo, Nome, null, Categoria, null, null, null, classificacao, finalidade, hipotese));
 
     [Fact(DisplayName = "Criar sem classificação, finalidade e hipótese legal recusa os três como proteção obrigatória")]
     public void Criar_SemProtecao_RecusaOsTresCampos()
     {
-        Result<TipoDocumento> resultado = CriarComProtecao(null, null, HipoteseLegalTratamento.Nenhuma);
+        Result<TipoDocumento> resultado = CriarComProtecao(null, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().Equal("classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal");

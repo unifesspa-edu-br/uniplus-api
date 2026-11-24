@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -105,6 +106,6 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
             t.Categoria,
             t.ClassificacaoProtecao,
             t.FinalidadeTratamento,
-            HipotesesLegaisTratamento.ParaTokenCanonico(t.HipoteseLegal),
+            t.HipoteseLegal.Codigo(),
             t.Aprovacao.EstaAprovada);
 }

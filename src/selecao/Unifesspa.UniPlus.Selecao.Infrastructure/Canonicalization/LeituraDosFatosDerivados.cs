@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -83,7 +84,7 @@ internal static class LeituraDosFatosDerivados
 
     private static string? CampoForaDoVocabulario(FatoDerivadoCongelado fato) =>
         !ClassificacoesDeProtecao.TryAnalisar(fato.ClassificacaoProtecao, out _) ? "classificacaoProtecao"
-        : !DominioDoCatalogo.HipotesesLegais.Contains(fato.HipoteseLegal) ? "hipoteseLegal"
+        : !CatalogoDe<HipoteseLegalTratamento>.TentarObter(fato.HipoteseLegal, out _) ? "hipoteseLegal"
         : fato.ComponenteExibicao is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(fato.ComponenteExibicao) ? "componenteExibicao"
         : null;
 }
