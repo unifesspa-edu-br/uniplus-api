@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
-using System.Text;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -51,36 +50,6 @@ public sealed class HashEstavelEntreGravacoesTests
         depois.Should().Equal(antes,
             "nada da configuração mudou, então o documento que a representa não pode mudar — "
             + "se muda, o hash deixa de responder se o gravado ainda é o que foi publicado");
-    }
-
-    [Fact(DisplayName = "O ato do produto em NFC e em NFD produz os mesmos bytes canônicos")]
-    public void AtoEmFormasUnicodeDiferentes_ProduzOsMesmosBytes()
-    {
-        const string EmNfc = "RESULTADO_AVALIAÇÃO";
-        const string EmNfd = "RESULTADO_AVALIAÇÃO";
-        EmNfd.Should().NotBe(EmNfc, "a literal decomposta precisa continuar diferente no arquivo-fonte");
-        ProcessoSeletivo processo = ProcessoComProdutoDeAto(EmNfc);
-        byte[] comNfc = Canonicalizar(processo);
-
-        processo.Etapas.Single().DefinirProdutos([ProdutoDaEtapa.Criar(EmNfd, PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
-        byte[] comNfd = Canonicalizar(processo);
-
-        comNfd.Should().Equal(comNfc, "a declaração equivalente do mesmo produto preserva o documento");
-    }
-
-    [Fact(DisplayName = "O ato gravado em forma decomposta sai do documento em NFC")]
-    public void AtoGravadoEmNfd_SaiDoDocumentoEmNfc()
-    {
-        const string EmNfc = "RESULTADO_AVALIAÇÃO";
-        string emNfd = EmNfc.Normalize(NormalizationForm.FormD);
-        emNfd.Should().NotBe(EmNfc, "decompor os acentos precisa mudar os bytes");
-        ProcessoSeletivo processo = ProcessoComProdutoDeAto(emNfd);
-        processo.Etapas.Single().Produtos.Single().AtoCodigo.Should().Be(emNfd);
-
-        using JsonDocument documento = JsonDocument.Parse(Canonicalizar(processo));
-        string emitido = documento.RootElement.GetProperty("etapas")[0].GetProperty("publicacoesPrevistas")[0].GetProperty("atoCodigo").GetString()!;
-
-        emitido.Should().Be(EmNfc, "a emissão normaliza o texto que ainda está decomposto na entidade");
     }
 
     [Fact(DisplayName = "A unidade responsável da fase entra nos bytes canônicos: regravá-la igual mantém, trocá-la muda")]
@@ -156,15 +125,6 @@ public sealed class HashEstavelEntreGravacoesTests
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar
                 && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)).Id).Value!;
-
-    private static ProcessoSeletivo ProcessoComProdutoDeAto(string atoCodigo)
-    {
-        ProcessoSeletivo processo = ProcessoBase();
-        processo.Etapas.Single()
-            .DefinirProdutos([ProdutoDaEtapa.Criar(atoCodigo, PapelProdutoFase.Preliminar)])
-            .IsSuccess.Should().BeTrue();
-        return processo;
-    }
 
     private static ProcessoSeletivo ProcessoBase()
     {

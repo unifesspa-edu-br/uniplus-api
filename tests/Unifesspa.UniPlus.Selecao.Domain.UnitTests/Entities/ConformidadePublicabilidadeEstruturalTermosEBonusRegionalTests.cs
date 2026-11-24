@@ -69,15 +69,6 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
         processo.TermosExigidos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Códigos de termo que só diferem na forma Unicode são o mesmo código")]
-    public void DefinirTermos_CodigoEmFormaUnicodeDiferente_ERepetido()
-    {
-        ProcessoSeletivo processo = ProcessoConforme();
-
-        processo.DefinirTermos([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)])
-            .Error!.Code.Should().Be(TermoFormularioErrorCodes.CodigoDuplicado);
-    }
-
     [Fact(DisplayName = "Condição de termo que cita fato que o processo deixou de coletar recusa a publicação")]
     public void TermoCitaFatoNaoColetado_RecusaPublicacao()
     {

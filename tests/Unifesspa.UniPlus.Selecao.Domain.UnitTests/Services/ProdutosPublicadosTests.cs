@@ -15,10 +15,12 @@ using Xunit;
 /// </summary>
 public sealed class ProdutosPublicadosTests
 {
-    private const string AtoComposto = "ÁREA";
-    private const string AtoDecomposto = "ÁREA";
+    private const string PrimeiroAto = "RESULTADO_ANALISE";
+    private const string SegundoAto = "RESULTADO_ANULACAO";
 
     private static string Ordinal(string ato) => ato;
+
+    private static string MesmaChave(string ato) => "RESULTADO";
 
     private static ProdutoDaFase Fase(string ato, PapelProdutoFase? papel) => ProdutoDaFase.Criar(ato, papel);
 
@@ -118,11 +120,11 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_ComparaOAtoPelaChaveDeQuemChama()
     {
-        ProdutoDaEtapa viva = Etapa(AtoDecomposto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(AtoComposto, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Preliminar);
 
         ProdutosReconciliados<ProdutoDaEtapa> pelaForma = ProdutosPublicados
-            .ReconciliarPreservandoIdentidade([viva], [chegado], HashCanonicalComputer.NormalizeNfc);
+            .ReconciliarPreservandoIdentidade([viva], [chegado], MesmaChave);
         ProdutosReconciliados<ProdutoDaEtapa> ordinal = ProdutosPublicados
             .ReconciliarPreservandoIdentidade([viva], [chegado], Ordinal);
 
@@ -218,11 +220,11 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_ComparaOAtoDaSegundaPassadaPelaChaveDeQuemChama()
     {
-        ProdutoDaEtapa viva = Etapa(AtoDecomposto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(AtoComposto, PapelProdutoFase.Definitivo);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Definitivo);
 
         ProdutosReconciliados<ProdutoDaEtapa> pelaForma = ProdutosPublicados
-            .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel([viva], [chegado], HashCanonicalComputer.NormalizeNfc);
+            .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel([viva], [chegado], MesmaChave);
 
         pelaForma.Produtos.Should().ContainSingle().Which.Should().BeSameAs(viva);
         viva.Papel.Should().Be(PapelProdutoFase.Definitivo);
@@ -231,8 +233,8 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_ComChaveOrdinal_AtoComFormaDiferenteNaoCasa()
     {
-        ProdutoDaEtapa viva = Etapa(AtoDecomposto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(AtoComposto, PapelProdutoFase.Definitivo);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Definitivo);
 
         ProdutosReconciliados<ProdutoDaEtapa> resultado = ProdutosPublicados
             .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel([viva], [chegado], Ordinal);
@@ -292,11 +294,11 @@ public sealed class ProdutosPublicadosTests
     {
         ProdutoDaEtapa[] produtos =
         [
-            Etapa(AtoComposto, PapelProdutoFase.Preliminar),
-            Etapa(AtoDecomposto, PapelProdutoFase.Preliminar),
+            Etapa(PrimeiroAto, PapelProdutoFase.Preliminar),
+            Etapa(SegundoAto, PapelProdutoFase.Preliminar),
         ];
 
-        ProdutosPublicados.PosicoesRepetidas(produtos, HashCanonicalComputer.NormalizeNfc).Should().Equal(1);
+        ProdutosPublicados.PosicoesRepetidas(produtos, MesmaChave).Should().Equal(1);
         ProdutosPublicados.PosicoesRepetidas(produtos, Ordinal).Should().BeEmpty();
     }
 }

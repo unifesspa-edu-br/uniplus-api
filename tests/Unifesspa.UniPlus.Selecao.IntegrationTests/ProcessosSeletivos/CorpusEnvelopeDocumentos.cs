@@ -35,7 +35,8 @@ internal static class CorpusEnvelopeDocumentos
     {
         DocumentoExigido historico = DocumentoExigidoRico(DocumentoExigidoIdFixo(1, variante), FaseInscricao(variante).Id,
             TipoDocumentoOrigemIdFixo(1), "HISTORICO_ESCOLAR", "Histórico escolar do ensino médio", "ACADEMICO", obrigatorio: true);
-        return RegraDeComprovacao.ReidratarRegraDeDocumento(RegraDeComprovacaoIdFixo(1, variante), 0, historico, RegraDeComprovacao.QuantidadeMinimaPadrao, null, null);
+        return RegraDeComprovacao.ReidratarRegraDeDocumento(RegraDeComprovacaoIdFixo(1, variante), 0, historico, 2, DistincaoDasApresentacoes.Reidratar(
+            CriterioDeDistincaoDasApresentacoes.Ocorrencia, null, ["Anuário", "Ana\u0301lise"]), null);
     }
 
     private static RegraDeComprovacao GrupoDeRenda(int variante, bool permutar)

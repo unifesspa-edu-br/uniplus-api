@@ -50,29 +50,14 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_linguagens").Value, ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
             ]);
 
-    // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
-    // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
-    //
-    // Os dois produtos seguintes existem como PAR, e é o par que importa. O acento em forma
-    // decomposta faz a normalização deixar de ser identidade; a escolha do companheiro
-    // faz a ordem entre eles VIRAR conforme o texto esteja normalizado ou não — os dois
-    // coincidem até `RESULTADO_AN`, e ali o `U` fica entre o `A` base da forma decomposta
-    // e o `Á` inteiro da composta.
-    //
-    // Sem essa inversão, normalizar a chave de ordenação era indistinguível de não
-    // normalizar: dois códigos acentuados quaisquer divergem antes de chegar ao acento e
-    // saem na mesma ordem das duas formas. Com ela, remover a normalização da chave
-    // reordena o documento e a fixture recusa.
-    //
-    // De quebra, dão ao bloco de recursos uma segunda âncora preliminar de verdade. A etapa fecha
-    // o próprio ciclo: cada preliminar tem o definitivo do mesmo tipo nela.
+    // O código e o papel determinam a ordem das publicações previstas.
     internal static IReadOnlyList<ProdutoDaEtapa> ProdutosDaObjetiva(int variante, bool permutar) =>
         Ordem([
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnaliseDecomposto, PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnalise, PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(4, variante), AtoAnulacao, PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(5, variante), AtoAnaliseDecomposto, PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(5, variante), AtoAnalise, PapelProdutoFase.Definitivo),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(6, variante), AtoAnulacao, PapelProdutoFase.Definitivo),
         ], permutar);
 

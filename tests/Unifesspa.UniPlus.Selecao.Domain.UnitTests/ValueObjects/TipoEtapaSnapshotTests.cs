@@ -30,26 +30,17 @@ public sealed class TipoEtapaSnapshotTests
         resultado.Value!.Codigo.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "Criar normaliza para NFC — forma decomposta e forma composta do mesmo texto congelam para o mesmo código")]
-    public void Criar_ComFormaDecomposta_NormalizaParaNfc()
+    [Fact(DisplayName = "Nome decomposto é guardado na forma composta")]
+    public void Criar_NomeDecomposto_GuardaNomeComposto()
     {
-        // Mesmo texto, duas representações Unicode do "O" acentuado: NFC (Ó, um único
-        // code point) e NFD ('O' base + COMBINING ACUTE ACCENT) — bytes diferentes,
-        // mesmo significado. A forma NFD vem de Normalize(FormD) em runtime, não de
-        // caractere literal no fonte — assim o teste não depende de qual normalização o
-        // editor/terminal aplicaria ao salvar o arquivo-fonte. Sem normalizar em
-        // TipoEtapaSnapshot.Criar, o código congelado mudaria de representação entre um
-        // snapshot criado a partir de um e de outro, e um ciclo de retificação descartada
-        // (que restaura via envelope, sempre NFC) quebraria a comparação ordinal em
-        // AvaliadorConformidadeLegal mesmo sem o dado ter mudado.
-        string codigoComposto = "CÓDIGO_ACENTUADO";
-        string codigoDecomposto = codigoComposto.Normalize(System.Text.NormalizationForm.FormD);
-        codigoDecomposto.Should().NotBe(codigoComposto, "pré-condição do teste: as duas formas têm bytes diferentes");
+        const string NomeComposto = "Avaliação";
+        string nomeDecomposto = NomeComposto.Normalize(System.Text.NormalizationForm.FormD);
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
+            OrigemId, "AVALIACAO", nomeDecomposto, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
 
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoDecomposto, "Banca", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
-
+        nomeDecomposto.Should().NotBe(NomeComposto);
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Codigo.Should().Be(codigoComposto);
+        resultado.Value!.Nome.Should().Be(NomeComposto);
     }
 
     [Fact(DisplayName = "Criar com OrigemId vazio falha")]

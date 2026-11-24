@@ -10,13 +10,11 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O tipo de processo do modelo é guardado na forma em que o cadastro grava o código — aparado e em
-/// NFC —, por qualquer caminho que o grave, porque o processo o compara de forma ordinal.
+/// O tipo de processo do modelo é guardado na forma em que o cadastro grava o código — sem espaços nas bordas —, por qualquer caminho que o grave, porque o processo o compara de forma ordinal.
 /// </summary>
 public sealed class ModeloFormularioTipoDeProcessoTests
 {
-    private const string Composto = "PÓS";
-    private const string Decomposto = "PÓS";
+    private const string Codigo = "POS";
 
     private static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
@@ -31,24 +29,24 @@ public sealed class ModeloFormularioTipoDeProcessoTests
         [],
         []);
 
-    [Fact(DisplayName = "Criar com o código do tipo decomposto guarda o código em NFC")]
-    public void Criar_TipoDecomposto_GuardaNormalizado()
+    [Fact(DisplayName = "Criar com espaços no código do tipo guarda o código sem espaços")]
+    public void Criar_TipoComEspacos_GuardaCodigoSemEspacos()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, $" {Decomposto} ", Conteudo(), SemDerivacoes);
+            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, $" {Codigo} ", Conteudo(), SemDerivacoes);
 
-        modelo.Value!.TipoProcessoCodigo.Should().Be(Composto);
+        modelo.Value!.TipoProcessoCodigo.Should().Be(Codigo);
     }
 
-    [Fact(DisplayName = "Atualizar com o código do tipo decomposto guarda o código em NFC")]
-    public void Atualizar_TipoDecomposto_GuardaNormalizado()
+    [Fact(DisplayName = "Atualizar com espaços no código do tipo guarda o código sem espaços")]
+    public void Atualizar_TipoComEspacos_GuardaCodigoSemEspacos()
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
             "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo(), SemDerivacoes).Value!;
 
-        Result atualizado = modelo.Atualizar("Habilitação", null, Decomposto, Conteudo(), SemDerivacoes);
+        Result atualizado = modelo.Atualizar("Habilitação", null, $" {Codigo} ", Conteudo(), SemDerivacoes);
 
         atualizado.IsSuccess.Should().BeTrue(atualizado.Error?.Message);
-        modelo.TipoProcessoCodigo.Should().Be(Composto);
+        modelo.TipoProcessoCodigo.Should().Be(Codigo);
     }
 }
