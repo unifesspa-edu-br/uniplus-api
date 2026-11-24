@@ -84,7 +84,7 @@ public sealed class AprovacaoDaProtecaoTests
     {
         TipoDocumento tipo = TipoSolicitado();
 
-        Result resultado = tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Nenhuma, null, Caroline, Terca);
+        Result resultado = tipo.RecomendarAjusteDaProtecao(null, null, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
@@ -94,16 +94,23 @@ public sealed class AprovacaoDaProtecaoTests
     [Fact(DisplayName = "Aceitar a recomendação aprova o tipo com a classificação indicada, sem nova solicitação")]
     public void Tipo_AceitarARecomendacao_AprovaComAClassificacaoIndicada()
     {
-        TipoDocumento tipo = NovoTipo(ClassificacaoDeProtecao.Interno, HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
-        tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
+        TipoDocumento tipo = TipoComAjusteRecomendado();
 
         tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).IsSuccess.Should().BeTrue();
 
         tipo.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
+    }
+
+    [Fact(DisplayName = "O aceite registra a classificação recomendada, quem recomendou o ajuste e quem aceitou, e quando")]
+    public void Tipo_AceitarARecomendacao_RegistraQuemRecomendouEQuemAceitou()
+    {
+        TipoDocumento tipo = TipoComAjusteRecomendado();
+
+        tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta);
+
         tipo.Aprovacao.Should().BeEquivalentTo(new
         {
-            Situacao = SituacaoDaAprovacao.Aprovada,
             ClassificacaoRecomendada = ClassificacaoDeProtecao.Sensivel,
             DecididaPor = Caroline,
             AceitaPor = Isabella,
@@ -146,8 +153,7 @@ public sealed class AprovacaoDaProtecaoTests
     [Fact(DisplayName = "Editar a classificação do tipo com ajuste recomendado o devolve a pendente")]
     public void Tipo_EditarOTipoComAjusteRecomendado_VoltaAPendente()
     {
-        TipoDocumento tipo = TipoSolicitado();
-        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
+        TipoDocumento tipo = TipoComAjusteRecomendado();
 
         Atualizar(tipo, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude).IsSuccess.Should().BeTrue();
 
@@ -195,24 +201,20 @@ public sealed class AprovacaoDaProtecaoTests
         tipo.Aprovacao.Justificativa.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Salvar o tipo com ajuste recomendado ou reprovado o devolve a pendente mesmo sem mudar a proteção; o aprovado continua aprovado")]
+    [Fact(DisplayName = "Salvar o tipo com ajuste recomendado ou reprovado o devolve a pendente mesmo sem mudar a proteção")]
     public void Tipo_QualquerEdicaoDevolveAjusteEReprovadoAPendente()
     {
-        TipoDocumento ajustado = TipoSolicitado();
-        ajustado.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, "Traz dado de saúde.", Caroline, Terca);
+        TipoDocumento ajustado = TipoComAjusteRecomendado();
         TipoDocumento reprovado = TipoSolicitado();
         reprovado.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
-        TipoDocumento aprovado = TipoAprovado();
 
         Atualizar(ajustado, nome: "Outro nome").IsSuccess.Should().BeTrue();
         Atualizar(reprovado, nome: "Outro nome").IsSuccess.Should().BeTrue();
-        Atualizar(aprovado, nome: "Outro nome").IsSuccess.Should().BeTrue();
 
         ajustado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
         ajustado.Aprovacao.Justificativa.Should().BeNull();
         reprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
         reprovado.Aprovacao.Justificativa.Should().BeNull();
-        aprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
     }
 
     [Fact(DisplayName = "A edição recusada não devolve o tipo reprovado a pendente")]
@@ -259,13 +261,21 @@ public sealed class AprovacaoDaProtecaoTests
     private static TipoDocumento NovoTipo(
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal) =>
-        TipoDocumento.Criar(
-            "COMPROVANTE_RESIDENCIA", "Comprovante de residência", null, "ENDERECO", null, null, null, classificacao, Finalidade, hipotese).Value!;
+        TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+            "COMPROVANTE_RESIDENCIA", "Comprovante de residência", null, "ENDERECO", null, null, null, classificacao, Finalidade, hipotese)).Value!;
 
     private static TipoDocumento TipoSolicitado()
     {
         TipoDocumento tipo = NovoTipo();
         tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        return tipo;
+    }
+
+    private static TipoDocumento TipoComAjusteRecomendado()
+    {
+        TipoDocumento tipo = NovoTipo(ClassificacaoDeProtecao.Interno, HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
+        tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
         return tipo;
     }
 
@@ -282,5 +292,5 @@ public sealed class AprovacaoDaProtecaoTests
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
         string finalidade = Finalidade) =>
-        tipo.Atualizar("COMPROVANTE_RESIDENCIA", nome, null, "ENDERECO", null, null, null, classificacao, finalidade, hipotese);
+        tipo.Atualizar(new DeclaracaoDoTipoDocumento("COMPROVANTE_RESIDENCIA", nome, null, "ENDERECO", null, null, null, classificacao, finalidade, hipotese));
 }

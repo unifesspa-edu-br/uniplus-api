@@ -69,16 +69,16 @@ internal sealed class CenarioDeFormularioPublicado
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
-        processo.DefinirItens([CorRacaDeSelecaoUnica()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([CorRacaDeEscolhaUnica()]).IsSuccess.Should().BeTrue();
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
         processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
 
-    private static FatoColetado CorRacaDeSelecaoUnica() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+    private static FatoColetado CorRacaDeEscolhaUnica() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
         .ComRotulo("Cor ou raça")
-        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .DoTipo(TipoRenderizacao.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 

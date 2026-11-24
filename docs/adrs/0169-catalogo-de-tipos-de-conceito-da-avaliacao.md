@@ -32,7 +32,7 @@ A etapa de um processo seletivo é avaliada por nota numérica, mas há etapas c
 
 1. Um **tipo de conceito** tem `codigo` imutável e único, inclusive entre desativados, `nome`, `descricao` opcional, `ativo` e uma **natureza**:
    - `NUMERICO`: escala mínima, escala máxima e casas decimais (0 a 4);
-   - `CATEGORICO`: no mínimo dois valores, cada um com `codigo`, `rotulo` e `contaComoAprovacao`.
+   - `POR_OPCOES`: no mínimo dois valores, cada um com `codigo`, `rotulo` e `contaComoAprovacao`.
    Os parâmetros da outra natureza são recusados.
 2. O **tipo de etapa** declara os conceitos que admite (`conceitosAdmitidos`, por código). O vínculo só aceita tipo de conceito existente e ativo, sem repetição. O tipo de etapa admite, não impõe: quem diz o conceito de uma etapa concreta é quem monta o certame.
 3. A leitura é pública e traz só os tipos ativos; criar, atualizar e desativar exige a permissão de manter tipos de conceito. Desativar impede novos vínculos, não libera o código: a edição do tipo de etapa recusa o conceito desativado que lê. Uma desativação que confirma entre essa leitura e a gravação do vínculo equivale a vincular e depois desativar, estado válido, pois desativar nunca remove os vínculos existentes.

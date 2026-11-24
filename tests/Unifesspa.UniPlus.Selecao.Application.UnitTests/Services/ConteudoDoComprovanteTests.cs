@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
@@ -25,8 +26,8 @@ public sealed class ConteudoDoComprovanteTests
     private static readonly Guid Direito = Guid.CreateVersion7();
     private static readonly Guid Computacao = Guid.CreateVersion7();
 
-    private static FatoDerivadoCongelado Derivado(string codigo, string rotulo, string tipo) =>
-        new(codigo, rotulo, "Descrição do fato.", null, tipo, "ESCALAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade.");
+    private static FatoDerivadoCongelado Derivado(string codigo, string rotulo, TipoDoDado tipo) =>
+        new(codigo, rotulo, "Descrição do fato.", null, tipo, QuantidadeDeValores.ValorUnico, "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade.");
 
     private static Dictionary<string, FatoDerivadoCongelado> Derivados(params FatoDerivadoCongelado[] fatos) =>
         fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
@@ -101,7 +102,7 @@ public sealed class ConteudoDoComprovanteTests
         ComprovanteInscricao comprovante = Emitir(inscricao, Respostas(), derivados: Respostas(("UF_RESIDENCIA", "PA")));
 
         ComprovanteDaInscricaoDto dto = Montar(
-            inscricao, comprovante, Envelope(derivados: Derivados(Derivado("UF_RESIDENCIA", "Estado de residência", "CATEGORICO"))));
+            inscricao, comprovante, Envelope(derivados: Derivados(Derivado("UF_RESIDENCIA", "Estado de residência", TipoDoDado.Opcao))));
 
         ItemDoComprovanteDto estado = dto.Formulario.Derivados.Should().ContainSingle(d => d.Rotulo == "Estado de residência").Subject;
         estado.Valor!.Value.GetProperty("rotulo").GetString().Should().Be("Pará");
@@ -111,7 +112,7 @@ public sealed class ConteudoDoComprovanteTests
     public void Montar_Derivados_IdadeEmAnos()
     {
         Inscricao inscricao = UmaInscricao();
-        FatoDerivadoCongelado faixaEtaria = Derivado("FAIXA_ETARIA", "Idade", "NUMERICO");
+        FatoDerivadoCongelado faixaEtaria = Derivado("FAIXA_ETARIA", "Idade", TipoDoDado.Numerico);
         ComprovanteInscricao comprovante = Emitir(inscricao, Respostas(), derivados: Respostas((faixaEtaria.Codigo, 26)));
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope(derivados: Derivados(faixaEtaria)));

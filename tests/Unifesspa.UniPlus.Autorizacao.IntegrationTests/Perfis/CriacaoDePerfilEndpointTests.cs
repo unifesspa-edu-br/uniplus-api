@@ -29,7 +29,7 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
         _cenario.Perfil.GetProperty("ativo").GetBoolean().Should().BeTrue();
         _cenario.Perfil.GetProperty("governanca").ValueKind.Should().Be(JsonValueKind.Null);
         _cenario.Perfil.GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
-        _cenario.Perfil.GetProperty("sensibilidade").GetString().Should().Be("interno");
+        _cenario.Perfil.GetProperty("sensibilidade").GetString().Should().Be("INTERNO");
     }
 
     [Fact(DisplayName = "O perfil criado tem versão pendente com as permissões propostas")]

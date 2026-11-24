@@ -5,6 +5,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -29,13 +30,14 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("termos_exigidos_formulario");
+        builder.ToTable("termos_exigidos_formulario", t =>
+            t.HasCheckConstraint("ck_termos_exigidos_formulario_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})"));
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
 
         builder.Property(t => t.Codigo).HasMaxLength(FormaDoTermo.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
-        builder.Property(t => t.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(t => t.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
         builder.Property(t => t.TermoId).IsRequired();
         builder.Property(t => t.VersaoId).IsRequired();
         builder.Property(t => t.TermoCodigo).HasMaxLength(TermoExigidoFormulario.TermoCodigoMaxLength).IsRequired();

@@ -46,51 +46,30 @@ public sealed class TipoDocumentoPersistenceTests
     {
         string codigo = CodigoUnico();
         TipoDocumento tipo = Novo(codigo, categoria: "SAUDE");
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDocumento.Add(tipo);
-            await ctx.SaveChangesAsync();
-        }
-
+        await PersistirAsync(AdminA, tipo);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDocumento persistido = await readCtx.TiposDocumento.SingleAsync(t => t.Id == tipo.Id);
-
-        persistido.Codigo.Valor.Should().Be(codigo);
-        persistido.Nome.Should().Be("Laudo médico");
-        persistido.Categoria.Should().Be("SAUDE");
-        persistido.CreatedBy.Should().Be(AdminA);
-        persistido.IsDeleted.Should().BeFalse();
-
-        var reader = new TipoDocumentoReader(readCtx);
-        TipoDocumentoView? view = await reader.ObterPorIdAsync(tipo.Id);
-        view.Should().NotBeNull();
-        view!.Codigo.Should().Be(codigo);
-        view.Categoria.Should().Be("SAUDE");
+        (persistido.Codigo.Valor, persistido.Nome, persistido.Categoria, persistido.CreatedBy, persistido.IsDeleted)
+            .Should().Be((codigo, "Laudo médico", "SAUDE", AdminA, false));
+        TipoDocumentoView? view = await new TipoDocumentoReader(readCtx).ObterPorIdAsync(tipo.Id);
+        (view?.Codigo, view?.Categoria).Should().Be((codigo, "SAUDE"));
     }
 
+    /// <summary>
+    /// Trava as constantes que o handler usa para traduzir a corrida concorrente em CodigoJaExiste (409):
+    /// SqlState 23505 e o nome do índice único parcial.
+    /// </summary>
     [Fact(DisplayName = "CA-02: UNIQUE parcial do código rejeita segundo tipo vivo com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDocumento.Add(Novo(codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(AdminA, Novo(codigo));
+        Func<Task> act = () => PersistirAsync(AdminA, Novo(codigo));
 
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.TiposDocumento.Add(Novo(codigo));
-
-        Func<Task> act = async () => await ctx2.SaveChangesAsync();
-
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
-        // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDocumentoCodigoVivo);
+        (pg.SqlState, pg.ConstraintName).Should().Be(("23505", RestricoesDoBanco.TipoDeDocumentoCodigoVivo));
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -109,57 +88,24 @@ public sealed class TipoDocumentoPersistenceTests
     {
         string codigo = CodigoUnico();
         TipoDocumento tipo = Novo(codigo);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDocumento.Add(tipo);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TipoDocumento tracked = await ctx.TiposDocumento.SingleAsync(t => t.Id == tipo.Id);
-            ctx.TiposDocumento.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            TipoDocumento excluido = await ctx.TiposDocumento
-                .IgnoreQueryFilters().SingleAsync(t => t.Id == tipo.Id);
-            excluido.IsDeleted.Should().BeTrue();
-            excluido.DeletedBy.Should().Be(AdminB);
-        }
-
-        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.TiposDocumento.Add(Novo(codigo));
-
-        Func<Task> act = async () => await ctx3.SaveChangesAsync();
+        await PersistirAsync(AdminA, tipo);
+        await RemoverAsync(AdminB, codigo);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        TipoDocumento excluido = await ctx.TiposDocumento.IgnoreQueryFilters().SingleAsync(t => t.Id == tipo.Id);
+        (excluido.IsDeleted, excluido.DeletedBy).Should().Be((true, AdminB));
+        Func<Task> act = () => PersistirAsync(AdminA, Novo(codigo));
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
     }
 
     [Fact(DisplayName = "CA-04: remover um tipo apontado como equivalente por outro vivo NÃO é bloqueado")]
     public async Task SoftDelete_TipoApontadoComoEquivalente_NaoBloqueia()
     {
-        string codigoCin = CodigoUnico();
-        string codigoRg = CodigoUnico();
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            // CIN existe; RG aponta CIN como equivalente (rótulo classificatório, sem FK).
-            ctx.TiposDocumento.Add(Novo(codigoCin, categoria: "IDENTIFICACAO"));
-            ctx.TiposDocumento.Add(Novo(codigoRg, categoria: "IDENTIFICACAO", tipoEquivalente: codigoCin));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoTipoDocumento cinVo = Vo(codigoCin);
-            TipoDocumento cin = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == cinVo);
-            ctx.TiposDocumento.Remove(cin);
-            Func<Task> act = async () => await ctx.SaveChangesAsync();
-            await act.Should().NotThrowAsync("tipo_equivalente é rótulo, não FK — a remoção não é bloqueada");
-        }
-
+        (string codigoCin, string codigoRg) = (CodigoUnico(), CodigoUnico());
+        // RG aponta CIN como equivalente: rótulo classificatório, sem chave estrangeira.
+        await PersistirAsync(
+            AdminA, Novo(codigoCin, categoria: "IDENTIFICACAO"), Novo(codigoRg, categoria: "IDENTIFICACAO", tipoEquivalente: codigoCin));
+        Func<Task> act = () => RemoverAsync(AdminB, codigoCin);
+        await act.Should().NotThrowAsync("tipo_equivalente é rótulo, não FK — a remoção não é bloqueada");
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CodigoTipoDocumento rgVo = Vo(codigoRg);
         TipoDocumento rg = await readCtx.TiposDocumento.SingleAsync(t => t.Codigo == rgVo);
@@ -244,86 +190,59 @@ public sealed class TipoDocumentoPersistenceTests
     public async Task ListarVivos_OrdenaPorCodigoEExcluiSoftDeleted()
     {
         string prefixo = $"DOC_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
-        string codA = $"{prefixo}_A";
-        string codB = $"{prefixo}_B";
-        string codExcluido = $"{prefixo}_D";
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDocumento.Add(Novo(codB));
-            ctx.TiposDocumento.Add(Novo(codA));
-            ctx.TiposDocumento.Add(Novo(codExcluido));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoTipoDocumento excluidoVo = Vo(codExcluido);
-            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == excluidoVo);
-            ctx.TiposDocumento.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
+        (string codA, string codB, string codExcluido) = ($"{prefixo}_A", $"{prefixo}_B", $"{prefixo}_D");
+        await PersistirAsync(AdminA, Novo(codB), Novo(codA), Novo(codExcluido));
+        await RemoverAsync(AdminB, codExcluido);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new TipoDocumentoReader(readCtx);
-        IReadOnlyList<TipoDocumentoView> todos = await reader.ListarVivosAsync();
-
-        string[] meus = [.. todos
-            .Select(v => v.Codigo)
-            .Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
-
+        IReadOnlyList<TipoDocumentoView> todos = await new TipoDocumentoReader(readCtx).ListarVivosAsync();
+        string[] meus = [.. todos.Select(v => v.Codigo).Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
         meus.Should().Equal([codA, codB]);
     }
 
-    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync não devolve tipo removido, e normaliza o código buscado")]
-    public async Task ObterVivoPorCodigo_ExcluiSoftDeletedENormalizaBusca()
+    /// <summary>
+    /// A regra legal referencia o tipo de documento por código, e quem valida a referência é este leitor. Se um tipo
+    /// removido continuasse respondendo, a regra que o exige seria aceita e o edital publicaria sob exigência de um
+    /// documento que saiu do catálogo.
+    /// </summary>
+    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync não devolve tipo removido")]
+    public async Task ObterVivoPorCodigo_ExcluiSoftDeleted()
     {
-        // A regra legal referencia o tipo de documento por código, e quem valida a referência
-        // é este leitor. Se um tipo removido continuasse respondendo, a regra que o exige
-        // seria aceita e o edital publicaria sob exigência de um documento que saiu do
-        // catálogo. O espaço supérfluo entra pelo mesmo caminho: quem digita " CODIGO " no
-        // cadastro da regra precisa encontrar o mesmo registro, ou a validação recusa o que
-        // existe.
-        string codigoVivo = CodigoUnico();
-        string codigoRemovido = CodigoUnico();
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDocumento.Add(Novo(codigoVivo));
-            ctx.TiposDocumento.Add(Novo(codigoRemovido));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoTipoDocumento removidoVo = Vo(codigoRemovido);
-            TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == removidoVo);
-            ctx.TiposDocumento.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
+        (string codigoVivo, string codigoRemovido) = (CodigoUnico(), CodigoUnico());
+        await PersistirAsync(AdminA, Novo(codigoVivo), Novo(codigoRemovido));
+        await RemoverAsync(AdminB, codigoRemovido);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new TipoDocumentoReader(readCtx);
-
+        TipoDocumentoReader reader = new(readCtx);
         TipoDocumentoView? vivo = await reader.ObterVivoPorCodigoAsync(codigoVivo);
-        TipoDocumentoView? comEspaco = await reader.ObterVivoPorCodigoAsync($"  {codigoVivo} ");
         TipoDocumentoView? removido = await reader.ObterVivoPorCodigoAsync(codigoRemovido);
-
         vivo.Should().NotBeNull();
-        vivo!.Codigo.Should().Be(codigoVivo);
-        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
-        comEspaco!.Id.Should().Be(vivo.Id);
         removido.Should().BeNull("o filtro global de soft-delete tira o tipo removido do cadastro vivo");
     }
 
+    /// <summary>
+    /// Quem digita " CODIGO " no cadastro da regra precisa encontrar o mesmo registro, ou a validação recusa o que existe.
+    /// </summary>
+    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync normaliza o código buscado")]
+    public async Task ObterVivoPorCodigo_NormalizaABusca()
+    {
+        string codigo = CodigoUnico();
+        await PersistirAsync(AdminA, Novo(codigo));
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        TipoDocumentoReader reader = new(readCtx);
+        TipoDocumentoView? exato = await reader.ObterVivoPorCodigoAsync(codigo);
+        TipoDocumentoView? comEspaco = await reader.ObterVivoPorCodigoAsync($"  {codigo} ");
+        exato.Should().NotBeNull();
+        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
+        comEspaco!.Id.Should().Be(exato!.Id);
+    }
+
+    /// <summary>
+    /// Bypassa o value object de propósito: o CHECK é defesa em profundidade contra escrita fora do fluxo da aplicação.
+    /// Sem ele, uma única linha com código sequencial derrubaria toda leitura da tabela na reidratação.
+    /// </summary>
     [Fact(DisplayName = "CHECK de formato do código rejeita insert cru fora do padrão canônico")]
     public async Task CheckConstraint_Codigo_RejeitaFormatoInvalido()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-
-        // Bypassa o value object de propósito: o CHECK é defesa em profundidade
-        // contra escrita fora do fluxo da aplicação. Sem ele, uma única linha com
-        // código sequencial derrubaria toda leitura da tabela na reidratação.
         Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
             """
             INSERT INTO configuracao.tipos_de_documento
@@ -331,31 +250,19 @@ public sealed class TipoDocumentoPersistenceTests
             VALUES ({0}, '01', 'Certificado', 'ESCOLARIDADE', now(), false, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)
             """,
             Guid.CreateVersion7());
-
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
-        pg.ConstraintName.Should().Be("ck_tipos_de_documento_codigo_formato");
+        (pg.SqlState, pg.ConstraintName).Should().Be(("23514", "ck_tipos_de_documento_codigo_formato"));
     }
 
     [Fact(DisplayName = "Código sobrevive ao round-trip pelo banco como value object")]
     public async Task Codigo_RoundTrip_PreservaValueObject()
     {
         string codigo = CodigoUnico();
-        Guid id;
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            TipoDocumento tipo = Novo(codigo);
-            id = tipo.Id;
-            ctx.TiposDocumento.Add(tipo);
-            await ctx.SaveChangesAsync();
-        }
-
+        TipoDocumento tipo = Novo(codigo);
+        await PersistirAsync(AdminA, tipo);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        TipoDocumento lido = await readCtx.TiposDocumento.AsNoTracking().SingleAsync(t => t.Id == id);
-
-        lido.Codigo.Should().Be(CodigoTipoDocumento.Criar(codigo).Value!,
-            "o conversor devolve o value object, não a string crua");
+        TipoDocumento lido = await readCtx.TiposDocumento.AsNoTracking().SingleAsync(t => t.Id == tipo.Id);
+        lido.Codigo.Should().Be(CodigoTipoDocumento.Criar(codigo).Value!, "o conversor devolve o value object, não a string crua");
         lido.Codigo.Valor.Should().Be(codigo);
     }
 
@@ -391,11 +298,26 @@ public sealed class TipoDocumentoPersistenceTests
             "nenhum registro pode ter esse código — converter o valor para comparar estouraria no conversor");
     }
 
+    private async Task PersistirAsync(string usuario, params TipoDocumento[] tipos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        ctx.TiposDocumento.AddRange(tipos);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task RemoverAsync(string usuario, string codigo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        CodigoTipoDocumento codigoVo = Vo(codigo);
+        ctx.TiposDocumento.Remove(await ctx.TiposDocumento.SingleAsync(t => t.Codigo == codigoVo));
+        await ctx.SaveChangesAsync();
+    }
+
     private static TipoDocumento Novo(
         string codigo,
         string categoria = "SAUDE",
         string? tipoEquivalente = null) =>
-        TipoDocumento.Criar(codigo, "Laudo médico", null, categoria, "pdf,jpg", 10, tipoEquivalente, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(codigo, "Laudo médico", null, categoria, "pdf,jpg", 10, tipoEquivalente, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal, FinalidadeTratamento: "Comprovação documental do candidato.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 

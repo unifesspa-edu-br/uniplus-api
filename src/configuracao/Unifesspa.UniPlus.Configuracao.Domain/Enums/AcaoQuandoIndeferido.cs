@@ -23,10 +23,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum AcaoQuandoIndeferido
 {
     /// <summary>Reclassifica o candidato na ampla concorrência (AC).</summary>
-    [CodigoDeContrato("RECLASSIFICAR_AC", "Reclassificar na ampla concorrência")]
-    ReclassificarAc = 1,
+    [CodigoDeContrato("RECLASSIFICA_AC", "Ampla concorrência", Descricao = "Passa a pessoa para a ampla concorrência.")]
+    ReclassificaAc = 1,
 
     /// <summary>Reclassifica o candidato conforme a regra específica do edital.</summary>
-    [CodigoDeContrato("RECLASSIFICAR_REGRA_EDITAL", "Reclassificar conforme a regra do edital")]
-    ReclassificarRegraEdital = 2,
+    [CodigoDeContrato("RECLASSIFICA_CONFORME_EDITAL", "Conforme o edital", Descricao = "Reclassifica a pessoa conforme as regras do edital.")]
+    ReclassificaConformeEdital = 2,
 }

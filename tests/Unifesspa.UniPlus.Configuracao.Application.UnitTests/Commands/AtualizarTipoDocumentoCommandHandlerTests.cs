@@ -24,9 +24,12 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     private readonly ITipoDocumentoRepository _repository = Substitute.For<ITipoDocumentoRepository>();
     private readonly ICategoriaDocumentoRepository _categoriaRepository = Substitute.For<ICategoriaDocumentoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly GravacaoDoTipoDocumento _gravacao;
 
     public AtualizarTipoDocumentoCommandHandlerTests()
     {
+        _gravacao = new GravacaoDoTipoDocumento(_repository, _categoriaRepository, _unitOfWork);
+
         // O caso comum é a categoria existir; o teste que exercita a ausência
         // sobrescreve esta configuração.
         _categoriaRepository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
@@ -34,7 +37,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     }
 
     private static TipoDocumento TipoExistente(string codigo = "CIN", string categoria = "IDENTIFICACAO") =>
-        TipoDocumento.Criar(codigo, "Carteira de Identidade Nacional", null, categoria, null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(codigo, "Carteira de Identidade Nacional", null, categoria, null, null, null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal, FinalidadeTratamento: "Comprovação documental do candidato.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private static AtualizarTipoDocumentoCommand Comando(Guid id, string codigo = "CIN", string categoria = "IDENTIFICACAO") =>
         new(id, codigo, "Carteira de Identidade Nacional", categoria, "Documento unificado", "pdf", 5, null,
@@ -46,8 +49,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         Guid id = Guid.CreateVersion7();
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((TipoDocumento?)null);
 
-        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(id), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(Comando(id), _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
@@ -65,7 +67,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
                 PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TipoDeDocumentoCodigoVivo)));
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id), _gravacao, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoJaExiste);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -80,8 +82,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
             .Returns(false);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id, categoria: "INEXISTENTE"),
-            _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id, categoria: "INEXISTENTE"), _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaNaoEncontrada);
@@ -89,20 +90,20 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// A categoria pode ser removida ou renomeada sem tocar nos tipos que a referenciavam. Exigir categoria viva
+    /// a cada edição travaria a manutenção desses tipos — nem corrigir o nome deles seria possível.
+    /// </summary>
     [Fact(DisplayName = "Tipo cuja categoria saiu do cadastro continua editável nos demais campos")]
     public async Task Handle_CategoriaOrfaInalterada_NaoConsultaOCadastroEAtualiza()
     {
-        // A categoria pode ser removida ou renomeada sem tocar nos tipos que a
-        // referenciavam. Exigir categoria viva a cada edição travaria a manutenção
-        // desses tipos — nem corrigir o nome deles seria possível.
         TipoDocumento existente = TipoExistente("CIN", categoria: "CATEGORIA_REMOVIDA");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         _categoriaRepository.CodigoExisteEntreVivosAsync("CATEGORIA_REMOVIDA", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id, categoria: "CATEGORIA_REMOVIDA"),
-            _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id, categoria: "CATEGORIA_REMOVIDA"), _gravacao, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         await _categoriaRepository.DidNotReceive()
@@ -119,7 +120,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(Codigo("RG"), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id, codigo: "RG"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id, codigo: "RG"), _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoJaExiste);
@@ -134,7 +135,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(Codigo("CIN_NOVO"), existente.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id, codigo: "CIN_NOVO"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id, codigo: "CIN_NOVO"), _gravacao, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Codigo.Valor.Should().Be("CIN_NOVO");
@@ -151,8 +152,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     {
         AtualizarTipoDocumentoCommand comando = Comando(Guid.CreateVersion7()) with { Nome = "" };
 
-        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
@@ -173,8 +173,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
 
         AtualizarTipoDocumentoCommand comando = Comando(existente.Id, codigo: "RG") with { Nome = "" };
 
-        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
@@ -189,12 +188,55 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
-            Comando(existente.Id, codigo: "CIN"), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            Comando(existente.Id, codigo: "CIN"), _gravacao, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.DidNotReceive()
             .CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O conflito de concorrência na gravação devolve o conflito e descarta o rastreamento")]
+    public async Task Handle_ConflitoDeConcorrencia_DevolveConflitoEDescarta()
+    {
+        TipoDocumento existente = TipoExistente("CIN");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(Comando(existente.Id), _gravacao, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Categoria inexistente é recusada antes de conferir o código, mesmo com o código colidente")]
+    public async Task Handle_CategoriaInexistenteECodigoColidente_RecusaACategoriaSemConsultarOCodigo()
+    {
+        TipoDocumento existente = TipoExistente("CIN");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _categoriaRepository.CodigoExisteEntreVivosAsync("INEXISTENTE", null, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CodigoExisteEntreVivosAsync(Codigo("RG"), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
+            Comando(existente.Id, codigo: "RG", categoria: "INEXISTENTE"), _gravacao, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaNaoEncontrada);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A edição recusada pelo agregado não grava nem altera o tipo")]
+    public async Task Handle_CodigoLivreComNomeMuitoCurto_NaoGravaENaoAltera()
+    {
+        TipoDocumento existente = TipoExistente("CIN");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
+            Comando(existente.Id) with { Nome = "A" }, _gravacao, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeTamanho);
+        existente.Nome.Should().Be("Carteira de Identidade Nacional");
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     /// Constrói o value object do código para casar com a assinatura do repositório,

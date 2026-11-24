@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -68,10 +69,10 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.Nome).HasComment("Nome apresentado para o dado.");
         builder.Property(f => f.Descricao).HasComment("Descrição do significado e uso do dado.");
         builder.Property(f => f.ComponenteExibicao).HasComment("Apresentação sugerida: MOEDA ou SITUACAO; nula quando não definida.");
-        builder.Property(f => f.Dominio).HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
-        builder.Property(f => f.Origem).HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
-        builder.Property(f => f.Cardinalidade).HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
-        builder.Property(f => f.FonteValores).HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), MUNICIPIOS_PROVA_PRESENCIAL, GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+        builder.Property(f => f.Dominio).HasComment("Tipo do dado: SIM_OU_NAO, OPCAO, NUMERICO, TEXTO, DATA ou ENDERECO.");
+        builder.Property(f => f.Origem).HasComment("Origem do dado: CALCULADO, DECLARADO ou INTEGRACAO.");
+        builder.Property(f => f.Cardinalidade).HasComment("Quantidade de valores: VALOR_UNICO ou VARIOS_VALORES.");
+        builder.Property(f => f.FonteValores).HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MODALIDADE, MUNICIPIOS_DO_FADA, MUNICIPIOS_PROVA_PRESENCIAL, UNIDADES_FEDERATIVAS, MUNICIPIOS ou TIPOS_DE_DEFICIENCIA; nula para outros tipos.");
         builder.Property(f => f.Formato).HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
         builder.Property(f => f.Escopo).HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
@@ -80,7 +81,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.SemeadoPeloSistema).HasComment("Indica se o dado foi fornecido pelo sistema.");
         builder.Property(f => f.Ativo).HasComment("Indica se o dado está disponível para uso.");
         builder.Property(f => f.PontoResolucao).HasComment("Código da fase em que o valor fica disponível.");
-        builder.Property(f => f.Binding).HasComment("Referência à fonte usada para obter o valor.");
+        builder.Property(f => f.Binding).HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DERIVACAO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
         builder.Property(f => f.RegrasPadrao).HasComment("Regras de cálculo padrão do dado, em documento JSON.");
         builder.Property(f => f.Dependencias).HasComment("Códigos dos dados necessários ao cálculo pelo sistema.");
     }
@@ -113,27 +114,23 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(f => f.Dominio).HasColumnName("tipo")
-            .HasConversion(DominioConverter)
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 
     private static void ConfigurarOrigemCardinalidadeEEscopo(EntityTypeBuilder<FatoCandidato> builder)
     {
-        builder.Property(f => f.Origem)
-            .HasConversion(OrigemConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
+        builder.Property(f => f.Origem).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
         builder.Property(f => f.Cardinalidade).HasColumnName("quantidade_de_valores")
-            .HasConversion(CardinalidadeConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
+            .HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
         builder.Property(f => f.Escopo)
             .HasConversion(EscopoConverter).HasMaxLength(CodigoDeContratoMaxLength).IsRequired();
     }
 
     private static void ConfigurarFonteEFormato(EntityTypeBuilder<FatoCandidato> builder)
     {
-        // fonte_valores (ADR-0136): anulável — só o fato categórico tem fonte; o booleano e o
-        // numérico ficam com NULL, que o EF encapsula sem chamar o converter.
+        // fonte_valores (ADR-0136): anulável — só o dado de opção tem fonte; os demais ficam com NULL.
         builder.Property(f => f.FonteValores).HasColumnName("fonte_das_opcoes")
-            .HasConversion(FonteValoresConverter)
             .HasMaxLength(FonteValoresMaxLength);
 
         // formato (ADR-0136): anulável — só o fato de domínio texto tem formato.
@@ -147,8 +144,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     private static void ConfigurarProtecaoDeDados(EntityTypeBuilder<FatoCandidato> builder)
     {
         builder.Property(f => f.ClassificacaoProtecao)
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired();
         builder.Property(f => f.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(f => f.HipoteseLegal)
@@ -287,18 +283,6 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     }
 
     // ── Conversores/comparadores ──────────────────────────────────────────────
-
-    private static readonly ValueConverter<DominioFato, string> DominioConverter =
-        new(dominio => DominiosFato.ParaTokenCanonico(dominio), codigo => DominiosFato.Analisar(codigo));
-
-    private static readonly ValueConverter<OrigemFato, string> OrigemConverter =
-        new(origem => OrigensFato.ParaTokenCanonico(origem), codigo => OrigensFato.Analisar(codigo));
-
-    private static readonly ValueConverter<FonteValoresFato, string> FonteValoresConverter =
-        new(fonte => FontesValoresFato.ParaTokenCanonico(fonte), codigo => FontesValoresFato.Analisar(codigo));
-
-    private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
-        new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), codigo => CardinalidadesFato.Analisar(codigo));
 
     private static readonly ValueConverter<ComponenteDeExibicao, string> ComponenteExibicaoConverter =
         new(componente => ComponentesDeExibicao.ParaTokenCanonico(componente), codigo => ComponentesDeExibicao.Analisar(codigo));

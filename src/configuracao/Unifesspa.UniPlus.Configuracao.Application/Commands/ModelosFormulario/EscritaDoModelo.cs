@@ -26,7 +26,7 @@ internal sealed class EscritaDoModelo(
     /// </summary>
     public async Task<(ConteudoLido Conteudo, IReadOnlyList<FieldError> RecusasDaLeitura, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
         ConteudoDoModeloInput? entrada,
-        FinalidadeFormulario finalidade,
+        FinalidadeFormulario? finalidade,
         string? tipoProcessoCodigo,
         ModeloGravado gravado,
         CancellationToken cancellationToken)

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -25,12 +26,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class VocabularioDeFatosTests
 {
     [Theory(DisplayName = "Fato de texto, data ou endereço fica fora do vocabulário citável")]
-    [InlineData("TEXTO")]
-    [InlineData("DATA")]
-    [InlineData("ENDERECO")]
-    public void Classificar_DominioNaoCitavel_Nulo(string dominio) =>
+    [InlineData(TipoDoDado.Texto)]
+    [InlineData(TipoDoDado.Data)]
+    [InlineData(TipoDoDado.Endereco)]
+    public void Classificar_DominioNaoCitavel_Nulo(TipoDoDado dominio) =>
         VocabularioDeFatos.Classificar(new FatoCandidatoView(
-            Guid.CreateVersion7(), "DADO_PESSOAL", "Dado pessoal", "Descrição do fato.", dominio, "DECLARADO", "ESCALAR",
+            Guid.CreateVersion7(), "DADO_PESSOAL", "Dado pessoal", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             ValoresDominio: null, "INSCRICAO", "CAMPO_FORMULARIO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true))
             .Should().BeNull();
 
@@ -39,11 +40,11 @@ public sealed class VocabularioDeFatosTests
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS Residência", OrigemCandidatos.InscricaoPropria);
 
-        VocabularioDeFatos.Classificar(Derivado("UF_RESIDENCIA", "GEO_UF")).Should().Be(TipoDominioFato.CategoricoDinamico);
-        VocabularioDeFatos.Classificar(Derivado("MUNICIPIO_RESIDENCIA", "GEO_MUNICIPIO")).Should().Be(TipoDominioFato.CategoricoDinamico);
+        VocabularioDeFatos.Classificar(Derivado("UF_RESIDENCIA", FonteValoresFato.UnidadesFederativas)).Should().Be(TipoDominioFato.CategoricoDinamico);
+        VocabularioDeFatos.Classificar(Derivado("MUNICIPIO_RESIDENCIA", FonteValoresFato.Municipios)).Should().Be(TipoDominioFato.CategoricoDinamico);
 
         Dictionary<string, DominioDeValores> dominios = VocabularioDeFatos.DominiosDinamicos(
-            processo, [Derivado("UF_RESIDENCIA", "GEO_UF"), Derivado("MUNICIPIO_RESIDENCIA", "GEO_MUNICIPIO")]);
+            processo, [Derivado("UF_RESIDENCIA", FonteValoresFato.UnidadesFederativas), Derivado("MUNICIPIO_RESIDENCIA", FonteValoresFato.Municipios)]);
 
         dominios["UF_RESIDENCIA"].Contem("PA").Should().BeTrue();
         dominios["UF_RESIDENCIA"].Contem("XX").Should().BeFalse();
@@ -55,7 +56,7 @@ public sealed class VocabularioDeFatosTests
     [Fact(DisplayName = "A recusa do valor fora da oferta do processo nomeia o valor e orienta ofertá-lo no processo")]
     public void Recusa_ValorForaDaOfertaDoProcesso_OrientaAOferta()
     {
-        FatoCandidatoView condicao = Derivado("CONDICAO_ATENDIMENTO", "PROCESSO");
+        FatoCandidatoView condicao = Derivado("CONDICAO_ATENDIMENTO", FonteValoresFato.OpcoesDoProcesso);
 
         Result recusa = ValidarCondicao(Processo(), condicao, "OUTRA_CONDICAO");
 
@@ -66,7 +67,7 @@ public sealed class VocabularioDeFatosTests
     [Fact(DisplayName = "A recusa da UF que não existe nomeia o valor sem mandar ofertá-lo, porque a UF não vem do processo")]
     public void Recusa_UfInexistente_SemOrientarOferta()
     {
-        FatoCandidatoView uf = Derivado("UF_RESIDENCIA", "GEO_UF");
+        FatoCandidatoView uf = Derivado("UF_RESIDENCIA", FonteValoresFato.UnidadesFederativas);
 
         Result recusa = ValidarCondicao(Processo(), uf, "XX");
 
@@ -86,18 +87,18 @@ public sealed class VocabularioDeFatosTests
             predicado, vocabulario, null, VocabularioDeFatos.DominiosDinamicos(processo, [fato]));
     }
 
-    private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
-        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR",
-        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+    private static FatoCandidatoView Derivado(string codigo, FonteValoresFato fonte) => new(
+        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(fonte), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "O domínio de contribuição de uma regra segue a fonte: valores do processo, ou todos os do catálogo")]
     public void DominioDeContribuicao_PelaFonte()
     {
         FatoCandidatoView global = new(
-            Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+            Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
             ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
             [new FatoValorDominioViewItem("REGULAR", "Regular", 0, true), new FatoValorDominioViewItem("EJA", "EJA", 1, false)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+            CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         Dictionary<string, DominioDeValores> dinamicos = new(StringComparer.Ordinal)
         {
             ["MODALIDADE"] = DominioDeValores.Enumerado(["AC", "LB_PPI"]),
@@ -105,7 +106,7 @@ public sealed class VocabularioDeFatosTests
 
         VocabularioDeFatos.DominioDeContribuicao(global, dinamicos)
             .Should().BeEquivalentTo(["REGULAR", "EJA"], "o desativado é recusado como vínculo novo, não como fora do domínio");
-        VocabularioDeFatos.DominioDeContribuicao(Derivado("MODALIDADE", "MODALIDADE"), dinamicos)
+        VocabularioDeFatos.DominioDeContribuicao(Derivado("MODALIDADE", FonteValoresFato.Modalidade), dinamicos)
             .Should().BeEquivalentTo(["AC", "LB_PPI"]);
     }
 
@@ -117,7 +118,7 @@ public sealed class VocabularioDeFatosTests
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                 .ComRotulo("Categoria de renda")
-                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .DoTipo(TipoRenderizacao.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
             .Construir();
@@ -145,14 +146,14 @@ public sealed class VocabularioDeFatosTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FatoCandidatoView Agregado(string codigo, string membro) => new(
-        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
+        ValoresDominio: null, "HABILITACAO", $"RESUMO_DE_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "Os fatos cujos valores são modalidades são escolhidos pela fonte, não pelo código")]
     public void ComValoresDeModalidade_PelaFonte()
     {
         FatosDeModalidade fatos = VocabularioDeFatos.ComValoresDeModalidade(
-            [Derivado("GRUPO_DE_COTA", "MODALIDADE"), Derivado("MODALIDADE", "GLOBAL"), Derivado("UF_RESIDENCIA", "GEO_UF")]);
+            [Derivado("GRUPO_DE_COTA", FonteValoresFato.Modalidade), Derivado("MODALIDADE", FonteValoresFato.Catalogo), Derivado("UF_RESIDENCIA", FonteValoresFato.UnidadesFederativas)]);
 
         fatos.Codigos.Should().BeEquivalentTo(["GRUPO_DE_COTA"]);
     }

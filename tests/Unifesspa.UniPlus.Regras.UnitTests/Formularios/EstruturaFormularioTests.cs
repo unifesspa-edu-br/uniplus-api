@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public sealed class EstruturaFormularioTests
 {
-    private static EtapaEstrutura Secao(string codigo, int ordem) => new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum);
+    private static EtapaEstrutura Secao(string codigo, int ordem) => new(codigo, ordem, TipoEtapaFormulario.Secao, null);
 
     private static EtapaEstrutura Bloco(BlocoSistema bloco, int ordem) => new(bloco.ToString(), ordem, TipoEtapaFormulario.Bloco, bloco);
 
@@ -54,7 +54,7 @@ public sealed class EstruturaFormularioTests
     private static readonly EtapaEstrutura[] EtapasComTodasAsRecusas =
     [
         new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.ComprovacaoDocumental),
-        new("DADOS", 1, TipoEtapaFormulario.Nenhum, BlocoSistema.Nenhum),
+        new("DADOS", 1, TipoEtapaFormulario.Bloco, null),
         Bloco(BlocoSistema.ComprovacaoDocumental, 2),
         Bloco(BlocoSistema.ComprovacaoDocumental, 2),
         Bloco(BlocoSistema.ModalidadesCalculadas, 3),
@@ -64,7 +64,7 @@ public sealed class EstruturaFormularioTests
     [
         ("etapas[0].bloco", EstruturaFormularioErrorCodes.SecaoComBloco),
         ("etapas[1].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
-        ("etapas[1].tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio),
+        ("etapas[1].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
         ("etapas[3].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
         ("etapas[3].ordem", EstruturaFormularioErrorCodes.EtapaOrdemDuplicada),
         ("etapas[3].bloco", EstruturaFormularioErrorCodes.BlocoRepetido),

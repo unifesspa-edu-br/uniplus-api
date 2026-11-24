@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class FatoCandidatoMapping
 {
@@ -28,16 +30,16 @@ internal static class FatoCandidatoMapping
         fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null);
 
     private static DefinicaoDoFatoDto DefinicaoDe(FatoCandidato fato) => new(
-        DominiosFato.ParaTokenCanonico(fato.Dominio),
-        CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
+        CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
+        CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
         EscoposFato.ParaTokenCanonico(fato.Escopo),
         fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null,
         ValoresDe(fato),
-        new ResolucaoDoFatoDto(OrigensFato.ParaTokenCanonico(fato.Origem), fato.PontoResolucao, fato.Binding),
+        new ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato>.De(fato.Origem), fato.PontoResolucao, fato.Binding),
         ProtecaoDe(fato));
 
     private static ValoresDoFatoDto ValoresDe(FatoCandidato fato) => new(
-        fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
+        fato.FonteValores is { } fonte ? CodigoComRotulo<FonteValoresFato>.De(fonte) : null,
         [.. fato.ValoresDominioDeclarados
             .OrderBy(static v => v.Ordem)
             .ThenBy(static v => v.Codigo, StringComparer.Ordinal)

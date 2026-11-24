@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Os tipos de conceito de uso corrente existem ao subir o sistema, gravados pelo script de sementes do módulo.
@@ -35,12 +36,12 @@ public sealed class SementeTiposConceitoTests
         TipoConceito aptoInapto = await ctx.TiposConceito.SingleAsync(t => t.Codigo == "APTO_INAPTO");
 
         nota.Ativo.Should().BeTrue();
-        nota.Natureza.Should().Be(NaturezaConceito.Numerico);
+        nota.Natureza.Should().Be(FormaDoConceito.Numerico);
         nota.EscalaMinima.Should().Be(0);
         nota.EscalaMaxima.Should().Be(1000);
         nota.CasasDecimais.Should().Be(2);
 
-        aptoInapto.Natureza.Should().Be(NaturezaConceito.Categorico);
+        aptoInapto.Natureza.Should().Be(FormaDoConceito.PorOpcoes);
         aptoInapto.Valores.Select(static v => (v.Codigo, v.ContaComoAprovacao, v.Posicao))
             .Should().Equal(("APTO", true, 1), ("INAPTO", false, 2));
     }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Códigos de erro de domínio do <see cref="Entities.FatoCandidato"/> — o catálogo
 /// <c>dados_do_candidato</c> (UNI-REQ-0077), prefixados por <c>FatoCandidato.</c>.

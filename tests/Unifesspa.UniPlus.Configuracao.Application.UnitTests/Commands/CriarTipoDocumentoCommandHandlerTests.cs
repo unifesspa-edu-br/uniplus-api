@@ -2,10 +2,15 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -17,9 +22,12 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     private readonly ITipoDocumentoRepository _repository = Substitute.For<ITipoDocumentoRepository>();
     private readonly ICategoriaDocumentoRepository _categoriaRepository = Substitute.For<ICategoriaDocumentoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly GravacaoDoTipoDocumento _gravacao;
 
     public CriarTipoDocumentoCommandHandlerTests()
     {
+        _gravacao = new GravacaoDoTipoDocumento(_repository, _categoriaRepository, _unitOfWork);
+
         // O caso comum é a categoria existir; os testes que exercitam a ausência
         // sobrescrevem esta configuração.
         _categoriaRepository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
@@ -37,7 +45,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
             .Returns(false);
 
         Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            ComandoValido(), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            ComandoValido(), _gravacao, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
@@ -52,7 +60,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
             .Returns(true);
 
         Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            ComandoValido(), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+            ComandoValido(), _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoJaExiste);
@@ -64,8 +72,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     {
         CriarTipoDocumentoCommand comando = ComandoValido() with { Categoria = "financeiro" };
 
-        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaFormatoInvalido);
@@ -80,8 +87,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
             .Returns(false);
         CriarTipoDocumentoCommand comando = ComandoValido() with { Categoria = "INEXISTENTE" };
 
-        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaNaoEncontrada);
@@ -95,8 +101,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     {
         CriarTipoDocumentoCommand comando = ComandoValido() with { Nome = "", Categoria = "financeiro" };
 
-        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -118,8 +123,7 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
             HipoteseLegal = null,
         };
 
-        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -132,10 +136,50 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     {
         CriarTipoDocumentoCommand comando = ComandoValido() with { ClassificacaoProtecao = "ALTISSIMA" };
 
-        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
-            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(comando, _gravacao, CancellationToken.None);
 
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida);
+    }
+
+    [Fact(DisplayName = "A corrida no índice único do código devolve CodigoJaExiste e descarta o rastreamento, para o save automático não estourar fora do catch")]
+    public async Task Handle_CorridaNoIndiceUnico_TraduzEDescartaRastreamento()
+    {
+        _repository.CodigoExisteEntreVivosAsync(Codigo("LAUDO_MEDICO"), null, Arg.Any<CancellationToken>()).Returns(false);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TipoDeDocumentoCodigoVivo)));
+
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(ComandoValido(), _gravacao, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "A violação de outro índice único não é traduzida: propaga sem descartar")]
+    public async Task Handle_ViolacaoDeOutroIndice_Propaga()
+    {
+        _repository.CodigoExisteEntreVivosAsync(Codigo("LAUDO_MEDICO"), null, Arg.Any<CancellationToken>()).Returns(false);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException("violação sintética de teste", PostgresExceptionFactory.Create("23505", "ix_outro")));
+
+        Func<Task> acao = () => CriarTipoDocumentoCommandHandler.Handle(ComandoValido(), _gravacao, CancellationToken.None);
+
+        await acao.Should().ThrowAsync<DbUpdateException>();
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Categoria inexistente é recusada antes de conferir o código, mesmo com o código já existente")]
+    public async Task Handle_CategoriaInexistenteECodigoExistente_RecusaACategoriaSemConsultarOCodigo()
+    {
+        _categoriaRepository.CodigoExisteEntreVivosAsync("INEXISTENTE", null, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CodigoExisteEntreVivosAsync(Codigo("LAUDO_MEDICO"), null, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
+            ComandoValido() with { Categoria = "INEXISTENTE" }, _gravacao, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaNaoEncontrada);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<CodigoTipoDocumento>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 }

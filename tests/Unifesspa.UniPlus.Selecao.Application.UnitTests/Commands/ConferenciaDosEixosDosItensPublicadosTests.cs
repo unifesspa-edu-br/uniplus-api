@@ -61,7 +61,7 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     {
         FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Data)]);
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.Booleano), "formularios[0].itens[3]")]);
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].itens[3]")]);
 
         FieldError causa = causas.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
@@ -72,9 +72,9 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     [Fact(DisplayName = "A comparação aceita os mesmos eixos e um fato novo")]
     public void Conferir_MesmosEixosEFatoNovo_NaoRecusa()
     {
-        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Booleano)]);
+        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.SimOuNao)]);
 
-        Conferir(publicadas, [new(Item(TipoRenderizacao.Booleano), "formularios[0].itens[0]"), new(ItemNovo(), "formularios[0].itens[1]")])
+        Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].itens[0]"), new(ItemNovo(), "formularios[0].itens[1]")])
             .Should().BeEmpty();
     }
 
@@ -89,7 +89,7 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
             .Construir();
         FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo])]);
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.Booleano), "formularios[0].grupos[0].subitens[2]")]);
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].grupos[0].subitens[2]")]);
 
         causas.Should().ContainSingle().Which.Field.Should().Be("formularios[0].grupos[0].subitens[2]");
         causas[0].Error.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
@@ -98,10 +98,10 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     [Fact(DisplayName = "Versões distintas geram uma recusa por ocorrência na ordem recebida de cada formulário")]
     public void Conferir_VariasOcorrenciasEVersoes_ConservaOrdemECaminhos()
     {
-        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Data)], [Item(TipoRenderizacao.Booleano)]);
+        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Data)], [Item(TipoRenderizacao.SimOuNao)]);
         string[] caminhos = ["formularios[2].itens[9]", "formularios[2].grupos[1].subitens[4]", "formularios[0].itens[3]"];
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, caminhos.Select(caminho => new ItemNoDocumento(Item(TipoRenderizacao.Booleano), caminho)));
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, caminhos.Select(caminho => new ItemNoDocumento(Item(TipoRenderizacao.SimOuNao), caminho)));
 
         causas.Select(static c => c.Field).Should().Equal(caminhos);
         causas.Select(static c => c.Error.Code).Should().AllBe(CodigoDaRecusaDoEixoAlterado);
@@ -131,7 +131,7 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     }
 
     private static FatoColetado Coletado(
-        TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
+        TipoRenderizacao tipo = TipoRenderizacao.SimOuNao, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
         FatoColetadoDeTeste.Coletando(fato, 0)
             .ComRotulo(rotulo)
             .DoTipo(tipo)

@@ -14,7 +14,7 @@ public static class RespostaDeCampo
     /// <summary>
     /// Indica que o campo está sem resposta: nulo, ausente, texto em branco ou lista vazia. Uma lista
     /// vazia ou um texto em branco não são respostas — tratá-los como valor faria uma condição
-    /// <c>DIFERENTE</c> ou <c>NAO_EM</c> ser satisfeita por quem não respondeu (UNI-REQ-0074).
+    /// <c>DIFERENTE</c> ou <c>NENHUM_DE</c> ser satisfeita por quem não respondeu (UNI-REQ-0074).
     /// </summary>
     public static bool EstaVazia(JsonElement resposta) => resposta.ValueKind switch
     {
@@ -36,13 +36,13 @@ public static class RespostaDeCampo
             return [resposta.GetString()!];
         }
 
-        if (resposta.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
+        return resposta.ValueKind == JsonValueKind.Array ? CodigosDaLista(resposta) : null;
+    }
 
+    private static List<string>? CodigosDaLista(JsonElement lista)
+    {
         List<string> codigos = [];
-        foreach (JsonElement item in resposta.EnumerateArray())
+        foreach (JsonElement item in lista.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.String)
             {

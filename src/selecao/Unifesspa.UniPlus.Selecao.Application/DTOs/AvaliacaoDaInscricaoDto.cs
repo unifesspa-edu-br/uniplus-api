@@ -83,18 +83,18 @@ public sealed record AvaliacaoDaInscricaoDto(
         DocumentoExigido documento = avaliado.Documento;
         return new DocumentoDaInscricaoDto(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
-            documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
+            documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null,
             documento.ExigidoNaEtapaId, Formatos(documento), Modelo(documento, enderecoDoModelo),
             CodigoComRotulo<SituacaoDoDocumento>.De(avaliado.Situacao), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
             [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, CodigoComRotulo<FormaDeComprovacao>.De(g.Forma), g.Minimo, g.GrupoDoFormularioParaRepeticao))],
             avaliado.GrupoDoFormularioParaRepeticao,
-            [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.Codigo())],
+            [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(CodigoComRotulo<FormatoPermitido>.De)],
             ArquivoDaApresentacao.LimiteAnunciadoDe(documento), avaliado.QuantidadeMinima,
             [.. arquivos.Where(a => a.ExigenciaId == documento.Id && a.OcorrenciaId == avaliado.OcorrenciaId)]);
     }
 
     private static FormatosAceitosCertameDto Formatos(DocumentoExigido documento) =>
-        new(documento.FormatosPermitidos.Qualquer, documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.Codigo()).ToList());
+        new(documento.FormatosPermitidos.Qualquer, documento.FormatosPermitidos.Lista?.Select(static e => CodigoComRotulo<FormatoPermitido>.De(e.Formato)).ToList());
 
     private static ModeloDocumentalCertameDto? Modelo(DocumentoExigido documento, Func<ModeloDaExigencia, Uri?> enderecoDoModelo) =>
         documento.Modelo is { } modelo
@@ -150,7 +150,7 @@ public sealed record DocumentoDaInscricaoDto(
     string TipoDocumentoCodigo,
     string Nome,
     bool Obrigatorio,
-    string? Finalidade,
+    CodigoComRotulo<FinalidadeFormulario>? Finalidade,
     Guid? EtapaId,
     FormatosAceitosCertameDto Formatos,
     ModeloDocumentalCertameDto? Modelo,
@@ -159,7 +159,7 @@ public sealed record DocumentoDaInscricaoDto(
     string? OcorrenciaId,
     IReadOnlyList<GrupoDeComprovacaoDto> Grupos,
     string? GrupoDoFormularioParaRepeticao,
-    IReadOnlyList<string> FormatosAceitos,
+    IReadOnlyList<CodigoComRotulo<FormatoPermitido>> FormatosAceitos,
     long TamanhoMaximoBytes,
     int QuantidadeMinima,
     IReadOnlyList<ArquivoDaApresentacaoDto> Arquivos);

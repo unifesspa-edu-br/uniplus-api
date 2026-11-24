@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -276,8 +277,8 @@ internal static class ConferenciaDoModelo
             return new(ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato.");
         }
 
-        return string.Equals(fato.Dominio, DominiosFato.ParaTokenCanonico(DominioFato.Categorico), StringComparison.Ordinal)
-            && string.Equals(fato.FonteValores, FontesValoresFato.ParaTokenCanonico(FonteValoresFato.Processo), StringComparison.Ordinal)
+        return fato.Dominio == TipoDoDado.Opcao
+            && fato.FonteValores == FonteValoresFato.OpcoesDoProcesso
             ? null
             : new(ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
                 "O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara. Informe um fato que atenda a essa condição.");

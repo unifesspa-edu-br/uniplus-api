@@ -29,7 +29,7 @@ internal static class SerializacaoDosFormularios
     internal static JsonArray SerializarFormularios(ProcessoSeletivo processo) =>
         new([.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)new JsonObject
         {
-            ["finalidade"] = EstruturaFormulario.ParaToken(formulario.Finalidade),
+            ["finalidade"] = formulario.Finalidade.Codigo(),
             ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
             ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
             ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
@@ -52,8 +52,8 @@ internal static class SerializacaoDosFormularios
     {
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.Codigo),
         ["ordem"] = etapa.Ordem,
-        ["tipo"] = EstruturaFormulario.ParaToken(etapa.Tipo),
-        ["bloco"] = EstruturaFormulario.ParaToken(etapa.Bloco),
+        ["tipo"] = etapa.Tipo.Codigo(),
+        ["bloco"] = etapa.Bloco?.Codigo(),
         ["titulo"] = HashCanonicalComputer.NormalizeNfc(etapa.Titulo),
         ["descricao"] = etapa.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
         ["aviso"] = etapa.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
@@ -79,7 +79,7 @@ internal static class SerializacaoDosFormularios
 
     internal static JsonObject SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) => new()
     {
-        ["tipo"] = PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
+        ["tipo"] = obrigatoriedade.Tipo.Codigo(),
         ["quando"] = obrigatoriedade.Predicado is { } predicado ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(predicado)) : null,
     };
 
@@ -95,7 +95,7 @@ internal static class SerializacaoDosFormularios
     private static JsonObject SerializarRestricao(RestricaoValor restricao)
     {
         JsonObject json = DetalheDaRestricao(restricao);
-        json["tipo"] = RestricaoValorJson.ParaToken(restricao.Tipo);
+        json["tipo"] = restricao.Tipo.Codigo();
         return json;
     }
 

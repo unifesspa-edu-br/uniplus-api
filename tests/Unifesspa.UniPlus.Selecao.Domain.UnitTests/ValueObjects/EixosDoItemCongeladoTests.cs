@@ -11,7 +11,7 @@ public sealed class EixosDoItemCongeladoTests
     public static TheoryData<EixosDoItemCongelado, string> Diferencas => new()
     {
         { Publicado with { TipoRenderizacao = "DATA" }, "tipo de renderização" },
-        { Publicado with { OrigemValores = "PROCESSO" }, "origem dos valores" },
+        { Publicado with { OrigemValores = "OPCOES_DO_PROCESSO" }, "origem dos valores" },
         { Publicado with { Formato = "FORMATO" }, "formato" },
         { Publicado with { ClassificacaoProtecao = "SENSIVEL" }, "classificação de proteção" },
         { Publicado with { HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS" }, "hipótese legal" },
@@ -45,7 +45,7 @@ public sealed class EixosDoItemCongeladoTests
     [Fact(DisplayName = "A primeira diferença segue a ordem dos seis eixos")]
     public void PrimeiraTroca_DoisEixosDiferentes_IdentificaOPrimeiro()
     {
-        TrocaDeEixo? troca = Publicado.PrimeiraTroca("FATO", Publicado with { OrigemValores = "PROCESSO", FinalidadeTratamento = "Outra finalidade." });
+        TrocaDeEixo? troca = Publicado.PrimeiraTroca("FATO", Publicado with { OrigemValores = "OPCOES_DO_PROCESSO", FinalidadeTratamento = "Outra finalidade." });
 
         troca!.Eixo.Should().Be("origem dos valores");
     }

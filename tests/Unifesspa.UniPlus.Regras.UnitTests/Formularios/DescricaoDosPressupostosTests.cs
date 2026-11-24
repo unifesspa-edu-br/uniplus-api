@@ -13,11 +13,11 @@ public sealed class DescricaoDosPressupostosTests
     public void Descrever_FatoPerguntadoPorOutroFormulario_TrazAApresentacaoDele()
     {
         ValorSelecionavel preta = new("PRETA", "Preta", 0);
-        DescricaoDosPressupostos descricao = new([Campo("COR_RACA", "Cor ou raça", "SELECAO_UNICA", valores: [preta])], SemCatalogo, []);
+        DescricaoDosPressupostos descricao = new([Campo("COR_RACA", "Cor ou raça", "ESCOLHA_UNICA", valores: [preta])], SemCatalogo, []);
 
         IReadOnlyList<PressupostoRenderizavel> pressupostos = descricao.Descrever(["COR_RACA"]);
 
-        pressupostos.Should().BeEquivalentTo([new PressupostoRenderizavel("COR_RACA", "Cor ou raça", "SELECAO_UNICA", null, [preta], null)], static opcoes => opcoes.WithStrictOrdering());
+        pressupostos.Should().BeEquivalentTo([new PressupostoRenderizavel("COR_RACA", "Cor ou raça", "ESCOLHA_UNICA", null, [preta], null)], static opcoes => opcoes.WithStrictOrdering());
     }
 
     [Fact(DisplayName = "O fato que nenhum formulário pergunta traz só o rótulo e o tipo do catálogo")]
@@ -58,11 +58,11 @@ public sealed class DescricaoDosPressupostosTests
     public void Descrever_FatoPerguntadoDuasVezes_ValePeloPrimeiroCampo()
     {
         DescricaoDosPressupostos descricao = new(
-            [Campo("COR_RACA", "Primeiro rótulo", "SELECAO_UNICA"), Campo("COR_RACA", "Segundo rótulo", "TEXTO")], SemCatalogo, []);
+            [Campo("COR_RACA", "Primeiro rótulo", "ESCOLHA_UNICA"), Campo("COR_RACA", "Segundo rótulo", "TEXTO")], SemCatalogo, []);
 
         IReadOnlyList<PressupostoRenderizavel> pressupostos = descricao.Descrever(["COR_RACA"]);
 
-        pressupostos.Should().BeEquivalentTo([new PressupostoRenderizavel("COR_RACA", "Primeiro rótulo", "SELECAO_UNICA", null, null, null)], static opcoes => opcoes.WithStrictOrdering());
+        pressupostos.Should().BeEquivalentTo([new PressupostoRenderizavel("COR_RACA", "Primeiro rótulo", "ESCOLHA_UNICA", null, null, null)], static opcoes => opcoes.WithStrictOrdering());
     }
 
     private static CampoRenderizavel Campo(string fato, string rotulo, string tipo, IReadOnlyList<ValorSelecionavel>? valores = null) =>

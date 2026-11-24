@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -48,7 +49,7 @@ public static class ConsolidacaoDoConceitoCategorico
 
     private static void ExigirValoresDoConceito(ConceitoDaEtapa conceito, IReadOnlyList<string> valoresAtribuidos)
     {
-        if (conceito.Natureza != NaturezaConceito.Categorico)
+        if (conceito.Natureza != FormaDoConceito.PorOpcoes)
         {
             throw new ArgumentException("A consolidação por valor exige um conceito categórico.", nameof(conceito));
         }

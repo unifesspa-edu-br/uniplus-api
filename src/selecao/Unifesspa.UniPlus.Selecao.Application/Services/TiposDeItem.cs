@@ -39,22 +39,22 @@ public static class TiposDeItem
     public static string De(TipoRenderizacao renderizacao) => renderizacao switch
     {
         TipoRenderizacao.Numero => Numero,
-        TipoRenderizacao.Booleano => Booleano,
-        TipoRenderizacao.SelecaoUnica or TipoRenderizacao.Municipio => Opcao,
-        TipoRenderizacao.SelecaoMultipla => Opcoes,
+        TipoRenderizacao.SimOuNao => Booleano,
+        TipoRenderizacao.EscolhaUnica or TipoRenderizacao.Municipio => Opcao,
+        TipoRenderizacao.EscolhaMultipla => Opcoes,
         TipoRenderizacao.Data => Data,
         TipoRenderizacao.Endereco => Endereco,
         _ => Texto,
     };
 
-    /// <summary>O tipo do fato derivado, pelo domínio e pela cardinalidade que a publicação congelou.</summary>
-    public static string De(string dominio, string cardinalidade) => dominio switch
+    /// <summary>O tipo do fato derivado, pelo tipo do dado e pela quantidade de valores que a publicação congelou.</summary>
+    public static string De(TipoDoDado tipo, QuantidadeDeValores quantidade) => tipo switch
     {
-        "CATEGORICO" => string.Equals(cardinalidade, "MULTIVALORADO", StringComparison.Ordinal) ? Opcoes : Opcao,
-        "NUMERICO" => Numero,
-        "BOOLEANO" => Booleano,
-        "DATA" => Data,
-        "ENDERECO" => Endereco,
+        TipoDoDado.Opcao => quantidade == QuantidadeDeValores.VariosValores ? Opcoes : Opcao,
+        TipoDoDado.Numerico => Numero,
+        TipoDoDado.SimOuNao => Booleano,
+        TipoDoDado.Data => Data,
+        TipoDoDado.Endereco => Endereco,
         _ => Texto,
     };
 }

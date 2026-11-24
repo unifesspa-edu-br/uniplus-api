@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -167,7 +168,7 @@ internal sealed class CenarioDeRecusaNoCongelamento
 
     private static IFatoCandidatoReader CatalogoDoFatoColetado()
     {
-        FatoCandidatoView vivo = FatoDoCatalogo("BOOLEANO", "PESSOAL");
+        FatoCandidatoView vivo = FatoDoCatalogo(TipoDoDado.SimOuNao, "PESSOAL");
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
         catalogo.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, FatoNovoDoCatalogo(vivo)]));

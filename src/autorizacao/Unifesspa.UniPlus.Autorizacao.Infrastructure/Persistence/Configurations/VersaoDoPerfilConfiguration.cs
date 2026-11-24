@@ -42,10 +42,6 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
         categoria => categoria.ToCodigo(),
         codigo => CategoriaDaRemocaoCodigo.FromCodigo(codigo));
 
-    private static readonly ValueConverter<ClassificacaoDeProtecao, string> ClassificacaoConverter = new(
-        classificacao => classificacao.ToString().ToLowerInvariant(),
-        codigo => Enum.Parse<ClassificacaoDeProtecao>(codigo, true));
-
     public void Configure(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -178,7 +174,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
             permissao.WithOwner().HasForeignKey("VersaoId");
             permissao.Property<Guid>("VersaoId");
             permissao.Property(x => x.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoDaPermissaoMaxLength).IsRequired();
-            permissao.Property(x => x.Classificacao).HasConversion(ClassificacaoConverter).HasMaxLength(ClassificacaoMaxLength).IsRequired();
+            permissao.Property(x => x.Classificacao).HasMaxLength(ClassificacaoMaxLength).IsRequired();
             permissao.Property(x => x.DeUnidade).IsRequired();
             permissao.HasKey("VersaoId", nameof(PermissaoDaVersao.Codigo));
         });

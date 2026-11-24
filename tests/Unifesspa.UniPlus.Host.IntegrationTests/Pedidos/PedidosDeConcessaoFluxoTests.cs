@@ -108,7 +108,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorContaId.Should().Be(Marlene.ContaId.ToString());
         JsonElement[] decisoes = [.. protecao.GetProperty("decisoes").EnumerateArray()];
         decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("gestor", "protecao_de_dados");
-        decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("sensivel");
+        decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("SENSIVEL");
         (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().NotContain(id);
     }
 

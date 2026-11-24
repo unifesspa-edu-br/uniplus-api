@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Corpo da alteração da definição de um fato do administrador. O eixo que o tipo do fato não
 /// aceita não se informa. Por tipo: o fato declarado envia domínio, cardinalidade, fonte dos valores
@@ -13,8 +16,8 @@ public sealed record DefinicaoDoFatoInput(
     string ClassificacaoProtecao,
     string FinalidadeTratamento,
     string HipoteseLegal,
-    string? Dominio = null,
-    string? Cardinalidade = null,
-    string? FonteValores = null,
+    [property: AceitaCodigosDe<TipoDoDado>] string? Dominio = null,
+    [property: AceitaCodigosDe<QuantidadeDeValores>] string? Cardinalidade = null,
+    [property: AceitaCodigosDe<FonteValoresFato>] string? FonteValores = null,
     string? Formato = null,
     string? Escopo = null);

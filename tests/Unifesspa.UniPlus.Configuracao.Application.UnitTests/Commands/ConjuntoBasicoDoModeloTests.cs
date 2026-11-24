@@ -31,7 +31,7 @@ public sealed class ConjuntoBasicoDoModeloTests
         ["NOME_COMUNIDADE"] = "LIVRE",
     };
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+    private static readonly EtapaDoModelo Dados = new("DADOS", 1, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
 
     [Fact(DisplayName = "O modelo de inscrição gravado sem os dados de sexo e gênero os recebe na seção dos dados básicos, sem repetir a ordem de nenhum item")]
     public void Mesclar_ModeloGravadoAntesDosTresDados_RecebeOsItensSemColidir()
@@ -99,7 +99,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     }
 
     private static ItemDoModelo ItemOpcionalDeBaixaRenda(int ordem) =>
-        new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
+        new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
 
     private static ModeloFormulario ModeloGravado(FinalidadeFormulario finalidade)
     {

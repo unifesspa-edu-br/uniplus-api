@@ -33,7 +33,7 @@ internal sealed record GrupoColetadoDeTeste
 
     private Obrigatoriedade Obrigatoriedade { get; init; } = Obrigatoriedade.Nunca;
 
-    private FinalidadeFormulario Finalidade { get; init; }
+    private FinalidadeFormulario? Finalidade { get; init; }
 
     private IReadOnlyList<FatoColetado> Campos { get; init; } = [];
 
@@ -89,7 +89,7 @@ internal sealed record GrupoColetadoDeTeste
     public GrupoColetado Construir() => Criar().Value!;
 
     private FatoColetado[] CamposNaFinalidade() =>
-        [.. Campos.Select(campo => Finalidade == FinalidadeFormulario.Nenhuma || campo.Finalidade == Finalidade
+        [.. Campos.Select(campo => Finalidade is not { } finalidade || campo.Finalidade == finalidade
             ? campo
-            : FatoColetadoDeTeste.Como(campo).DaFinalidade(Finalidade).Construir())];
+            : FatoColetadoDeTeste.Como(campo).DaFinalidade(finalidade).Construir())];
 }

@@ -4,6 +4,9 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>Validação de forma de uma regra de documento (<see cref="ItemDocumentoExigidoInput"/>).</summary>
 /// <remarks>
 /// A aplicabilidade, a consequência do indeferimento, o tamanho máximo e a coerência entre geral e condição têm
@@ -40,15 +43,15 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
 /// <summary>Forma de uma condição do gatilho: cláusula não negativa, fato, operador do catálogo e valor.</summary>
 public sealed class CondicaoGatilhoInputValidator : AbstractValidator<CondicaoGatilhoInput>
 {
-    private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL", "DIFERENTE", "NAO_EM"];
+    private static readonly string CodigosDosOperadores = string.Join(", ", CatalogoDe<Operador>.Todos().Select(static c => c.Codigo));
 
     public CondicaoGatilhoInputValidator()
     {
         RuleFor(c => c.Clausula).GreaterThanOrEqualTo(0).WithMessage("O ordinal da cláusula não pode ser negativo.");
         RuleFor(c => c.Fato).NotEmpty().WithMessage("O fato da condição é obrigatório.");
         RuleFor(c => c.Operador)
-            .Must(valor => OperadoresValidos.Contains(valor, StringComparer.Ordinal))
-            .WithMessage($"Operador deve ser um de: {string.Join(", ", OperadoresValidos)}.");
+            .Must(static codigo => CatalogoDe<Operador>.TentarObter(codigo, out _))
+            .WithMessage($"Operador deve ser um de: {CodigosDosOperadores}.");
         RuleFor(c => c.Valor).NotEmpty().WithMessage("O valor da condição é obrigatório.");
     }
 }

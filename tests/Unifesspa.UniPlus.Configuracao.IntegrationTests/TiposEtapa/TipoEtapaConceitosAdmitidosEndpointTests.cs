@@ -39,7 +39,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
             .Select(conceito => (conceito.GetProperty("codigo").GetString(), conceito.GetProperty("nome").GetString(), conceito.GetProperty("natureza").GetProperty("codigo").GetString()))
             .Should().Equal(
                 ($"{prefixo}_NOTA", "Nota da entrevista", "NUMERICO"),
-                ($"{prefixo}_PARECER", "Parecer da análise", "CATEGORICO"));
+                ($"{prefixo}_PARECER", "Parecer da análise", "POR_OPCOES"));
     }
 
     [Fact(DisplayName = "A listagem pública traz os conceitos admitidos de cada tipo de etapa")]

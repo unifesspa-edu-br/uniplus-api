@@ -51,7 +51,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.Property(o => o.TipoProcessoCodigo).HasComment("Código do tipo de processo ao qual a regra se aplica.");
-        builder.Property(o => o.Categoria).HasComment("Categoria da regra: etapa, modalidade, desempate, documento, bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), atendimento ou outros.");
+        builder.Property(o => o.Categoria).HasComment("Categoria da regra: etapa, modalidade, desempate, documento, fada, atendimento ou outros.");
         builder.Property(o => o.RegraCodigo).HasComment("Código que identifica a regra legal.");
         builder.Property(o => o.Predicado).HasComment("Condições de aplicação da regra legal, em JSON.");
         builder.Property(o => o.DescricaoHumana).HasComment("Descrição da regra para leitura por pessoas.");

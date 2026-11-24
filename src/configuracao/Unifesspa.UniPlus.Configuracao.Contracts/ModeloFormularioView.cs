@@ -21,7 +21,7 @@ public sealed record ConteudoDoModeloInput(
 /// e uma finalidade (UNI-REQ-0144). O conteúdo está no formato da escrita do formulário do processo:
 /// a cópia para o processo passa pelas mesmas conferências que a escrita direta.
 /// </summary>
-/// <param name="Finalidade">Token canônico: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.</param>
+/// <param name="Finalidade">Código da finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.</param>
 /// <param name="TipoProcessoCodigo">O tipo de processo a que o modelo se destina; nulo quando serve a todos.</param>
 /// <param name="Ativo">O modelo desativado sai da escolha dos processos novos; o processo que já o copiou não muda.</param>
 public sealed record ModeloFormularioView(

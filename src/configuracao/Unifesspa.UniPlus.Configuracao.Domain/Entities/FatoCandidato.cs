@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -55,9 +56,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// mudá-lo não altera a proteção de dados nem reinicia o fato aprovado.
     /// </summary>
     public ComponenteDeExibicao? ComponenteExibicao { get; private set; }
-    public DominioFato Dominio { get; private set; }
+    public TipoDoDado Dominio { get; private set; }
     public OrigemFato Origem { get; private set; }
-    public CardinalidadeFato Cardinalidade { get; private set; }
+    public QuantidadeDeValores Cardinalidade { get; private set; }
 
     /// <summary>
     /// De onde vêm os valores de um fato categórico (ADR-0136) — <see langword="null"/> para
@@ -126,11 +127,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// O fato de membro que o agregado aponta (ADR-0138), ou <see langword="null"/> quando o fato não
     /// é agregado sobre grupo repetível.
     /// </summary>
-    public string? FatoDeMembroAgregado => VinculoDeFato.Nomeado(Binding, PrefixoBindingAgregacao);
+    public string? FatoDeMembroAgregado => VinculoDeFato.Nomeado(Binding, MecanismoDoVinculo.ResumoDeGrupo);
 
     /// <summary>O valor do fato vem da regra de derivação do próprio fato.</summary>
     public bool DerivadoPorRegra =>
-        Binding.StartsWith(PrefixoBindingDerivadoRegra + ":", StringComparison.Ordinal);
+        VinculoDeFato.Usa(Binding, MecanismoDoVinculo.RegraDeDerivacao);
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -151,44 +152,17 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     {
     }
 
-    internal FatoCandidato(
-        string codigo,
-        string nome,
-        string descricao,
-        ComponenteDeExibicao? componenteExibicao,
-        DominioFato dominio,
-        OrigemFato origem,
-        CardinalidadeFato cardinalidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato,
-        string pontoResolucao,
-        string binding,
-        EscopoFato escopo,
-        ProtecaoDeDados protecao,
-        bool sistema)
+    internal FatoCandidato(DescritivoDoFato descritivo, OrigemFato origem, string binding, EixosDaDefinicao eixos, bool sistema)
     {
-        Formato = formato;
-        Codigo = codigo;
-        FonteValores = fonteValores;
-        Nome = nome;
-        Descricao = descricao;
-        ComponenteExibicao = componenteExibicao;
-        Dominio = dominio;
+        Codigo = descritivo.Codigo;
+        Nome = descritivo.Nome;
+        Descricao = descritivo.Descricao ?? string.Empty;
+        ComponenteExibicao = descritivo.ComponenteExibicao;
         Origem = origem;
-        Cardinalidade = cardinalidade;
-        PontoResolucao = pontoResolucao;
         Binding = binding;
-        Escopo = escopo;
-        DefinirProtecao(protecao);
+        AplicarEixos(eixos);
         SemeadoPeloSistema = sistema;
         Ativo = true;
-    }
-
-    private void DefinirProtecao(ProtecaoDeDados protecao)
-    {
-        ClassificacaoProtecao = protecao.Classificacao;
-        FinalidadeTratamento = protecao.Finalidade;
-        HipoteseLegal = protecao.Hipotese;
     }
 
     /// <summary>
@@ -278,7 +252,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// A proteção de dados recomenda o ajuste da proteção do fato e indica a classificação correta, que precisa
     /// respeitar o mínimo do domínio do fato.
     /// </summary>
-    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em) =>
+    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao? recomendada, string? justificativa, string ator, DateTimeOffset em) =>
         TrocaDaProtecaoDoFato.Recomendar(this, recomendada, justificativa, ator, em);
 
     /// <summary>A proteção de dados reprova a proteção do fato, sem recomendar classificação, e explica o motivo.</summary>
@@ -364,7 +338,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <summary>
     /// Adiciona um valor ao conjunto fechado de um categórico estático (ADR-0116).
     /// Só o agregado conhece o necessário para validar: que o próprio
-    /// <see cref="Dominio"/> é <see cref="DominioFato.Categorico"/>, que o
+    /// <see cref="Dominio"/> é <see cref="TipoDoDado.Opcao"/>, que o
     /// <paramref name="codigo"/> (normalizado por trim, comparação ordinal) não
     /// colide com um irmão já adicionado, e que a <paramref name="descricao"/> é
     /// obrigatória quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>. A

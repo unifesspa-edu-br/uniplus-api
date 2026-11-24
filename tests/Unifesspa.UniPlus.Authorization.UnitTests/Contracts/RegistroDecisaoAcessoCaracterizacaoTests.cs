@@ -23,12 +23,12 @@ public sealed class RegistroDecisaoAcessoCaracterizacaoTests
 
     private const string JsonPermitido =
         """
-        {"Instante":"2026-08-22T13:00:00+00:00","AtorEmissor":"https://idp.exemplo/realms/unifesspa","AtorContaId":"conta-fixa-1","RequestId":"req-fixa","ExecucaoId":"01920000-0000-7000-8000-000000000001","Permissao":"selecao:inscricoes:consultar","ResourceTipo":"inscricao","Sensibilidade":"pessoal","UnidadeProprietariaId":"01920000-0000-7000-8000-000000000002","ProcessoId":"01920000-0000-7000-8000-000000000003","ChamadaId":"01920000-0000-7000-8000-000000000004","ResourceId":"01920000-0000-7000-8000-000000000005","InscricaoId":"01920000-0000-7000-8000-000000000005","FatoCodigo":"CPF","Ocorrencia":"membro-1","Origem":"api","ClienteOidc":"selecao-web","Resultado":"permitido","Permitido":true,"MotivoNegativa":null,"FonteGrant":"concessao","GrantId":"01920000-0000-7000-8000-000000000006","PerfilId":"01920000-0000-7000-8000-000000000007","VersaoId":"01920000-0000-7000-8000-000000000008","EscopoUnidadeId":"01920000-0000-7000-8000-000000000002"}
+        {"Instante":"2026-08-22T13:00:00+00:00","AtorEmissor":"https://idp.exemplo/realms/unifesspa","AtorContaId":"conta-fixa-1","RequestId":"req-fixa","ExecucaoId":"01920000-0000-7000-8000-000000000001","Permissao":"selecao:inscricoes:consultar","ResourceTipo":"inscricao","Sensibilidade":"PESSOAL","UnidadeProprietariaId":"01920000-0000-7000-8000-000000000002","ProcessoId":"01920000-0000-7000-8000-000000000003","ChamadaId":"01920000-0000-7000-8000-000000000004","ResourceId":"01920000-0000-7000-8000-000000000005","InscricaoId":"01920000-0000-7000-8000-000000000005","FatoCodigo":"CPF","Ocorrencia":"membro-1","Origem":"api","ClienteOidc":"selecao-web","Resultado":"permitido","Permitido":true,"MotivoNegativa":null,"FonteGrant":"concessao","GrantId":"01920000-0000-7000-8000-000000000006","PerfilId":"01920000-0000-7000-8000-000000000007","VersaoId":"01920000-0000-7000-8000-000000000008","EscopoUnidadeId":"01920000-0000-7000-8000-000000000002"}
         """;
 
     private const string JsonNegado =
         """
-        {"Instante":"2026-08-22T13:00:00+00:00","AtorEmissor":"https://idp.exemplo/realms/unifesspa","AtorContaId":"conta-fixa-1","RequestId":"req-fixa","ExecucaoId":"01920000-0000-7000-8000-000000000001","Permissao":"selecao:inscricoes:consultar","ResourceTipo":"inscricao","Sensibilidade":"pessoal","UnidadeProprietariaId":"01920000-0000-7000-8000-000000000002","ProcessoId":"01920000-0000-7000-8000-000000000003","ChamadaId":"01920000-0000-7000-8000-000000000004","ResourceId":"01920000-0000-7000-8000-000000000005","InscricaoId":"01920000-0000-7000-8000-000000000005","FatoCodigo":"CPF","Ocorrencia":"membro-1","Origem":"api","ClienteOidc":"selecao-web","Resultado":"negado","Permitido":false,"MotivoNegativa":"sem_concessao_aplicavel","FonteGrant":null,"GrantId":null,"PerfilId":null,"VersaoId":null,"EscopoUnidadeId":null}
+        {"Instante":"2026-08-22T13:00:00+00:00","AtorEmissor":"https://idp.exemplo/realms/unifesspa","AtorContaId":"conta-fixa-1","RequestId":"req-fixa","ExecucaoId":"01920000-0000-7000-8000-000000000001","Permissao":"selecao:inscricoes:consultar","ResourceTipo":"inscricao","Sensibilidade":"PESSOAL","UnidadeProprietariaId":"01920000-0000-7000-8000-000000000002","ProcessoId":"01920000-0000-7000-8000-000000000003","ChamadaId":"01920000-0000-7000-8000-000000000004","ResourceId":"01920000-0000-7000-8000-000000000005","InscricaoId":"01920000-0000-7000-8000-000000000005","FatoCodigo":"CPF","Ocorrencia":"membro-1","Origem":"api","ClienteOidc":"selecao-web","Resultado":"negado","Permitido":false,"MotivoNegativa":"sem_concessao_aplicavel","FonteGrant":null,"GrantId":null,"PerfilId":null,"VersaoId":null,"EscopoUnidadeId":null}
         """;
 
     private static readonly Guid Execucao = Guid.Parse("01920000-0000-7000-8000-000000000001");
@@ -43,8 +43,8 @@ public sealed class RegistroDecisaoAcessoCaracterizacaoTests
 
     private static ResourceContext ResourceDaInscricao() =>
         ResourceContext.From(
-            "inscricao", ClassificacaoDeProtecao.Interno, Unidade, Processo, Chamada, Inscricao,
-            fatoCodigo: "CPF", ocorrencia: "membro-1", inscricaoId: Inscricao).Value!;
+            "inscricao", ClassificacaoDeProtecao.Interno, Unidade, Processo, Chamada, Inscricao, inscricaoId: Inscricao)
+            .Value!.ComCampo("CPF", "membro-1").Value!;
 
     private static RegistroDecisaoAcesso Registro(AuthorizationDecision decisao) =>
         RegistroDecisaoAcesso.De(
@@ -69,7 +69,7 @@ public sealed class RegistroDecisaoAcessoCaracterizacaoTests
         (registro.AtorEmissor, registro.AtorContaId, registro.Instante, registro.RequestId, registro.ExecucaoId)
             .Should().Be(("https://idp.exemplo/realms/unifesspa", "conta-fixa-1", Instante, "req-fixa", Execucao));
         (registro.Permissao, registro.ResourceTipo, registro.Sensibilidade, registro.Origem, registro.ClienteOidc)
-            .Should().Be((Permissao, "inscricao", "pessoal", "api", "selecao-web"));
+            .Should().Be((Permissao, "inscricao", "PESSOAL", "api", "selecao-web"));
         (registro.UnidadeProprietariaId, registro.ProcessoId, registro.ChamadaId, registro.ResourceId, registro.InscricaoId)
             .Should().Be(((Guid?)Unidade, (Guid?)Processo, (Guid?)Chamada, (Guid?)Inscricao, (Guid?)Inscricao));
         (registro.FatoCodigo, registro.Ocorrencia, registro.Resultado, registro.Permitido)
@@ -87,7 +87,7 @@ public sealed class RegistroDecisaoAcessoCaracterizacaoTests
             .Be((ResultadoDoAcesso.Negado, false, (string?)"sem_concessao_aplicavel"));
         (registro.FonteGrant, registro.GrantId, registro.PerfilId, registro.VersaoId, registro.EscopoUnidadeId).Should()
             .Be(((string?)null, (Guid?)null, (Guid?)null, (Guid?)null, (Guid?)null));
-        (registro.Permissao, registro.ResourceId, registro.Sensibilidade).Should().Be((Permissao, (Guid?)Inscricao, "pessoal"));
+        (registro.Permissao, registro.ResourceId, registro.Sensibilidade).Should().Be((Permissao, (Guid?)Inscricao, "PESSOAL"));
     }
 
     [Fact(DisplayName = "A identidade e a chave do acesso têm valor fixo para uma entrada conhecida")]

@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -60,13 +61,13 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         Codigo: "MODALIDADE",
         Nome: "Modalidade de concorrência",
         Descricao: "Descrição do fato.",
-        Dominio: "CATEGORICO",
-        Origem: "DERIVADO",
-        Cardinalidade: "MULTIVALORADO",
+        Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao),
+        Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado),
+        Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,

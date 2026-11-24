@@ -1,62 +1,27 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>
-/// Mapeamento entre <see cref="ClassificacaoDeProtecao"/> (PascalCase) e o token textual de contrato/banco
-/// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita. Fonte única do token para
-/// todo módulo que guarda ou congela a classificação: o CHECK de domínio em
-/// <c>dados_do_candidato.classificacao_protecao</c>, os conversores de persistência e o envelope
-/// congelado da publicação.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Conversão e resolução da classificação de proteção.</summary>
 public static class ClassificacoesDeProtecao
 {
-    private static readonly Dictionary<ClassificacaoDeProtecao, string> ParaToken = new()
-    {
-        [ClassificacaoDeProtecao.Publico] = "PUBLICO",
-        [ClassificacaoDeProtecao.Interno] = "INTERNO",
-        [ClassificacaoDeProtecao.Pessoal] = "PESSOAL",
-        [ClassificacaoDeProtecao.Identificador] = "IDENTIFICADOR",
-        [ClassificacaoDeProtecao.Sensivel] = "SENSIVEL",
-    };
+    /// <summary>Códigos aceitos para classificação de proteção.</summary>
+    public static readonly IReadOnlyList<string> TokensCanonicos = [.. CatalogoDe<ClassificacaoDeProtecao>.Todos().Select(static c => c.Codigo)];
 
-    private static readonly Dictionary<string, ClassificacaoDeProtecao> DeToken =
-        ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
+    /// <summary>Código de contrato da classificação.</summary>
+    public static string ParaTokenCanonico(ClassificacaoDeProtecao valor) => valor.Codigo();
 
-    /// <summary>Os tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
-    public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
+    /// <summary>Uma classificação ausente ou inválida exige a proteção mais restrita.</summary>
+    public static ClassificacaoDeProtecao Resolvida(ClassificacaoDeProtecao? classificacao) =>
+        classificacao is { } valor && Enum.IsDefined(valor) ? valor : ClassificacaoDeProtecao.Sensivel;
 
-    /// <summary>Token textual de contrato/banco (UPPER_SNAKE) de um valor válido.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">Se o valor é o sentinela ou está fora do roster.</exception>
-    public static string ParaTokenCanonico(ClassificacaoDeProtecao valor) =>
-        ParaToken.TryGetValue(valor, out string? token)
-            ? token
-            : throw new ArgumentOutOfRangeException(nameof(valor), valor, "Classificação de proteção de dados fora do domínio fechado.");
+    /// <summary>Procura uma classificação pelo código exato.</summary>
+    public static bool TryAnalisar(string? token, out ClassificacaoDeProtecao valor) =>
+        CatalogoDe<ClassificacaoDeProtecao>.TentarObter(token, out valor);
 
-    /// <summary>
-    /// A classificação que vale para decidir o acesso: a que não se resolve (<see cref="ClassificacaoDeProtecao.Nenhuma"/>
-    /// ou fora do roster) vale como sensível, na dúvida a permissão mais restrita.
-    /// </summary>
-    public static ClassificacaoDeProtecao Resolvida(ClassificacaoDeProtecao classificacao) =>
-        classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(classificacao)
-            ? ClassificacaoDeProtecao.Sensivel
-            : classificacao;
-
-    /// <summary>Resolve um token textual (UPPER_SNAKE); <see langword="false"/> quando inválido.</summary>
-    public static bool TryAnalisar(string? token, out ClassificacaoDeProtecao valor)
-    {
-        if (!string.IsNullOrWhiteSpace(token) && DeToken.TryGetValue(token.Trim(), out ClassificacaoDeProtecao resolvido))
-        {
-            valor = resolvido;
-            return true;
-        }
-
-        valor = ClassificacaoDeProtecao.Nenhuma;
-        return false;
-    }
-
-    /// <summary>Resolve um token à sua enum (reidratação fail-fast do value converter).</summary>
-    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="token"/> não é canônico.</exception>
+    /// <summary>Obtém a classificação pelo código.</summary>
     public static ClassificacaoDeProtecao Analisar(string? token) =>
         TryAnalisar(token, out ClassificacaoDeProtecao valor)
             ? valor
-            : throw new ArgumentOutOfRangeException(nameof(token), token, "Token de classificação de proteção de dados fora do domínio fechado.");
+            : throw new ArgumentOutOfRangeException(nameof(token), token, "Código de classificação de proteção inválido.");
 }

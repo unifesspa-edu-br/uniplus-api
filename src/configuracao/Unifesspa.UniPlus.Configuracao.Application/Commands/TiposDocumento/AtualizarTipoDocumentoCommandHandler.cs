@@ -1,129 +1,21 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
-using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarTipoDocumentoCommand"/>. Valida os campos (sem
-/// I/O) antes de buscar a entidade: sem o validator removido, um payload mal
-/// formado não pode chegar a <c>ObterPorIdAsync</c> nem à consulta de unicidade
-/// primeiro — validação sempre vence sobre "não encontrado", mesma prioridade que
-/// o validator garantia. Como o código é editável, confere a unicidade entre tipos
-/// vivos quando ele muda (ignorando o próprio registro) — só depois de o agregado
-/// passar em todas as regras de campo, para não mascarar violação de campo atrás
-/// de um CodigoJaExiste — e protege a corrida traduzindo a violação do índice
-/// único parcial em <c>CodigoJaExiste</c> (CA-02). O código antigo é capturado
-/// antes de qualquer mutação, porque <see cref="TipoDocumento.Atualizar"/> muta o
-/// agregado rastreado pelo EF.
+/// Handler do <see cref="AtualizarTipoDocumentoCommand"/>: a conferência dos campos vem antes de buscar o tipo, e a
+/// categoria e o código só são conferidos contra o cadastro quando mudam (<see cref="GravacaoDoTipoDocumento"/>).
 /// </summary>
 public static class AtualizarTipoDocumentoCommandHandler
 {
-    public static async Task<Result> Handle(
+    public static Task<Result> Handle(
         AtualizarTipoDocumentoCommand command,
-        ITipoDocumentoRepository repository,
-        ICategoriaDocumentoRepository categoriaRepository,
-        IUnitOfWork unitOfWork,
+        GravacaoDoTipoDocumento gravacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(categoriaRepository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(gravacao);
 
-        ClassificacaoDeProtecao classificacao = TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma;
-        HipoteseLegalTratamento hipotese = TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma;
-
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
-            TipoDocumento.ValidarCampos(
-                command.Codigo,
-                command.Nome,
-                command.Descricao,
-                command.Categoria,
-                command.FormatosAceitos,
-                command.TamanhoMaximoMb,
-                command.TipoEquivalente,
-                classificacao,
-                command.FinalidadeTratamento,
-                hipotese);
-        if (validacao.IsFailure)
-        {
-            return Result.ValidationFailure(validacao.Errors);
-        }
-
-        TipoDocumento? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return Result.Failure(new DomainError(
-                TipoDocumentoErrorCodes.NaoEncontrado,
-                "Tipo de documento não encontrado."));
-        }
-
-        // A categoria só é conferida contra o cadastro quando muda — a referência é
-        // autônoma depois da escrita, e exigir a categoria viva a cada edição
-        // travaria a manutenção de um tipo cuja categoria foi removida ou renomeada,
-        // impedindo até corrigir o nome dele.
-        if (!string.Equals(validacao.Value.Categoria, tipo.Categoria, StringComparison.Ordinal)
-            && !await categoriaRepository.CodigoExisteEntreVivosAsync(validacao.Value.Categoria, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.ValidationFailure(
-                [new("categoria", CriarTipoDocumentoCommandHandler.CategoriaNaoEncontradaErro(validacao.Value.Categoria))]);
-        }
-
-        CodigoTipoDocumento codigoAntigo = tipo.Codigo;
-        CodigoTipoDocumento codigoNovo = validacao.Value.Codigo;
-
-        // Igualdade estrutural do value object (record), sobre o valor já canônico —
-        // equivale à comparação Ordinal de antes e só checa colisão quando o código
-        // efetivamente muda.
-        if (codigoAntigo != codigoNovo
-            && await repository.CodigoExisteEntreVivosAsync(codigoNovo, command.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.Failure(CodigoJaExisteErro());
-        }
-
-        // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
-        // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
-        // serve para aplicar a mutação.
-        tipo.Atualizar(
-            command.Codigo,
-            command.Nome,
-            command.Descricao,
-            command.Categoria,
-            command.FormatosAceitos,
-            command.TamanhoMaximoMb,
-            command.TipoEquivalente,
-            classificacao,
-            command.FinalidadeTratamento,
-            hipotese);
-
-        try
-        {
-            return await MutacaoDoTipo.SalvarAsync(
-                unitOfWork,
-                new DomainError(
-                    TipoDocumentoErrorCodes.ConflitoDeConcorrencia,
-                    "O tipo de documento foi alterado concorrentemente. Tente novamente."),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
-        {
-            // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
-            // dispara 23505 e viramos o mesmo CodigoJaExiste do caminho não-race. O descarte evita que o save
-            // automático do Wolverine regrave o tipo depois do handler e estoure fora deste catch (ADR-0119).
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(CodigoJaExisteErro());
-        }
+        return gravacao.EditarAsync(command.Id, command.Declaracao(), cancellationToken);
     }
-
-    private static DomainError CodigoJaExisteErro() =>
-        new(TipoDocumentoErrorCodes.CodigoJaExiste,
-            "Já existe um tipo de documento vivo com o código informado.");
 }

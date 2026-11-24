@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -236,11 +237,11 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     private ConteudoDoModeloInput ComDocumentoPorOpcao(string fato)
     {
         FatoCandidato condicao = CriacaoDoFato.CriarDoAdministrador(
-            "CONDICAO", "Condição", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("CONDICAO", "Condição", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, FonteValoresFato.OpcoesDoProcesso, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         Aprovar(condicao);
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, condicao]);
-        return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
+        return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "ESCOLHA_MULTIPLA")) with
         {
             ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO", true), new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []), PorOpcao: new ExigenciaPorOpcaoInput(fato, []))),
         };

@@ -29,7 +29,7 @@ using Xunit;
 /// <c>quando</c> de derivação, predicado de desempate) passam a ordenar pelos bytes da cláusula
 /// já canonicalizada, não pelo ordinal <c>Clausula</c> que quem envia a configuração escolhe
 /// livremente para AGRUPAR os átomos. Os arrays de alternativas sob operador de pertencimento
-/// (<c>EM</c>/<c>NAO_EM</c>) passam a ordenar do mesmo jeito.
+/// (<c>ALGUM_DE</c>/<c>NENHUM_DE</c>) passam a ordenar do mesmo jeito.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -192,7 +192,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// <summary>
     /// O risco número um da correção: achatar as cláusulas destruiria a semântica do predicado em
     /// silêncio. Três átomos distintos, valores escalares (para não misturar com a regra de
-    /// conjuntos de EM/NAO_EM), o MESMO multiconjunto nas duas configs — só o agrupamento muda:
+    /// conjuntos de ALGUM_DE/NENHUM_DE), o MESMO multiconjunto nas duas configs — só o agrupamento muda:
     /// P1 = (FATO_A E FATO_B) OU (FATO_C); P2 = (FATO_A E FATO_C) OU (FATO_B). Um mutante que
     /// removesse o <c>GroupBy</c> e achatasse tudo num nível só produziria os MESMOS bytes para os
     /// dois — é exatamente isso que este teste reprova.
@@ -216,20 +216,20 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             "cláusulas antes de ordenar destruiria essa diferença em silêncio");
     }
 
-    // ── D3: alternativas de EM/NAO_EM ordenam pela chave de conteúdo, nos DOIS pontos de código ──
+    // ── D3: alternativas de ALGUM_DE/NENHUM_DE ordenam pela chave de conteúdo, nos DOIS pontos de código ──
 
     /// <summary>
     /// Ponto 1 — o método CONSOLIDADO (<c>SerializarDnf</c>, usado por <c>condicaoGatilho</c>,
     /// pré-condição de fato e <c>quando</c> de derivação). Parametrizado por
-    /// <see cref="Operador.Em"/> e <see cref="Operador.NaoEm"/> — os DOIS operadores de
+    /// <see cref="Operador.AlgumDe"/> e <see cref="Operador.NenhumDe"/> — os DOIS operadores de
     /// pertencimento, não só um: um guarda em <c>SerializarValorDeAtomo</c> que reconhecesse
-    /// apenas <c>Em</c> deixaria <c>NAO_EM</c> sem ordenar (o array cairia no ramo escalar,
+    /// apenas <c>Em</c> deixaria <c>NENHUM_DE</c> sem ordenar (o array cairia no ramo escalar,
     /// preservado tal como chegou) e este teste, com um só operador coberto, não pegaria isso.
     /// Alternativas deliberadamente fora de ordem alfabética.
     /// </summary>
-    [Theory(DisplayName = "condicoes: alternativas de pertencimento (EM/NAO_EM) ordenam pela chave de conteúdo — ponto de código consolidado")]
-    [InlineData(Operador.Em)]
-    [InlineData(Operador.NaoEm)]
+    [Theory(DisplayName = "condicoes: alternativas de pertencimento (ALGUM_DE/NENHUM_DE) ordenam pela chave de conteúdo — ponto de código consolidado")]
+    [InlineData(Operador.AlgumDe)]
+    [InlineData(Operador.NenhumDe)]
     public void CondicaoGatilho_AlternativasDePertencimento_OrdenamPelaChaveDeConteudo(Operador operador)
     {
         JsonNode gatilhoUm = GatilhoDeAlternativas(operador, Alternativas("PRETA", "PARDA", "AMARELA"));
@@ -255,9 +255,9 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// pegaria. Parametrizado pelos mesmos dois operadores do ponto 1: são dois consumidores e
     /// dois operadores, e só a matriz completa (2×2) garante que nenhuma célula fica descoberta.
     /// </summary>
-    [Theory(DisplayName = "criteriosDesempate (PredicadoFato): alternativas de pertencimento (EM/NAO_EM) ordenam pela chave de conteúdo — ponto de código do desempate")]
-    [InlineData(Operador.Em)]
-    [InlineData(Operador.NaoEm)]
+    [Theory(DisplayName = "criteriosDesempate (PredicadoFato): alternativas de pertencimento (ALGUM_DE/NENHUM_DE) ordenam pela chave de conteúdo — ponto de código do desempate")]
+    [InlineData(Operador.AlgumDe)]
+    [InlineData(Operador.NenhumDe)]
     public void CriterioDesempatePredicadoFato_AlternativasDePertencimento_OrdenamPelaChaveDeConteudo(Operador operador)
     {
         JsonNode valorUm = ArgsDoEnvelope(

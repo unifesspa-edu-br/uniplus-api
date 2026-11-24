@@ -36,7 +36,7 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
     public async Task Conciliacao_ContraCriacaoDeConcessao(bool conciliacaoPrimeiro)
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "INTERNO");
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);
         Func<Task> conciliacao = ImplantarRealAsync;
         Func<Task> concessao = () => ConcederDepoisAsync(perfil, Betina);
@@ -134,7 +134,7 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
         using HttpClient gestor = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
         Envio nova = await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar, Sensivel);
-        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "INTERNO");
         using HttpClient gestao = await GestaoAsync();
         await AprovarAsync(gestao, nova, EtapaGestao);
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);

@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -26,7 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// O catálogo de fatos do candidato pode reclassificar a <c>Origem</c> de um fato depois que
 /// ele já virou <see cref="FatoColetado"/> — a migration que reclassificou MODALIDADE de
-/// DECLARADO para DERIVADO é o caso real. Prova, nos <b>três</b> handlers que congelam
+/// DECLARADO para CALCULADO é o caso real. Prova, nos <b>três</b> handlers que congelam
 /// (ao lado de <see cref="ConformidadeLegalGateTests"/>), que um <c>FatoColetado</c> cujo fato
 /// deixou de ser coletável recusa ANTES da canonicalização, e que um fato ainda coletável não
 /// bloqueia a publicação. A publicação também congela o rótulo e o tipo do catálogo do fato que as
@@ -42,13 +43,13 @@ public sealed class ColetabilidadeDeFatosGateTests
         Codigo: "MODALIDADE",
         Nome: "Modalidade de concorrência",
         Descricao: "Descrição do fato.",
-        Dominio: "CATEGORICO",
-        Origem: "DERIVADO",
-        Cardinalidade: "MULTIVALORADO",
+        Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao),
+        Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado),
+        Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     // Story #1059 (UNI-REQ-0072): categórico ESTÁTICO — os valores selecionáveis do fato
     // coletado vêm de ValoresDominioDeclarados (FatoValorDominio no catálogo real), nunca do
@@ -67,18 +68,18 @@ public sealed class ColetabilidadeDeFatosGateTests
         Codigo: "COR_RACA",
         Nome: "Cor ou raça",
         Descricao: "Descrição do fato.",
-        Dominio: "CATEGORICO",
-        Origem: "DECLARADO",
-        Cardinalidade: "ESCALAR",
+        Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao),
+        Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+        Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
         ValoresDominio: [.. ValoresCorRaca.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_FORMULARIO:COR_RACA",
-        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoColetado FatoColetadoModalidade() =>
         FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
             .ComRotulo("Modalidade")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
@@ -183,12 +184,12 @@ public sealed class ColetabilidadeDeFatosGateTests
     }
 
     private static FatoCandidatoView FatoAtendimentoNoMunicipio() => new(
-        Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null,
+        Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
         "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView FatoMunicipioDeResidencia(string nome) => new(
-        Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR", null,
-        "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
+        "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Task<(Result, IEnumerable<object>)> PublicarAsync(
         ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, ISnapshotPublicacaoCanonicalizer canonicalizer) =>

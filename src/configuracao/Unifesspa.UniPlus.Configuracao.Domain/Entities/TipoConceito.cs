@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cadastro configurável dos tipos de conceito com que uma etapa avalia: numérico, medido numa escala,
@@ -25,7 +26,7 @@ public sealed class TipoConceito : EntityBase, IAuditableEntity
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
     public bool Ativo { get; private set; }
-    public NaturezaConceito Natureza { get; private set; }
+    public FormaDoConceito Natureza { get; private set; }
 
     /// <summary>Menor valor da escala; só no tipo numérico.</summary>
     public decimal? EscalaMinima { get; private set; }

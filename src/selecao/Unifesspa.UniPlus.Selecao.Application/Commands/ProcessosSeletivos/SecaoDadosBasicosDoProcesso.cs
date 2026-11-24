@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -60,7 +61,7 @@ internal static class SecaoDadosBasicosDoProcesso
         ArgumentNullException.ThrowIfNull(processo);
         return ConjuntoBasicoDaInscricao.SecaoDe((processo.FormularioDe(FinalidadeFormulario.Inscricao)?.Etapas ?? [])
             .Select(static gravada => new EtapaFormularioInput(
-                gravada.Codigo, gravada.Ordem, EstruturaFormulario.ParaToken(gravada.Tipo), EstruturaFormulario.ParaToken(gravada.Bloco),
+                gravada.Codigo, gravada.Ordem, gravada.Tipo.Codigo(), gravada.Bloco?.Codigo(),
                 new ApresentacaoDaEtapaInput(gravada.Titulo, gravada.Descricao, gravada.Aviso), EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
     }
 

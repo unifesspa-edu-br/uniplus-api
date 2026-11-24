@@ -1,9 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -44,14 +41,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 {
-    private const int NomeMinLength = 2;
-    private const int NomeMaxLength = 200;
-    private const int DescricaoMaxLength = 1000;
-    private const int FormatosAceitosMaxLength = 200;
-    // Acompanha o teto do próprio código (2 a 50): o campo guarda o Codigo de outro
-    // tipo, então dimensioná-lo acima aceitaria texto que jamais poderá ser um código.
-    private const int TipoEquivalenteMaxLength = 50;
-
     public CodigoTipoDocumento Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
@@ -81,224 +70,56 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
-    private static readonly RecusasDaProtecao RecusasDaProtecaoDoTipo = new(
-        "do tipo de documento",
-        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
-        TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida,
-        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
-        TipoDocumentoErrorCodes.FinalidadeTratamentoTamanho,
-        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
-        TipoDocumentoErrorCodes.HipoteseLegalInvalida,
-        TipoDocumentoErrorCodes.HipoteseLegalIncompativelComClassificacao);
-
     // EF Core materialization
     private TipoDocumento()
     {
     }
 
     /// <summary>
-    /// Valida todos os campos, acumulando cada violação em vez de retornar na
-    /// primeira (ADR-0125), sem mutar nada — existe para o handler de atualização
-    /// decidir se vale a pena buscar a entidade e consultar unicidade antes mesmo
-    /// de chamar <see cref="Atualizar"/>/<see cref="Criar"/>, que revalidam por
-    /// conta própria e nunca confiam num resultado calculado por fora. O guard de
-    /// auto-equivalência (<paramref name="tipoEquivalente"/> igual a
-    /// <paramref name="codigo"/>) só roda depois que os dois já passaram nas
-    /// próprias checagens individuais, para não mascarar a causa raiz de um dos
-    /// dois atrás de uma relação inválida.
+    /// Confere todos os campos da declaração, acumulando cada violação em vez de retornar na primeira (ADR-0125),
+    /// sem mutar nada. Existe para a gravação decidir se vale a pena buscar a entidade e consultar o cadastro antes
+    /// de chamar <see cref="Atualizar"/> ou <see cref="Criar"/>, que reconferem por conta própria e nunca confiam
+    /// num resultado calculado por fora.
     /// </summary>
-    public static Result<(
-        CodigoTipoDocumento Codigo,
-        string Nome,
-        string? Descricao,
-        string Categoria,
-        string? FormatosAceitos,
-        int? TamanhoMaximoMb,
-        string? TipoEquivalente,
-        ProtecaoDeDados Protecao)> ValidarCampos(
-        string? codigo,
-        string? nome,
-        string? descricao,
-        string? categoria,
-        string? formatosAceitos,
-        int? tamanhoMaximoMb,
-        string? tipoEquivalente,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string? finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal)
+    public static Result<CamposDoTipoDocumento> ValidarDeclaracao(DeclaracaoDoTipoDocumento declaracao)
     {
-        List<FieldError> erros = [];
+        ArgumentNullException.ThrowIfNull(declaracao);
 
-        // Obrigatoriedade e formato são do value object: ele é a única definição do
-        // que conta como código, e a mesma que o conversor aplica na reidratação.
-        CodigoTipoDocumento? codigoVo = null;
-        Result<CodigoTipoDocumento> codigoResult = CodigoTipoDocumento.Criar(codigo);
-        if (codigoResult.IsFailure)
-        {
-            erros.Add(new("codigo", codigoResult.Error!));
-        }
-        else
-        {
-            codigoVo = codigoResult.Value;
-        }
-
-        string? nomeNorm = null;
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            erros.Add(new("nome", new DomainError(
-                TipoDocumentoErrorCodes.NomeObrigatorio, "Nome do tipo de documento é obrigatório.")));
-        }
-        else
-        {
-            nomeNorm = nome.Trim();
-            if (nomeNorm.Length is < NomeMinLength or > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    TipoDocumentoErrorCodes.NomeTamanho,
-                    $"Nome do tipo de documento deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
-                nomeNorm = null;
-            }
-        }
-
-        string? descricaoNorm = NormalizarOpcional(descricao);
-        if (descricaoNorm is not null && descricaoNorm.Length > DescricaoMaxLength)
-        {
-            erros.Add(new("descricao", new DomainError(
-                TipoDocumentoErrorCodes.DescricaoTamanho,
-                $"Descrição do tipo de documento deve ter no máximo {DescricaoMaxLength} caracteres.")));
-        }
-
-        // A categoria é o código de um cadastro, não um token de vocabulário fechado:
-        // aqui só a forma é conhecida. Se existe categoria viva com este código é
-        // pergunta para o handler, que consulta o cadastro (ADR-0125).
-        string? categoriaNorm = null;
-        if (string.IsNullOrWhiteSpace(categoria))
-        {
-            erros.Add(new("categoria", new DomainError(
-                TipoDocumentoErrorCodes.CategoriaObrigatoria,
-                "Categoria do tipo de documento é obrigatória.")));
-        }
-        else
-        {
-            // Trim + NFC antes de validar: o valor normalizado é o que persiste e o
-            // que a comparação ordinal a jusante — inclusive contra o cadastro — usa.
-            categoriaNorm = categoria.Trim().Normalize(NormalizationForm.FormC);
-            if (!CodigoCategoriaDocumento.EhValido(categoriaNorm))
-            {
-                erros.Add(new("categoria", new DomainError(
-                    TipoDocumentoErrorCodes.CategoriaFormatoInvalido,
-                    "Categoria do tipo de documento deve ser um código que inicia com letra maiúscula "
-                    + "e contém apenas letras maiúsculas, dígitos e sublinhado, com 2 a 50 caracteres "
-                    + "(ex.: RENDA, DOCUMENTO_PROCESSUAL).")));
-                categoriaNorm = null;
-            }
-        }
-
-        string? formatosAceitosNorm = NormalizarOpcional(formatosAceitos);
-        if (formatosAceitosNorm is not null && formatosAceitosNorm.Length > FormatosAceitosMaxLength)
-        {
-            erros.Add(new("formatosAceitos", new DomainError(
-                TipoDocumentoErrorCodes.FormatosAceitosTamanho,
-                $"Formatos aceitos devem ter no máximo {FormatosAceitosMaxLength} caracteres.")));
-        }
-
-        if (tamanhoMaximoMb is <= 0)
-        {
-            erros.Add(new("tamanhoMaximoMb", new DomainError(
-                TipoDocumentoErrorCodes.TamanhoMaximoInvalido,
-                "Tamanho máximo em MB, quando informado, deve ser positivo.")));
-        }
-
-        string? tipoEquivalenteNorm = NormalizarOpcional(tipoEquivalente);
-        if (tipoEquivalenteNorm is not null && tipoEquivalenteNorm.Length > TipoEquivalenteMaxLength)
-        {
-            erros.Add(new("tipoEquivalente", new DomainError(
-                TipoDocumentoErrorCodes.TipoEquivalenteTamanho,
-                $"Tipo equivalente deve ter no máximo {TipoEquivalenteMaxLength} caracteres.")));
-            tipoEquivalenteNorm = null;
-        }
-
-        if (codigoVo is not null && tipoEquivalenteNorm is not null
-            && string.Equals(tipoEquivalenteNorm, codigoVo.Valor, StringComparison.Ordinal))
-        {
-            // Guard de auto-equivalência case-sensitive (Ordinal), alinhado ao CHECK
-            // `tipo_equivalente <> codigo` do banco (também case-sensitive).
-            erros.Add(new("tipoEquivalente", new DomainError(
-                TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo,
-                "Um tipo de documento não pode declarar-se equivalente a si mesmo.")));
-        }
-
-        // Vocabulário, limite da finalidade e coerência entre classificação e hipótese são os do
-        // fato do candidato (ProtecaoDeDados): o tipo só dá o código de cada recusa.
-        Result<ProtecaoDeDados> protecao = ProtecaoDeDados.Validar(
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, RecusasDaProtecaoDoTipo);
-        erros.AddRange(protecao.Errors);
-
-        if (erros.Count > 0)
-        {
-            return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?, ProtecaoDeDados)>.ValidationFailure(erros);
-        }
-
-        return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?, ProtecaoDeDados)>.Success((
-            codigoVo!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm, protecao.Value));
+        return new ValidacaoDoTipoDocumento(declaracao).Resolver();
     }
 
     /// <summary>
-    /// Cria um novo TipoDocumento. Revalida todos os campos via
-    /// <see cref="ValidarCampos"/>, acumulando toda violação no mesmo lote. A
-    /// unicidade de <c>Codigo</c> entre tipos vivos é responsabilidade do handler.
+    /// Cria um novo TipoDocumento. Reconfere a declaração por <see cref="ValidarDeclaracao"/>, acumulando toda
+    /// violação no mesmo lote. A existência da categoria e a unicidade de <c>Codigo</c> entre tipos vivos são da
+    /// gravação.
     /// </summary>
-    public static Result<TipoDocumento> Criar(
-        string? codigo,
-        string? nome,
-        string? descricao,
-        string? categoria,
-        string? formatosAceitos,
-        int? tamanhoMaximoMb,
-        string? tipoEquivalente,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string? finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal)
+    public static Result<TipoDocumento> Criar(DeclaracaoDoTipoDocumento declaracao)
     {
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
-            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
-        if (validacao.IsFailure)
+        Result<CamposDoTipoDocumento> campos = ValidarDeclaracao(declaracao);
+        if (campos.IsFailure)
         {
-            return Result<TipoDocumento>.ValidationFailure(validacao.Errors);
+            return Result<TipoDocumento>.ValidationFailure(campos.Errors);
         }
 
         var tipo = new TipoDocumento();
-        tipo.AplicarCampos(validacao.Value);
+        tipo.AplicarCampos(campos.Value!);
 
         return Result<TipoDocumento>.Success(tipo);
     }
 
     /// <summary>
-    /// Atualiza os atributos do TipoDocumento. O <c>Codigo</c> é editável; sua
-    /// unicidade (quando alterado) é responsabilidade do handler. Revalida todos
-    /// os campos via <see cref="ValidarCampos"/>, incluindo o guard de
-    /// auto-equivalência.
+    /// Atualiza os atributos do TipoDocumento. O <c>Codigo</c> é editável; a unicidade dele (quando alterado) é da
+    /// gravação. Reconfere a declaração por <see cref="ValidarDeclaracao"/>, inclusive a auto-equivalência.
     /// </summary>
-    public Result Atualizar(
-        string? codigo,
-        string? nome,
-        string? descricao,
-        string? categoria,
-        string? formatosAceitos,
-        int? tamanhoMaximoMb,
-        string? tipoEquivalente,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string? finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal)
+    public Result Atualizar(DeclaracaoDoTipoDocumento declaracao)
     {
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
-            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
-        if (validacao.IsFailure)
+        Result<CamposDoTipoDocumento> campos = ValidarDeclaracao(declaracao);
+        if (campos.IsFailure)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        AplicarCampos(validacao.Value);
+        AplicarCampos(campos.Value!);
 
         return Result.Success();
     }
@@ -310,7 +131,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public Result AprovarProtecao(string ator, DateTimeOffset em) => Aprovacao.Aprovar(ator, em);
 
     /// <summary>A proteção de dados recomenda o ajuste da proteção do tipo e indica a classificação correta.</summary>
-    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
+    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao? recomendada, string? justificativa, string ator, DateTimeOffset em)
     {
         Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
         return recusa.IsFailure ? recusa : Aprovacao.RecomendarAjuste(recomendada, justificativa, ator, em);
@@ -340,13 +161,12 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         return aceita;
     }
 
-    private void AplicarCampos(
-        (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao) campos)
+    /// <summary>
+    /// A mudança da proteção reinicia o circuito de aprovação; o item com ajuste recomendado ou reprovado também
+    /// recomeça por qualquer edição, e o nome e a descrição de um item aprovado não o reiniciam.
+    /// </summary>
+    private void AplicarCampos(CamposDoTipoDocumento campos)
     {
-        // A mudança da proteção reinicia o circuito; o item com ajuste recomendado ou reprovado também recomeça por
-        // qualquer edição. O nome e a descrição de um item aprovado não o reiniciam.
-        ProtecaoDeDados anterior = Protecao;
-
         Codigo = campos.Codigo;
         Nome = campos.Nome;
         Descricao = campos.Descricao;
@@ -354,13 +174,17 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         FormatosAceitos = campos.FormatosAceitos;
         TamanhoMaximoMb = campos.TamanhoMaximoMb;
         TipoEquivalente = campos.TipoEquivalente;
-        ClassificacaoProtecao = campos.Protecao.Classificacao;
-        FinalidadeTratamento = campos.Protecao.Finalidade;
-        HipoteseLegal = campos.Protecao.Hipotese;
-
-        Aprovacao.AoEditarItem(campos.Protecao != anterior);
+        AplicarProtecao(campos.Protecao);
     }
 
-    private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+    private void AplicarProtecao(ProtecaoDeDados protecao)
+    {
+        ProtecaoDeDados anterior = Protecao;
+
+        ClassificacaoProtecao = protecao.Classificacao;
+        FinalidadeTratamento = protecao.Finalidade;
+        HipoteseLegal = protecao.Hipotese;
+
+        Aprovacao.AoEditarItem(protecao != anterior);
+    }
 }

@@ -82,9 +82,9 @@ public static class ValoresCanonicos
 
     /// <summary>
     /// Valor canônico da sensibilidade, no vocabulário dos fatos do candidato
-    /// (<c>publico</c>, <c>interno</c>, <c>pessoal</c>, <c>identificador</c>, <c>sensivel</c>),
+    /// (<c>PUBLICO</c>, <c>INTERNO</c>, <c>PESSOAL</c>, <c>IDENTIFICADOR</c>, <c>SENSIVEL</c>),
     /// que é o mesmo do campo <c>sensibilidade</c> do catálogo de permissões (ADR-0151).
     /// </summary>
     public static string De(ClassificacaoDeProtecao sensibilidade) =>
-        ClassificacoesDeProtecao.ParaTokenCanonico(sensibilidade).ToLowerInvariant();
+        ClassificacoesDeProtecao.ParaTokenCanonico(sensibilidade);
 }

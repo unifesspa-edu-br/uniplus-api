@@ -4,10 +4,12 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -257,7 +259,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
         catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
-            .. codigos.Select(codigo => CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = "DERIVADO", ProtecaoAprovada = false })]));
+            .. codigos.Select(codigo => CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), ProtecaoAprovada = false })]));
 
         return catalogo;
     }

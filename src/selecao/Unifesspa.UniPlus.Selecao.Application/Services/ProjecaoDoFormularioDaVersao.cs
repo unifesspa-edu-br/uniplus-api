@@ -286,7 +286,7 @@ public static class ProjecaoDoFormularioDaVersao
     {
         if (!TentarGuid(exigencia, "exigidoNaFaseId", out Guid fase)
             || !TentarStringOpcional(exigencia, "finalidade", out string? finalidade)
-            || (finalidade is not null && EstruturaFormulario.FinalidadeDoToken(finalidade) == FinalidadeFormulario.Nenhuma))
+            || (finalidade is not null && EstruturaFormulario.FinalidadeDoCodigo(finalidade) is null))
         {
             return null;
         }

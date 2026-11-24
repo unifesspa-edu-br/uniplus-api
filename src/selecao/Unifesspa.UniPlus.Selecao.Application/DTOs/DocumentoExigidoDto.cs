@@ -5,6 +5,7 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -46,8 +47,8 @@ public sealed record ProtecaoDeDadosDto(string Classificacao, string Finalidade,
 
 /// <param name="FaseId">Fase do cronograma que exige o documento.</param>
 /// <param name="EtapaId">Etapa da fase que coleta o documento; nula quando é da fase inteira.</param>
-/// <param name="Finalidade">O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>); nula quando a fase não responde formulário nenhum.</param>
-public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, string? Finalidade);
+/// <param name="Finalidade">O formulário a que o documento pertence, com o código (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>) e o rótulo; nula quando a fase não responde formulário nenhum.</param>
+public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, CodigoComRotulo<FinalidadeFormulario>? Finalidade);
 
 /// <param name="Tipo">Código (<c>GERAL</c> ou <c>CONDICIONAL</c>) e rótulo da aplicabilidade.</param>
 /// <param name="Condicoes">As condições do gatilho.</param>

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class MunicipiosDaProvaPresencialTests
 {
-    private const string Fonte = "MUNICIPIOS_PROVA_PRESENCIAL";
+    private const FonteValoresFato Fonte = FonteValoresFato.MunicipiosProvaPresencial;
     private const string Codigo = "CIDADE_DE_PROVA";
 
     [Fact]
@@ -86,11 +87,12 @@ public sealed class MunicipiosDaProvaPresencialTests
     }
 
     private static void ColetarCidade(ProcessoSeletivo processo) =>
-        processo.DefinirItens([FatoColetadoDeTeste.Coletando(Codigo, 0).DoTipo(TipoRenderizacao.SelecaoUnica)
+        processo.DefinirItens([FatoColetadoDeTeste.Coletando(Codigo, 0).DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
     private static FatoCandidatoView Fato() => new(
-        Guid.CreateVersion7(), Codigo, "Cidade de prova", "Cidade de prova", "CATEGORICO", "DECLARADO", "ESCALAR",
-        null, "INSCRICAO", $"CAMPO_FORMULARIO:{Codigo}", null, Fonte, true, "PESSOAL",
+        Guid.CreateVersion7(), Codigo, "Cidade de prova", "Cidade de prova",
+        CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+        null, "INSCRICAO", $"CAMPO_FORMULARIO:{Codigo}", null, CodigoComRotulo<FonteValoresFato>.De(Fonte), true, "PESSOAL",
         ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 }

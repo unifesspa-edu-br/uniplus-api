@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class ProtecaoDoCatalogoMapping
 {
@@ -119,8 +121,8 @@ internal static class ProtecaoDoCatalogoMapping
 
     private static DetalheDoFatoDto ToDetalheDoFato(this FatoCandidato fato) =>
         new(
-            DominiosFato.ParaTokenCanonico(fato.Dominio),
-            CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
+            CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
+            CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
             fato.SemeadoPeloSistema,
             fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null,
             [.. fato.ValoresDominioDeclarados

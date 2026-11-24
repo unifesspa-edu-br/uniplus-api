@@ -31,7 +31,6 @@ internal static class CabecalhosDoRegistroDeAcesso
     internal const string VersaoDoSchema = "1";
 
     private static readonly Dictionary<string, int> OrdemDaSensibilidade = Enum.GetValues<ClassificacaoDeProtecao>()
-        .Where(static c => c != ClassificacaoDeProtecao.Nenhuma)
         .ToDictionary(static c => ValoresCanonicos.De(c), static c => (int)c, StringComparer.Ordinal);
 
     public static Headers De(IReadOnlyList<RegistroDecisaoAcesso> registros, DateTimeOffset produzidoEm, Activity? atividade)

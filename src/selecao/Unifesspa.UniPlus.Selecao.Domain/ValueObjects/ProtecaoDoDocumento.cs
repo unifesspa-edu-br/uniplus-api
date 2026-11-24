@@ -15,6 +15,6 @@ public sealed record ProtecaoDoDocumento(
     internal string? Violacao() =>
         string.IsNullOrWhiteSpace(Finalidade) ? "A proteção do tipo de documento precisa de finalidade do tratamento."
         : string.IsNullOrWhiteSpace(HipoteseLegal) ? "A proteção do tipo de documento precisa de hipótese legal."
-        : Classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(Classificacao) ? "A classificação de proteção do tipo de documento é obrigatória."
+        : !Enum.IsDefined(Classificacao) ? "A classificação de proteção do tipo de documento é obrigatória."
         : null;
 }

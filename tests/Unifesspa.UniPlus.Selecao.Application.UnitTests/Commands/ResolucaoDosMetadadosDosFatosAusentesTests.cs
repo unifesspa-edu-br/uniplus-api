@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -37,7 +38,7 @@ public sealed class ResolucaoDosMetadadosDosFatosAusentesTests
         ProcessoSeletivo processo = ProcessoQueColetaOFato(comItemNovo: false, citaFatoAusenteDoCatalogo: true);
         IReadOnlyDictionary<string, FatoCandidatoView> soOFatoCitadoPrimeiro = new Dictionary<string, FatoCandidatoView>
         {
-            [Fato] = FatoDoCatalogo("BOOLEANO", "PESSOAL"),
+            [Fato] = FatoDoCatalogo(TipoDoDado.SimOuNao, "PESSOAL"),
         };
 
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> resolucao = ResolvedorMetadadosFatosCongelados.Resolver(processo, soOFatoCitadoPrimeiro);

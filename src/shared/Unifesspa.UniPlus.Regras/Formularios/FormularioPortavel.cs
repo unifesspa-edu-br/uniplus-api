@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -201,7 +202,7 @@ public sealed record FormularioPortavel(
             [.. derivacao.Regras.Select(static r => new RegraDerivacaoPortavel(r.Quando.ToDto(), r.Contribui))]);
 
     private static AgregadoPortavel Agregado(DefinicaoAgregado agregado) =>
-        new(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, AgregadoDeGrupo.ParaToken(agregado.Operacao));
+        new(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, agregado.Operacao.Codigo());
 
     private static ItemPortavel Item(DefinicaoItem item, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(

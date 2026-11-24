@@ -24,8 +24,8 @@ public sealed class DecisoesDoPedidoNoMesmoInstanteTests
     public void MesmoInstante_DecisaoNaoGravadaVemPorUltimo()
     {
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().Protegido().AguardandoGestor();
-        pedido.Aprovar(Primeiro, new(["a"], "sensivel", true, null), new(false), Instante);
-        pedido.Aprovar(Segundo, new(["a", "b"], "sensivel", true, null), new(false), Instante);
+        pedido.Aprovar(Primeiro, new(["a"], "SENSIVEL", true, null), new(false), Instante);
+        pedido.Aprovar(Segundo, new(["a", "b"], "SENSIVEL", true, null), new(false), Instante);
         Numerar(pedido.Decisoes.First(d => d.DecisorContaId == Primeiro.ContaId), 7);
 
         string[] decisores = [.. PedidoMapping.ToDto(pedido, null).Decisoes.Select(d => d.Decisor.ContaId)];

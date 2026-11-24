@@ -155,7 +155,7 @@ public sealed class SementeDeTermoRemovidoTests
             $"""
             INSERT INTO configuracao.termos_de_consentimento
                 (id, codigo, nome, forma_aceite_rascunho, revisado, is_deleted, deleted_at, deleted_by, created_at)
-            VALUES ({id}, {codigo}, {nome}, 'REGISTRO_DIGITAL_COM_LOG_IP', FALSE, {removido},
+            VALUES ({id}, {codigo}, {nome}, 'REGISTRO_COM_ENDERECO_IP', FALSE, {removido},
                     CASE WHEN {removido} THEN now() END, CASE WHEN {removido} THEN 'administracao-de-teste' END, now())
             """);
 

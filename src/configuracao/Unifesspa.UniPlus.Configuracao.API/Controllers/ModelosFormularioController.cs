@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -47,7 +48,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>
     /// Lista paginada, com filtros opcionais: o tipo de processo traz os modelos que servem a ele,
-    /// inclusive os que servem a todos; a finalidade é o token canônico.
+    /// inclusive os que servem a todos; a finalidade é um dos códigos de finalidade do formulário.
     /// </summary>
     [HttpGet("admin/modelos-formulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
@@ -62,7 +63,7 @@ public sealed class ModelosFormularioController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery] string? tipoProcesso = null,
-        [FromQuery] string? finalidade = null,
+        [FromQuery, AceitaCodigosDe<FinalidadeFormulario>] string? finalidade = null,
         [FromQuery] bool? ativo = null,
         CancellationToken cancellationToken = default)
     {

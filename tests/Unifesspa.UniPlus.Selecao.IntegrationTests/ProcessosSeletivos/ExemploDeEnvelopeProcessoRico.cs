@@ -225,7 +225,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static FatoColetado FatoDeRenda() =>
         FatoColetadoDeTeste.Coletando("RENDA", 1)
             .ComRotulo("Faixa de renda familiar")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
             .ComImpedimento(new Impedimento(
@@ -262,7 +262,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         processo.DefinirTermos(
             [
                 Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta)),
-                Termo("AUTORIZACAO_REGISTRO_DE_ACESSO", 1, formaAceite: FormaAceite.RegistroDigitalComLogIp),
+                Termo("AUTORIZACAO_REGISTRO_DE_ACESSO", 1, formaAceite: FormaAceite.RegistroComEnderecoIp),
             ]).IsSuccess.Should().BeTrue();
     }
 
@@ -275,8 +275,8 @@ internal static class ExemploDeEnvelopeProcessoRico
             FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
             [
                 FormularioDeTeste.Etapas()[0],
-                EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Pertencimento", null, null, corPreta).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, null), "Pertencimento", null, null, corPreta).Value!,
                 EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).IsSuccess.Should().BeTrue();
     }

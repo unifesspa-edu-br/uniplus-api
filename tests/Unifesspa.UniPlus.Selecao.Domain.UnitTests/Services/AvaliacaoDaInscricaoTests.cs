@@ -238,7 +238,7 @@ public sealed class AvaliacaoDaInscricaoTests
             .ComRotulo($"Rótulo de {f}")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")
-            .ComOrigem(f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo)
+            .ComOrigem(f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoFada : OrigemValoresColeta.Catalogo)
             .NaSecao(Secao)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir())];
@@ -284,7 +284,7 @@ public sealed class AvaliacaoDaInscricaoTests
             .ComRotulo("Município")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")
-            .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+            .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
             .Construir())
         .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();

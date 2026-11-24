@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -43,20 +45,10 @@ public sealed class FatoCandidatoSementeTests
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
         {
             Result<FatoCandidato> resultado = CriacaoDoFato.Criar(
-                item.Codigo,
-                item.Nome,
-                item.Descricao,
-                item.Dominio,
+                new DescritivoDoFato(item.Codigo, item.Nome, item.Descricao),
                 item.Origem,
-                item.Cardinalidade,
-                item.FonteValores,
-                item.Formato,
-                item.PontoResolucao,
                 item.Binding,
-                item.Escopo,
-                item.ClassificacaoProtecao,
-                item.FinalidadeTratamento,
-                FatoCandidatoSeed.HipoteseLegal,
+                new DefinicaoDoFato(item.Dominio, item.Cardinalidade, item.FonteValores, item.Formato, item.PontoResolucao, item.Escopo, item.ClassificacaoProtecao, item.FinalidadeTratamento, FatoCandidatoSeed.HipoteseLegal),
                 sistema: true);
 
             resultado.IsSuccess.Should().BeTrue(
@@ -98,10 +90,10 @@ public sealed class FatoCandidatoSementeTests
 
             fatoElegibilidade.Id.Should().NotBe(fatoOptIn.Id,
                 $"{elegibilidade} e {optIn} são fatos independentes — a elegibilidade sozinha não coloca na cota");
-            fatoOptIn.Dominio.Should().Be(DominioFato.Booleano);
+            fatoOptIn.Dominio.Should().Be(TipoDoDado.SimOuNao);
             fatoOptIn.Origem.Should().Be(OrigemFato.Declarado,
                 "o opt-in é seleção direta do candidato, ainda que expresse vontade e não elegibilidade");
-            fatoOptIn.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
+            fatoOptIn.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
         }
     }
 
@@ -137,7 +129,7 @@ public sealed class FatoCandidatoSementeTests
 
         // BAIXA_RENDA não substitui RENDA_PER_CAPITA: coexistem com naturezas distintas.
         fatos.Single(f => f.Codigo == "BAIXA_RENDA").Origem.Should().Be(OrigemFato.Declarado);
-        fatos.Single(f => f.Codigo == "RENDA_PER_CAPITA").Origem.Should().Be(OrigemFato.Derivado);
+        fatos.Single(f => f.Codigo == "RENDA_PER_CAPITA").Origem.Should().Be(OrigemFato.Calculado);
     }
 
     [Fact(DisplayName = "Fato booleano não recebe FatoValorDominio (ADR-0111/ADR-0116)")]
@@ -146,7 +138,7 @@ public sealed class FatoCandidatoSementeTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> booleanos = await ctx.FatosCandidato.AsNoTracking()
-            .Where(f => f.Dominio == DominioFato.Booleano)
+            .Where(f => f.Dominio == TipoDoDado.SimOuNao)
             .Include(f => f.ValoresDominioDeclarados)
             .ToListAsync();
 
@@ -299,8 +291,8 @@ public sealed class FatoCandidatoSementeTests
         FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE_SEGUNDA_OPCAO");
 
         fato.SemeadoPeloSistema.Should().BeTrue();
-        fato.Origem.Should().Be(OrigemFato.Derivado);
-        fato.Cardinalidade.Should().Be(CardinalidadeFato.Multivalorado);
+        fato.Origem.Should().Be(OrigemFato.Calculado);
+        fato.Cardinalidade.Should().Be(QuantidadeDeValores.VariosValores);
         fato.FonteValores.Should().Be(FonteValoresFato.Modalidade);
         fato.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Interno);
     }

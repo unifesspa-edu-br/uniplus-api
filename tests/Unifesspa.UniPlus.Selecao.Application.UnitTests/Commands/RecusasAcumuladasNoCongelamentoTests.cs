@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -180,8 +181,8 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     {
         FatoCandidatoView modalidade = new(
             Id: Guid.CreateVersion7(), Codigo: "MODALIDADE", Nome: "Modalidade de concorrência", Descricao: "Descrição do fato.",
-            Dominio: "CATEGORICO", Origem: "DERIVADO", Cardinalidade: "MULTIVALORADO", ValoresDominio: null, PontoResolucao: "INSCRICAO",
-            Binding: "REGRA_DERIVACAO:MODALIDADE", ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true,
+            Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ValoresDominio: null, PontoResolucao: "INSCRICAO",
+            Binding: "REGRA_DERIVACAO:MODALIDADE", ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true,
             ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
             FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
@@ -193,7 +194,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     private static FatoColetado ItemDaModalidade() =>
         FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
             .ComRotulo("Modalidade")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 }

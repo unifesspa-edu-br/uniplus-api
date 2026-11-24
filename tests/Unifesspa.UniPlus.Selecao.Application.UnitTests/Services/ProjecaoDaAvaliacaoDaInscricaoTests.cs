@@ -37,7 +37,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         AvaliacaoDaInscricaoDto avaliacao = Projetar(documentos.ComAsSituacoesDaAvaliacao(), faseId: null).Value!;
 
         avaliacao.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("INSCRICAO", "HABILITACAO");
-        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade, d.Situacao.Codigo)).Should().Equal(
+        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade!.Codigo, d.Situacao.Codigo)).Should().Equal(
             [(documentos.DaInscricao.Id, "INSCRICAO", "PENDENTE"), (documentos.DaIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
             "a isenção na mesma fase aparece como da isenção, e não como exigência da inscrição");
         avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao.Codigo).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
@@ -96,11 +96,11 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
 
         DocumentoDaInscricaoDto projetado = documentos.Single(d => d.ExigenciaId == cenario.Laudo.Id);
         projetado.Situacao.Codigo.Should().Be("SATISFEITA");
-        projetado.FormatosAceitos.Should().Equal("PDF", "JPEG");
+        projetado.FormatosAceitos.Select(f => f.Codigo).Should().Equal("PDF", "JPEG");
         projetado.TamanhoMaximoBytes.Should().Be(1_000_000, "o menor limite efetivo entre os formatos aceitos");
         projetado.QuantidadeMinima.Should().Be(1);
         projetado.Arquivos.Should().Equal(cenario.ArquivoDoLaudo);
-        documentos.Single(d => d.ExigenciaId == cenario.Outro.Id).FormatosAceitos.Should().Equal("PDF", "JPEG", "PNG");
+        documentos.Single(d => d.ExigenciaId == cenario.Outro.Id).FormatosAceitos.Select(f => f.Codigo).Should().Equal("PDF", "JPEG", "PNG");
         documentos.Single(d => d.ExigenciaId == cenario.Outro.Id).TamanhoMaximoBytes.Should().Be(ArquivoDaApresentacao.TetoDoSistemaBytes);
     }
 

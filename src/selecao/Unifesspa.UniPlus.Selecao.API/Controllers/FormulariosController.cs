@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
@@ -75,14 +76,14 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterFormularioRenderizavel(Guid id, string finalidade, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularioRenderizavel(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
     {
         // Revalidação obrigatória, não cache proibido: o endereço não muda quando a divulgação
         // chega nem quando o certame é retificado, e sem diretiva um cache compartilhado atribui
         // frescor heurístico ao 404 transitório (RFC 9111 §4.2.2).
         Response.Headers.CacheControl = "no-cache";
 
-        if (EstruturaFormulario.FinalidadeDoToken(finalidade) is not (not FinalidadeFormulario.Nenhuma and var alvo))
+        if (EstruturaFormulario.FinalidadeDoCodigo(finalidade) is not { } alvo)
         {
             return NotFound();
         }
@@ -107,9 +108,9 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterFormularioRenderizavelDoRascunho(Guid id, string finalidade, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularioRenderizavelDoRascunho(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
     {
-        if (EstruturaFormulario.FinalidadeDoToken(finalidade) is not (not FinalidadeFormulario.Nenhuma and var alvo))
+        if (EstruturaFormulario.FinalidadeDoCodigo(finalidade) is not { } alvo)
         {
             return NotFound();
         }
@@ -136,7 +137,7 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> DefinirFormulario(
         Guid id,
-        string finalidade,
+        [AceitaCodigosDe<FinalidadeFormulario>] string finalidade,
         [FromBody] DefinirFormularioRequest request,
         CancellationToken cancellationToken)
     {
@@ -155,7 +156,7 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> RemoverFormulario(Guid id, string finalidade, CancellationToken cancellationToken) =>
+    public Task<IActionResult> RemoverFormulario(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken) =>
         EnviarMutacao(finalidade,
             alvo => new RemoverFormularioCommand(id, alvo),
             cancellationToken);
@@ -176,7 +177,7 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> DefinirItens(
         Guid id,
-        string finalidade,
+        [AceitaCodigosDe<FinalidadeFormulario>] string finalidade,
         [FromBody] DefinirItensDoFormularioRequest request,
         CancellationToken cancellationToken)
     {
@@ -202,7 +203,7 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> DefinirTermos(
         Guid id,
-        string finalidade,
+        [AceitaCodigosDe<FinalidadeFormulario>] string finalidade,
         [FromBody] DefinirTermosDoFormularioRequest request,
         CancellationToken cancellationToken)
     {
@@ -249,7 +250,7 @@ public sealed class FormulariosController : ControllerBase
         Func<FinalidadeFormulario, ICommand<Result>> comando,
         CancellationToken cancellationToken)
     {
-        if (EstruturaFormulario.FinalidadeDoToken(finalidade) is not (not FinalidadeFormulario.Nenhuma and var alvo))
+        if (EstruturaFormulario.FinalidadeDoCodigo(finalidade) is not { } alvo)
         {
             return NotFound();
         }

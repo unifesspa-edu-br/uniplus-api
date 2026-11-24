@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Onde um tipo de documento ou fato do candidato está no circuito de aprovação da proteção de dados (ADR-0153): a
 /// situação, os instantes de cada passo, a classificação que o Representante do controlador recomendou no ajuste e a
@@ -78,14 +81,14 @@ public sealed record DetalheDaProtecaoDoCatalogoDto(
     IReadOnlyList<ManifestacaoDaProtecaoDto> ManifestacoesVigentes);
 
 /// <summary>O fato, para quem avalia a proteção: o tipo do dado, como é exibido e os valores possíveis.</summary>
-/// <param name="Dominio">Token canônico do tipo do dado.</param>
-/// <param name="Cardinalidade">Token canônico: se o fato recebe um valor ou vários.</param>
+/// <param name="Dominio">O tipo do dado, com código e rótulo.</param>
+/// <param name="Cardinalidade">Se o fato recebe um valor ou vários, com código e rótulo.</param>
 /// <param name="SemeadoPeloSistema"><c>true</c> no fato que o sistema semeou e mantém.</param>
 /// <param name="ComponenteExibicao">Token canônico do componente de exibição, quando o fato declara um.</param>
 /// <param name="Valores">Os valores possíveis ativos, na ordem do cadastro; vazio no fato sem conjunto fechado.</param>
 public sealed record DetalheDoFatoDto(
-    string Dominio,
-    string Cardinalidade,
+    CodigoComRotulo<TipoDoDado> Dominio,
+    CodigoComRotulo<QuantidadeDeValores> Cardinalidade,
     bool SemeadoPeloSistema,
     string? ComponenteExibicao,
     IReadOnlyList<DetalheDoValorDoFatoDto> Valores);

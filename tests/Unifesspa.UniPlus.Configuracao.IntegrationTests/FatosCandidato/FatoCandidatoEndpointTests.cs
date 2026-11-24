@@ -2,12 +2,14 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.FatosCandidato;
 
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Smoke dos endpoints somente-leitura do catálogo <c>dados_do_candidato</c>
@@ -38,7 +40,7 @@ public sealed class FatoCandidatoEndpointTests
         // confere os fatos de sistema, não a contagem total.
         fatos.Select(f => f.Codigo).Should().Contain(FatoCandidatoSeed.Itens.Select(i => i.Codigo));
         fatos.Select(f => f.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
-        fatos.Should().Contain(f => f.Codigo == "MODALIDADE" && f.Cardinalidade == "MULTIVALORADO" && f.ValoresDominio == null);
+        fatos.Should().Contain(f => f.Codigo == "MODALIDADE" && f.CardinalidadeValor == QuantidadeDeValores.VariosValores && f.ValoresDominio == null);
     }
 
     [Fact(DisplayName = "GET /api/configuracao/fatos-candidato/{codigo} resolve pela chave natural")]
@@ -50,7 +52,7 @@ public sealed class FatoCandidatoEndpointTests
         using JsonDocument corpo = await LerAsync(response);
         FatoCandidatoView fato = Fato(corpo.RootElement);
         fato.Codigo.Should().Be("COR_RACA");
-        fato.Dominio.Should().Be("CATEGORICO");
+        fato.DominioValor.Should().Be(TipoDoDado.Opcao);
         // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
         // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
         fato.ValoresDominio.Should().Contain("PRETA");
@@ -64,7 +66,7 @@ public sealed class FatoCandidatoEndpointTests
 
         using JsonDocument corpo = await LerAsync(response);
         JsonElement[] operadores = [.. corpo.RootElement.GetProperty("operadoresAdmitidos").EnumerateArray()];
-        operadores.Select(static o => o.GetProperty("codigo").GetString()).Should().Equal("IGUAL", "DIFERENTE", "EM", "NAO_EM");
+        operadores.Select(static o => o.GetProperty("codigo").GetString()).Should().Equal("IGUAL", "DIFERENTE", "ALGUM_DE", "NENHUM_DE");
         operadores.Select(static o => o.GetProperty("rotulo").GetString())
             .Should().Equal("é igual a", "é diferente de", "é um de", "não é nenhum de");
     }
@@ -76,7 +78,7 @@ public sealed class FatoCandidatoEndpointTests
 
         using JsonDocument corpo = await LerAsync(response);
         corpo.RootElement.EnumerateArray().Should().Contain(static item =>
-            item.GetProperty("fato").GetProperty("dominio").GetString() == "TEXTO"
+            item.GetProperty("fato").GetProperty("dominio").GetProperty("codigo").GetString() == "TEXTO"
             && item.GetProperty("operadoresAdmitidos").GetArrayLength() == 0);
     }
 
@@ -88,8 +90,13 @@ public sealed class FatoCandidatoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    private static readonly JsonSerializerOptions OpcoesDaResposta = new(JsonSerializerOptions.Web)
+    {
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+    };
+
     private static FatoCandidatoView Fato(JsonElement item) =>
-        item.GetProperty("fato").Deserialize<FatoCandidatoView>(JsonSerializerOptions.Web)!;
+        item.GetProperty("fato").Deserialize<FatoCandidatoView>(OpcoesDaResposta)!;
 
     private static async Task<JsonDocument> LerAsync(HttpResponseMessage response) =>
         JsonDocument.Parse(await response.Content.ReadAsStringAsync());

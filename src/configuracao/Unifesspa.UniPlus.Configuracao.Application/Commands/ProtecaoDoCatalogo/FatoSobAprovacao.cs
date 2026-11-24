@@ -25,7 +25,7 @@ internal sealed class FatoSobAprovacao(FatoCandidato fato) : IItemSobAprovacao
         {
             AtoDaProtecao.Aprovacao => fato.AprovarProtecao(ator, em),
             AtoDaProtecao.AjusteRecomendado => fato.RecomendarAjusteDaProtecao(
-                decisao.ClassificacaoRecomendada ?? ClassificacaoDeProtecao.Nenhuma, decisao.Justificativa?.Valor, ator, em),
+                decisao.ClassificacaoRecomendada, decisao.Justificativa?.Valor, ator, em),
             _ => fato.ReprovarProtecao(decisao.Justificativa?.Valor, ator, em),
         };
 }

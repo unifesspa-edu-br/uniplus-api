@@ -40,10 +40,8 @@ public sealed class ProjetorDeItensTests
     {
         PermissionRequirement pessoais = Requisito("selecao:dados-pessoais:consultar", ClassificacaoDeProtecao.Pessoal);
         PermissionRequirement sensiveis = Requisito("selecao:dados-sensiveis:consultar", ClassificacaoDeProtecao.Sensivel);
-        _verificador.AvaliarAsync(pessoais, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(pessoais, permitida: true));
-        _verificador.AvaliarAsync(sensiveis, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(sensiveis, permitida: false));
+        VerificadorResponde(pessoais, permitida: true);
+        VerificadorResponde(sensiveis, permitida: false);
 
         DecisoesDaProjecao decisoes = await _projetor.DecidirAsync(
             Porta(pessoais, sensiveis), _inscricao, Pares(ClassificacaoDeProtecao.Pessoal, ClassificacaoDeProtecao.Sensivel), default);
@@ -51,35 +49,27 @@ public sealed class ProjetorDeItensTests
 
         decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal).Should().BeTrue();
         decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel).Should().BeFalse();
-        await _verificador.Received(1).RegistrarDesfechoAsync(
-            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 1 && ((DecisaoPermitida)d.Single()).Registro.Permissao == pessoais.Permissao),
-            IntencaoDoRegistro.Projecao,
-            Arg.Any<CancellationToken>());
+        await RegistrouSoAsync(pessoais);
     }
 
     [Fact(DisplayName = "A decisão permitida de dado público também é registrada, ainda que a regra de sensibilidade não a exija")]
     public async Task Registrar_DecisaoPublica_EhRegistrada()
     {
         PermissionRequirement publicos = Requisito("selecao:dados-publicos:consultar", ClassificacaoDeProtecao.Publico);
-        _verificador.AvaliarAsync(publicos, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(publicos, permitida: true));
+        VerificadorResponde(publicos, permitida: true);
 
         DecisoesDaProjecao decisoes = await _projetor.DecidirAsync(
             Porta(publicos), _inscricao, Pares(ClassificacaoDeProtecao.Publico), default);
         await _projetor.RegistrarAsync(decisoes, default);
 
-        await _verificador.Received(1).RegistrarDesfechoAsync(
-            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 1 && ((DecisaoPermitida)d.Single()).Registro.Permissao == publicos.Permissao),
-            IntencaoDoRegistro.Projecao,
-            Arg.Any<CancellationToken>());
+        await RegistrouSoAsync(publicos);
     }
 
     [Fact(DisplayName = "Cada par é decidido com a sensibilidade do dado que a permissão libera, e não com a do resource de origem")]
     public async Task Decidir_UsaASensibilidadeDaPermissaoDoPar()
     {
         PermissionRequirement publicos = Requisito("selecao:dados-publicos:consultar", ClassificacaoDeProtecao.Publico);
-        _verificador.AvaliarAsync(publicos, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(publicos, permitida: true));
+        VerificadorResponde(publicos, permitida: true);
 
         await _projetor.DecidirAsync(Porta(publicos), _inscricao, Pares(ClassificacaoDeProtecao.Publico), default);
 
@@ -92,13 +82,12 @@ public sealed class ProjetorDeItensTests
     public async Task Decidir_ClassificacaoNaoResolvida_VaiComoSensivel()
     {
         PermissionRequirement sensiveis = Requisito("selecao:dados-sensiveis:consultar", ClassificacaoDeProtecao.Sensivel);
-        _verificador.AvaliarAsync(sensiveis, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(sensiveis, permitida: true));
+        VerificadorResponde(sensiveis, permitida: true);
 
         DecisoesDaProjecao decisoes = await _projetor.DecidirAsync(
-            Porta(sensiveis), _inscricao, Pares(ClassificacaoDeProtecao.Nenhuma), default);
+            Porta(sensiveis), _inscricao, Pares(default(ClassificacaoDeProtecao)), default);
 
-        decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Nenhuma).Should().BeTrue();
+        decisoes.Permite(NaturezaDoItem.Dado, default(ClassificacaoDeProtecao)).Should().BeTrue();
         await _verificador.Received(1).AvaliarAsync(sensiveis, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
     }
 
@@ -116,8 +105,7 @@ public sealed class ProjetorDeItensTests
     public async Task Decidir_GuardaNaRequisicao()
     {
         PermissionRequirement publicos = Requisito("selecao:dados-publicos:consultar", ClassificacaoDeProtecao.Publico);
-        _verificador.AvaliarAsync(publicos, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(Decisao(publicos, permitida: true));
+        VerificadorResponde(publicos, permitida: true);
 
         await _projetor.DecidirAsync(Porta(publicos), _inscricao, Pares(ClassificacaoDeProtecao.Publico), default);
 
@@ -146,6 +134,16 @@ public sealed class ProjetorDeItensTests
             .Returns(chamada => requisitos.SingleOrDefault(r => r.Sensibilidade == chamada.ArgAt<ClassificacaoDeProtecao>(1)));
         return porta;
     }
+
+    private void VerificadorResponde(PermissionRequirement requisito, bool permitida) =>
+        _verificador.AvaliarAsync(requisito, Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(requisito, permitida));
+
+    private Task RegistrouSoAsync(PermissionRequirement requisito) =>
+        _verificador.Received(1).RegistrarDesfechoAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 1 && ((DecisaoPermitida)d.Single()).Registro.Permissao == requisito.Permissao),
+            IntencaoDoRegistro.Projecao,
+            Arg.Any<CancellationToken>());
 
     private DecisaoDeAcesso Decisao(PermissionRequirement requisito, bool permitida) =>
         DecisaoDeAcessoDeTeste.Tomada(

@@ -16,7 +16,7 @@ internal static class ApoioDoModeloDeFormulario
 {
     internal static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
-    internal static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+    internal static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
     internal static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     internal static PredicadoDnf Quando(string fato, Operador operador = Operador.Igual) =>
@@ -27,7 +27,7 @@ internal static class ApoioDoModeloDeFormulario
             fato,
             ordem,
             etapa,
-            new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano),
+            new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao),
             null,
             new RegrasDoCampo(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, []));
 
@@ -35,7 +35,7 @@ internal static class ApoioDoModeloDeFormulario
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, []);
 
     internal static Result<ModeloFormulario> Criar(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
+        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
         ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "PSR", conteudo, derivacoes ?? SemDerivacoes);
 
     internal static Result<ModeloFormulario> CriarInscricao(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>

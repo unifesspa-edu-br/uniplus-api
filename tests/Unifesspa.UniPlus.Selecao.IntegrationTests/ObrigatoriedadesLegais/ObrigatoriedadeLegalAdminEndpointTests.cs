@@ -322,7 +322,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         await SeedRegraAsync(client, regraCodigoModalidade, categoria: "MODALIDADE");
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/selecao/obrigatoriedades-legais?categoria=etapa&limit=50", UriKind.Relative));
+            new Uri("/api/selecao/obrigatoriedades-legais?categoria=ETAPA&limit=50", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -330,7 +330,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             .Select(e => e.GetProperty("regraCodigo").GetString()!)];
 
         regraCodigos.Should().Contain(regraCodigoEtapa);
-        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=etapa exclui modalidade");
+        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=ETAPA exclui modalidade");
     }
 
     [Fact(DisplayName = "GET filtra por tipoProcesso e ignora o parâmetro legado")]

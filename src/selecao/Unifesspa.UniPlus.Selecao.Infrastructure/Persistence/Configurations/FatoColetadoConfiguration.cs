@@ -32,7 +32,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
-        builder.Property(f => f.TipoRenderizacao).HasComment("Tipo de campo: NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+        builder.Property(f => f.TipoRenderizacao).HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
         builder.Property(f => f.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
         builder.Property(f => f.Ajuda).HasComment("Orientação adicional exibida junto ao campo, quando houver.");
         builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
@@ -45,12 +45,12 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FinalidadeTratamento).HasComment("Finalidade informada para o tratamento do dado.");
         builder.Property(f => f.Descricao).HasComment("Descrição do dado solicitado.");
         builder.Property(f => f.ComponenteExibicao).HasComment("Componente usado para exibir o dado, quando especificado.");
-        builder.Property(f => f.Finalidade).HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
         builder.Property(f => f.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
 
         builder.ToTable("dados_dos_formularios", t =>
         {
             t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
+            t.HasCheckConstraint("ck_dados_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
             t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", $"origem_valores IN ({SqlDosCodigosDeContrato.Lista<OrigemValoresColeta>()})");
         });
         builder.HasKey(f => f.Id);
@@ -85,7 +85,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Ignore(f => f.Exibicao);
         builder.Ignore(f => f.Apresentacao);
         builder.Ignore(f => f.Regras);
-        builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
         builder.Property(f => f.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em

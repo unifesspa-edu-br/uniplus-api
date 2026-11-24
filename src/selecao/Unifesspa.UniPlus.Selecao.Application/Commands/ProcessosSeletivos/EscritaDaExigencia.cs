@@ -30,10 +30,12 @@ internal static class EscritaDaExigencia
     /// <summary>A aplicabilidade do código, nula quando ausente ou desconhecida: a forma da exigência a recusa.</summary>
     public static Aplicabilidade? AplicabilidadeDoToken(string? token) => CodigoLidoDoPedido.Ler<Aplicabilidade>(token);
 
-    /// <summary>
-    /// A finalidade do token, nula quando o cliente não a declarou. O token desconhecido vira o sentinela,
-    /// que a forma do documento recusa.
-    /// </summary>
-    public static FinalidadeFormulario? FinalidadeDoToken(string? token) =>
-        token is null ? null : EstruturaFormulario.FinalidadeDoToken(token);
+    /// <summary>A finalidade do código, nula quando o cliente não a declarou ou declarou um código desconhecido.</summary>
+    public static FinalidadeFormulario? FinalidadeDoCodigo(string? codigo) => CodigoLidoDoPedido.Ler<FinalidadeFormulario>(codigo);
+
+    /// <summary>A recusa da finalidade declarada que não é código de finalidade; o texto ausente não é recusado.</summary>
+    public static IEnumerable<FieldError> RecusaDaFinalidadeDesconhecida(string? codigo) =>
+        CodigoLidoDoPedido.TentarLerOpcional(codigo, out FinalidadeFormulario? _)
+            ? []
+            : FormaDoCabecalho.ValidarFinalidade(null);
 }

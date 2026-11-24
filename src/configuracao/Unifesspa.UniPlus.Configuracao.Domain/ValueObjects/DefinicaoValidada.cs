@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// A definição de um tipo de conceito que as regras aceitaram: só <see cref="DefinicaoInformada.Validar"/> a
@@ -10,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 public sealed class DefinicaoValidada
 {
     internal DefinicaoValidada(
-        string nome, string? descricao, NaturezaConceito natureza, EscalaNumerica? escala, IReadOnlyList<ValorCategorico> valores)
+        string nome, string? descricao, FormaDoConceito natureza, EscalaNumerica? escala, IReadOnlyList<ValorCategorico> valores)
     {
         Nome = nome;
         Descricao = descricao;
@@ -21,7 +22,7 @@ public sealed class DefinicaoValidada
 
     public string Nome { get; }
     public string? Descricao { get; }
-    public NaturezaConceito Natureza { get; }
+    public FormaDoConceito Natureza { get; }
     public EscalaNumerica? Escala { get; }
     public IReadOnlyList<ValorCategorico> Valores { get; }
 }

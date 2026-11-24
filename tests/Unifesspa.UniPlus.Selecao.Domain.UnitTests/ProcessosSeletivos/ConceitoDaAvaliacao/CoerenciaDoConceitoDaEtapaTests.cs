@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conceito
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -16,11 +17,11 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
     private static readonly string[] AdmitidosNotaEAptoInapto = ["NOTA", "APTO_INAPTO"];
 
     private static ConceitoDaEtapa Nota() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ConceitoDaEtapa AptoInapto() =>
         ConceitoDaEtapa.Criar(
-            "APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, null,
+            "APTO_INAPTO", "Apto ou inapto", FormaDoConceito.PorOpcoes, null,
             [new ValorCategoricoInformado("APTO", "Apto", true), new ValorCategoricoInformado("INAPTO", "Inapto", false)]).Value!;
 
     private static DeclaracaoDaAvaliacaoDaEtapa Declaracao(

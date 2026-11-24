@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -33,7 +34,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
     [Fact(DisplayName = "Texto não entra na regra de aplicabilidade")]
     public void Conferir_CitaTexto_Recusa()
     {
-        FatoCandidato nome = Declarado("NOME", DominioFato.Texto, formato: FormatoTexto.NomePessoa);
+        FatoCandidato nome = Declarado("NOME", TipoDoDado.Texto, formato: FormatoTexto.NomePessoa);
 
         Codigos(ConferenciaDaRegraDeAplicabilidade.Conferir(Quando(("NOME", "MARIA")), vigente: null, Catalogo(nome)))
             .Should().Equal(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel);
@@ -55,7 +56,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
     [Fact(DisplayName = "Valor desativado recusa citação nova e mantém a que a regra vigente já fazia")]
     public void Conferir_ValorDesativado_SoRecusaCitacaoNova()
     {
-        FatoCandidato corRaca = Declarado("COR_RACA", DominioFato.Categorico);
+        FatoCandidato corRaca = Declarado("COR_RACA", TipoDoDado.Opcao);
         corRaca.AdicionarValorDominio("PARDA", "Parda", 0, ativo: true);
         corRaca.DesativarValor("PARDA");
         CatalogoDeFatos catalogo = Catalogo(corRaca);
@@ -138,25 +139,24 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
 
     private static FatoCandidato Modalidade()
     {
-        FatoCandidato modalidade = Derivado(ModalidadeDoCandidato.Fato, DominioFato.Categorico);
+        FatoCandidato modalidade = Derivado(ModalidadeDoCandidato.Fato, TipoDoDado.Opcao);
         modalidade.AdicionarValorDominio("AC", "Ampla concorrência", 0, ativo: true);
         return modalidade;
     }
 
-    private static FatoCandidato Derivado(string codigo, DominioFato dominio = DominioFato.Booleano) =>
+    private static FatoCandidato Derivado(string codigo, TipoDoDado dominio = TipoDoDado.SimOuNao) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese)).Value!;
 
     private static FatoCandidato Declarado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "INSCRICAO",
         FormatoTexto? formato = null) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar,
-            dominio == DominioFato.Categorico ? FonteValoresFato.Global : null, formato, ponto, EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, dominio == TipoDoDado.Opcao ? FonteValoresFato.Catalogo : null, formato, ponto, EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese)).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

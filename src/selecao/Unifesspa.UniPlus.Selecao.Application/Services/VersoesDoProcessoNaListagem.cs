@@ -30,7 +30,7 @@ internal static class VersoesDoProcessoNaListagem
     private static LeituraDasVersoes LerVersoes(IReadOnlyList<VersaoConfiguracao> versoes, IRegistroCodecsEnvelope registroCodecs)
     {
         Dictionary<Guid, IReadOnlyDictionary<Guid, string>> nomesPorVersao = [];
-        ClassificacaoDeProtecao maisAlta = ClassificacaoDeProtecao.Nenhuma;
+        ClassificacaoDeProtecao maisAlta = ClassificacaoDeProtecao.Publico;
         List<string> basesLegais = [];
         bool resolvida = true;
         foreach (VersaoConfiguracao versao in versoes)

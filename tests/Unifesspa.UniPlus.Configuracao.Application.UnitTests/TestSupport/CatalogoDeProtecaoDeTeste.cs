@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -62,13 +63,13 @@ internal static class CatalogoDeProtecaoDeTeste
         string codigo = "LAUDO_MEDICO_COMPLEMENTAR",
         string nome = "Laudo médico complementar",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Interno) =>
-        TipoDocumento.Criar(
-            codigo, nome, null, "SAUDE", null, null, null, classificacao, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+            codigo, nome, null, "SAUDE", null, null, null, classificacao, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     public static FatoCandidato NovoFato(string codigo = "TEM_RENDA", string nome = "Tem renda") =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(codigo, nome, "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     /// <summary>O tipo no instante do ato, como o registro do ato o guarda.</summary>
     public static RetratoDoItemDaProtecao Retrato(TipoDocumento tipo) =>

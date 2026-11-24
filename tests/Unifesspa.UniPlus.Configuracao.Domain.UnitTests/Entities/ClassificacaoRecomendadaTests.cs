@@ -13,9 +13,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class ClassificacaoRecomendadaTests
 {
-    [Theory(DisplayName = "A recomendação ausente, a sentinela e a fora da escala são recusadas uma vez no campo classificacaoRecomendada")]
+    [Theory(DisplayName = "A recomendação ausente e a fora da escala são recusadas uma vez no campo classificacaoRecomendada")]
     [InlineData(null)]
-    [InlineData(ClassificacaoDeProtecao.Nenhuma)]
+    [InlineData((ClassificacaoDeProtecao)0)]
     [InlineData((ClassificacaoDeProtecao)(-1))]
     public void ConferirClassificacaoRecomendada_Invalida_RecusaUmaVez(ClassificacaoDeProtecao? recomendada) =>
         AprovacaoDaProtecao.ConferirClassificacaoRecomendada(recomendada).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>

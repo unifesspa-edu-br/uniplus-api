@@ -117,7 +117,7 @@ public sealed class ReuniaoDasFontesDoCatalogoTests
             new(CodigoDePermissao.De("alfa:itens:ler"), ClassificacaoDeProtecao.Interno, false, false),
         ];
 
-        LinhaDoCatalogo.ImpressaoDe(linhas).Valor.Should().Be("d05499ba573110812d843fb0aa90efb001dd7c37fbf9918e67de86980bbf4eaf");
+        LinhaDoCatalogo.ImpressaoDe(linhas).Valor.Should().Be("a8d7713738473dc19f3e1fe9922d648c37eaffee6a5a1a655397de6bc20e178a");
     }
 
     private static IReadOnlyList<string> Problemas(params IFonteDeCatalogo[] fontes)

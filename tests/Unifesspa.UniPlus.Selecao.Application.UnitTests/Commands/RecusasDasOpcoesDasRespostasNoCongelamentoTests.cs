@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -100,27 +101,27 @@ public sealed class RecusasDasOpcoesDasRespostasNoCongelamentoTests
 
     private static FatoColetado CampoDoProcesso(string codigo, int ordem, string[] formadoPor) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
             .ComRestricoes(formadoPor.Length > 0 ? [new OpcoesDasRespostas(formadoPor)] : [])
             .Construir();
 
     private static FatoColetado CampoDoCatalogo(string codigo, int ordem) =>
-        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.SelecaoUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(params string[] codigos) =>
         codigos.ToDictionary(static c => c, static c => c == "TIPO_DEFICIENCIA" ? TipoDeDeficienciaSemTipoVivo() : FatoDoProcesso(c), StringComparer.Ordinal);
 
     private static FatoCandidatoView FatoDoProcesso(string codigo) => new(
-        Id: Guid.CreateVersion7(), Codigo: codigo, Nome: codigo, Descricao: "Descrição do fato.", Dominio: "CATEGORICO", Origem: "DECLARADO",
-        Cardinalidade: "MULTIVALORADO", ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: $"CAMPO_FORMULARIO:{codigo}",
-        ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL",
+        Id: Guid.CreateVersion7(), Codigo: codigo, Nome: codigo, Descricao: "Descrição do fato.", Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+        Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: $"CAMPO_FORMULARIO:{codigo}",
+        ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL",
         HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView TipoDeDeficienciaSemTipoVivo() => FatoDoProcesso("TIPO_DEFICIENCIA") with
     {
         ValoresDominioDeclarados = [new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 0, Ativo: false)],
-        FonteValores = "TIPOS_DEFICIENCIA",
+        FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.TiposDeDeficiencia),
     };
 }

@@ -16,14 +16,14 @@ public sealed record Impedimento(PredicadoDnf Quando, string Mensagem)
 {
     /// <summary>Os tipos de campo que aceitam impedimento: os que entram em regra (ADR-0136).</summary>
     public static bool CabeNoCampo(TipoRenderizacao campo) => campo is
-        TipoRenderizacao.Booleano or TipoRenderizacao.Numero or TipoRenderizacao.SelecaoUnica
-        or TipoRenderizacao.SelecaoMultipla or TipoRenderizacao.Municipio;
+        TipoRenderizacao.SimOuNao or TipoRenderizacao.Numero or TipoRenderizacao.EscolhaUnica
+        or TipoRenderizacao.EscolhaMultipla or TipoRenderizacao.Municipio;
 
     /// <summary>
     /// A recusa de cada item com impedimento, na posição dele, quando o formulário não é o de
     /// inscrição: só ele tem impedimento, porque o impedimento impede a inscrição do candidato.
     /// </summary>
-    public static List<FieldError> ConferirFinalidade(FinalidadeFormulario finalidade, IEnumerable<Impedimento?> impedimentosDosItens)
+    public static List<FieldError> ConferirFinalidade(FinalidadeFormulario? finalidade, IEnumerable<Impedimento?> impedimentosDosItens)
     {
         ArgumentNullException.ThrowIfNull(impedimentosDosItens);
 

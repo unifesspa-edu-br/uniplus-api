@@ -52,7 +52,7 @@ public sealed class LeituraTipadaColetaEndpointTests
         ctx.PutFatosAsync(
         [
             FormularioDeInscricaoHttp.Item(
-                "BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA",
+                "BAIXA_RENDA", 0, "Baixa renda", "SIM_OU_NAO", "NUNCA",
                 exibicao: CorRacaPreta()),
         ]);
 
@@ -73,7 +73,7 @@ public sealed class LeituraTipadaColetaEndpointTests
         itens.Length.Should().Be(ConjuntoBasicoDaInscricao.Itens.Count + 1);
         JsonElement corRaca = itens.Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         corRaca.GetProperty("apresentacao").GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
-        corRaca.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
+        corRaca.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("ESCOLHA_UNICA");
         corRaca.GetProperty("regras").GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         corRaca.GetProperty("regras").GetProperty("exibicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem exibição é null, nunca []");
         ConferirExibicaoDaBaixaRenda(itens[ConjuntoBasicoDaInscricao.Itens.Count]);

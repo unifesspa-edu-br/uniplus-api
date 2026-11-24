@@ -83,7 +83,7 @@ internal static class EnvelopeDeReferencia
 
     /// <summary>
     /// Os valores selecionáveis dos dois fatos coletados do processo de referência (COR_RACA,
-    /// RENDA — ambos <c>SELECAO_UNICA</c>, issue #1059) — totalidade exigida pelo encoder (D1-ter).
+    /// RENDA — ambos <c>ESCOLHA_UNICA</c>, issue #1059) — totalidade exigida pelo encoder (D1-ter).
     /// COR_RACA reusa o MESMO vocabulário dos metadados: é o mesmo fato do catálogo, congelado nos dois blocos.
     /// </summary>
     internal static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveisDeReferencia() =>
@@ -218,14 +218,14 @@ internal static class EnvelopeDeReferencia
     private static FatoColetado FatoCorRaca() =>
         FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
     private static FatoColetado FatoRendaGatadoPelaCorRaca() =>
         FatoColetadoDeTeste.Coletando("RENDA", 1)
             .ComRotulo("Faixa de renda familiar")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
             .Construir();
@@ -273,7 +273,7 @@ internal static class EnvelopeDeReferencia
         0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!;
 
     private static CondicaoGatilho GatilhoDaCorRaca() => CondicaoGatilho.Criar(
-        0, "COR_RACA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "PRETA", "PARDA" })).Value!;
+        0, "COR_RACA", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "PRETA", "PARDA" })).Value!;
 
     private static DocumentoExigidoBaseLegal BaseLegalDaResolucao() => DocumentoExigidoBaseLegal.Criar(
         "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna do certame").Value!;
@@ -288,9 +288,9 @@ internal static class EnvelopeDeReferencia
 
     private static MetadadoFatoCongelado MetadadoDaModalidade() => new(
         Codigo: "MODALIDADE",
-        Dominio: "CATEGORICO",
-        Origem: "DERIVADO",
-        Cardinalidade: "MULTIVALORADO",
+        Dominio: TipoDoDado.Opcao,
+        Origem: OrigemFato.Calculado,
+        Cardinalidade: QuantidadeDeValores.VariosValores,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
         ValoresDominio: null,
@@ -298,9 +298,9 @@ internal static class EnvelopeDeReferencia
 
     private static MetadadoFatoCongelado MetadadoDaCorRaca() => new(
         Codigo: "COR_RACA",
-        Dominio: "CATEGORICO",
-        Origem: "DECLARADO",
-        Cardinalidade: "ESCALAR",
+        Dominio: TipoDoDado.Opcao,
+        Origem: OrigemFato.Declarado,
+        Cardinalidade: QuantidadeDeValores.ValorUnico,
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_FORMULARIO:COR_RACA",
         ValoresDominio: ["BRANCA", "PRETA", "PARDA"],

@@ -51,7 +51,7 @@ public sealed class ModeloFormularioPersistenceTests
 
     private static EtapaDoModelo[] EtapasDaHabilitacao() =>
     [
-        new("ESCOLA", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Escolaridade", "Como concluiu", null, Quando("FORMA_CONCLUSAO", "REGULAR")),
+        new("ESCOLA", 0, TipoEtapaFormulario.Secao, null, "Escolaridade", "Como concluiu", null, Quando("FORMA_CONCLUSAO", "REGULAR")),
         new("DOCUMENTOS", 1, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
         new("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
     ];
@@ -59,11 +59,11 @@ public sealed class ModeloFormularioPersistenceTests
     private static ItemDoModelo[] ItensDaHabilitacao() =>
     [
         new("CERTIFICADO_EMITIDO", 0, "ESCOLA",
-            new ApresentacaoDoCampo("Certificado emitido?", TipoRenderizacao.Booleano, "Responda pelo histórico", pedirConfirmacao: true),
+            new ApresentacaoDoCampo("Certificado emitido?", TipoRenderizacao.SimOuNao, "Responda pelo histórico", pedirConfirmacao: true),
             null,
             new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
         new("TIPO_DOCUMENTO", 1, "ESCOLA",
-            new ApresentacaoDoCampo("Tipo de documento", TipoRenderizacao.SelecaoUnica),
+            new ApresentacaoDoCampo("Tipo de documento", TipoRenderizacao.EscolhaUnica),
             null,
             new RegrasDoCampo(
                 null,
@@ -80,11 +80,11 @@ public sealed class ModeloFormularioPersistenceTests
             new ExibicaoEObrigatoriedade(Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre),
         [
             new("PARENTESCO", 0, null,
-                new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.SelecaoUnica, "Em relação ao candidato"),
+                new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.EscolhaUnica, "Em relação ao candidato"),
                 null,
                 new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
             new("RENDA_MEMBRO", 1, null,
-                new ApresentacaoDoCampo("Renda", TipoRenderizacao.Booleano),
+                new ApresentacaoDoCampo("Renda", TipoRenderizacao.SimOuNao),
                 null,
                 new RegrasDoCampo(Quando("PARENTESCO", "CONJUGE"), Obrigatoriedade.Quando(Quando("PARENTESCO", "CONJUGE")), [])),
         ]);
@@ -103,11 +103,11 @@ public sealed class ModeloFormularioPersistenceTests
         new(
             "Inscrição",
             [
-                new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+                new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
                 new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
             [new("VINCULO_PARFOR", 0, "DADOS",
-                new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoRenderizacao.Booleano),
+                new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoRenderizacao.SimOuNao),
                 null,
                 new RegrasDoCampo(null, Obrigatoriedade.Sempre, [], impedimento))],
             [], [], []);

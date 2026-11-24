@@ -72,7 +72,7 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        FinalidadeFormulario? finalidade = campos.FinalidadeToken is null ? null : EstruturaFormulario.FinalidadeDoToken(campos.FinalidadeToken);
+        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(campos.FinalidadeToken);
         if (RecusaDaFinalidadeOuDoTamanho(campos, finalidade, path) is { } recusa)
         {
             return Recusar(leitor, recusa);
@@ -83,7 +83,7 @@ internal static class LeituraDasExigencias
 
     private static string? RecusaDaFinalidadeOuDoTamanho(CamposDaExigenciaNoEnvelope campos, FinalidadeFormulario? finalidade, string path)
     {
-        if (finalidade == FinalidadeFormulario.Nenhuma)
+        if (campos.FinalidadeToken is not null && finalidade is null)
         {
             return $"'{path}.finalidade' fora do vocabulário de finalidades.";
         }

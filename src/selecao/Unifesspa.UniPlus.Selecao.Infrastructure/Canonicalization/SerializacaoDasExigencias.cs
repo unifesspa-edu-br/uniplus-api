@@ -120,7 +120,7 @@ internal static class SerializacaoDasExigencias
     {
         item["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId;
         item["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId;
-        item["finalidade"] = exigencia.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null;
+        item["finalidade"] = exigencia.Finalidade?.Codigo();
         item["aplicabilidade"] = exigencia.Aplicabilidade.Codigo();
         item["obrigatorio"] = exigencia.Obrigatorio;
         item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia

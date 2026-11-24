@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -20,9 +21,13 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("inscricoes", t => t.HasComment(
+        builder.ToTable("inscricoes", t =>
+        {
+            t.HasCheckConstraint("ck_inscricoes_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoInscricao>()})");
+            t.HasComment(
             "A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e " +
-            "processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas."));
+            "processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
+        });
 
         builder.HasKey(i => i.Id);
 

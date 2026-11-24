@@ -30,23 +30,23 @@ public sealed class AgregadoDoAdministradorTests
 
         FatoCandidato agregado = Criar("EXISTE_MENOR_SOB_GUARDA", "MENOR_SOB_GUARDA", membro).Value!;
 
-        agregado.Dominio.Should().Be(DominioFato.Booleano);
-        agregado.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
+        agregado.Dominio.Should().Be(TipoDoDado.SimOuNao);
+        agregado.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
         agregado.Escopo.Should().Be(EscopoFato.Candidato);
-        agregado.Binding.Should().Be("AGREGACAO_GRUPO:MENOR_SOB_GUARDA");
+        agregado.Binding.Should().Be("RESUMO_DE_GRUPO:MENOR_SOB_GUARDA");
         agregado.FatoDeMembroAgregado.Should().Be("MENOR_SOB_GUARDA");
     }
 
     [Fact]
     public void CriarAgregado_SobreFatoCategorico_EhValoresPresentesComAFonteDoFatoDeMembro()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico);
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", TipoDoDado.Opcao);
 
         FatoCandidato agregado = Criar("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA", membro).Value!;
 
-        agregado.Dominio.Should().Be(DominioFato.Categorico);
-        agregado.Cardinalidade.Should().Be(CardinalidadeFato.Multivalorado);
-        agregado.FonteValores.Should().Be(FonteValoresFato.Processo);
+        agregado.Dominio.Should().Be(TipoDoDado.Opcao);
+        agregado.Cardinalidade.Should().Be(QuantidadeDeValores.VariosValores);
+        agregado.FonteValores.Should().Be(FonteValoresFato.OpcoesDoProcesso);
     }
 
     [Theory]
@@ -56,9 +56,9 @@ public sealed class AgregadoDoAdministradorTests
     public void CriarAgregado_FatoDeMembroInvalido_Recusa(string fatoDeMembro, string esperado)
     {
         FatoCandidato doCandidato = CriacaoDoFato.CriarDoAdministrador(
-            "RENDA_DECLARADA", "Renda", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato numerico = DeMembro("IDADE_DO_MEMBRO", DominioFato.Numerico);
+            new DescritivoDoFato("RENDA_DECLARADA", "Renda", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
+        FatoCandidato numerico = DeMembro("IDADE_DO_MEMBRO", TipoDoDado.Numerico);
 
         Result<FatoCandidato> agregado = Criar("AGREGADO", fatoDeMembro, doCandidato, numerico);
 
@@ -69,8 +69,8 @@ public sealed class AgregadoDoAdministradorTests
     public void CriarAgregado_SobreFatoDoCandidatoMaisProtegido_RecusaSoPeloEscopo()
     {
         FatoCandidato doCandidato = CriacaoDoFato.CriarDoAdministrador(
-            "RENDA_DECLARADA", "Renda", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "HABILITACAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("RENDA_DECLARADA", "Renda", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "HABILITACAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese)).Value!;
 
         Criar("AGREGADO", "RENDA_DECLARADA", doCandidato).Errors.Select(static e => e.Error.Code)
             .Should().Equal(FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo);
@@ -102,8 +102,10 @@ public sealed class AgregadoDoAdministradorTests
         PrecedenciaFase[] precedencias = [PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!];
 
         Result<FatoCandidato> agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "EXISTE_MENOR", "Existe menor", "Descrição do fato.", "MENOR_SOB_GUARDA", new CatalogoDeFatos([membro], precedencias), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
+            new DescritivoDoFato("EXISTE_MENOR", "Existe menor", "Descrição do fato."),
+            "MENOR_SOB_GUARDA",
+            new CatalogoDeFatos([membro], precedencias),
+            new DefinicaoDoFato(null, null, null, null, "INSCRICAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese));
 
         agregado.Errors.Select(static e => e.Error.Code).Should().Equal(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
     }
@@ -112,8 +114,10 @@ public sealed class AgregadoDoAdministradorTests
     public void CriarAgregado_SemFatoDeMembroENomeVazio_AcumulaSemRecusasDoDominio()
     {
         Result<FatoCandidato> agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "AGREGADO", " ", "Descrição do fato.", "INEXISTENTE", new CatalogoDeFatos([], []), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
+            new DescritivoDoFato("AGREGADO", " ", "Descrição do fato."),
+            "INEXISTENTE",
+            new CatalogoDeFatos([], []),
+            new DefinicaoDoFato(null, null, null, null, "INSCRICAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese));
 
         agregado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["fatoDeMembro", "nome"]);
     }
@@ -125,8 +129,10 @@ public sealed class AgregadoDoAdministradorTests
         PrecedenciaFase[] precedencias = [PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!];
 
         Result<FatoCandidato> agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "EXISTE_MENOR", " ", "Descrição do fato.", "MENOR_SOB_GUARDA", new CatalogoDeFatos([membro], precedencias), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
+            new DescritivoDoFato("EXISTE_MENOR", " ", "Descrição do fato."),
+            "MENOR_SOB_GUARDA",
+            new CatalogoDeFatos([membro], precedencias),
+            new DefinicaoDoFato(null, null, null, null, "INSCRICAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese));
 
         agregado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
@@ -138,7 +144,7 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void AdicionarValorDominio_NoAgregado_RecusaPorqueOsValoresSaoDoFatoDeMembro()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, fonte: FonteValoresFato.Global);
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", TipoDoDado.Opcao, fonte: FonteValoresFato.Catalogo);
         FatoCandidato agregado = Criar("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA", membro).Value!;
 
         agregado.AdicionarValorDominio("RURAL", null, 0, ativo: true).Error!.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios);
@@ -147,7 +153,7 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void CorrigirEReordenarValores_NoAgregado_RecusaPorqueOsValoresSaoDoFatoDeMembro()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, fonte: FonteValoresFato.Global);
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", TipoDoDado.Opcao, fonte: FonteValoresFato.Catalogo);
         FatoCandidato agregado = Criar("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA", membro).Value!;
 
         agregado.CorrigirValor("RURAL", "Rural", null).Error!.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios);
@@ -200,45 +206,49 @@ public sealed class AgregadoDoAdministradorTests
             "MENOR_SOB_GUARDA",
             0,
             null,
-            new Regras.Formularios.ApresentacaoDoCampo("Menor sob guarda", TipoRenderizacao.Booleano),
+            new Regras.Formularios.ApresentacaoDoCampo("Menor sob guarda", TipoRenderizacao.SimOuNao),
             null,
             new Regras.Formularios.RegrasDoCampo(null, Regras.Formularios.Obrigatoriedade.Sempre, []))]);
 
     private static FatoCandidato DeMembroCategoricoComValorRural()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, ponto: "INSCRICAO", fonte: FonteValoresFato.Global);
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", TipoDoDado.Opcao, ponto: "INSCRICAO", fonte: FonteValoresFato.Catalogo);
         membro.AdicionarValorDominio("RURAL", "Trabalho rural", 0, ativo: true).IsSuccess.Should().BeTrue();
         return membro;
     }
 
     private static FatoCandidato AgregadoDeCategorias(FatoCandidato membro) =>
         CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", "Descrição do fato."),
+            "CATEGORIA_RENDA",
+            new CatalogoDeFatos([membro], []),
+            new DefinicaoDoFato(null, null, null, null, "INSCRICAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 
     private static Result DefinirRegraQueCitaRural(FatoCandidato membro, FatoCandidato agregado)
     {
         FatoCandidato derivado = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "TEM_RENDA_RURAL", "Tem renda rural", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("TEM_RENDA_RURAL", "Tem renda rural", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
+            [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.AlgumDe, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
 
         return derivado.DefinirRegrasPadrao([regra], new CatalogoDeFatos([membro, agregado, derivado], []));
     }
 
     private static Result<FatoCandidato> Criar(string codigo, string fatoDeMembro, params FatoCandidato[] catalogo) =>
         CriacaoDoFato.CriarAgregadoDoAdministrador(
-            codigo, codigo, "Descrição do fato.", fatoDeMembro, new CatalogoDeFatos(catalogo, []), "HABILITACAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            fatoDeMembro,
+            new CatalogoDeFatos(catalogo, []),
+            new DefinicaoDoFato(null, null, null, null, "HABILITACAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese));
 
     private static FatoCandidato DeMembro(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "HABILITACAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
-        FonteValoresFato fonte = FonteValoresFato.Processo) =>
+        FonteValoresFato fonte = FonteValoresFato.OpcoesDoProcesso) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,
-            EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, dominio == TipoDoDado.Opcao ? fonte : null, null, ponto, EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese)).Value!;
 }

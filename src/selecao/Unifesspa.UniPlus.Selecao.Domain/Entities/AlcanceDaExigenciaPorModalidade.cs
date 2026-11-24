@@ -39,9 +39,9 @@ internal static class AlcanceDaExigenciaPorModalidade
         condicao.Operador switch
         {
             Operador.Igual => Igual(condicao.Valor, modalidadeCodigo),
-            Operador.Em => Contem(condicao.Valor, modalidadeCodigo),
+            Operador.AlgumDe => Contem(condicao.Valor, modalidadeCodigo),
             Operador.Diferente => condicao.Valor.ValueKind == JsonValueKind.String && !Igual(condicao.Valor, modalidadeCodigo),
-            Operador.NaoEm => condicao.Valor.ValueKind == JsonValueKind.Array && !Contem(condicao.Valor, modalidadeCodigo),
+            Operador.NenhumDe => condicao.Valor.ValueKind == JsonValueKind.Array && !Contem(condicao.Valor, modalidadeCodigo),
             _ => false,
         };
 

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Os operadores que uma condição de regra pode usar sobre um fato do catálogo, com o rótulo no sentido da
-/// cardinalidade do fato. É o ponto único dessa lista: a consulta pública e a manutenção a devolvem por aqui.
+/// quantidade de valores do fato. É o ponto único dessa lista: a consulta pública e a manutenção a devolvem por aqui.
 /// </summary>
 public static class OperadoresAdmitidosDoFato
 {
@@ -26,8 +26,7 @@ public static class OperadoresAdmitidosDoFato
             return [];
         }
 
-        CardinalidadeDoFato cardinalidade = VocabularioDoCatalogo.CardinalidadeNoVocabulario(fato);
-        return [.. OperadoresDoFato.Admitidos(dominio, cardinalidade)
-            .Select(operador => CodigoComRotulo<Operador>.De(operador, OperadoresDoFato.Rotulo(operador, cardinalidade)))];
+        return [.. OperadoresDoFato.Admitidos(dominio, fato.Cardinalidade)
+            .Select(operador => CodigoComRotulo<Operador>.De(operador, OperadoresDoFato.Rotulo(operador, fato.Cardinalidade)))];
     }
 }

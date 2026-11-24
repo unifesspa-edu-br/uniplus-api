@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
 /// Mapeamento entre <see cref="FormatoTexto"/> (PascalCase) e o token textual de contrato/banco
-/// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
-/// <see cref="CardinalidadesFato"/>). Fonte do CHECK de domínio em
+/// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita. Fonte do CHECK de domínio em
 /// <c>dados_do_candidato.formato</c> e do value converter de persistência.
 /// </summary>
 public static class FormatosTexto
@@ -57,29 +58,17 @@ public static class FormatosTexto
     /// </summary>
     public static string Mascarar(FormatoTexto formato, string? texto) => formato switch
     {
-        FormatoTexto.Cpf => MascararCpf(texto),
-        FormatoTexto.Email => MascararEmail(texto),
-        FormatoTexto.Telefone => MascararTelefone(texto),
-        FormatoTexto.Cep => MascararCep(texto),
-        FormatoTexto.NomePessoa => MascararNome(texto),
+        FormatoTexto.Cpf => Mascara(Kernel.Domain.ValueObjects.Cpf.Criar(texto), static cpf => cpf.Mascarado),
+        FormatoTexto.Email => Mascara(Kernel.Domain.ValueObjects.Email.Criar(texto), static email => email.Mascarado),
+        FormatoTexto.Telefone => Mascara(Kernel.Domain.ValueObjects.Telefone.Criar(texto), static telefone => telefone.Mascarado),
+        FormatoTexto.Cep => Mascara(Kernel.Domain.ValueObjects.Cep.Criar(texto), static cep => cep.Mascarado),
+        FormatoTexto.NomePessoa => Mascara(Kernel.Domain.ValueObjects.NomePessoa.Criar(texto), static nome => nome.Mascarado),
         FormatoTexto.Livre => Oculto,
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de texto fora do domínio fechado."),
     };
 
-    private static string MascararCpf(string? texto) =>
-        Kernel.Domain.ValueObjects.Cpf.Criar(texto) is { IsSuccess: true } cpf ? cpf.Value!.Mascarado : Oculto;
-
-    private static string MascararEmail(string? texto) =>
-        Kernel.Domain.ValueObjects.Email.Criar(texto) is { IsSuccess: true } email ? email.Value!.Mascarado : Oculto;
-
-    private static string MascararTelefone(string? texto) =>
-        Kernel.Domain.ValueObjects.Telefone.Criar(texto) is { IsSuccess: true } telefone ? telefone.Value!.Mascarado : Oculto;
-
-    private static string MascararCep(string? texto) =>
-        Kernel.Domain.ValueObjects.Cep.Criar(texto) is { IsSuccess: true } cep ? cep.Value!.Mascarado : Oculto;
-
-    private static string MascararNome(string? texto) =>
-        Kernel.Domain.ValueObjects.NomePessoa.Criar(texto) is { IsSuccess: true } nome ? nome.Value!.Mascarado : Oculto;
+    private static string Mascara<T>(Result<T> valor, Func<T, string> mascarado) =>
+        valor is { IsSuccess: true } ? mascarado(valor.Value!) : Oculto;
 
     private const string Oculto = "***";
 }

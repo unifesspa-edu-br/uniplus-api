@@ -64,6 +64,34 @@ public sealed class ConteudoLidoTests
             PorMembros);
     }
 
+    [Fact(DisplayName = "A etapa com tipo e bloco que não são códigos do contrato é recusada em cada campo, depois da exibição, e não é montada")]
+    public void Ler_EtapaComTipoEBlocoDesconhecidos_RecusaCadaCampoSemMontarAEtapa()
+    {
+        EtapaFormularioInput etapa = EtapaValida() with { Exibicao = PredicadoSemCondicao, Tipo = "secao", Bloco = "RODAPE" };
+
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [etapa], null, null, null));
+
+        leitura.Recusas.Select(static e => (e.Field!, e.Error.Code)).Should().Equal(
+            ("etapas[0].exibicao[0]", "ClausulaDnf.ClausulaVazia"),
+            ("etapas[0].tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio),
+            ("etapas[0].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido));
+        lido.Etapas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O bloco ausente é a etapa sem bloco, e o código do bloco lido vai para a etapa")]
+    public void Ler_BlocoAusenteOuDeclarado_VaiParaAEtapa()
+    {
+        EtapaFormularioInput comBloco = EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").Construir();
+
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [EtapaValida(), comBloco], null, null, null));
+
+        leitura.Recusas.Should().BeEmpty();
+        lido.Etapas.Select(static e => (e.Etapa.Tipo, e.Etapa.Bloco)).Should().Equal(
+            (TipoEtapaFormulario.Secao, (BlocoSistema?)null), (TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite));
+    }
+
     [Fact(DisplayName = "A parte lida guarda a posição dela na entrada; a nula e a recusada ficam de fora")]
     public void Ler_PartesLidasEEntreRecusadas_GuardamAPosicaoNaEntrada()
     {
@@ -244,7 +272,7 @@ public sealed class ConteudoLidoTests
         EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Descrição").ComAviso("Aviso").ExibidaQuando(Quando("CERTIFICADO")).Construir();
 
     private static EtapaDoModelo EtapaEsperada() =>
-        new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
+        new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
 
     private static FatoColetadoInput ItemValido() =>
         EntradaDoFatoColetadoDeTeste.Coletando("CPF_RESPONSAVEL")
@@ -282,7 +310,7 @@ public sealed class ConteudoLidoTests
         new("COMPOSICAO", 1, "DADOS", "Composição", new OcorrenciasDoGrupo(1, 5, true),
             new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Sempre),
             [new ItemDoModelo(
-                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
+                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),

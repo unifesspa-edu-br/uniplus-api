@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -45,7 +46,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             ["PERFIL"] = [RegraDerivacao.Criar(Quando("QUILOMBOLA", true), "A").Value!],
             ["FLAG"] = [RegraDerivacao.CriarBooleana(Quando("QUILOMBOLA", true))],
             ["COTISTA"] = [RegraDerivacao.Criar(
-                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "AC" })).Value!)]).Value!,
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("MODALIDADE", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "AC" })).Value!)]).Value!,
                 "SIM").Value!],
         });
         Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
@@ -66,24 +67,24 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     [
         Declarado("QUILOMBOLA"),
         Declarado("CERTIFICADO"),
-        Declarado("DATA_NASCIMENTO") with { Dominio = "DATA" },
+        Declarado("DATA_NASCIMENTO") with { Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Data) },
         Declarado("MAIOR_IDADE") with { Escopo = "MEMBRO_GRUPO" },
         Declarado("SOB_GUARDA") with { Escopo = "MEMBRO_GRUPO", Ativo = false },
         Declarado("BAIXA_RENDA") with { Ativo = false },
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR", ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
-            "CAMPO_FORMULARIO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "PERFIL", "Perfil", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["A", "B"], "INSCRICAO",
-            "REGRA_DERIVACAO:PERFIL", [new("A", "A", 0, true), new("B", "B", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FLAG", "Flag", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
+            "CAMPO_FORMULARIO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "PERFIL", "Perfil", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ["A", "B"], "INSCRICAO",
+            "REGRA_DERIVACAO:PERFIL", [new("A", "A", 0, true), new("B", "B", 1, true)], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FLAG", "Flag", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
             "REGRA_DERIVACAO:FLAG_SEM_REGRA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "COTISTA", "Cotista", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["SIM"], "INSCRICAO",
-            "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["X"], "INSCRICAO",
-            "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", null, "INSCRICAO",
-            "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), "COTISTA", "Cotista", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ["SIM"], "INSCRICAO",
+            "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ["X"], "INSCRICAO",
+            "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), null, "INSCRICAO",
+            "REGRA_DERIVACAO:MODALIDADE", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Numerico), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
             "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ];
 
@@ -94,7 +95,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         IReadOnlyList<string>? pressupostos = null,
         IReadOnlyList<GrupoColetadoInput>? grupos = null,
         ConjuntoDeDocumentosDoModeloInput? documentos = null) =>
-        new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
+        new(Guid.NewGuid(), "MODELO", "Modelo", null, finalidade.Codigo(), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
                 [
@@ -109,7 +110,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     public static ModeloFormularioView ModeloComConjunto(ConjuntoDeDocumentosDoModeloInput conjunto) =>
         Modelo(
             FinalidadeFormulario.Inscricao,
-            [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "SELECAO_MULTIPLA")],
+            [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "ESCOLHA_MULTIPLA")],
             documentos: conjunto);
 
     public static DocumentoExigidoDoModeloInput DocumentoDoModelo(string tipo, string condicao) =>
@@ -126,10 +127,10 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     public static FatoColetadoInput Campo(string fato, int ordem) => EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).Construir();
 
-    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).Construir();
+    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "SIM_OU_NAO") => Montar(fato, ordem, tipo).Construir();
 
     /// <summary>O item na seção <c>DADOS</c>, ainda sem fechar, para o teste que lhe dá regras ou apresentação.</summary>
-    public static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "BOOLEANO") =>
+    public static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS");
 
     public static FatoColetadoInput ItemQueCita(FatoColetadoInput item, string fato, string operador, object valor) =>
@@ -139,7 +140,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         FatoColetadoDeTeste.Coletando(codigo, 0).ComRotulo(rotulo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     public static FatoCandidatoView Declarado(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     public static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
@@ -172,8 +173,8 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     public void DeclararAtendimentoEspecializado()
     {
         Catalogo.Add(Declarado("SOLICITA_ATENDIMENTO_ESPECIALIZADO"));
-        Catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", "Descrição do fato.", "CATEGORICO", "DECLARADO", "MULTIVALORADO", ["PCD", "LACTANTE"], "INSCRICAO",
-            "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
+        Catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ["PCD", "LACTANTE"], "INSCRICAO",
+            "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, true)], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
         List<TipoDocumentoView> tipos = [.. new[] { "LAUDO_MEDICO", "CERTIDAO_NASCIMENTO" }.Select(static codigo => new TipoDocumentoView(Guid.CreateVersion7(), codigo, codigo, "SAUDE", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true))];
         _tiposDocumento.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Codigo == call.Arg<string>()));
         _tiposDocumento.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Id == call.Arg<Guid>()));
@@ -198,7 +199,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             _repository, _modelos, Fatos, Termos, _tiposDocumento, _modelosDeDocumento, UnitOfWork, CancellationToken.None);
 
     private static FatoCandidatoView DerivadoBooleano(string codigo, string rotulo) =>
-        new(Guid.CreateVersion7(), codigo, rotulo, "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), codigo, rotulo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
             $"REGRA_DERIVACAO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDeVagasCom(ModalidadeSelecionada[] modalidades) =>

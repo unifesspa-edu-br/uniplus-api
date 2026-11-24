@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -364,7 +365,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal)
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
-                Codigo: "COR_RACA", Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
+                Codigo: "COR_RACA", Dominio: TipoDoDado.Opcao, Origem: OrigemFato.Declarado, Cardinalidade: QuantidadeDeValores.ValorUnico,
                 PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: valores, ValoresDominioDeclarados: null),
         };

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
 using System.Text.Json;
 
 using Domain.Enums;
@@ -10,6 +11,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Entrada de uma condição do gatilho DNF, usada por <see cref="AplicabilidadeDaExigenciaInput"/>.
@@ -22,10 +24,10 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodi
 /// <summary>
 /// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
 /// <see cref="IndeferimentoDoGrupoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
-/// são tokens canônicos (<see cref="Domain.Enums.TipoAbrangencia"/>/
+/// são códigos canônicos (<see cref="Domain.Enums.TipoAbrangencia"/>/
 /// <see cref="Domain.Enums.StatusBaseLegal"/>). A validação de <b>gate</b> (≥1
 /// RESOLVIDO por exigência que determina resultado) é da publicação, não deste PUT —
-/// aqui só a forma de cada item é validada.
+/// aqui só a forma de cada item é validada. No pedido, use os códigos de abrangência e situação lidos no GET.
 /// </summary>
 public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Situacao, string? Observacao)
 {
@@ -46,12 +48,13 @@ public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
 /// que a etapa é do processo e acontece naquela fase.
 /// </param>
 /// <param name="Finalidade">
-/// O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>):
+/// Código do formulário lido no GET, a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>):
 /// obrigatória quando a fase responde algum formulário, e um dos que ela responde; ausente quando a fase não
 /// responde nenhum. É ela que diz em qual formulário o candidato apresenta o documento, porque inscrição e
 /// isenção podem dividir a fase.
 /// </param>
-public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, string? Finalidade = null)
+public sealed record MomentoDaExigenciaInput(
+    Guid FaseId, Guid? EtapaId = null, [property: AceitaCodigosDe<FinalidadeFormulario>] string? Finalidade = null)
 {
     /// <summary>O caminho da finalidade no pedido.</summary>
     public const string CaminhoDaFinalidade = "momento.finalidade";
@@ -61,7 +64,7 @@ public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, 
 /// A quem a exigência se aplica: <c>GERAL</c> ou <c>CONDICIONAL</c>. A lista de condições vazia ou ausente é
 /// coerente com <c>GERAL</c> e com <c>CONDICIONAL</c> "exigida de ninguém".
 /// </summary>
-/// <param name="Tipo">Token <c>GERAL</c> ou <c>CONDICIONAL</c>; ausente, o domínio recusa a exigência.</param>
+/// <param name="Tipo">Código <c>GERAL</c> ou <c>CONDICIONAL</c>, lido no GET; ausente, o domínio recusa a exigência.</param>
 /// <param name="Condicoes">As condições do gatilho, em forma normal disjuntiva.</param>
 public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<Aplicabilidade>] string? Tipo, IReadOnlyList<CondicaoGatilhoInput>? Condicoes)
 {
@@ -74,7 +77,7 @@ public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<A
 
 /// <summary>O que acontece quando o documento não é apresentado, e a base legal da obrigação.</summary>
 /// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir.</param>
-/// <param name="Consequencia">Token da consequência do indeferimento; ausente, a exigência não determina resultado.</param>
+/// <param name="Consequencia">Código da consequência do indeferimento, lido no GET; ausente, a exigência não determina resultado.</param>
 /// <param name="BasesLegais">As bases legais da exigência; ausentes valem lista vazia, válida na escrita e pendente na publicação quando exigida.</param>
 public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais)
 {
@@ -103,6 +106,7 @@ public sealed record ModeloDaExigenciaInput(Guid ModeloId);
 /// </param>
 /// <param name="Modelo">Modelo que a exigência oferece; ausente, a exigência não tem modelo.</param>
 public sealed record RequisitosDoDocumentoInput(
+    [property: Description("Código do formato permitido; devolva só o código de cada formato lido no GET. Informe QUALQUER ou uma lista de códigos ou objetos com formato e tamanhoMaximoBytesMax.")]
     JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes,
     PrazoDeEmissaoInput? PrazoDeEmissao,
@@ -143,7 +147,7 @@ public sealed record ItemDocumentoExigidoInput(
 /// do domínio: <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
 /// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/> opcional).
 /// </summary>
-/// <param name="CriterioDeDistincao">Código do critério de distinção (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoes"/>).</param>
+/// <param name="CriterioDeDistincao">Código do critério de distinção lido no GET (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoes"/>).</param>
 /// <param name="DataReferencia">Data a partir da qual o calendário é derivado.</param>
 /// <param name="OcorrenciasEsperadas">Identificadores das ocorrências esperadas.</param>
 public sealed record DistincaoDasApresentacoesInput(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
@@ -161,7 +165,7 @@ public sealed record DistincaoDasApresentacoesInput(string? CriterioDeDistincao,
 public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null, DistincaoDasApresentacoesInput? Distincao = null);
 
 /// <summary>A consequência do indeferimento de um grupo com quantidade mínima de itens e as bases legais dela.</summary>
-/// <param name="Consequencia">Token da consequência; só o grupo com quantidade mínima de itens a declara.</param>
+/// <param name="Consequencia">Código da consequência lido no GET; só o grupo com quantidade mínima de itens a declara.</param>
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
 public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
 

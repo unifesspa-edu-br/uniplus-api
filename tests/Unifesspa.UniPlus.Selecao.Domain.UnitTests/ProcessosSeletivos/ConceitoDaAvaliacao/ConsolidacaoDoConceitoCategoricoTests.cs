@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conceito
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
@@ -17,7 +18,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
 
     private static ConceitoDaEtapa Conceito(params string[] codigos) =>
         ConceitoDaEtapa.Criar(
-            "CONCEITO", "Conceito", NaturezaConceito.Categorico, null,
+            "CONCEITO", "Conceito", FormaDoConceito.PorOpcoes, null,
             [.. codigos.Select(static codigo => new ValorCategoricoInformado(codigo, codigo, codigo == "APTO"))]).Value!;
 
     private static ConceitoDaEtapa AptoInapto() => Conceito("APTO", "INAPTO");
@@ -25,7 +26,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     private static ConceitoDaEtapa AptoInaptoEPendente() => Conceito("APTO", "INAPTO", "PENDENTE");
 
     private static ConceitoDaEtapa Numerico() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ResultadoDaConsolidacaoDoConceito Consolidar(
         CriterioDeApuracaoDoConceito criterio, int corretores, params string[] atribuicoes) =>

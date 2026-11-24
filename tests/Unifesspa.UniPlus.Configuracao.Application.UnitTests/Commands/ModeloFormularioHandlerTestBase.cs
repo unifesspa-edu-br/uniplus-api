@@ -40,16 +40,22 @@ public abstract class ModeloFormularioHandlerTestBase
     protected IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     protected FatoCandidato Certificado { get; } = Declarado("CERTIFICADO");
-    protected FatoCandidato DataNascimento { get; } = Declarado("DATA_NASCIMENTO", DominioFato.Data);
+    protected FatoCandidato DataNascimento { get; } = Declarado("DATA_NASCIMENTO", TipoDoDado.Data);
     protected FatoCandidato FaixaEtaria { get; } = CriacaoDoFato.Criar(
-        "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-        "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
+        new DescritivoDoFato("FAIXA_ETARIA", "Faixa etária", "Descrição do fato."),
+        OrigemFato.Calculado,
+        "ATRIBUTO_CANDIDATO:FAIXA_ETARIA",
+        new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese),
+        sistema: true).Value!;
     protected FatoCandidato MaiorIdade { get; } = Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo);
     protected FatoCandidato SemRenda { get; } = Declarado("SEM_RENDA", escopo: EscopoFato.MembroGrupo);
-    protected FatoCandidato Cpf { get; } = Declarado("CPF_RESPONSAVEL", DominioFato.Texto, FormatoTexto.Cpf);
+    protected FatoCandidato Cpf { get; } = Declarado("CPF_RESPONSAVEL", TipoDoDado.Texto, FormatoTexto.Cpf);
     protected FatoCandidato Idade { get; } = CriacaoDoFato.Criar(
-        "IDADE", "Idade", "Descrição do fato.", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-        "ATRIBUTO_CANDIDATO:IDADE", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
+        new DescritivoDoFato("IDADE", "Idade", "Descrição do fato."),
+        OrigemFato.Calculado,
+        "ATRIBUTO_CANDIDATO:IDADE",
+        new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese),
+        sistema: true).Value!;
 
     protected ModeloFormularioHandlerTestBase()
     {
@@ -88,14 +94,14 @@ public abstract class ModeloFormularioHandlerTestBase
     protected static ModeloFormulario Existente(string? tipo)
     {
         ItemDoModelo item = new(
-            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }
 
-    protected static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+    protected static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
     protected static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     protected static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
@@ -115,20 +121,20 @@ public abstract class ModeloFormularioHandlerTestBase
                 .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir()],
         };
 
-    protected static FatoColetadoInput Campo(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();
+    protected static FatoColetadoInput Campo(string fato, int ordem, string tipo = "SIM_OU_NAO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();
 
-    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).Construir();
+    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "SIM_OU_NAO") => Montar(fato, ordem, tipo).Construir();
 
     /// <summary>O item na seção <c>DADOS</c>, ainda sem fechar, para o teste que lhe dá regras.</summary>
-    private protected static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "BOOLEANO") =>
+    private protected static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS");
 
     protected static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];
 
     protected static FatoCandidato Declarado(
-        string codigo, DominioFato dominio = DominioFato.Booleano, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
+        string codigo, TipoDoDado dominio = TipoDoDado.SimOuNao, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, null, formato, "INSCRICAO", escopo,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, null, formato, "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 }

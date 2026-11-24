@@ -17,10 +17,10 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     public void Ler_CodigoDeclarado_ItemTemOTipo()
     {
         LeituraDoConteudo leitura = new(SemFormatos);
-        ConteudoLido lido = leitura.Ler(Conteudo(Item("SELECAO_MULTIPLA")));
+        ConteudoLido lido = leitura.Ler(Conteudo(Item("ESCOLHA_MULTIPLA")));
 
         leitura.Recusas.Should().BeEmpty();
-        lido.Itens.Single().Item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoMultipla);
+        lido.Itens.Single().Item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.EscolhaMultipla);
     }
 
     [Fact(DisplayName = "Tipo de campo ausente é recusado como obrigatório e o item não é lido")]
@@ -62,7 +62,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     public void Ler_ApresentacaoAusente_RecusaOTipoNoCaminhoDaApresentacao()
     {
         LeituraDoConteudo leitura = new(SemFormatos);
-        ConteudoLido lido = leitura.Ler(Conteudo(Campo("BOOLEANO").SemApresentacao().Construir()));
+        ConteudoLido lido = leitura.Ler(Conteudo(Campo("SIM_OU_NAO").SemApresentacao().Construir()));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
@@ -73,7 +73,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     public void Ler_RegrasAusentes_RecusaAObrigatoriedadeNoCaminhoDasRegras()
     {
         LeituraDoConteudo leitura = new(SemFormatos);
-        ConteudoLido lido = leitura.Ler(Conteudo(Campo("BOOLEANO").SemRegras().Construir()));
+        ConteudoLido lido = leitura.Ler(Conteudo(Campo("SIM_OU_NAO").SemRegras().Construir()));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[0].regras.obrigatoriedade", "ModeloFormulario.ObrigatoriedadeInvalida"));

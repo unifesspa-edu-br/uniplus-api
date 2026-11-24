@@ -24,7 +24,7 @@ public sealed class PedidoDeConcessaoVersaoTests
     private static readonly PessoaNoToken Betina = Pessoa("betina.neves", "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local");
     private static readonly PessoaNoToken Leandro = Pessoa("leandro.viana", "Leandro Caleb Viana", "leandro-viana84@uniplus-test.local");
     private static readonly Identidade Diogo = new(Emissor, "diogo.souza");
-    private static readonly PerfilAvaliado Sensivel = new([Analisar, Consultar], "sensivel", true, null);
+    private static readonly PerfilAvaliado Sensivel = new([Analisar, Consultar], "SENSIVEL", true, null);
 
     [Fact(DisplayName = "O pedido grava a versão em vigor quando foi criado")]
     public void Criar_GravaAVersaoVigente()
@@ -199,7 +199,7 @@ public sealed class PedidoDeConcessaoVersaoTests
     private static PedidoDeConcessao Terminal(SituacaoDoPedido terminal)
     {
         PedidoDeConcessao pedido = Criar(PerfilNaVersao1(), paraSiMesmo: true);
-        PerfilAvaliado interno = new([Consultar], "interno", false, null);
+        PerfilAvaliado interno = new([Consultar], "INTERNO", false, null);
         _ = terminal switch
         {
             SituacaoDoPedido.Aprovado => pedido.Aprovar(Diogo, interno, Contexto, Agora).IsSuccess,

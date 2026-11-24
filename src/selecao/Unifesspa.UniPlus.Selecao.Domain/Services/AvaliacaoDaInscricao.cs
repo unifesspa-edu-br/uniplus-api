@@ -142,13 +142,13 @@ public static class AvaliacaoDaInscricao
     private static string[] FatosDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoBonusRegional bonus) =>
     [
         .. bonus.FatoElegibilidadeCodigo is { } elegibilidade ? [elegibilidade] : Array.Empty<string>(),
-        .. configuracao.Campos.Where(static c => c.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus).Select(static c => c.FatoCodigo),
+        .. configuracao.Campos.Where(static c => c.OrigemValores == OrigemValoresColeta.MunicipiosDoFada).Select(static c => c.FatoCodigo),
     ];
 
     private static (string Grupo, string Fato)[] FatosDeMembroDoFator(ConfiguracaoAvaliavel configuracao) =>
     [
         .. configuracao.Grupos.SelectMany(static g => g.Subitens
-            .Where(static s => s.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
+            .Where(static s => s.OrigemValores == OrigemValoresColeta.MunicipiosDoFada)
             .Select(s => (Grupo: g.Codigo, Fato: s.FatoCodigo))),
     ];
 

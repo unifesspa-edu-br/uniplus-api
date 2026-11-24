@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
@@ -27,9 +29,9 @@ internal static class CatalogoDoConjuntoBasico
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valores = null)
     {
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> completos = new(valores ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(), StringComparer.Ordinal);
-        foreach (FatoCandidatoView fato in Fatos.Where(static f => f.Dominio == "CATEGORICO" && f.FonteValores != "GEO_MUNICIPIO"))
+        foreach (FatoCandidatoView fato in Fatos.Where(static f => f.DominioValor == TipoDoDado.Opcao && f.FonteValoresValor != FonteValoresFato.Municipios))
         {
-            completos.TryAdd(fato.Codigo, fato.FonteValores == "GEO_UF"
+            completos.TryAdd(fato.Codigo, fato.FonteValoresValor == FonteValoresFato.UnidadesFederativas
                 ? [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorDominioDeclaradoCongelado(uf.Sigla, uf.Nome, ordem))]
                 : [.. fato.ValoresDominioDeclarados!.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]);
         }
@@ -41,20 +43,20 @@ internal static class CatalogoDoConjuntoBasico
     public static IReadOnlyList<FatoCandidatoView> Fatos { get; } =
     [
         Texto("NOME", "LIVRE"),
-        Declarado("DESEJA_NOME_SOCIAL", "BOOLEANO"),
+        Declarado("DESEJA_NOME_SOCIAL", TipoDoDado.SimOuNao),
         Texto("NOME_SOCIAL", "NOME_PESSOA", classificacao: "PUBLICO"),
         Categorico("NACIONALIDADE", "NATO", "NATURALIZADO", "ESTRANGEIRO"),
         Texto("CPF", "CPF", classificacao: "IDENTIFICADOR"),
         Texto("RG_NUMERO", "LIVRE", classificacao: "IDENTIFICADOR"),
         Categorico("RG_ORGAO_EMISSOR", "SSP", "PC", "DETRAN", "IFP", "PM", "CBM", "EB", "MB", "FAB", "DPF", "MRE", "OUTRO"),
         Texto("RG_ORGAO_EMISSOR_OUTRO", "LIVRE"),
-        Geo("RG_UF", "GEO_UF"),
-        Declarado("RG_DATA_EMISSAO", "DATA"),
+        Geo("RG_UF", FonteValoresFato.UnidadesFederativas),
+        Declarado("RG_DATA_EMISSAO", TipoDoDado.Data),
         Texto("PASSAPORTE_NUMERO", "LIVRE", classificacao: "IDENTIFICADOR"),
         Texto("RNM_NUMERO", "LIVRE", classificacao: "IDENTIFICADOR"),
-        Declarado("DATA_NASCIMENTO", "DATA"),
-        Geo("NATURALIDADE_UF", "GEO_UF"),
-        Geo("NATURALIDADE_MUNICIPIO", "GEO_MUNICIPIO"),
+        Declarado("DATA_NASCIMENTO", TipoDoDado.Data),
+        Geo("NATURALIDADE_UF", FonteValoresFato.UnidadesFederativas),
+        Geo("NATURALIDADE_MUNICIPIO", FonteValoresFato.Municipios),
         Texto("NOME_MAE", "NOME_PESSOA"),
         Texto("NOME_PAI", "NOME_PESSOA"),
         Categorico("ESTADO_CIVIL", "SOLTEIRO", "CASADO", "UNIAO_ESTAVEL", "SEPARADO", "DIVORCIADO", "VIUVO"),
@@ -67,24 +69,24 @@ internal static class CatalogoDoConjuntoBasico
         Texto("TELEFONE", "TELEFONE"),
         Categorico("TIPO_ENDERECO", "URBANO", "RURAL", "ALDEIA", "COMUNIDADE", "QUILOMBO", "VILA", "OUTRO"),
         Texto("NOME_COMUNIDADE", "LIVRE"),
-        Declarado("ENDERECO_RESIDENCIAL", "ENDERECO"),
+        Declarado("ENDERECO_RESIDENCIAL", TipoDoDado.Endereco),
     ];
 
     private static FatoCandidatoView Declarado(
-        string codigo, string dominio, string? formato = null, string? fonte = null,
+        string codigo, TipoDoDado dominio, string? formato = null, FonteValoresFato? fonte = null,
         IReadOnlyList<string>? valores = null, string classificacao = "PESSOAL") =>
-        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", dominio, "DECLARADO", "ESCALAR", valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
-            valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), fonte, Ativo: true,
+        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
+            valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), (fonte is { } fonteInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteInformada) : null), Ativo: true,
             ClassificacaoProtecao: classificacao, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: formato, ProtecaoAprovada: true);
 
     private static FatoCandidatoView Texto(string codigo, string formato, string classificacao = "PESSOAL") =>
-        Declarado(codigo, "TEXTO", formato, classificacao: classificacao);
+        Declarado(codigo, TipoDoDado.Texto, formato, classificacao: classificacao);
 
-    private static FatoCandidatoView Geo(string codigo, string fonte) => Declarado(codigo, "CATEGORICO", fonte: fonte);
+    private static FatoCandidatoView Geo(string codigo, FonteValoresFato fonte) => Declarado(codigo, TipoDoDado.Opcao, fonte: fonte);
 
     private static FatoCandidatoView Categorico(string codigo, params string[] valores) =>
-        Declarado(codigo, "CATEGORICO", fonte: "GLOBAL", valores: valores);
+        Declarado(codigo, TipoDoDado.Opcao, fonte: FonteValoresFato.Catalogo, valores: valores);
 
     private static FatoCandidatoView Sensivel(string codigo, params string[] valores) =>
-        Declarado(codigo, "CATEGORICO", fonte: "GLOBAL", valores: valores, classificacao: "SENSIVEL");
+        Declarado(codigo, TipoDoDado.Opcao, fonte: FonteValoresFato.Catalogo, valores: valores, classificacao: "SENSIVEL");
 }

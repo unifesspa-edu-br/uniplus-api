@@ -43,7 +43,7 @@ public sealed record DecisaoFundamentada(
         if (Ato == AtoDaProtecao.AjusteRecomendado)
         {
             erros.AddRange(AprovacaoDaProtecao.ConferirRecomendacao(
-                ClassificacaoRecomendada ?? ClassificacaoDeProtecao.Nenhuma, protecao.Classificacao, protecao.Hipotese).Errors);
+                ClassificacaoRecomendada, protecao.Classificacao, protecao.Hipotese).Errors);
         }
 
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();

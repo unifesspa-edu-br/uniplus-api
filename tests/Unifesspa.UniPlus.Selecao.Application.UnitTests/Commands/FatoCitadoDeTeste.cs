@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -31,7 +32,7 @@ internal static class FatoCitadoDeTeste
 
     // Um fato que nenhuma versão publicada coletou, com a cópia velha do catálogo (PESSOAL).
     public static FatoColetado ItemNovo() =>
-        ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca);
+        ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.SimOuNao, Obrigatoriedade.Nunca);
 
     public static DocumentoExigido ExigenciaComGatilho(Guid faseId, bool citaFatoAusenteDoCatalogo = false) =>
         DocumentoExigidoDeTeste.Novo()
@@ -47,7 +48,7 @@ internal static class FatoCitadoDeTeste
     public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo, bool citaFatoAusenteDoCatalogo = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
-        processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)])
+        processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.SimOuNao), ItemNovo()] : [Item(TipoRenderizacao.SimOuNao)])
             .IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!])
             .IsSuccess.Should().BeTrue();
@@ -64,20 +65,20 @@ internal static class FatoCitadoDeTeste
         return outro;
     }
 
-    public static EixosDeVersaoPublicada EixosCongelados(string dominio) => new(
-        new Dictionary<string, EixosDoMetadadoCongelado> { [Fato] = new(dominio, "ESCALAR", "RESULTADO_FINAL") },
+    public static EixosDeVersaoPublicada EixosCongelados(TipoDoDado dominio) => new(
+        new Dictionary<string, EixosDoMetadadoCongelado> { [Fato] = new(dominio, QuantidadeDeValores.ValorUnico, "RESULTADO_FINAL") },
         new Dictionary<string, string>());
 
     public static MetadadoFatoCongelado MetadadoCongelado(EixosDeVersaoPublicada congelado) =>
-        new(Fato, congelado.Metadados[Fato].Dominio, "DECLARADO", "ESCALAR", "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null);
+        new(Fato, congelado.Metadados[Fato].Dominio, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null);
 
-    public static FatoCandidatoView FatoDoCatalogo(string dominio, string classificacao) => new(
-        Guid.CreateVersion7(), Fato, "Tem renda?", "Descrição do fato.", dominio, "DECLARADO", "ESCALAR", null,
+    public static FatoCandidatoView FatoDoCatalogo(TipoDoDado dominio, string classificacao) => new(
+        Guid.CreateVersion7(), Fato, "Tem renda?", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
         "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacao,
         HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     public static FatoCandidatoView FatoNovoDoCatalogo(FatoCandidatoView fato) =>
-        fato with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
+        fato with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
 
     private static CondicaoGatilho[] CondicoesDoGatilho(bool citaFatoAusenteDoCatalogo) =>
     [

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -184,7 +185,7 @@ public static class ValidadorRegrasPadrao
         for (int i = 0; i < regras.Count; i++)
         {
             string[] citados = [.. regras[i].FatosCitados.Distinct(StringComparer.Ordinal)];
-            Result<DerivacaoDoFato> estrutura = derivado.Dominio == DominioFato.Booleano
+            Result<DerivacaoDoFato> estrutura = derivado.Dominio == TipoDoDado.SimOuNao
                 ? DerivacaoDoFato.CriarBooleana(derivado.Codigo, [regras[i]], citados)
                 : DerivacaoDoFato.Criar(derivado.Codigo, [regras[i]], citados, dominio);
             if (estrutura.IsFailure)

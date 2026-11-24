@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public static class ConferenciaDasReferenciasEntreModalidades
 {
     /// <summary>Token de contrato da ação que reclassifica na ampla concorrência.</summary>
-    private const string ReclassificarNaAmplaConcorrencia = "RECLASSIFICAR_AC";
+    private const string ReclassificarNaAmplaConcorrencia = "RECLASSIFICA_AC";
 
     private static readonly (Func<ModalidadeSelecionada, string?> Citada, string Codigo, string Rotulo)[] Citacoes =
     [

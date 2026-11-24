@@ -54,7 +54,7 @@ public sealed class ConferenciaDaOfertaDeVagasTests
     public void AcaoQuandoIndeferidoDivergente_Recusa() =>
         Causas(
             [
-                Oferta(Guid.CreateVersion7(), Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICAR_AC")),
+                Oferta(Guid.CreateVersion7(), Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICA_AC")),
                 Oferta(Guid.CreateVersion7(), Modalidade("IND", acaoQuandoIndeferido: null)),
             ]).Should().Equal(DistribuicaoDeVagasErrorCodes.AcaoQuandoIndeferidoDivergente);
 
@@ -93,7 +93,7 @@ public sealed class ConferenciaDaOfertaDeVagasTests
 
         Causas(
             [
-                Oferta(curso, Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, "RECLASSIFICAR_AC")),
+                Oferta(curso, Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, "RECLASSIFICA_AC")),
                 Oferta(curso, Modalidade("IND", NaturezaLegalModalidade.Ampla)),
             ])
             .Should().Equal(

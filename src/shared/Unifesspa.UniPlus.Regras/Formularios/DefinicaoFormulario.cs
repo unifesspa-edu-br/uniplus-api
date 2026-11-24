@@ -277,9 +277,9 @@ public sealed record DefinicaoAgregado
             throw new ArgumentException(violacao, nameof(codigo));
         }
 
-        if (operacao == OperacaoAgregado.Nenhuma || !Enum.IsDefined(operacao))
+        if (!Enum.IsDefined(operacao))
         {
-            throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES.");
+            throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "A operação do agregado não é conhecida.");
         }
 
         Codigo = codigo;

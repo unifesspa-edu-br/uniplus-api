@@ -53,7 +53,7 @@ public sealed class ResourceContextTests
     [Fact]
     public void ResourceContext_SensibilidadeNaoInformada_Rejeita()
     {
-        Result<ResourceContext> resultado = ResourceContext.From("processo", ClassificacaoDeProtecao.Nenhuma);
+        Result<ResourceContext> resultado = ResourceContext.From("processo", default(ClassificacaoDeProtecao));
 
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida);
     }
@@ -78,23 +78,13 @@ public sealed class ResourceContextTests
     [Fact]
     public void ResourceContext_ComEscoposEValores_Constroi()
     {
-        Guid unidade = Guid.CreateVersion7();
-        Guid processo = Guid.CreateVersion7();
-        Guid chamada = Guid.CreateVersion7();
+        (Guid unidade, Guid processo, Guid chamada) = (Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
-        Result<ResourceContext> resultado = ResourceContext.From(
-            "edital",
-            ClassificacaoDeProtecao.Pessoal,
-            unidadeProprietariaId: unidade,
-            processoId: processo,
-            chamadaId: chamada);
+        ResourceContext resource = ComOsTresEscopos(unidade, processo, chamada);
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.ResourceTipo.Should().Be("edital");
-        resultado.Value.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Pessoal);
-        resultado.Value.UnidadeProprietariaId.Should().Be(unidade);
-        resultado.Value.ProcessoId.Should().Be(processo);
-        resultado.Value.ChamadaId.Should().Be(chamada);
+        resource.ResourceTipo.Should().Be("edital");
+        resource.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Pessoal);
+        (resource.UnidadeProprietariaId, resource.ProcessoId, resource.ChamadaId).Should().Be((unidade, processo, chamada));
     }
 
     [Fact]
@@ -107,4 +97,76 @@ public sealed class ResourceContextTests
         resultado.Value.ProcessoId.Should().BeNull();
         resultado.Value.ChamadaId.Should().BeNull();
     }
+
+    [Fact(DisplayName = "O campo do registro alvo leva o código do fato e a ocorrência, e mantém o resto do resource")]
+    public void ComCampo_FatoEOcorrencia_LevaOsDoisEMantemOResource()
+    {
+        ResourceContext resource = ComOsTresEscopos(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+
+        ResourceContext comCampo = resource.ComCampo("CPF", "membro-1").Value!;
+
+        (comCampo.FatoCodigo, comCampo.Ocorrencia).Should().Be(("CPF", "membro-1"));
+        comCampo.Should().BeEquivalentTo(resource, opcoes => opcoes.Excluding(c => c.FatoCodigo).Excluding(c => c.Ocorrencia));
+        (resource.FatoCodigo, resource.Ocorrencia).Should().Be(((string?)null, (string?)null));
+    }
+
+    [Fact(DisplayName = "O campo fora de grupo que se repete não leva ocorrência")]
+    public void ComCampo_SemOcorrencia_FicaSemOcorrencia()
+    {
+        ResourceContext comCampo = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Identificador).Value!.ComCampo("CPF", null).Value!;
+
+        comCampo.FatoCodigo.Should().Be("CPF");
+        comCampo.Ocorrencia.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Código do fato vazio ou em branco é recusado")]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ComCampo_FatoEmBranco_Recusa(string fatoCodigo)
+    {
+        Result<ResourceContext> resultado = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Interno).Value!.ComCampo(fatoCodigo, null);
+
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextFatoInvalido);
+    }
+
+    [Theory(DisplayName = "Ocorrência informada e em branco é recusada")]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ComCampo_OcorrenciaEmBranco_Recusa(string ocorrencia)
+    {
+        Result<ResourceContext> resultado = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Interno).Value!.ComCampo("CPF", ocorrencia);
+
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida);
+    }
+
+    [Fact(DisplayName = "A recusa do tipo vem antes da da sensibilidade, e a desta antes da dos escopos")]
+    public void ResourceContext_VariasRecusas_ApontaAPrimeiraNaOrdem()
+    {
+        ResourceContext.From(null, default(ClassificacaoDeProtecao), Guid.Empty).Error!.Code
+            .Should().Be(AuthorizationErrorCodes.ResourceContextResourceTipoObrigatorio);
+        ResourceContext.From("edital", default(ClassificacaoDeProtecao), Guid.Empty).Error!.Code
+            .Should().Be(AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida);
+    }
+
+    [Theory(DisplayName = "O registro alvo e a inscrição informados como Guid vazio são recusados")]
+    [InlineData("resourceId")]
+    [InlineData("inscricaoId")]
+    public void ResourceContext_RegistroEInscricaoGuidVazio_Rejeita(string escopo)
+    {
+        Result<ResourceContext> resultado = ResourceContext.From(
+            "inscricao",
+            ClassificacaoDeProtecao.Interno,
+            resourceId: escopo == "resourceId" ? Guid.Empty : null,
+            inscricaoId: escopo == "inscricaoId" ? Guid.Empty : null);
+
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextEscopoInvalido);
+    }
+
+    private static ResourceContext ComOsTresEscopos(Guid unidade, Guid processo, Guid chamada) =>
+        ResourceContext.From(
+            "edital",
+            ClassificacaoDeProtecao.Pessoal,
+            unidadeProprietariaId: unidade,
+            processoId: processo,
+            chamadaId: chamada).Value!;
 }

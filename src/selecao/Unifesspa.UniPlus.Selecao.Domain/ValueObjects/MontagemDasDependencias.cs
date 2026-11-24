@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -45,8 +46,8 @@ internal sealed class MontagemDasDependencias
 
     private static IEnumerable<(FatoColetado Item, FinalidadeFormulario Finalidade, int Ordem)> ItensNaPosicaoDeColeta(
         IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        itens.Select(static i => (i, i.Finalidade, i.Ordem))
-            .Concat(grupos.SelectMany(static g => g.Subitens.Select(i => (i, g.Finalidade, g.Ordem))));
+        itens.Select(static i => (i, i.Finalidade!.Value, i.Ordem))
+            .Concat(grupos.SelectMany(static g => g.Subitens.Select(i => (i, g.Finalidade!.Value, g.Ordem))));
 
     private void RegistrarItens(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
     {
@@ -150,8 +151,8 @@ internal sealed class MontagemDasDependencias
     {
         foreach (TermoExigidoFormulario termo in termos.Where(static t => t.FatosCitados.Count > 0))
         {
-            ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Termo, CodigoNoFormulario(termo.Finalidade, termo.Codigo));
-            _posicoes[parte] = PosicaoNaColeta.DoTermo(termo.Finalidade, termo.Ordem);
+            ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Termo, CodigoNoFormulario(termo.Finalidade!.Value, termo.Codigo));
+            _posicoes[parte] = PosicaoNaColeta.DoTermo(termo.Finalidade!.Value, termo.Ordem);
             LigarCitacoes(MotivoDaDependencia.CondicionaExibicao, termo.FatosCitados, parte);
         }
     }
@@ -175,7 +176,7 @@ internal sealed class MontagemDasDependencias
         return parte;
     }
 
-    private static string CodigoNoFormulario(FinalidadeFormulario finalidade, string codigo) => $"{EstruturaFormulario.ParaToken(finalidade)}.{codigo}";
+    private static string CodigoNoFormulario(FinalidadeFormulario finalidade, string codigo) => $"{finalidade.Codigo()}.{codigo}";
     private static IReadOnlyCollection<string> DadosDasCondicoes(DocumentoExigido documento) =>
         [.. documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal)];
 }

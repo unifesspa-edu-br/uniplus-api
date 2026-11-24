@@ -25,7 +25,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
     private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Etapa(), Revisao], itens, [], [], []);
 
-    private static List<FieldError> Conferir(ConteudoDoModelo conteudo, FinalidadeFormulario finalidade = FinalidadeFormulario.Habilitacao) =>
+    private static List<FieldError> Conferir(ConteudoDoModelo conteudo, FinalidadeFormulario? finalidade = FinalidadeFormulario.Habilitacao) =>
         ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, SemDerivacoes);
 
     private static string[] Campos(IEnumerable<FieldError> erros) => [.. erros.Select(static e => e.Field ?? "(sem campo)")];
@@ -199,7 +199,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
     [Fact(DisplayName = "Com a finalidade recusada no cadastro, a estrutura que depende dela não é conferida")]
     public void Estrutura_NaoEConferidaSemFinalidade() =>
-        Conferir(Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }), FinalidadeFormulario.Nenhuma).Should().BeEmpty();
+        Conferir(Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }), finalidade: null).Should().BeEmpty();
 
     [Fact(DisplayName = "A estrutura das etapas recusada impede a conferência da posição dos itens")]
     public void Estrutura_EtapaRecusada_ImpedeAConferenciaDosItens()

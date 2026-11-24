@@ -121,11 +121,11 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso);
     }
 
-    [Fact(DisplayName = "EM em fato multivalorado é interseção — vazia resolve falso")]
+    [Fact(DisplayName = "ALGUM_DE em fato multivalorado é interseção — vazia resolve falso")]
     public void Avaliar_EmFatoMultivalorado_IntersecaoVazia_Falso()
     {
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
+            [(1, Categorica("MODALIDADE", Operador.AlgumDe, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
 
         Dictionary<string, FatoResolvido> fatos = new()
         {
@@ -135,11 +135,11 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso, "[AC] intersecta [LB_PPI, LB_Q] em vazio");
     }
 
-    [Fact(DisplayName = "EM em fato multivalorado é interseção — não vazia resolve verdadeiro")]
+    [Fact(DisplayName = "ALGUM_DE em fato multivalorado é interseção — não vazia resolve verdadeiro")]
     public void Avaliar_EmFatoMultivalorado_IntersecaoNaoVazia_Verdadeiro()
     {
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
+            [(1, Categorica("MODALIDADE", Operador.AlgumDe, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
 
         Dictionary<string, FatoResolvido> fatos = new()
         {
@@ -160,7 +160,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro, "fato escalar (não-array) segue o ramo original, sem mudança de comportamento");
     }
 
-    // ── Story #916 — operadores de exclusão (DIFERENTE/NAO_EM) e tabela-verdade ternária ──
+    // ── Story #916 — operadores de exclusão (DIFERENTE/NENHUM_DE) e tabela-verdade ternária ──
 
     private static PredicadoDnf Predicado(params (int Clausula, CondicaoDnf Condicao)[] linhas) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!;
@@ -186,46 +186,46 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
-    [Theory(DisplayName = "NAO_EM categórico: nega EM quando o fato está resolvido")]
+    [Theory(DisplayName = "NENHUM_DE categórico: nega ALGUM_DE quando o fato está resolvido")]
     [InlineData("PARDA", Ternario.Verdadeiro)]
     [InlineData("PRETA", Ternario.Falso)]
     public void NaoEm_Categorico_NegaEmQuandoResolvido(string valorCandidato, Ternario esperado)
     {
         PredicadoDnf predicado = Predicado(
-            (1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson("PRETA"))));
+            (1, Categorica("COR_RACA", Operador.NenhumDe, ArrayJson("PRETA"))));
 
         predicado.Avaliar(Fatos("COR_RACA", StringJson(valorCandidato))).Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "NAO_EM nunca inverte ausência para Verdadeiro — fato ausente é Indeterminado")]
+    [Fact(DisplayName = "NENHUM_DE nunca inverte ausência para Verdadeiro — fato ausente é Indeterminado")]
     public void NaoEm_FatoAusente_Indeterminado()
     {
-        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson("PRETA"))));
+        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.NenhumDe, ArrayJson("PRETA"))));
 
         predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
-    [Fact(DisplayName = "EM [] com fato resolvido é Falso (interseção vazia)")]
+    [Fact(DisplayName = "ALGUM_DE [] com fato resolvido é Falso (interseção vazia)")]
     public void Em_ListaVazia_ComFatoResolvido_Falso()
     {
-        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.Em, ArrayJson())));
+        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.AlgumDe, ArrayJson())));
 
         predicado.Avaliar(Fatos("COR_RACA", StringJson("PARDA"))).Should().Be(Ternario.Falso);
     }
 
-    [Fact(DisplayName = "NAO_EM [] com fato resolvido é Verdadeiro (não pertence ao vazio)")]
+    [Fact(DisplayName = "NENHUM_DE [] com fato resolvido é Verdadeiro (não pertence ao vazio)")]
     public void NaoEm_ListaVazia_ComFatoResolvido_Verdadeiro()
     {
-        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson())));
+        PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.NenhumDe, ArrayJson())));
 
         predicado.Avaliar(Fatos("COR_RACA", StringJson("PARDA"))).Should().Be(Ternario.Verdadeiro);
     }
 
-    [Fact(DisplayName = "EM []/NAO_EM [] com fato ausente continuam Indeterminado — a ausência tem precedência sobre a semântica de lista vazia")]
+    [Fact(DisplayName = "ALGUM_DE []/NENHUM_DE [] com fato ausente continuam Indeterminado — a ausência tem precedência sobre a semântica de lista vazia")]
     public void EmOuNaoEmListaVazia_ComFatoAusente_Indeterminado()
     {
-        PredicadoDnf emVazio = Predicado((1, Categorica("COR_RACA", Operador.Em, ArrayJson())));
-        PredicadoDnf naoEmVazio = Predicado((1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson())));
+        PredicadoDnf emVazio = Predicado((1, Categorica("COR_RACA", Operador.AlgumDe, ArrayJson())));
+        PredicadoDnf naoEmVazio = Predicado((1, Categorica("COR_RACA", Operador.NenhumDe, ArrayJson())));
 
         emVazio.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
         naoEmVazio.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
@@ -351,15 +351,15 @@ public sealed class PredicadoDnfTests
     [Theory(DisplayName = "Átomo sobre fato NAO_APLICAVEL é não-aplicável para todo operador — a negação não inverte a inaplicabilidade")]
     [InlineData(Operador.Igual)]
     [InlineData(Operador.Diferente)]
-    [InlineData(Operador.Em)]
-    [InlineData(Operador.NaoEm)]
+    [InlineData(Operador.AlgumDe)]
+    [InlineData(Operador.NenhumDe)]
     [InlineData(Operador.MaiorIgual)]
     [InlineData(Operador.MenorIgual)]
     public void Atomo_SobreFatoNaoAplicavel_NuncaEhVerdadeiro(Operador operador)
     {
         JsonElement valor = operador switch
         {
-            Operador.Em or Operador.NaoEm => ArrayJson("SIM"),
+            Operador.AlgumDe or Operador.NenhumDe => ArrayJson("SIM"),
             Operador.MaiorIgual or Operador.MenorIgual => JsonSerializer.SerializeToElement(18),
             _ => StringJson("SIM"),
         };

@@ -45,7 +45,7 @@ public sealed record AvaliacaoPortavel(
         new RegrasDoCampoAvaliadas(
             item.Visivel.Codigo(),
             item.Obrigatorio.Codigo(),
-            [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+            [.. item.RestricoesVioladas.Select(static r => r.Tipo.Codigo())],
             item.Impedido.Codigo()),
         item.Opcoes);
 }

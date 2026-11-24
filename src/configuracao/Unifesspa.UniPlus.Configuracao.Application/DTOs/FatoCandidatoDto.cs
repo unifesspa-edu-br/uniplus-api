@@ -54,32 +54,32 @@ public sealed record DescritivoDoFatoDto(string Nome, string Descricao, string? 
 /// <c>finalidadeTratamento</c> e <c>hipoteseLegal</c>. A origem e o vínculo não mudam, e os valores declarados e a
 /// aprovação da proteção têm operações próprias.
 /// </summary>
-/// <param name="Dominio">Token canônico do tipo do dado.</param>
-/// <param name="Cardinalidade">Token canônico: se o fato recebe um valor ou vários.</param>
+/// <param name="Dominio">O tipo do dado, com código e rótulo.</param>
+/// <param name="Cardinalidade">Se o fato recebe um valor ou vários, com código e rótulo.</param>
 /// <param name="Escopo">Token canônico: de quem é o fato.</param>
 /// <param name="Formato">Token canônico do formato do fato de texto.</param>
 /// <param name="Valores">De onde vêm os valores do categórico e os que o catálogo declara.</param>
 /// <param name="Resolucao">De onde o valor do fato vem e quando fica conhecido.</param>
 /// <param name="Protecao">A proteção de dados do fato.</param>
 public sealed record DefinicaoDoFatoDto(
-    string Dominio,
-    string Cardinalidade,
+    CodigoComRotulo<TipoDoDado> Dominio,
+    CodigoComRotulo<QuantidadeDeValores> Cardinalidade,
     string Escopo,
     string? Formato,
     ValoresDoFatoDto Valores,
     ResolucaoDoFatoDto Resolucao,
     ProtecaoDoFatoDto Protecao);
 
-/// <summary>Os valores de um fato categórico.</summary>
-/// <param name="Fonte">Token canônico de onde vêm os valores; nulo no fato que não é categórico.</param>
+/// <summary>Os valores de um dado de opção.</summary>
+/// <param name="Fonte">De onde vêm os valores, com código e rótulo; nula no dado que não é de opção.</param>
 /// <param name="Declarados">Os valores que o catálogo declara, em ordem, ativos e desativados.</param>
-public sealed record ValoresDoFatoDto(string? Fonte, IReadOnlyList<FatoValorDominioDto> Declarados);
+public sealed record ValoresDoFatoDto(CodigoComRotulo<FonteValoresFato>? Fonte, IReadOnlyList<FatoValorDominioDto> Declarados);
 
 /// <summary>De onde o valor do fato vem e quando fica conhecido.</summary>
-/// <param name="Origem">Token canônico: derivado, declarado ou de integração; não muda.</param>
+/// <param name="Origem">Como o valor chega ao sistema, com código e rótulo: calculado, declarado ou de integração; não muda.</param>
 /// <param name="PontoResolucao">Código canônico da fase em que o valor fica conhecido.</param>
 /// <param name="Binding">Vínculo ao campo, ao atributo ou à regra que produz o valor; não muda.</param>
-public sealed record ResolucaoDoFatoDto(string Origem, string PontoResolucao, string Binding);
+public sealed record ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato> Origem, string PontoResolucao, string Binding);
 
 /// <summary>A proteção de dados do fato e o circuito que a aprova.</summary>
 /// <param name="Classificacao">Token canônico da classificação de proteção.</param>

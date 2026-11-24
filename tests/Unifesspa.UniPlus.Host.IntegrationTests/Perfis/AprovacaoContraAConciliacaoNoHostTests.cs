@@ -179,7 +179,7 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
         (await ReclassificacoesAsync(perfil)).Should().Be(1);
         (await ConsultarTextoAsync(
             """SELECT classificacao_anterior || '>' || classificacao_nova AS "Value" FROM autorizacao.reclassificacoes_da_permissao WHERE id = {0}""",
-            reclassificacao)).Should().Be("interno>sensivel");
+            reclassificacao)).Should().Be("INTERNO>SENSIVEL");
         (await BasesDaOrigemAsync(perfil, "conciliacao")).Should().Be(0);
         Guid unidade = await SemearUnidadeAsync();
         await ConcederDepoisAsync(new Cenario(perfil, unidade, new Dictionary<Persona, Guid>()), Betina);

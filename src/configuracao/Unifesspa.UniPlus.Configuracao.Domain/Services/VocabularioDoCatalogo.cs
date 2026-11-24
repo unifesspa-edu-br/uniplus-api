@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -70,24 +71,14 @@ public static class VocabularioDoCatalogo
     public static TipoDominioFato? TipoNoVocabulario(FatoCandidato fato) =>
         fato switch
         {
-            { Dominio: DominioFato.Booleano } => TipoDominioFato.Booleano,
-            { Dominio: DominioFato.Numerico } => TipoDominioFato.Numerico,
-            { Dominio: DominioFato.Categorico, FonteValores: FonteValoresFato.Global } => TipoDominioFato.CategoricoEstatico,
-            { Dominio: DominioFato.Categorico } => TipoDominioFato.CategoricoDinamico,
+            { Dominio: TipoDoDado.SimOuNao } => TipoDominioFato.Booleano,
+            { Dominio: TipoDoDado.Numerico } => TipoDominioFato.Numerico,
+            { Dominio: TipoDoDado.Opcao, FonteValores: FonteValoresFato.Catalogo } => TipoDominioFato.CategoricoEstatico,
+            { Dominio: TipoDoDado.Opcao } => TipoDominioFato.CategoricoDinamico,
             _ => null,
         };
 
     /// <summary>
-    /// A cardinalidade do fato na matriz de operadores das regras: o multivalorado é um conjunto; os
-    /// demais, um valor único.
-    /// </summary>
-    public static CardinalidadeDoFato CardinalidadeNoVocabulario(FatoCandidato fato)
-    {
-        ArgumentNullException.ThrowIfNull(fato);
-        return fato.Cardinalidade == CardinalidadeFato.Multivalorado
-            ? CardinalidadeDoFato.Conjunto
-            : CardinalidadeDoFato.ValorUnico;
-    }
 
     /// <summary>
     /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência
@@ -100,7 +91,7 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(fatos);
         Dictionary<string, DominioDeValores> dominios = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in fatos.Where(static fato => fato.Dominio == DominioFato.Categorico))
+        foreach (FatoCandidato fato in fatos.Where(static fato => fato.Dominio == TipoDoDado.Opcao))
         {
             if (DominioPelaFonte(fato.FonteValores) is { } dominio)
             {
@@ -114,10 +105,10 @@ public static class VocabularioDoCatalogo
     private static DominioDeValores? DominioPelaFonte(FonteValoresFato? fonte) =>
         fonte switch
         {
-            FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
-            FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
-            FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
-                or FonteValoresFato.TiposDeficiencia or FonteValoresFato.MunicipiosProvaPresencial
+            FonteValoresFato.UnidadesFederativas => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
+            FonteValoresFato.Municipios => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
+            FonteValoresFato.OpcoesDoProcesso or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosDoFada
+                or FonteValoresFato.TiposDeDeficiencia or FonteValoresFato.MunicipiosProvaPresencial
                 => DominioDeValores.PorFormato(static _ => true),
             _ => null,
         };
@@ -141,12 +132,9 @@ public static class VocabularioDoCatalogo
         ApresentacaoDoFato.DoCatalogo(
             fato.Codigo,
             fato.Nome,
-            DominiosFato.ParaTokenCanonico(fato.Dominio),
-            CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
-            TokenDaFonteDeValores(fato));
-
-    private static string? TokenDaFonteDeValores(FatoCandidato fato) =>
-        fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null;
+            fato.Dominio,
+            fato.Cardinalidade,
+            fato.FonteValores);
 
     /// <summary>O catálogo como as regras do formulário o conferem, por código (<see cref="FatoDoCatalogo"/>).</summary>
     public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidato> fatos)
@@ -159,11 +147,11 @@ public static class VocabularioDoCatalogo
     private static FatoDoCatalogo FatoParaRegras(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo) =>
         new(
             fato.Codigo,
-            DominiosFato.ParaTokenCanonico(fato.Dominio),
-            CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
-            OrigensFato.ParaTokenCanonico(fato.Origem),
+            fato.Dominio,
+            fato.Cardinalidade,
+            fato.Origem,
             fato.Binding,
-            TokenDaFonteDeValores(fato),
+            fato.FonteValores,
             EscoposFato.ParaTokenCanonico(fato.Escopo),
             fato.Ativo,
             [.. ValoresDe(fato, porCodigo).Select(static valor => new ValorDoCatalogo(valor.Codigo, valor.Ativo))],
@@ -201,9 +189,9 @@ public static class VocabularioDoCatalogo
             .Where(fato => fato.FatoDeMembroAgregado is { } membro && grupoDoCampo.ContainsKey(membro) && porCodigo.ContainsKey(membro))
             .OrderBy(static fato => fato.Codigo, StringComparer.Ordinal)
             .Select(fato => (Agregado: fato.Codigo, Membro: fato.FatoDeMembroAgregado!,
-                Operacao: AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(porCodigo[fato.FatoDeMembroAgregado!].Dominio))))
-            .Where(static definicao => definicao.Operacao != OperacaoAgregado.Nenhuma)
-            .Select(definicao => new DefinicaoAgregado(definicao.Agregado, grupoDoCampo[definicao.Membro], definicao.Membro, definicao.Operacao))];
+                Operacao: AgregadoDeGrupo.OperacaoDoDominio(porCodigo[fato.FatoDeMembroAgregado!].Dominio)))
+            .Where(static definicao => definicao.Operacao is not null)
+            .Select(definicao => new DefinicaoAgregado(definicao.Agregado, grupoDoCampo[definicao.Membro], definicao.Membro, definicao.Operacao!.Value))];
     }
 
     /// <summary>
@@ -228,15 +216,15 @@ public static class VocabularioDoCatalogo
 
     private static List<ValorSelecionavel>? OpcoesDoCatalogo(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
     {
-        if (fato.Dominio != DominioFato.Categorico)
+        if (fato.Dominio != TipoDoDado.Opcao)
         {
             return null;
         }
 
         return fato.FonteValores switch
         {
-            FonteValoresFato.Global => OpcoesDosValoresAtivos(fato, porCodigo),
-            FonteValoresFato.GeoUf => OpcoesDasUnidadesFederativas(),
+            FonteValoresFato.Catalogo => OpcoesDosValoresAtivos(fato, porCodigo),
+            FonteValoresFato.UnidadesFederativas => OpcoesDasUnidadesFederativas(),
             _ => null,
         };
     }
@@ -292,11 +280,11 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(fatos);
         return [.. fatos
-            .Where(static fato => fato.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao))
+            .Where(static fato => fato.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.RegraDeDerivacao))
             .Select(static fato =>
             {
                 string[] dependencias = [.. fato.RegrasPadrao.SelectMany(static regra => regra.FatosCitados).Distinct(StringComparer.Ordinal)];
-                Result<DerivacaoDoFato> derivacao = fato.Dominio == DominioFato.Booleano
+                Result<DerivacaoDoFato> derivacao = fato.Dominio == TipoDoDado.SimOuNao
                     ? DerivacaoDoFato.CriarBooleana(fato.Codigo, fato.RegrasPadrao, dependencias)
                     : DerivacaoDoFato.Criar(fato.Codigo, fato.RegrasPadrao, dependencias, [.. fato.ValoresDominioDeclarados.Select(static valor => valor.Codigo)]);
                 return derivacao.IsSuccess

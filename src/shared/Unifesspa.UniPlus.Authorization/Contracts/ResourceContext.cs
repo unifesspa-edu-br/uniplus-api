@@ -42,17 +42,17 @@ public sealed record ResourceContext
     /// Código do fato (campo) que a operação alcança dentro do registro alvo, quando ela recai sobre um único campo —
     /// a revelação de um identificador. É o código do catálogo, nunca o valor.
     /// </summary>
-    public string? FatoCodigo { get; }
+    public string? FatoCodigo { get; private init; }
 
     /// <summary>Ocorrência do fato, quando o campo está num grupo que se repete; nula fora de grupo.</summary>
-    public string? Ocorrencia { get; }
+    public string? Ocorrencia { get; private init; }
 
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; private init; }
 
     /// <summary>
     /// A banca a que o resource se refere e o lugar dela no processo, quando o ato exige designação a ela; nulo nos
-    /// demais resources. Entra por <see cref="ComVinculosDaBanca"/>, e não pela fábrica, que já recebe nove escopos.
+    /// demais resources. Entra por <see cref="ComVinculosDaBanca"/>, e não pela fábrica, que já recebe os cinco escopos.
     /// </summary>
     public VinculosDaBanca? Banca { get; private init; }
 
@@ -63,8 +63,6 @@ public sealed record ResourceContext
         Guid? processoId,
         Guid? chamadaId,
         Guid? resourceId,
-        string? fatoCodigo,
-        string? ocorrencia,
         Guid? inscricaoId)
     {
         ResourceTipo = resourceTipo;
@@ -73,8 +71,6 @@ public sealed record ResourceContext
         ProcessoId = processoId;
         ChamadaId = chamadaId;
         ResourceId = resourceId;
-        FatoCodigo = fatoCodigo;
-        Ocorrencia = ocorrencia;
         InscricaoId = inscricaoId;
     }
 
@@ -83,7 +79,7 @@ public sealed record ResourceContext
     /// <paramref name="resourceTipo"/> em branco ou fora da convenção de <see cref="ResourceTipos"/> e qualquer identificador de
     /// escopo informado como <see cref="Guid.Empty"/> — nulo é "escopo não se
     /// aplica"; um valor informado precisa ser um identificador real (o projeto
-    /// usa Guid v7).
+    /// usa Guid v7). A recusa é a primeira, nesta ordem: tipo, sensibilidade, escopos.
     /// </summary>
     public static Result<ResourceContext> From(
         string? resourceTipo,
@@ -92,66 +88,29 @@ public sealed record ResourceContext
         Guid? processoId = null,
         Guid? chamadaId = null,
         Guid? resourceId = null,
-        string? fatoCodigo = null,
-        string? ocorrencia = null,
         Guid? inscricaoId = null)
     {
-        if (string.IsNullOrWhiteSpace(resourceTipo))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextResourceTipoObrigatorio,
-                "Tipo do resource é obrigatório."));
-        }
+        DomainError? recusa = RecusaDoTipo(resourceTipo)
+            ?? RecusaDaSensibilidade(sensibilidade)
+            ?? RecusaDosEscopos(unidadeProprietariaId, processoId, chamadaId, resourceId, inscricaoId);
 
-        if (!ResourceTipos.SegueAConvencao(resourceTipo))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextResourceTipoForaDaConvencao,
-                "Tipo do resource deve estar em kebab-case, em minúsculas, sem acento (ex.: tipo-documento)."));
-        }
+        return recusa is not null
+            ? Result<ResourceContext>.Failure(recusa)
+            : Result<ResourceContext>.Success(new ResourceContext(
+                resourceTipo!, sensibilidade, unidadeProprietariaId, processoId, chamadaId, resourceId, inscricaoId));
+    }
 
-        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida,
-                "A sensibilidade do resource é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
-        }
+    /// <summary>
+    /// O mesmo resource situado num campo do registro alvo: o código do fato e, no grupo que se repete, a ocorrência.
+    /// O código do fato não pode ser vazio, e a ocorrência, quando informada, também não.
+    /// </summary>
+    public Result<ResourceContext> ComCampo(string fatoCodigo, string? ocorrencia)
+    {
+        DomainError? recusa = RecusaDoCampo(fatoCodigo, ocorrencia);
 
-        if (GuidVazioInformado(unidadeProprietariaId)
-            || GuidVazioInformado(processoId)
-            || GuidVazioInformado(chamadaId)
-            || GuidVazioInformado(resourceId)
-            || GuidVazioInformado(inscricaoId))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextEscopoInvalido,
-                "Escopo informado não pode ser Guid.Empty — use um identificador real ou nulo."));
-        }
-
-        if (fatoCodigo is not null && string.IsNullOrWhiteSpace(fatoCodigo))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextFatoInvalido,
-                "O código do fato, quando informado, não pode ser vazio."));
-        }
-
-        if (ocorrencia is not null && (string.IsNullOrWhiteSpace(ocorrencia) || fatoCodigo is null))
-        {
-            return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida,
-                "A ocorrência exige o código do fato e não pode ser vazia."));
-        }
-
-        return Result<ResourceContext>.Success(new ResourceContext(
-            resourceTipo,
-            sensibilidade,
-            unidadeProprietariaId,
-            processoId,
-            chamadaId,
-            resourceId,
-            fatoCodigo,
-            ocorrencia,
-            inscricaoId));
+        return recusa is not null
+            ? Result<ResourceContext>.Failure(recusa)
+            : Result<ResourceContext>.Success(this with { FatoCodigo = fatoCodigo, Ocorrencia = ocorrencia });
     }
 
     /// <summary>
@@ -160,7 +119,7 @@ public sealed record ResourceContext
     /// </summary>
     public ResourceContext ComSensibilidade(ClassificacaoDeProtecao sensibilidade)
     {
-        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
+        if (!Enum.IsDefined(sensibilidade))
         {
             throw new ArgumentOutOfRangeException(nameof(sensibilidade), sensibilidade, "A sensibilidade do resource é obrigatória.");
         }
@@ -176,5 +135,41 @@ public sealed record ResourceContext
         return this with { Banca = vinculos };
     }
 
-    private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;
+    private static DomainError? RecusaDoTipo(string? resourceTipo) =>
+        string.IsNullOrWhiteSpace(resourceTipo)
+            ? new(AuthorizationErrorCodes.ResourceContextResourceTipoObrigatorio, "Tipo do resource é obrigatório.")
+            : !ResourceTipos.SegueAConvencao(resourceTipo)
+                ? new(
+                    AuthorizationErrorCodes.ResourceContextResourceTipoForaDaConvencao,
+                    "Tipo do resource deve estar em kebab-case, em minúsculas, sem acento (ex.: tipo-documento).")
+                : null;
+
+    private static DomainError? RecusaDaSensibilidade(ClassificacaoDeProtecao sensibilidade) =>
+        Enum.IsDefined(sensibilidade)
+            ? null
+            : new(
+                AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida,
+                "A sensibilidade do resource é obrigatória: informe um nível da escala de proteção (PUBLICO a SENSIVEL).");
+
+    private static DomainError? RecusaDosEscopos(params ReadOnlySpan<Guid?> escopos)
+    {
+        foreach (Guid? escopo in escopos)
+        {
+            if (escopo == Guid.Empty)
+            {
+                return new(
+                    AuthorizationErrorCodes.ResourceContextEscopoInvalido,
+                    "Escopo informado não pode ser Guid.Empty — use um identificador real ou nulo.");
+            }
+        }
+
+        return null;
+    }
+
+    private static DomainError? RecusaDoCampo(string fatoCodigo, string? ocorrencia) =>
+        string.IsNullOrWhiteSpace(fatoCodigo)
+            ? new(AuthorizationErrorCodes.ResourceContextFatoInvalido, "O código do fato não pode ser vazio.")
+            : ocorrencia is not null && string.IsNullOrWhiteSpace(ocorrencia)
+                ? new(AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida, "A ocorrência, quando informada, não pode ser vazia.")
+                : null;
 }

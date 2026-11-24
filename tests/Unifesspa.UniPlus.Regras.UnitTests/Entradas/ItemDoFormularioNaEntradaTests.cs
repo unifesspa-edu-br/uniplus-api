@@ -25,9 +25,9 @@ public sealed class ItemDoFormularioNaEntradaTests
     [Fact(DisplayName = "A apresentação ausente na entrada fica sem texto: a recusa do rótulo é da forma do item")]
     public void Apresentacao_EntradaAusente_FicaSemTexto()
     {
-        ApresentacaoDoCampo apresentacao = EntradaDeRegras.Apresentacao(null, TipoRenderizacao.Booleano);
+        ApresentacaoDoCampo apresentacao = EntradaDeRegras.Apresentacao(null, TipoRenderizacao.SimOuNao);
 
-        apresentacao.Should().Be(new ApresentacaoDoCampo(string.Empty, TipoRenderizacao.Booleano));
+        apresentacao.Should().Be(new ApresentacaoDoCampo(string.Empty, TipoRenderizacao.SimOuNao));
     }
 
     [Fact(DisplayName = "As regras do domínio vão à entrada com o token da obrigatoriedade e o predicado dela")]

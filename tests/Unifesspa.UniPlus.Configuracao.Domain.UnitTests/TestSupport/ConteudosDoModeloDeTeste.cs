@@ -18,10 +18,10 @@ internal static class ConteudosDoModeloDeTeste
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, operador, valor).Value!)]).Value!;
 
     public static EtapaDoModelo Etapa(string codigo = "DADOS", int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, exibicao);
+        new(codigo, ordem, TipoEtapaFormulario.Secao, null, "Dados", null, null, exibicao);
 
     public static ItemDoModelo Item(string fato, int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     public static GrupoDoModelo Grupo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null, params ItemDoModelo[] campos) =>
         new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);

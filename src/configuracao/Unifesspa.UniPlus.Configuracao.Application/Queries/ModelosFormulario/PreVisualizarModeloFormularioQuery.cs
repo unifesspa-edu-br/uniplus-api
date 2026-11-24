@@ -122,7 +122,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         item.EtapaCodigo,
         item.Visivel.Codigo(),
         item.Obrigatorio.Codigo(),
-        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
+        [.. item.RestricoesVioladas.Select(static r => r.Tipo.Codigo())],
         item.Impedido.Codigo(),
         itemPorFato[item.FatoCodigo].Regras.Impedimento?.Mensagem,
         item.Opcoes is { } opcoes ? new OpcoesPreVisualizadasDto(opcoes.Codigos, opcoes.Definitivas) : null);

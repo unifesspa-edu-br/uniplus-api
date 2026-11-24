@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -29,256 +30,162 @@ public static class CriacaoDoFato
     /// conferida quando esse campo é válido.
     /// </summary>
     public static Result<FatoCandidato> Criar(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        OrigemFato origem,
-        CardinalidadeFato cardinalidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato,
-        string pontoResolucao,
+        DescritivoDoFato descritivo,
+        OrigemFato? origem,
         string binding,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        bool sistema,
-        ComponenteDeExibicao? componenteExibicao = null)
+        DefinicaoDoFato definicao,
+        bool sistema)
     {
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+        ArgumentNullException.ThrowIfNull(descritivo);
+        ArgumentNullException.ThrowIfNull(definicao);
 
-        Result<CodigoFatoCandidato> codigoResult = CodigoFatoCandidato.Criar(codigo);
-        if (codigoResult.IsFailure)
-        {
-            erros.Add(new("codigo", codigoResult.Error!));
-        }
-
-        Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> descritivo = ValidarDescritivo(nome, descricao, componenteExibicao);
-        erros.AddRange(descritivo.Errors);
-
-        ConferirEixosDeValor(erros, dominio, cardinalidade, fonteValores, formato);
-
-        bool origemValida = origem != OrigemFato.Nenhuma && Enum.IsDefined(origem);
-        if (origem == OrigemFato.Nenhuma)
-        {
-            Recusar("origem", FatoCandidatoErrorCodes.OrigemObrigatoria, "Origem do fato é obrigatória.");
-        }
-        else if (!origemValida)
-        {
-            Recusar("origem", FatoCandidatoErrorCodes.OrigemInvalida, "Origem do fato fora do vocabulário fechado.");
-        }
-
-        Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
-        if (pontoResolucaoResult.IsFailure)
-        {
-            erros.Add(new("pontoResolucao", pontoResolucaoResult.Error!));
-        }
-
-        string? bindingValidado = null;
-        if (codigoResult.IsSuccess && origemValida)
-        {
-            Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
-            bindingValidado = bindingResult.Value;
-            if (bindingResult.IsFailure)
-            {
-                erros.Add(new("binding", bindingResult.Error!));
-            }
-            else if (!sistema && (origem == OrigemFato.Integracao
-                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)
-                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoClassificacao + ":", StringComparison.Ordinal)))
-            {
-                // O fato do administrador não tem código que calcule ou traga o valor: é declarado,
-                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato, classificação
-                // e integração só existem em fato de sistema.
-                Recusar(
-                    "origem",
-                    FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
-                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato, classificação e integração só existem em fato de sistema.");
-            }
-        }
-
-        ConferirEscopo(erros, escopo);
-
-        Result<ProtecaoDeDados> protecao = ValidarProtecao(
-            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
-        erros.AddRange(protecao.Errors);
-
-        if (erros.Count > 0)
-        {
-            return Result<FatoCandidato>.ValidationFailure(erros);
-        }
-
-        return Result<FatoCandidato>.Success(new FatoCandidato(
-            codigoResult.Value!.Valor,
-            descritivo.Value.Nome,
-            descritivo.Value.Descricao,
-            descritivo.Value.Componente,
-            dominio,
-            origem,
-            cardinalidade,
-            fonteValores,
-            formato,
-            pontoResolucaoResult.Value!,
-            bindingValidado!,
-            escopo,
-            protecao.Value,
-            sistema));
+        return new ConferenciaDoNovoFato(descritivo, origem, binding, definicao, sistema).Conferir();
     }
 
     /// <summary>
     /// Cadastro de fato pelo administrador (ADR-0136): sempre declarado, com o vínculo ao campo de
     /// formulário gerado a partir do código, e nunca de sistema.
     /// </summary>
-    public static Result<FatoCandidato> CriarDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        CardinalidadeFato cardinalidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato,
-        string pontoResolucao,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null) =>
-        Criar(
-            codigo, nome, descricao, dominio, OrigemFato.Declarado, cardinalidade, fonteValores, formato, pontoResolucao,
-            $"{PrefixoBindingDeclarado}:{codigo?.Trim()}", escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
-            sistema: false, componenteExibicao);
+    public static Result<FatoCandidato> CriarDoAdministrador(DescritivoDoFato descritivo, DefinicaoDoFato definicao)
+    {
+        ArgumentNullException.ThrowIfNull(descritivo);
+
+        return Criar(
+            descritivo, OrigemFato.Declarado, VinculoDeFato.De(MecanismoDoVinculo.CampoFormulario, CodigoNormalizado(descritivo)),
+            definicao, sistema: false);
+    }
 
     /// <summary>
     /// Cadastro de derivado por regra pelo administrador (ADR-0136): booleano, verdadeiro quando
-    /// alguma regra ativa, ou categórico de valores próprios, com a união das contribuições. As
-    /// regras padrão vêm depois, por <see cref="FatoCandidato.DefinirRegrasPadrao"/>, porque citam os valores que
-    /// o categórico ainda vai receber.
+    /// alguma regra ativa, ou categórico de valores próprios, com a união das contribuições. A
+    /// cardinalidade e a fonte saem do domínio, então a definição não as traz. As regras padrão vêm
+    /// depois, por <see cref="FatoCandidato.DefinirRegrasPadrao"/>, porque citam os valores que o
+    /// categórico ainda vai receber.
     /// </summary>
-    public static Result<FatoCandidato> CriarDerivadoDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        string pontoResolucao,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null)
+    public static Result<FatoCandidato> CriarDerivadoDoAdministrador(DescritivoDoFato descritivo, DefinicaoDoFato definicao)
     {
-        (CardinalidadeFato cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(dominio);
+        ArgumentNullException.ThrowIfNull(descritivo);
+        ArgumentNullException.ThrowIfNull(definicao);
+
         Result<FatoCandidato> criado = Criar(
-            codigo, nome, descricao, dominio, OrigemFato.Derivado,
-            cardinalidade,
-            fonteValores,
-            formato: null, pontoResolucao, $"{PrefixoBindingDerivadoRegra}:{codigo?.Trim()}", escopo,
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false, componenteExibicao);
+            descritivo, OrigemFato.Calculado, VinculoDeFato.De(MecanismoDoVinculo.RegraDeDerivacao, CodigoNormalizado(descritivo)),
+            ComEixosInferidosDoDerivado(definicao), sistema: false);
         List<FieldError> recusasDoDominio = [];
-        if (ConferirDominioDoDerivado(recusasDoDominio, dominio))
-        {
-            return criado;
-        }
 
         // Com o domínio recusado, o que depende dele (formato, fonte) não é conferido.
-        return Result<FatoCandidato>.ValidationFailure(
-            [.. recusasDoDominio, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
+        return ConferirDominioDoDerivado(recusasDoDominio, definicao.Dominio)
+            ? criado
+            : Result<FatoCandidato>.ValidationFailure(
+                [.. recusasDoDominio, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
+    }
+
+    private static DefinicaoDoFato ComEixosInferidosDoDerivado(DefinicaoDoFato definicao)
+    {
+        (QuantidadeDeValores cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(definicao.Dominio);
+        return definicao with { Cardinalidade = cardinalidade, FonteValores = fonteValores, Formato = null };
     }
 
     /// <summary>
     /// Cadastro do agregado sobre grupo repetível pelo administrador (ADR-0138, UNI-REQ-0146): o
-    /// vínculo <c>AGREGACAO_GRUPO:</c> aponta o fato de membro, que precisa existir, estar ativo e ser
+    /// vínculo <c>RESUMO_DE_GRUPO:</c> aponta o fato de membro, que precisa existir, estar ativo e ser
     /// fato declarado de membro de grupo de domínio que agrega. O domínio, a cardinalidade e a fonte
     /// dos valores saem do fato de membro — booleano dá "existe membro que…", categórico dá "valores
-    /// presentes" —, e o agregado não tem valores próprios. Não protege menos nem resolve antes do
-    /// fato de membro. As recusas se acumulam (ADR-0125); sem fato de membro válido, as que
-    /// dependem dele não são conferidas.
+    /// presentes" —, e o agregado não tem valores próprios; a definição traz só o ponto de resolução e a
+    /// proteção de dados. Não protege menos nem resolve antes do fato de membro. As recusas se acumulam
+    /// (ADR-0125); sem fato de membro válido, as que dependem dele não são conferidas.
     /// </summary>
     public static Result<FatoCandidato> CriarAgregadoDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
+        DescritivoDoFato descritivo,
         string fatoDeMembroCodigo,
         CatalogoDeFatos catalogo,
-        string pontoResolucao,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null)
+        DefinicaoDoFato definicao)
     {
+        ArgumentNullException.ThrowIfNull(descritivo);
         ArgumentNullException.ThrowIfNull(catalogo);
-
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+        ArgumentNullException.ThrowIfNull(definicao);
 
         string membroCodigo = fatoDeMembroCodigo?.Trim() ?? string.Empty;
         FatoCandidato? membro = catalogo.Fatos.FirstOrDefault(f => string.Equals(f.Codigo, membroCodigo, StringComparison.Ordinal));
-        OperacaoAgregado operacao = AgregadoDeGrupo.OperacaoDoDominio(membro is null ? null : DominiosFato.ParaTokenCanonico(membro.Dominio));
-        bool campoDeGrupo = membro is { Escopo: EscopoFato.MembroGrupo, Origem: OrigemFato.Declarado };
-        if (membro is null)
-        {
-            Recusar("fatoDeMembro", FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro, $"O fato de membro '{membroCodigo}' não pertence ao catálogo.");
-        }
-        else if (!campoDeGrupo)
-        {
-            Recusar("fatoDeMembro", FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo,
-                $"O fato '{membroCodigo}' não é fato declarado de membro de grupo: o agregado resume o que cada membro respondeu.");
-        }
-        else
-        {
-            if (!membro.Ativo)
-            {
-                Recusar("fatoDeMembro", VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{membroCodigo}' está desativado no catálogo e não aceita vínculo novo.");
-            }
+        return CriarAgregadoSobre(descritivo, membro, membroCodigo, catalogo, definicao);
+    }
 
-            if (operacao == OperacaoAgregado.Nenhuma)
-            {
-                Recusar("fatoDeMembro", FatoCandidatoErrorCodes.AgregadoSobreDominioQueNaoAgrega,
-                    "O agregado resume fato de membro booleano (existe membro que…) ou categórico (valores presentes).");
-            }
-        }
-
-        bool membroValido = campoDeGrupo && operacao != OperacaoAgregado.Nenhuma;
-        (DominioFato dominioInferido, CardinalidadeFato cardinalidadeInferida, FonteValoresFato? fonteInferida) =
-            EixosInferidosDoAgregado(operacao, membro?.FonteValores);
+    private static Result<FatoCandidato> CriarAgregadoSobre(
+        DescritivoDoFato descritivo, FatoCandidato? membro, string membroCodigo, CatalogoDeFatos catalogo, DefinicaoDoFato definicao)
+    {
+        List<FieldError> erros = [];
+        OperacaoAgregado? operacao = AgregadoDeGrupo.OperacaoDoDominio(membro?.Dominio);
+        bool membroValido = ConferirFatoDeMembro(erros, membro, membroCodigo, operacao);
         Result<FatoCandidato> criado = Criar(
-            codigo, nome, descricao,
-            dominioInferido,
-            OrigemFato.Derivado,
-            cardinalidadeInferida,
-            fonteInferida,
-            formato: null, pontoResolucao, $"{PrefixoBindingAgregacao}:{membroCodigo}", EscopoFato.Candidato,
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false, componenteExibicao);
-
-        // As recusas que dependem do fato de membro só valem com ele válido; sem ele, o domínio e a
-        // fonte não foram inferidos e as recusas desses campos não orientam.
-        erros.AddRange(membroValido ? criado.Errors : criado.Errors.Where(static e => e.Field is not ("dominio" or "fonteValores" or "binding")));
-        // A proteção e o ponto de resolução se comparam com os do fato de membro sempre que o campo
-        // é válido, independentemente das recusas dos outros campos.
+            descritivo, OrigemFato.Calculado, VinculoDeFato.De(MecanismoDoVinculo.ResumoDeGrupo, membroCodigo),
+            ComEixosInferidosDoAgregado(definicao, operacao, membro?.FonteValores), sistema: false);
+        erros.AddRange(RecusasDoCadastroDoAgregado(criado, membroValido));
         if (membroValido)
         {
-            ConferirContraOMembro(erros, membro!, pontoResolucao, classificacaoProtecao, catalogo);
+            ConferirContraOMembro(erros, membro!, definicao.PontoResolucao, definicao.ClassificacaoProtecao, catalogo);
         }
 
         return erros.Count > 0 ? Result<FatoCandidato>.ValidationFailure(erros) : criado;
     }
 
-    /// <summary>A cardinalidade e a fonte que o derivado por regra infere do próprio domínio.</summary>
-    internal static (CardinalidadeFato Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoDerivado(DominioFato dominio) =>
-        dominio == DominioFato.Categorico
-            ? (CardinalidadeFato.Multivalorado, FonteValoresFato.Global)
-            : (CardinalidadeFato.Escalar, null);
+    // As recusas que dependem do fato de membro só valem com ele válido; sem ele, o domínio e a fonte
+    // não foram inferidos e as recusas desses campos não orientam. A proteção e o ponto de resolução se
+    // comparam com os do fato de membro sempre que o campo é válido, independentemente dos outros.
+    private static IEnumerable<FieldError> RecusasDoCadastroDoAgregado(Result<FatoCandidato> criado, bool membroValido) =>
+        membroValido ? criado.Errors : criado.Errors.Where(static e => e.Field is not ("dominio" or "fonteValores" or "binding"));
+
+    private static string CodigoNormalizado(DescritivoDoFato descritivo) => descritivo.Codigo?.Trim() ?? string.Empty;
+
+    private static DefinicaoDoFato ComEixosInferidosDoAgregado(DefinicaoDoFato definicao, OperacaoAgregado? operacao, FonteValoresFato? fonteDoMembro)
+    {
+        (TipoDoDado dominio, QuantidadeDeValores cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoAgregado(operacao, fonteDoMembro);
+        return definicao with { Dominio = dominio, Cardinalidade = cardinalidade, FonteValores = fonteValores, Formato = null, Escopo = EscopoFato.Candidato };
+    }
+
+    private static bool ConferirFatoDeMembro(List<FieldError> erros, FatoCandidato? membro, string codigo, OperacaoAgregado? operacao)
+    {
+        if (!RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembro(membro, codigo)))
+        {
+            return false;
+        }
+
+        RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembroDesativado(membro!, codigo));
+        return RegistrarRecusa(erros, "fatoDeMembro", RecusaDoAgregadoSobreDominioQueNaoAgrega(operacao));
+    }
+
+    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembro(FatoCandidato? membro, string codigo) => membro switch
+    {
+        null => (FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro, $"O fato de membro '{codigo}' não pertence ao catálogo."),
+        { Escopo: not EscopoFato.MembroGrupo } or { Origem: not OrigemFato.Declarado } => (
+            FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo,
+            $"O fato '{codigo}' não é fato declarado de membro de grupo: o agregado resume o que cada membro respondeu."),
+        _ => null,
+    };
+
+    private static (string Codigo, string Mensagem)? RecusaDoAgregadoSobreDominioQueNaoAgrega(OperacaoAgregado? operacao) =>
+        operacao is null
+            ? (FatoCandidatoErrorCodes.AgregadoSobreDominioQueNaoAgrega, "O agregado resume fato de membro booleano (existe membro que…) ou categórico (valores presentes).")
+            : null;
+
+    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembroDesativado(FatoCandidato membro, string membroCodigo) =>
+        membro.Ativo
+            ? null
+            : (VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{membroCodigo}' está desativado no catálogo e não aceita vínculo novo.");
+
+    /// <summary>A quantidade de valores e a fonte que o derivado por regra infere do próprio tipo do dado.</summary>
+    internal static (QuantidadeDeValores Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoDerivado(TipoDoDado? tipo) =>
+        tipo == TipoDoDado.Opcao
+            ? (QuantidadeDeValores.VariosValores, FonteValoresFato.Catalogo)
+            : (QuantidadeDeValores.ValorUnico, null);
 
     /// <summary>
     /// O domínio, a cardinalidade e a fonte que o agregado infere da operação sobre o fato de membro:
     /// valores presentes dá categórico multivalorado com a fonte do membro, e o restante dá booleano.
     /// </summary>
-    internal static (DominioFato Dominio, CardinalidadeFato Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoAgregado(
-        OperacaoAgregado operacao, FonteValoresFato? fonteDoMembro) =>
+    internal static (TipoDoDado Dominio, QuantidadeDeValores Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoAgregado(
+        OperacaoAgregado? operacao, FonteValoresFato? fonteDoMembro) =>
         operacao == OperacaoAgregado.ValoresPresentes
-            ? (DominioFato.Categorico, CardinalidadeFato.Multivalorado, fonteDoMembro)
-            : (DominioFato.Booleano, CardinalidadeFato.Escalar, null);
+            ? (TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, fonteDoMembro)
+            : (TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null);
 
     /// <summary>
     /// O agregado não protege menos nem resolve antes do fato de membro: a recusa vai no campo do
@@ -288,23 +195,25 @@ public static class CriacaoDoFato
         List<FieldError> erros,
         FatoCandidato membro,
         string pontoResolucao,
-        ClassificacaoDeProtecao classificacaoProtecao,
+        ClassificacaoDeProtecao? classificacaoProtecao,
         CatalogoDeFatos catalogo)
     {
-        if (classificacaoProtecao != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(classificacaoProtecao)
-            && classificacaoProtecao < membro.ClassificacaoProtecao)
-        {
-            erros.Add(new("classificacaoProtecao", new DomainError(
-                FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
-                $"O agregado revela o que se sabe de '{membro.Codigo}' e não pode ter proteção de dados mais fraca que a dele.")));
-        }
-
+        RegistrarRecusa(erros, "classificacaoProtecao", RecusaDaProtecaoAbaixoDoMembro(membro, classificacaoProtecao));
         string ponto = pontoResolucao?.Trim() ?? string.Empty;
-        if (FaseCanonicaCatalogo.EhCanonico(ponto) && ValidadorRegrasPadrao.Precede(ponto, membro.PontoResolucao, catalogo.Precedencias))
-        {
-            erros.Add(new("pontoResolucao", new DomainError(
-                FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
-                $"O agregado resolve em {ponto}, antes de '{membro.Codigo}', que só é conhecido em {membro.PontoResolucao}.")));
-        }
+        RegistrarRecusa(erros, "pontoResolucao", RecusaDoPontoAnteriorAoMembro(membro, ponto, catalogo));
     }
+
+    private static (string Codigo, string Mensagem)? RecusaDaProtecaoAbaixoDoMembro(
+        FatoCandidato membro, ClassificacaoDeProtecao? classificacaoProtecao) =>
+        classificacaoProtecao is { } valor && Enum.IsDefined(valor)
+        && classificacaoProtecao < membro.ClassificacaoProtecao
+            ? (FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
+                $"O agregado revela o que se sabe de '{membro.Codigo}' e não pode ter proteção de dados mais fraca que a dele.")
+            : null;
+
+    private static (string Codigo, string Mensagem)? RecusaDoPontoAnteriorAoMembro(FatoCandidato membro, string ponto, CatalogoDeFatos catalogo) =>
+        FaseCanonicaCatalogo.EhCanonico(ponto) && ValidadorRegrasPadrao.Precede(ponto, membro.PontoResolucao, catalogo.Precedencias)
+            ? (FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
+                $"O agregado resolve em {ponto}, antes de '{membro.Codigo}', que só é conhecido em {membro.PontoResolucao}.")
+            : null;
 }

@@ -120,7 +120,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
 
     [Fact(DisplayName = "O código da ação quando indeferido é componente de texto com enum, sem o valor nenhum")]
     public Task AcaoQuandoIndeferidoCodigo_EComponenteDeTextoComEnum() =>
-        ConferirComponenteDeCodigosAsync("AcaoQuandoIndeferidoCodigo", ["RECLASSIFICAR_AC", "RECLASSIFICAR_REGRA_EDITAL"]);
+        ConferirComponenteDeCodigosAsync("AcaoQuandoIndeferidoCodigo", ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"]);
 
     [Fact(DisplayName = "O código da composição de vagas é componente de texto com enum, sem o valor nenhum")]
     public Task ComposicaoVagasCodigo_EComponenteDeTextoComEnum() =>
@@ -155,7 +155,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
     [Fact(DisplayName = "O código da forma de aceite é componente de texto com enum, sem o valor nenhuma")]
     public Task FormaAceiteCodigo_EComponenteDeTextoComEnum() =>
         ConferirComponenteDeCodigosAsync(
-            "FormaAceiteCodigo", ["A_DEFINIR", "REGISTRO_DIGITAL_SEM_LOG_IP", "REGISTRO_DIGITAL_COM_LOG_IP"]);
+            "FormaAceiteCodigo", ["A_DEFINIR", "REGISTRO_SEM_ENDERECO_IP", "REGISTRO_COM_ENDERECO_IP"]);
 
     [Theory(DisplayName = "O código da resposta de fase e de termo referencia o componente do enum")]
     [InlineData("OrigemDataFase", "origemData", "OrigemDataFaseCodigo", "FaseCanonicaDto")]

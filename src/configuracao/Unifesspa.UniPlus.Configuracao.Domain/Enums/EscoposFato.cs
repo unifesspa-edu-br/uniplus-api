@@ -2,8 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento entre <see cref="EscopoFato"/> (PascalCase) e o token textual de contrato/banco
-/// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
-/// <see cref="CardinalidadesFato"/>). Fonte do CHECK de domínio em
+/// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita. Fonte do CHECK de domínio em
 /// <c>dados_do_candidato.escopo</c> e do value converter de persistência.
 /// </summary>
 public static class EscoposFato

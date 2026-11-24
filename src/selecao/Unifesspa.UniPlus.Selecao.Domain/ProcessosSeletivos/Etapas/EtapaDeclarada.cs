@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using System.Collections.Frozen;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -170,7 +171,7 @@ public sealed record EtapaDeclarada
         }
 
         return NotaVemDoEnem ? ModoDeAvaliacaoDaEtapa.NotaDoEnem
-            : Conceito?.Natureza == NaturezaConceito.Categorico ? ModoDeAvaliacaoDaEtapa.ConceitoCategorico
+            : Conceito?.Natureza == FormaDoConceito.PorOpcoes ? ModoDeAvaliacaoDaEtapa.ConceitoCategorico
             : Conceito is not null || ComponeNota || NotaMinima.HasValue || citacao.CitaANota ? ModoDeAvaliacaoDaEtapa.NotaNumerica
             : ModoDeAvaliacaoDaEtapa.SemNotaNemConceito;
     }

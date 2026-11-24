@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -127,7 +128,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucaoDoSexo)]));
-        ColetarFato(processo, "SEXO", TipoRenderizacao.SelecaoUnica);
+        ColetarFato(processo, "SEXO", TipoRenderizacao.EscolhaUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
 
@@ -158,8 +159,8 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     }
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
-        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(

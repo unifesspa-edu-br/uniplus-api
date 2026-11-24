@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -56,7 +57,7 @@ public static class CitacoesDosFormularios
         {
             if (FatoNaoGarantido(configuracao, citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
             {
-                string anterior = EstruturaFormulario.ParaToken(naoGarantido.Produtora);
+                string anterior = naoGarantido.Produtora.Codigo();
                 string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
                     ? $"O fato '{citado}', citado por {citante}, não"
                     : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
@@ -83,8 +84,8 @@ public static class CitacoesDosFormularios
     {
         if (configuracao.Coleta.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado)
         {
-            return coletado.Finalidade != finalidadePropria && !publicadas.Garante(coletado.Finalidade, fato)
-                ? (fato, coletado.Finalidade)
+            return coletado.Finalidade is { } produtora && produtora != finalidadePropria && !publicadas.Garante(produtora, fato)
+                ? (fato, produtora)
                 : null;
         }
 
@@ -107,7 +108,7 @@ public static class CitacoesDosFormularios
     /// <summary>As citações das regras de um formulário, com quem cita nomeado junto do formulário.</summary>
     internal static IEnumerable<(string Citante, string Citado)> DoFormulario(
         FinalidadeFormulario finalidade, IEnumerable<(string Dono, string Citado)> citacoes) =>
-        citacoes.Select(c => ($"{c.Dono} do formulário de {EstruturaFormulario.ParaToken(finalidade)}", c.Citado));
+        citacoes.Select(c => ($"{c.Dono} do formulário de {finalidade.Codigo()}", c.Citado));
 
     /// <summary>
     /// A regra de formulário que usa, de outra finalidade, fato fora do que o formulário dela coletou em
@@ -177,7 +178,7 @@ public static class CitacoesDosFormularios
                 {
                     yield return new DomainError(
                         GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                        $"O fato '{citado}', citado por {dono} do formulário de {EstruturaFormulario.ParaToken(outra)}, deixaria de ser conhecido por ele.");
+                        $"O fato '{citado}', citado por {dono} do formulário de {outra.Codigo()}, deixaria de ser conhecido por ele.");
                 }
             }
         }

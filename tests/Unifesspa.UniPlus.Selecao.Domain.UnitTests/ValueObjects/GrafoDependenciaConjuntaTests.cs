@@ -25,7 +25,7 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. citados.Select(static c => (c, Operador.Igual, (object)true))]))
             .Construir();
 
@@ -245,8 +245,8 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
     [
-        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Cotas", null, null, Cita("EGRESSO")).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, null), "Cotas", null, null, Cita("EGRESSO")).Value!,
         EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
     ]).Value!;
 
@@ -268,7 +268,7 @@ public sealed class GrafoDependenciaConjuntaTests
     {
         TermoExigidoFormulario termo = TermoExigidoFormulario.Criar(
             "CONSULTA", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Consulta", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Consulta", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
             Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
         GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")], termos: [termo]).Value!;
@@ -296,9 +296,9 @@ public sealed class GrafoDependenciaConjuntaTests
     {
         FormularioProcesso inscricao = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
         [
-            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("AVISO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Aviso", null, null, Cita("EGRESSO")).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("FINAL", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Final", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("AVISO", 1, TipoEtapaFormulario.Secao, null), "Aviso", null, null, Cita("EGRESSO")).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("FINAL", 2, TipoEtapaFormulario.Secao, null), "Final", null, null).Value!,
             EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ]).Value!;
 
@@ -312,7 +312,7 @@ public sealed class GrafoDependenciaConjuntaTests
     [Fact(DisplayName = "Termos condicionados mantêm a ordem declarada entre si, depois dos campos")]
     public void TermosCondicionados_NaOrdemDeclarada()
     {
-        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64));
+        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64));
         TermoExigidoFormulario primeiro = TermoExigidoFormulario.Criar("Z_PRIMEIRO", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
         TermoExigidoFormulario segundo = TermoExigidoFormulario.Criar("A_SEGUNDO", 1, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
@@ -326,7 +326,7 @@ public sealed class GrafoDependenciaConjuntaTests
     [Fact(DisplayName = "Seção condicional sem campos seguintes fica entre os campos e os termos")]
     public void SecaoSemCamposSeguintes_FicaEntreCamposETermos()
     {
-        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64));
+        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64));
         TermoExigidoFormulario termo = TermoExigidoFormulario.Criar("CONSULTA", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
         GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")],
             formularios: [InscricaoComSecaoDeCotasCondicionada()], termos: [termo]).Value!;

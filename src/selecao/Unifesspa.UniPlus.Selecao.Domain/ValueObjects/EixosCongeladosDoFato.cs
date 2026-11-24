@@ -49,12 +49,12 @@ public sealed record EixosDoItemCongelado(
 /// Os eixos que a versão publicada congela do fato citado por condição de documento exigido: o
 /// domínio, a cardinalidade e o ponto de resolução.
 /// </summary>
-public sealed record EixosDoMetadadoCongelado(string Dominio, string Cardinalidade, string PontoResolucao)
+public sealed record EixosDoMetadadoCongelado(TipoDoDado Dominio, QuantidadeDeValores Cardinalidade, string PontoResolucao)
 {
     internal IEnumerable<(string Eixo, string? Valor)> Eixos() =>
     [
-        ("domínio", Dominio),
-        ("cardinalidade", Cardinalidade),
+        ("domínio", Dominio.Codigo()),
+        ("cardinalidade", Cardinalidade.Codigo()),
         ("ponto de resolução", PontoResolucao),
     ];
 }

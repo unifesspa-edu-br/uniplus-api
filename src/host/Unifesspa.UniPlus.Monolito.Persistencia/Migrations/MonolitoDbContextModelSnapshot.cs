@@ -4026,14 +4026,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("fonte_do_valor")
-                        .HasComment("Referência à fonte usada para obter o valor.");
+                        .HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DERIVACAO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
 
                     b.Property<string>("Cardinalidade")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("quantidade_de_valores")
-                        .HasComment("Quantidade de valores: ESCALAR ou MULTIVALORADO.");
+                        .HasComment("Quantidade de valores: VALOR_UNICO ou VARIOS_VALORES.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
@@ -4086,7 +4086,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo do dado: CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA ou ENDERECO.");
+                        .HasComment("Tipo do dado: SIM_OU_NAO, OPCAO, NUMERICO, TEXTO, DATA ou ENDERECO.");
 
                     b.Property<string>("Escopo")
                         .IsRequired()
@@ -4103,10 +4103,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Finalidade informada para o tratamento do dado.");
 
                     b.Property<string>("FonteValores")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("fonte_das_opcoes")
-                        .HasComment("Origem das opções: GLOBAL, PROCESSO, MODALIDADE, MUNICIPIOS_BONUS (municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)), GEO_UF, GEO_MUNICIPIO ou TIPOS_DEFICIENCIA; nula para outros tipos.");
+                        .HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MODALIDADE, MUNICIPIOS_DO_FADA, MUNICIPIOS_PROVA_PRESENCIAL, UNIDADES_FEDERATIVAS, MUNICIPIOS ou TIPOS_DE_DEFICIENCIA; nula para outros tipos.");
 
                     b.Property<string>("Formato")
                         .HasMaxLength(20)
@@ -4133,7 +4133,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("origem")
-                        .HasComment("Origem do dado: DERIVADO, DECLARADO ou INTEGRACAO.");
+                        .HasComment("Origem do dado: CALCULADO, DECLARADO ou INTEGRACAO.");
 
                     b.Property<string>("PontoResolucao")
                         .IsRequired()
@@ -4192,13 +4192,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_dados_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_fonte_das_opcoes_coerente", "(tipo = 'CATEGORICO' AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (tipo <> 'CATEGORICO' AND fonte_das_opcoes IS NULL)");
+                            t.HasCheckConstraint("ck_dados_do_candidato_fonte_das_opcoes_coerente", "(tipo = 'OPCAO' AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ('CATALOGO', 'OPCOES_DO_PROCESSO', 'MODALIDADE', 'MUNICIPIOS_DO_FADA', 'UNIDADES_FEDERATIVAS', 'MUNICIPIOS', 'TIPOS_DE_DEFICIENCIA', 'MUNICIPIOS_PROVA_PRESENCIAL')) OR (tipo <> 'OPCAO' AND fonte_das_opcoes IS NULL)");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_formato_coerente", "(tipo = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (tipo <> 'TEXTO' AND formato IS NULL)");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_mecanismo_do_vinculo", "split_part(fonte_do_valor, ':', 1) IN ('CAMPO_FORMULARIO', 'ATRIBUTO_CANDIDATO', 'REGRA_DERIVACAO', 'CLASSIFICACAO', 'INTEGRACAO', 'RESUMO_DE_GRUPO')");
+
+                            t.HasCheckConstraint("ck_dados_do_candidato_origem", "origem IN ('CALCULADO', 'DECLARADO', 'INTEGRACAO')");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
 
@@ -4212,9 +4214,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_dados_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_quantidade_de_valores", "quantidade_de_valores IN ('ESCALAR', 'MULTIVALORADO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_quantidade_de_valores", "quantidade_de_valores IN ('VALOR_UNICO', 'VARIOS_VALORES')");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_tipo", "tipo IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_tipo", "tipo IN ('SIM_OU_NAO', 'OPCAO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
                         });
 
                     b.HasData(
@@ -4223,16 +4225,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000001"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:COR_RACA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "COR_RACA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Cor ou raça que o candidato declara. É o dado de que depende a concorrência às vagas reservadas a pretos, pardos e indígenas.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Cor ou raça",
                             Origem = "DECLARADO",
@@ -4245,13 +4247,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000002"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:QUILOMBOLA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato se declara quilombola. É o dado de que depende a concorrência às vagas reservadas a quilombolas.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4266,13 +4268,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000003"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:PCD",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "PCD",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato declara ser pessoa com deficiência. É o dado de que depende a concorrência às vagas reservadas a pessoas com deficiência.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4287,20 +4289,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000004"),
                             Ativo = true,
                             Binding = "REGRA_DERIVACAO:EGRESSO_ESCOLA_PUBLICA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EGRESSO_ESCOLA_PUBLICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato cursou o ensino médio em escola pública. O sistema o calcula a partir das duas respostas sobre a origem escolar, pela regra da Lei nº 12.711/2012.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Egresso de escola pública",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
-                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"EM\",\"valor\":[\"SOMENTE_PUBLICA\",\"COMUNITARIA_CAMPO\",\"PUBLICA_E_COMUNITARIA\"]}],[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"IGUAL\",\"valor\":\"CERTIFICACAO\"},{\"fato\":\"FORMA_CONCLUSAO_EM\",\"operador\":\"EM\",\"valor\":[\"ENCCEJA\",\"PROFICIENCIA\",\"ENEM\"]}]]}]",
+                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"SOMENTE_PUBLICA\",\"COMUNITARIA_CAMPO\",\"PUBLICA_E_COMUNITARIA\"]}],[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"IGUAL\",\"valor\":\"CERTIFICACAO\"},{\"fato\":\"FORMA_CONCLUSAO_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"ENCCEJA\",\"PROFICIENCIA\",\"ENEM\"]}]]}]",
                             SemeadoPeloSistema = true
                         },
                         new
@@ -4308,7 +4310,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000005"),
                             Ativo = true,
                             Binding = "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RENDA_PER_CAPITA",
                             ComponenteExibicao = "MOEDA",
@@ -4320,7 +4322,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Renda familiar per capita",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4330,7 +4332,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000006"),
                             Ativo = true,
                             Binding = "ATRIBUTO_CANDIDATO:FAIXA_ETARIA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FAIXA_ETARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4341,7 +4343,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             FinalidadeTratamento = "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Idade",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4351,16 +4353,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000007"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:SEXO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "SEXO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Sexo biológico do candidato, conforme ele declara na inscrição.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Sexo biológico",
                             Origem = "DECLARADO",
@@ -4373,19 +4375,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000008"),
                             Ativo = true,
                             Binding = "REGRA_DERIVACAO:MODALIDADE",
-                            Cardinalidade = "MULTIVALORADO",
+                            Cardinalidade = "VARIOS_VALORES",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "MODALIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Modalidades de concorrência em que o candidato concorre, resultantes das regras de reserva de vagas do processo aplicadas às respostas dele.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             FonteValores = "MODALIDADE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Modalidade de concorrência",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4395,16 +4397,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000009"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
-                            Cardinalidade = "MULTIVALORADO",
+                            Cardinalidade = "VARIOS_VALORES",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "CONDICAO_ATENDIMENTO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Condições do candidato pelas quais ele pede atendimento especializado nas etapas do processo.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.",
-                            FonteValores = "PROCESSO",
+                            FonteValores = "OPCOES_DO_PROCESSO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Condição de atendimento especializado",
                             Origem = "DECLARADO",
@@ -4417,16 +4419,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000010"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NACIONALIDADE",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NACIONALIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Nacionalidade do candidato, que define os documentos de identificação que ele informa.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Nacionalidade",
                             Origem = "DECLARADO",
@@ -4439,16 +4441,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000011"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "TIPO_DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Tipo de deficiência do candidato com deficiência, entre os do cadastro de tipos de deficiência.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
-                            FonteValores = "TIPOS_DEFICIENCIA",
+                            FonteValores = "TIPOS_DE_DEFICIENCIA",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Tipo de deficiência",
                             Origem = "DECLARADO",
@@ -4461,13 +4463,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000012"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:BAIXA_RENDA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "BAIXA_RENDA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Autodeclaração de que a renda familiar per capita é igual ou inferior a um salário mínimo, feita na inscrição para as vagas reservadas por renda.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4482,13 +4484,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000013"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_PCD",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_PCD",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas reservadas a pessoas com deficiência.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4503,13 +4505,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000014"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_EP",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_EP",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas reservadas a egressos de escola pública.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4524,13 +4526,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000015"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_PPI",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_PPI",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas reservadas a pretos, pardos e indígenas.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4545,13 +4547,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000016"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_Q",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_Q",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas reservadas a quilombolas.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4566,13 +4568,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000017"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_RENDA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_RENDA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas reservadas por renda familiar per capita.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4587,7 +4589,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000018"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "ENDERECO_RESIDENCIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4608,7 +4610,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000019"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:DATA_NASCIMENTO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DATA_NASCIMENTO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4629,19 +4631,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000020"),
                             Ativo = true,
                             Binding = "ATRIBUTO_CANDIDATO:UF_RESIDENCIA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "UF_RESIDENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new[] { "ENDERECO_RESIDENCIAL" },
                             Descricao = "Unidade da Federação em que o candidato reside, derivada do endereço residencial.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
-                            FonteValores = "GEO_UF",
+                            FonteValores = "UNIDADES_FEDERATIVAS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "UF de residência",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4651,19 +4653,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000021"),
                             Ativo = true,
                             Binding = "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "MUNICIPIO_RESIDENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new[] { "ENDERECO_RESIDENCIAL" },
                             Descricao = "Município em que o candidato reside, derivado do endereço residencial.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
-                            FonteValores = "GEO_MUNICIPIO",
+                            FonteValores = "MUNICIPIOS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Município de residência",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4673,19 +4675,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000022"),
                             Ativo = true,
                             Binding = "CLASSIFICACAO:MODALIDADE_CONVOCACAO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "MODALIDADE_CONVOCACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Grupo de vagas em que o candidato foi convocado, conhecido só depois do resultado final. Os documentos da habilitação seguem a convocação.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             FonteValores = "MODALIDADE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Modalidade da convocação",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "RESULTADO_FINAL",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -4695,13 +4697,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000023"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:MAIOR_IDADE",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "MAIOR_IDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o membro da composição familiar é maior de idade.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "MEMBRO_GRUPO",
                             FinalidadeTratamento = "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4716,13 +4718,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000024"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:SEM_RENDA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "SEM_RENDA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o membro da composição familiar não tem renda.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "MEMBRO_GRUPO",
                             FinalidadeTratamento = "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4737,13 +4739,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000025"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:SOB_GUARDA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "SOB_GUARDA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o membro da composição familiar está sob guarda.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "MEMBRO_GRUPO",
                             FinalidadeTratamento = "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4758,16 +4760,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000026"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:PARENTESCO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "PARENTESCO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Parentesco do membro da composição familiar com o candidato.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "MEMBRO_GRUPO",
                             FinalidadeTratamento = "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Parentesco",
                             Origem = "DECLARADO",
@@ -4780,7 +4782,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000027"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4802,13 +4804,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000028"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:DESEJA_NOME_SOCIAL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DESEJA_NOME_SOCIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato deseja ser identificado pelo nome social no processo seletivo.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -4823,7 +4825,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000029"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME_SOCIAL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME_SOCIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4845,7 +4847,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000030"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CPF",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "CPF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4867,7 +4869,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000031"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RG_NUMERO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "RG_NUMERO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4889,16 +4891,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000032"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RG_ORGAO_EMISSOR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Órgão que emitiu o RG do candidato, entre os de uma lista fechada.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Órgão emissor do RG",
                             Origem = "DECLARADO",
@@ -4911,7 +4913,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000056"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RG_ORGAO_EMISSOR_OUTRO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4933,7 +4935,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000033"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RG_DATA_EMISSAO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RG_DATA_EMISSAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4954,7 +4956,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000051"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:PASSAPORTE_NUMERO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "PASSAPORTE_NUMERO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4976,7 +4978,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000052"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RNM_NUMERO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "RNM_NUMERO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -4998,7 +5000,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000036"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME_MAE",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME_MAE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -5020,7 +5022,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000037"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME_PAI",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME_PAI",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -5042,16 +5044,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000057"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:SEXO_CIVIL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "SEXO_CIVIL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Sexo que consta do registro civil do candidato.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Sexo civil",
                             Origem = "DECLARADO",
@@ -5064,16 +5066,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000058"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:IDENTIDADE_GENERO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "IDENTIDADE_GENERO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Identidade de gênero que o candidato declara.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Identidade de gênero",
                             Origem = "DECLARADO",
@@ -5086,16 +5088,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000059"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "ORIENTACAO_SEXUAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Orientação sexual que o candidato declara.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Orientação sexual",
                             Origem = "DECLARADO",
@@ -5108,16 +5110,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000038"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:ESTADO_CIVIL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "ESTADO_CIVIL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Estado civil do candidato.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Estado civil",
                             Origem = "DECLARADO",
@@ -5130,7 +5132,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000039"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:EMAIL",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EMAIL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -5152,7 +5154,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000040"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:TELEFONE",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "TELEFONE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -5174,16 +5176,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000041"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RG_UF",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RG_UF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Unidade da Federação que emitiu o RG do candidato.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GEO_UF",
+                            FonteValores = "UNIDADES_FEDERATIVAS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "UF de emissão do RG",
                             Origem = "DECLARADO",
@@ -5196,16 +5198,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000042"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NATURALIDADE_UF",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NATURALIDADE_UF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Unidade da Federação em que o candidato nasceu.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GEO_UF",
+                            FonteValores = "UNIDADES_FEDERATIVAS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "UF de nascimento",
                             Origem = "DECLARADO",
@@ -5218,16 +5220,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000043"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NATURALIDADE_MUNICIPIO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Município em que o candidato nasceu.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GEO_MUNICIPIO",
+                            FonteValores = "MUNICIPIOS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Município de nascimento",
                             Origem = "DECLARADO",
@@ -5240,16 +5242,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000044"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:TIPO_ENDERECO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "TIPO_ENDERECO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Tipo de localidade em que o candidato reside, perguntado antes do endereço.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Tipo de localidade",
                             Origem = "DECLARADO",
@@ -5262,7 +5264,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000045"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME_COMUNIDADE",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME_COMUNIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -5284,16 +5286,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000046"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FORMA_CONCLUSAO_EM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Forma de conclusão do ensino médio",
                             Origem = "DECLARADO",
@@ -5306,16 +5308,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000047"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:ONDE_CURSOU_EM",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "ONDE_CURSOU_EM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
-                            FonteValores = "GLOBAL",
+                            FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Onde cursou o ensino médio",
                             Origem = "DECLARADO",
@@ -5328,13 +5330,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000048"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se a renda familiar per capita do candidato é igual ou inferior a um salário mínimo e meio, como ele declara no pedido de isenção da taxa.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Análise do pedido de isenção da taxa de inscrição do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -5349,18 +5351,40 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000049"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:EDICAO_ENEM",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EDICAO_ENEM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Edição do ENEM cujas notas são importadas para a classificação do candidato.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Importação das notas do ENEM da edição escolhida pelo candidato, na classificação do processo seletivo.",
-                            FonteValores = "PROCESSO",
+                            FonteValores = "OPCOES_DO_PROCESSO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Edição do ENEM",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            SemeadoPeloSistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000061"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:CIDADE_DE_PROVA",
+                            Cardinalidade = "VALOR_UNICO",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "CIDADE_DE_PROVA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Descricao = "Cidade de prova escolhida pelo candidato entre as cidades de aplicação da prova.",
+                            Dominio = "OPCAO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Organização da aplicação da prova presencial do processo seletivo.",
+                            FonteValores = "MUNICIPIOS_PROVA_PRESENCIAL",
+                            HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS",
+                            Nome = "Cidade de prova",
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
@@ -5371,13 +5395,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000050"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:INDIGENA",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "INDIGENA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato se declara indígena. A condição exige declaração de pertencimento e passa só por análise de documentos.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -5392,18 +5416,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000054"),
                             Ativo = true,
                             Binding = "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "OPTOU_PELAS_COTAS_DA_LEI",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Se o candidato é egresso de escola pública e optou por concorrer às vagas de escola pública.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Optou pelas cotas da Lei nº 12.711/2012",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"EGRESSO_ESCOLA_PUBLICA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_EP\",\"operador\":\"IGUAL\",\"valor\":true}]]}]",
                             SemeadoPeloSistema = true
@@ -5413,13 +5437,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000055"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO",
-                            Cardinalidade = "ESCALAR",
+                            Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "CONCORRER_VAGA_POR_ACRESCIMO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Opção do candidato por concorrer às vagas por acréscimo para indígenas e quilombolas.",
-                            Dominio = "BOOLEANO",
+                            Dominio = "SIM_OU_NAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
@@ -5434,16 +5458,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000053"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
-                            Cardinalidade = "MULTIVALORADO",
+                            Cardinalidade = "VARIOS_VALORES",
                             ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "RECURSO_ACESSIBILIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Recursos de acessibilidade de que o candidato precisa nas etapas, entre os que o processo oferece.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.",
-                            FonteValores = "PROCESSO",
+                            FonteValores = "OPCOES_DO_PROCESSO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Recurso de acessibilidade",
                             Origem = "DECLARADO",
@@ -5456,19 +5480,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("fa700000-0000-7000-8000-000000000060"),
                             Ativo = true,
                             Binding = "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO",
-                            Cardinalidade = "MULTIVALORADO",
+                            Cardinalidade = "VARIOS_VALORES",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "MODALIDADE_SEGUNDA_OPCAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Descricao = "Modalidades de concorrência do candidato na segunda opção de curso, que tem distribuição de vagas própria.",
-                            Dominio = "CATEGORICO",
+                            Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
                             FonteValores = "MODALIDADE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Modalidade de concorrência da 2ª opção de curso",
-                            Origem = "DERIVADO",
+                            Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             SemeadoPeloSistema = true
@@ -6571,7 +6595,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("acao_quando_indeferido")
-                        .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICAR_AC, RECLASSIFICAR_REGRA_EDITAL.");
+                        .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL.");
 
                     b.Property<string>("BaseLegal")
                         .HasMaxLength(500)
@@ -6648,7 +6672,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("regra_remanejamento")
-                        .HasComment("Regra aplicada ao remanejamento das vagas, quando definida. Códigos: SEGUE_CASCATA, DESTINO_UNICO, CRUZADO.");
+                        .HasComment("Regra aplicada ao remanejamento das vagas, quando definida. Códigos: SEGUE_ORDEM_DE_REMANEJAMENTO, DESTINO_UNICO, CRUZADO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6673,7 +6697,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Modalidades de concorrência e suas regras de composição e remanejamento de vagas.");
 
-                            t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')");
+                            t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICA_AC', 'RECLASSIFICA_CONFORME_EDITAL')");
 
                             t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
 
@@ -6681,7 +6705,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
 
-                            t.HasCheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
+                            t.HasCheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_ORDEM_DE_REMANEJAMENTO', 'DESTINO_UNICO', 'CRUZADO')");
 
                             t.HasCheckConstraint("ck_modalidades_remanejamento_cruzado", "regra_remanejamento IS DISTINCT FROM 'CRUZADO' OR (remanejamento_par IS NOT NULL AND remanejamento_destino IS NULL)");
 
@@ -6715,8 +6739,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6729,7 +6753,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6742,7 +6766,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6755,7 +6779,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6767,8 +6791,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6781,7 +6805,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6794,7 +6818,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -6807,7 +6831,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
-                            RegraRemanejamento = "SEGUE_CASCATA"
+                            RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
                         {
@@ -7581,7 +7605,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
 
-                            t.HasCheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                            t.HasCheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_SEM_ENDERECO_IP', 'REGISTRO_COM_ENDERECO_IP')");
                         });
                 });
 
@@ -7645,7 +7669,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("versoes_do_termo_consentimento", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                            t.HasCheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_SEM_ENDERECO_IP', 'REGISTRO_COM_ENDERECO_IP')");
 
                             t.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
                         });
@@ -7790,7 +7814,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("forma")
-                        .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
+                        .HasComment("Forma do conceito: NUMERICO, medido na escala desta linha, ou POR_OPCOES, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7830,9 +7854,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
 
-                            t.HasCheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'CATEGORICO')");
+                            t.HasCheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'POR_OPCOES')");
 
-                            t.HasCheckConstraint("ck_tipos_conceito_parametros_da_forma", "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (forma = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+                            t.HasCheckConstraint("ck_tipos_conceito_parametros_da_forma", "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (forma = 'POR_OPCOES' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
                         });
                 });
 
@@ -10902,10 +10926,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
 
-                    b.Property<int>("Formato")
-                        .HasColumnType("integer")
+                    b.Property<string>("Formato")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
                         .HasColumnName("formato")
-                        .HasComment("O formato do arquivo (PDF, JPEG ou PNG), conferido contra a exigência no início do envio.");
+                        .HasComment("Formato do arquivo.");
 
                     b.Property<string>("HashSha256")
                         .HasMaxLength(64)
@@ -10917,8 +10943,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("inscricao_id");
 
-                    b.Property<int?>("MotivoDaRecusa")
-                        .HasColumnType("integer")
+                    b.Property<string>("MotivoDaRecusa")
+                        .HasMaxLength(38)
+                        .HasColumnType("character varying(38)")
                         .HasColumnName("motivo_da_recusa")
                         .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa.");
 
@@ -10939,10 +10966,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("publicacoes")
                         .HasComment("Quantas vezes o pedido de verificação foi publicado; o prazo da reconciliação dobra a cada uma.");
 
-                    b.Property<int>("Situacao")
-                        .HasColumnType("integer")
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)")
                         .HasColumnName("situacao")
-                        .HasComment("Pendente (0), em verificação (1), verificado (2), recusado (3) ou reenvio necessário (4). Só o verificado atende a exigência.");
+                        .HasComment("Situação da verificação; só o arquivo verificado atende à exigência.");
 
                     b.Property<long?>("TamanhoBytes")
                         .HasColumnType("bigint")
@@ -10969,11 +10998,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ProximaPublicacaoEm")
                         .HasDatabaseName("ix_arquivos_da_apresentacao_em_verificacao")
-                        .HasFilter("situacao = 1");
+                        .HasFilter("situacao = 'EM_VERIFICACAO'");
 
                     b.ToTable("arquivos_da_apresentacao", "selecao", t =>
                         {
                             t.HasComment("O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado pelo próprio armazenamento; o nome original do arquivo não é guardado.");
+
+                            t.HasCheckConstraint("ck_arquivos_da_apresentacao_formato", "formato IN ('PDF', 'JPEG', 'PNG')");
+
+                            t.HasCheckConstraint("ck_arquivos_da_apresentacao_motivo_da_recusa", "motivo_da_recusa IN ('TAMANHO_EXCEDIDO', 'FORMATO_NAO_CORRESPONDE', 'PDF_COM_SENHA', 'NAO_PASSOU_NA_VERIFICACAO_DE_SEGURANCA')");
+
+                            t.HasCheckConstraint("ck_arquivos_da_apresentacao_situacao", "situacao IN ('PENDENTE', 'EM_VERIFICACAO', 'VERIFICADO', 'RECUSADO', 'REENVIO_NECESSARIO')");
                         });
                 });
 
@@ -11170,10 +11205,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("oferta_curso_id")
                         .HasComment("A oferta de curso concorrida (origem da oferta no edital divulgado), guardada por valor e sem chave estrangeira: pertence à configuração do processo.");
 
-                    b.Property<short>("Situacao")
-                        .HasColumnType("smallint")
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)")
                         .HasColumnName("situacao")
-                        .HasComment("1 = apurada, 2 = inscrição sem linha no arquivo, 3 = inscrição com linhas em conflito. Só a apurada tem nota; a falta de nota nunca vira zero.");
+                        .HasComment("Códigos: APURADA, INSCRITO_SEM_LINHA, EM_CONFLITO.");
 
                     b.HasKey("Id")
                         .HasName("pk_avaliacoes_da_etapa");
@@ -11192,9 +11229,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
 
-                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 1) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
+                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 'APURADA') = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
 
-                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_situacao", "situacao IN (1, 2, 3)");
+                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_situacao", "situacao IN ('APURADA', 'INSCRITO_SEM_LINHA', 'EM_CONFLITO')");
                         });
                 });
 
@@ -11351,7 +11388,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("RegraDeComprovacaoId")
                         .HasDatabaseName("ix_bases_legais_da_comprovacao_regra_de_comprovacao_id");
 
-                    b.ToTable("bases_legais_da_comprovacao", "selecao");
+                    b.ToTable("bases_legais_da_comprovacao", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_bases_legais_da_comprovacao_abrangencia", "abrangencia IN ('FEDERAL', 'ESTADUAL', 'MUNICIPAL', 'INTERNA_NORMA', 'INTERNA_EDITAL')");
+
+                            t.HasCheckConstraint("ck_bases_legais_da_comprovacao_situacao", "situacao IN ('PENDENTE', 'RESOLVIDO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>
@@ -11695,7 +11737,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11799,7 +11841,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11852,7 +11894,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
 
                     b.Property<Guid>("RegraDerivacaoConfiguradaId")
                         .HasColumnType("uuid")
@@ -12294,12 +12336,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("created_at")
                         .HasComment("Data e hora de criação do registro.");
 
-                    b.Property<string>("Fundamentos")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("fundamentos")
-                        .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio somente quando cobra=false (issue #1310).");
-
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id")
@@ -12315,6 +12351,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("valor")
                         .HasComment("Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03).");
+
+                    b.PrimitiveCollection<string[]>("_fundamentos")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("fundamentos")
+                        .HasComment("Fundamentos de isenção.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_taxa_inscricao");
@@ -12488,13 +12530,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
 
-                    b.Property<int>("Finalidade")
-                        .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(19)
+                        .HasColumnType("character varying(19)")
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do documento. Códigos: DOCUMENTO_DO_EDITAL, ANEXO_DO_EDITAL, DOCUMENTO_DE_ATO.");
 
-                    b.Property<int>("Formato")
-                        .HasColumnType("integer")
-                        .HasColumnName("formato");
+                    b.Property<string>("Formato")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("formato")
+                        .HasComment("Formato do documento. Códigos: DOCX, ODT, PDF.");
 
                     b.Property<string>("HashSha256")
                         .HasMaxLength(64)
@@ -12522,9 +12570,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("status")
+                        .HasComment("Situação do envio. Códigos: PENDENTE, CONFIRMADO.");
 
                     b.Property<long?>("TamanhoBytes")
                         .HasColumnType("bigint")
@@ -12542,7 +12593,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsDescending(false, true, true)
                         .HasDatabaseName("ix_documentos_a_publicar_processo_recentes");
 
-                    b.ToTable("documentos_a_publicar", "selecao");
+                    b.ToTable("documentos_a_publicar", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_documentos_a_publicar_finalidade", "finalidade IN ('DOCUMENTO_DO_EDITAL', 'ANEXO_DO_EDITAL', 'DOCUMENTO_DE_ATO')");
+
+                            t.HasCheckConstraint("ck_documentos_a_publicar_formato", "formato IN ('DOCX', 'ODT', 'PDF')");
+
+                            t.HasCheckConstraint("ck_documentos_a_publicar_status", "status IN ('PENDENTE', 'CONFIRMADO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
@@ -12552,10 +12610,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("id")
                         .HasComment("Identificador da exigência de documento.");
 
-                    b.Property<int>("Aplicabilidade")
-                        .HasColumnType("integer")
+                    b.Property<string>("Aplicabilidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("aplicabilidade")
-                        .HasComment("A quem a exigência se aplica: 1 para todos os candidatos, 2 só para quem atende às condições da exigência.");
+                        .HasComment("A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. Códigos: GERAL, CONDICIONAL.");
 
                     b.Property<string>("Chave")
                         .IsRequired()
@@ -12575,7 +12635,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("consequencia_indeferimento")
-                        .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO; vazio quando a exigência não determina resultado.");
+                        .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, ABRE_PRAZO_PARA_REENVIO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12598,10 +12658,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("fatos_comprovados")
                         .HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
 
-                    b.Property<int?>("Finalidade")
-                        .HasColumnType("integer")
+                    b.Property<string>("Finalidade")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("finalidade")
-                        .HasComment("Formulário a que o documento pertence: 1 inscrição, 2 isenção da taxa, 3 habilitação; vazio quando a fase não responde formulário.");
+                        .HasComment("Formulário a que o documento pertence; vazio quando a fase não responde formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
@@ -12675,7 +12736,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
 
+                            t.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_consequencia_indeferimento", "consequencia_indeferimento IS NULL OR consequencia_indeferimento IN ('ELIMINA', 'RECLASSIFICA_AC', 'REMOVE_VANTAGEM', 'ABRE_PRAZO_PARA_REENVIO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_finalidade", "finalidade IS NULL OR finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+
                             t.HasCheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_prazo_emissao_efeito", "prazo_emissao_efeito IS NULL OR prazo_emissao_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_prazo_emissao_escolha", "prazo_emissao_escolha IS NULL OR prazo_emissao_escolha IN ('SEM_PRAZO', 'COM_PRAZO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_prazo_emissao_referencia_tipo", "prazo_emissao_referencia_tipo IS NULL OR prazo_emissao_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_prazo_emissao_unidade", "prazo_emissao_unidade IS NULL OR prazo_emissao_unidade IN ('DIAS', 'MESES', 'ANOS')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_validade_efeito", "validade_efeito IS NULL OR validade_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_validade_escolha", "validade_escolha IS NULL OR validade_escolha IN ('NAO_EXIGE_DOCUMENTO_VALIDO', 'EXIGE_DOCUMENTO_VALIDO')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_validade_referencia_tipo", "validade_referencia_tipo IS NULL OR validade_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
                         });
                 });
 
@@ -12737,6 +12820,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("documentos_exigidos_base_legal", "selecao", t =>
                         {
                             t.HasComment("Bases legais das exigências de documentos.");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_base_legal_abrangencia", "abrangencia IN ('FEDERAL', 'ESTADUAL', 'MUNICIPAL', 'INTERNA_NORMA', 'INTERNA_EDITAL')");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_base_legal_situacao", "situacao IN ('PENDENTE', 'RESOLVIDO')");
                         });
                 });
 
@@ -12751,9 +12838,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("aviso");
 
-                    b.Property<int>("Bloco")
-                        .HasColumnType("integer")
-                        .HasColumnName("bloco");
+                    b.Property<string>("Bloco")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("bloco")
+                        .HasComment("O bloco que o sistema monta; nulo na seção. Códigos: COMPROVACAO_DOCUMENTAL, MODALIDADES_CALCULADAS, REVISAO_E_ACEITE.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -12783,9 +12872,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("ordem");
 
-                    b.Property<int>("Tipo")
-                        .HasColumnType("integer")
-                        .HasColumnName("tipo");
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo")
+                        .HasComment("O que a etapa é. Códigos: SECAO, BLOCO.");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
@@ -12809,7 +12901,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_etapas_formulario_formulario_ordem");
 
-                    b.ToTable("etapas_formulario", "selecao");
+                    b.ToTable("etapas_formulario", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_etapas_formulario_bloco", "bloco IS NULL OR bloco IN ('COMPROVACAO_DOCUMENTAL', 'MODALIDADES_CALCULADAS', 'REVISAO_E_ACEITE')");
+
+                            t.HasCheckConstraint("ck_etapas_formulario_tipo", "tipo IN ('SECAO', 'BLOCO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
@@ -12819,10 +12916,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("id")
                         .HasComment("Identificador da etapa.");
 
-                    b.Property<int>("Carater")
-                        .HasColumnType("integer")
+                    b.Property<string>("Carater")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("carater")
-                        .HasComment("Finalidade da etapa na avaliação. Códigos: 0 (Nenhum), 1 (Classificatoria), 2 (Eliminatoria), 3 (Ambas).");
+                        .HasComment("Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas.");
 
                     b.Property<string>("Chave")
                         .IsRequired()
@@ -12854,10 +12953,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("fim")
                         .HasComment("Fim do período próprio da etapa; ausente quando usa o período da fase.");
 
-                    b.Property<int?>("FormaDeAvaliacao")
-                        .HasColumnType("integer")
+                    b.Property<string>("FormaDeAvaliacao")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("forma_de_avaliacao")
-                        .HasComment("Como a nota da etapa é obtida; ausente quando não definida. Códigos: 1 (Objetiva), 2 (Humana).");
+                        .HasComment("Como a nota da etapa é obtida: OBJETIVA ou HUMANA; ausente quando não definida.");
 
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
@@ -12935,7 +13035,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Etapas de avaliação e suas definições em cada processo seletivo.");
 
-                            t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
+                            t.HasCheckConstraint("ck_etapas_processo_carater_valido", "carater IN ('CLASSIFICATORIA', 'ELIMINATORIA', 'AMBAS')");
+
+                            t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN ('OBJETIVA', 'HUMANA')");
 
                             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
 
@@ -13022,10 +13124,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("ordem")
                         .HasComment("Posição da fase no cronograma.");
 
-                    b.Property<int>("OrigemData")
-                        .HasColumnType("integer")
+                    b.Property<string>("OrigemData")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("origem_data")
-                        .HasComment("Momento em que as datas da fase são definidas. Códigos: 0 (Nenhuma), 1 (NoEdital), 2 (NaExecucao).");
+                        .HasComment("Momento em que as datas da fase são definidas: NO_EDITAL ou NA_EXECUCAO.");
 
                     b.Property<bool>("PermiteComplementacao")
                         .HasColumnType("boolean")
@@ -13084,6 +13188,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Fases e períodos do cronograma de cada processo seletivo.");
 
+                            t.HasCheckConstraint("ck_fases_cronograma_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+
                             t.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
 
                             t.HasCheckConstraint("ck_fases_cronograma_unidade_completa", "(unidade_responsavel_origem_id IS NULL AND unidade_responsavel_codigo IS NULL AND unidade_responsavel_sigla IS NULL AND unidade_responsavel_nome IS NULL) OR (unidade_responsavel_origem_id IS NOT NULL AND unidade_responsavel_codigo IS NOT NULL AND unidade_responsavel_sigla IS NOT NULL AND unidade_responsavel_nome IS NOT NULL)");
@@ -13140,10 +13246,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("codigo_do_dado")
                         .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
-                    b.Property<int>("Finalidade")
-                        .HasColumnType("integer")
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
+                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
@@ -13186,10 +13294,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("ordem")
                         .HasComment("Posição de apresentação ou avaliação no conjunto.");
 
-                    b.Property<int>("OrigemValores")
-                        .HasColumnType("integer")
+                    b.Property<string>("OrigemValores")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("origem_valores")
-                        .HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) ou 3 unidades federativas.");
+                        .HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_BONUS, UNIDADES_FEDERATIVAS ou MUNICIPIOS_DA_PROVA_PRESENCIAL.");
 
                     b.Property<bool>("PedirConfirmacao")
                         .HasColumnType("boolean")
@@ -13219,7 +13329,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_renderizacao")
-                        .HasComment("Tipo de campo: NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+                        .HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13245,6 +13355,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("dados_dos_formularios", "selecao", t =>
                         {
                             t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
+
+                            t.HasCheckConstraint("ck_dados_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+
+                            t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", "origem_valores IN ('CATALOGO', 'OPCOES_DO_PROCESSO', 'MUNICIPIOS_DO_FADA', 'UNIDADES_FEDERATIVAS', 'MUNICIPIOS_DA_PROVA_PRESENCIAL')");
                         });
                 });
 
@@ -13263,9 +13377,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("fase_id");
 
-                    b.Property<int>("Finalidade")
-                        .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<string>("ModeloOrigemCodigo")
                         .HasMaxLength(60)
@@ -13303,7 +13420,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_formularios_processo_processo_finalidade");
 
-                    b.ToTable("formularios_processo", "selecao");
+                    b.ToTable("formularios_processo", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_formularios_processo_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GeracaoDeEnvioAoInep", b =>
@@ -13412,10 +13532,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("exibicao")
                         .HasComment("Condições para exibir o grupo, em JSON, quando houver.");
 
-                    b.Property<int>("Finalidade")
-                        .HasColumnType("integer")
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
+                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<bool>("IncluiCandidato")
                         .HasColumnType("boolean")
@@ -13470,6 +13592,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("grupos_dos_formularios", "selecao", t =>
                         {
                             t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
+
+                            t.HasCheckConstraint("ck_grupos_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
                         });
                 });
 
@@ -13655,10 +13779,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("nota")
                         .HasComment("Nota da área do ENEM, de zero a mil, com até três casas decimais.");
 
-                    b.Property<short>("Situacao")
-                        .HasColumnType("smallint")
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
                         .HasColumnName("situacao")
-                        .HasComment("1 = presente, 2 = ausente. Quem faltou tem nota zero, que não vale como nota obtida.");
+                        .HasComment("Códigos: PRESENTE, AUSENTE.");
 
                     b.HasKey("Id")
                         .HasName("pk_lancamentos_de_nota");
@@ -13679,7 +13805,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
 
-                            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", "situacao IN (1, 2)");
+                            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", "situacao IN ('PRESENTE', 'AUSENTE')");
                         });
                 });
 
@@ -13865,7 +13991,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("composicao_vagas")
-                        .HasComment("Composição das vagas: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE ou SUPLEMENTAR_AO_TOTAL.");
+                        .HasComment("Composição das vagas da modalidade. Códigos: RESTANTE_DAS_VAGAS_OFERTADAS, DENTRO_DA_RESERVA_LEGAL, RETIRADA_DE_OUTRA_MODALIDADE, SUPLEMENTAR_AO_TOTAL.");
 
                     b.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
                         .HasColumnType("uuid")
@@ -13893,7 +14019,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("natureza_legal")
-                        .HasComment("Natureza legal copiada do cadastro: COTA_RESERVADA, AMPLA ou ACAO_AFIRMATIVA.");
+                        .HasComment("Natureza legal da modalidade. Códigos: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
 
                     b.Property<int?>("QuantidadeDeclarada")
                         .HasColumnType("integer")
@@ -13906,11 +14032,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("regra_de_aplicabilidade")
                         .HasComment("Condições de aplicabilidade da modalidade, copiadas do cadastro em JSON.");
 
-                    b.Property<string>("RegraRemanejamentoCodigo")
+                    b.Property<string>("RegraRemanejamento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("regra_remanejamento")
-                        .HasComment("Código da regra de remanejamento, quando definida.");
+                        .HasComment("Regra de remanejamento da modalidade. Códigos: SEGUE_ORDEM_DE_REMANEJAMENTO, DESTINO_UNICO, CRUZADO.");
 
                     b.Property<string>("RemanejamentoDestino")
                         .HasMaxLength(60)
@@ -13944,6 +14070,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("modalidades_selecionadas", "selecao", t =>
                         {
                             t.HasComment("Modalidades escolhidas para a distribuição de vagas, com dados copiados do cadastro.");
+
+                            t.HasCheckConstraint("ck_modalidades_selecionadas_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
+
+                            t.HasCheckConstraint("ck_modalidades_selecionadas_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
+
+                            t.HasCheckConstraint("ck_modalidades_selecionadas_regra_remanejamento", "regra_remanejamento IN ('SEGUE_ORDEM_DE_REMANEJAMENTO', 'DESTINO_UNICO', 'CRUZADO')");
                         });
                 });
 
@@ -13966,9 +14098,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
 
-                    b.Property<int>("Formato")
-                        .HasColumnType("integer")
-                        .HasColumnName("formato");
+                    b.Property<string>("Formato")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("formato")
+                        .HasComment("Formato do documento. Códigos: DOCX, ODT, PDF.");
 
                     b.Property<string>("HashSha256")
                         .HasMaxLength(64)
@@ -13996,9 +14131,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("status")
+                        .HasComment("Situação do envio. Códigos: PENDENTE, CONFIRMADO.");
 
                     b.Property<long?>("TamanhoBytes")
                         .HasColumnType("bigint")
@@ -14015,7 +14153,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ProcessoSeletivoId")
                         .HasDatabaseName("ix_modelos_de_documento_processo");
 
-                    b.ToTable("modelos_de_documento", "selecao");
+                    b.ToTable("modelos_de_documento", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_modelos_de_documento_formato", "formato IN ('DOCX', 'ODT', 'PDF')");
+
+                            t.HasCheckConstraint("ck_modelos_de_documento_status", "status IN ('PENDENTE', 'CONFIRMADO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDeDecisao", b =>
@@ -14054,8 +14197,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Sentido")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
                         .HasColumnName("sentido");
 
                     b.Property<string>("Subclassificacao")
@@ -14151,10 +14294,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Sentido")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
                         .HasColumnName("sentido")
-                        .HasComment("Sentido da decisão associado ao motivo: Favoravel ou Desfavoravel.");
+                        .HasComment("Sentido da decisão associado ao motivo: FAVORAVEL ou DESFAVORAVEL.");
 
                     b.Property<string>("Subclassificacao")
                         .HasMaxLength(64)
@@ -14228,7 +14371,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("categoria")
-                        .HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), Atendimento ou Outros.");
+                        .HasComment("Categoria da regra: etapa, modalidade, desempate, documento, fada, atendimento ou outros.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14335,6 +14478,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("obrigatoriedades_legais", "selecao", t =>
                         {
                             t.HasComment("Regras legais aplicáveis à configuração de processos seletivos.");
+
+                            t.HasCheckConstraint("ck_obrigatoriedades_legais_categoria", "categoria IN ('ETAPA', 'MODALIDADE', 'DESEMPATE', 'DOCUMENTO', 'FADA', 'ATENDIMENTO', 'OUTROS')");
                         });
                 });
 
@@ -14421,10 +14566,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("sexo")
                         .HasComment("O sexo (F ou M) que o arquivo traz para a linha sem inscrito.");
 
-                    b.Property<short>("Tipo")
-                        .HasColumnType("smallint")
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)")
                         .HasColumnName("tipo")
-                        .HasComment("1 = inscrito sem linha, 2 = linha sem inscrito, 3 = conflito.");
+                        .HasComment("Códigos: INSCRITO_SEM_LINHA, LINHA_SEM_INSCRITO, CONFLITO.");
 
                     b.HasKey("Id")
                         .HasName("pk_ocorrencias_da_importacao");
@@ -14439,7 +14586,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("O que não virou nota ao importar um lote: inscrito sem linha, linha de CPF sem inscrito e inscrito em conflito. Nunca guarda o CPF.");
 
-                            t.HasCheckConstraint("ck_ocorrencias_da_importacao_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
+                            t.HasCheckConstraint("ck_ocorrencias_da_importacao_forma", "(tipo = 'INSCRITO_SEM_LINHA' AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 'LINHA_SEM_INSCRITO' AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 'CONFLITO' AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
                         });
                 });
 
@@ -14553,15 +14700,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("numero_de_opcoes_de_curso")
                         .HasComment("Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado.");
 
-                    b.Property<int>("OrigemCandidatos")
-                        .HasColumnType("integer")
+                    b.Property<string>("OrigemCandidatos")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("origem_candidatos")
-                        .HasComment("Origem dos candidatos: 1 = inscrição própria, 2 = importação externa.");
+                        .HasComment("Como os candidatos chegam ao processo: INSCRICAO_PROPRIA ou IMPORTACAO_EXTERNA.");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
                         .HasColumnName("status")
-                        .HasComment("Situação do processo: 1 = rascunho, 2 = publicado, 3 = encerrado, 4 = cancelado.");
+                        .HasComment("Situação do processo: rascunho, publicado, encerrado ou cancelado.");
 
                     b.Property<Guid>("UnidadeAdministradoraOrigemId")
                         .HasColumnType("uuid")
@@ -14586,6 +14737,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasComment("Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
 
                             t.HasCheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_processos_seletivos_origem_candidatos", "origem_candidatos IN ('INSCRICAO_PROPRIA', 'IMPORTACAO_EXTERNA')");
 
                             t.HasCheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
                         });
@@ -14615,10 +14768,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("etapa_processo_id")
                         .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
-                    b.Property<int?>("Papel")
-                        .HasColumnType("integer")
+                    b.Property<string>("Papel")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("papel")
-                        .HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).");
+                        .HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14637,6 +14791,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("publicacoes_previstas_da_etapa", "selecao", t =>
                         {
                             t.HasComment("Publicações previstas para uma etapa de avaliação.");
+
+                            t.HasCheckConstraint("ck_publicacoes_previstas_da_etapa_papel", "papel IS NULL OR papel IN ('PRELIMINAR', 'DEFINITIVO')");
                         });
                 });
 
@@ -14664,10 +14820,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("fase_cronograma_id")
                         .HasComment("Identificador do registro ao qual esta configuração pertence.");
 
-                    b.Property<int?>("Papel")
-                        .HasColumnType("integer")
+                    b.Property<string>("Papel")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("papel")
-                        .HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).");
+                        .HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14686,6 +14843,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("publicacoes_previstas_da_fase", "selecao", t =>
                         {
                             t.HasComment("Publicações previstas para uma fase do cronograma.");
+
+                            t.HasCheckConstraint("ck_publicacoes_previstas_da_fase_papel", "papel IS NULL OR papel IN ('PRELIMINAR', 'DEFINITIVO')");
                         });
                 });
 
@@ -14746,10 +14905,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("id")
                         .HasComment("Identificador do registro.");
 
-                    b.Property<int>("Ancora")
-                        .HasColumnType("integer")
+                    b.Property<string>("Ancora")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("evento_inicial_do_prazo")
-                        .HasComment("Evento que inicia o prazo: 1 (publicação do ato) ou 2 (ciência individual).");
+                        .HasComment("Evento que inicia o prazo: PUBLICACAO_DO_ATO ou CIENCIA_INDIVIDUAL.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14788,6 +14949,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("recursos_configurados_da_etapa", "selecao", t =>
                         {
                             t.HasComment("Configurações dos recursos de uma etapa de avaliação.");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_etapa_evento_inicial_do_prazo", "evento_inicial_do_prazo IN ('PUBLICACAO_DO_ATO', 'CIENCIA_INDIVIDUAL')");
                         });
                 });
 
@@ -14881,7 +15044,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(48)
                         .HasColumnType("character varying(48)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo da regra no catálogo.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14904,199 +15068,202 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_regras_do_catalogo_codigo_versao");
 
-                    b.ToTable("regras_do_catalogo", "selecao");
+                    b.ToTable("regras_do_catalogo", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_regras_do_catalogo_tipo", "tipo IN ('REGRA_CALCULO', 'REGRA_ARREDONDAMENTO', 'REGRA_ELIMINACAO', 'REGRA_FADA', 'CRITERIO_DESEMPATE', 'CRITERIO_REMANEJAMENTO', 'REGRA_ORDEM_ALOCACAO', 'REGRA_ELEGIBILIDADE', 'REGRA_DISTRIBUICAO_VAGAS', 'REGRA_AJUSTE_DISTRIBUICAO_VAGAS', 'REGRA_PRAZO_RECURSO', 'CONVENCAO_CONTAGEM_PRAZO', 'REGRA_APURACAO_AVALIACAO', 'REGRA_PROCEDIMENTO_RECURSO')");
+                        });
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000001"),
-                            BaseLegal = "Proposta CEPS + #56; média ponderada NOTA=Σ(nota×peso)/Σpeso",
-                            Codigo = "FORMULA-MEDIA-PONDERADA",
+                            BaseLegal = "Proposta da CEPS; média ponderada NOTA=Σ(nota×peso)/Σpeso",
+                            Codigo = "FORMULA_MEDIA_PONDERADA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"fonte_pesos\":[\"etapa\",\"peso_area_enem\"]}",
-                            Hash = "19e7eb71db8366ffffe886f8cf197182b770ad76cc9412e347de3fa4336fe2a4",
+                            Hash = "a9164af9b08bf28cce8a24d21b90681dad2453a958ee35385914a47bc89bc293",
                             Invariantes = "[\"divisor = Σ(peso das etapas classificatória∪ambas)\"]",
-                            Tipo = "regra_calculo",
+                            Tipo = "REGRA_CALCULO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000002"),
                             BaseLegal = "Portaria MEC 18/2012 art. 16 — SiSU federal (CEPS não calcula)",
-                            Codigo = "CLASSIFICACAO-IMPORTADA",
+                            Codigo = "CLASSIFICACAO_IMPORTADA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "9cfe24c7afcee8fc87daf9f9bbc8a7b80d3a1df7401e24000ef463f43a472782",
-                            Invariantes = "[\"sem cálculo local; classificação federal por importação do listão\"]",
-                            Tipo = "regra_calculo",
+                            Hash = "71f33ea317f8fbbac69ae71147dc8525d3b5f73a6d4533b291aafc273fab82a7",
+                            Invariantes = "[\"sem cálculo local; classificação federal por importação da lista de classificação\"]",
+                            Tipo = "REGRA_CALCULO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000003"),
-                            BaseLegal = "Decisão CEPS/PO (gaps 1.1) — truncamento 2 casas (default)",
-                            Codigo = "PRECISAO-TRUNCAR",
+                            BaseLegal = "Decisão da CEPS: truncamento em duas casas, padrão",
+                            Codigo = "PRECISAO_TRUNCAR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "3dab0ed7db55a129d6e166d7a29abf872a701ff63e7813e0f0443dc09ddd8525",
+                            Hash = "a054a8e682c4e045dc68d068f821d000bfbf8e5b8a8060a2913594aa9ff830bf",
                             Invariantes = "[\"trunca na N-ésima casa, sem arredondar\"]",
-                            Tipo = "regra_arredondamento",
+                            Tipo = "REGRA_ARREDONDAMENTO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000004"),
                             BaseLegal = "Reprodução de editais antigos (PSE/Convênios)",
-                            Codigo = "PRECISAO-ARREDONDAR-CIMA",
+                            Codigo = "PRECISAO_ARREDONDAR_A_PARTIR_DE_CINCO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "46da4f2755448705ee2105b6dd4f04b8ddac34ae54f1aeca92f62403031755de",
+                            Hash = "c12be79030a20b9d164d3cc5e6039d01b752467d68c80e55f1f91a4f22debcb5",
                             Invariantes = "[\"arredonda p/ cima se 3ª casa ≥ 5\"]",
-                            Tipo = "regra_arredondamento",
+                            Tipo = "REGRA_ARREDONDAMENTO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000005"),
                             BaseLegal = "Edital por processo (nota mínima eliminatória)",
-                            Codigo = "ELIM-NOTA-MINIMA-ETAPA",
+                            Codigo = "ELIMINACAO_NOTA_MINIMA_ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "617f3c2475f598a7b603575cc2b15015b3a6cc2da69e6b36f783e24a5f6ce5d3",
+                            Hash = "f476fd544e77be10c8c0260b5e187c9f6dcedd090edf853f5461db2e3357b350",
                             Invariantes = "[\"nota < mínima na etapa → elimina\"]",
-                            Tipo = "regra_eliminacao",
+                            Tipo = "REGRA_ELIMINACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000006"),
                             BaseLegal = "Res. 805/2024 art. 5º e Anexo I (ponto de corte por área do ENEM; Redação = 400)",
-                            Codigo = "ELIM-CORTE-EM-AREA",
+                            Codigo = "ELIMINACAO_CORTE_EM_AREA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "cd75036daf99e45f55147484860221ba8318552b5246b9f2c089457cd360d90f",
+                            Hash = "51f955af938952330e249040a54e61f311b217bb265cf9875e6f06dfeefc9813",
                             Invariantes = "[\"nota na área < mínimo → elimina\",\"no máximo um corte por área\"]",
-                            Tipo = "regra_eliminacao",
+                            Tipo = "REGRA_ELIMINACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000007"),
                             BaseLegal = "Res. 805/2024 art. 5º (zero em qualquer área elimina)",
-                            Codigo = "ELIM-ZERO-EM-AREA",
+                            Codigo = "ELIMINACAO_ZERO_EM_AREA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "d386e1056176df828c484483cf3d35fe751c39515a156ed4b27fec33ed304c42",
+                            Hash = "4b10a49dc7c34b3cafa6cd5e29b72bab6c7c8be9abb5731a2f02f800ecbb2137",
                             Invariantes = "[\"nota zero em qualquer área do ENEM → elimina\"]",
-                            Tipo = "regra_eliminacao",
+                            Tipo = "REGRA_ELIMINACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000029"),
                             BaseLegal = "Edital (falta em dia de prova do ENEM)",
-                            Codigo = "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM",
+                            Codigo = "ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "49975e49b82c3f823938d1c89f15eba026acd1ee00088688b0b5e54107acdc19",
+                            Hash = "b07e389dac687d427f988424b968626ec0b5876a7d5a04864b19bdbdfd2bf4d6",
                             Invariantes = "[\"falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina\",\"sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta\"]",
-                            Tipo = "regra_eliminacao",
+                            Tipo = "REGRA_ELIMINACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000032"),
                             BaseLegal = "Edital (eliminação do candidato que faltar à etapa)",
-                            Codigo = "ELIM-AUSENCIA-NA-ETAPA",
+                            Codigo = "ELIMINACAO_AUSENCIA_NA_ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "945883414c6954eaa0666665d9eb10997b2d73a4ae3c296a4662b4ea44d4c682",
+                            Hash = "eba80411a9fc04e4dc51d534fd5b50cc4ca9ea45a1e596ef74b32c5cd9a74f19",
                             Invariantes = "[\"falta à etapa referenciada → elimina\",\"não se aplica à etapa de nota do ENEM\"]",
-                            Tipo = "regra_eliminacao",
+                            Tipo = "REGRA_ELIMINACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000008"),
-                            BaseLegal = "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão",
-                            Codigo = "BONUS-MULTIPLICATIVO",
+                            BaseLegal = "Fator de Atenuação das Desigualdades de Acesso (FADA) multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão",
+                            Codigo = "FADA_MULTIPLICATIVO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "9a0a48e57734722f2165876fd9806b3e69098e6f5252c1d00221c3996ea123f3",
+                            Hash = "0c90842b3a25f21bd5e692d1e48f0a0ed697260a174f5ce40fe8f9344eea51c5",
                             Invariantes = "[\"nota final multiplicada pelo fator, após os pesos; teto opcional\"]",
-                            Tipo = "regra_bonus",
+                            Tipo = "REGRA_FADA",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000009"),
                             BaseLegal = "Lei 10.741/2003 art. 27 (Estatuto do Idoso)",
-                            Codigo = "DESEMPATE-IDOSO",
+                            Codigo = "DESEMPATE_IDOSO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "e2d5aa49299ca4d401b24c4581e2252ef72cd302b41f0e4f37f838d54ee7a323",
+                            Hash = "afadf230757d399e72dcd5fe93e89f4200cc9a93461896a7173d90c794736387",
                             Invariantes = "[\"prioriza quem tem idade igual ou superior à idade mínima declarada no critério\"]",
-                            Tipo = "criterio_desempate",
+                            Tipo = "CRITERIO_DESEMPATE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000010"),
                             BaseLegal = "Edital (ordem de desempate)",
-                            Codigo = "DESEMPATE-MAIOR-NOTA-ETAPA",
+                            Codigo = "DESEMPATE_MAIOR_NOTA_ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "1d007290da9c0dd131f4fad538138bcc830f49ec55b4a494160ba3cf1574d125",
+                            Hash = "b216a196dac420ae81e1a508f719d5f6ebd32e773abf97de30c17cce65dbe27a",
                             Invariantes = "[\"ordena por maior nota da etapa indicada\"]",
-                            Tipo = "criterio_desempate",
+                            Tipo = "CRITERIO_DESEMPATE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000011"),
                             BaseLegal = "Edital (maior idade cronológica)",
-                            Codigo = "DESEMPATE-MAIOR-IDADE",
+                            Codigo = "DESEMPATE_MAIOR_IDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "f3e04f52843030533e4c590764155903667ea05cc395a76655ddfd4967f9b4da",
+                            Hash = "3eabafb58968b36361f9779191bbaca906af27acb04d6b008b3141c99d7944b0",
                             Invariantes = "[\"ordena por data de nascimento (nascido mais cedo vence)\"]",
-                            Tipo = "criterio_desempate",
+                            Tipo = "CRITERIO_DESEMPATE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000012"),
-                            BaseLegal = "Edital (critério adicional via fato do candidato — ex.: professor rural)",
-                            Codigo = "DESEMPATE-PREDICADO-FATO",
+                            BaseLegal = "Edital (critério adicional por dado do candidato — ex.: professor rural)",
+                            Codigo = "DESEMPATE_CONDICAO_SOBRE_DADO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "5bdc4dc67c4cacc8550d0b521704de7adbb176eb1a4cfa62cc320b4354202312",
+                            Hash = "6da800f55f2e9634a0e8fe168e86deff6bcbc025539948aa492c4cdd0291ded2",
                             Invariantes = "[\"prioriza quem atende à condição sobre um dado do candidato; o dado deve estar cadastrado e ser solicitado\"]",
-                            Tipo = "criterio_desempate",
+                            Tipo = "CRITERIO_DESEMPATE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000028"),
                             BaseLegal = "Edital (ordem de desempate por nota de área do ENEM)",
-                            Codigo = "DESEMPATE-MAIOR-NOTA-AREA-ENEM",
+                            Codigo = "DESEMPATE_MAIOR_NOTA_AREA_ENEM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "fa627f59003c26fe75e0797380520790e2d5c85e2c410f9bba903ca1973fb7b4",
+                            Hash = "69acb10c7aff5f8ef0f8222e65454c4ea08f87620eea45515ccb8be7845d2257",
                             Invariantes = "[\"ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte\",\"cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área registrado na versão da classificação\",\"exige classificação baseada em ENEM, calculada pela média ponderada\"]",
-                            Tipo = "criterio_desempate",
+                            Tipo = "CRITERIO_DESEMPATE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000013"),
                             BaseLegal = "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª",
-                            Codigo = "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
+                            Codigo = "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "91d63d7b9ef29893df02e1e7d96261e1dae304926ce9fa44722f3fbd447dae29",
+                            Hash = "9b08764b327434401de25cf5be209f031cf5d7f9b2044cb43b5fd2d9ca95f15a",
                             Invariantes = "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]",
-                            Tipo = "regra_ordem_alocacao",
+                            Tipo = "REGRA_ORDEM_ALOCACAO",
                             Versao = "v1"
                         },
                         new
@@ -15106,249 +15273,249 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Codigo = "RENDA-PER-CAPITA-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "2460afa057fa3154dbd788f2b8ce3770fd1407be1dacff1afb25737548ea7439",
+                            Hash = "3300f396d5f99b257bb5ada2b919d7749e3ad9babc097f63d7c99e3ce641e99a",
                             Invariantes = "[\"média mensal da renda familiar bruta no período considerado, após exclusões, dividida pelo número de membros da família deve ser menor ou igual ao limite em salários mínimos multiplicado pelo valor de referência do salário mínimo\"]",
-                            Tipo = "regra_elegibilidade",
+                            Tipo = "REGRA_ELEGIBILIDADE",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000017"),
                             BaseLegal = "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — reserva limitada às vagas da oferta e prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)",
-                            Codigo = "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO",
+                            Codigo = "AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "efb16d5af5080f290a4f9c06ae05399f01879b38d8f57838a8f05b09a89a45cb",
+                            Hash = "6929fffe7c5164b48f8c05867dffe296c72baa029dfdbfafb873757dc85ad3fc",
                             Invariantes = "[\"a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"na falta de vagas, as modalidades de baixa renda têm prioridade sobre as demais (art. 11 §único II)\",\"a reserva pode superar o mínimo legal de 50%, reduzindo as vagas da ampla concorrência (art. 10 II)\",\"a distribuição em cursos com poucas vagas segue o limite previsto em lei, sem impedir a oferta\"]",
-                            Tipo = "regra_ajuste_distribuicao_vagas",
+                            Tipo = "REGRA_AJUSTE_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000018"),
                             BaseLegal = "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo, efeito suspensivo e guarda da vaga configuráveis por edital",
-                            Codigo = "RECURSO-PRAZO-ANCORADO-EM-ATO",
+                            Codigo = "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "7bf7efd0ce76abe370879d800b980b7894eadf27d2a96f22eba6066d6aa24206",
-                            Invariantes = "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
-                            Tipo = "regra_prazo_recurso",
+                            Hash = "cffb7c530a7664cfd44d4750daa2974a1800cf0b73ff084039f701e2b453b2dc",
+                            Invariantes = "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de uma publicação prevista preliminar da própria fase, identificada por ela e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
+                            Tipo = "REGRA_PRAZO_RECURSO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000019"),
                             BaseLegal = "Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 2º e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 21/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)",
-                            Codigo = "REMANEJ-CASCATA-LEI-12711",
+                            Codigo = "REMANEJAMENTO_ORDEM_LEI_12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"fallbackCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}",
-                            Hash = "06ec7280bb66571912648d9e6a1c6948745dc7b1dbdc30b3b43ad46c42deb04d",
+                            DeclaracaoDaRegra = "{\"destinoFinalCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}",
+                            Hash = "1dfcb5775510b09c7698fd743a8b7c2d01f4a6f13c3c34942034ffc6f407b6e5",
                             Invariantes = "[\"oito origens federais, ordem fixa por origem e ampla concorrência como modalidade final — a ordem é aplicada sem recálculo\"]",
-                            Tipo = "criterio_remanejamento",
+                            Tipo = "CRITERIO_REMANEJAMENTO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000020"),
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
-                            Codigo = "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL",
+                            Codigo = "CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "64e9c6c59b5d9a4e25a6c2fee46689fcc1c2c439aa9d33bd148dd8c74371a562",
+                            Hash = "ae056fe1463054f24b56768b6fbe43741f7834e2befbf9cea03f523f689f2057",
                             Invariantes = "[\"evento que inicia o prazo fora da meia-noite: a hora do evento que inicia o prazo não influencia o fechamento — o dia civil do evento que inicia o prazo é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"evento que inicia o prazo em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia do evento que inicia o prazo, útil ou não, nunca conta (1 dia útil iniciado domingo às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; o prazo termina à meia-noite que inicia o dia seguinte ao N-ésimo dia útil; esse instante não está incluído no prazo, conforme o fuso horário registrado na versão publicada\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia do evento que inicia o prazo e consome apenas horas situadas em dia útil (48h iniciadas sexta às 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]",
-                            Tipo = "algoritmo_contagem_prazo",
+                            Tipo = "CONVENCAO_CONTAGEM_PRAZO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000021"),
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
-                            Codigo = "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA",
+                            Codigo = "CONTAGEM_PRAZO_HORAS_UTEIS_DESDE_O_EVENTO_INICIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "1319f925c7af96f337a34e8b705c6a40bd6d124dcc9e7bf9f5f1fd2d43d18cc6",
+                            Hash = "c2d80dcb4e20f527568a740ce272c0cdab8b620ab21a8170a57160af5a001203",
                             Invariantes = "[\"evento que inicia o prazo fora da meia-noite: a contagem parte do instante exato do evento que inicia o prazo — a hora do fechamento deriva da hora do evento que inicia o prazo, sem deslocamento para o início de outro dia (48h iniciadas sexta às 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"evento que inicia o prazo em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h iniciadas domingo às 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde o evento que inicia o prazo; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha segunda 18h)\"]",
-                            Tipo = "algoritmo_contagem_prazo",
+                            Tipo = "CONVENCAO_CONTAGEM_PRAZO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000022"),
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
-                            Codigo = "CONTAGEM-PRAZO-AVANCA-DATA-UTIL",
+                            Codigo = "CONTAGEM_PRAZO_AVANCA_DATA_UTIL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "47fb025bcfef2680377b57369e6f7e6657677c707f4e8293b979f883401eb094",
+                            Hash = "2d4aa7f3c0a0712b1f56271b88de6590d2f29e5b96b78fecf66ddf2db3fac71c",
                             Invariantes = "[\"evento que inicia o prazo fora da meia-noite: mantém a hora do evento que inicia o prazo — a contagem parte do instante exato, sem deslocamento para o início de outro dia (1 dia útil iniciado sexta às 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)\",\"evento que inicia o prazo em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (evento que inicia o prazo no domingo às 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil\",\"em dias úteis: fecha na mesma hora do evento que inicia o prazo, N datas úteis adiante, pulando cada data não útil; se a hora do evento que inicia o prazo não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte\",\"em horas: consome horas situadas em dia útil desde o evento que inicia o prazo, sem deslocar o início — nesta unidade a convenção coincide com a contagem de horas úteis a partir do evento que inicia o prazo; a diferença entre as duas está apenas na contagem em dias úteis\"]",
-                            Tipo = "algoritmo_contagem_prazo",
+                            Tipo = "CONVENCAO_CONTAGEM_PRAZO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000023"),
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
-                            Codigo = "DISTRIBUICAO-LEI-12711",
+                            Codigo = "DISTRIBUICAO_LEI_12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}",
-                            Hash = "33b7cb12bd7e3d2d98615beddfbe345959e47a9e4f395e45ffd52ccd264cbc5e",
+                            Hash = "e732a36dfc79e64d7acc9afc13fccb09284ff567d5d50f2bc946b3a4d605249e",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]",
-                            Tipo = "regra_distribuicao_vagas",
+                            Tipo = "REGRA_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000027"),
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
-                            Codigo = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
+                            Codigo = "DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}",
-                            Hash = "5affac48aa7350844e3a1b633263e92e99d0df78de323aedcb065111500a7136",
+                            Hash = "49aceb36f02de21633ca0c49972a72c9dd8848d442e06af921ec160b8a227f33",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]",
-                            Tipo = "regra_distribuicao_vagas",
+                            Tipo = "REGRA_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000024"),
                             BaseLegal = "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)",
-                            Codigo = "DISTRIBUICAO-INSTITUCIONAL",
+                            Codigo = "DISTRIBUICAO_INSTITUCIONAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}",
-                            Hash = "54d9e00fc5545dec85005d7e131f2e9cdf4639fe8e89fe66c0b8883df663a93b",
+                            Hash = "9b2c768ff2a081cf5989ad584754a3a5b532e3e2f7c5168d81d28e7e354d1880",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"a soma das quantidades declaradas é o total publicado, e fecha no VO_base\",\"modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria\"]",
-                            Tipo = "regra_distribuicao_vagas",
+                            Tipo = "REGRA_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000025"),
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)",
-                            Codigo = "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA",
+                            Codigo = "DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}",
-                            Hash = "56f020a09b0cfd20d4d8f02e10449cfbf9438023b7ef2b4c37657e1977d6d518",
+                            Hash = "1c03f5d1c364ea02380c4239594082799c9b14d1366b9b81eff391fd3f136de0",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame exclusivo: não há ampla concorrência\",\"rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado\"]",
-                            Tipo = "regra_distribuicao_vagas",
+                            Tipo = "REGRA_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000026"),
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12",
-                            Codigo = "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
+                            Codigo = "DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}",
-                            Hash = "5c822c0575b947c2de85ca22099273db42460438e4bba276104a620960e8a145",
+                            Hash = "7af723f2b051599d743058d8a80a9cc8b78742c40e028c31c83d59b1faa89c20",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]",
-                            Tipo = "regra_distribuicao_vagas",
+                            Tipo = "REGRA_DISTRIBUICAO_VAGAS",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000030"),
                             BaseLegal = "Decisão institucional da Unifesspa",
-                            Codigo = "CONSOLIDACAO-AVALIACAO-UNICA",
+                            Codigo = "APURACAO_AVALIACAO_UNICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"CATEGORICO\",\"NUMERICO\"]}",
-                            Hash = "935e4e0fd8a06289cfa225672f293876c3ebb5058682583eaa81495f3d7190e5",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":1,\"formas_do_conceito\":[\"POR_OPCOES\",\"NUMERICO\"]}",
+                            Hash = "bae89bddb6e30db62a655bc0e7ebfc49435ca03154ff241b88d58fdc744c558a",
                             Invariantes = "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]",
-                            Tipo = "regra_consolidacao",
+                            Tipo = "REGRA_APURACAO_AVALIACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000031"),
                             BaseLegal = "UNI-REQ-0097 (dupla correção) e edital do processo seletivo",
-                            Codigo = "CONSOLIDACAO-CORRECAO-INDEPENDENTE",
+                            Codigo = "APURACAO_CORRECAO_INDEPENDENTE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"NUMERICO\"]}",
-                            Hash = "e258ddb6a1360104b1fdc3163397608c107452835db87582ec89d1bb2145c7ad",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"formas_do_conceito\":[\"NUMERICO\"]}",
+                            Hash = "0511a574005e32f27cb9b54c78d31e5d2474d6d8916f7ac06d918d7b9377e85a",
                             Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
-                            Tipo = "regra_consolidacao",
+                            Tipo = "REGRA_APURACAO_AVALIACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000037"),
                             BaseLegal = "Decisão institucional da Unifesspa",
-                            Codigo = "CONSOLIDACAO-CONCEITO-UNANIMIDADE",
+                            Codigo = "APURACAO_CONCEITO_UNANIMIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
-                            Hash = "e741f7fefd96b00ed43aba1fc6d06827139231d980b84e8b30ce26fd5cf33482",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":2,\"criterio\":\"UNANIMIDADE\",\"formas_do_conceito\":[\"POR_OPCOES\"],\"quando_nao_consolida\":\"DECISAO_DA_BANCA\"}",
+                            Hash = "0dcc0358c55a8deeb5c42c53dd51dd3e00482c2a3d2fbe58af8ea74f95c71a5d",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
-                            Tipo = "regra_consolidacao",
+                            Tipo = "REGRA_APURACAO_AVALIACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000038"),
                             BaseLegal = "Decisão institucional da Unifesspa",
-                            Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES",
+                            Codigo = "APURACAO_CONCEITO_MAIORIA_SIMPLES",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "99b97cf62ff6bed01054a52a2de44cbc3527020e58ccb4f803d42dbe2ad3b59d",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"MAIORIA_SIMPLES\",\"formas_do_conceito\":[\"POR_OPCOES\"],\"quando_nao_consolida\":\"NOVO_CORRETOR\"}",
+                            Hash = "c1800bc344c0b04e867953d2b203e355b7aa2fd758ce531dc17c6a9c01559d33",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
-                            Tipo = "regra_consolidacao",
+                            Tipo = "REGRA_APURACAO_AVALIACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000039"),
                             BaseLegal = "Decisão institucional da Unifesspa",
-                            Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA",
+                            Codigo = "APURACAO_CONCEITO_MAIORIA_ABSOLUTA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"CATEGORICO\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "f5e600cc2b88671b1b1c8ee0a0c696ef7bd654dce74ab6eb24abdda9d4168aaf",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"MAIORIA_ABSOLUTA\",\"formas_do_conceito\":[\"POR_OPCOES\"],\"quando_nao_consolida\":\"NOVO_CORRETOR\"}",
+                            Hash = "9e6971981925fa1f297f2d6cce0e0599ae43b54bc4fb5127497920dd929dc726",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
-                            Tipo = "regra_consolidacao",
+                            Tipo = "REGRA_APURACAO_AVALIACAO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000033"),
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)",
-                            Codigo = "PROCEDIMENTO-RECURSO-RECORRECAO",
+                            Codigo = "PROCEDIMENTO_RECURSO_RECORRECAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"revisa\":\"desempenho avaliado por pessoas\",\"evidencia\":\"nova correção cega do material\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa\"}",
-                            Hash = "4ce312b49c32f152fc2c73dda209a24cffe2a048f5e6a5c299b2dade0e088c0b",
-                            Invariantes = "[\"a revisão é uma nova correção do material, feita sem conhecer a nota anterior\",\"os corretores são os da regra de consolidação da etapa\"]",
-                            Tipo = "regra_procedimento_recurso",
+                            Hash = "0b214cc0b0bd7610fd7e2ddf03f1e4fb8c7ac13d90cb780d8bf4982ee623a738",
+                            Invariantes = "[\"a revisão é uma nova correção do material, feita sem conhecer a nota anterior\",\"os corretores são os da apuração da etapa\"]",
+                            Tipo = "REGRA_PROCEDIMENTO_RECURSO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000034"),
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
-                            Codigo = "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                            Codigo = "PROCEDIMENTO_RECURSO_CONFERENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"revisa\":\"comprovação de um fato e aplicação da pontuação prevista por tabela\",\"evidencia\":\"o documento e a tabela\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana\"}",
-                            Hash = "2cfc01f124953d982ba4fbc6dc749ea2e6b0d470242ccd149354657f1b7ad073",
-                            Invariantes = "[\"a revisão confere o documento contra a tabela do edital\",\"há corretores só quando a etapa tem consolidação humana; do contrário, nenhum\"]",
-                            Tipo = "regra_procedimento_recurso",
+                            Hash = "3ecbeea4bf0ef7dc09f58ed5fa4077f489083b81aee587a76a02cf56c0341c28",
+                            Invariantes = "[\"a revisão confere o documento contra a tabela do edital\",\"há corretores só quando a etapa tem apuração; do contrário, nenhum\"]",
+                            Tipo = "REGRA_PROCEDIMENTO_RECURSO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000035"),
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0281",
-                            Codigo = "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
+                            Codigo = "PROCEDIMENTO_RECURSO_CORRECAO_MATERIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"revisa\":\"erro de registro (transcrição, soma, presença)\",\"evidencia\":\"o registro e a evidência do erro\",\"corretores\":\"nenhum\"}",
-                            Hash = "6878bc5b9e296e71658e263ecd30a03bb2bfa32bb6b2d225b3dd2b6169a645dc",
-                            Invariantes = "[\"a correção tem sempre um motivo da lista da etapa, sem a opção outro\",\"não é saída genérica para o que a derivação da nota não explica\"]",
-                            Tipo = "regra_procedimento_recurso",
+                            Hash = "68185a7b9aafdacfbcfc2b431bf672d3d0c12bb84dfb300d3671ca05e10fec82",
+                            Invariantes = "[\"a correção tem sempre um motivo da lista da etapa, sem a opção outro\",\"não é saída genérica para o que o cálculo da nota não explica\"]",
+                            Tipo = "REGRA_PROCEDIMENTO_RECURSO",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000036"),
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
-                            Codigo = "PROCEDIMENTO-RECURSO-RECALCULO",
+                            Codigo = "PROCEDIMENTO_RECURSO_RECALCULO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{\"revisa\":\"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)\",\"evidencia\":\"os dados registrados na versão publicada e o boletim\",\"corretores\":\"nenhum\"}",
-                            Hash = "3037fb8056047033781e438511c135bdad9bd37aef8d20303a53e138142a6032",
+                            Hash = "4b79e746dda9247af7589a48e6908a4e2fd333da257fcb4015f3fafc6467f4d2",
                             Invariantes = "[\"o recálculo parte dos dados registrados na versão publicada, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]",
-                            Tipo = "regra_procedimento_recurso",
+                            Tipo = "REGRA_PROCEDIMENTO_RECURSO",
                             Versao = "v1"
                         });
                 });
@@ -15422,7 +15589,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_regras_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
 
-                            t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
 
                             t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
 
@@ -15586,9 +15753,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("exibicao");
 
-                    b.Property<int>("Finalidade")
-                        .HasColumnType("integer")
-                        .HasColumnName("finalidade");
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("finalidade")
+                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<string>("FormaAceite")
                         .IsRequired()
@@ -15661,7 +15831,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_ordem");
 
-                    b.ToTable("termos_exigidos_formulario", "selecao");
+                    b.ToTable("termos_exigidos_formulario", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_termos_exigidos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.VagaOfertada", b =>
@@ -15947,10 +16120,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("ocorrencia_id")
                         .HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
 
-                    b.Property<int>("Origem")
-                        .HasColumnType("integer")
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
                         .HasColumnName("origem")
-                        .HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
+                        .HasComment("Origem da resposta.");
 
                     b.Property<string>("Procedencia")
                         .HasColumnType("text")
@@ -15978,7 +16153,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("A resposta de um campo de endereço da inscrição, um componente por coluna.");
 
-                            t.HasCheckConstraint("ck_enderecos_da_inscricao_origem", "origem IN (1, 2)");
+                            t.HasCheckConstraint("ck_enderecos_da_inscricao_origem", "origem IN ('INFORMADA', 'CALCULADA')");
                         });
                 });
 
@@ -16054,9 +16229,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("revisao");
 
-                    b.Property<int>("Situacao")
-                        .HasColumnType("integer")
-                        .HasColumnName("situacao");
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("situacao")
+                        .HasComment("Situação da inscrição.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -16080,11 +16258,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ProcessoSeletivoId", "CpfIndice")
                         .IsUnique()
                         .HasDatabaseName("ux_inscricoes_processo_cpf_indice")
-                        .HasFilter("situacao <> 3");
+                        .HasFilter("situacao <> 'CANCELADA'");
 
                     b.ToTable("inscricoes", "selecao", t =>
                         {
                             t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
+
+                            t.HasCheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'SUBMETIDA', 'CANCELADA')");
                         });
                 });
 
@@ -16150,20 +16330,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("ocorrencia_id")
                         .HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
 
-                    b.Property<int>("Origem")
-                        .HasColumnType("integer")
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
                         .HasColumnName("origem")
-                        .HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
+                        .HasComment("Origem da resposta.");
 
                     b.Property<int?>("Posicao")
                         .HasColumnType("integer")
                         .HasColumnName("posicao")
                         .HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
 
-                    b.Property<int>("Tipo")
-                        .HasColumnType("integer")
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo do valor: 1 booleano, 2 número, 3 código, 4 texto, 5 data ou 7 município.");
+                        .HasComment("Tipo do valor da resposta.");
 
                     b.Property<bool?>("ValorBooleano")
                         .HasColumnType("boolean")
@@ -16231,11 +16415,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("respostas_da_inscricao", "selecao", t =>
                         {
-                            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou derivado de outra resposta.");
+                            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou calculado a partir de outra resposta.");
 
-                            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
+                            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN ('INFORMADA', 'CALCULADA')");
 
-                            t.HasCheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN (1, 2, 3, 4, 5, 7) AND (valor_cifrado IS NOT NULL OR (tipo = 1 AND valor_booleano IS NOT NULL) OR (tipo = 2 AND valor_numero IS NOT NULL) OR (tipo = 3 AND valor_codigo IS NOT NULL) OR (tipo = 4 AND valor_texto IS NOT NULL) OR (tipo = 5 AND valor_data IS NOT NULL) OR (tipo = 7 AND valor_codigo IS NOT NULL)) AND (valor_rotulo IS NULL OR (tipo = 7 AND valor_codigo IS NOT NULL))");
+                            t.HasCheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN ('SIM_OU_NAO', 'NUMERO', 'OPCAO', 'TEXTO', 'DATA', 'MUNICIPIO') AND (valor_cifrado IS NOT NULL OR (tipo = 'SIM_OU_NAO' AND valor_booleano IS NOT NULL) OR (tipo = 'NUMERO' AND valor_numero IS NOT NULL) OR (tipo = 'OPCAO' AND valor_codigo IS NOT NULL) OR (tipo = 'TEXTO' AND valor_texto IS NOT NULL) OR (tipo = 'DATA' AND valor_data IS NOT NULL) OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL)) AND (valor_rotulo IS NULL OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL))");
                         });
                 });
 
@@ -17986,6 +18170,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000049"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000061"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
                                     ManifestacoesNoCiclo = 0,
@@ -20590,10 +20782,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .HasColumnType("uuid")
                                         .HasColumnName("id");
 
-                                    b2.Property<int>("Formato")
-                                        .HasColumnType("integer")
+                                    b2.Property<string>("Formato")
+                                        .IsRequired()
+                                        .HasMaxLength(4)
+                                        .HasColumnType("character varying(4)")
                                         .HasColumnName("modelo_formato")
-                                        .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência: 1 DOCX, 2 ODT.");
+                                        .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: DOCX, ODT, PDF.");
 
                                     b2.Property<string>("HashSha256")
                                         .IsRequired()
@@ -21642,13 +21836,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("efeito_suspensivo")
-                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo.");
+                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("guarda_da_vaga")
-                                .HasComment("Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda.");
+                                .HasComment("Guarda da vaga durante o recurso: ATE_O_RESULTADO_DEFINITIVO ou NAO_GUARDA.");
 
                             b1.HasKey("RecursoDaEtapaId");
 
@@ -21668,7 +21862,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
-                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
+                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -21695,7 +21889,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_unidade")
-                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
+                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -21799,8 +21993,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
-                            b1.Property<int?>("Criterio")
-                                .HasColumnType("integer")
+                            b1.Property<string>("Criterio")
+                                .HasMaxLength(18)
+                                .HasColumnType("character varying(18)")
                                 .HasColumnName("criterio_de_distincao");
 
                             b1.Property<DateOnly?>("DataReferencia")
@@ -21906,13 +22101,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("efeito_suspensivo")
-                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: semEfeitoSuspensivo.");
+                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("guarda_da_vaga")
-                                .HasComment("Guarda da vaga durante o recurso: ateOResultadoDefinitivo ou naoGuarda.");
+                                .HasComment("Guarda da vaga durante o recurso: ATE_O_RESULTADO_DEFINITIVO ou NAO_GUARDA.");
 
                             b1.HasKey("RegraRecursoFaseId");
 
@@ -21932,7 +22127,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
-                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
+                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -21959,7 +22154,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_unidade")
-                                        .HasComment("Unidade do prazo: horas, dias ou diasUteis.");
+                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)

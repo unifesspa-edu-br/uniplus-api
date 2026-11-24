@@ -76,7 +76,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
         DocumentoExigidoDeclarado declarado = new(
             new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
-            new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FinalidadeDoToken(documentoInformado.Finalidade())),
+            new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FinalidadeDoCodigo(documentoInformado.Finalidade())),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
             new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.Consequencia(), basesLegais),
             new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),

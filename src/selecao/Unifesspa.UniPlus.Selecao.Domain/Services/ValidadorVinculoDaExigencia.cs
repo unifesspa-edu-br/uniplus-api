@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -103,13 +104,13 @@ public static class ValidadorVinculoDaExigencia
                 ? null
                 : new DomainError(
                     DocumentoExigidoErrorCodes.FinalidadeObrigatoria,
-                    $"A fase '{fase.Codigo}' responde o formulário de {string.Join(" e de ", atendidas.Select(EstruturaFormulario.ParaToken))}; informe a que formulário o documento pertence.");
+                    $"A fase '{fase.Codigo}' responde o formulário de {string.Join(" e de ", atendidas.Select(static a => a.Codigo()))}; informe a que formulário o documento pertence.");
         }
 
         return atendidas.Contains(declarada)
             ? null
             : new DomainError(
                 DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade,
-                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(declarada)}.");
+                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {declarada.Codigo()}.");
     }
 }

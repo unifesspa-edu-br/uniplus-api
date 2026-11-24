@@ -17,10 +17,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class PredicadoDnfJson
 {
-    public const string ObrigatoriedadeSempre = "SEMPRE";
-    public const string ObrigatoriedadeNunca = "NUNCA";
-    public const string ObrigatoriedadeQuando = "QUANDO";
-
     public const string FormaInvalida = "PredicadoDnf.FormaJsonInvalida";
 
     public static JsonArray ParaJson(PredicadoDnf predicado)
@@ -131,7 +127,7 @@ public static class PredicadoDnfJson
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         return new JsonObject
         {
-            ["tipo"] = ParaToken(obrigatoriedade.Tipo),
+            ["tipo"] = obrigatoriedade.Tipo.Codigo(),
             ["predicado"] = obrigatoriedade.Predicado is { } predicado ? ParaJson(predicado) : null,
         };
     }
@@ -147,28 +143,27 @@ public static class PredicadoDnfJson
         return LerObrigatoriedade(tipo.GetString(), json);
     }
 
-    private static Result<Obrigatoriedade> LerObrigatoriedade(string? token, JsonElement json)
+    private static Result<Obrigatoriedade> LerObrigatoriedade(string? codigo, JsonElement json)
     {
         json.TryGetProperty("predicado", out JsonElement predicado);
         bool temPredicado = predicado.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null);
-        if (token == ObrigatoriedadeQuando && temPredicado)
+        bool conhecido = CatalogoDe<TipoObrigatoriedade>.TentarObter(codigo, out TipoObrigatoriedade tipo);
+        if (conhecido && tipo == TipoObrigatoriedade.Quando && temPredicado)
         {
             return ObrigatoriedadeCondicional(predicado);
         }
 
-        return (token, temPredicado) switch
-        {
-            (ObrigatoriedadeSempre, false) => Result<Obrigatoriedade>.Success(Obrigatoriedade.Sempre),
-            (ObrigatoriedadeNunca, false) => Result<Obrigatoriedade>.Success(Obrigatoriedade.Nunca),
-            _ => Result<Obrigatoriedade>.Failure(Erro("Só a obrigatoriedade QUANDO tem predicado, e ela sempre o tem.")),
-        };
+        Obrigatoriedade? forma = conhecido && !temPredicado ? Obrigatoriedade.DaForma(tipo, null) : null;
+        return forma is null
+            ? Result<Obrigatoriedade>.Failure(Erro("Só a obrigatoriedade QUANDO tem predicado, e ela sempre o tem."))
+            : Result<Obrigatoriedade>.Success(forma);
     }
 
     private static Result<Obrigatoriedade> ObrigatoriedadeCondicional(JsonElement predicado)
     {
         Result<PredicadoDnf> lido = DeJson(predicado);
         return lido.IsSuccess
-            ? Result<Obrigatoriedade>.Success(Obrigatoriedade.Quando(lido.Value!))
+            ? Result<Obrigatoriedade>.Success(Obrigatoriedade.DaForma(TipoObrigatoriedade.Quando, lido.Value)!)
             : Result<Obrigatoriedade>.Failure(lido.Error!);
     }
 
@@ -208,24 +203,6 @@ public static class PredicadoDnfJson
             ? Result<Impedimento?>.Success(new Impedimento(lido.Value!, mensagem))
             : Result<Impedimento?>.Failure(lido.Error!);
     }
-
-    /// <summary>O token do tipo de obrigatoriedade; o sentinela não tem token.</summary>
-    public static string ParaToken(TipoObrigatoriedade tipo) => tipo switch
-    {
-        TipoObrigatoriedade.Sempre => ObrigatoriedadeSempre,
-        TipoObrigatoriedade.Nunca => ObrigatoriedadeNunca,
-        TipoObrigatoriedade.Quando => ObrigatoriedadeQuando,
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de obrigatoriedade sem token."),
-    };
-
-    /// <summary>O tipo de obrigatoriedade do token; token desconhecido é o sentinela.</summary>
-    public static TipoObrigatoriedade TipoDoToken(string? token) => token switch
-    {
-        ObrigatoriedadeSempre => TipoObrigatoriedade.Sempre,
-        ObrigatoriedadeNunca => TipoObrigatoriedade.Nunca,
-        ObrigatoriedadeQuando => TipoObrigatoriedade.Quando,
-        _ => TipoObrigatoriedade.Nenhuma,
-    };
 
     private static Result<PredicadoDnf> Falha(string mensagem, string campo = "") =>
         Result<PredicadoDnf>.ValidationFailure([new FieldError(campo, Erro(mensagem))]);

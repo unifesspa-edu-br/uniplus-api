@@ -15,8 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal sealed record DocumentoExigidoDeTeste
 {
-    private static readonly FormatosPermitidos QualquerFormato = FormatosPermitidos.Criar(true, null).Value!;
-
     private static readonly ChavesEmUso ChavesFormadas = new();
 
     private Guid FaseId { get; init; } = Guid.CreateVersion7();
@@ -45,7 +43,7 @@ internal sealed record DocumentoExigidoDeTeste
 
     private IReadOnlyList<DocumentoExigidoBaseLegal> BasesLegais { get; init; } = [];
 
-    private FormatosPermitidos Formatos { get; init; } = QualquerFormato;
+    private FormatosPermitidos Formatos { get; init; } = FormatosPermitidos.Criar(true, null).Value!;
 
     private int? TamanhoMaximoBytes { get; init; }
 

@@ -46,7 +46,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         RegraRemanejamentoModalidade? regraRemanejamento = null,
         int? quantidadeDeclarada = null,
         PredicadoDnf? regraDeAplicabilidade = null) =>
-        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { Descricao = $"Modalidade {codigo}", ComposicaoOrigemCodigo = composicaoOrigemCodigo, RegraRemanejamento = regraRemanejamento, RegraDeAplicabilidade = regraDeAplicabilidade ?? PredicadoDnf.SemClausula, AcaoQuandoIndeferido = "RECLASSIFICA_AC" }, quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { Descricao = $"Modalidade {codigo}", ComposicaoOrigemCodigo = composicaoOrigemCodigo, RegraRemanejamento = regraRemanejamento, RegraDeAplicabilidade = regraDeAplicabilidade ?? PredicadoDnf.SemClausula }, quantidadeDeclarada).Value!;
 
     private static readonly PredicadoDnf RegraDaReservaPcd = PredicadoDnf.CriarDeCondicoesAgrupadas(
     [

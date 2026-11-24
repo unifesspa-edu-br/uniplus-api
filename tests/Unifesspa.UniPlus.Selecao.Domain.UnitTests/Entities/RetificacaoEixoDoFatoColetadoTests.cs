@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class RetificacaoEixoDoFatoColetadoTests
 {
-    private static readonly EixosDoMetadadoCongelado Booleano = new("BOOLEANO", "ESCALAR", "INSCRICAO");
-    private static readonly EixosDoMetadadoCongelado Categorico = new("CATEGORICO", "ESCALAR", "INSCRICAO");
+    private static readonly EixosDoMetadadoCongelado Booleano = new(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, "INSCRICAO");
+    private static readonly EixosDoMetadadoCongelado Categorico = new(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, "INSCRICAO");
 
     private static FatosDasVersoesPublicadas VersaoPublicadaComTemRendaEHaMembro() => FatosDasVersoesPublicadas.De(
         [VersoesPublicadasDeTeste.Versao([], [Fato("TEM_RENDA", 0)])],

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitadoDeTeste;
 
@@ -16,7 +17,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     [Fact(DisplayName = "Retificar recusa o fato citado por condição de documento cujo domínio o catálogo trocou desde a versão publicada")]
     public async Task Retificar_DominioDoFatoCitadoTrocado_Recusa()
     {
-        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO" });
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioCongelado = TipoDoDado.Opcao });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
@@ -29,7 +30,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     public async Task Retificar_FatoReclassificadoEFatoComDominioTrocado_RecusaOsDoisNaOrdem()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
-            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", ComItemNovo = true, ItemNovoReclassificadoNoCatalogo = true });
+            new SituacaoDoFatoCitado { DominioCongelado = TipoDoDado.Opcao, ComItemNovo = true, ItemNovoReclassificadoNoCatalogo = true });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
@@ -43,7 +44,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     public async Task Retificar_FatoCitadoAusenteEFatoComDominioTrocado_RecusaOsDoisNaOrdem()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
-            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", ExigenciaCitaFatoAusenteDoCatalogo = true });
+            new SituacaoDoFatoCitado { DominioCongelado = TipoDoDado.Opcao, ExigenciaCitaFatoAusenteDoCatalogo = true });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
@@ -57,7 +58,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     public async Task Retificar_FatoNaoColetavelComDominioTrocado_RecusaSoAColetabilidade()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
-            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", FatoCitadoReclassificadoNoCatalogo = true });
+            new SituacaoDoFatoCitado { DominioCongelado = TipoDoDado.Opcao, FatoCitadoReclassificadoNoCatalogo = true });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
@@ -100,7 +101,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     [Fact(DisplayName = "Retificar recusa o fato já coletado cujo campo ficou incoerente com o catálogo, orientando desfazer a correção")]
     public async Task Retificar_FatoJaColetadoIncoerenteComOCatalogo_Recusa()
     {
-        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioNoCatalogo = "CATEGORICO" });
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioNoCatalogo = TipoDoDado.Opcao });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 

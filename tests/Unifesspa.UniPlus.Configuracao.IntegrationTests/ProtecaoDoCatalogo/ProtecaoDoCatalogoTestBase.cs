@@ -42,8 +42,8 @@ public abstract class ProtecaoDoCatalogoTestBase
             classificacaoProtecao = protecao.GetProperty("classificacao").GetString(),
             finalidadeTratamento = protecao.GetProperty("finalidade").GetString(),
             hipoteseLegal = hipoteseLegal ?? protecao.GetProperty("hipoteseLegal").GetString(),
-            dominio = dominio ?? definicao.GetProperty("dominio").GetString(),
-            cardinalidade = definicao.GetProperty("cardinalidade").GetString(),
+            dominio = dominio ?? definicao.GetProperty("dominio").GetProperty("codigo").GetString(),
+            cardinalidade = definicao.GetProperty("cardinalidade").GetProperty("codigo").GetString(),
             escopo = definicao.GetProperty("escopo").GetString(),
         };
     }

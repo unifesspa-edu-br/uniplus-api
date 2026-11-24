@@ -53,7 +53,7 @@ public sealed class RegraCatalogo : EntityBase
     public TipoRegra Tipo { get; private set; }
 
     /// <summary>
-    /// O que a versão declara de si, como as naturezas de conceito a que uma regra de consolidação se aplica.
+    /// O que a versão declara de si, como as formas de conceito a que uma regra de consolidação se aplica.
     /// </summary>
     public JsonElement DeclaracaoDaRegra { get; private set; }
 

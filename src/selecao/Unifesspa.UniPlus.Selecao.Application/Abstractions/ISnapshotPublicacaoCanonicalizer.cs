@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Domain.Entities;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -60,9 +61,9 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 /// </remarks>
 public sealed record MetadadoFatoCongelado(
     string Codigo,
-    string Dominio,
-    string Origem,
-    string Cardinalidade,
+    TipoDoDado Dominio,
+    OrigemFato Origem,
+    QuantidadeDeValores Cardinalidade,
     string PontoResolucao,
     string Binding,
     IReadOnlyList<string>? ValoresDominio,
@@ -101,8 +102,8 @@ public sealed record TipoDeAtoCongelado(string Codigo, string Nome, bool UnicoPo
 /// <param name="Nome">Nome do fato, o rótulo do item que o mostra.</param>
 /// <param name="Descricao">O que o dado significa, para quem analisa a inscrição.</param>
 /// <param name="ComponenteExibicao">Como a tela exibe o valor — token canônico (MOEDA, SITUACAO) —, ou <see langword="null"/> quando não declara.</param>
-/// <param name="Dominio">Domínio do valor — token canônico (CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA, ENDERECO).</param>
-/// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
+/// <param name="Dominio">Tipo do dado: sim ou não, opção, número, texto, data ou endereço.</param>
+/// <param name="Cardinalidade">Quantidade de valores: um valor ou vários valores.</param>
 /// <param name="ClassificacaoProtecao">Classificação de proteção — token canônico (PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL).</param>
 /// <param name="HipoteseLegal">Hipótese legal de tratamento — token canônico (UPPER_SNAKE).</param>
 /// <param name="FinalidadeTratamento">Para que o dado é tratado.</param>
@@ -111,8 +112,8 @@ public sealed record FatoDerivadoCongelado(
     string Nome,
     string Descricao,
     string? ComponenteExibicao,
-    string Dominio,
-    string Cardinalidade,
+    TipoDoDado Dominio,
+    QuantidadeDeValores Cardinalidade,
     string ClassificacaoProtecao,
     string HipoteseLegal,
     string FinalidadeTratamento);
@@ -151,7 +152,7 @@ public sealed record FatoDerivadoCongelado(
 /// do processo, por <c>FatoCodigo</c> — montado pelo handler via <c>IFatoCandidatoReader</c> e
 /// pelo atendimento especializado do próprio processo (o canonicalizador não injeta reader nem lê
 /// I/O, ADR-0042). Toda entrada é <c>IReadOnlyList</c> quando o fato é de seleção
-/// (<c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>) — array possivelmente vazio, nunca ausente — e
+/// (<c>ESCOLHA_UNICA</c>/<c>ESCOLHA_MULTIPLA</c>) — array possivelmente vazio, nunca ausente — e
 /// <see langword="null"/> quando não é; o handler garante essa totalidade ANTES de
 /// canonicalizar, e o canonicalizador LANÇA se um fato de seleção não tiver entrada (defesa em
 /// profundidade contra um handler que esqueceu de passar o valor, nunca publicando um seletor

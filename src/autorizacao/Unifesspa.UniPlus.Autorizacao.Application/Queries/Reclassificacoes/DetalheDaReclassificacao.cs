@@ -78,7 +78,7 @@ public sealed class DetalheDaReclassificacao
     internal static MudancaDaPermissaoDto Mudanca(ReclassificacaoDaPermissao r) => new(
         Texto(r.ClassificacaoAnterior), Texto(r.ClassificacaoNova), r.DeUnidadeAnterior, r.DeUnidadeNovo);
 
-    internal static string Texto(ClassificacaoDeProtecao classificacao) => classificacao.ToString().ToLowerInvariant();
+    internal static string Texto(ClassificacaoDeProtecao classificacao) => ClassificacoesDeProtecao.ParaTokenCanonico(classificacao);
 
     // O documento instituidor é o da própria versão ou, na versão de remoção, o da proposta que ela herda.
     private static VersaoEmUsoDto Versao(Perfil perfil, VersaoDoPerfil versao)

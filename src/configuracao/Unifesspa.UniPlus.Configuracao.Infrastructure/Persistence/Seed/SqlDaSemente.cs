@@ -57,7 +57,7 @@ internal static class SqlDaSemente
     public static ComandoDaSemente ComandoDoModelo(Guid id, ModeloFormulario modelo, DeclaracaoDaSemente declaracao) =>
         new(InserirQuando("modelos_formulario", "id", CondicaoDoModelo(id, modelo),
                 ("id", Uuid(id)), ("codigo", Texto(modelo.Codigo)), ("nome", Texto(modelo.Nome)),
-                ("descricao", Texto(modelo.Descricao)), ("finalidade", Texto(EstruturaFormulario.ParaToken(modelo.Finalidade))),
+                ("descricao", Texto(modelo.Descricao)), ("finalidade", Texto(modelo.Finalidade.Codigo())),
                 ("tipo_processo_codigo", Texto(modelo.TipoProcessoCodigo)),
                 ("conteudo", $"{Texto(ConteudoDoModeloJson.Serializar(modelo.Conteudo))}::jsonb"),
                 ("ativo", Logico(modelo.Ativo)), ("created_at", Momento(declaracao.Instante))),
@@ -93,7 +93,7 @@ internal static class SqlDaSemente
     {
         TermoConsentimento termo = declaracao.Exigir(
             TermoConsentimento.Criar(
-                semente.Nome, semente.Texto, semente.BaseLegal, FormaAceite.RegistroDigitalComLogIp.Codigo()),
+                semente.Nome, semente.Texto, semente.BaseLegal, FormaAceite.RegistroComEnderecoIp.Codigo()),
             $"termo {semente.Nome}");
         declaracao.Exigir(termo.MarcarRevisado(declaracao.Autor, declaracao.Instante), $"revisão do termo {semente.Nome}");
         return termo;

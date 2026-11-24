@@ -9,7 +9,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -54,7 +56,7 @@ public sealed class OpcoesDoCadastroInstitucionalTests
             [Tipo("VISUAL", "Visual"), Tipo("AUDITIVA", "Auditiva")]);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new() { ["TIPO_A"] = null, ["TIPO_B"] = null };
 
-        await CompletarAsync(opcoes, [Fato("TIPO_A", FonteValoresFato.TiposDeficiencia), Fato("TIPO_B", FonteValoresFato.TiposDeficiencia)]);
+        await CompletarAsync(opcoes, [Fato("TIPO_A", FonteValoresFato.TiposDeDeficiencia), Fato("TIPO_B", FonteValoresFato.TiposDeDeficiencia)]);
 
         ValorSelecionavel[] esperado = [new("AUDITIVA", "Auditiva", 0), new("VISUAL", "Visual", 1)];
         opcoes["TIPO_A"].Should().Equal(esperado);
@@ -68,7 +70,7 @@ public sealed class OpcoesDoCadastroInstitucionalTests
             [Base("Portaria A", ("1504208", "Marabá", "PA"), ("1500404", "Água Azul do Norte", "PA")), Base("Portaria B", ("1504208", "Marabá", "PA"))]);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new() { ["BONUS_A"] = null, ["BONUS_B"] = null };
 
-        await CompletarAsync(opcoes, [Fato("BONUS_A", FonteValoresFato.MunicipiosBonus), Fato("BONUS_B", FonteValoresFato.MunicipiosBonus)]);
+        await CompletarAsync(opcoes, [Fato("BONUS_A", FonteValoresFato.MunicipiosDoFada), Fato("BONUS_B", FonteValoresFato.MunicipiosDoFada)]);
 
         ValorSelecionavel[] esperado = [new("1500404", "Água Azul do Norte/PA", 0), new("1504208", "Marabá/PA", 1)];
         opcoes["BONUS_A"].Should().Equal(esperado);
@@ -87,7 +89,7 @@ public sealed class OpcoesDoCadastroInstitucionalTests
             ["BONUS"] = doCatalogo,
         };
 
-        await CompletarAsync(opcoes, [Fato("TIPO", FonteValoresFato.TiposDeficiencia), Fato("BONUS", FonteValoresFato.MunicipiosBonus)]);
+        await CompletarAsync(opcoes, [Fato("TIPO", FonteValoresFato.TiposDeDeficiencia), Fato("BONUS", FonteValoresFato.MunicipiosDoFada)]);
 
         opcoes.Values.Should().OnlyContain(valores => ReferenceEquals(valores, doCatalogo));
         await NenhumCadastroConsultadoAsync();
@@ -98,7 +100,7 @@ public sealed class OpcoesDoCadastroInstitucionalTests
     {
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new() { ["OUTRO"] = null };
 
-        await CompletarAsync(opcoes, [Fato("OUTRO", FonteValoresFato.Processo), Fato("TIPO_FORA_DO_MODELO", FonteValoresFato.TiposDeficiencia)]);
+        await CompletarAsync(opcoes, [Fato("OUTRO", FonteValoresFato.OpcoesDoProcesso), Fato("TIPO_FORA_DO_MODELO", FonteValoresFato.TiposDeDeficiencia)]);
 
         opcoes["OUTRO"].Should().BeNull();
         opcoes.Should().ContainSingle();
@@ -127,6 +129,6 @@ public sealed class OpcoesDoCadastroInstitucionalTests
 
     private static FatoCandidato Fato(string codigo, FonteValoresFato fonte) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, fonte, null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, "Verificação dos requisitos do processo seletivo.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, fonte, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Verificação dos requisitos do processo seletivo.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 }

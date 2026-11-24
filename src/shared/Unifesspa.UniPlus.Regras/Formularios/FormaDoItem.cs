@@ -156,10 +156,9 @@ public static class FormaDoItem
         {
             TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
             TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
-            TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhSelecao(),
+            TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhEscolha(),
             TipoRestricaoValor.MunicipiosDaUf => campo == TipoRenderizacao.Municipio,
             TipoRestricaoValor.FaixaDeData => campo == TipoRenderizacao.Data,
-            TipoRestricaoValor.Nenhuma => false,
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
         };
 

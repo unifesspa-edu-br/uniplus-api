@@ -51,11 +51,11 @@ public sealed class OperadorNoModeloDaSelecaoTests
             .Should().Equal(new Dictionary<Operador, object?>
             {
                 [Operador.Igual] = "IGUAL",
-                [Operador.Em] = "EM",
+                [Operador.AlgumDe] = "ALGUM_DE",
                 [Operador.MaiorIgual] = "MAIOR_IGUAL",
                 [Operador.MenorIgual] = "MENOR_IGUAL",
                 [Operador.Diferente] = "DIFERENTE",
-                [Operador.NaoEm] = "NAO_EM",
+                [Operador.NenhumDe] = "NENHUM_DE",
             });
     }
 

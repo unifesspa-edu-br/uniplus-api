@@ -53,14 +53,13 @@ public sealed class VocabularioDaDecisaoTests
     [Fact(DisplayName = "A sensibilidade usa o mesmo vocabulário do catálogo de permissões")]
     public void Sensibilidade_UsaVocabularioDoCatalogo() =>
         Enum.GetValues<ClassificacaoDeProtecao>()
-            .Where(static nivel => nivel != ClassificacaoDeProtecao.Nenhuma)
             .Select(ValoresCanonicos.De)
-            .Should().BeEquivalentTo(["publico", "interno", "pessoal", "identificador", "sensivel"]);
+            .Should().BeEquivalentTo(["PUBLICO", "INTERNO", "PESSOAL", "IDENTIFICADOR", "SENSIVEL"]);
 
     [Fact(DisplayName = "A classificação não informada não tem valor canônico")]
-    public void Sensibilidade_Nenhuma_Recusa()
+    public void Sensibilidade_NaoInformada_Recusa()
     {
-        Action acao = () => ValoresCanonicos.De(ClassificacaoDeProtecao.Nenhuma);
+        Action acao = () => ValoresCanonicos.De(default(ClassificacaoDeProtecao));
 
         acao.Should().Throw<ArgumentException>();
     }

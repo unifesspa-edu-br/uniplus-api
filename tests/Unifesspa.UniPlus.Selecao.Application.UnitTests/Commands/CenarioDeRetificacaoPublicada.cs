@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -182,9 +183,9 @@ internal sealed class CenarioDeRetificacaoPublicada
     private void ConfigurarCatalogoDeFatos(SituacaoDoFatoCitado fato)
     {
         FatoCandidatoView vivo = FatoDoCatalogo(fato.DominioNoCatalogo, fato.ClassificacaoNoCatalogo);
-        FatoCandidatoView citado = fato.FatoCitadoReclassificadoNoCatalogo ? vivo with { Origem = "DERIVADO" } : vivo;
+        FatoCandidatoView citado = fato.FatoCitadoReclassificadoNoCatalogo ? vivo with { Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado) } : vivo;
         FatoCandidatoView novo = FatoNovoDoCatalogo(vivo);
         _handlers.CatalogoDeFatos.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[citado, fato.ItemNovoReclassificadoNoCatalogo ? novo with { Origem = "DERIVADO" } : novo]));
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[citado, fato.ItemNovoReclassificadoNoCatalogo ? novo with { Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado) } : novo]));
     }
 }

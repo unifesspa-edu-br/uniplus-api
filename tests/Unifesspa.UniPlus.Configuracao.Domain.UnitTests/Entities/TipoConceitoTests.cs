@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class TipoConceitoTests
 {
@@ -22,7 +23,7 @@ public sealed class TipoConceitoTests
 
         TipoConceito tipo = resultado.Value!;
         resultado.IsSuccess.Should().BeTrue();
-        (tipo.Ativo, tipo.Natureza, tipo.Codigo).Should().Be((true, NaturezaConceito.Numerico, "NOTA_ENTREVISTA"));
+        (tipo.Ativo, tipo.Natureza, tipo.Codigo).Should().Be((true, FormaDoConceito.Numerico, "NOTA_ENTREVISTA"));
         tipo.EscalaMinima.Should().Be(0m);
         tipo.EscalaMaxima.Should().Be(10m);
         tipo.CasasDecimais.Should().Be(2);
@@ -34,7 +35,7 @@ public sealed class TipoConceitoTests
     {
         TipoConceito tipo = TipoConceito.Criar("PARECER_ANALISE", DefinicoesDeTipoConceito.Categorica()).Value!;
 
-        tipo.Natureza.Should().Be(NaturezaConceito.Categorico);
+        tipo.Natureza.Should().Be(FormaDoConceito.PorOpcoes);
         tipo.Valores.Select(v => (v.Posicao, v.Codigo, v.Rotulo, v.ContaComoAprovacao))
             .Should().Equal((1, "DEFERIDO", "Deferido", true), (2, "INDEFERIDO", "Indeferido", false));
         tipo.EscalaMinima.Should().BeNull();
@@ -173,7 +174,7 @@ public sealed class TipoConceitoTests
         Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = "ordinal" });
 
         string mensagem = resultado.Errors.Single().Error.Message;
-        mensagem.Should().Contain("NUMERICO").And.Contain("CATEGORICO").And.NotContain("ordinal");
+        mensagem.Should().Contain("NUMERICO").And.Contain("POR_OPCOES").And.NotContain("ordinal");
     }
 
     [Fact(DisplayName = "Natureza inválida acumula com as demais recusas do pedido")]

@@ -9,7 +9,7 @@ internal static class FormularioNaRespostaDoProcesso
 {
     public static JsonElement DeInscricao(JsonDocument processo) =>
         processo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO");
+            .Single(static f => f.GetProperty("finalidade").GetProperty("codigo").GetString() == "INSCRICAO");
 
     public static IEnumerable<JsonElement> Itens(JsonElement formulario) =>
         formulario.GetProperty("coleta").GetProperty("itens").EnumerateArray();

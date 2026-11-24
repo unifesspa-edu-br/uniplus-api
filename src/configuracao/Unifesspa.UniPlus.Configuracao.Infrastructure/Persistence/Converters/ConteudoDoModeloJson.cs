@@ -46,8 +46,8 @@ internal static class ConteudoDoModeloJson
     {
         ["codigo"] = etapa.Codigo,
         ["ordem"] = etapa.Ordem,
-        ["tipo"] = EstruturaFormulario.ParaToken(etapa.Tipo),
-        ["bloco"] = EstruturaFormulario.ParaToken(etapa.Bloco),
+        ["tipo"] = etapa.Tipo.Codigo(),
+        ["bloco"] = etapa.Bloco?.Codigo(),
         ["titulo"] = etapa.Titulo,
         ["descricao"] = etapa.Descricao,
         ["aviso"] = etapa.Aviso,
@@ -179,8 +179,8 @@ internal static class ConteudoDoModeloJson
     private static EtapaDoModelo EtapaDeJson(JsonElement etapa) => new(
         etapa.GetProperty("codigo").GetString()!,
         etapa.GetProperty("ordem").GetInt32(),
-        EstruturaFormulario.TipoDoToken(etapa.GetProperty("tipo").GetString()),
-        EstruturaFormulario.BlocoDoToken(Texto(etapa, "bloco")),
+        CatalogoDe<TipoEtapaFormulario>.Obter(etapa.GetProperty("tipo").GetString()!),
+        Texto(etapa, "bloco") is { } bloco ? CatalogoDe<BlocoSistema>.Obter(bloco) : null,
         etapa.GetProperty("titulo").GetString()!,
         Texto(etapa, "descricao"),
         Texto(etapa, "aviso"),

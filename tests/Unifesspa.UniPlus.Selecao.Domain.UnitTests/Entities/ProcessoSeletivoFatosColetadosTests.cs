@@ -32,7 +32,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
 
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. cita.Select(static c => (c, Operador.Igual, (object)true))]))
             .Construir();
 
@@ -195,7 +195,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     public void Autorreferencia_Recusada()
     {
         Result<FatoColetado> resultado = FatoColetadoDeTeste.Coletando("PCD", 0)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
             .Criar();
 

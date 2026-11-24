@@ -1,92 +1,27 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="CriarTipoDocumentoCommand"/> (convention-based
-/// Wolverine): valida o agregado por inteiro primeiro (sem I/O), só então confere
-/// a existência da categoria entre as vivas do cadastro e a unicidade do código
-/// entre tipos vivos, com os valores já normalizados, cria, persiste e commita.
-/// Protege a corrida check-then-act traduzindo a violação do índice único parcial
-/// em <c>CodigoJaExiste</c> (CA-02).
+/// Handler do <see cref="CriarTipoDocumentoCommand"/> (convention-based Wolverine): confere a declaração inteira
+/// primeiro (sem I/O), só então a existência da categoria e a unicidade do código, e grava
+/// (<see cref="GravacaoDoTipoDocumento"/>).
 /// </summary>
 public static class CriarTipoDocumentoCommandHandler
 {
     public static async Task<Result<Guid>> Handle(
         CriarTipoDocumentoCommand command,
-        ITipoDocumentoRepository repository,
-        ICategoriaDocumentoRepository categoriaRepository,
-        IUnitOfWork unitOfWork,
+        GravacaoDoTipoDocumento gravacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(categoriaRepository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(gravacao);
 
-        Result<TipoDocumento> tipoResult = TipoDocumento.Criar(
-            command.Codigo,
-            command.Nome,
-            command.Descricao,
-            command.Categoria,
-            command.FormatosAceitos,
-            command.TamanhoMaximoMb,
-            command.TipoEquivalente,
-            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
-            command.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+        Result<TipoDocumento> tipo = TipoDocumento.Criar(command.Declaracao());
 
-        if (tipoResult.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(tipoResult.Errors);
-        }
-
-        TipoDocumento tipo = tipoResult.Value!;
-
-        // A categoria é código de outro cadastro, sem chave estrangeira: quem
-        // responde pela existência é este handler, não o agregado nem o banco.
-        if (!await categoriaRepository.CodigoExisteEntreVivosAsync(tipo.Categoria, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.ValidationFailure([new("categoria", CategoriaNaoEncontradaErro(tipo.Categoria))]);
-        }
-
-        if (await repository.CodigoExisteEntreVivosAsync(tipo.Codigo, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExisteErro());
-        }
-
-        await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
-        {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
-            // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            return Result<Guid>.Failure(CodigoJaExisteErro());
-        }
-
-        return Result<Guid>.Success(tipo.Id);
+        return tipo.IsFailure
+            ? Result<Guid>.ValidationFailure(tipo.Errors)
+            : await gravacao.IncluirAsync(tipo.Value!, cancellationToken).ConfigureAwait(false);
     }
-
-    private static DomainError CodigoJaExisteErro() =>
-        new(TipoDocumentoErrorCodes.CodigoJaExiste,
-            "Já existe um tipo de documento vivo com o código informado.");
-
-    internal static DomainError CategoriaNaoEncontradaErro(string categoria) =>
-        new(TipoDocumentoErrorCodes.CategoriaNaoEncontrada,
-            $"Não existe categoria de documento viva com o código '{categoria}'.");
 }

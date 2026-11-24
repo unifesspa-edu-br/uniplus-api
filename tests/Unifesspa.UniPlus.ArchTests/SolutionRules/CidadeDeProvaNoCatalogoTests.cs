@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class CidadeDeProvaNoCatalogoTests
 {
@@ -18,9 +19,9 @@ public sealed class CidadeDeProvaNoCatalogoTests
     public void Semente_CidadeDeProva_DeclaraOsEixosEProtecao()
     {
         FatoCandidatoSeedItem cidade = FatoCandidatoSeed.Itens.Single(item => item.Codigo == "CIDADE_DE_PROVA");
-        cidade.Dominio.Should().Be(DominioFato.Categorico);
+        cidade.Dominio.Should().Be(TipoDoDado.Opcao);
         cidade.Origem.Should().Be(OrigemFato.Declarado);
-        cidade.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
+        cidade.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
         cidade.FonteValores.Should().Be(FonteValoresFato.MunicipiosProvaPresencial);
         cidade.Binding.Should().Be("CAMPO_FORMULARIO:CIDADE_DE_PROVA");
         cidade.PontoResolucao.Should().Be("INSCRICAO");

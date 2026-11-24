@@ -37,7 +37,7 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Persistir com rascunho completo e reler devolve os campos corretos")]
     public async Task Insert_PersisteRascunhoComCamposCorretos()
     {
-        TermoConsentimento termo = NovoTermo("REGISTRO_DIGITAL_SEM_LOG_IP");
+        TermoConsentimento termo = NovoTermo("REGISTRO_SEM_ENDERECO_IP");
         await GravarAsync(termo);
 
         TermoConsentimento persistido = await LerAsync(termo.Id);
@@ -46,7 +46,7 @@ public sealed class TermoConsentimentoPersistenceTests
         persistido.Nome.Should().Be(termo.Nome);
         persistido.TextoRascunho.Should().Be("Texto do termo");
         persistido.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
-        persistido.FormaAceiteRascunho.Should().Be(FormaAceite.RegistroDigitalSemLogIp);
+        persistido.FormaAceiteRascunho.Should().Be(FormaAceite.RegistroSemEnderecoIp);
         persistido.Revisado.Should().BeFalse();
     }
 
@@ -55,7 +55,7 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Promover após reload persiste a versão imutável via AdicionarVersaoAsync")]
     public async Task Promover_AposReload_PersisteVersaoImutavelViaRepositorio()
     {
-        TermoConsentimento termo = TermoRevisado("REGISTRO_DIGITAL_SEM_LOG_IP");
+        TermoConsentimento termo = TermoRevisado("REGISTRO_SEM_ENDERECO_IP");
         await GravarAsync(termo);
         await PromoverAsync(termo.Id);
 
@@ -64,7 +64,7 @@ public sealed class TermoConsentimentoPersistenceTests
         persistido.Versoes.Should().ContainSingle();
         TermoConsentimentoVersao versao = persistido.Versoes[0];
         (versao.Texto, versao.BaseLegal, versao.FormaAceite, versao.PromovidaPor).Should().Be(
-            ("Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp, "usuario.revisor"));
+            ("Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroSemEnderecoIp, "usuario.revisor"));
         versao.Hash.Should().HaveLength(64, "hash é SHA-256 hex (64 caracteres)");
         persistido.Revisado.Should().BeFalse("a revisão é consumida pela promoção");
     }

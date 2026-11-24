@@ -55,11 +55,11 @@ public sealed class CodigosDeContratoDasRegrasTests
             .Should().Equal(new Dictionary<int, string>
             {
                 [1] = "IGUAL",
-                [2] = "EM",
+                [2] = "ALGUM_DE",
                 [3] = "MAIOR_IGUAL",
                 [4] = "MENOR_IGUAL",
                 [5] = "DIFERENTE",
-                [6] = "NAO_EM",
+                [6] = "NENHUM_DE",
             });
 
     [Fact(DisplayName = "Cada operador tem o rótulo de negócio")]
@@ -68,11 +68,11 @@ public sealed class CodigosDeContratoDasRegrasTests
             .Should().Equal(new Dictionary<Operador, string>
             {
                 [Operador.Igual] = "é igual a",
-                [Operador.Em] = "é um de",
+                [Operador.AlgumDe] = "é um de",
                 [Operador.MaiorIgual] = "maior ou igual a",
                 [Operador.MenorIgual] = "menor ou igual a",
                 [Operador.Diferente] = "é diferente de",
-                [Operador.NaoEm] = "não é nenhum de",
+                [Operador.NenhumDe] = "não é nenhum de",
             });
 
     [Fact(DisplayName = "Cada tipo de renderização tem o número e o código que o contrato publica")]
@@ -81,9 +81,9 @@ public sealed class CodigosDeContratoDasRegrasTests
             .Should().Equal(new Dictionary<int, string>
             {
                 [1] = "NUMERO",
-                [2] = "BOOLEANO",
-                [3] = "SELECAO_UNICA",
-                [4] = "SELECAO_MULTIPLA",
+                [2] = "SIM_OU_NAO",
+                [3] = "ESCOLHA_UNICA",
+                [4] = "ESCOLHA_MULTIPLA",
                 [5] = "TEXTO",
                 [6] = "DATA",
                 [7] = "ENDERECO",
@@ -96,9 +96,9 @@ public sealed class CodigosDeContratoDasRegrasTests
             .Should().Equal(new Dictionary<TipoRenderizacao, string>
             {
                 [TipoRenderizacao.Numero] = "Número",
-                [TipoRenderizacao.Booleano] = "Sim ou não",
-                [TipoRenderizacao.SelecaoUnica] = "Escolha de um valor",
-                [TipoRenderizacao.SelecaoMultipla] = "Escolha de vários valores",
+                [TipoRenderizacao.SimOuNao] = "Sim ou não",
+                [TipoRenderizacao.EscolhaUnica] = "Escolha de um valor",
+                [TipoRenderizacao.EscolhaMultipla] = "Escolha de vários valores",
                 [TipoRenderizacao.Texto] = "Texto",
                 [TipoRenderizacao.Data] = "Data",
                 [TipoRenderizacao.Endereco] = "Endereço",

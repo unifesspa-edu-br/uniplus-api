@@ -36,7 +36,7 @@ internal static class ExclusividadeEntreCotaEAcaoAfirmativa
     private static HashSet<string> FatosMultivalorados(ConfiguracaoDeclarada configuracao) =>
     [
         .. configuracao.Coleta.Itens
-            .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
+            .Where(static f => f.TipoRenderizacao == TipoRenderizacao.EscolhaMultipla)
             .Select(static f => f.FatoCodigo),
         .. configuracao.DerivacoesEfetivas().Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
     ];

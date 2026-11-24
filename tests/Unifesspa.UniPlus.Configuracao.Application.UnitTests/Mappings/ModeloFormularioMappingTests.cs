@@ -142,7 +142,7 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
-        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
+        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
@@ -164,7 +164,7 @@ public sealed class ModeloFormularioMappingTests
             EfeitoNaAnaliseDoDocumento.AceitarComAviso));
 
     private static EtapaDoModelo EtapaCompleta() => new(
-        "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
+        "DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
         "RENDA",
@@ -179,7 +179,7 @@ public sealed class ModeloFormularioMappingTests
             new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
         "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),

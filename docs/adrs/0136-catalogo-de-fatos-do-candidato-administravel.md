@@ -261,3 +261,11 @@ No processo de resultado importado, os dados que o arquivo traz em toda linha va
 - **Valor.** O fato é verdadeiro quando existe resposta de origem `Importada` completa para o dado; para quem informou o dado, continua falso.
 - **Configuração.** O fato é conhecido quando algum relatório considerado do processo declara o dado inteiro, em coluna obrigatória ou opcional; fora disso, não existe no processo.
 - **Sem dependência.** O fato de presença não depende do dado que apresenta, e por isso o campo que complementa o dado pode citá-lo na regra de exibição sem formar ciclo.
+
+## Emenda (2026-11-23) — códigos das fontes dos valores
+
+As fontes dos valores passam a ser um enum único no projeto compartilhado de regras (ADR-0176), sem membro "nenhuma": o dado que não é de opção não tem fonte, e a ausência é o valor nulo. Os códigos gravados e trocados no contrato mudam, e o significado de cada fonte não muda: `GLOBAL` passa a `CATALOGO`; `PROCESSO` a `OPCOES_DO_PROCESSO`; `MUNICIPIOS_BONUS` a `MUNICIPIOS_DO_FADA`; `GEO_UF` a `UNIDADES_FEDERATIVAS`; `GEO_MUNICIPIO` a `MUNICIPIOS`; `TIPOS_DEFICIENCIA` a `TIPOS_DE_DEFICIENCIA`; `MODALIDADE` fica. A origem das opções que a Seleção copia para o campo coletado usa, nas fontes que ela copia, os mesmos códigos. O texto acima, escrito com os códigos antigos, vale com os novos.
+
+## Emenda (2026-11-23) — mecanismos do vínculo
+
+O prefixo do vínculo do dado (`MECANISMO:REFERENCIA`) passa a ser um enum único no projeto compartilhado de regras (ADR-0176), e o banco recusa um prefixo que não seja o código de um mecanismo. Os códigos são `CAMPO_FORMULARIO`, `ATRIBUTO_CANDIDATO`, `REGRA_DERIVACAO`, `CLASSIFICACAO`, `INTEGRACAO` e `RESUMO_DE_GRUPO`; este último é o antigo `AGREGACAO_GRUPO:` (ADR-0138), e o formato do vínculo não muda. O nome `REGRA_DERIVACAO` fica como está, até o líder técnico decidir o nome da regra de derivação.

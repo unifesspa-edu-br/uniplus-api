@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -125,7 +126,7 @@ public static class PendenciasDosFormularios
         formulario.FaseId is not { } fase
             ? new DomainError(
                 FormularioProcessoErrorCodes.SemFase,
-                $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.")
+                $"O formulário de {formulario.Finalidade.Codigo()} ainda não declara a fase em que é respondido.")
             : RegrasDosFormularios.RecusaDaFaseDoFormulario(configuracao, formulario.Finalidade, fase);
 
     /// <summary>Formulário de isenção só em processo que cobra taxa de inscrição (UNI-REQ-0144).</summary>
@@ -162,7 +163,7 @@ public static class PendenciasDosFormularios
 
     /// <summary>
     /// Termo exigido cuja versão ainda não definiu a forma de aceite não é publicável
-    /// (UNI-REQ-0086): só o registro digital, com ou sem log de IP, é forma resolvida.
+    /// (UNI-REQ-0086): só o registro digital, com ou sem o endereço IP, é forma resolvida.
     /// </summary>
     internal static DomainError? PendenciaDeTermoSemFormaDeAceite(ConfiguracaoDeclarada configuracao) =>
         configuracao.Coleta.TermosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo

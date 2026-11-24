@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
@@ -135,7 +136,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         [
             FatoColetadoDeTeste.Coletando("COR_RACA", 0)
                 .ComRotulo("Cor ou raça")
-                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .DoTipo(TipoRenderizacao.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir(),
             FatoColetadoDeTeste.Coletando("ATENDIMENTO_NO_MUNICIPIO", 1)
@@ -178,7 +179,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
         PressupostoRenderizavel corRaca = lido.Formulario.Pressupostos.Fatos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
-        corRaca.TipoRenderizacao.Should().Be("SELECAO_UNICA");
+        corRaca.TipoRenderizacao.Should().Be("ESCOLHA_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
         PressupostoRenderizavel faixaEtaria = lido.Formulario.Pressupostos.Fatos[1];
         faixaEtaria.Rotulo.Should().Be("Faixa etária", "nenhum formulário a pergunta, e o rótulo é o do catálogo congelado na versão");
@@ -223,11 +224,11 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     private static IReadOnlyList<FatoCandidatoView> CatalogoComOMunicipio(string nomeDoMunicipio) => CatalogoDoConjuntoBasico.Com(
     [
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null,
+            Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
             "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR", null,
-            "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
+            "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ]);
 
     private static EntradaAvaliacaoFormulario Respostas(string? corRaca, string? renda, bool trabalhaNoCampo)

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.FatosCandidato.FatoCandidatoCodigoDeTeste;
@@ -70,9 +72,11 @@ public sealed class FatoCandidatoGravacaoTests
     {
         string codigo = CodigoUnico();
         FatoCandidato fato = CriacaoDoFato.Criar(
-            codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
-            FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            new DescritivoDoFato(codigo, "Fato com valores", "Descrição do fato."),
+            OrigemFato.Declarado,
+            $"CAMPO_FORMULARIO:{codigo}",
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+            sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
         try
@@ -200,9 +204,11 @@ public sealed class FatoCandidatoGravacaoTests
     {
         string codigo = CodigoUnico();
         FatoCandidato fato = CriacaoDoFato.Criar(
-            codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
-            FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            new DescritivoDoFato(codigo, "Fato com valores", "Descrição do fato."),
+            OrigemFato.Declarado,
+            $"CAMPO_FORMULARIO:{codigo}",
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+            sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
         return fato;
@@ -219,8 +225,10 @@ public sealed class FatoCandidatoGravacaoTests
     {
         string codigo = CodigoUnico();
         return CriacaoDoFato.Criar(
-            codigo, "Fato do administrador", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
-            fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            new DescritivoDoFato(codigo, "Fato do administrador", "Descrição do fato."),
+            OrigemFato.Declarado,
+            $"CAMPO_FORMULARIO:{codigo}",
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+            sistema: false).Value!;
     }
 }

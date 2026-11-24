@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>Vista ativa dos tipos de etapa para consumo cross-módulo (ADR-0056).</summary>
 /// <remarks>
 /// A <paramref name="Avaliacao"/> diz como as etapas do tipo são avaliadas; o Seleção copia os sinalizadores dela para o
@@ -38,5 +40,5 @@ public sealed record AvaliacaoDasEtapasView(
     bool ExigeCorrecaoIndependente,
     IReadOnlyList<ConceitoAdmitidoView> ConceitosAdmitidos);
 
-/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza é o código declarado de <c>NaturezaConceito</c> (ADR-0176).</summary>
+/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza é o código declarado de <c>FormaDoConceito</c> (ADR-0176).</summary>
 public sealed record ConceitoAdmitidoView(string Codigo, string Nome, string Natureza);

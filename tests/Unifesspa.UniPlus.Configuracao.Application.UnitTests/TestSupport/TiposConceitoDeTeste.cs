@@ -13,7 +13,7 @@ internal static class TiposConceitoDeTeste
 
     public static CriarTipoConceitoCommand CriarCategorico() =>
         new("PARECER_ANALISE", new DefinicaoDoTipoConceitoInput(
-            "Parecer da análise", null, "CATEGORICO", null,
+            "Parecer da análise", null, "POR_OPCOES", null,
             [new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false)]));
 
     public static AtualizarTipoConceitoCommand AtualizarNumerico(Guid id) =>
@@ -21,7 +21,7 @@ internal static class TiposConceitoDeTeste
 
     public static AtualizarTipoConceitoCommand AtualizarCategorico(Guid id) =>
         new(id, new DefinicaoDoTipoConceitoInput(
-            "Parecer revisado", null, "CATEGORICO", null,
+            "Parecer revisado", null, "POR_OPCOES", null,
             [new ValorCategoricoCommand("INDEFERIDO", "Indeferido", false), new ValorCategoricoCommand("DEFERIDO", "Deferido", true), new ValorCategoricoCommand("EM_ANALISE", "Em análise", false)]));
 
     public static TipoConceito Numerico() =>
@@ -29,6 +29,6 @@ internal static class TiposConceitoDeTeste
 
     public static TipoConceito Categorico() =>
         TipoConceito.Criar("PARECER_ANALISE", new DefinicaoInformada(
-            "Parecer da análise", null, "CATEGORICO", null,
+            "Parecer da análise", null, "POR_OPCOES", null,
             [new ValorInformado("DEFERIDO", "Deferido", true), new ValorInformado("INDEFERIDO", "Indeferido", false)])).Value!;
 }

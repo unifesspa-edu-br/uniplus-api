@@ -1,5 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using System.Text.Json.Serialization;
+
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// DTO read-only de <c>FatoCandidato</c> para consumo cross-módulo via
 /// <see cref="IFatoCandidatoReader"/> (ADR-0056, ADR-0111, refinada pela ADR-0116).
@@ -11,9 +17,9 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Codigo">Código do fato, chave natural (ex.: "COR_RACA", "MODALIDADE").</param>
 /// <param name="Nome">Rótulo legível do fato.</param>
 /// <param name="Descricao">O que o dado significa, para quem analisa a inscrição; obrigatória no catálogo e congelada pela Seleção no fato coletado e no derivado.</param>
-/// <param name="Dominio">Tipo de dado — token canônico UPPER_SNAKE (CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA, ENDERECO).</param>
-/// <param name="Origem">Origem do dado — token canônico (DERIVADO, DECLARADO, INTEGRACAO).</param>
-/// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
+/// <param name="Dominio">Tipo do dado: sim ou não, opção, número, texto, data ou endereço.</param>
+/// <param name="Origem">Origem do dado: calculado, declarado ou de integração.</param>
+/// <param name="Cardinalidade">Quantidade de valores: um valor ou vários valores.</param>
 /// <param name="ValoresDominio">
 /// Os códigos dos valores de um categórico de fonte global ou de tipos de deficiência, na ordem de
 /// <paramref name="ValoresDominioDeclarados"/>, ou <see langword="null"/> quando o fato não tem
@@ -24,12 +30,11 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="ValoresDominioDeclarados">
 /// Descrição por valor de um categórico estático (ADR-0116), ou <see langword="null"/>
 /// quando o fato não tem valores no catálogo — booleano/numérico, ou categórico de
-/// escopo-processo. No fato de fonte TIPOS_DEFICIENCIA, os valores são os tipos do cadastro de
+/// escopo-processo. No dado de fonte TIPOS_DE_DEFICIENCIA, os valores são os tipos do cadastro de
 /// tipos de deficiência, com o removido inativo. Ordenada por <c>Ordem</c> e depois por <c>Codigo</c>.
 /// </param>
 /// <param name="FonteValores">
-/// De onde vêm os valores de um categórico (ADR-0136) — token canônico (GLOBAL, PROCESSO,
-/// MODALIDADE, MUNICIPIOS_BONUS, MUNICIPIOS_PROVA_PRESENCIAL, GEO_UF, GEO_MUNICIPIO, TIPOS_DEFICIENCIA), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
+/// De onde vêm os valores de um dado de opção (ADR-0136), ou <see langword="null"/> em todo dado que não é de opção. O consumidor decide por ela,
 /// nunca pelo código do fato.
 /// </param>
 /// <param name="Ativo">
@@ -66,14 +71,14 @@ public sealed record FatoCandidatoView(
     string Codigo,
     string Nome,
     string Descricao,
-    string Dominio,
-    string Origem,
-    string Cardinalidade,
+    CodigoComRotulo<TipoDoDado> Dominio,
+    CodigoComRotulo<OrigemFato> Origem,
+    CodigoComRotulo<QuantidadeDeValores> Cardinalidade,
     IReadOnlyList<string>? ValoresDominio,
     string PontoResolucao,
     string Binding,
     IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
-    string? FonteValores,
+    CodigoComRotulo<FonteValoresFato>? FonteValores,
     bool Ativo,
     string ClassificacaoProtecao,
     string HipoteseLegal,
@@ -81,7 +86,13 @@ public sealed record FatoCandidatoView(
     bool ProtecaoAprovada,
     string? Formato = null,
     string Escopo = "CANDIDATO",
-    string? ComponenteExibicao = null);
+    string? ComponenteExibicao = null)
+{
+    [JsonIgnore] public TipoDoDado DominioValor => CatalogoDe<TipoDoDado>.Obter(Dominio.Codigo);
+    [JsonIgnore] public OrigemFato OrigemValor => CatalogoDe<OrigemFato>.Obter(Origem.Codigo);
+    [JsonIgnore] public QuantidadeDeValores CardinalidadeValor => CatalogoDe<QuantidadeDeValores>.Obter(Cardinalidade.Codigo);
+    [JsonIgnore] public FonteValoresFato? FonteValoresValor => FonteValores is null ? null : CatalogoDe<FonteValoresFato>.Obter(FonteValores.Codigo);
+}
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

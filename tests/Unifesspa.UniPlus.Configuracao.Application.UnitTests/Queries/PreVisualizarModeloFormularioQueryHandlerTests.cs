@@ -30,7 +30,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     private const string Finalidade = "Verificação dos requisitos do processo seletivo.";
     private const HipoteseLegalTratamento Hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
     private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
@@ -86,7 +86,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_DerivadoDoCatalogo_DecideAExibicao()
     {
         FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("PERFIL", "Perfil", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         perfil.DefinirRegrasPadrao([RegraDerivacao.CriarBooleana(Quando("CERTIFICADO", true))], new CatalogoDeFatos([_certificado, perfil], []))
             .IsSuccess.Should().BeTrue();
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([_certificado, perfil]);
@@ -138,7 +139,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, CorComAmarelaDesativada()]);
         ModeloFormulario modelo = Modelo([
-            Item("COR_RACA", 0, TipoRenderizacao.SelecaoUnica),
+            Item("COR_RACA", 0, TipoRenderizacao.EscolhaUnica),
             Item("CERTIFICADO", 1, exibicao: Quando("COR_RACA", "AMARELA")),
         ]);
 
@@ -152,9 +153,9 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_RespostaForaDoCadastroInstitucional_NaoVale()
     {
         _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, Declarado("CONDICAO_ATENDIMENTO", DominioFato.Categorico, FonteValoresFato.Processo)]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, Declarado("CONDICAO_ATENDIMENTO", TipoDoDado.Opcao, FonteValoresFato.OpcoesDoProcesso)]);
         ModeloFormulario modelo = Modelo([
-            Item("CONDICAO_ATENDIMENTO", 0, TipoRenderizacao.SelecaoUnica),
+            Item("CONDICAO_ATENDIMENTO", 0, TipoRenderizacao.EscolhaUnica),
             Item("CERTIFICADO", 1, exibicao: Quando("CONDICAO_ATENDIMENTO", "TEA")),
         ]);
 
@@ -171,7 +172,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         OpcoesPermitidas filtro = new([new OpcoesCondicionadas(Quando("CERTIFICADO", true), ["COM_CERTIFICADO"])]);
         ModeloFormulario modelo = Modelo([
             Item("CERTIFICADO", 0),
-            Item("SITUACAO", 1, TipoRenderizacao.SelecaoUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
+            Item("SITUACAO", 1, TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
         ]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
@@ -238,11 +239,11 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         return modelo.Value!;
     }
 
-    private static ItemDoModelo Item(string fato, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, PredicadoDnf? exibicao = null) =>
+    private static ItemDoModelo Item(string fato, int ordem, TipoRenderizacao tipo = TipoRenderizacao.SimOuNao, PredicadoDnf? exibicao = null) =>
         new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, tipo), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, null, new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, null, new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
@@ -260,14 +261,14 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
 
     private static FatoCandidato CorComAmarelaDesativada()
     {
-        FatoCandidato cor = Declarado("COR_RACA", DominioFato.Categorico, FonteValoresFato.Global);
+        FatoCandidato cor = Declarado("COR_RACA", TipoDoDado.Opcao, FonteValoresFato.Catalogo);
         cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
         cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
         return cor;
     }
 
-    private static FatoCandidato Declarado(string codigo, DominioFato dominio = DominioFato.Booleano, FonteValoresFato? fonte = null) =>
+    private static FatoCandidato Declarado(string codigo, TipoDoDado dominio = TipoDoDado.SimOuNao, FonteValoresFato? fonte = null) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, fonte, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 }

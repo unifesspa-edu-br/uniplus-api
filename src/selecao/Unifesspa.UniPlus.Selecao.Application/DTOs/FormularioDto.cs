@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
@@ -30,7 +32,7 @@ public sealed record ColetaDoFormularioDto(IReadOnlyList<FatoColetadoDto> Itens,
 /// partiu de um modelo —, as etapas, o que ele coleta e os termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
-    string Finalidade,
+    CodigoComRotulo<FinalidadeFormulario> Finalidade,
     Guid? FaseId,
     string? Titulo,
     ModeloDeOrigemDto? ModeloOrigem,

@@ -15,11 +15,18 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed class AgregadoDeGrupoTests
 {
     [Theory]
-    [InlineData("BOOLEANO", OperacaoAgregado.Existe)]
-    [InlineData("CATEGORICO", OperacaoAgregado.ValoresPresentes)]
-    [InlineData("NUMERICO", OperacaoAgregado.Nenhuma)]
-    public void OperacaoDoDominio_SaiDoDominioDoFatoDeMembro(string dominio, OperacaoAgregado esperada) =>
-        AgregadoDeGrupo.OperacaoDoDominio(dominio).Should().Be(esperada);
+    [InlineData(TipoDoDado.SimOuNao, OperacaoAgregado.Existe)]
+    [InlineData(TipoDoDado.Opcao, OperacaoAgregado.ValoresPresentes)]
+    public void OperacaoDoDominio_SaiDoTipoDoDadoDoFatoDeMembro(TipoDoDado tipo, OperacaoAgregado esperada) =>
+        AgregadoDeGrupo.OperacaoDoDominio(tipo).Should().Be(esperada);
+
+    [Fact]
+    public void OperacaoDoDominio_DominioQueNaoSeResume_NaoTemOperacao() =>
+        AgregadoDeGrupo.OperacaoDoDominio(TipoDoDado.Numerico).Should().BeNull();
+
+    [Fact]
+    public void OperacaoDoDominio_SemTipoDoDado_NaoTemOperacao() =>
+        AgregadoDeGrupo.OperacaoDoDominio(null).Should().BeNull();
 
     [Theory]
     [InlineData(new[] { false, true }, true)]

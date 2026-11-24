@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -69,7 +70,7 @@ public static class CoerenciaDoConceitoDaEtapa
 
     private static IEnumerable<FieldError> RecusasDaNotaNoCategorico(
         ConceitoDaEtapa conceito, DeclaracaoDaAvaliacaoDaEtapa declaracao, bool declaraItens) =>
-        conceito.Natureza == NaturezaConceito.Categorico
+        conceito.Natureza == FormaDoConceito.PorOpcoes
             ? CamposDeNota(declaracao, declaraItens)
                 .Where(static campo => campo.Declarado)
                 .Select(static campo => Recusa(

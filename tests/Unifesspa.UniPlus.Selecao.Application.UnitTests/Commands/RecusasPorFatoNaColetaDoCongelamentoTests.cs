@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -49,7 +50,7 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0), ItemDeSelecao("TIPO_DEFICIENCIA", 1)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
-        Dictionary<string, FatoCandidatoView> catalogo = PorCodigo(ModalidadeDerivada(), TipoDeDeficienciaSemTipoVivo() with { Origem = "DERIVADO" });
+        Dictionary<string, FatoCandidatoView> catalogo = PorCodigo(ModalidadeDerivada(), TipoDeDeficienciaSemTipoVivo() with { Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado) });
 
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogo);
 
@@ -109,19 +110,19 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
 
     private static FatoCandidatoView ModalidadeDerivada() => new(
         Id: Guid.CreateVersion7(), Codigo: "MODALIDADE", Nome: "Modalidade de concorrência", Descricao: "Descrição do fato.",
-        Dominio: "CATEGORICO", Origem: "DERIVADO", Cardinalidade: "MULTIVALORADO", ValoresDominio: null, PontoResolucao: "INSCRICAO",
-        Binding: "REGRA_DERIVACAO:MODALIDADE", ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true,
+        Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ValoresDominio: null, PontoResolucao: "INSCRICAO",
+        Binding: "REGRA_DERIVACAO:MODALIDADE", ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true,
         ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
         FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView TipoDeDeficienciaSemTipoVivo() => new(
         Id: Guid.CreateVersion7(), Codigo: "TIPO_DEFICIENCIA", Nome: "Tipo de deficiência", Descricao: "Descrição do fato.",
-        Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO", ValoresDominio: null, PontoResolucao: "INSCRICAO",
+        Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ValoresDominio: null, PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
         ValoresDominioDeclarados: [new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 0, Ativo: false)],
-        FonteValores: "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
+        FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.TiposDeDeficiencia), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
         FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoColetado ItemDeSelecao(string codigo, int ordem) =>
-        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.SelecaoUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 }

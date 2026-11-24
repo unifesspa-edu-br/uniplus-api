@@ -31,7 +31,7 @@ internal static class FatoDeTesteDaAlteracao
         FatoCandidato derivado = Derivado("PERFIL", ponto: "HABILITACAO");
         RegraDerivacao[] regras = segundaRegra ? [Booleana(("FATO_A", true)), Booleana(("FATO_B", true))] : [Booleana(("FATO_A", true))];
         derivado.DefinirRegrasPadrao(regras, Catalogo(a, b, derivado)).IsSuccess.Should().BeTrue();
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, ponto: "RESULTADO_FINAL"), Catalogo(a, b, derivado)).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "RESULTADO_FINAL"), Catalogo(a, b, derivado)).IsSuccess.Should().BeTrue();
         PrecedenciaFase[] precedencias =
         [
             PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!,
@@ -41,8 +41,8 @@ internal static class FatoDeTesteDaAlteracao
     }
 
     internal static DefinicaoDoFato Definicao(
-        DominioFato? dominio = DominioFato.Booleano,
-        CardinalidadeFato? cardinalidade = null,
+        TipoDoDado? dominio = TipoDoDado.SimOuNao,
+        QuantidadeDeValores? cardinalidade = null,
         FonteValoresFato? fonte = null,
         FormatoTexto? formato = null,
         string ponto = "INSCRICAO",
@@ -54,32 +54,32 @@ internal static class FatoDeTesteDaAlteracao
 
     // O declarado informa a cardinalidade; o derivado e o agregado a inferem.
     internal static DefinicaoDoFato DeDeclarado(
-        DominioFato dominio,
+        TipoDoDado dominio,
         FormatoTexto? formato = null,
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         HipoteseLegalTratamento hipotese = Hipotese,
         string ponto = "INSCRICAO") =>
-        Definicao(dominio, CardinalidadeFato.Escalar, formato: formato, ponto: ponto, classificacao: classificacao, hipotese: hipotese);
+        Definicao(dominio, QuantidadeDeValores.ValorUnico, formato: formato, ponto: ponto, classificacao: classificacao, hipotese: hipotese);
 
     internal static FatoCandidato Declarado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         FonteValoresFato? fonte = null,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, ponto, EscopoFato.Candidato,
-            classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, fonte, null, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese)).Value!;
 
     internal static FatoCandidato DeMembro(
         string codigo,
-        DominioFato dominio = DominioFato.Categorico,
-        FonteValoresFato fonte = FonteValoresFato.Global,
+        TipoDoDado dominio = TipoDoDado.Opcao,
+        FonteValoresFato fonte = FonteValoresFato.Catalogo,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,
-            EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, dominio == TipoDoDado.Opcao ? fonte : null, null, ponto, EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese)).Value!;
 
     internal static FatoCandidato Agregado(
         string codigo,
@@ -88,15 +88,19 @@ internal static class FatoDeTesteDaAlteracao
         string ponto = "INSCRICAO",
         PrecedenciaFase[]? precedencias = null) =>
         CriacaoDoFato.CriarAgregadoDoAdministrador(
-            codigo, codigo, "Descrição do fato.", membro.Codigo, new CatalogoDeFatos([membro], precedencias ?? []), ponto, classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            membro.Codigo,
+            new CatalogoDeFatos([membro], precedencias ?? []),
+            new DefinicaoDoFato(null, null, null, null, ponto, null, classificacao, Finalidade, Hipotese)).Value!;
 
     internal static FatoCandidato Derivado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, null, null, null, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese)).Value!;
 
     internal static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

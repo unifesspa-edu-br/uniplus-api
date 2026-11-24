@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandidatoDeTeste;
 
@@ -21,11 +22,11 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandid
 public sealed class FatoCandidatoVinculoTests
 {
     [Theory(DisplayName = "Fato do administrador não usa vínculo que exige código do sistema")]
-    [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:DADO")]
-    [InlineData(OrigemFato.Derivado, "CLASSIFICACAO:DADO")]
+    [InlineData(OrigemFato.Calculado, "ATRIBUTO_CANDIDATO:DADO")]
+    [InlineData(OrigemFato.Calculado, "CLASSIFICACAO:DADO")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:DADO")]
     public void Criar_FatoDoAdministradorComVinculoDeSistema_Recusa(OrigemFato origem, string binding) =>
-        Criar(codigo: "DADO", origem: origem, binding: binding)
+        Criar(descritivo: Descritivo with { Codigo = "DADO" }, origem: origem, binding: binding)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema);
 
     [Theory(DisplayName = "Ponto de resolução ausente ou em branco é rejeitado")]
@@ -33,7 +34,7 @@ public sealed class FatoCandidatoVinculoTests
     [InlineData("   ")]
     public void Criar_PontoResolucaoAusente_Falha(string ponto)
     {
-        Result<FatoCandidato> resultado = Criar(pontoResolucao: ponto);
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { PontoResolucao = ponto });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio);
@@ -42,7 +43,7 @@ public sealed class FatoCandidatoVinculoTests
     [Fact(DisplayName = "Ponto de resolução fora do conjunto canônico de fases é rejeitado")]
     public void Criar_PontoResolucaoForaDoCanonico_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(pontoResolucao: "FASE_INEXISTENTE");
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { PontoResolucao = "FASE_INEXISTENTE" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoInvalido);
@@ -76,7 +77,7 @@ public sealed class FatoCandidatoVinculoTests
     [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
     [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
     [InlineData(OrigemFato.Declarado, "REGRA_DERIVACAO:MODALIDADE")]
-    [InlineData(OrigemFato.Derivado, "CAMPO_FORMULARIO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Calculado, "CAMPO_FORMULARIO:FAIXA_ETARIA")]
     [InlineData(OrigemFato.Integracao, "CAMPO_FORMULARIO:ANO_ENEM")]
     [InlineData(OrigemFato.Integracao, "REGRA_DERIVACAO:ALGO")]
     public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
@@ -91,7 +92,9 @@ public sealed class FatoCandidatoVinculoTests
     public void Criar_BindingRegraDerivacaoReferenciaOutroFato_Falha()
     {
         Result<FatoCandidato> resultado = Criar(
-            codigo: "FAIXA_ETARIA", origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
+            descritivo: Descritivo with { Codigo = "FAIXA_ETARIA" },
+            origem: OrigemFato.Calculado,
+            binding: "REGRA_DERIVACAO:MODALIDADE");
 
         resultado.IsFailure.Should().BeTrue(
             "a regra de derivação referenciada é a do próprio fato — apontar para outro congelaria metadado de derivação alheio");
@@ -102,9 +105,10 @@ public sealed class FatoCandidatoVinculoTests
     public void Criar_BindingRegraDerivacaoReferenciaProprioFato_Aceita()
     {
         Result<FatoCandidato> resultado = Criar(
-            codigo: "MODALIDADE", dominio: DominioFato.Categorico,
-            cardinalidade: CardinalidadeFato.Multivalorado,
-            origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
+            descritivo: Descritivo with { Codigo = "MODALIDADE" },
+            definicao: Definicao with { Dominio = TipoDoDado.Opcao, Cardinalidade = QuantidadeDeValores.VariosValores },
+            origem: OrigemFato.Calculado,
+            binding: "REGRA_DERIVACAO:MODALIDADE");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -112,7 +116,7 @@ public sealed class FatoCandidatoVinculoTests
     [Fact(DisplayName = "A mensagem de prefixo incoerente lista os dois prefixos aceitos quando a origem é derivada")]
     public void Criar_BindingPrefixoIncoerente_Derivado_MensagemListaOsDois()
     {
-        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Derivado, binding: "CAMPO_FORMULARIO:X");
+        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Calculado, binding: "CAMPO_FORMULARIO:X");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("ATRIBUTO_CANDIDATO")
@@ -122,16 +126,19 @@ public sealed class FatoCandidatoVinculoTests
 
     [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
     [InlineData(OrigemFato.Declarado, "CAMPO_FORMULARIO:COR_RACA")]
-    [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Calculado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
     // REGRA_DERIVACAO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
-    [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:FATO_QUALQUER")]
+    [InlineData(OrigemFato.Calculado, "REGRA_DERIVACAO:FATO_QUALQUER")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
     public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
     {
         // Atributo do candidato e integração só existem em fato de sistema.
         Result<FatoCandidato> resultado = Criar(
-            codigo: "FATO_QUALQUER", dominio: DominioFato.Numerico,
-            origem: origem, binding: binding, sistema: true);
+            descritivo: Descritivo with { Codigo = "FATO_QUALQUER" },
+            definicao: Definicao with { Dominio = TipoDoDado.Numerico, FonteValores = null },
+            origem: origem,
+            binding: binding,
+            sistema: true);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Binding.Should().Be(binding);

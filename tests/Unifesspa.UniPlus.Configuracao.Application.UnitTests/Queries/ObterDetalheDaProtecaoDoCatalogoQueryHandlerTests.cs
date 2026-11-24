@@ -37,7 +37,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
         detalhe!.Tipo.Should().Be("FATO");
         detalhe.Descricao.Should().Be("Descrição do fato.");
         detalhe.Fato.Should().NotBeNull();
-        detalhe.Fato!.Dominio.Should().Be("BOOLEANO");
+        detalhe.Fato!.Dominio.Codigo.Should().Be("SIM_OU_NAO");
         detalhe.Fato.Valores.Should().BeEmpty();
         detalhe.TipoDocumento.Should().BeNull();
         await _tipos.DidNotReceive().ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());

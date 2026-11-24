@@ -148,9 +148,7 @@ public sealed class RegistroDeAcessoAvroCompletoTests
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
-            "COR_RACA",
-            "2",
-            Guid.CreateVersion7()).Value!;
+            Guid.CreateVersion7()).Value!.ComCampo("COR_RACA", "2").Value!;
 
     private static AuthorizationRequestContext Requisicao() =>
         AuthorizationRequestContext.From(

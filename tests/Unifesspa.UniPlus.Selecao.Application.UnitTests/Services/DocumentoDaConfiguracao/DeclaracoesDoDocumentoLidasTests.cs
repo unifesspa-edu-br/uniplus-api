@@ -70,7 +70,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
               "alternativas": [
                 { "condicoes": [ { "tipo": "RESULTADO_NO_RETORNO_DO_INEP", "edicaoDoExame": 2025, "motivoDesfavoravelCodigo": "SEM_NOTA" } ] },
                 { "condicoes": [ { "tipo": "RESULTADO_NO_RETORNO_DO_INEP", "edicaoDoExame": 2024, "motivoDesfavoravelCodigo": "SEM_NOTA",
-                  "enquadramento": [ [ { "fato": "MODALIDADE", "operador": "EM", "valor": [ "AC", "PPI" ] } ] ] } ] }
+                  "enquadramento": [ [ { "fato": "MODALIDADE", "operador": "ALGUM_DE", "valor": [ "AC", "PPI" ] } ] ] } ] }
               ]
             }
           } ] }

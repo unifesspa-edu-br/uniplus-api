@@ -25,6 +25,11 @@ public sealed class PreVisualizacaoDoProcessoEndpointTests
 {
     private const string MediaType = "application/vnd.uniplus.pre-visualizacao-processo-seletivo.v1+json";
 
+    private static readonly object PerfilEstrangeiro = new
+    {
+        respostas = new Dictionary<string, object> { ["NACIONALIDADE"] = "ESTRANGEIRO" },
+    };
+
     private readonly CascadingFixture _fixture;
 
     public PreVisualizacaoDoProcessoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -34,24 +39,21 @@ public sealed class PreVisualizacaoDoProcessoEndpointTests
     {
         Guid processoId = await SemearProcessoAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
-        object estrangeiro = new
-        {
-            respostas = new Dictionary<string, object> { ["NACIONALIDADE"] = "ESTRANGEIRO" },
-        };
-
-        HttpResponseMessage resposta = await EnviarAsync(client, processoId, estrangeiro);
+        HttpResponseMessage resposta = await EnviarAsync(client, processoId, PerfilEstrangeiro);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         resposta.Content.Headers.ContentType!.MediaType.Should().Be(MediaType);
         using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        JsonElement rg = corpo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO")
+        ItemDoRegistroGeralNoFormularioDeInscricao(corpo.RootElement).GetProperty("visivel").GetProperty("codigo").GetString().Should().Be("FALSO");
+        corpo.RootElement.GetProperty("documentos").ValueKind.Should().Be(JsonValueKind.Array);
+        (await EnviarAsync(client, Guid.NewGuid(), PerfilEstrangeiro)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private static JsonElement ItemDoRegistroGeralNoFormularioDeInscricao(JsonElement corpo) =>
+        corpo.GetProperty("formularios").EnumerateArray()
+            .Single(static f => f.GetProperty("finalidade").GetProperty("codigo").GetString() == "INSCRICAO")
             .GetProperty("itens").EnumerateArray()
             .Single(static i => i.GetProperty("fatoCodigo").GetString() == "RG_NUMERO");
-        rg.GetProperty("visivel").GetString().Should().Be("FALSO");
-        corpo.RootElement.GetProperty("documentos").ValueKind.Should().Be(JsonValueKind.Array);
-        (await EnviarAsync(client, Guid.NewGuid(), estrangeiro)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
 
     private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, Guid processoId, object simulacao)
     {

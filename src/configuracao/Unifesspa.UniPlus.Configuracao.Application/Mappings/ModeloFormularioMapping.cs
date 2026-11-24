@@ -24,7 +24,7 @@ public static class ModeloFormularioMapping
         return new ModeloFormularioDto(
             modelo.Id,
             modelo.Codigo,
-            EstruturaFormulario.ParaToken(modelo.Finalidade),
+            CodigoComRotulo<FinalidadeFormulario>.De(modelo.Finalidade),
             modelo.Ativo,
             new DescritivoDoModeloDto(modelo.Nome, modelo.Descricao, modelo.TipoProcessoCodigo),
             modelo.Conteudo.ToDto());
@@ -45,7 +45,7 @@ public static class ModeloFormularioMapping
     }
 
     private static EtapaFormularioDto EtapaParaLeitura(EtapaDoModelo etapa) => new(
-        etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Codigo, etapa.Ordem, etapa.Tipo.Codigo(), etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso), etapa.Exibicao is { } exibicao ? LeituraDeRegras.ToDto(exibicao) : null);
 
     private static ItemDoModeloDto ItemParaLeitura(ItemDoModelo item) => new(
@@ -67,7 +67,7 @@ public static class ModeloFormularioMapping
             modelo.Codigo,
             modelo.Nome,
             modelo.Descricao,
-            EstruturaFormulario.ParaToken(modelo.Finalidade),
+            modelo.Finalidade.Codigo(),
             modelo.TipoProcessoCodigo,
             modelo.Ativo,
             modelo.Conteudo.ParaEntrada());
@@ -88,7 +88,7 @@ public static class ModeloFormularioMapping
     }
 
     private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
-        etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Codigo, etapa.Ordem, etapa.Tipo.Codigo(), etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaInput(etapa.Titulo, etapa.Descricao, etapa.Aviso), EntradaDeRegras.ParaEntrada(etapa.Exibicao));
 
     private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(

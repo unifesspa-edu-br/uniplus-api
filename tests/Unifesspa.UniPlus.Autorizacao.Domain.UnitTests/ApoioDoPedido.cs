@@ -27,10 +27,10 @@ internal static class ApoioDoPedido
     internal static readonly PessoaNoToken Isabella = Pessoa("isabella.figueiredo", "Isabella Priscila Figueiredo", "isabellapriscilafigueiredo@uniplus-test.local");
     internal static readonly PessoaNoToken Marlene = Pessoa("marlene.martins", "Marlene Márcia Emily Martins", "marlenemarciamartins@uniplus-test.local");
 
-    internal static readonly PerfilAvaliado Interno = new(["selecao:processos:consultar"], "interno", false, null);
-    internal static readonly PerfilAvaliado Sensivel = new(["selecao:atendimento:analisar", "selecao:processos:consultar"], "sensivel", true, null);
-    internal static readonly PerfilAvaliado DeGestor = new(["autorizacao:perfis:manter"], "pessoal", true, TipoDeGovernanca.GestorDeAcessos);
-    internal static readonly PerfilAvaliado DeRepresentante = new(["autorizacao:concessoes:administrar"], "pessoal", true, TipoDeGovernanca.RepresentanteDoControlador);
+    internal static readonly PerfilAvaliado Interno = new(["selecao:processos:consultar"], "INTERNO", false, null);
+    internal static readonly PerfilAvaliado Sensivel = new(["selecao:atendimento:analisar", "selecao:processos:consultar"], "SENSIVEL", true, null);
+    internal static readonly PerfilAvaliado DeGestor = new(["autorizacao:perfis:manter"], "PESSOAL", true, TipoDeGovernanca.GestorDeAcessos);
+    internal static readonly PerfilAvaliado DeRepresentante = new(["autorizacao:concessoes:administrar"], "PESSOAL", true, TipoDeGovernanca.RepresentanteDoControlador);
 
     internal static EscopoDaConcessao EscopoDe(Perfil? perfil) =>
         perfil?.Governanca is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao();

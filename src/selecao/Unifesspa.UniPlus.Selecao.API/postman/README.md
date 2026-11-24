@@ -7,7 +7,7 @@ endpoints** de `ProcessoSeletivoController` + os 2 de `DocumentosAPublicarContro
 incluindo a configuração de catálogo pré-requisito (Publicações/Organização/
 Configuração) e o fluxo de documentos exigidos por gatilho e fase (Story #554,
 PR #903), com o cenário-alvo end-to-end da task 7.3 — os 4 sub-casos de gatilho
-DNF (GERAL, `MODALIDADE EM`, `CONDICAO_ATENDIMENTO IGUAL`, conjunção AND) mais 4
+DNF (GERAL, `MODALIDADE ALGUM_DE`, `CONDICAO_ATENDIMENTO IGUAL`, conjunção AND) mais 4
 testes de borda de validação.
 
 ## Arquivos
@@ -104,7 +104,7 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **Setup — Publicações** | `POST admin/tipos-ato` (EDITAL_ABERTURA, EDITAL_RETIFICACAO) — tolera 409 em reexecuções |
 | **Setup — Organização** | `POST admin/instituicao` (singleton, tolera 409) + `GET instituicao` + `POST admin/unidades` |
 | **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + TipoDocumento + FaseCanonica (nenhum pré-seedado), a leitura das modalidades `AC` e `AC_PCD` do catálogo semeado, e a leitura dos catálogos de tipo de processo (`SiSU`) e de tipo de etapa (`PROVA_OBJETIVA`, `ENTREVISTA`), que a criação do processo e as etapas referenciam por id |
-| **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, atendimento-especializado, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **formulário de inscrição e os seus itens** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/laudo de `AC_PCD`, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
+| **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, atendimento-especializado, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **formulário de inscrição e os seus itens** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE ALGUM_DE`/laudo de `AC_PCD`, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
 | **Rascunho do processo seletivo** | `POST` do documento da configuração (guarda `rascunho_id` e o ETag) → `GET` da exportação → `PUT` com `If-Match` (revisão 2) → `DELETE` com `If-Match` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → declarar sem prova presencial → `Publicar` → `ObterSnapshotVigente` |
@@ -148,7 +148,7 @@ A mesma configuração de `ProcessoSeletivo` desta coleção define, num único 
 | Sub-caso | Fato/operador | O que prova |
 |---|---|---|
 | Nível de ensino | `aplicabilidade: GERAL`, `condicoes: []` | GERAL nunca avalia gatilho — exigida de todo candidato |
-| Laudo de `AC_PCD` | `MODALIDADE EM ["AC_PCD"]` | Cardinalidade multivalorada (ADR-0111); domínio dinâmico resolvido contra `DistribuicaoVagas` do próprio processo |
+| Laudo de `AC_PCD` | `MODALIDADE ALGUM_DE ["AC_PCD"]` | Cardinalidade multivalorada (ADR-0111); domínio dinâmico resolvido contra `DistribuicaoVagas` do próprio processo |
 | Laudo | `CONDICAO_ATENDIMENTO IGUAL "PCD_..."` | Fato dinâmico resolvido contra `AtendimentoEspecializado` do próprio processo (não um catálogo fixo) |
 | Reservista | `SEXO IGUAL MASCULINO` **E** `FAIXA_ETARIA MAIOR_IGUAL 18`, mesma `clausula` | Conjunção AND dentro de uma cláusula DNF (`CondicaoGatilho`: OU entre cláusulas, E dentro) |
 
@@ -161,9 +161,9 @@ CONDICIONAL) com o `condicaoGatilho` exato de cada uma — inclusive o par
 recusado com 422 antes do PUT válido final) cobrem os limites do validador do
 gatilho DNF, com asserção no `code` do `ProblemDetails` — não só no status:
 
-- `MODALIDADE EM` com um código que não está na `DistribuicaoVagas` do processo → `uniplus.predicado_dnf.valor_fora_do_dominio`.
+- `MODALIDADE ALGUM_DE` com um código que não está na `DistribuicaoVagas` do processo → `uniplus.predicado_dnf.valor_fora_do_dominio`.
 - `FAIXA_ETARIA MAIOR_IGUAL "18.5"` (decimal onde o domínio exige inteiro) → `uniplus.predicado_dnf.valor_incompativel_com_tipo`.
-- `FAIXA_ETARIA EM [...]` (operador `EM` não é válido para domínio numérico) → `uniplus.predicado_dnf.operador_incompativel_com_dominio`.
+- `FAIXA_ETARIA ALGUM_DE [...]` (operador `ALGUM_DE` não é válido para domínio numérico) → `uniplus.predicado_dnf.operador_incompativel_com_dominio`.
 - `GERAL` com uma condição viva não-vazia (CA-01: GERAL nunca convive com gatilho) → `uniplus.selecao.documento_exigido.geral_com_condicao`.
 
 Simplificação assumida: os 5 itens de `documentos-exigidos` usam a mesma fase

@@ -6,55 +6,48 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 
 /// <summary>
-/// O tipo de campo segue o domínio e a cardinalidade do fato no catálogo, no processo e no modelo:
-/// booleano em campo de sim/não, numérico em campo numérico, texto, data e endereço de resposta
-/// única nos campos deles, e categórico em seleção única ou múltipla conforme a cardinalidade — salvo
+/// O tipo de campo segue o tipo do dado e a quantidade de valores do fato no catálogo, no processo e no modelo:
+/// sim ou não em campo de sim/não, número em campo numérico, texto, data e endereço de resposta
+/// única nos campos deles, e opção em seleção única ou múltipla conforme a quantidade — salvo
 /// o município do Geo, de resposta única no campo de município.
 /// </summary>
 public static class CoerenciaDoCampo
 {
-    private const string Booleano = DominioDoCatalogo.Booleano;
-    private const string Numerico = DominioDoCatalogo.Numerico;
-    private const string Categorico = DominioDoCatalogo.Categorico;
-    private const string Texto = DominioDoCatalogo.Texto;
-    private const string Data = DominioDoCatalogo.Data;
-    private const string Endereco = DominioDoCatalogo.Endereco;
-    private const string Multivalorado = DominioDoCatalogo.Multivalorado;
-
     /// <summary>
-    /// O único tipo de campo que o domínio, a cardinalidade e a fonte de valores do fato admitem, dados
-    /// pelos tokens do catálogo; <see langword="null"/> quando nenhum admite — o campo de texto, de data
-    /// e de endereço recolhe uma resposta só, e o município do Geo também.
+    /// O único tipo de campo que o tipo do dado, a quantidade de valores e a fonte de valores do fato admitem;
+    /// <see langword="null"/> quando nenhum admite — o campo de texto, de data e de endereço recolhe uma resposta só, e o
+    /// município do Geo também.
     /// </summary>
-    public static TipoRenderizacao? TipoDoFato(string dominio, string cardinalidade, string? fonteValores)
+    public static TipoRenderizacao? TipoDoFato(TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores)
     {
-        bool multivalorado = string.Equals(cardinalidade, Multivalorado, StringComparison.Ordinal);
-        bool municipio = string.Equals(fonteValores, DominioDoCatalogo.FonteGeoMunicipio, StringComparison.Ordinal);
-        return dominio switch
+        bool variosValores = quantidade == QuantidadeDeValores.VariosValores;
+        bool municipio = fonteValores == FonteValoresFato.Municipios;
+        return tipo switch
         {
-            Booleano => TipoRenderizacao.Booleano,
-            Numerico => TipoRenderizacao.Numero,
-            Texto when !multivalorado => TipoRenderizacao.Texto,
-            Data when !multivalorado => TipoRenderizacao.Data,
-            Endereco when !multivalorado => TipoRenderizacao.Endereco,
-            Categorico => TipoDoCategorico(municipio, multivalorado),
+            TipoDoDado.SimOuNao => TipoRenderizacao.SimOuNao,
+            TipoDoDado.Numerico => TipoRenderizacao.Numero,
+            TipoDoDado.Texto when !variosValores => TipoRenderizacao.Texto,
+            TipoDoDado.Data when !variosValores => TipoRenderizacao.Data,
+            TipoDoDado.Endereco when !variosValores => TipoRenderizacao.Endereco,
+            TipoDoDado.Opcao => TipoDaOpcao(municipio, variosValores),
             _ => null,
         };
     }
 
-    private static TipoRenderizacao? TipoDoCategorico(bool municipio, bool multivalorado) => (municipio, multivalorado) switch
+    private static TipoRenderizacao? TipoDaOpcao(bool municipio, bool variosValores) => (municipio, variosValores) switch
     {
         (true, true) => null,
         (true, false) => TipoRenderizacao.Municipio,
-        (false, true) => TipoRenderizacao.SelecaoMultipla,
-        (false, false) => TipoRenderizacao.SelecaoUnica,
+        (false, true) => TipoRenderizacao.EscolhaMultipla,
+        (false, false) => TipoRenderizacao.EscolhaUnica,
     };
 
     /// <summary>Recusa o tipo de campo diferente do que o fato admite (<see cref="TipoDoFato"/>).</summary>
-    public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade, string? fonteValores) =>
-        TipoDoFato(dominio, cardinalidade, fonteValores) == tipoRenderizacao
+    public static DomainError? Validar(
+        string fatoCodigo, TipoRenderizacao tipoRenderizacao, TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores) =>
+        TipoDoFato(tipo, quantidade, fonteValores) == tipoRenderizacao
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-                $"O tipo de campo '{tipoRenderizacao.Codigo()}' não é coerente com o domínio '{dominio}', a cardinalidade '{cardinalidade}' e a fonte de valores '{fonteValores ?? "nenhuma"}' do fato '{fatoCodigo}'.");
+                $"O tipo de campo '{tipoRenderizacao.Codigo()}' não é coerente com o tipo do dado '{tipo.Codigo()}', a quantidade de valores '{quantidade.Codigo()}' e a fonte de valores '{fonteValores?.Codigo() ?? "nenhuma"}' do fato '{fatoCodigo}'.");
 }

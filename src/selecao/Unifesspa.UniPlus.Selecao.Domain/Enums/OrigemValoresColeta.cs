@@ -22,10 +22,10 @@ public enum OrigemValoresColeta
     OpcoesDoProcesso = 1,
 
     [CodigoDeContrato(
-        "MUNICIPIOS_DO_BONUS",
-        "Municípios do bônus",
-        Descricao = "As opções são os municípios do bônus regional do processo.")]
-    MunicipiosDoBonus = 2,
+        "MUNICIPIOS_DO_FADA",
+        "Municípios do Fator de Atenuação das Desigualdades de Acesso (FADA)",
+        Descricao = "As opções são os municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) do processo.")]
+    MunicipiosDoFada = 2,
 
     [CodigoDeContrato(
         "UNIDADES_FEDERATIVAS",

@@ -23,7 +23,7 @@ public static class ConferenciaDoConteudoDoModelo
     /// regra do catálogo, para o grafo.
     /// </summary>
     public static List<FieldError> Conferir(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(derivacoes);
@@ -32,17 +32,17 @@ public static class ConferenciaDoConteudoDoModelo
     }
 
     private static List<FieldError> ConferirNormalizado(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         List<FieldError> erros = ConferirPartesDoConteudo(finalidade, conteudo);
 
         // A estrutura depende da finalidade, recusada no cadastro.
-        return erros.Count > 0 || FormaDoCabecalho.ValidarFinalidade(finalidade).Count > 0
+        return erros.Count > 0 || FormaDoCabecalho.ValidarFinalidade(finalidade).Count > 0 || finalidade is not { } declarada
             ? erros
-            : ConferirEstruturaEGrafo(finalidade, conteudo, derivacoes);
+            : ConferirEstruturaEGrafo(declarada, conteudo, derivacoes);
     }
 
-    private static List<FieldError> ConferirPartesDoConteudo(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo) =>
+    private static List<FieldError> ConferirPartesDoConteudo(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo) =>
     [
         .. conteudo.TextosNaoGravaveis(),
         .. FormaDoCabecalho.ValidarTitulo(conteudo.Titulo),
@@ -69,7 +69,7 @@ public static class ConferenciaDoConteudoDoModelo
             FormaDaEtapa.Conferir(etapa.Codigo, etapa.Ordem, etapa.Tipo, etapa.Titulo, etapa.Descricao, etapa.Aviso, etapa.Exibicao is not null),
             $"etapas[{i}]"));
 
-    private static List<FieldError> ConferirCamposEGrupos(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+    private static List<FieldError> ConferirCamposEGrupos(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo)
     {
         List<FieldError> excesso = FormaDoItem.ValidarQuantidade(
             FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)));
@@ -125,7 +125,7 @@ public static class ConferenciaDoConteudoDoModelo
     /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo de inscrição não tem, e o
     /// fato não é pressuposto e item do mesmo modelo.
     /// </summary>
-    private static List<FieldError> ConferirPressupostos(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo) =>
+    private static List<FieldError> ConferirPressupostos(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo) =>
         finalidade == FinalidadeFormulario.Inscricao && conteudo.Pressupostos.Count > 0
             ? [new("pressupostos", new DomainError(
                 ModeloFormularioErrorCodes.PressupostoNaInscricao,

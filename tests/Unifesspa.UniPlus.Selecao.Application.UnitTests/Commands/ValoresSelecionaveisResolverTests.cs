@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -50,7 +51,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
     // ── D1-ter — encoder é quem lança quando falta entrada; aqui provamos que o HANDLER sempre entrega uma ──
 
-    [Fact(DisplayName = "Fato BOOLEANO coletado recebe entrada null no dicionário — nunca fica de fora dele")]
+    [Fact(DisplayName = "Fato SIM_OU_NAO coletado recebe entrada null no dicionário — nunca fica de fora dele")]
     public async Task Publicar_ComFatoBooleanoColetado_EntradaENula()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -106,10 +107,10 @@ public sealed class ValoresSelecionaveisResolverTests
         FatoValorDominioViewItem[] seisValores = ValoresDeCorRaca();
         FatoCandidatoView corRacaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "COR_RACA", Nome: "Cor ou raça", Descricao: "Descrição do fato.",
-            Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
+            Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             ValoresDominio: [.. seisValores.Select(static v => v.Codigo)],
             PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
-            ValoresDominioDeclarados: seisValores, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+            ValoresDominioDeclarados: seisValores, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
         return corRacaNoCatalogo;
     }
@@ -121,7 +122,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: "Descrição do fato.",
-            Dominio: "BOOLEANO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
+            Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:BAIXA_RENDA",
             ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
@@ -156,15 +157,15 @@ public sealed class ValoresSelecionaveisResolverTests
     {
         FatoColetado condicaoAtendimento = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Condição de atendimento")
-            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .DoTipo(TipoRenderizacao.EscolhaMultipla)
             .Construir();
         processo.DefinirItens([condicaoAtendimento]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: "Descrição do fato.",
-            Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
+            Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
-            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+            ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
         return condicaoAtendimentoNoCatalogo;
     }

@@ -56,7 +56,7 @@ public sealed class FatosDaVersaoTests
     [Fact(DisplayName = "O nome sem classificação resolvida ou ausente da versão vale como sensível")]
     public void ClassificacaoDoNome_NaoResolvido_Sensivel()
     {
-        Nomes(("NOME", ClassificacaoDeProtecao.Nenhuma)).ClassificacaoDoNome().Should().Be(ClassificacaoDeProtecao.Sensivel);
+        Nomes(("NOME", default(ClassificacaoDeProtecao))).ClassificacaoDoNome().Should().Be(ClassificacaoDeProtecao.Sensivel);
         Nomes().ClassificacaoDoNome().Should().Be(ClassificacaoDeProtecao.Sensivel);
     }
 

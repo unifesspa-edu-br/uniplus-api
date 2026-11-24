@@ -53,7 +53,7 @@ public sealed class VocabularioIdaEVoltaEndpointTests
     public async Task CriarLerRecriar_MesmoVocabularioNasTresPontas()
     {
         HttpClient client = _fixture.Factory.CreateClient();
-        string sufixo = Guid.CreateVersion7().ToString("N")[..8];
+        string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
         (Guid unidadeId, Guid tipoProcessoId) = await SemearAsync(_fixture.Factory, sufixo);
         HttpResponseMessage criacao = await CriarAsync(
             client, $"PS ida e volta {sufixo}", "INSCRICAO_PROPRIA", tipoProcessoId, unidadeId);

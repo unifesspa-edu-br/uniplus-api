@@ -113,11 +113,11 @@ internal sealed record ModeloDeEtapa(string Nome)
 
     internal static ConceitoDaEtapa AptoInapto() =>
         ConceitoDaEtapa.Criar(
-            "APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, null,
+            "APTO_INAPTO", "Apto ou inapto", FormaDoConceito.PorOpcoes, null,
             [new ValorCategoricoInformado("APTO", "Apto", true), new ValorCategoricoInformado("INAPTO", "Inapto", false)]).Value!;
 
     internal static ConceitoDaEtapa NotaDeZeroADez() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     internal static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 

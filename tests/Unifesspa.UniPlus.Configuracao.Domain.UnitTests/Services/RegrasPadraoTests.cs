@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -27,34 +28,34 @@ public sealed class RegrasPadraoTests
     public void CriarDerivado_FormaPeloDominio()
     {
         FatoCandidato booleano = Derivado("EGRESSO_REDE_PUBLICA");
-        FatoCandidato categorico = Derivado("PERFIS", DominioFato.Categorico);
+        FatoCandidato categorico = Derivado("PERFIS", TipoDoDado.Opcao);
 
         booleano.Should().BeEquivalentTo(new
         {
-            Origem = OrigemFato.Derivado,
-            Cardinalidade = CardinalidadeFato.Escalar,
+            Origem = OrigemFato.Calculado,
+            Cardinalidade = QuantidadeDeValores.ValorUnico,
             FonteValores = (FonteValoresFato?)null,
             Binding = "REGRA_DERIVACAO:EGRESSO_REDE_PUBLICA",
             SemeadoPeloSistema = false,
         });
-        categorico.Should().BeEquivalentTo(new { Cardinalidade = CardinalidadeFato.Multivalorado, FonteValores = FonteValoresFato.Global });
+        categorico.Should().BeEquivalentTo(new { Cardinalidade = QuantidadeDeValores.VariosValores, FonteValores = FonteValoresFato.Catalogo });
     }
 
     [Fact(DisplayName = "Derivado por regra de domínio texto é recusado no domínio")]
     public void CriarDerivado_Texto_Recusa() =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-                "NOME_DERIVADO", "Nome", "Descrição do fato.", DominioFato.Texto, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
+            new DescritivoDoFato("NOME_DERIVADO", "Nome", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Texto, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese))
             .Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico);
 
     [Theory(DisplayName = "Domínio do derivado no cadastro: ausente é obrigatório, fora do vocabulário é inválido")]
-    [InlineData(DominioFato.Nenhum, FatoCandidatoErrorCodes.DominioObrigatorio)]
-    [InlineData((DominioFato)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
-    public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(DominioFato dominio, string codigo) =>
+    [InlineData(null, FatoCandidatoErrorCodes.DominioObrigatorio)]
+    [InlineData((TipoDoDado)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
+    public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(TipoDoDado? dominio, string codigo) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-                "DERIVADO", "Derivado", "Descrição do fato.", dominio, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
+            new DescritivoDoFato("DERIVADO", "Derivado", "Descrição do fato."),
+            new DefinicaoDoFato(dominio, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
 
     [Fact(DisplayName = "Fato declarado não tem regras padrão")]
@@ -81,14 +82,14 @@ public sealed class RegrasPadraoTests
     }
 
     [Theory(DisplayName = "O categórico contribui só os seus valores; o booleano não contribui código")]
-    [InlineData(DominioFato.Categorico, "EJA", true)]
-    [InlineData(DominioFato.Categorico, "XYZ", false)]
-    [InlineData(DominioFato.Booleano, "EJA", false)]
-    public void Definir_Contribuicao(DominioFato dominio, string contribui, bool aceita)
+    [InlineData(TipoDoDado.Opcao, "EJA", true)]
+    [InlineData(TipoDoDado.Opcao, "XYZ", false)]
+    [InlineData(TipoDoDado.SimOuNao, "EJA", false)]
+    public void Definir_Contribuicao(TipoDoDado dominio, string contribui, bool aceita)
     {
         FatoCandidato renda = Declarado("TEM_RENDA");
         FatoCandidato derivado = Derivado("PERFIS", dominio);
-        if (dominio == DominioFato.Categorico)
+        if (dominio == TipoDoDado.Opcao)
         {
             derivado.AdicionarValorDominio("EJA", "Educação de jovens e adultos", 0, ativo: true);
         }
@@ -112,7 +113,7 @@ public sealed class RegrasPadraoTests
     [Fact(DisplayName = "Texto não entra em predicado de regra")]
     public void Definir_CitaTexto_Recusa()
     {
-        FatoCandidato nome = Declarado("NOME", DominioFato.Texto, formato: FormatoTexto.NomePessoa);
+        FatoCandidato nome = Declarado("NOME", TipoDoDado.Texto, formato: FormatoTexto.NomePessoa);
         FatoCandidato derivado = Derivado("TEM_NOME");
 
         derivado.DefinirRegrasPadrao([Booleana(("NOME", "MARIA"))], Catalogo(nome, derivado))
@@ -201,7 +202,7 @@ public sealed class RegrasPadraoTests
     public void Definir_ContribuiValorDesativado_Recusa()
     {
         FatoCandidato renda = Declarado("TEM_RENDA");
-        FatoCandidato derivado = Derivado("PERFIS", DominioFato.Categorico);
+        FatoCandidato derivado = Derivado("PERFIS", TipoDoDado.Opcao);
         derivado.AdicionarValorDominio("EJA", "Educação de jovens e adultos", 0, ativo: true);
         derivado.DesativarValor("EJA");
 
@@ -213,7 +214,7 @@ public sealed class RegrasPadraoTests
     public void Definir_RecusasAcumuladas()
     {
         FatoCandidato pcd = Declarado("PCD", classificacao: ClassificacaoDeProtecao.Sensivel);
-        FatoCandidato nome = Declarado("NOME", DominioFato.Texto, formato: FormatoTexto.NomePessoa);
+        FatoCandidato nome = Declarado("NOME", TipoDoDado.Texto, formato: FormatoTexto.NomePessoa);
         FatoCandidato derivado = Derivado("DERIVADO", classificacao: ClassificacaoDeProtecao.Pessoal);
 
         Result resultado = derivado.DefinirRegrasPadrao(
@@ -228,22 +229,23 @@ public sealed class RegrasPadraoTests
 
     private static FatoCandidato Derivado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, null, null, null, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese)).Value!;
 
     private static FatoCandidato Declarado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         FormatoTexto? formato = null,
         EscopoFato escopo = EscopoFato.Candidato) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, null, formato, ponto, escopo,
-            classificacao, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, null, formato, ponto, escopo, classificacao, Finalidade, Hipotese)).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

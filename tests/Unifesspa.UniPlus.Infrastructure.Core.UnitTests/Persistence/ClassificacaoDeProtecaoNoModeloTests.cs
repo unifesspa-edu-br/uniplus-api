@@ -262,6 +262,14 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
             .ToDictionary(p => p[0], p => Enum.TryParse(p[1], out ClassificacaoDeProtecao c) ? (ClassificacaoDeProtecao?)c : null);
     }
 
+    private static string ViolacaoDaColunaCompartilhada<TContext>(Func<DbContextOptions<TContext>, TContext> criar)
+        where TContext : DbContext
+    {
+        using TContext contexto = criar(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<TContext>());
+        return ConferenciaDaClassificacaoDoModelo.Conferir(contexto.GetService<IDesignTimeModel>().Model).Violacoes
+            .Should().ContainSingle(v => v.StartsWith("cadastros.id:", StringComparison.Ordinal)).Subject;
+    }
+
     [Fact(DisplayName = "Tipo mapeado sem declaração reprova a conferência e nomeia a tabela e a coluna")]
     public void SemDeclaracao_ReprovaNomeandoTabelaEColuna()
     {
@@ -321,29 +329,17 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
         colunas["cadastros.id"].Should().Be(ClassificacaoDeProtecao.Pessoal);
     }
 
-    [Theory(DisplayName = "Coluna compartilhada com uma das partes sem declaração reprova e nomeia o tipo, em qualquer ordem")]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void ColunaCompartilhadaComParteSemDeclaracaoReprova(int caso)
+    [Fact(DisplayName = "Coluna compartilhada com o dono sem declaração reprova e nomeia só o dono")]
+    public void ColunaCompartilhadaComDonoSemDeclaracaoReprova()
     {
-        DbContext contexto = caso == 0
-            ? new ContextoCompartilhado<DonoSemDeclaracao>(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ContextoCompartilhado<DonoSemDeclaracao>>())
-            : new ContextoCompartilhado<OwnedSemDeclaracao>(UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ContextoCompartilhado<OwnedSemDeclaracao>>());
-        using (contexto)
-        {
-            string violacao = ConferenciaDaClassificacaoDoModelo.Conferir(contexto.GetService<IDesignTimeModel>().Model).Violacoes
-                .Should().ContainSingle(v => v.StartsWith("cadastros.id:", StringComparison.Ordinal)).Subject;
+        string violacao = ViolacaoDaColunaCompartilhada<ContextoCompartilhado<DonoSemDeclaracao>>(o => new(o));
 
-            if (caso == 0)
-            {
-                violacao.Should().Contain(nameof(Cadastro)).And.NotContain(nameof(Complemento));
-            }
-            else
-            {
-                violacao.Should().Contain(nameof(Complemento));
-            }
-        }
+        violacao.Should().Contain(nameof(Cadastro)).And.NotContain(nameof(Complemento));
     }
+
+    [Fact(DisplayName = "Coluna compartilhada com o tipo dependente sem declaração reprova e nomeia o tipo dependente")]
+    public void ColunaCompartilhadaComTipoDependenteSemDeclaracaoReprova() =>
+        ViolacaoDaColunaCompartilhada<ContextoCompartilhado<OwnedSemDeclaracao>>(o => new(o)).Should().Contain(nameof(Complemento));
 
     [Fact(DisplayName = "Tipo mapeado a tabela e a view ao mesmo tempo reprova a conferência")]
     public void TabelaEViewReprova()
@@ -427,7 +423,7 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
     {
         ModelBuilder modelBuilder = new();
 
-        Action declarar = () => modelBuilder.Entity<Pedido>().ClassificaPorPadrao(ClassificacaoDeProtecao.Nenhuma);
+        Action declarar = () => modelBuilder.Entity<Pedido>().ClassificaPorPadrao(default(ClassificacaoDeProtecao));
 
         declarar.Should().Throw<ArgumentOutOfRangeException>();
     }

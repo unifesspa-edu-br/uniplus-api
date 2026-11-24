@@ -165,7 +165,7 @@ public static class PredicadoDnfValidador
         };
 
     private static TipoDeValorEsperado TipoCategorico(CondicaoDnf condicao) =>
-        condicao.Operador is Operador.Em or Operador.NaoEm ? TipoDeValorEsperado.ListaDeTextos : TipoDeValorEsperado.Texto;
+        condicao.Operador is Operador.AlgumDe or Operador.NenhumDe ? TipoDeValorEsperado.ListaDeTextos : TipoDeValorEsperado.Texto;
 
     private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ComTipoEsperado(Result resultado, TipoDeValorEsperado tipo) =>
         (resultado, resultado.Error?.Code == PredicadoDnfErrorCodes.ValorIncompativelComTipo ? tipo : null);
@@ -218,11 +218,11 @@ public static class PredicadoDnfValidador
 
     private static Result ValidarValorCategorico(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
-        // NAO_EM (Story #916) segue a mesma forma de lista de EM — negação, não muda a
+        // NENHUM_DE (Story #916) segue a mesma forma de lista de ALGUM_DE — negação, não muda a
         // validação de valor × domínio.
-        if (condicao.Operador is Operador.Em or Operador.NaoEm)
+        if (condicao.Operador is Operador.AlgumDe or Operador.NenhumDe)
         {
-            return ValidarValorCategoricoEm(condicao, pertence, foraDoDominio);
+            return ValidarValorDeAlgumDe(condicao, pertence, foraDoDominio);
         }
 
         return ValidarValorCategoricoEscalar(condicao, pertence, foraDoDominio);
@@ -249,9 +249,9 @@ public static class PredicadoDnfValidador
 
     private static Result ValorForaDoDominio(CondicaoDnf condicao, string valor, string foraDoDominio) =>
         Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorForaDoDominio,
-            $"O valor '{valor}' da condição EM sobre '{condicao.Fato}' {foraDoDominio}"));
+            $"O valor '{valor}' da condição ALGUM_DE sobre '{condicao.Fato}' {foraDoDominio}"));
 
-    private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
+    private static Result ValidarValorDeAlgumDe(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
         bool possuiItemNaoString = condicao.Valor.EnumerateArray()
             .Any(static item => item.ValueKind != JsonValueKind.String);
@@ -260,7 +260,7 @@ public static class PredicadoDnfValidador
         {
             return Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.ValorIncompativelComTipo,
-                $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
+                $"Os valores da condição ALGUM_DE sobre '{condicao.Fato}' devem ser strings JSON."));
         }
 
         return ConferirValoresCategoricos(condicao, pertence, foraDoDominio);

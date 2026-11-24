@@ -55,8 +55,7 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
 
         aprovacao.Property(a => a.ClassificacaoRecomendada)
             .HasColumnName("protecao_recomendada")
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength);
+            .HasMaxLength(ColunaDaClassificacao.MaxLength);
 
         aprovacao.Property(a => a.Justificativa)
             .HasColumnName("protecao_justificativa")

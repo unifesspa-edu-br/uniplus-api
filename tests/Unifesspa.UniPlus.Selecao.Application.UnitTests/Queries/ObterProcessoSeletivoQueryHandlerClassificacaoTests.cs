@@ -18,9 +18,9 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler"/> para o bloco de
-/// classificação — em particular <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/>
-/// (issue #850), que a projeção precisa expor: sem este teste, trocar a leitura por um
-/// <see langword="false"/> hard-coded em <c>ProjectClassificacao</c> compilaria e nenhum
+/// classificação — em particular <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/>,
+/// que a projeção precisa expor: sem este teste, trocar a leitura por um
+/// <see langword="false"/> fixo em <c>ProjectClassificacao</c> compilaria e nenhum
 /// teste existente acusaria.
 /// </summary>
 public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
@@ -34,16 +34,22 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
         dto!.BaseadoEmEnem.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Handle projeta a resolução de Pesos por Área e o quadro congelado, ordenados pelo código do grupo e da área")]
-    public async Task Handle_ProjetaResolucaoEQuadroCongelado()
+    [Fact(DisplayName = "Handle projeta a resolução de Pesos por Área e os grupos do quadro congelado, ordenados pelo código")]
+    public async Task Handle_ProjetaAResolucaoEOsGruposOrdenadosPeloCodigo()
     {
         ConfiguracaoClassificacaoDto? dto = await ObterDtoComClassificacaoAsync(baseadoEmEnem: true);
 
         dto!.ResolucaoPesoAreaEnem.Should().Be(QuadroPesoAreaEnemDeTeste.Resolucao);
         dto.QuadroPesoAreaEnem.Select(g => g.GrupoAreaEnem.Codigo).Should().Equal(
             "HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS", "TECNOLOGICA");
+    }
 
-        GrupoPesoAreaEnemCongeladoDto saude = dto.QuadroPesoAreaEnem[2];
+    [Fact(DisplayName = "Handle projeta o rótulo, a base legal e as áreas do grupo, ordenadas pelo código")]
+    public async Task Handle_ProjetaORotuloABaseLegalEAsAreasDoGrupoOrdenadasPeloCodigo()
+    {
+        ConfiguracaoClassificacaoDto? dto = await ObterDtoComClassificacaoAsync(baseadoEmEnem: true);
+
+        GrupoPesoAreaEnemCongeladoDto saude = dto!.QuadroPesoAreaEnem.Single(g => g.GrupoAreaEnem.Codigo == "SAUDE_E_BIOLOGICAS");
         saude.GrupoAreaEnem.Rotulo.Should().Be("Saúde e Biológicas");
         saude.BaseLegal.Should().Be("Resolução nº 805/2024/Consepe – Anexo I");
         saude.Areas.Should().Equal(

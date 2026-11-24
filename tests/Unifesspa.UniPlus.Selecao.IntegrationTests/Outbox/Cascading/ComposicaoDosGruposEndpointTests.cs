@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -89,10 +90,10 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
         return (processo.Id, tipo.Id, processo.CronogramaFases.Single().Id);
     }
 
-    private static TipoDocumento CriarTipoDeDocumento() => TipoDocumento.Criar(
-        $"COMPROVANTE_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}", "Comprovante", descricao: null, categoria: "IDENTIFICACAO",
-        formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal,
-        finalidadeTratamento: "Comprovação documental.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+    private static TipoDocumento CriarTipoDeDocumento() => TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+        $"COMPROVANTE_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}", "Comprovante", Descricao: null, Categoria: "IDENTIFICACAO",
+        FormatosAceitos: null, TamanhoMaximoMb: null, TipoEquivalente: null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal,
+        FinalidadeTratamento: "Comprovação documental.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private static void ConfigurarGrupo(ProcessoSeletivo processo)
     {

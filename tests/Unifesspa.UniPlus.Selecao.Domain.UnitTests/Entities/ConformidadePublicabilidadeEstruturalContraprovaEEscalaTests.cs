@@ -39,7 +39,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .DoTipo(TipoRenderizacao.EscolhaMultipla)
             .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 

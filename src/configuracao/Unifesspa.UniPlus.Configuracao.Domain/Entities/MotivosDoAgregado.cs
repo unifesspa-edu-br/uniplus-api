@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 
@@ -20,18 +22,18 @@ internal static class MotivosDoAgregado
     /// <summary>Vazio quando o agregado continua valendo.</summary>
     internal static IReadOnlyList<FieldError> PelosQuaisDeixaDeAgregar(FatoCandidato agregado, FatoCandidato membro, CatalogoDeFatos catalogo)
     {
-        OperacaoAgregado operacao = AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(membro.Dominio));
+        OperacaoAgregado? operacao = AgregadoDeGrupo.OperacaoDoDominio(membro.Dominio);
         if (membro is not { Escopo: EscopoFato.MembroGrupo, Origem: OrigemFato.Declarado })
         {
             return [Motivo("membro", $"'{membro.Codigo}' deixa de ser fato declarado de membro de grupo, e o agregado resume o que cada membro respondeu.")];
         }
 
-        if (operacao == OperacaoAgregado.Nenhuma)
+        if (operacao is not { } definida)
         {
             return [Motivo("dominioSemResumo", $"'{membro.Codigo}' passa a um domínio que o agregado não resume (só booleano e categórico).")];
         }
 
-        return [.. MotivoDoMembroInativo(membro), .. MotivoDosEixos(agregado, membro, operacao), .. MotivosContraOMembro(agregado, membro, catalogo)];
+        return [.. MotivoDoMembroInativo(membro), .. MotivoDosEixos(agregado, membro, definida), .. MotivosContraOMembro(agregado, membro, catalogo)];
     }
 
     private static FieldError Motivo(string motivo, string mensagem) =>
@@ -45,14 +47,14 @@ internal static class MotivosDoAgregado
     // O primeiro eixo que deixou de acompanhar o inferido do membro basta para o motivo.
     private static IEnumerable<FieldError> MotivoDosEixos(FatoCandidato agregado, FatoCandidato membro, OperacaoAgregado operacao)
     {
-        (DominioFato dominioEsperado, CardinalidadeFato cardinalidadeEsperada, FonteValoresFato? fonteEsperada) =
+        (TipoDoDado dominioEsperado, QuantidadeDeValores cardinalidadeEsperada, FonteValoresFato? fonteEsperada) =
             EixosInferidosDoAgregado(operacao, membro.FonteValores);
         return Presentes(
             agregado.Dominio != dominioEsperado
-                ? Motivo("dominio", $"o domínio de '{membro.Codigo}' mudou, e o agregado gravou o domínio {DominiosFato.ParaTokenCanonico(agregado.Dominio)} inferido dele.")
+                ? Motivo("dominio", $"o domínio de '{membro.Codigo}' mudou, e o agregado gravou o domínio {agregado.Dominio.Codigo()} inferido dele.")
                 : null,
             agregado.Cardinalidade != cardinalidadeEsperada
-                ? Motivo("cardinalidade", $"a cardinalidade do agregado não acompanha a inferida de '{membro.Codigo}': o agregado gravou {CardinalidadesFato.ParaTokenCanonico(agregado.Cardinalidade)}.")
+                ? Motivo("cardinalidade", $"a cardinalidade do agregado não acompanha a inferida de '{membro.Codigo}': o agregado gravou {agregado.Cardinalidade.Codigo()}.")
                 : null,
             agregado.FonteValores != fonteEsperada
                 ? Motivo("fonte", $"a fonte dos valores de '{membro.Codigo}' mudou, e o agregado gravou a fonte inferida dela.")

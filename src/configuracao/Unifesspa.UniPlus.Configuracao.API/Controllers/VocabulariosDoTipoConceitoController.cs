@@ -10,9 +10,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Vocabulário fechado de <c>NaturezaConceito</c>, usado pelo cadastro de tipos de conceito.
+/// Vocabulário fechado de <c>FormaDoConceito</c>, usado pelo cadastro de tipos de conceito.
 /// Somente leitura: o conjunto é governado por código e muda por versão da API, não por cadastro
 /// administrativo. Sem paginação, sem <c>_links</c> e sem cache.
 /// </summary>
@@ -31,11 +32,11 @@ public sealed class VocabulariosDoTipoConceitoController : ControllerBase
     [HttpGet("vocabularios/naturezas-conceito")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-natureza-conceito", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<NaturezaConceito>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<FormaDoConceito>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarNaturezasConceito(CancellationToken cancellationToken)
     {
-        IReadOnlyList<CodigoComRotulo<NaturezaConceito>> naturezas = await _queryBus
+        IReadOnlyList<CodigoComRotulo<FormaDoConceito>> naturezas = await _queryBus
             .Send(new ListarNaturezasConceitoQuery(), cancellationToken)
             .ConfigureAwait(false);
 

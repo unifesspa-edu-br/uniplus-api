@@ -47,26 +47,18 @@ internal static class EscritaCanonica
 
     internal static JsonArray OrdenarPorConteudo(IEnumerable<JsonValue> itens)
     {
-        List<JsonValue> lista = [];
-        foreach (JsonValue? item in itens)
-        {
-            if (item is null)
-            {
-                throw new InvalidOperationException(
-                    "Um array de texto do envelope recebeu um elemento nulo antes da ordenação — nenhum dos " +
-                    "conjuntos de texto simples (ocorrenciasEsperadas, valoresDominio, " +
-                    "codigos, necessidades, alternativas de átomo EM/NAO_EM) admite null como item.");
-            }
-
-            lista.Add(item);
-        }
-
-        IOrderedEnumerable<JsonValue> ordenados = lista.OrderBy(
+        IOrderedEnumerable<JsonValue> ordenados = itens.Select(ExigirNaoNulo).OrderBy(
             static item => PerfilCanonicoV1.SerializarChave(item),
             ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
     }
+
+    private static JsonValue ExigirNaoNulo(JsonValue? item) =>
+        item ?? throw new InvalidOperationException(
+            "Um array de texto do envelope recebeu um elemento nulo antes da ordenação — nenhum dos " +
+            "conjuntos de texto simples (ocorrenciasEsperadas, valoresDominio, " +
+            "codigos, necessidades, alternativas de átomo ALGUM_DE/NENHUM_DE) admite null como item.");
 
     internal static JsonArray OrdenarPorConteudo(IEnumerable<JsonArray> clausulas)
     {

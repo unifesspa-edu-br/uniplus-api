@@ -4,7 +4,7 @@
     "descricao": "Mantém os cadastros de configuração da instituição usados pelos processos seletivos.",
     "alcance": "instituicao",
     "permissoes": [
-      "configuracao:base-legal-bonus-regional:manter",
+      "configuracao:base-legal-do-fada:manter",
       "configuracao:calendarios-dias-uteis:manter",
       "configuracao:campi:manter",
       "configuracao:categorias-documento:manter",

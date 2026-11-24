@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// Operador de uma <see cref="Regras.ValueObjects.CondicaoDnf"/> — a tripla
 /// <c>{ Fato, Operador, Valor }</c> que compõe a forma normal disjuntiva de um
 /// predicado sobre o candidato (ADR-0111, Story #847; operadores de exclusão
-/// <see cref="Diferente"/>/<see cref="NaoEm"/>, Story #916). Conjunto fechado por
+/// <see cref="Diferente"/>/<see cref="NenhumDe"/>, Story #916). Conjunto fechado por
 /// design: os seis operadores espelham exatamente a matriz operador ×
 /// domínio da ADR-0111.
 /// </summary>
@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// textual, e decorre de a canonicalização ordenar cada átomo pela sua própria serialização
 /// canônica; ordenar por valor numérico produziria outra ordem.
 /// </remarks>
-[DescricaoDoContrato("Operador que compara o fato do candidato com o valor da condição. Sobre fato multivalorado, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).")]
+[DescricaoDoContrato("Operador que compara o dado do candidato com o valor da condição. Sobre dado com vários valores, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).")]
 public enum Operador
 {
     /// <summary>Igualdade — aceito nos três domínios.</summary>
@@ -26,9 +26,9 @@ public enum Operador
     Igual = 1,
 
     /// <summary>Pertencimento a uma lista — só aceito para domínio categórico.</summary>
-    [CodigoDeContrato("EM", "é um de")]
+    [CodigoDeContrato("ALGUM_DE", "é um de")]
     [RotuloSobreConjunto("inclui algum de")]
-    Em = 2,
+    AlgumDe = 2,
 
     /// <summary>Maior ou igual — só aceito para domínio numérico.</summary>
     [CodigoDeContrato("MAIOR_IGUAL", "maior ou igual a")]
@@ -40,7 +40,7 @@ public enum Operador
 
     /// <summary>
     /// Negação de <see cref="Igual"/> (Story #916) — aceito em todo domínio onde
-    /// <see cref="Igual"/> vale. Sobre fato multivalorado significa que nenhum elemento do
+    /// <see cref="Igual"/> vale. Sobre dado com vários valores significa que nenhum elemento do
     /// conjunto é igual ao valor configurado.
     /// </summary>
     [CodigoDeContrato("DIFERENTE", "é diferente de")]
@@ -48,10 +48,10 @@ public enum Operador
     Diferente = 5,
 
     /// <summary>
-    /// Negação de <see cref="Em"/> (Story #916) — só aceito onde <see cref="Em"/> vale.
-    /// Sobre fato multivalorado significa interseção vazia com a lista configurada.
+    /// Negação de <see cref="AlgumDe"/> (Story #916) — só aceito onde <see cref="AlgumDe"/> vale.
+    /// Sobre dado com vários valores significa interseção vazia com a lista configurada.
     /// </summary>
-    [CodigoDeContrato("NAO_EM", "não é nenhum de")]
+    [CodigoDeContrato("NENHUM_DE", "não é nenhum de")]
     [RotuloSobreConjunto("não inclui nenhum de")]
-    NaoEm = 6,
+    NenhumDe = 6,
 }

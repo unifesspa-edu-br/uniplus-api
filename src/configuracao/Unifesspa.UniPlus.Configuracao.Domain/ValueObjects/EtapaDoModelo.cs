@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>Uma etapa do modelo: uma seção com itens, ou um bloco que o sistema monta.</summary>
 public sealed record EtapaDoModelo(
-    string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema Bloco, string Titulo, string? Descricao, string? Aviso, PredicadoDnf? Exibicao)
+    string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema? Bloco, string Titulo, string? Descricao, string? Aviso, PredicadoDnf? Exibicao)
 {
     public IReadOnlyCollection<string> FatosCitados => Exibicao?.FatosCitados ?? [];
 

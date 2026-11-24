@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -61,8 +62,8 @@ public static class ConferenciaDaGovernanca
         }
     }
 
-    private static string Texto(Unifesspa.UniPlus.Kernel.Domain.Enums.ClassificacaoDeProtecao classificacao) =>
-        classificacao.ToString().ToLowerInvariant();
+    private static string Texto(ClassificacaoDeProtecao classificacao) =>
+        ClassificacoesDeProtecao.ParaTokenCanonico(classificacao);
 
     private static DivergenciaDaGovernanca Registrar(Guid implantacaoId, PermissaoDeGovernanca permissao, TipoDeDivergencia tipo, DateTimeOffset instante) =>
         DivergenciaDaGovernanca.DaComposicao(implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, tipo, instante, 0);

@@ -130,11 +130,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade());
-        if (finalidade == FinalidadeFormulario.Nenhuma)
-        {
-            finalidade = null;
-        }
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoCodigo(documento.Finalidade());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
                 configuracao, c.Fato, documento.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
@@ -142,7 +138,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }
 
-    // Texto JSON válido (booleano, número, string entre aspas, array para EM) é interpretado como tal; o
+    // Texto JSON válido (booleano, número, string entre aspas, array para ALGUM_DE) é interpretado como tal; o
     // que não é JSON válido é o escalar de string que representa.
     private static JsonElement InterpretarValor(string valor)
     {

@@ -80,7 +80,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", regras, HttpStatusCode.NoContent);
 
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "cardinalidade").GetString().Should().Be("MULTIVALORADO");
+        Em(fato, "definicao", "cardinalidade", "codigo").GetString().Should().Be("VARIOS_VALORES");
         ConferirRegraEja(fato, dependencia);
     }
 
@@ -110,7 +110,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         Guid id = await CadastrarAsync(client, Agregado(membro), "/agregados");
 
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "resolucao", "binding").GetString().Should().Be($"AGREGACAO_GRUPO:{membro}");
+        Em(fato, "definicao", "resolucao", "binding").GetString().Should().Be($"RESUMO_DE_GRUPO:{membro}");
     }
 
     [Fact(DisplayName = "Agregado sobre fato do candidato é recusado")]
@@ -148,8 +148,8 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/definicao", DefinicaoCategorica(), HttpStatusCode.NoContent);
 
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "dominio").GetString().Should().Be("CATEGORICO");
-        Em(fato, "definicao", "valores", "fonte").GetString().Should().Be("GLOBAL");
+        Em(fato, "definicao", "dominio", "codigo").GetString().Should().Be("OPCAO");
+        Em(fato, "definicao", "valores", "fonte", "codigo").GetString().Should().Be("CATALOGO");
         Em(fato, "definicao", "resolucao", "pontoResolucao").GetString().Should().Be("INSCRICAO");
         Em(fato, "codigo").GetString().Should().Be(codigo);
         Em(fato, "definicao", "resolucao", "binding").GetString().Should().Be($"CAMPO_FORMULARIO:{codigo}");
@@ -168,7 +168,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         problema.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle()
             .Which.GetProperty("field").GetString().Should().Be("fonteValores");
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "dominio").GetString().Should().Be("BOOLEANO");
+        Em(fato, "definicao", "dominio", "codigo").GetString().Should().Be("SIM_OU_NAO");
     }
 
     [Fact(DisplayName = "Alterar a definição de fato de sistema é recusado e fato inexistente é 404")]
@@ -197,7 +197,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
 
         (await alteracao).StatusCode.Should().Be(HttpStatusCode.Conflict);
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "dominio").GetString().Should().Be("BOOLEANO");
+        Em(fato, "definicao", "dominio", "codigo").GetString().Should().Be("SIM_OU_NAO");
     }
 
     private static async Task<Guid> CadastrarDerivadoComValorEjaAsync(HttpClient client)

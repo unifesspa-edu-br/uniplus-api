@@ -41,7 +41,7 @@ public sealed class AvisoDeDevolucaoPorTermoExigidoTests
     private static PedidoDeConcessao Devolvido()
     {
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().AguardandoGestor();
-        pedido.Aprovar(new Identidade(ApoioDoPedido.Emissor, "diogo.souza"), new(["a"], "sensivel", true, null), new(false), DateTimeOffset.UtcNow)
+        pedido.Aprovar(new Identidade(ApoioDoPedido.Emissor, "diogo.souza"), new(["a"], "SENSIVEL", true, null), new(false), DateTimeOffset.UtcNow)
             .IsFailure.Should().BeTrue();
 
         return pedido;

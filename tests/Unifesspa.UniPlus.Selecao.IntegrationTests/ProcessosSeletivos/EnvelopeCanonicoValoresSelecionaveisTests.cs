@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Envel
 /// </summary>
 public sealed class EnvelopeCanonicoValoresSelecionaveisTests
 {
-    // O processo de referência coleta COR_RACA e RENDA, ambos SELECAO_UNICA — canonicalizar SEM
+    // O processo de referência coleta COR_RACA e RENDA, ambos ESCOLHA_UNICA — canonicalizar SEM
     // passar ValoresSelecionaveisCongelados (dicionário nulo) tem de LANÇAR, nunca emitir
     // "valoresSelecionaveis": [] por omissão. É a contraprova de D1-ter: sem esta guarda, um
     // handler que esquecesse de resolver o dicionário publicaria um seletor MUDO, e a prova de
@@ -58,7 +58,7 @@ public sealed class EnvelopeCanonicoValoresSelecionaveisTests
 
         canonicalizarComListaVazia.Should().Throw<InvalidOperationException>()
             .WithMessage("*COR_RACA*",
-                "um seletor de SELECAO_UNICA/SELECAO_MULTIPLA publicado sem opção nenhuma não é respondível — " +
+                "um seletor de ESCOLHA_UNICA/ESCOLHA_MULTIPLA publicado sem opção nenhuma não é respondível — " +
                 "o canonicalizer nunca emite \"valoresSelecionaveis\": []");
     }
 

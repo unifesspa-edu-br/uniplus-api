@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandidatoDeTeste;
 
@@ -24,7 +25,9 @@ public sealed class FatoCandidatoValoresTests
     public void AdicionarValorDominio_FonteProcesso_Recusa()
     {
         FatoCandidato fato = Criar(
-            codigo: "TIPO_DEFICIENCIA", fonteValores: FonteValoresFato.Processo, binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA").Value!;
+            descritivo: Descritivo with { Codigo = "TIPO_DEFICIENCIA" },
+            definicao: Definicao with { FonteValores = FonteValoresFato.OpcoesDoProcesso },
+            binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA").Value!;
 
         fato.AdicionarValorDominio("VISUAL", "Deficiência visual", 0, ativo: true)
             .Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal);
@@ -159,7 +162,8 @@ public sealed class FatoCandidatoValoresTests
     public void AdicionarValorDominio_ForaDeCategorico_Falha()
     {
         FatoCandidato fato = Criar(
-            codigo: "PCD", dominio: DominioFato.Booleano,
+            descritivo: Descritivo with { Codigo = "PCD" },
+            definicao: Definicao with { Dominio = TipoDoDado.SimOuNao, FonteValores = null },
             binding: "CAMPO_FORMULARIO:PCD").Value!;
 
         Result resultado = fato.AdicionarValorDominio("SIM", "Descrição", 0, ativo: true);
@@ -195,8 +199,10 @@ public sealed class FatoCandidatoValoresTests
     public void AdicionarValorDominio_SemDescricaoDerivado_Aceita()
     {
         FatoCandidato fato = Criar(
-            codigo: "FATO_DERIVADO", dominio: DominioFato.Categorico,
-            origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:FATO_DERIVADO").Value!;
+            descritivo: Descritivo with { Codigo = "FATO_DERIVADO" },
+            definicao: Definicao with { Dominio = TipoDoDado.Opcao },
+            origem: OrigemFato.Calculado,
+            binding: "REGRA_DERIVACAO:FATO_DERIVADO").Value!;
 
         Result resultado = fato.AdicionarValorDominio("X", null, 0, ativo: true);
 

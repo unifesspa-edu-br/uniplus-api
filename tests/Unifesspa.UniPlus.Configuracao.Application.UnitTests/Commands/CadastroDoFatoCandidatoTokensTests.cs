@@ -121,7 +121,7 @@ public sealed class CadastroDoFatoCandidatoTokensTests
     public async Task Declarado_TokenComEspacos_Aceito()
     {
         Result<Guid> resultado = await CriarDeclaradoAsync(
-            Declarado() with { Dominio = " BOOLEANO ", Cardinalidade = " ESCALAR ", Escopo = " CANDIDATO ", ClassificacaoProtecao = " PESSOAL " });
+            Declarado() with { Dominio = " SIM_OU_NAO ", Cardinalidade = " VALOR_UNICO ", Escopo = " CANDIDATO ", ClassificacaoProtecao = " PESSOAL " });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -139,11 +139,11 @@ public sealed class CadastroDoFatoCandidatoTokensTests
     }
 
     private static CriarFatoCandidatoCommand Declarado() => new(
-        "FATO_NOVO", "Fato novo", "Descrição do fato.", "BOOLEANO", "ESCALAR", null, null, "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade,
+        "FATO_NOVO", "Fato novo", "Descrição do fato.", "SIM_OU_NAO", "VALOR_UNICO", null, null, "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade,
         "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private static CriarFatoDerivadoCommand Derivado() => new(
-        "DERIVADO_NOVO", "Derivado novo", "Descrição do fato.", "BOOLEANO", "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
+        "DERIVADO_NOVO", "Derivado novo", "Descrição do fato.", "SIM_OU_NAO", "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private static CriarFatoAgregadoCommand Agregado() => new(
         "AGREGADO_NOVO", "Agregado novo", "Descrição do fato.", "MEMBRO", "INSCRICAO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");

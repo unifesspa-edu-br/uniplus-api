@@ -63,7 +63,7 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         problem.Extensions["code"].Should().Be("uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
         problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
         problem.Title.Should().Be("O prazo do recurso em dias úteis exige número inteiro");
-        problem.Detail.Should().Contain("HORAS",
+        problem.Detail.Should().Contain("horas",
             "quem declarou fração precisa ser levado à saída que serve ao caso dele, que é declarar em horas");
     }
 

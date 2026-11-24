@@ -26,14 +26,14 @@ public sealed class ChavesEstrangeirasDasBasesELiberacoesTests : ConcessoesEmVig
         """
         INSERT INTO autorizacao.bases_da_permissao_concedida
             (id, perfil_id, concessao_id, codigo, classificacao, de_unidade, origem, referencia_id, ordem_na_trilha)
-        VALUES ({0}, {1}, {2}, 'configuracao:cursos:manter', 'interno', false, 'migracao', {3}, nextval('autorizacao.ordem_da_trilha_de_contencao'))
+        VALUES ({0}, {1}, {2}, 'configuracao:cursos:manter', 'INTERNO', false, 'migracao', {3}, nextval('autorizacao.ordem_da_trilha_de_contencao'))
         """;
 
     private const string ReclassificacaoSql =
         """
         INSERT INTO autorizacao.reclassificacoes_da_permissao
             (id, implantacao_id, perfil_id, codigo, classificacao_anterior, classificacao_nova, de_unidade_anterior, de_unidade_novo, instante, ordem_na_trilha)
-        SELECT {0}, i.id, {1}, 'configuracao:cursos:manter', 'interno', 'pessoal', false, false, now(), nextval('autorizacao.ordem_da_trilha_de_contencao')
+        SELECT {0}, i.id, {1}, 'configuracao:cursos:manter', 'INTERNO', 'PESSOAL', false, false, now(), nextval('autorizacao.ordem_da_trilha_de_contencao')
         FROM autorizacao.implantacoes_das_permissoes i ORDER BY i.sequencia DESC LIMIT 1
         """;
 

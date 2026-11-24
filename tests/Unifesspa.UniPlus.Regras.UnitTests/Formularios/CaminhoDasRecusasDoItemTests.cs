@@ -21,7 +21,7 @@ public sealed class CaminhoDasRecusasDoItemTests
     [Fact(DisplayName = "O rótulo e a ajuda recusados saem no caminho da apresentação")]
     public void Conferir_RotuloEAjuda_ApontaNaApresentacao()
     {
-        ApresentacaoDoCampo apresentacao = new(" ", TipoRenderizacao.Booleano, new string('a', FormaDoItem.AjudaMaxLength + 1));
+        ApresentacaoDoCampo apresentacao = new(" ", TipoRenderizacao.SimOuNao, new string('a', FormaDoItem.AjudaMaxLength + 1));
 
         List<FieldError> erros = FormaDoItem.Conferir("CAMPO", 0, apresentacao, formato: null, SemRegras);
 
@@ -35,7 +35,7 @@ public sealed class CaminhoDasRecusasDoItemTests
     {
         RegrasDoCampo regras = new(Citando("CAMPO"), Obrigatoriedade.Quando(Citando("CAMPO")), []);
 
-        List<FieldError> erros = FormaDoItem.Conferir("CAMPO", 0, new ApresentacaoDoCampo("Campo", TipoRenderizacao.Booleano), formato: null, regras);
+        List<FieldError> erros = FormaDoItem.Conferir("CAMPO", 0, new ApresentacaoDoCampo("Campo", TipoRenderizacao.SimOuNao), formato: null, regras);
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("regras.exibicao", ItemFormularioErrorCodes.RegraAutorreferente),

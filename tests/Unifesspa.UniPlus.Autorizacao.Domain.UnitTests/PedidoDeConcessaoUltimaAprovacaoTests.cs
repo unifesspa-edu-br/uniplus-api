@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBui
 /// </summary>
 public sealed class PedidoDeConcessaoUltimaAprovacaoTests
 {
-    private static readonly PerfilAvaliado Ampliado = new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "sensivel", true, null);
+    private static readonly PerfilAvaliado Ampliado = new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "SENSIVEL", true, null);
 
     [Fact(DisplayName = "A segunda aprovação do gestor, no mesmo instante da primeira, é a que a proteção de dados confere")]
     public void MesmoInstante_DecisaoNaoGravadaEAMaisRecente()

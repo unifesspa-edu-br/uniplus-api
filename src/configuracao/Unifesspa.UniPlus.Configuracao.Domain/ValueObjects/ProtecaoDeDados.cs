@@ -22,7 +22,7 @@ public readonly record struct ProtecaoDeDados(
     /// classificação.
     /// </summary>
     public static Result<ProtecaoDeDados> Validar(
-        ClassificacaoDeProtecao classificacao,
+        ClassificacaoDeProtecao? classificacao,
         string? finalidade,
         HipoteseLegalTratamento hipotese,
         RecusasDaProtecao recusas,
@@ -30,57 +30,56 @@ public readonly record struct ProtecaoDeDados(
     {
         ArgumentNullException.ThrowIfNull(recusas);
 
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
-
-        bool classificacaoValida = classificacao != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(classificacao);
-        if (classificacao == ClassificacaoDeProtecao.Nenhuma)
-        {
-            Recusar("classificacaoProtecao", recusas.ClassificacaoObrigatoria,
-                $"Classificação de proteção de dados {recusas.Sujeito} é obrigatória.");
-        }
-        else if (!classificacaoValida)
-        {
-            Recusar("classificacaoProtecao", recusas.ClassificacaoInvalida,
-                $"Classificação de proteção de dados {recusas.Sujeito} fora do vocabulário fechado.");
-        }
-        else if (restricaoDaClassificacao?.Invoke(classificacao) is { } restricao)
-        {
-            Recusar("classificacaoProtecao", restricao.Code, restricao.Message);
-        }
-
         string finalidadeNormalizada = finalidade?.Trim() ?? string.Empty;
-        if (finalidadeNormalizada.Length == 0)
-        {
-            Recusar("finalidadeTratamento", recusas.FinalidadeObrigatoria,
-                $"Finalidade do tratamento {recusas.Sujeito} é obrigatória.");
-        }
-        else if (finalidadeNormalizada.Length > FinalidadeMaxLength)
-        {
-            Recusar("finalidadeTratamento", recusas.FinalidadeTamanho,
-                $"Finalidade do tratamento deve ter no máximo {FinalidadeMaxLength} caracteres.");
-        }
-
-        if (hipotese == HipoteseLegalTratamento.Nenhuma)
-        {
-            Recusar("hipoteseLegal", recusas.HipoteseObrigatoria,
-                $"Hipótese legal de tratamento {recusas.Sujeito} é obrigatória.");
-        }
-        else if (!Enum.IsDefined(hipotese))
-        {
-            Recusar("hipoteseLegal", recusas.HipoteseInvalida,
-                $"Hipótese legal de tratamento {recusas.Sujeito} fora do vocabulário fechado.");
-        }
-        else if (classificacaoValida && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
-        {
-            Recusar("hipoteseLegal", recusas.HipoteseIncompativel,
-                "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.");
-        }
-
+        FieldError?[] conferencias =
+        [
+            RecusaDaClassificacao(classificacao, recusas, restricaoDaClassificacao),
+            RecusaDaFinalidade(finalidadeNormalizada, recusas),
+            RecusaDaHipotese(hipotese, classificacao, recusas),
+        ];
+        List<FieldError> erros = [.. conferencias.OfType<FieldError>()];
         return erros.Count > 0
             ? Result<ProtecaoDeDados>.ValidationFailure(erros)
-            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao, finalidadeNormalizada, hipotese));
+            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao!.Value, finalidadeNormalizada, hipotese));
     }
+
+    private static FieldError? RecusaDaClassificacao(
+        ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas,
+        Func<ClassificacaoDeProtecao, DomainError?>? restricao)
+    {
+        DomainError? erro = classificacao is null
+            ? new(recusas.ClassificacaoObrigatoria, $"Classificação de proteção de dados {recusas.Sujeito} é obrigatória.")
+            : !NaEscala(classificacao)
+                ? new(recusas.ClassificacaoInvalida, $"Classificação de proteção de dados {recusas.Sujeito} fora do vocabulário fechado.")
+                : restricao?.Invoke(classificacao.Value);
+        return erro is null ? null : new FieldError("classificacaoProtecao", erro);
+    }
+
+    private static FieldError? RecusaDaFinalidade(string finalidade, RecusasDaProtecao recusas)
+    {
+        DomainError? erro = finalidade.Length == 0
+            ? new(recusas.FinalidadeObrigatoria, $"Finalidade do tratamento {recusas.Sujeito} é obrigatória.")
+            : finalidade.Length > FinalidadeMaxLength
+                ? new(recusas.FinalidadeTamanho, $"Finalidade do tratamento deve ter no máximo {FinalidadeMaxLength} caracteres.")
+                : null;
+        return erro is null ? null : new FieldError("finalidadeTratamento", erro);
+    }
+
+    private static FieldError? RecusaDaHipotese(
+        HipoteseLegalTratamento hipotese, ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas)
+    {
+        DomainError? erro = hipotese == HipoteseLegalTratamento.Nenhuma
+            ? new(recusas.HipoteseObrigatoria, $"Hipótese legal de tratamento {recusas.Sujeito} é obrigatória.")
+            : !Enum.IsDefined(hipotese)
+                ? new(recusas.HipoteseInvalida, $"Hipótese legal de tratamento {recusas.Sujeito} fora do vocabulário fechado.")
+                : NaEscala(classificacao) && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao!.Value)
+                    ? new(recusas.HipoteseIncompativel, "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.")
+                    : null;
+        return erro is null ? null : new FieldError("hipoteseLegal", erro);
+    }
+
+    private static bool NaEscala(ClassificacaoDeProtecao? classificacao) =>
+        classificacao is { } valor && Enum.IsDefined(valor);
 }
 
 /// <summary>

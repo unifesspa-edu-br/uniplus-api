@@ -11,6 +11,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -256,7 +257,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
         DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo, PrazoEValidadeCopiados prazoEValidade) =>
         new(
             new TipoDocumentoDaExigenciaInput(tipo.Id),
-            new MomentoDaExigenciaInput(fase.Id, Finalidade: EstruturaFormulario.ParaToken(finalidade)),
+            new MomentoDaExigenciaInput(fase.Id, Finalidade: finalidade.Codigo()),
             new AplicabilidadeDaExigenciaInput(
                 documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", CondicoesDoGatilho(documento.Quando)),
             IndeferimentoDoModelo(documento.Indeferimento),

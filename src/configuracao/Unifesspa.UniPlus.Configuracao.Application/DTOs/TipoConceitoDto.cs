@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Representação pública de um tipo de conceito: a identidade (<c>Id</c> e <c>Codigo</c>, imutável), o estado
@@ -27,7 +28,7 @@ public sealed record TipoConceitoDto(
 public sealed record DefinicaoDoTipoConceitoDto(
     string Nome,
     string? Descricao,
-    CodigoComRotulo<NaturezaConceito> Natureza,
+    CodigoComRotulo<FormaDoConceito> Natureza,
     EscalaNumericaDto? Numerico,
     IReadOnlyList<ValorCategoricoDto>? Valores);
 

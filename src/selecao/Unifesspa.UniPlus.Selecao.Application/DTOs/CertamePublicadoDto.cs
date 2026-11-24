@@ -167,7 +167,7 @@ public sealed record FaseCronogramaCertameDto(
 /// <see cref="Qualquer"/> verdadeiro e <see cref="Lista"/> nula são a mesma afirmação vista de dois
 /// ângulos — o envelope os congela em bicondicional, e a projeção preserva a forma.
 /// </remarks>
-public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<string>? Lista);
+public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<CodigoComRotulo<FormatoPermitido>>? Lista);
 
 /// <summary>
 /// Uma exigência documental, reduzida ao que o candidato precisa saber para reunir os documentos.

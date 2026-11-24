@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Único lugar em que o token de um eixo do fato vira o enum, no cadastro e na alteração. Ausente,
@@ -14,11 +16,12 @@ internal static class TokensDoFato
     /// <summary>O que o token preenchido e desconhecido vira: nenhum enum o define.</summary>
     internal const int ForaDoVocabulario = -1;
 
-    internal static DominioFato? Dominio(string? token) => Ler<DominioFato>(token, DominiosFato.TryAnalisar);
+    internal static TipoDoDado? Dominio(string? token) => Ler<TipoDoDado>(token, CatalogoDe<TipoDoDado>.TentarObter);
 
-    internal static CardinalidadeFato? Cardinalidade(string? token) => Ler<CardinalidadeFato>(token, CardinalidadesFato.TryAnalisar);
+    internal static QuantidadeDeValores? Cardinalidade(string? token) =>
+        Ler<QuantidadeDeValores>(token, CatalogoDe<QuantidadeDeValores>.TentarObter);
 
-    internal static FonteValoresFato? Fonte(string? token) => Ler<FonteValoresFato>(token, FontesValoresFato.TryAnalisar);
+    internal static FonteValoresFato? Fonte(string? token) => Ler<FonteValoresFato>(token, CatalogoDe<FonteValoresFato>.TentarObter);
 
     internal static FormatoTexto? Formato(string? token) => Ler<FormatoTexto>(token, FormatosTexto.TryAnalisar);
 

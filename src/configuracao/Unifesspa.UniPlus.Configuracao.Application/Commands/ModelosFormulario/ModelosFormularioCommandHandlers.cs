@@ -40,7 +40,7 @@ public static class CriarModeloFormularioCommandHandler
     private static async Task<Result<ModeloFormulario>> ConferirECriarAsync(
         CriarModeloFormularioCommand command, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
-        FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(command.Finalidade);
+        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(command.Finalidade);
         DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
         (ConteudoLido conteudo, IReadOnlyList<FieldError> recusasDaLeitura, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
             command.Conteudo, finalidade, descritivo.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);

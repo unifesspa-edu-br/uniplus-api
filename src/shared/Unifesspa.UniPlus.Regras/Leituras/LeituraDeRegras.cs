@@ -18,14 +18,14 @@ public static class LeituraDeRegras
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         return new ObrigatoriedadeDto(
-            PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo),
+            obrigatoriedade.Tipo.Codigo(),
             obrigatoriedade.Predicado?.ToDto());
     }
 
     public static RestricaoValorDto ToDto(this RestricaoValor restricao)
     {
         ArgumentNullException.ThrowIfNull(restricao);
-        string tipo = RestricaoValorJson.ParaToken(restricao.Tipo);
+        string tipo = restricao.Tipo.Codigo();
         return restricao switch
         {
             FaixaNumerica faixa => new RestricaoValorDto(tipo, faixa.Minimo, faixa.Maximo, null, null, null, null),

@@ -26,6 +26,11 @@ public sealed record FormatoPermitidoEntry
 
     public static Result<FormatoPermitidoEntry> Criar(FormatoPermitido formato, int? tamanhoMaximoBytesMax)
     {
+        if (!Enum.IsDefined(formato))
+        {
+            return Result<FormatoPermitidoEntry>.Failure(new DomainError("FormatosPermitidos.FormatoInvalido", "Formato não reconhecido."));
+        }
+
         if (tamanhoMaximoBytesMax is <= 0)
         {
             return Result<FormatoPermitidoEntry>.Failure(new DomainError(

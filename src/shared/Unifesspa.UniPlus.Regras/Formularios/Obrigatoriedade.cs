@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -26,6 +27,15 @@ public sealed record Obrigatoriedade
 
     public static Obrigatoriedade Nunca { get; } = new(TipoObrigatoriedade.Nunca, predicado: null);
 
+    public static Obrigatoriedade? DaForma(TipoObrigatoriedade tipo, PredicadoDnf? predicado) =>
+        (tipo, predicado) switch
+        {
+            (TipoObrigatoriedade.Sempre, null) => Sempre,
+            (TipoObrigatoriedade.Nunca, null) => Nunca,
+            (TipoObrigatoriedade.Quando, { } condicao) => Quando(condicao),
+            _ => null,
+        };
+
     public static Obrigatoriedade Quando(PredicadoDnf predicado)
     {
         ArgumentNullException.ThrowIfNull(predicado);
@@ -45,10 +55,24 @@ public sealed record Obrigatoriedade
 }
 
 /// <summary>As três formas de obrigatoriedade de um item ou termo.</summary>
+[DescricaoDoContrato("Quando o item ou o termo do formulário é de resposta obrigatória.")]
 public enum TipoObrigatoriedade
 {
-    Nenhuma = 0,
+    [CodigoDeContrato(
+        "SEMPRE",
+        "Sempre obrigatório",
+        Descricao = "O candidato sempre precisa responder. Não tem condição.")]
     Sempre = 1,
+
+    [CodigoDeContrato(
+        "NUNCA",
+        "Nunca obrigatório",
+        Descricao = "A resposta é sempre opcional. Não tem condição.")]
     Nunca = 2,
+
+    [CodigoDeContrato(
+        "QUANDO",
+        "Obrigatório quando a condição é verdadeira",
+        Descricao = "O candidato precisa responder quando a condição sobre as respostas anteriores é verdadeira. Tem sempre uma condição.")]
     Quando = 3,
 }

@@ -21,11 +21,11 @@ public sealed class CondicaoDnfInformadaTests
 
     [Theory(DisplayName = "Cada código de operador declarado cria a condição com o operador dele")]
     [InlineData("IGUAL", Operador.Igual, "true")]
-    [InlineData("EM", Operador.Em, "[\"A\"]")]
+    [InlineData("ALGUM_DE", Operador.AlgumDe, "[\"A\"]")]
     [InlineData("MAIOR_IGUAL", Operador.MaiorIgual, "18")]
     [InlineData("MENOR_IGUAL", Operador.MenorIgual, "60")]
     [InlineData("DIFERENTE", Operador.Diferente, "true")]
-    [InlineData("NAO_EM", Operador.NaoEm, "[\"A\"]")]
+    [InlineData("NENHUM_DE", Operador.NenhumDe, "[\"A\"]")]
     public void CriarInformada_CodigoDeclarado_CriaComOOperador(string codigo, Operador esperado, string valor)
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.CriarInformada(" FATO ", codigo, Json(valor));
@@ -51,7 +51,7 @@ public sealed class CondicaoDnfInformadaTests
 
     [Fact(DisplayName = "O valor incoerente com o operador lido é recusado no campo do valor")]
     public void CriarInformada_ValorIncoerenteComOOperador_RecusaOValor() =>
-        Recusas(CondicaoDnf.CriarInformada("FATO", "EM", Json("\"A\"")))
+        Recusas(CondicaoDnf.CriarInformada("FATO", "ALGUM_DE", Json("\"A\"")))
             .Should().Equal(("valor", "CondicaoDnf.FormaIncoerenteComOperador"));
 
     [Fact(DisplayName = "O fato em branco e o valor incoerente saem juntos quando o operador é conhecido")]
@@ -65,7 +65,7 @@ public sealed class CondicaoDnfInformadaTests
         Result<CondicaoDnf> resultado = CondicaoDnf.CriarInformada("FATO", "QUASE_IGUAL", Json("true"));
 
         string mensagem = resultado.Error!.Message;
-        mensagem.Should().Contain("IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NAO_EM");
+        mensagem.Should().Contain("IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE");
         mensagem.Should().NotContain("QUASE_IGUAL");
     }
 

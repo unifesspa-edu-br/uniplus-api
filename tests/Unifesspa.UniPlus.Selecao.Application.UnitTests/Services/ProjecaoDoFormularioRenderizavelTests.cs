@@ -125,7 +125,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         pressupostos.Should().BeEquivalentTo(
             [
-                new PressupostoRenderizavel("COR_RACA", "COR_RACA", "SELECAO_UNICA", null, [new ValorSelecionavel("PRETA", "Preta", 0)], null),
+                new PressupostoRenderizavel("COR_RACA", "COR_RACA", "ESCOLHA_UNICA", null, [new ValorSelecionavel("PRETA", "Preta", 0)], null),
                 new PressupostoRenderizavel("FAIXA_ETARIA", null, null, null, null, ["DATA_NASCIMENTO"]),
                 new PressupostoRenderizavel("RURAL_NA_FAMILIA", null, null, null, null, ["TRABALHADOR_RURAL"]),
             ]);
@@ -133,7 +133,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
     private static Configuracao ConfiguracaoComValores() => new(
         [Formulario(FinalidadeFormulario.Inscricao)],
-        [Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
+        [Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica, FinalidadeFormulario.Inscricao),
          Campo("NOME_SOCIAL", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")], [], [])
     {
         Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
@@ -145,10 +145,10 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
     private static Configuracao ConfiguracaoComPressupostos() => new(
         [Formulario(FinalidadeFormulario.Inscricao), Formulario(FinalidadeFormulario.Habilitacao)],
-        [Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
-         Campo("CERTIFICADO", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
-         Campo("DECLARACAO_RURAL", 1, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
-         Campo("DECLARACAO_MAIORIDADE", 2, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)])],
+        [Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica, FinalidadeFormulario.Inscricao),
+         Campo("CERTIFICADO", 0, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
+         Campo("DECLARACAO_RURAL", 1, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
+         Campo("DECLARACAO_MAIORIDADE", 2, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)])],
         [Familia()], [])
     {
         Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal) { ["COR_RACA"] = [new("PRETA", "Preta", 0)] },
@@ -158,7 +158,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     private static GrupoColetado Familia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
         .NaSecao(Secao)
         .ComOcorrencias(0, null)
-        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null))
+        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Inscricao, etapa: null))
         .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
@@ -206,7 +206,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         FormularioProcesso.Criar(
             finalidade, null, null,
             [
-                EtapaFormulario.Criar(new EtapaEstrutura(Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura(Secao, 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
                 EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
@@ -230,6 +230,6 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     private static TermoExigidoFormulario Termo(string codigo, FinalidadeFormulario finalidade) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Veracidade", "Declaro a veracidade.", "Lei 9.784/1999", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Veracidade", "Declaro a veracidade.", "Lei 9.784/1999", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
             null, Obrigatoriedade.Sempre, finalidade).Value!;
 }

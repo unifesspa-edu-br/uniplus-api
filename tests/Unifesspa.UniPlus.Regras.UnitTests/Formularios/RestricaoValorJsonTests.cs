@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -48,6 +49,8 @@ public sealed class RestricaoValorJsonTests
     [InlineData("""{"tipo":"OPCOES_PERMITIDAS","entradas":[]}""", RestricaoValorErrorCodes.OpcoesVazias)]
     [InlineData("""{"tipo":"OPCOES_DAS_RESPOSTAS","fatos":[]}""", RestricaoValorErrorCodes.FatosVazios)]
     [InlineData("""{"tipo":"REGEX"}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
+    [InlineData("""{"tipo":"faixa_numerica","minimo":1}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
+    [InlineData("""{"tipo":"FORMATO_TEXTO"}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     [InlineData("""{"tipo":"FAIXA_DE_DATA","dataMinima":{"referenciaDaData":"HOJE"}}""", RestricaoValorErrorCodes.LimiteDeDataInvalido)]
     [InlineData("""{"tipo":"FAIXA_DE_DATA","dataMaxima":{"referenciaDaData":"DATA_FIXA","data":"10/01/2027"}}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     public void DeJson_FormaInvalida_Recusa(string json, string codigo)
@@ -57,5 +60,28 @@ public sealed class RestricaoValorJsonTests
         Result<RestricaoValor> lida = RestricaoValorJson.DeJson(documento.RootElement);
 
         lida.Error!.Code.Should().Be(codigo);
+    }
+
+    [Theory(DisplayName = "O tipo declarável é o do código exato; o formato do texto vem do catálogo e não se declara")]
+    [InlineData("FAIXA_NUMERICA", TipoRestricaoValor.FaixaNumerica)]
+    [InlineData("TAMANHO_TEXTO", TipoRestricaoValor.TamanhoTexto)]
+    [InlineData("OPCOES_PERMITIDAS", TipoRestricaoValor.OpcoesPermitidas)]
+    [InlineData("OPCOES_DAS_RESPOSTAS", TipoRestricaoValor.OpcoesDasRespostas)]
+    [InlineData("MUNICIPIOS_DA_UF", TipoRestricaoValor.MunicipiosDaUf)]
+    [InlineData("FAIXA_DE_DATA", TipoRestricaoValor.FaixaDeData)]
+    [InlineData("FORMATO_TEXTO", null)]
+    [InlineData("faixa_de_data", null)]
+    [InlineData("FAIXA_DE_DATA ", null)]
+    [InlineData("REGEX", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void TipoDeclarado_SoOCodigoExatoDeTipoDeclaravel(string? codigo, TipoRestricaoValor? esperado) =>
+        RestricoesDeValor.TipoDeclarado(codigo).Should().Be(esperado);
+
+    [Fact(DisplayName = "A restrição da entrada com tipo desconhecido ou de formato do texto é recusada com o código do tipo")]
+    public void Restricao_TipoNaoDeclaravel_RecusaComoTipoDesconhecido()
+    {
+        EntradaDeRegras.Restricao(new RestricaoValorInput("FORMATO_TEXTO")).Error!.Code.Should().Be(RestricaoValorErrorCodes.TipoDesconhecido);
+        EntradaDeRegras.Restricao(new RestricaoValorInput("tamanho_texto", Maximo: 5)).Error!.Code.Should().Be(RestricaoValorErrorCodes.TipoDesconhecido);
     }
 }

@@ -156,10 +156,10 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
     }
 
     private DomainError? ForaDaReclassificacao(ConcessaoNaReclassificacao concessao) =>
-        concessao.DaPermissao && SuspendeA(concessao.Base) ? null : ReclassificacaoErros.ConcessaoForaDaReclassificacao();
+        concessao.DaPermissao && concessao.Base is { } baseDaConcessao && SuspendeA(baseDaConcessao) ? null : ReclassificacaoErros.ConcessaoForaDaReclassificacao();
 
     private DomainError? EtapaNaoExigida(PedidoDeDecisaoDaReclassificacao pedido, ConcessaoNaReclassificacao concessao) =>
-        EtapasExigidas(concessao.Base).Contains(pedido.Etapa) ? null : ReclassificacaoErros.EtapaNaoExigida();
+        EtapasExigidas(concessao.Base!).Contains(pedido.Etapa) ? null : ReclassificacaoErros.EtapaNaoExigida();
 
     private static DomainError? EtapaJaDecidida(PedidoDeDecisaoDaReclassificacao pedido, ConcessaoNaReclassificacao concessao) =>
         concessao.Decisoes.Any(d => d.Etapa == pedido.Etapa) ? ReclassificacaoErros.EtapaJaDecidida() : null;
@@ -196,7 +196,7 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
     {
         List<DecisaoNaConcessao> decisoes = [.. concessao.Decisoes, new(pedido.Etapa, pedido.Decisor, pedido.Resultado)];
 
-        return EtapasExigidas(concessao.Base)
+        return EtapasExigidas(concessao.Base!)
             .All(etapa => decisoes.Exists(d => d.Etapa == etapa && d.Resultado == ResultadoDaLiberacao.Liberada));
     }
 

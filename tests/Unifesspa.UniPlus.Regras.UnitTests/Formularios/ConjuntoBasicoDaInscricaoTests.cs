@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -43,7 +44,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         ConjuntoBasicoDaInscricao.Fatos.Should().Contain(codigos);
         IReadOnlyList<FatoColetadoInput> itens = [.. codigos.Select(c => ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == c))];
         itens.Select(static i => i.Apresentacao!.Rotulo).Should().Equal("Sexo biológico", "Sexo civil", "Identidade de gênero", "Orientação sexual");
-        itens.Should().OnlyContain(static i => i.Regras!.Obrigatoriedade!.Tipo == PredicadoDnfJson.ObrigatoriedadeSempre && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        itens.Should().OnlyContain(static i => i.Regras!.Obrigatoriedade!.Tipo == TipoObrigatoriedade.Sempre.Codigo() && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "O grupo do cliente que colide com a seção sobe com os itens")]
@@ -195,7 +196,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [InlineData(3, 3)]
     public void MesclarEtapas_SecaoOmitida_Entra(int ordemEnviada, int ordemGravada)
     {
-        EtapaFormularioInput dados = new("DADOS", ordemEnviada, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados", null, null));
+        EtapaFormularioInput dados = new("DADOS", ordemEnviada, TipoEtapaFormulario.Secao.Codigo(), null, new ApresentacaoDaEtapaInput("Dados", null, null));
 
         (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([dados], ConjuntoBasicoDaInscricao.Secao);
 
@@ -291,7 +292,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
         return alteracao switch
         {
-            "obrigatoriedade" => nome with { Regras = nome.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput(PredicadoDnfJson.ObrigatoriedadeNunca) } },
+            "obrigatoriedade" => nome with { Regras = nome.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput(TipoObrigatoriedade.Nunca.Codigo()) } },
             "secao" => nome with { EtapaCodigo = "DADOS" },
             _ => nome with
             {

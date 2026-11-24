@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -29,7 +30,7 @@ public sealed record ConceitoDaEtapa
 
     public string Codigo { get; }
     public string Nome { get; }
-    public NaturezaConceito Natureza { get; }
+    public FormaDoConceito Natureza { get; }
 
     /// <summary>A escala do conceito numérico; nula no categórico.</summary>
     public EscalaNumerica? Escala { get; }
@@ -44,7 +45,7 @@ public sealed record ConceitoDaEtapa
     public static Result<ConceitoDaEtapa> Criar(
         string? codigo,
         string? nome,
-        NaturezaConceito natureza,
+        FormaDoConceito natureza,
         EscalaInformada? escala,
         IReadOnlyList<ValorCategoricoInformado?>? valores)
     {

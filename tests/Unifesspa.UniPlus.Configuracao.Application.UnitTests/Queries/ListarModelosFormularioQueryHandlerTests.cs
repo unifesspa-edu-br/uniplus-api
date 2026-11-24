@@ -79,7 +79,7 @@ public sealed class ListarModelosFormularioQueryHandlerTests
 
         ListarModelosFormularioResult resultado = await ListarAsync();
 
-        resultado.Items.Select(static m => (m.Id, m.Codigo, m.Finalidade)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", "HABILITACAO"));
+        resultado.Items.Select(static m => (m.Id, m.Codigo, m.Finalidade.Codigo)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", "HABILITACAO"));
         (resultado.AnteriorAfterId, resultado.ProximoAfterId).Should().Be((anterior, proximo));
     }
 
@@ -94,7 +94,7 @@ public sealed class ListarModelosFormularioQueryHandlerTests
 
     private static ModeloFormulario Modelo()
     {
-        EtapaDoModelo dados = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+        EtapaDoModelo dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
         EtapaDoModelo revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             "MODELO_DE_TESTE", "Modelo de teste", null, FinalidadeFormulario.Habilitacao, null,

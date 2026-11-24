@@ -6,9 +6,11 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -32,7 +34,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
         (ProcessoSeletivo processo, TipoDocumentoView tipo) = await ProcessoComExigenciaAsync(fatosComprovados: ["MODALIDADE"]);
 
         Result resultado = ConferenciaDaAprovacaoDaProtecao.Conferir(
-            processo, Vivos(tipo with { ProtecaoAprovada = false }), [Fato("MODALIDADE", "DERIVADO", aprovada: false), Fato("SEXO", "DECLARADO", aprovada: false)]);
+            processo, Vivos(tipo with { ProtecaoAprovada = false }), [Fato("MODALIDADE", OrigemFato.Calculado, aprovada: false), Fato("SEXO", OrigemFato.Declarado, aprovada: false)]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("documentosExigidos.LAUDO_MEDICO", "ProcessoSeletivo.TipoDocumentoComProtecaoPendente"),
@@ -45,7 +47,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
     {
         (ProcessoSeletivo semUso, TipoDocumentoView tipoSemUso) = await ProcessoComExigenciaAsync(fatosComprovados: []);
         (ProcessoSeletivo comUso, TipoDocumentoView tipoComUso) = await ProcessoComExigenciaAsync(fatosComprovados: ["MODALIDADE"]);
-        FatoCandidatoView[] catalogo = [Fato("MODALIDADE", "DERIVADO", aprovada: false), Fato("SEXO", "DECLARADO", aprovada: false)];
+        FatoCandidatoView[] catalogo = [Fato("MODALIDADE", OrigemFato.Calculado, aprovada: false), Fato("SEXO", OrigemFato.Declarado, aprovada: false)];
 
         ConferenciaDaAprovacaoDaProtecao.Conferir(semUso, Vivos(tipoSemUso), catalogo).IsSuccess.Should().BeTrue();
         ConferenciaDaAprovacaoDaProtecao.Conferir(comUso, Vivos(tipoComUso), catalogo).Errors
@@ -57,7 +59,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
     {
         (ProcessoSeletivo processo, TipoDocumentoView tipo) = await ProcessoComExigenciaAsync(fatosComprovados: ["MODALIDADE"]);
 
-        ConferenciaDaAprovacaoDaProtecao.Conferir(processo, Vivos(tipo), [Fato("MODALIDADE", "DERIVADO", aprovada: true)]).IsSuccess.Should().BeTrue();
+        ConferenciaDaAprovacaoDaProtecao.Conferir(processo, Vivos(tipo), [Fato("MODALIDADE", OrigemFato.Calculado, aprovada: true)]).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "O tipo exigido que o cadastro não devolve mais (excluído) é recusado em vez de passar como aprovado")]
@@ -81,8 +83,8 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
 
         MarcadasDe(pendente, Vivos(tipoPendente with { ProtecaoAprovada = false }), []).Should().Equal(pendente.DocumentosExigidos.Single().Id);
         MarcadasDe(excluido, new Dictionary<Guid, TipoDocumentoView>(), []).Should().Equal(excluido.DocumentosExigidos.Single().Id);
-        MarcadasDe(comFatoPendente, Vivos(tipoComFato), [Fato("MODALIDADE", "DERIVADO", aprovada: false)]).Should().Equal(comFatoPendente.DocumentosExigidos.Single().Id);
-        MarcadasDe(aprovado, Vivos(tipoAprovado), [Fato("MODALIDADE", "DERIVADO", aprovada: true)]).Should().BeEmpty();
+        MarcadasDe(comFatoPendente, Vivos(tipoComFato), [Fato("MODALIDADE", OrigemFato.Calculado, aprovada: false)]).Should().Equal(comFatoPendente.DocumentosExigidos.Single().Id);
+        MarcadasDe(aprovado, Vivos(tipoAprovado), [Fato("MODALIDADE", OrigemFato.Calculado, aprovada: true)]).Should().BeEmpty();
     }
 
     private static IReadOnlySet<Guid> MarcadasDe(
@@ -123,9 +125,9 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 
-    private static FatoCandidatoView Fato(string codigo, string origem, bool aprovada) => new(
-        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "CATEGORICO", origem, "ESCALAR", null, "INSCRICAO",
-        origem == "DERIVADO" ? $"REGRA_DERIVACAO:{codigo}" : $"CAMPO_FORMULARIO:{codigo}", null, "GLOBAL", Ativo: true,
+    private static FatoCandidatoView Fato(string codigo, OrigemFato origem, bool aprovada) => new(
+        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(origem), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
+        origem == OrigemFato.Calculado ? $"REGRA_DERIVACAO:{codigo}" : $"CAMPO_FORMULARIO:{codigo}", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true,
         ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
         ProtecaoAprovada: aprovada);
 }

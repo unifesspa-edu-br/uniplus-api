@@ -2,18 +2,17 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<ModeloFormulario>
 {
-    private static readonly ValueConverter<FinalidadeFormulario, string> FinalidadeConverter =
-        new(finalidade => EstruturaFormulario.ParaToken(finalidade), token => EstruturaFormulario.FinalidadeDoToken(token));
+    private const int CodigoDeContratoMaxLength = 30;
 
     public void Configure(EntityTypeBuilder<ModeloFormulario> builder)
     {
@@ -27,14 +26,14 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
             tabela.HasComment("Modelos de formulário e seu conteúdo para processos seletivos.");
             tabela.HasCheckConstraint(
                 "ck_modelos_formulario_finalidade",
-                $"finalidade IN ('{EstruturaFormulario.FinalidadeInscricao}', '{EstruturaFormulario.FinalidadeIsencaoTaxa}', '{EstruturaFormulario.FinalidadeHabilitacao}')");
+                $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
         });
         builder.HasKey(modelo => modelo.Id);
         builder.Property(modelo => modelo.Id).ValueGeneratedNever().HasComment("Identificador do modelo de formulário.");
         builder.Property(modelo => modelo.Codigo).HasMaxLength(ModeloFormulario.CodigoMaxLength).IsRequired().HasComment("Código que identifica o modelo de formulário.");
         builder.Property(modelo => modelo.Nome).HasMaxLength(ModeloFormulario.NomeMaxLength).IsRequired().HasComment("Nome do modelo de formulário.");
         builder.Property(modelo => modelo.Descricao).HasMaxLength(ModeloFormulario.DescricaoMaxLength).HasComment("Descrição do modelo de formulário.");
-        builder.Property(modelo => modelo.Finalidade).HasConversion(FinalidadeConverter).HasMaxLength(30).IsRequired().HasComment("Finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.");
+        builder.Property(modelo => modelo.Finalidade).HasMaxLength(CodigoDeContratoMaxLength).IsRequired().HasComment("Finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.");
         builder.Property(modelo => modelo.TipoProcessoCodigo).HasMaxLength(ModeloFormulario.TipoProcessoCodigoMaxLength).HasComment("Código do tipo de processo ao qual o modelo se aplica.");
         builder.Property(modelo => modelo.Ativo).IsRequired().HasComment("Indica se o modelo está disponível para uso.");
 

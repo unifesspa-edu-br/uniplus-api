@@ -16,7 +16,7 @@ public sealed class MotorDerivacaoBooleanoTests
 {
     private static readonly DerivacaoDoFato EgressoDeEscolaPublica = DerivacaoDoFato.CriarBooleana(
         "EGRESSO_ESCOLA_PUBLICA",
-        [RegraDerivacao.CriarBooleana(Predicado("TIPO_ESCOLA", Operador.Em, new[] { "PUBLICA_INTEGRAL", "COMUNITARIA_CAMPO_CONVENIADA" }))],
+        [RegraDerivacao.CriarBooleana(Predicado("TIPO_ESCOLA", Operador.AlgumDe, new[] { "PUBLICA_INTEGRAL", "COMUNITARIA_CAMPO_CONVENIADA" }))],
         ["TIPO_ESCOLA"]).Value!;
 
     [Theory(DisplayName = "Verdadeiro se alguma regra ativa, falso se nenhuma")]

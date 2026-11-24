@@ -111,7 +111,7 @@ public sealed class ConferenciaDoCatalogoTests
 
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = ConferenciaDaGovernanca.DoCatalogo(Catalogo, anterior, novo, Agora);
 
-        divergencias.Should().Contain(d => d.Tipo == TipoDeDivergencia.Classificacao && d.De == "interno" && d.Para == "sensivel");
+        divergencias.Should().Contain(d => d.Tipo == TipoDeDivergencia.Classificacao && d.De == "INTERNO" && d.Para == "SENSIVEL");
         divergencias.Should().Contain(d => d.Tipo == TipoDeDivergencia.Escopo && d.De == "False" && d.Para == "True");
     }
 

@@ -93,16 +93,6 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         recusa.Field.Should().Be("conteudo.itens[0].regras.restricoes[0]");
     }
 
-    [Fact(DisplayName = "Tipo de etapa fora do vocabulário é recusado")]
-    public void TipoDeEtapaForaDoVocabulario_Recusa()
-    {
-        Result<ModeloFormulario> etapa = Criar(
-            FinalidadeFormulario.Habilitacao,
-            new ConteudoDoModelo("Habilitação", [Dados with { Tipo = (TipoEtapaFormulario)99 }, Revisao], [Item("CERTIFICADO", 0)], [], [], []));
-
-        etapa.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio);
-    }
-
     [Fact(DisplayName = "Tipo de processo só com espaços é recusado, em vez de virar o modelo de todos os tipos")]
     public void TipoProcessoEmBranco_Recusa()
     {
@@ -115,7 +105,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     [Fact(DisplayName = "Finalidade inválida é recusada no cadastro, não no conteúdo, e a estrutura que depende dela não é conferida")]
     public void FinalidadeInvalida_RecusaNoCadastro()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Nenhuma, Conteudo([Item("CERTIFICADO", 0)]));
+        Result<ModeloFormulario> modelo = Criar(null, Conteudo([Item("CERTIFICADO", 0)]));
 
         modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida, string.Empty)),

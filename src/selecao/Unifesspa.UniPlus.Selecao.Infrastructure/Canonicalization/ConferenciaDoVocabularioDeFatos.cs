@@ -21,7 +21,7 @@ internal static class ConferenciaDoVocabularioDeFatos
         HashSet<string> coletados,
         HashSet<string> codigosDeGrupo)
     {
-        HashSet<(FinalidadeFormulario, int)> ordens = [];
+        HashSet<(FinalidadeFormulario?, int)> ordens = [];
         DomainError? erro = ConferirFatosColetados(bloco.Fatos, coletados, ordens);
         if (erro is not null)
         {
@@ -33,7 +33,7 @@ internal static class ConferenciaDoVocabularioDeFatos
 
     private static DomainError? ConferirGrupos(
         IReadOnlyList<GrupoColetado> grupos, HashSet<string> coletados, HashSet<string> codigosDeGrupo,
-        HashSet<(FinalidadeFormulario, int)> ordens)
+        HashSet<(FinalidadeFormulario?, int)> ordens)
     {
         foreach (GrupoColetado grupo in grupos)
         {
@@ -50,7 +50,7 @@ internal static class ConferenciaDoVocabularioDeFatos
     }
 
     private static DomainError? ConferirFatosColetados(
-        IReadOnlyList<FatoColetado> fatos, HashSet<string> coletados, HashSet<(FinalidadeFormulario, int)> ordens)
+        IReadOnlyList<FatoColetado> fatos, HashSet<string> coletados, HashSet<(FinalidadeFormulario?, int)> ordens)
     {
         foreach (FatoColetado fato in fatos)
         {
@@ -72,7 +72,7 @@ internal static class ConferenciaDoVocabularioDeFatos
         GrupoColetado grupo,
         HashSet<string> coletados,
         HashSet<string> codigosDeGrupo,
-        HashSet<(FinalidadeFormulario, int)> ordens)
+        HashSet<(FinalidadeFormulario?, int)> ordens)
     {
         if (!codigosDeGrupo.Add(grupo.Codigo))
         {

@@ -162,7 +162,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     private static void ConferirHabilitacaoAtivaLida(JsonObject lido)
     {
         lido["ativo"]!.GetValue<bool>().Should().BeTrue();
-        lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
+        lido["finalidade"]!["codigo"]!.GetValue<string>().Should().Be("HABILITACAO");
         JsonNode condicao = lido["conteudo"]!["itens"]![1]!["regras"]!["exibicao"]![0]![0]!;
         condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
         condicao["valor"]!.GetValue<bool>().Should().BeTrue();

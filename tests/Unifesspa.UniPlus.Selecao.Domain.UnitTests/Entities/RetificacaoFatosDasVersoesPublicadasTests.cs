@@ -350,14 +350,14 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static TermoExigidoFormulario TermoQueCita(string fato) =>
         TermoExigidoFormulario.Criar(
             "TERMO_0", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
             Cita(fato), Obrigatoriedade.Sempre).Value!;
 
     /// <summary>As etapas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>
     private static IReadOnlyList<EtapaFormulario> EtapasDaHabilitacao(string exibicaoDaSegunda) =>
     [
-        EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 1, TipoEtapaFormulario.Secao, null), "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
         EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 }

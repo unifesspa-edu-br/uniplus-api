@@ -31,32 +31,43 @@ public static class PendenciasDosFatos
     /// É também a conferência das citações das derivações da oferta: a modalidade do candidato cita o
     /// que as regras citam, e a opção pelas cotas só é derivada quando uma regra a cita.
     /// </remarks>
-    internal static DomainError? PendenciaDasRegrasDasModalidades(ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        if (configuracao.Identidade.OrigemCandidatos != OrigemCandidatos.InscricaoPropria)
-        {
-            return null;
-        }
+    internal static DomainError? PendenciaDasRegrasDasModalidades(ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        configuracao.Identidade.OrigemCandidatos == OrigemCandidatos.InscricaoPropria
+            ? PendenciaDasRegrasNaInscricao(configuracao, membroPorAgregado)
+            : null;
 
+    private static DomainError? PendenciaDasRegrasNaInscricao(ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, string> membroPorAgregado)
+    {
         HashSet<string> daInscricao = CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
-        HashSet<string> camposDosGruposDaInscricao = new(
+        HashSet<string> camposDosGrupos = new(
             configuracao.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
                 .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
             StringComparer.Ordinal);
         foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(configuracao.Vagas.DistribuicaoVagas.SelectMany(static d => d.Modalidades)))
         {
-            if (regra.FatosCitados
-                    .Select(f => FatoForaDaInscricao(configuracao, f, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, new HashSet<string>(StringComparer.Ordinal)))
-                    .FirstOrDefault(static f => f is not null) is { } fato)
+            if (PendenciaDaRegra(configuracao, modalidade, regra, daInscricao, camposDosGrupos, membroPorAgregado) is { } pendencia)
             {
-                return new DomainError(
-                    ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
-                    $"A regra de aplicabilidade da modalidade {modalidade.Codigo} depende de '{fato}', que o formulário de inscrição não pergunta.");
+                return pendencia;
             }
         }
 
         return null;
     }
+
+    private static DomainError? PendenciaDaRegra(
+        ConfiguracaoDeclarada configuracao,
+        ModalidadeSelecionada modalidade,
+        PredicadoDnf regra,
+        IReadOnlySet<string> daInscricao,
+        IReadOnlySet<string> camposDosGrupos,
+        IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        regra.FatosCitados
+            .Select(f => FatoForaDaInscricao(configuracao, f, daInscricao, camposDosGrupos, membroPorAgregado, new HashSet<string>(StringComparer.Ordinal)))
+            .FirstOrDefault(static f => f is not null) is { } fato
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
+                $"A regra de aplicabilidade da modalidade {modalidade.Codigo} depende de '{fato}', que o formulário de inscrição não pergunta.")
+            : null;
 
     /// <summary>
     /// O primeiro fato de que o fato depende e que o formulário de inscrição não coleta: o próprio,
@@ -78,11 +89,19 @@ public static class PendenciasDosFatos
 
         // O agregado se calcula sobre as ocorrências do grupo: basta que um grupo da inscrição
         // pergunte o campo de membro. Citado sozinho, o campo de grupo não decide a modalidade.
-        if (membroPorAgregado.TryGetValue(fato, out string? membro))
-        {
-            return camposDosGruposDaInscricao.Contains(membro) ? null : membro;
-        }
+        return membroPorAgregado.TryGetValue(fato, out string? membro)
+            ? (camposDosGruposDaInscricao.Contains(membro) ? null : membro)
+            : DependenciaDoDerivadoForaDaInscricao(configuracao, fato, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, emAvaliacao);
+    }
 
+    private static string? DependenciaDoDerivadoForaDaInscricao(
+        ConfiguracaoDeclarada configuracao,
+        string fato,
+        IReadOnlySet<string> daInscricao,
+        IReadOnlySet<string> camposDosGruposDaInscricao,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        HashSet<string> emAvaliacao)
+    {
         bool derivado = configuracao.DerivacoesEfetivas().Any(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal))
             || DerivadosDoSistema.Dependencias.ContainsKey(fato);
         return derivado
@@ -118,27 +137,20 @@ public static class PendenciasDosFatos
         HashSet<string> universo = new(
             configuracao.Coleta.Itens.Select(static f => f.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
 
-        foreach (ConfiguracaoDerivacaoFato derivacao in configuracao.Coleta.RegrasDerivacao)
-        {
-            foreach (RegraDerivacaoConfigurada regra in derivacao.Regras)
-            {
-                foreach (CondicaoRegraDerivacao condicao in regra.Condicoes)
-                {
-                    if (!universo.Contains(condicao.Fato))
-                    {
-                        return new DomainError(
-                            FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                            $"A regra de derivação do fato '{derivacao.CodigoFato}' cita '{condicao.Fato}', "
-                            + "que este processo não coleta nem deriva.");
-                    }
-                }
-            }
-        }
-
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
-        return CitacoesDosFormularios.CitacaoInvalidaNosFormularios(configuracao.Coleta.Formularios, [.. configuracao.Coleta.Itens], configuracao.Coleta.TermosExigidos, derivacoes, configuracao.Coleta.GruposColetados);
+        return CondicaoQueCitaFatoNaoColetado(configuracao.Coleta.RegrasDerivacao, universo)
+            ?? CitacoesDosFormularios.CitacaoInvalidaNosFormularios(configuracao.Coleta.Formularios, [.. configuracao.Coleta.Itens], configuracao.Coleta.TermosExigidos, derivacoes, configuracao.Coleta.GruposColetados);
     }
+
+    private static DomainError? CondicaoQueCitaFatoNaoColetado(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao, HashSet<string> universo) =>
+        (from derivacao in regrasDerivacao
+         from regra in derivacao.Regras
+         from condicao in regra.Condicoes
+         where !universo.Contains(condicao.Fato)
+         select new DomainError(
+             FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+             $"A regra de derivação do fato '{derivacao.CodigoFato}' cita '{condicao.Fato}', que este processo não coleta nem deriva.")).FirstOrDefault();
 
     /// <summary>
     /// Campo opcional que alimenta derivação, negação ou impedimento, em qualquer regra viva do processo — a regra
@@ -191,7 +203,7 @@ public static class PendenciasDosFatos
     /// </summary>
     internal static DomainError? PendenciaDeFatoColetadoSemValoresOfertados(ConfiguracaoDeclarada configuracao) =>
         configuracao.Coleta.Campos
-            .Where(static fato => fato.TipoRenderizacao.EhSelecao())
+            .Where(static fato => fato.TipoRenderizacao.EhEscolha())
             .Where(fato => !EdicaoDoEnemForaDaClassificacaoEnem(configuracao, fato))
             .Select(fato => SemValoresOfertados(configuracao, fato))
             .FirstOrDefault(static pendencia => pendencia is not null);
@@ -208,7 +220,7 @@ public static class PendenciasDosFatos
                 new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele."),
-            OrigemValoresColeta.MunicipiosDoBonus when configuracao.Vagas.BonusRegional is null =>
+            OrigemValoresColeta.MunicipiosDoFada when configuracao.Vagas.BonusRegional is null =>
                 new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional."),
@@ -230,7 +242,7 @@ public static class PendenciasDosFatos
 
         HashSet<string> municipios = [.. configuracao.Vagas.BonusRegional.Municipios.Select(static m => m.CodigoIbge)];
         FatoColetado? fato = configuracao.Coleta.Campos.FirstOrDefault(f =>
-            f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus
+            f.OrigemValores == OrigemValoresColeta.MunicipiosDoFada
             && ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, f.FatoCodigo, municipios));
         return fato is null
             ? null

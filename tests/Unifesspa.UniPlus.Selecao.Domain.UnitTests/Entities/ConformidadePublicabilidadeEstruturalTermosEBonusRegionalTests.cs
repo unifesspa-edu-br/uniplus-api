@@ -31,7 +31,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTests
 {
     private static TermoExigidoFormulario Termo(
-        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroDigitalSemLogIp, PredicadoDnf? exibicao = null) =>
+        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroSemEnderecoIp, PredicadoDnf? exibicao = null) =>
         TermoExigidoFormulario.Criar(
             codigo, ordem,
             new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
@@ -105,9 +105,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
 
     private static FatoColetado FatoMunicipioDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
         .ComRotulo("Município")
-        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .DoTipo(TipoRenderizacao.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
-        .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+        .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
         .Construir();
 
     private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>

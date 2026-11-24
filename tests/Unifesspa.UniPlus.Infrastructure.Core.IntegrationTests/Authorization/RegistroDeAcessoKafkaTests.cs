@@ -199,7 +199,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         Cabecalho(mensagem, "uniplus.cliente-oidc").Should().Be("selecao-web");
         Cabecalho(mensagem, "uniplus.quantidade").Should().Be("1");
         Cabecalho(mensagem, "uniplus.resultado").Should().Be("permitido");
-        Cabecalho(mensagem, "uniplus.sensibilidade-maxima").Should().Be("identificador");
+        Cabecalho(mensagem, "uniplus.sensibilidade-maxima").Should().Be("IDENTIFICADOR");
     }
 
     [Fact(DisplayName = "Dois lotes da mesma requisição caem na mesma partição, mesmo com várias partições no tópico")]
@@ -420,9 +420,15 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         return RegistroDecisaoAcesso.De(
             sujeito,
             PermissionRequirement.From("selecao:inscricoes:revelar-cpf", ClassificacaoDeProtecao.Identificador, "Lei nº 13.709/2018 (LGPD), art. 7º, III").Value!,
-            ResourceContext.From("inscricao", ClassificacaoDeProtecao.Identificador, fatoCodigo: fatoCodigo).Value!,
+            ResourceDoRegistro(fatoCodigo),
             AuthorizationRequestContext.From($"req-{Guid.NewGuid():N}", DateTimeOffset.UtcNow, OrigemRequisicao.Api, execucaoId: execucaoId, clienteOidc: clienteOidc).Value!,
             AuthorizationDecision.Permitir(concessao));
+    }
+
+    private static ResourceContext ResourceDoRegistro(string? fatoCodigo)
+    {
+        ResourceContext inscricao = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Identificador).Value!;
+        return fatoCodigo is null ? inscricao : inscricao.ComCampo(fatoCodigo, null).Value!;
     }
 
     private static int PortaLivre()

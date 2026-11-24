@@ -10,8 +10,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class ReativarFatoCandidatoCommandHandlerTests
 {
@@ -20,9 +22,8 @@ public sealed class ReativarFatoCandidatoCommandHandlerTests
 
     private static FatoCandidato Declarado() =>
         CriacaoDoFato.CriarDoAdministrador(
-            "OPTOU", "Optou", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null,
-            "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal,
-            "Enquadramento na reserva de vagas.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato("OPTOU", "Optou", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Enquadramento na reserva de vagas.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     [Fact(DisplayName = "Fato desativado é reativado e a alteração é gravada")]
     public async Task Handle_FatoDesativado_ReativaEGrava()

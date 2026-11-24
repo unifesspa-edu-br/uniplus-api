@@ -118,7 +118,7 @@ internal sealed class DerivacaoInformada
     private Result<ConfiguracaoDerivacaoFato> ConferirComODominioDoFato(
         ConfiguracaoDerivacaoFato configuracao, FatoCandidatoView alvo, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
-        bool alvoBooleano = string.Equals(alvo.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal);
+        bool alvoBooleano = alvo.DominioValor == TipoDoDado.SimOuNao;
         if (configuracao.Booleano != alvoBooleano)
         {
             return Result<ConfiguracaoDerivacaoFato>.Failure(RecusaDeContribuicaoIncoerente(alvoBooleano));

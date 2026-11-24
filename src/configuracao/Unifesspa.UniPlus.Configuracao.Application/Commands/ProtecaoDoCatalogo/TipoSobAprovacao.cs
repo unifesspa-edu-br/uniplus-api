@@ -25,7 +25,7 @@ internal sealed class TipoSobAprovacao(TipoDocumento tipo) : IItemSobAprovacao
         {
             AtoDaProtecao.Aprovacao => tipo.AprovarProtecao(ator, em),
             AtoDaProtecao.AjusteRecomendado => tipo.RecomendarAjusteDaProtecao(
-                decisao.ClassificacaoRecomendada ?? ClassificacaoDeProtecao.Nenhuma, decisao.Justificativa?.Valor, ator, em),
+                decisao.ClassificacaoRecomendada, decisao.Justificativa?.Valor, ator, em),
             _ => tipo.ReprovarProtecao(decisao.Justificativa?.Valor, ator, em),
         };
 }

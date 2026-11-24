@@ -91,13 +91,9 @@ public static class EntradaDeRegras
     /// recusa com o código da sua entidade.
     /// </summary>
     public static Obrigatoriedade? Obrigatoriedade(string? token, PredicadoDnf? predicado) =>
-        (PredicadoDnfJson.TipoDoToken(token), predicado) switch
-        {
-            (TipoObrigatoriedade.Sempre, null) => Formularios.Obrigatoriedade.Sempre,
-            (TipoObrigatoriedade.Nunca, null) => Formularios.Obrigatoriedade.Nunca,
-            (TipoObrigatoriedade.Quando, { } quando) => Formularios.Obrigatoriedade.Quando(quando),
-            _ => null,
-        };
+        CatalogoDe<TipoObrigatoriedade>.TentarObter(token, out TipoObrigatoriedade tipo)
+            ? Formularios.Obrigatoriedade.DaForma(tipo, predicado)
+            : null;
 
     /// <summary>
     /// O impedimento da entrada; nulo quando o campo não tem. A condição é obrigatória; a mensagem e
@@ -134,7 +130,7 @@ public static class EntradaDeRegras
     {
         ArgumentNullException.ThrowIfNull(input);
         IReadOnlyList<string> fatos = input.Fatos ?? [];
-        return RestricaoValorJson.TipoDoToken(input.Tipo) switch
+        return RestricoesDeValor.TipoDeclarado(input.Tipo) switch
         {
             TipoRestricaoValor.FaixaNumerica => RestricoesDeValor.Faixa(input.Minimo, input.Maximo),
             TipoRestricaoValor.TamanhoTexto => LerTamanhoDeTexto(input.Minimo, input.Maximo),
@@ -277,7 +273,7 @@ public static class EntradaDeRegras
     public static string ParaEntrada(Formularios.Obrigatoriedade obrigatoriedade)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
-        return PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo);
+        return obrigatoriedade.Tipo.Codigo();
     }
 
     /// <summary>
@@ -330,7 +326,7 @@ public static class EntradaDeRegras
     public static RestricaoValorInput ParaEntrada(RestricaoValor restricao)
     {
         ArgumentNullException.ThrowIfNull(restricao);
-        string tipo = RestricaoValorJson.ParaToken(restricao.Tipo);
+        string tipo = restricao.Tipo.Codigo();
         return restricao switch
         {
             FaixaNumerica faixa => new(tipo, faixa.Minimo, faixa.Maximo),

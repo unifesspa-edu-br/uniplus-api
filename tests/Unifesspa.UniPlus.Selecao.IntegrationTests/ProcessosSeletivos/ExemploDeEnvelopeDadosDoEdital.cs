@@ -66,7 +66,7 @@ internal static class ExemploDeEnvelopeDadosDoEdital
 
     /// <summary>
     /// Os valores selecionáveis dos dois fatos coletados de <see cref="ProcessoRico"/>
-    /// (COR_RACA, RENDA — ambos <c>SELECAO_UNICA</c>, UNI-REQ-0072): totalidade exigida pelo
+    /// (COR_RACA, RENDA — ambos <c>ESCOLHA_UNICA</c>, UNI-REQ-0072): totalidade exigida pelo
     /// encoder (D1-ter) desde que qualquer processo colete um fato de seleção. Ordens não-zero
     /// e fora de ordem de código de propósito — a ordenação canônica (Ordem, depois Codigo) é
     /// responsabilidade do ENCODER, não de quem monta este dicionário.
@@ -159,7 +159,7 @@ internal static class ExemploDeEnvelopeDadosDoEdital
 
     private static FatoColetado Parentesco() => FatoColetadoDeTeste.Coletando(CandidatoComoMembro.FatoParentesco, 2)
         .ComRotulo("Parentesco")
-        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .DoTipo(TipoRenderizacao.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 

@@ -24,6 +24,8 @@ using Unifesspa.UniPlus.Regras.Leituras;
 /// </summary>
 internal static class ProjecaoDaColeta
 {
+    private static readonly JsonSerializerOptions OpcoesDaProjecao = new(JsonSerializerDefaults.Web);
+
     internal static IReadOnlyList<FormularioDto> ProjetarFormularios(ProcessoSeletivo processo) =>
         [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(f => ProjetarFormulario(processo, f))];
 
@@ -43,7 +45,7 @@ internal static class ProjecaoDaColeta
         [.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static n => n.Ordem).ThenBy(static n => n.Id).Select(ProjetarRegra)];
 
     private static FormularioDto ProjetarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
-        EstruturaFormulario.ParaToken(formulario.Finalidade),
+        CodigoComRotulo<FinalidadeFormulario>.De(formulario.Finalidade),
         formulario.FaseId,
         formulario.Titulo,
         formulario.ModeloOrigemId is { } modeloId ? new ModeloDeOrigemDto(modeloId, formulario.ModeloOrigemCodigo!) : null,
@@ -54,8 +56,8 @@ internal static class ProjecaoDaColeta
     private static EtapaFormularioDto ProjetarEtapa(EtapaFormulario etapa) => new(
         etapa.Codigo,
         etapa.Ordem,
-        EstruturaFormulario.ParaToken(etapa.Tipo),
-        EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Tipo.Codigo(),
+        etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso),
         etapa.Exibicao?.ToDto());
 
@@ -158,7 +160,7 @@ internal static class ProjecaoDaColeta
     private static MomentoDaExigenciaDto ProjetarMomento(DocumentoExigido documento) => new(
         documento.ExigidoNaFaseId,
         documento.ExigidoNaEtapaId,
-        documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null);
+        documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null);
 
     private static RequisitosDoDocumentoDto ProjetarRequisitos(DocumentoExigido documento) => new(
         ProjetarFormatosPermitidos(documento.FormatosPermitidos),
@@ -196,18 +198,19 @@ internal static class ProjecaoDaColeta
         baseLegal.Observacao);
 
     /// <summary>
-    /// Projeta <see cref="FormatosPermitidos"/> no mesmo valor JSON polimórfico que
-    /// <c>EscritaDosFormatosPermitidos.Resolver</c> aceita de volta — <c>"QUALQUER"</c> ou um array de
-    /// <c>{formato, tamanhoMaximoBytesMax}</c> —, fechando o round-trip GET e PUT sem transformação do cliente.
+    /// Projeta <see cref="FormatosPermitidos"/> como valor JSON polimórfico: <c>"QUALQUER"</c> ou um array de
+    /// <c>{formato, tamanhoMaximoBytesMax}</c>, em que o formato sai com código e rótulo, como todo enum da resposta.
     /// </summary>
     private static JsonElement ProjetarFormatosPermitidos(FormatosPermitidos formatosPermitidos) =>
         formatosPermitidos.Qualquer
-            ? JsonSerializer.SerializeToElement("QUALQUER")
-            : JsonSerializer.SerializeToElement(formatosPermitidos.Lista!.Select(static e => new
-            {
-                formato = e.Formato.Codigo(),
-                tamanhoMaximoBytesMax = e.TamanhoMaximoBytesMax,
-            }));
+            ? JsonSerializer.SerializeToElement("QUALQUER", OpcoesDaProjecao)
+            : JsonSerializer.SerializeToElement(
+                formatosPermitidos.Lista!.Select(static e => new
+                {
+                    formato = CodigoComRotulo<FormatoPermitido>.De(e.Formato),
+                    tamanhoMaximoBytesMax = e.TamanhoMaximoBytesMax,
+                }),
+                OpcoesDaProjecao);
 
     // O valor vai como texto JSON canônico (GetRawText): o mesmo PUT que aceita este DTO de volta
     // reparseia texto JSON válido como tal, fechando o round-trip sem perda de tipo.

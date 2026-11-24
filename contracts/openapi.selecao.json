@@ -398,7 +398,7 @@
             "name": "situacao",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/SituacaoDoCertame"
+              "$ref": "#/components/schemas/SituacaoDoCertameCodigo"
             }
           },
           {
@@ -675,7 +675,7 @@
             "name": "finalidade",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/FinalidadeDoDocumento"
+              "$ref": "#/components/schemas/FinalidadeDoDocumentoCodigo"
             }
           }
         ],
@@ -689,6 +689,16 @@
                   "items": {
                     "$ref": "#/components/schemas/DocumentoAPublicarDto"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1650,7 +1660,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           }
         ],
@@ -1718,7 +1728,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           }
         ],
@@ -1811,7 +1821,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           },
           {
@@ -1958,7 +1968,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           }
         ],
@@ -2044,7 +2054,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           },
           {
@@ -2193,7 +2203,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           },
           {
@@ -5167,7 +5177,7 @@
             "name": "tipo",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/TipoDeLeiauteDoInep"
+              "type": "string"
             }
           }
         ],
@@ -5879,7 +5889,7 @@
             "name": "categoria",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+              "$ref": "#/components/schemas/CategoriaObrigatoriedadeCodigo"
             }
           },
           {
@@ -12422,6 +12432,102 @@
           }
         }
       }
+    },
+    "/api/selecao/vocabularios/formatos-permitidos": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.formato-permitido.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormatoPermitido"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/criterios-distincao-apresentacoes": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.criterio-distincao-apresentacoes.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CriterioDeDistincaoDasApresentacoes"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/vocabularios/consequencias-indeferimento": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.consequencia-indeferimento.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsequenciaDoIndeferimento"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12539,7 +12645,7 @@
             "type": "string"
           },
           "operacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/OperacaoAgregadoCodigo"
           }
         }
       },
@@ -12651,14 +12757,6 @@
           }
         }
       },
-      "AncoraDoRecurso": {
-        "enum": [
-          "nenhuma",
-          "atoPublicado",
-          "cienciaIndividual"
-        ],
-        "type": "string"
-      },
       "AnexoDoAtoRequest": {
         "required": [
           "documentoId",
@@ -12697,6 +12795,29 @@
           }
         }
       },
+      "Aplicabilidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/AplicabilidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "AplicabilidadeCodigo": {
+        "enum": [
+          "GERAL",
+          "CONDICIONAL"
+        ],
+        "type": "string",
+        "description": "- \u0060GERAL\u0060: Todos os candidatos \u2014 Exigida de todos os candidatos: as condi\u00E7\u00F5es n\u00E3o s\u00E3o avaliadas.\n- \u0060CONDICIONAL\u0060: S\u00F3 quem atende \u00E0s condi\u00E7\u00F5es \u2014 Exigida apenas de quem atende \u00E0s condi\u00E7\u00F5es declaradas; sem nenhuma condi\u00E7\u00E3o ativa, n\u00E3o \u00E9 exigida de ningu\u00E9m."
+      },
       "AplicabilidadeDaExigenciaDto": {
         "required": [
           "tipo",
@@ -12705,7 +12826,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/Aplicabilidade"
           },
           "condicoes": {
             "type": "array",
@@ -12723,9 +12844,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AplicabilidadeCodigo"
+              }
             ]
           },
           "condicoes": {
@@ -12751,7 +12876,7 @@
         "type": "object",
         "properties": {
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormulario"
           },
           "fatosTrazidosParaAInscricao": {
             "type": "array",
@@ -13288,7 +13413,14 @@
             ]
           },
           "categoria": {
-            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CategoriaObrigatoriedadeCodigo"
+              }
+            ]
           },
           "regraCodigo": {
             "type": [
@@ -13406,9 +13538,13 @@
         "type": "object",
         "properties": {
           "formaDeAvaliacao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaDeAvaliacao"
+              }
             ]
           },
           "regraConsolidacao": {
@@ -13785,10 +13921,10 @@
             "type": "string"
           },
           "abrangencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoAbrangencia"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusBaseLegal"
           },
           "observacao": {
             "type": [
@@ -13823,6 +13959,15 @@
             ]
           }
         }
+      },
+      "BlocoSistemaCodigo": {
+        "enum": [
+          "COMPROVACAO_DOCUMENTAL",
+          "MODALIDADES_CALCULADAS",
+          "REVISAO_E_ACEITE"
+        ],
+        "type": "string",
+        "description": "Os blocos que o sistema monta no formul\u00E1rio a partir da configura\u00E7\u00E3o do processo seletivo.\n\n- \u0060COMPROVACAO_DOCUMENTAL\u0060: Comprova\u00E7\u00E3o documental \u2014 Os documentos que o candidato envia, conforme a exig\u00EAncia de cada situa\u00E7\u00E3o dele.\n- \u0060MODALIDADES_CALCULADAS\u0060: Modalidades calculadas \u2014 As modalidades de concorr\u00EAncia em que o candidato se enquadra, calculadas pelas respostas dele.\n- \u0060REVISAO_E_ACEITE\u0060: Revis\u00E3o e aceite \u2014 A confer\u00EAncia das respostas e o aceite dos termos, sempre a \u00FAltima etapa do formul\u00E1rio."
       },
       "CampoDivulgacaoDto": {
         "required": [
@@ -13971,13 +14116,28 @@
         }
       },
       "CaraterEtapa": {
-        "enum": [
-          "nenhum",
-          "classificatoria",
-          "eliminatoria",
-          "ambas"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CaraterEtapaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "CaraterEtapaCodigo": {
+        "enum": [
+          "CLASSIFICATORIA",
+          "ELIMINATORIA",
+          "AMBAS"
+        ],
+        "type": "string",
+        "description": "- \u0060CLASSIFICATORIA\u0060: Classificat\u00F3ria \u2014 A nota da etapa entra na nota final e na ordem de classifica\u00E7\u00E3o dos candidatos.\n- \u0060ELIMINATORIA\u0060: Eliminat\u00F3ria \u2014 A etapa aprova ou reprova o candidato, sem pontuar.\n- \u0060AMBAS\u0060: Classificat\u00F3ria e eliminat\u00F3ria \u2014 A nota da etapa entra na nota final e, al\u00E9m disso, pode eliminar o candidato."
       },
       "CardinalidadeQualificadaDto": {
         "required": [
@@ -14049,17 +14209,32 @@
         }
       },
       "CategoriaObrigatoriedade": {
-        "enum": [
-          "nenhuma",
-          "etapa",
-          "modalidade",
-          "desempate",
-          "documento",
-          "bonus",
-          "atendimento",
-          "outros"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CategoriaObrigatoriedadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "CategoriaObrigatoriedadeCodigo": {
+        "enum": [
+          "ETAPA",
+          "MODALIDADE",
+          "DESEMPATE",
+          "DOCUMENTO",
+          "FADA",
+          "ATENDIMENTO",
+          "OUTROS"
+        ],
+        "type": "string",
+        "description": "- \u0060ETAPA\u0060: Etapa \u2014 Regra sobre as etapas do processo seletivo.\n- \u0060MODALIDADE\u0060: Modalidade \u2014 Regra sobre as modalidades de concorr\u00EAncia e a reserva de vagas.\n- \u0060DESEMPATE\u0060: Desempate \u2014 Regra sobre os crit\u00E9rios de desempate.\n- \u0060DOCUMENTO\u0060: Documento \u2014 Regra sobre os documentos exigidos dos candidatos.\n- \u0060FADA\u0060: Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) \u2014 Regra sobre o Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA).\n- \u0060ATENDIMENTO\u0060: Atendimento \u2014 Regra sobre o atendimento especializado.\n- \u0060OUTROS\u0060: Outros \u2014 Regra que n\u00E3o pertence a nenhuma das outras categorias."
       },
       "CertameNaVitrineDto": {
         "required": [
@@ -14209,7 +14384,7 @@
             }
           },
           "origemCandidatos": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemCandidatos"
           },
           "cronogramaFases": {
             "type": "array",
@@ -14311,6 +14486,31 @@
             }
           }
         }
+      },
+      "ComposicaoVagasModalidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ComposicaoVagasModalidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ComposicaoVagasModalidadeCodigo": {
+        "enum": [
+          "RESTANTE_DAS_VAGAS_OFERTADAS",
+          "DENTRO_DA_RESERVA_LEGAL",
+          "RETIRADA_DE_OUTRA_MODALIDADE",
+          "SUPLEMENTAR_AO_TOTAL"
+        ],
+        "type": "string",
+        "description": "- \u0060RESTANTE_DAS_VAGAS_OFERTADAS\u0060: Restante das vagas ofertadas \u2014 Vagas restantes ap\u00F3s as reservas.\n- \u0060DENTRO_DA_RESERVA_LEGAL\u0060: Dentro da reserva legal \u2014 Vagas inclu\u00EDdas na reserva legal.\n- \u0060RETIRADA_DE_OUTRA_MODALIDADE\u0060: Retirada de outra modalidade \u2014 Vagas retiradas de outra modalidade.\n- \u0060SUPLEMENTAR_AO_TOTAL\u0060: Suplementar ao total \u2014 Vagas adicionais ao total ofertado."
       },
       "ComprovanteDaInscricaoDto": {
         "required": [
@@ -15048,7 +15248,7 @@
           "fundamentos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FundamentoIsencao"
             }
           }
         }
@@ -15123,6 +15323,31 @@
             }
           }
         }
+      },
+      "ConsequenciaDoIndeferimento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ConsequenciaDoIndeferimentoCodigo": {
+        "enum": [
+          "ELIMINA",
+          "RECLASSIFICA_AC",
+          "REMOVE_VANTAGEM",
+          "ABRE_PRAZO_PARA_REENVIO"
+        ],
+        "type": "string",
+        "description": "- \u0060ELIMINA\u0060: Elimina\u00E7\u00E3o \u2014 Retira a pessoa do processo seletivo.\n- \u0060RECLASSIFICA_AC\u0060: Ampla concorr\u00EAncia \u2014 Passa a pessoa para a ampla concorr\u00EAncia.\n- \u0060REMOVE_VANTAGEM\u0060: Perda da vantagem \u2014 Retira a vantagem solicitada.\n- \u0060ABRE_PRAZO_PARA_REENVIO\u0060: Prazo para reenvio \u2014 Abre prazo para reenviar o documento."
       },
       "ConteudoDoTermoDto": {
         "required": [
@@ -15228,9 +15453,13 @@
             ]
           },
           "sentido": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SentidoDoMotivoCodigo"
+              }
             ]
           }
         }
@@ -15257,7 +15486,14 @@
             ]
           },
           "categoria": {
-            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CategoriaObrigatoriedadeCodigo"
+              }
+            ]
           },
           "regraCodigo": {
             "type": [
@@ -15336,7 +15572,14 @@
             "format": "uuid"
           },
           "origemCandidatos": {
-            "$ref": "#/components/schemas/OrigemCandidatos"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrigemCandidatosCodigo"
+              }
+            ]
           },
           "unidadeAdministradoraOrigemId": {
             "type": "string",
@@ -15367,6 +15610,30 @@
             ]
           }
         }
+      },
+      "CriterioDeDistincaoDasApresentacoes": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CriterioDeDistincaoDasApresentacoesCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "CriterioDeDistincaoDasApresentacoesCodigo": {
+        "enum": [
+          "COMPETENCIA_MENSAL",
+          "EXERCICIO_ANUAL",
+          "OCORRENCIA"
+        ],
+        "type": "string",
+        "description": "- \u0060COMPETENCIA_MENSAL\u0060: Compet\u00EAncia mensal \u2014 Distingue as apresenta\u00E7\u00F5es pelo m\u00EAs a que se referem.\n- \u0060EXERCICIO_ANUAL\u0060: Exerc\u00EDcio anual \u2014 Distingue as apresenta\u00E7\u00F5es pelo ano a que se referem.\n- \u0060OCORRENCIA\u0060: Ocorr\u00EAncia \u2014 Distingue as apresenta\u00E7\u00F5es por ocorr\u00EAncia."
       },
       "CriterioDesempateDto": {
         "required": [
@@ -15444,12 +15711,12 @@
       },
       "CriterioDeVotacaoCodigo": {
         "enum": [
-          "maioriaSimples",
-          "maioriaAbsoluta",
-          "unanimidade"
+          "MAIORIA_SIMPLES",
+          "MAIORIA_ABSOLUTA",
+          "UNANIMIDADE"
         ],
         "type": "string",
-        "description": "- \u0060maioriaSimples\u0060: Maioria simples\n- \u0060maioriaAbsoluta\u0060: Maioria absoluta\n- \u0060unanimidade\u0060: Unanimidade"
+        "description": "- \u0060MAIORIA_SIMPLES\u0060: Maioria simples\n- \u0060MAIORIA_ABSOLUTA\u0060: Maioria absoluta\n- \u0060UNANIMIDADE\u0060: Unanimidade"
       },
       "CronogramaDaFaseDto": {
         "required": [
@@ -15838,9 +16105,9 @@
             ],
             "items": {
               "enum": [
-                "numero_inscricao",
-                "nome_abreviado",
-                "nome"
+                "NUMERO_INSCRICAO",
+                "NOME_ABREVIADO",
+                "NOME"
               ],
               "type": "string"
             }
@@ -16132,11 +16399,11 @@
       },
       "DesempateDaVotacaoCodigo": {
         "enum": [
-          "votoDaPresidencia",
-          "novaVotacao"
+          "VOTO_DA_PRESIDENCIA",
+          "NOVA_VOTACAO"
         ],
         "type": "string",
-        "description": "- \u0060votoDaPresidencia\u0060: Voto da presid\u00EAncia\n- \u0060novaVotacao\u0060: Nova vota\u00E7\u00E3o"
+        "description": "- \u0060VOTO_DA_PRESIDENCIA\u0060: Voto da presid\u00EAncia\n- \u0060NOVA_VOTACAO\u0060: Nova vota\u00E7\u00E3o"
       },
       "DestinoRemanejamentoDto": {
         "required": [
@@ -16198,9 +16465,13 @@
         "type": "object",
         "properties": {
           "criterioDeDistincao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CriterioDeDistincaoDasApresentacoes"
+              }
             ]
           },
           "dataReferencia": {
@@ -16287,7 +16558,7 @@
             "type": "string"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusArquivoEnviado"
           },
           "criadoEm": {
             "type": "string",
@@ -16637,6 +16908,16 @@
               "maxLength": 50
             }
           },
+          "categoriasDocumentoNomes": {
+            "title": "Nomes dos candidatos atendidos",
+            "description": "Nomes das categorias de documento que a banca analisa, na mesma ordem dos c\u00F3digos. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia s\u00E3o os c\u00F3digos.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "readOnly": true
+          },
           "regraDeDeliberacao": {
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancasRegraDeDeliberacao"
           }
@@ -16650,10 +16931,10 @@
         "properties": {
           "modo": {
             "title": "Modo de delibera\u00E7\u00E3o",
-            "description": "Vota\u00E7\u00E3o do colegiado (colegiadaComVotacao) ou ato individual (atoIndividual).",
+            "description": "Vota\u00E7\u00E3o do colegiado (COLEGIADA_COM_VOTACAO) ou ato individual (ATO_INDIVIDUAL).",
             "enum": [
-              "colegiadaComVotacao",
-              "atoIndividual"
+              "COLEGIADA_COM_VOTACAO",
+              "ATO_INDIVIDUAL"
             ]
           },
           "integrantes": {
@@ -16678,34 +16959,34 @@
             "title": "Crit\u00E9rio de vota\u00E7\u00E3o",
             "description": "Maioria simples, maioria absoluta ou unanimidade. S\u00F3 quando h\u00E1 vota\u00E7\u00E3o: no colegiado ou no ato individual que julga o recurso.",
             "enum": [
-              "maioriaSimples",
-              "maioriaAbsoluta",
-              "unanimidade"
+              "MAIORIA_SIMPLES",
+              "MAIORIA_ABSOLUTA",
+              "UNANIMIDADE"
             ]
           },
           "desempate": {
             "title": "Desempate",
             "description": "Como se desempata nos crit\u00E9rios de maioria: voto da presid\u00EAncia ou nova vota\u00E7\u00E3o.",
             "enum": [
-              "votoDaPresidencia",
-              "novaVotacao"
+              "VOTO_DA_PRESIDENCIA",
+              "NOVA_VOTACAO"
             ]
           },
           "encerramento": {
             "title": "Encerramento da vota\u00E7\u00E3o",
             "description": "Quando a vota\u00E7\u00E3o termina: com o voto de todos os titulares ou quando a presid\u00EAncia v\u00EA o qu\u00F3rum atingido.",
             "enum": [
-              "todosOsTitulares",
-              "presidenciaNoQuorum"
+              "TODOS_OS_TITULARES",
+              "PRESIDENCIA_NO_QUORUM"
             ]
           },
           "semUnanimidade": {
             "title": "Resultado sem unanimidade",
             "description": "O que vale quando a unanimidade \u00E9 o crit\u00E9rio e ela n\u00E3o ocorre: favor\u00E1vel, desfavor\u00E1vel ou nova vota\u00E7\u00E3o.",
             "enum": [
-              "favoravel",
-              "desfavoravel",
-              "novaVotacao"
+              "FAVORAVEL",
+              "DESFAVORAVEL",
+              "NOVA_VOTACAO"
             ]
           }
         }
@@ -17026,10 +17307,10 @@
                 "title": "C\u00F3digo da regra do procedimento",
                 "description": "C\u00F3digo de um procedimento de recurso do cat\u00E1logo: nova corre\u00E7\u00E3o, confer\u00EAncia, corre\u00E7\u00E3o de erro de registro ou rec\u00E1lculo.",
                 "enum": [
-                  "PROCEDIMENTO-RECURSO-RECORRECAO",
-                  "PROCEDIMENTO-RECURSO-CONFERENCIA",
-                  "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
-                  "PROCEDIMENTO-RECURSO-RECALCULO"
+                  "PROCEDIMENTO_RECURSO_RECORRECAO",
+                  "PROCEDIMENTO_RECURSO_CONFERENCIA",
+                  "PROCEDIMENTO_RECURSO_CORRECAO_MATERIAL",
+                  "PROCEDIMENTO_RECURSO_RECALCULO"
                 ]
               }
             }
@@ -17067,11 +17348,11 @@
           },
           "prazoUnidade": {
             "title": "Unidade do prazo",
-            "description": "Unidade do prazo de interposi\u00E7\u00E3o: horas, dias \u00FAteis (diasUteis) ou dias corridos (dias). S\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio; dias corridos chegam a ele para receber a recusa pr\u00F3pria.",
+            "description": "Unidade do prazo de interposi\u00E7\u00E3o: horas, dias \u00FAteis (DIAS_UTEIS) ou dias corridos (DIAS). S\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio; dias corridos chegam a ele para receber a recusa pr\u00F3pria.",
             "enum": [
-              "horas",
-              "dias",
-              "diasUteis"
+              "HORAS",
+              "DIAS",
+              "DIAS_UTEIS"
             ]
           },
           "publicacaoDeReferenciaAtoCodigo": {
@@ -17095,26 +17376,26 @@
           },
           "prazoSegundaInstanciaUnidade": {
             "title": "Unidade do prazo da 2\u00AA inst\u00E2ncia",
-            "description": "Unidade do prazo da 2\u00AA inst\u00E2ncia: horas, dias \u00FAteis (diasUteis) ou dias corridos (dias). Como no prazo de interposi\u00E7\u00E3o, s\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio.",
+            "description": "Unidade do prazo da 2\u00AA inst\u00E2ncia: horas, dias \u00FAteis (DIAS_UTEIS) ou dias corridos (DIAS). Como no prazo de interposi\u00E7\u00E3o, s\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio.",
             "enum": [
-              "horas",
-              "dias",
-              "diasUteis"
+              "HORAS",
+              "DIAS",
+              "DIAS_UTEIS"
             ]
           },
           "efeitoSuspensivo": {
             "title": "Efeito suspensivo na 1\u00AA inst\u00E2ncia",
-            "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital. A \u00FAnica op\u00E7\u00E3o aceita \u00E9 sem efeito suspensivo (semEfeitoSuspensivo). A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
+            "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital. A \u00FAnica op\u00E7\u00E3o aceita \u00E9 sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
             "enum": [
-              "semEfeitoSuspensivo"
+              "SEM_EFEITO_SUSPENSIVO"
             ]
           },
           "guardaDaVaga": {
             "title": "Guarda da vaga",
-            "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: at\u00E9 o resultado definitivo (ateOResultadoDefinitivo) ou n\u00E3o guarda (naoGuarda). Quando ausente, vale guardar at\u00E9 o resultado definitivo. Com inst\u00E2ncia superior, a vaga fica guardada at\u00E9 o resultado definitivo.",
+            "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: at\u00E9 o resultado definitivo (ATE_O_RESULTADO_DEFINITIVO) ou n\u00E3o guarda (NAO_GUARDA). Quando ausente, vale guardar at\u00E9 o resultado definitivo. Com inst\u00E2ncia superior, a vaga fica guardada at\u00E9 o resultado definitivo.",
             "enum": [
-              "ateOResultadoDefinitivo",
-              "naoGuarda"
+              "ATE_O_RESULTADO_DEFINITIVO",
+              "NAO_GUARDA"
             ]
           },
           "procedimentosDeRecurso": {
@@ -17141,6 +17422,13 @@
             "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
             "minLength": 1,
             "maxLength": 60
+          },
+          "atoNome": {
+            "title": "Nome do tipo de ato",
+            "description": "Nome do tipo de ato no cat\u00E1logo de publica\u00E7\u00F5es, copiado ao publicar. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
           },
           "papel": {
             "title": "Papel do ato",
@@ -17249,7 +17537,7 @@
       },
       "DocumentoDaConfiguracaoCondicoesCondicao": {
         "title": "Condi\u00E7\u00E3o de aplica\u00E7\u00E3o",
-        "description": "Uma condi\u00E7\u00E3o: o dado, o operador e o valor de compara\u00E7\u00E3o. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A exist\u00EAncia do dado no vocabul\u00E1rio \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
+        "description": "Uma condi\u00E7\u00E3o: o dado, o operador e o valor de compara\u00E7\u00E3o. Os operadores ALGUM_DE e NENHUM_DE comparam com uma lista; os demais, com um valor escalar. A exist\u00EAncia do dado no vocabul\u00E1rio \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -17270,17 +17558,17 @@
             "title": "Operador",
             "description": "Operador de compara\u00E7\u00E3o entre o fato e o valor.",
             "enum": [
-              "IGUAL",
+              "ALGUM_DE",
               "DIFERENTE",
+              "IGUAL",
               "MAIOR_IGUAL",
               "MENOR_IGUAL",
-              "EM",
-              "NAO_EM"
+              "NENHUM_DE"
             ]
           },
           "valor": {
             "title": "Valor",
-            "description": "Valor de compara\u00E7\u00E3o: uma lista para EM e NAO_EM, um texto, n\u00FAmero ou booleano para os demais. Texto em branco, sozinho ou como item da lista, \u00E9 recusado.",
+            "description": "Valor de compara\u00E7\u00E3o: uma lista para ALGUM_DE e NENHUM_DE, um texto, n\u00FAmero ou booleano para os demais. Texto em branco, sozinho ou como item da lista, \u00E9 recusado.",
             "if": {
               "type": "string"
             },
@@ -17309,8 +17597,8 @@
           "properties": {
             "operador": {
               "enum": [
-                "EM",
-                "NAO_EM"
+                "ALGUM_DE",
+                "NENHUM_DE"
               ]
             }
           }
@@ -17447,6 +17735,13 @@
             "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
           },
+          "tipoFaseNome": {
+            "title": "Nome do tipo de fase",
+            "description": "Nome do tipo de fase, guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
           "noMesmoMomentoDaAnterior": {
             "title": "No mesmo momento da fase anterior",
             "description": "A fase acontece no mesmo momento da fase que a antecede na lista. N\u00E3o vale na primeira fase.",
@@ -17574,7 +17869,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "DESEMPATE-MAIOR-NOTA-ETAPA"
+                      "const": "DESEMPATE_MAIOR_NOTA_ETAPA"
                     }
                   },
                   "required": [
@@ -17600,7 +17895,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "DESEMPATE-MAIOR-IDADE"
+                      "const": "DESEMPATE_MAIOR_IDADE"
                     }
                   },
                   "required": [
@@ -17626,7 +17921,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "DESEMPATE-IDOSO"
+                      "const": "DESEMPATE_IDOSO"
                     }
                   },
                   "required": [
@@ -17652,7 +17947,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "DESEMPATE-PREDICADO-FATO"
+                      "const": "DESEMPATE_CONDICAO_SOBRE_DADO"
                     }
                   },
                   "required": [
@@ -17678,7 +17973,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "DESEMPATE-MAIOR-NOTA-AREA-ENEM"
+                      "const": "DESEMPATE_MAIOR_NOTA_AREA_ENEM"
                     }
                   },
                   "required": [
@@ -18024,14 +18319,14 @@
         "properties": {
           "camposPublicos": {
             "title": "Campos p\u00FAblicos",
-            "description": "Dados do candidato divulgados nas listas p\u00FAblicas: numero_inscricao, nome_abreviado ou nome. N\u00E3o se repetem.",
+            "description": "Dados do candidato divulgados nas listas p\u00FAblicas: NUMERO_INSCRICAO, NOME_ABREVIADO ou NOME. N\u00E3o se repetem.",
             "type": "array",
             "uniqueItems": true,
             "items": {
               "enum": [
-                "numero_inscricao",
-                "nome_abreviado",
-                "nome"
+                "NUMERO_INSCRICAO",
+                "NOME_ABREVIADO",
+                "NOME"
               ]
             }
           },
@@ -18043,7 +18338,7 @@
           },
           "regraNomeAbreviado": {
             "title": "Regra do nome abreviado",
-            "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando nome_abreviado \u00E9 divulgado. Definido pelo servidor na publica\u00E7\u00E3o. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 camposPublicos.",
+            "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando NOME_ABREVIADO \u00E9 divulgado. Definido pelo servidor na publica\u00E7\u00E3o. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 camposPublicos.",
             "type": "string",
             "maxLength": 100,
             "readOnly": true
@@ -18078,7 +18373,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "ELIM-NOTA-MINIMA-ETAPA"
+                      "const": "ELIMINACAO_NOTA_MINIMA_ETAPA"
                     }
                   },
                   "required": [
@@ -18104,7 +18399,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "ELIM-CORTE-EM-AREA"
+                      "const": "ELIMINACAO_CORTE_EM_AREA"
                     }
                   },
                   "required": [
@@ -18130,7 +18425,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "ELIM-ZERO-EM-AREA"
+                      "const": "ELIMINACAO_ZERO_EM_AREA"
                     }
                   },
                   "required": [
@@ -18156,7 +18451,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM"
+                      "const": "ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM"
                     }
                   },
                   "required": [
@@ -18182,7 +18477,7 @@
                 "regra": {
                   "properties": {
                     "codigo": {
-                      "const": "ELIM-AUSENCIA-NA-ETAPA"
+                      "const": "ELIMINACAO_AUSENCIA_NA_ETAPA"
                     }
                   },
                   "required": [
@@ -18301,11 +18596,11 @@
           },
           "carater": {
             "title": "Car\u00E1ter da etapa",
-            "description": "Se a etapa classifica (classificatoria), elimina (eliminatoria) ou faz as duas coisas (ambas).",
+            "description": "Se a etapa classifica (CLASSIFICATORIA), elimina (ELIMINATORIA) ou faz as duas coisas (AMBAS).",
             "enum": [
-              "classificatoria",
-              "eliminatoria",
-              "ambas"
+              "CLASSIFICATORIA",
+              "ELIMINATORIA",
+              "AMBAS"
             ]
           },
           "tipoEtapaCodigo": {
@@ -18399,7 +18694,23 @@
             "description": "Bancas que a etapa exige. Cada uma tem uma chave local.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancas"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancas"
+                }
+              ],
+              "properties": {
+                "categoriasDocumentoCodigos": {
+                  "title": "Candidatos atendidos",
+                  "description": "N\u00E3o existe na banca da etapa: s\u00F3 a banca da fase define candidatos atendidos por categoria.",
+                  "not": {}
+                },
+                "categoriasDocumentoNomes": {
+                  "title": "Nomes dos candidatos atendidos",
+                  "description": "N\u00E3o existe na banca da etapa: s\u00F3 a banca da fase define candidatos atendidos por categoria.",
+                  "not": {}
+                }
+              }
             }
           },
           "recursos": {
@@ -18486,7 +18797,7 @@
       },
       "DocumentoDaConfiguracaoEtapasRecursoDaEtapa": {
         "title": "Recurso da etapa",
-        "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo \u00E9 atoPublicado, o ato de refer\u00EAncia \u00E9 um ato preliminar da pr\u00F3pria etapa.",
+        "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo \u00E9 PUBLICACAO_DO_ATO, o ato de refer\u00EAncia \u00E9 um ato preliminar da pr\u00F3pria etapa.",
         "type": "object",
         "allOf": [
           {
@@ -18495,11 +18806,11 @@
         ],
         "properties": {
           "eventoInicialDoPrazo": {
-            "title": "\u00C2ncora do prazo",
-            "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ci\u00EAncia individual do candidato (cienciaIndividual).",
+            "title": "Evento que inicia o prazo",
+            "description": "De onde o prazo corre: da publica\u00E7\u00E3o do ato (PUBLICACAO_DO_ATO) ou da ci\u00EAncia individual do candidato (CIENCIA_INDIVIDUAL).",
             "enum": [
-              "atoPublicado",
-              "cienciaIndividual"
+              "PUBLICACAO_DO_ATO",
+              "CIENCIA_INDIVIDUAL"
             ]
           }
         },
@@ -18664,8 +18975,8 @@
             "title": "Aplicabilidade",
             "description": "GERAL vale para todos os candidatos; CONDICIONAL vale s\u00F3 quando a condi\u00E7\u00E3o de gatilho \u00E9 verdadeira.",
             "enum": [
-              "Geral",
-              "Condicional"
+              "GERAL",
+              "CONDICIONAL"
             ]
           },
           "obrigatorio": {
@@ -18680,7 +18991,7 @@
               "ELIMINA",
               "RECLASSIFICA_AC",
               "REMOVE_VANTAGEM",
-              "PENDENCIA_REENVIO"
+              "ABRE_PRAZO_PARA_REENVIO"
             ]
           },
           "condicoes": {
@@ -19027,6 +19338,14 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 60,
+            "readOnly": true
+          },
+          "modeloOrigemNome": {
+            "title": "Nome do modelo de origem",
+            "description": "Nome do modelo de formul\u00E1rio de que o formul\u00E1rio partiu, guardado no processo. Ausente quando n\u00E3o h\u00E1 modelo de origem. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
             "readOnly": true
           },
           "paginas": {
@@ -19406,10 +19725,10 @@
           },
           "origemCandidatos": {
             "title": "Origem dos candidatos",
-            "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (inscricaoPropria) ou por importa\u00E7\u00E3o de uma lista externa (importacaoExterna).",
+            "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (INSCRICAO_PROPRIA) ou por importa\u00E7\u00E3o de uma lista externa (IMPORTACAO_EXTERNA).",
             "enum": [
-              "inscricaoPropria",
-              "importacaoExterna"
+              "INSCRICAO_PROPRIA",
+              "IMPORTACAO_EXTERNA"
             ]
           },
           "localidadeCodigoIbge": {
@@ -19913,7 +20232,7 @@
               "ELIMINA",
               "RECLASSIFICA_AC",
               "REMOVE_VANTAGEM",
-              "PENDENCIA_REENVIO"
+              "ABRE_PRAZO_PARA_REENVIO"
             ]
           },
           "basesLegais": {
@@ -20198,9 +20517,13 @@
             "type": "boolean"
           },
           "finalidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinalidadeFormulario"
+              }
             ]
           },
           "etapaId": {
@@ -20224,7 +20547,7 @@
             ]
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoDocumento"
           },
           "grupoCodigo": {
             "type": [
@@ -20253,7 +20576,7 @@
           "formatosAceitos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FormatoPermitido"
             }
           },
           "tamanhoMaximoBytes": {
@@ -20494,9 +20817,13 @@
             "format": "uuid"
           },
           "finalidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinalidadeFormulario"
+              }
             ]
           },
           "etapaId": {
@@ -20591,10 +20918,10 @@
       },
       "EfeitoSuspensivoCodigo": {
         "enum": [
-          "semEfeitoSuspensivo"
+          "SEM_EFEITO_SUSPENSIVO"
         ],
         "type": "string",
-        "description": "- \u0060semEfeitoSuspensivo\u0060: Sem efeito suspensivo \u2014 O recurso n\u00E3o suspende o processo: as fases seguintes come\u00E7am nas datas do cronograma, mesmo com recurso em an\u00E1lise."
+        "description": "- \u0060SEM_EFEITO_SUSPENSIVO\u0060: Sem efeito suspensivo \u2014 O recurso n\u00E3o suspende o processo: as fases seguintes come\u00E7am nas datas do cronograma, mesmo com recurso em an\u00E1lise."
       },
       "EfeitoSuspensivoComDescricao": {
         "required": [
@@ -20632,11 +20959,11 @@
       },
       "EncerramentoDaVotacaoCodigo": {
         "enum": [
-          "todosOsTitulares",
-          "presidenciaNoQuorum"
+          "TODOS_OS_TITULARES",
+          "PRESIDENCIA_NO_QUORUM"
         ],
         "type": "string",
-        "description": "- \u0060todosOsTitulares\u0060: Todos os titulares votam\n- \u0060presidenciaNoQuorum\u0060: A presid\u00EAncia encerra ao atingir o qu\u00F3rum"
+        "description": "- \u0060TODOS_OS_TITULARES\u0060: Todos os titulares votam\n- \u0060PRESIDENCIA_NO_QUORUM\u0060: A presid\u00EAncia encerra ao atingir o qu\u00F3rum"
       },
       "EnvioDoComprovanteDto": {
         "required": [
@@ -20781,7 +21108,7 @@
             "type": "string"
           },
           "carater": {
-            "type": "string"
+            "$ref": "#/components/schemas/CaraterEtapa"
           },
           "tipoEtapa": {
             "$ref": "#/components/schemas/TipoCatalogadoCertameDto"
@@ -20869,7 +21196,7 @@
         "type": "object",
         "properties": {
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
           },
           "etapa": {
             "type": "string"
@@ -20895,12 +21222,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -20938,12 +21269,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -21069,7 +21404,14 @@
             "type": "string"
           },
           "carater": {
-            "$ref": "#/components/schemas/CaraterEtapa"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CaraterEtapaCodigo"
+              }
+            ]
           },
           "tipoEtapaOrigemId": {
             "type": "string",
@@ -21160,9 +21502,13 @@
             "format": "double"
           },
           "formaDeAvaliacao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaDeAvaliacaoCodigo"
+              }
             ]
           },
           "regraConsolidacaoCodigo": {
@@ -21205,6 +21551,29 @@
             }
           }
         }
+      },
+      "EventoInicialDoPrazo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EventoInicialDoPrazoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EventoInicialDoPrazoCodigo": {
+        "enum": [
+          "PUBLICACAO_DO_ATO",
+          "CIENCIA_INDIVIDUAL"
+        ],
+        "type": "string",
+        "description": "- \u0060PUBLICACAO_DO_ATO\u0060: Publica\u00E7\u00E3o do ato \u2014 O prazo conta da publica\u00E7\u00E3o do ato e vale igual para todos os candidatos (UNI-REQ-0115).\n- \u0060CIENCIA_INDIVIDUAL\u0060: Ci\u00EAncia individual do candidato \u2014 O prazo conta da data em que cada candidato toma ci\u00EAncia da decis\u00E3o que o alcan\u00E7a."
       },
       "ExibicaoEObrigatoriedadeDto": {
         "required": [
@@ -21277,7 +21646,7 @@
             "type": "string"
           },
           "aplicabilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/Aplicabilidade"
           },
           "obrigatorio": {
             "type": "boolean"
@@ -21333,7 +21702,7 @@
             "format": "uuid"
           },
           "origemData": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemDataFase"
           },
           "agrupaEtapas": {
             "type": "boolean"
@@ -21686,12 +22055,52 @@
         }
       },
       "FinalidadeDoDocumento": {
-        "enum": [
-          "documentoDoEdital",
-          "anexoDoEdital",
-          "documentoDeAto"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FinalidadeDoDocumentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FinalidadeDoDocumentoCodigo": {
+        "enum": [
+          "DOCUMENTO_DO_EDITAL",
+          "ANEXO_DO_EDITAL",
+          "DOCUMENTO_DE_ATO"
+        ],
+        "type": "string",
+        "description": "- \u0060DOCUMENTO_DO_EDITAL\u0060: Documento do edital \u2014 Documento principal do edital.\n- \u0060ANEXO_DO_EDITAL\u0060: Anexo do edital \u2014 Documento que acompanha o edital.\n- \u0060DOCUMENTO_DE_ATO\u0060: Documento de ato \u2014 Documento de um ato do processo."
+      },
+      "FinalidadeFormulario": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FinalidadeFormularioCodigo": {
+        "enum": [
+          "INSCRICAO",
+          "ISENCAO_TAXA",
+          "HABILITACAO"
+        ],
+        "type": "string",
+        "description": "Para que o formul\u00E1rio coleta respostas: cada processo tem no m\u00E1ximo um formul\u00E1rio por finalidade.\n\n- \u0060INSCRICAO\u0060: Inscri\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato se inscreve no processo seletivo.\n- \u0060ISENCAO_TAXA\u0060: Isen\u00E7\u00E3o da taxa \u2014 Formul\u00E1rio em que o candidato pede a isen\u00E7\u00E3o da taxa de inscri\u00E7\u00E3o.\n- \u0060HABILITACAO\u0060: Habilita\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato comprova os requisitos para ser habilitado."
       },
       "FormaAceite": {
         "required": [
@@ -21711,11 +22120,34 @@
       "FormaAceiteCodigo": {
         "enum": [
           "A_DEFINIR",
-          "REGISTRO_DIGITAL_SEM_LOG_IP",
-          "REGISTRO_DIGITAL_COM_LOG_IP"
+          "REGISTRO_SEM_ENDERECO_IP",
+          "REGISTRO_COM_ENDERECO_IP"
         ],
         "type": "string",
-        "description": "- \u0060A_DEFINIR\u0060: A definir\n- \u0060REGISTRO_DIGITAL_SEM_LOG_IP\u0060: Registro digital sem log do endere\u00E7o IP\n- \u0060REGISTRO_DIGITAL_COM_LOG_IP\u0060: Registro digital com log do endere\u00E7o IP"
+        "description": "Como o candidato registra o aceite de um termo de consentimento ou declara\u00E7\u00E3o.\n\n- \u0060A_DEFINIR\u0060: A definir \u2014 Forma ainda n\u00E3o definida; a publica\u00E7\u00E3o de um processo recusa termo exigido nesta forma.\n- \u0060REGISTRO_SEM_ENDERECO_IP\u0060: Registro digital sem o endere\u00E7o IP \u2014 O aceite \u00E9 registrado no sistema sem guardar o endere\u00E7o IP do candidato.\n- \u0060REGISTRO_COM_ENDERECO_IP\u0060: Registro digital com o endere\u00E7o IP \u2014 O aceite \u00E9 registrado no sistema guardando o endere\u00E7o IP do candidato."
+      },
+      "FormaDeAvaliacao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaDeAvaliacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaDeAvaliacaoCodigo": {
+        "enum": [
+          "OBJETIVA",
+          "HUMANA"
+        ],
+        "type": "string",
+        "description": "- \u0060OBJETIVA\u0060: Avalia\u00E7\u00E3o objetiva \u2014 Gabarito ou leitora \u00F3ptica: a nota sai sem avaliador.\n- \u0060HUMANA\u0060: Avalia\u00E7\u00E3o humana \u2014 Pessoas da banca da etapa lan\u00E7am as notas."
       },
       "FormaDeComprovacao": {
         "required": [
@@ -21741,6 +22173,54 @@
         "type": "string",
         "description": "- \u0060DOCUMENTO\u0060: Documento\n- \u0060TODOS_OS_ITENS\u0060: Todos estes itens\n- \u0060QUANTIDADE_MINIMA_DE_ITENS\u0060: Pelo menos a quantidade indicada destes itens"
       },
+      "FormatoDeDocumento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormatoDeDocumentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormatoDeDocumentoCodigo": {
+        "enum": [
+          "DOCX",
+          "ODT",
+          "PDF"
+        ],
+        "type": "string",
+        "description": "- \u0060DOCX\u0060: DOCX \u2014 Documento de texto em formato DOCX.\n- \u0060ODT\u0060: ODT \u2014 Documento de texto em formato ODT.\n- \u0060PDF\u0060: PDF \u2014 Documento em formato PDF."
+      },
+      "FormatoPermitido": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormatoPermitidoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormatoPermitidoCodigo": {
+        "enum": [
+          "PDF",
+          "JPEG",
+          "PNG"
+        ],
+        "type": "string",
+        "description": "- \u0060PDF\u0060: PDF \u2014 Documento em formato PDF.\n- \u0060JPEG\u0060: JPEG \u2014 Imagem em formato JPEG.\n- \u0060PNG\u0060: PNG \u2014 Imagem em formato PNG."
+      },
       "FormatosAceitosCertameDto": {
         "required": [
           "qualquer",
@@ -21757,7 +22237,7 @@
               "array"
             ],
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FormatoPermitido"
             }
           }
         }
@@ -21814,7 +22294,7 @@
         "type": "object",
         "properties": {
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormulario"
           },
           "faseId": {
             "type": [
@@ -22032,7 +22512,7 @@
         "type": "object",
         "properties": {
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormulario"
           },
           "itens": {
             "type": "array",
@@ -22059,6 +22539,30 @@
             }
           }
         }
+      },
+      "FundamentoIsencao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FundamentoIsencaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FundamentoIsencaoCodigo": {
+        "enum": [
+          "CADASTRO_UNICO",
+          "DOACAO_MEDULA_OSSEA",
+          "CARENCIA_SOCIOECONOMICA"
+        ],
+        "type": "string",
+        "description": "- \u0060CADASTRO_UNICO\u0060: Cadastro \u00DAnico \u2014 Candidato de fam\u00EDlia de baixa renda inscrita no Cadastro \u00DAnico do Governo Federal.\n- \u0060DOACAO_MEDULA_OSSEA\u0060: Doa\u00E7\u00E3o de medula \u00F3ssea \u2014 Candidato doador de medula \u00F3ssea.\n- \u0060CARENCIA_SOCIOECONOMICA\u0060: Car\u00EAncia socioecon\u00F4mica \u2014 Candidato com renda familiar per capita de at\u00E9 um sal\u00E1rio m\u00EDnimo e meio que tenha cursado o ensino m\u00E9dio completo em escola p\u00FAblica ou como bolsista integral da rede privada \u2014 os dois requisitos s\u00E3o cumulativos (Lei n\u00BA 12.799/2013)."
       },
       "FundamentoIsencaoDto": {
         "required": [
@@ -22455,10 +22959,10 @@
             ]
           },
           "visivel": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "obrigatorio": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "contagemValida": {
             "type": "boolean"
@@ -22491,11 +22995,11 @@
       },
       "GuardaDaVagaCodigo": {
         "enum": [
-          "ateOResultadoDefinitivo",
-          "naoGuarda"
+          "ATE_O_RESULTADO_DEFINITIVO",
+          "NAO_GUARDA"
         ],
         "type": "string",
-        "description": "- \u0060ateOResultadoDefinitivo\u0060: Guarda a vaga at\u00E9 o resultado definitivo \u2014 Se quem recorre seria chamado para a vaga, ela fica guardada at\u00E9 a publica\u00E7\u00E3o do resultado definitivo.\n- \u0060naoGuarda\u0060: N\u00E3o guarda a vaga \u2014 A vaga n\u00E3o fica guardada durante o recurso. Se o recurso for deferido com a vaga j\u00E1 ocupada, a unidade resolve a situa\u00E7\u00E3o."
+        "description": "- \u0060ATE_O_RESULTADO_DEFINITIVO\u0060: Guarda a vaga at\u00E9 o resultado definitivo \u2014 Se quem recorre seria chamado para a vaga, ela fica guardada at\u00E9 a publica\u00E7\u00E3o do resultado definitivo.\n- \u0060NAO_GUARDA\u0060: N\u00E3o guarda a vaga \u2014 A vaga n\u00E3o fica guardada durante o recurso. Se o recurso for deferido com a vaga j\u00E1 ocupada, a unidade resolve a situa\u00E7\u00E3o."
       },
       "GuardaDaVagaComDescricao": {
         "required": [
@@ -22563,18 +23067,30 @@
         }
       },
       "ImpedimentoDoProduto": {
-        "enum": [
-          "jaPublicado",
-          "preliminarNaoPublicado",
-          "tipoDeAtoNaoVigente"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ImpedimentoDoProdutoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ImpedimentoDoProdutoCodigo": {
+        "enum": [
+          "JA_PUBLICADO",
+          "PRELIMINAR_NAO_PUBLICADO",
+          "TIPO_DE_ATO_NAO_VIGENTE"
+        ],
+        "type": "string",
+        "description": "- \u0060JA_PUBLICADO\u0060: J\u00E1 publicada \u2014 A publica\u00E7\u00E3o prevista j\u00E1 foi realizada.\n- \u0060PRELIMINAR_NAO_PUBLICADO\u0060: Preliminar n\u00E3o publicado \u2014 O resultado preliminar ainda n\u00E3o foi publicado.\n- \u0060TIPO_DE_ATO_NAO_VIGENTE\u0060: Tipo de ato n\u00E3o vigente \u2014 O tipo de ato n\u00E3o tem vers\u00E3o vigente."
       },
       "ImpedimentoDoProdutoDto": {
-        "required": [
-          "motivo",
-          "mensagem"
-        ],
         "type": "object",
         "properties": {
           "motivo": {
@@ -22645,9 +23161,13 @@
             "type": "boolean"
           },
           "consequencia": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoIndeferimento"
+              }
             ]
           },
           "basesLegais": {
@@ -22694,9 +23214,13 @@
         "type": "object",
         "properties": {
           "consequencia": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoIndeferimento"
+              }
             ]
           },
           "basesLegais": {
@@ -22837,7 +23361,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/FinalidadeDoDocumento"
+                "$ref": "#/components/schemas/FinalidadeDoDocumentoCodigo"
               }
             ]
           },
@@ -23538,10 +24062,10 @@
             ]
           },
           "visivel": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "obrigatorio": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "restricoesVioladas": {
             "type": "array",
@@ -23550,7 +24074,7 @@
             }
           },
           "impedido": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "mensagemDoImpedimento": {
             "type": [
@@ -23613,7 +24137,7 @@
             "type": "string"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeLeiauteDoInep"
           },
           "descricao": {
             "type": "string"
@@ -23968,9 +24492,13 @@
             "type": "boolean"
           },
           "situacao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SituacaoDasModalidades"
+              }
             ]
           },
           "itens": {
@@ -24025,10 +24553,10 @@
             ]
           },
           "naturezaLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/NaturezaLegalModalidade"
           },
           "composicaoVagas": {
-            "type": "string"
+            "$ref": "#/components/schemas/ComposicaoVagasModalidade"
           },
           "composicaoOrigemCodigo": {
             "type": [
@@ -24037,9 +24565,13 @@
             ]
           },
           "regraRemanejamento": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraRemanejamentoModalidade"
+              }
             ]
           },
           "remanejamentoDestino": {
@@ -24104,7 +24636,7 @@
             "type": "string"
           },
           "formato": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormatoDeDocumento"
           },
           "hashSha256": {
             "type": "string"
@@ -24150,10 +24682,10 @@
             "type": "string"
           },
           "formato": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormatoDeDocumento"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusArquivoEnviado"
           },
           "criadoEm": {
             "type": "string",
@@ -24214,7 +24746,7 @@
             "type": "string"
           },
           "formato": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormatoDeDocumento"
           },
           "hashSha256": {
             "type": "string"
@@ -24245,11 +24777,11 @@
       },
       "ModoDeDeliberacaoCodigo": {
         "enum": [
-          "colegiadaComVotacao",
-          "atoIndividual"
+          "COLEGIADA_COM_VOTACAO",
+          "ATO_INDIVIDUAL"
         ],
         "type": "string",
-        "description": "- \u0060colegiadaComVotacao\u0060: Colegiada, com vota\u00E7\u00E3o\n- \u0060atoIndividual\u0060: Ato individual"
+        "description": "- \u0060COLEGIADA_COM_VOTACAO\u0060: Colegiada, com vota\u00E7\u00E3o\n- \u0060ATO_INDIVIDUAL\u0060: Ato individual"
       },
       "MomentoDaExigenciaDto": {
         "required": [
@@ -24271,9 +24803,13 @@
             "format": "uuid"
           },
           "finalidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinalidadeFormulario"
+              }
             ]
           }
         }
@@ -24296,9 +24832,13 @@
             "format": "uuid"
           },
           "finalidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
+              }
             ]
           }
         }
@@ -24340,7 +24880,7 @@
             ]
           },
           "sentido": {
-            "type": "string"
+            "$ref": "#/components/schemas/SentidoDoMotivo"
           },
           "vigencia": {
             "$ref": "#/components/schemas/VigenciaDoMotivoDto"
@@ -24385,7 +24925,7 @@
             ]
           },
           "sentido": {
-            "type": "string"
+            "$ref": "#/components/schemas/SentidoDoMotivo"
           },
           "ativo": {
             "type": "boolean"
@@ -24462,6 +25002,30 @@
             ]
           }
         }
+      },
+      "NaturezaLegalModalidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/NaturezaLegalModalidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "NaturezaLegalModalidadeCodigo": {
+        "enum": [
+          "COTA_RESERVADA",
+          "AMPLA",
+          "ACAO_AFIRMATIVA"
+        ],
+        "type": "string",
+        "description": "- \u0060COTA_RESERVADA\u0060: Cota reservada \u2014 Vagas reservadas pela Lei de Cotas.\n- \u0060AMPLA\u0060: Ampla concorr\u00EAncia \u2014 Vagas destinadas \u00E0 ampla concorr\u00EAncia.\n- \u0060ACAO_AFIRMATIVA\u0060: A\u00E7\u00E3o afirmativa \u2014 Vagas de a\u00E7\u00E3o afirmativa institucional."
       },
       "NivelDeAtendimentoDto": {
         "required": [
@@ -24568,7 +25132,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoObrigatoriedadeCodigo"
           },
           "predicado": {
             "type": [
@@ -24591,9 +25155,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoObrigatoriedadeCodigo"
+              }
             ]
           },
           "predicado": {
@@ -24762,7 +25330,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeOcorrenciaDoLote"
           },
           "inscricaoId": {
             "type": [
@@ -25161,25 +25729,71 @@
           }
         }
       },
+      "OperacaoAgregadoCodigo": {
+        "enum": [
+          "EXISTE",
+          "VALORES_PRESENTES"
+        ],
+        "type": "string",
+        "description": "O que o fato agregado calcula a partir das ocorr\u00EAncias de um grupo repet\u00EDvel.\n\n- \u0060EXISTE\u0060: Existe alguma ocorr\u00EAncia \u2014 Verdadeiro quando ao menos uma ocorr\u00EAncia do grupo respondeu sim.\n- \u0060VALORES_PRESENTES\u0060: Valores presentes nas ocorr\u00EAncias \u2014 Os valores diferentes que as ocorr\u00EAncias do grupo responderam."
+      },
       "OperadorCodigo": {
         "enum": [
           "IGUAL",
-          "EM",
+          "ALGUM_DE",
           "MAIOR_IGUAL",
           "MENOR_IGUAL",
           "DIFERENTE",
-          "NAO_EM"
+          "NENHUM_DE"
         ],
         "type": "string",
-        "description": "Operador que compara o fato do candidato com o valor da condi\u00E7\u00E3o. Sobre fato multivalorado, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).\n\n- \u0060IGUAL\u0060: \u00E9 igual a\n- \u0060EM\u0060: \u00E9 um de\n- \u0060MAIOR_IGUAL\u0060: maior ou igual a\n- \u0060MENOR_IGUAL\u0060: menor ou igual a\n- \u0060DIFERENTE\u0060: \u00E9 diferente de\n- \u0060NAO_EM\u0060: n\u00E3o \u00E9 nenhum de"
+        "description": "Operador que compara o dado do candidato com o valor da condi\u00E7\u00E3o. Sobre dado com v\u00E1rios valores, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).\n\n- \u0060IGUAL\u0060: \u00E9 igual a\n- \u0060ALGUM_DE\u0060: \u00E9 um de\n- \u0060MAIOR_IGUAL\u0060: maior ou igual a\n- \u0060MENOR_IGUAL\u0060: menor ou igual a\n- \u0060DIFERENTE\u0060: \u00E9 diferente de\n- \u0060NENHUM_DE\u0060: n\u00E3o \u00E9 nenhum de"
       },
       "OrigemCandidatos": {
-        "enum": [
-          "nenhuma",
-          "inscricaoPropria",
-          "importacaoExterna"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/OrigemCandidatosCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OrigemCandidatosCodigo": {
+        "enum": [
+          "INSCRICAO_PROPRIA",
+          "IMPORTACAO_EXTERNA"
+        ],
+        "type": "string",
+        "description": "- \u0060INSCRICAO_PROPRIA\u0060: Inscri\u00E7\u00E3o pr\u00F3pria \u2014 O processo coleta a pr\u00F3pria inscri\u00E7\u00E3o: exige ao menos uma fase de coleta de inscri\u00E7\u00E3o.\n- \u0060IMPORTACAO_EXTERNA\u0060: Importa\u00E7\u00E3o externa \u2014 Os candidatos v\u00EAm de importa\u00E7\u00E3o externa, como a do SiSU: nenhuma fase de coleta \u00E9 exigida."
+      },
+      "OrigemDataFase": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/OrigemDataFaseCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OrigemDataFaseCodigo": {
+        "enum": [
+          "NO_EDITAL",
+          "NA_EXECUCAO"
+        ],
+        "type": "string",
+        "description": "- \u0060NO_EDITAL\u0060: No edital \u2014 A data \u00E9 fixada no edital: o per\u00EDodo \u00E9 obrigat\u00F3rio.\n- \u0060NA_EXECUCAO\u0060: Na execu\u00E7\u00E3o do processo \u2014 A data n\u00E3o \u00E9 fixada no edital: a unidade respons\u00E1vel pela fase a define na execu\u00E7\u00E3o, e o per\u00EDodo \u00E9 opcional."
       },
       "PapelDaBanca": {
         "required": [
@@ -25206,6 +25820,29 @@
         ],
         "type": "string",
         "description": "O que as bancas de um tipo fazem no processo seletivo. Cada tipo de banca cadastrado tem exatamente um papel; as regras da sele\u00E7\u00E3o decidem pelo papel, e n\u00E3o pelo c\u00F3digo do tipo.\n\n- \u0060AVALIA_O_MERITO\u0060: Avalia o m\u00E9rito\n- \u0060JULGA_A_PRIMEIRA_INSTANCIA\u0060: Julga o recurso em 1\u00AA inst\u00E2ncia\n- \u0060IMPORTA_AS_NOTAS_DO_INEP\u0060: Importa as notas do INEP\n- \u0060IMPORTA_CANDIDATOS\u0060: Importa candidatos\n- \u0060JULGA_A_SEGUNDA_INSTANCIA\u0060: Julga o recurso em 2\u00AA inst\u00E2ncia"
+      },
+      "PapelDaPublicacaoPrevista": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/PapelDaPublicacaoPrevistaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "PapelDaPublicacaoPrevistaCodigo": {
+        "enum": [
+          "PRELIMINAR",
+          "DEFINITIVO"
+        ],
+        "type": "string",
+        "description": "- \u0060PRELIMINAR\u0060: Preliminar \u2014 Abre o ciclo recursal da mat\u00E9ria: h\u00E1 um resultado definitivo depois dele.\n- \u0060DEFINITIVO\u0060: Definitivo \u2014 Encerra o ciclo recursal da mat\u00E9ria: n\u00E3o h\u00E1 outro resultado sobre ela."
       },
       "ParametrosDoCriterioDesempateDto": {
         "required": [
@@ -26495,9 +27132,13 @@
             "type": "string"
           },
           "papel": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelDaPublicacaoPrevista"
+              }
             ]
           }
         }
@@ -26513,9 +27154,13 @@
             "type": "string"
           },
           "papel": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelDaPublicacaoPrevistaCodigo"
+              }
             ]
           }
         }
@@ -26536,9 +27181,13 @@
             "type": "string"
           },
           "papel": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelDaPublicacaoPrevista"
+              }
             ]
           }
         }
@@ -26554,9 +27203,13 @@
             "type": "string"
           },
           "papel": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelDaPublicacaoPrevistaCodigo"
+              }
             ]
           }
         }
@@ -26589,9 +27242,13 @@
             ]
           },
           "papel": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelDaPublicacaoPrevista"
+              }
             ]
           },
           "situacao": {
@@ -27077,7 +27734,7 @@
             "format": "uuid"
           },
           "ancora": {
-            "$ref": "#/components/schemas/AncoraDoRecurso"
+            "$ref": "#/components/schemas/EventoInicialDoPrazo"
           },
           "regra": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
@@ -27120,7 +27777,14 @@
         "type": "object",
         "properties": {
           "ancora": {
-            "$ref": "#/components/schemas/AncoraDoRecurso"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EventoInicialDoPrazoCodigo"
+              }
+            ]
           },
           "regraCodigo": {
             "type": "string"
@@ -27338,7 +28002,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/ReferenciaTipo"
           },
           "data": {
             "type": [
@@ -27355,6 +28019,31 @@
             "format": "uuid"
           }
         }
+      },
+      "ReferenciaTipo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ReferenciaTipoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ReferenciaTipoCodigo": {
+        "enum": [
+          "FIM_INSCRICAO",
+          "INICIO_FASE",
+          "FIM_FASE",
+          "DATA_ESPECIFICA"
+        ],
+        "type": "string",
+        "description": "- \u0060FIM_INSCRICAO\u0060: Fim da inscri\u00E7\u00E3o \u2014 Usa o fim da inscri\u00E7\u00E3o como refer\u00EAncia.\n- \u0060INICIO_FASE\u0060: In\u00EDcio da fase \u2014 Usa o in\u00EDcio da fase como refer\u00EAncia.\n- \u0060FIM_FASE\u0060: Fim da fase \u2014 Usa o fim da fase como refer\u00EAncia.\n- \u0060DATA_ESPECIFICA\u0060: Data espec\u00EDfica \u2014 Usa a data informada como refer\u00EAncia."
       },
       "RegraAvaliadaDto": {
         "required": [
@@ -27455,7 +28144,7 @@
             "type": "string"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoRegra"
           },
           "declaracaoDaRegra": {
             "$ref": "#/components/schemas/JsonElement"
@@ -27479,6 +28168,12 @@
             }
           },
           "ramoDaDistribuicao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rotulo": {
             "type": [
               "null",
               "string"
@@ -28101,6 +28796,30 @@
           }
         }
       },
+      "RegraRemanejamentoModalidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/RegraRemanejamentoModalidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "RegraRemanejamentoModalidadeCodigo": {
+        "enum": [
+          "SEGUE_ORDEM_DE_REMANEJAMENTO",
+          "DESTINO_UNICO",
+          "CRUZADO"
+        ],
+        "type": "string",
+        "description": "- \u0060SEGUE_ORDEM_DE_REMANEJAMENTO\u0060: Segue a ordem de remanejamento \u2014 As vagas seguem a ordem legal de remanejamento.\n- \u0060DESTINO_UNICO\u0060: Destino \u00FAnico \u2014 As vagas seguem para uma modalidade de destino.\n- \u0060CRUZADO\u0060: Remanejamento cruzado \u2014 As vagas s\u00E3o remanejadas entre modalidades pareadas."
+      },
       "RegrasDoCampoDto": {
         "required": [
           "exibicao",
@@ -28261,6 +28980,7 @@
                 "type": "null"
               },
               {
+                "description": "C\u00F3digo do formato permitido; devolva s\u00F3 o c\u00F3digo de cada formato lido no GET. Informe QUALQUER ou uma lista de c\u00F3digos ou objetos com formato e tamanhoMaximoBytesMax.",
                 "$ref": "#/components/schemas/JsonElement"
               }
             ]
@@ -28453,12 +29173,12 @@
       },
       "ResultadoSemUnanimidadeCodigo": {
         "enum": [
-          "favoravel",
-          "desfavoravel",
-          "novaVotacao"
+          "FAVORAVEL",
+          "DESFAVORAVEL",
+          "NOVA_VOTACAO"
         ],
         "type": "string",
-        "description": "- \u0060favoravel\u0060: Favor\u00E1vel\n- \u0060desfavoravel\u0060: Desfavor\u00E1vel\n- \u0060novaVotacao\u0060: Nova vota\u00E7\u00E3o"
+        "description": "- \u0060FAVORAVEL\u0060: Favor\u00E1vel\n- \u0060DESFAVORAVEL\u0060: Desfavor\u00E1vel\n- \u0060NOVA_VOTACAO\u0060: Nova vota\u00E7\u00E3o"
       },
       "RetificacaoCertameDto": {
         "required": [
@@ -28613,12 +29333,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -28637,43 +29361,180 @@
             "type": "string"
           },
           "visivel": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           }
         }
       },
-      "SituacaoDoArquivoDoCandidato": {
-        "enum": [
-          "pendente",
-          "emVerificacao",
-          "verificado",
-          "recusado",
-          "reenvioNecessario"
+      "SentidoDoMotivo": {
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SentidoDoMotivoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SentidoDoMotivoCodigo": {
+        "enum": [
+          "FAVORAVEL",
+          "DESFAVORAVEL"
+        ],
+        "type": "string",
+        "description": "- \u0060FAVORAVEL\u0060: favor\u00E1vel \u2014 O motivo \u00E9 favor\u00E1vel \u00E0 pessoa.\n- \u0060DESFAVORAVEL\u0060: desfavor\u00E1vel \u2014 O motivo \u00E9 desfavor\u00E1vel \u00E0 pessoa."
+      },
+      "SituacaoDasModalidades": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDasModalidadesCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDasModalidadesCodigo": {
+        "enum": [
+          "CONCORRE",
+          "NAO_CONCORRE",
+          "FALTA_RESPONDER"
+        ],
+        "type": "string",
+        "description": "- \u0060CONCORRE\u0060: Concorre \u2014 As respostas indicam modalidades ofertadas.\n- \u0060NAO_CONCORRE\u0060: N\u00E3o concorre \u2014 Nenhuma modalidade ofertada se aplica.\n- \u0060FALTA_RESPONDER\u0060: Falta responder \u2014 Faltam respostas necess\u00E1rias para determinar as modalidades."
+      },
+      "SituacaoDoArquivoDoCandidato": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoArquivoDoCandidatoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoArquivoDoCandidatoCodigo": {
+        "enum": [
+          "PENDENTE",
+          "EM_VERIFICACAO",
+          "VERIFICADO",
+          "RECUSADO",
+          "REENVIO_NECESSARIO"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente \u2014 O envio do arquivo est\u00E1 pendente.\n- \u0060EM_VERIFICACAO\u0060: Em verifica\u00E7\u00E3o \u2014 O arquivo est\u00E1 em verifica\u00E7\u00E3o.\n- \u0060VERIFICADO\u0060: Verificado \u2014 O arquivo foi verificado.\n- \u0060RECUSADO\u0060: Recusado \u2014 O arquivo foi recusado.\n- \u0060REENVIO_NECESSARIO\u0060: Reenvio necess\u00E1rio \u2014 O arquivo precisa ser enviado novamente."
       },
       "SituacaoDoCertame": {
-        "enum": [
-          "emBreve",
-          "inscricoesAbertas",
-          "ultimosDias",
-          "encerradas"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoCertameCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoCertameCodigo": {
+        "enum": [
+          "EM_BREVE",
+          "INSCRICOES_ABERTAS",
+          "ULTIMOS_DIAS",
+          "ENCERRADAS"
+        ],
+        "type": "string",
+        "description": "- \u0060EM_BREVE\u0060: Em breve \u2014 As inscri\u00E7\u00F5es ainda n\u00E3o come\u00E7aram.\n- \u0060INSCRICOES_ABERTAS\u0060: Inscri\u00E7\u00F5es abertas \u2014 As inscri\u00E7\u00F5es est\u00E3o abertas.\n- \u0060ULTIMOS_DIAS\u0060: \u00DAltimos dias \u2014 As inscri\u00E7\u00F5es est\u00E3o nos \u00FAltimos dias.\n- \u0060ENCERRADAS\u0060: Encerradas \u2014 As inscri\u00E7\u00F5es est\u00E3o encerradas."
+      },
+      "SituacaoDoDocumento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoDocumentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoDocumentoCodigo": {
+        "enum": [
+          "NAO_EXIGIDO",
+          "PENDENTE",
+          "PODE_SER_EXIGIDO",
+          "DEPENDE_DE_FASE_POSTERIOR",
+          "SATISFEITA"
+        ],
+        "type": "string",
+        "description": "- \u0060NAO_EXIGIDO\u0060: N\u00E3o exigido \u2014 A exig\u00EAncia n\u00E3o se aplica.\n- \u0060PENDENTE\u0060: Pendente \u2014 A exig\u00EAncia ainda n\u00E3o foi atendida.\n- \u0060PODE_SER_EXIGIDO\u0060: Pode ser exigido \u2014 Uma resposta pendente decide a exig\u00EAncia.\n- \u0060DEPENDE_DE_FASE_POSTERIOR\u0060: Depende de fase posterior \u2014 A exig\u00EAncia depende de uma fase posterior.\n- \u0060SATISFEITA\u0060: Satisfeita \u2014 A exig\u00EAncia foi atendida."
       },
       "SituacaoDoProdutoPrevisto": {
-        "enum": [
-          "aberto",
-          "publicado"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoProdutoPrevistoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoProdutoPrevistoCodigo": {
+        "enum": [
+          "ABERTO",
+          "PUBLICADO"
+        ],
+        "type": "string",
+        "description": "- \u0060ABERTO\u0060: Aberta \u2014 A publica\u00E7\u00E3o prevista ainda n\u00E3o foi realizada.\n- \u0060PUBLICADO\u0060: Publicada \u2014 A publica\u00E7\u00E3o prevista foi realizada."
       },
       "SituacaoInscricao": {
-        "enum": [
-          "rascunho",
-          "submetida",
-          "cancelada"
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoInscricaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoInscricaoCodigo": {
+        "enum": [
+          "RASCUNHO",
+          "SUBMETIDA",
+          "CANCELADA"
+        ],
+        "type": "string",
+        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 A inscri\u00E7\u00E3o est\u00E1 em preenchimento.\n- \u0060SUBMETIDA\u0060: Submetida \u2014 A inscri\u00E7\u00E3o foi enviada.\n- \u0060CANCELADA\u0060: Cancelada \u2014 A inscri\u00E7\u00E3o enviada foi cancelada."
       },
       "SnapshotVigenteDto": {
         "required": [
@@ -28712,15 +29573,76 @@
           }
         }
       },
-      "StatusProcesso": {
-        "enum": [
-          "nenhum",
-          "rascunho",
-          "publicado",
-          "encerrado",
-          "cancelado"
+      "StatusArquivoEnviado": {
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/StatusArquivoEnviadoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusArquivoEnviadoCodigo": {
+        "enum": [
+          "PENDENTE",
+          "CONFIRMADO"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente \u2014 O envio ainda n\u00E3o foi confirmado.\n- \u0060CONFIRMADO\u0060: Confirmado \u2014 O conte\u00FAdo do envio foi confirmado."
+      },
+      "StatusBaseLegal": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/StatusBaseLegalCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusBaseLegalCodigo": {
+        "enum": [
+          "PENDENTE",
+          "RESOLVIDO"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente \u2014 A base legal ainda est\u00E1 pendente.\n- \u0060RESOLVIDO\u0060: Resolvido \u2014 A base legal est\u00E1 resolvida."
+      },
+      "StatusProcesso": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/StatusProcessoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusProcessoCodigo": {
+        "enum": [
+          "RASCUNHO",
+          "PUBLICADO",
+          "ENCERRADO",
+          "CANCELADO"
+        ],
+        "type": "string",
+        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 O processo est\u00E1 em prepara\u00E7\u00E3o.\n- \u0060PUBLICADO\u0060: Publicado \u2014 O processo foi publicado.\n- \u0060ENCERRADO\u0060: Encerrado \u2014 O processo foi encerrado.\n- \u0060CANCELADO\u0060: Cancelado \u2014 O processo foi cancelado."
       },
       "TaxaInscricaoCertameDto": {
         "required": [
@@ -28742,7 +29664,7 @@
           "fundamentos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FundamentoIsencao"
             }
           }
         }
@@ -28894,10 +29816,25 @@
             "type": "string"
           },
           "visivel": {
-            "$ref": "#/components/schemas/TernarioCodigo"
+            "$ref": "#/components/schemas/Ternario"
           },
           "obrigatorio": {
+            "$ref": "#/components/schemas/Ternario"
+          }
+        }
+      },
+      "Ternario": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
             "$ref": "#/components/schemas/TernarioCodigo"
+          },
+          "rotulo": {
+            "type": "string"
           }
         }
       },
@@ -28909,6 +29846,32 @@
         ],
         "type": "string",
         "description": "Resultado da avalia\u00E7\u00E3o de uma condi\u00E7\u00E3o: verdadeiro, falso ou indeterminado, que \u00E9 estado pr\u00F3prio e n\u00E3o equivale a falso nem a aus\u00EAncia.\n\n- \u0060INDETERMINADO\u0060: Indeterminado \u2014 N\u00E3o h\u00E1 como decidir ainda: nunca \u00E9 lido como verdadeiro nem como falso.\n- \u0060VERDADEIRO\u0060: Verdadeiro\n- \u0060FALSO\u0060: Falso"
+      },
+      "TipoAbrangencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoAbrangenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoAbrangenciaCodigo": {
+        "enum": [
+          "FEDERAL",
+          "ESTADUAL",
+          "MUNICIPAL",
+          "INTERNA_NORMA",
+          "INTERNA_EDITAL"
+        ],
+        "type": "string",
+        "description": "- \u0060FEDERAL\u0060: Federal \u2014 Aplica-se a norma federal.\n- \u0060ESTADUAL\u0060: Estadual \u2014 Aplica-se a norma estadual.\n- \u0060MUNICIPAL\u0060: Municipal \u2014 Aplica-se a norma municipal.\n- \u0060INTERNA_NORMA\u0060: Norma interna \u2014 Aplica-se a norma da institui\u00E7\u00E3o.\n- \u0060INTERNA_EDITAL\u0060: Edital \u2014 Aplica-se o pr\u00F3prio edital."
       },
       "TipoCatalogadoCertameDto": {
         "required": [
@@ -28983,12 +29946,51 @@
         "description": "O tipo de banca que a sele\u00E7\u00E3o pode prever em uma fase ou em uma etapa. O c\u00F3digo e o r\u00F3tulo do tipo s\u00E3o fixos; o nome do cadastro de tipos de banca pode ser editado.\n\n- \u0060BANCA_ANALISE_DOCUMENTAL\u0060: Banca de an\u00E1lise documental\n- \u0060BANCA_ENTREVISTA\u0060: Banca de entrevista\n- \u0060BANCA_CORRECAO_REDACOES\u0060: Banca de corre\u00E7\u00E3o de reda\u00E7\u00F5es\n- \u0060BANCA_ANALISE_RECURSOS\u0060: Banca de an\u00E1lise de recursos\n- \u0060BANCA_HETEROIDENTIFICACAO\u0060: Banca de heteroidentifica\u00E7\u00E3o\n- \u0060BANCA_BIOPSICOSSOCIAL\u0060: Banca de avalia\u00E7\u00E3o biopsicossocial\n- \u0060BANCA_HOMOLOGACAO_INSCRICOES\u0060: Banca de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060BANCA_IMPORTACAO_NOTAS_INEP\u0060: Banca de importa\u00E7\u00E3o das notas do INEP\n- \u0060BANCA_IMPORTACAO_CANDIDATOS\u0060: Banca de importa\u00E7\u00E3o de candidatos\n- \u0060BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA\u0060: Banca de an\u00E1lise de recursos de 2\u00AA inst\u00E2ncia"
       },
       "TipoDeLeiauteDoInep": {
-        "enum": [
-          "envio",
-          "retorno",
-          null
+        "required": [
+          "codigo",
+          "rotulo"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeLeiauteDoInepCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeLeiauteDoInepCodigo": {
+        "enum": [
+          "ENVIO",
+          "RETORNO"
+        ],
+        "type": "string",
+        "description": "- \u0060ENVIO\u0060: Envio \u2014 Arquivo enviado ao INEP.\n- \u0060RETORNO\u0060: Retorno \u2014 Arquivo recebido do INEP."
+      },
+      "TipoDeOcorrenciaDoLote": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeOcorrenciaDoLoteCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeOcorrenciaDoLoteCodigo": {
+        "enum": [
+          "INSCRITO_SEM_LINHA",
+          "LINHA_SEM_INSCRITO",
+          "CONFLITO"
+        ],
+        "type": "string",
+        "description": "- \u0060INSCRITO_SEM_LINHA\u0060: Inscrito sem linha \u2014 A inscri\u00E7\u00E3o n\u00E3o aparece no arquivo.\n- \u0060LINHA_SEM_INSCRITO\u0060: Linha sem inscrito \u2014 A linha n\u00E3o corresponde a uma inscri\u00E7\u00E3o.\n- \u0060CONFLITO\u0060: Conflito \u2014 A inscri\u00E7\u00E3o tem linhas diferentes no arquivo."
       },
       "TipoDocumentoDaExigenciaDto": {
         "required": [
@@ -29029,6 +30031,14 @@
             "format": "uuid"
           }
         }
+      },
+      "TipoEtapaFormularioCodigo": {
+        "enum": [
+          "SECAO",
+          "BLOCO"
+        ],
+        "type": "string",
+        "description": "O que a etapa do formul\u00E1rio \u00E9: uma se\u00E7\u00E3o com itens de resposta ou um bloco que o sistema monta.\n\n- \u0060SECAO\u0060: Se\u00E7\u00E3o \u2014 Etapa com os itens que o candidato responde.\n- \u0060BLOCO\u0060: Bloco do sistema \u2014 Etapa que o sistema monta a partir da configura\u00E7\u00E3o do processo; o bloco diz qual."
       },
       "TipoEtapaSnapshotDto": {
         "required": [
@@ -29087,6 +30097,15 @@
         "type": "string",
         "description": "A decis\u00E3o individual a que um motivo serve. O tipo separa as listas do cadastro de motivos, e o c\u00F3digo do motivo s\u00F3 \u00E9 \u00FAnico dentro dele. O recurso n\u00E3o \u00E9 tipo pr\u00F3prio: o motivo do recurso \u00E9 o da decis\u00E3o recorrida.\n\n- \u0060ISENCAO_DA_TAXA\u0060: Isen\u00E7\u00E3o da taxa\n- \u0060HOMOLOGACAO_DAS_INSCRICOES\u0060: Homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060ANALISE_DOCUMENTAL\u0060: An\u00E1lise documental\n- \u0060HETEROIDENTIFICACAO\u0060: Heteroidentifica\u00E7\u00E3o\n- \u0060AVALIACAO_BIOPSICOSSOCIAL\u0060: Avalia\u00E7\u00E3o biopsicossocial\n- \u0060CLASSIFICACAO\u0060: Classifica\u00E7\u00E3o\n- \u0060GABARITO_DA_PROVA\u0060: Gabarito da prova\n- \u0060NOTA_DA_ETAPA\u0060: Nota da etapa"
       },
+      "TipoObrigatoriedadeCodigo": {
+        "enum": [
+          "SEMPRE",
+          "NUNCA",
+          "QUANDO"
+        ],
+        "type": "string",
+        "description": "Quando o item ou o termo do formul\u00E1rio \u00E9 de resposta obrigat\u00F3ria.\n\n- \u0060SEMPRE\u0060: Sempre obrigat\u00F3rio \u2014 O candidato sempre precisa responder. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060NUNCA\u0060: Nunca obrigat\u00F3rio \u2014 A resposta \u00E9 sempre opcional. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060QUANDO\u0060: Obrigat\u00F3rio quando a condi\u00E7\u00E3o \u00E9 verdadeira \u2014 O candidato precisa responder quando a condi\u00E7\u00E3o sobre as respostas anteriores \u00E9 verdadeira. Tem sempre uma condi\u00E7\u00E3o."
+      },
       "TipoProcessoSnapshotDto": {
         "required": [
           "origemId",
@@ -29107,19 +30126,54 @@
           }
         }
       },
+      "TipoRegra": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoRegraCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoRegraCodigo": {
+        "enum": [
+          "REGRA_CALCULO",
+          "REGRA_ARREDONDAMENTO",
+          "REGRA_ELIMINACAO",
+          "REGRA_FADA",
+          "CRITERIO_DESEMPATE",
+          "CRITERIO_REMANEJAMENTO",
+          "REGRA_ORDEM_ALOCACAO",
+          "REGRA_ELEGIBILIDADE",
+          "REGRA_DISTRIBUICAO_VAGAS",
+          "REGRA_AJUSTE_DISTRIBUICAO_VAGAS",
+          "REGRA_PRAZO_RECURSO",
+          "CONVENCAO_CONTAGEM_PRAZO",
+          "REGRA_APURACAO_AVALIACAO",
+          "REGRA_PROCEDIMENTO_RECURSO"
+        ],
+        "type": "string",
+        "description": "- \u0060REGRA_CALCULO\u0060: C\u00E1lculo da nota \u2014 C\u00E1lculo da nota.\n- \u0060REGRA_ARREDONDAMENTO\u0060: Arredondamento da nota \u2014 Arredondamento da nota.\n- \u0060REGRA_ELIMINACAO\u0060: Elimina\u00E7\u00E3o \u2014 Elimina\u00E7\u00E3o.\n- \u0060REGRA_FADA\u0060: Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) \u2014 Regra do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA).\n- \u0060CRITERIO_DESEMPATE\u0060: Crit\u00E9rio de desempate \u2014 Crit\u00E9rio de desempate.\n- \u0060CRITERIO_REMANEJAMENTO\u0060: Crit\u00E9rio de remanejamento \u2014 Crit\u00E9rio de remanejamento.\n- \u0060REGRA_ORDEM_ALOCACAO\u0060: Ordem de aloca\u00E7\u00E3o \u2014 Ordem de aloca\u00E7\u00E3o.\n- \u0060REGRA_ELEGIBILIDADE\u0060: Elegibilidade \u2014 Elegibilidade.\n- \u0060REGRA_DISTRIBUICAO_VAGAS\u0060: Distribui\u00E7\u00E3o de vagas \u2014 Distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_AJUSTE_DISTRIBUICAO_VAGAS\u0060: Ajuste da distribui\u00E7\u00E3o de vagas \u2014 Ajuste da distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_PRAZO_RECURSO\u0060: Prazo de recurso \u2014 Prazo de recurso.\n- \u0060CONVENCAO_CONTAGEM_PRAZO\u0060: Conven\u00E7\u00E3o de contagem do prazo \u2014 Conven\u00E7\u00E3o de contagem do prazo.\n- \u0060REGRA_APURACAO_AVALIACAO\u0060: Apura\u00E7\u00E3o da avalia\u00E7\u00E3o \u2014 Apura\u00E7\u00E3o da avalia\u00E7\u00E3o.\n- \u0060REGRA_PROCEDIMENTO_RECURSO\u0060: Procedimento de recurso \u2014 Procedimento de recurso."
+      },
       "TipoRenderizacaoCodigo": {
         "enum": [
           "NUMERO",
-          "BOOLEANO",
-          "SELECAO_UNICA",
-          "SELECAO_MULTIPLA",
+          "SIM_OU_NAO",
+          "ESCOLHA_UNICA",
+          "ESCOLHA_MULTIPLA",
           "TEXTO",
           "DATA",
           "ENDERECO",
           "MUNICIPIO"
         ],
         "type": "string",
-        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero\n- \u0060BOOLEANO\u0060: Sim ou n\u00E3o\n- \u0060SELECAO_UNICA\u0060: Escolha de um valor\n- \u0060SELECAO_MULTIPLA\u0060: Escolha de v\u00E1rios valores\n- \u0060TEXTO\u0060: Texto\n- \u0060DATA\u0060: Data\n- \u0060ENDERECO\u0060: Endere\u00E7o\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio"
+        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
       },
       "UnidadeAdministradoraCertameDto": {
         "required": [
@@ -29244,12 +30298,12 @@
       },
       "UnidadePrazoCodigo": {
         "enum": [
-          "horas",
-          "dias",
-          "diasUteis"
+          "HORAS",
+          "DIAS",
+          "DIAS_UTEIS"
         ],
         "type": "string",
-        "description": "- \u0060horas\u0060: Horas\n- \u0060dias\u0060: Dias corridos\n- \u0060diasUteis\u0060: Dias \u00FAteis"
+        "description": "- \u0060HORAS\u0060: Horas\n- \u0060DIAS\u0060: Dias corridos\n- \u0060DIAS_UTEIS\u0060: Dias \u00FAteis"
       },
       "UnidadeResponsavelDto": {
         "required": [

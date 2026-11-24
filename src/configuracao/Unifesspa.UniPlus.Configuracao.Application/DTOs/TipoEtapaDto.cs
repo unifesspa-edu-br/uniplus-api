@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Representação pública de um tipo de etapa ativo: a identidade, o estado e como as etapas do tipo são avaliadas.</summary>
 public sealed record TipoEtapaDto(
@@ -32,4 +33,4 @@ public sealed record AvaliacaoDasEtapasDto(
     IReadOnlyList<ConceitoAdmitidoDto> ConceitosAdmitidos);
 
 /// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza sai com código e rótulo.</summary>
-public sealed record ConceitoAdmitidoDto(string Codigo, string Nome, CodigoComRotulo<NaturezaConceito> Natureza);
+public sealed record ConceitoAdmitidoDto(string Codigo, string Nome, CodigoComRotulo<FormaDoConceito> Natureza);

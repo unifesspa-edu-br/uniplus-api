@@ -53,7 +53,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             .ComOcorrencias(0, 10)
             .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
                 .ComRotulo("Parentesco")
-                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .DoTipo(TipoRenderizacao.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
             .DaFinalidade(FinalidadeFormulario.Inscricao)
@@ -113,7 +113,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
     private static FatoColetadoInput[] ItensDaColetaValida() =>
     [
-        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
         EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]]).Construir(),
     ];
 
@@ -137,7 +137,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").NaSecao("INEXISTENTE").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").NaSecao("INEXISTENTE").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").NaSecao("OUTRA").Construir(),
         ]);
 
@@ -191,7 +191,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("SELECAO_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("ESCOLHA_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -231,7 +231,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [EntradaDoFatoColetadoDeTeste.Coletando("V").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("V").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoDesconhecido");
@@ -246,7 +246,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]).Construir(),
         ]);
 
@@ -266,7 +266,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]]).Construir(),
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         Result resultado = await HandleAsync(mocks, command);
@@ -275,14 +275,14 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Error!.Code.Should().Be("GrafoFormulario.CitaFatoPosterior");
     }
 
-    [Theory(DisplayName = "TipoRenderizacao incoerente com Domínio/Cardinalidade do fato no catálogo é recusado")]
-    [InlineData("COR_RACA", "BOOLEANO", "COR_RACA é CATEGORICO/ESCALAR — só SELECAO_UNICA é coerente")]
-    [InlineData("COR_RACA", "NUMERO", "COR_RACA é CATEGORICO/ESCALAR — NUMERO não é coerente com nenhum categórico")]
-    [InlineData("COR_RACA", "SELECAO_MULTIPLA", "COR_RACA é ESCALAR, não MULTIVALORADO — só SELECAO_UNICA é coerente")]
-    [InlineData("BAIXA_RENDA", "SELECAO_UNICA", "BAIXA_RENDA é BOOLEANO — só BOOLEANO é coerente")]
-    [InlineData("BAIXA_RENDA", "NUMERO", "BAIXA_RENDA é BOOLEANO — NUMERO não é coerente")]
-    [InlineData("NOME_SOCIAL", "SELECAO_UNICA", "NOME_SOCIAL é TEXTO — só TEXTO é coerente")]
-    [InlineData("BAIXA_RENDA", "TEXTO", "BAIXA_RENDA é BOOLEANO — TEXTO não é coerente")]
+    [Theory(DisplayName = "TipoRenderizacao incoerente com tipo do dado e a quantidade de valores do fato no catálogo é recusado")]
+    [InlineData("COR_RACA", "SIM_OU_NAO", "COR_RACA é OPCAO com um valor só — só ESCOLHA_UNICA é coerente")]
+    [InlineData("COR_RACA", "NUMERO", "COR_RACA é OPCAO com um valor só — NUMERO não é coerente com nenhuma opção")]
+    [InlineData("COR_RACA", "ESCOLHA_MULTIPLA", "COR_RACA tem um valor só, não vários valores — só ESCOLHA_UNICA é coerente")]
+    [InlineData("BAIXA_RENDA", "ESCOLHA_UNICA", "BAIXA_RENDA é SIM_OU_NAO — só SIM_OU_NAO é coerente")]
+    [InlineData("BAIXA_RENDA", "NUMERO", "BAIXA_RENDA é SIM_OU_NAO — NUMERO não é coerente")]
+    [InlineData("NOME_SOCIAL", "ESCOLHA_UNICA", "NOME_SOCIAL é TEXTO — só TEXTO é coerente")]
+    [InlineData("BAIXA_RENDA", "TEXTO", "BAIXA_RENDA é SIM_OU_NAO — TEXTO não é coerente")]
     [InlineData("DATA_NASCIMENTO", "TEXTO", "DATA_NASCIMENTO é DATA — só DATA é coerente")]
     [InlineData("ENDERECO_RESIDENCIAL", "DATA", "ENDERECO_RESIDENCIAL é ENDERECO — só ENDERECO é coerente")]
     public async Task Handle_TipoRenderizacaoIncoerente_RetornaErroDeCoerencia(
@@ -305,7 +305,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade(tipo, comPredicado ? [[Condicao("COR_RACA", "IGUAL", "PRETA")]] : null).Construir(),
         ]);
 
@@ -318,7 +318,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
     private static FatoColetadoInput[] ItensComObrigatoriedadeQuando() =>
     [
-        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").Construir(),
         EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("QUANDO", [[Condicao("COR_RACA", "IGUAL", "PRETA")]]).ComAjuda("Renda por pessoa da família").PedindoConfirmacao().Construir(),
     ];
 

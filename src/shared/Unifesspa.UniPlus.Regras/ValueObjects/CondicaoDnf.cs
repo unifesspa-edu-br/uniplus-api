@@ -17,10 +17,10 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <para>
 /// Validação de <b>forma</b>, sem I/O: <see cref="Fato"/> não vazio,
 /// <see cref="Operador"/> um dos valores do domínio fechado, e a forma de
-/// <see cref="Valor"/> coerente com o operador — <see cref="Regras.Enums.Operador.Em"/> e
-/// <see cref="Regras.Enums.Operador.NaoEm"/> (Story #916) exigem array JSON, sem itens de
+/// <see cref="Valor"/> coerente com o operador — <see cref="Regras.Enums.Operador.AlgumDe"/> e
+/// <see cref="Regras.Enums.Operador.NenhumDe"/> (Story #916) exigem array JSON, sem itens de
 /// texto em branco; array <b>vazio</b> é aceito na forma (a semântica de avaliar
-/// <c>EM []</c>/<c>NAO_EM []</c> é de <see cref="PredicadoDnf"/>, não desta factory). Os
+/// <c>ALGUM_DE []</c>/<c>NENHUM_DE []</c> é de <see cref="PredicadoDnf"/>, não desta factory). Os
 /// demais operadores (<see cref="Regras.Enums.Operador.Igual"/>, <see cref="Regras.Enums.Operador.Diferente"/>,
 /// <see cref="Regras.Enums.Operador.MaiorIgual"/>, <see cref="Regras.Enums.Operador.MenorIgual"/>) exigem
 /// escalar (rejeitam array e objeto). A validação <b>semântica</b> (fato existe no
@@ -117,7 +117,7 @@ public sealed record CondicaoDnf
 
     private static DomainError? RecusaDaForma(Operador operador, JsonElement valor)
     {
-        bool ehOperadorDeLista = operador is Operador.Em or Operador.NaoEm;
+        bool ehOperadorDeLista = operador is Operador.AlgumDe or Operador.NenhumDe;
         bool formaCoerente = ehOperadorDeLista
             ? valor.ValueKind == JsonValueKind.Array && NenhumItemEmBranco(valor)
             : valor.ValueKind is not (JsonValueKind.Array or JsonValueKind.Object) && !EscalarEmBranco(valor);
@@ -127,7 +127,7 @@ public sealed record CondicaoDnf
             : new DomainError(
                 "CondicaoDnf.FormaIncoerenteComOperador",
                 ehOperadorDeLista
-                    ? "Os operadores EM e NAO_EM exigem um array JSON, sem itens de texto em branco (array vazio é aceito)."
+                    ? "Os operadores ALGUM_DE e NENHUM_DE exigem um array JSON, sem itens de texto em branco (array vazio é aceito)."
                     : "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco.");
     }
 

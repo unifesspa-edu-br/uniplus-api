@@ -58,7 +58,7 @@ public static class ArquivosAdministrativos
         DocumentoExigido? exigencia = configuracaoPublicada.Exigencias.DocumentosExigidos.FirstOrDefault(d => d.Id == exigenciaId);
 
         return (
-            exigencia?.ClassificacaoProtecao ?? ClassificacaoDeProtecao.Nenhuma,
+            ClassificacoesDeProtecao.Resolvida(exigencia?.ClassificacaoProtecao),
             string.IsNullOrWhiteSpace(exigencia?.HipoteseLegal) ? null : exigencia.HipoteseLegal);
     }
 }

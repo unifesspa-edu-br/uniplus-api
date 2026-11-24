@@ -30,7 +30,7 @@ public sealed class ResolvedorEstadoFatosTests
 
     private static FatoColetado Fato(string codigo, int ordem, params (string Fato, Operador Operador, object Valor)[] condicoes) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ExibidoQuando(condicoes.Length == 0 ? null : ExibicaoDeTeste.QuandoTodas(condicoes))
             .Construir();
 
@@ -53,7 +53,7 @@ public sealed class ResolvedorEstadoFatosTests
     [
         Fato("CONCORRER_EP", 3, EgressoDeEscolaPublica()),
         Fato("COR_RACA", 4, EgressoDeEscolaPublica()),
-        Fato("CONCORRER_PPI", 5, EgressoDeEscolaPublica(), Cond("COR_RACA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "INDIGENA", "PRETA", "PARDA" }))),
+        Fato("CONCORRER_PPI", 5, EgressoDeEscolaPublica(), Cond("COR_RACA", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "INDIGENA", "PRETA", "PARDA" }))),
         Fato("QUILOMBOLA", 6, EgressoDeEscolaPublica(), Cond("COR_RACA", Operador.Diferente, Cor("INDIGENA"))),
         Fato("CONCORRER_Q", 7, EgressoDeEscolaPublica(), Cond("QUILOMBOLA", Operador.Igual, Sim)),
         Fato("BAIXA_RENDA", 8, EgressoDeEscolaPublica()),
@@ -111,7 +111,7 @@ public sealed class ResolvedorEstadoFatosTests
 
         return FatoColetadoDeTeste.Coletando("COR_RACA", 1)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])]))
             .Construir();
     }
@@ -169,8 +169,8 @@ public sealed class ResolvedorEstadoFatosTests
         return FormularioProcesso.Criar(
             FinalidadeFormulario.Inscricao, null, null,
             [
-                EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Cotas", null, null, egresso).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+                EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, null), "Cotas", null, null, egresso).Value!,
                 EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
     }
@@ -187,7 +187,7 @@ public sealed class ResolvedorEstadoFatosTests
     {
         FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();

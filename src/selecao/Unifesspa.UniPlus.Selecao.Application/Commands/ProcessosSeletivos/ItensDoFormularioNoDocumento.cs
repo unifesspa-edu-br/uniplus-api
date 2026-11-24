@@ -19,7 +19,7 @@ internal static class ItensDoFormularioNoDocumento
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        IEnumerable<FinalidadeFormulario> comItens = processo.Campos.Select(static c => c.Finalidade).Concat(processo.GruposColetados.Select(static g => g.Finalidade));
+        IEnumerable<FinalidadeFormulario> comItens = processo.Campos.Select(static c => c.Finalidade).Concat(processo.GruposColetados.Select(static g => g.Finalidade)).OfType<FinalidadeFormulario>();
         IEnumerable<FinalidadeFormulario> finalidades = OrdemCanonicaDaConfiguracao.Finalidades(processo.Formularios.Select(static f => f.Finalidade).Concat(comItens));
 
         return [.. finalidades.Select((finalidade, posicao) => DaFinalidade(processo, finalidade, posicao))];

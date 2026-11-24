@@ -140,9 +140,9 @@ internal static class LeituraDosValoresDeDominio
 
     /// <summary>
     /// Os valores selecionáveis de um fato coletado (UNI-REQ-0072) — bicondicional
-    /// com <paramref name="tipoRenderizacao"/> : <c>SELECAO_UNICA</c>/
-    /// <c>SELECAO_MULTIPLA</c> exige array com cardinalidade mínima 1 (nunca vazio);
-    /// <c>BOOLEANO</c>/<c>NUMERO</c> exige <see langword="null"/>. Um envelope que descumpra a
+    /// com <paramref name="tipoRenderizacao"/> : <c>ESCOLHA_UNICA</c>/
+    /// <c>ESCOLHA_MULTIPLA</c> exige array com cardinalidade mínima 1 (nunca vazio);
+    /// <c>SIM_OU_NAO</c>/<c>NUMERO</c> exige <see langword="null"/>. Um envelope que descumpra a
     /// bicondicional em qualquer sentido — seletor mudo (<c>null</c> ou <c>[]</c> onde deveria
     /// ter opção), ou vocabulário pendurado num campo booleano/numérico — é malformado. Cada
     /// item exige <c>ordem</c> não negativa e
@@ -153,12 +153,12 @@ internal static class LeituraDosValoresDeDominio
         LeitorEnvelope leitor, JsonObject item, string pathPai, TipoRenderizacao tipoRenderizacao)
     {
         string path = $"{pathPai}.valoresSelecionaveis";
-        bool ehFatoDeSelecao = tipoRenderizacao.EhSelecao();
+        bool ehFatoDeSelecao = tipoRenderizacao.EhEscolha();
 
         if (item["valoresSelecionaveis"] is not JsonNode node)
         {
             return ehFatoDeSelecao
-                ? leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>($"'{path}' é null, mas o tipo de renderização é de seleção — a bicondicional exige um array.")
+                ? Recusar(leitor, $"'{path}' é null, mas o tipo de renderização é de seleção — a bicondicional exige um array.")
                 : null;
         }
 
@@ -170,13 +170,13 @@ internal static class LeituraDosValoresDeDominio
     {
         if (node is not JsonArray array)
         {
-            return leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>($"'{path}' deveria ser um array ou null.");
+            return Recusar(leitor, $"'{path}' deveria ser um array ou null.");
         }
 
         if (!ehFatoDeSelecao)
         {
-            return leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(
-                $"'{path}' é um array, mas o tipo de renderização '{tipoRenderizacao}' não é de seleção — a bicondicional exige null.");
+            return Recusar(
+                leitor, $"'{path}' é um array, mas o tipo de renderização '{tipoRenderizacao}' não é de seleção — a bicondicional exige null.");
         }
 
         return LerOpcoesDoSeletor(leitor, array, path);
@@ -188,7 +188,10 @@ internal static class LeituraDosValoresDeDominio
 
         // Um seletor publicado sem opção nenhuma não é respondível: o array vazio é malformado.
         return valores is { Count: 0 }
-            ? leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>($"'{path}' é um array vazio, mas o tipo de renderização é de seleção — a cardinalidade mínima é 1.")
+            ? Recusar(leitor, $"'{path}' é um array vazio, mas o tipo de renderização é de seleção — a cardinalidade mínima é 1.")
             : valores;
     }
+
+    private static IReadOnlyList<ValorDominioDeclaradoCongelado>? Recusar(LeitorEnvelope leitor, string motivo) =>
+        leitor.Recusar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(motivo);
 }

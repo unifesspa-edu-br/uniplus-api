@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -92,12 +93,11 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
     private async Task<Guid> SemearCatalogoAsync(string fato, string codigoDoDocumento)
     {
         FatoCandidato elegivel = CriacaoDoFato.CriarDoAdministrador(
-            fato, "Elegível", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            FaseDoFato, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Isenção da taxa",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
-        TipoDocumento tipoDocumento = TipoDocumento.Criar(
-            codigoDoDocumento, "Comprovante de elegibilidade", descricao: null, categoria: "IDENTIFICACAO",
-            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(fato, "Elegível", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, FaseDoFato, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Isenção da taxa", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
+        TipoDocumento tipoDocumento = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+            codigoDoDocumento, "Comprovante de elegibilidade", Descricao: null, Categoria: "IDENTIFICACAO",
+            FormatosAceitos: null, TamanhoMaximoMb: null, TipoEquivalente: null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal, FinalidadeTratamento: "Comprovação documental do candidato.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.AddRange(elegivel, tipoDocumento);

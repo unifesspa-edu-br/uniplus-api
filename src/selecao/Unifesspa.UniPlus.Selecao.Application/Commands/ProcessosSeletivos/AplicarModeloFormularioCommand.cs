@@ -5,6 +5,9 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Aplica ao processo a cópia de um modelo de formulário (UNI-REQ-0144, ADR-0061): o formulário da
@@ -23,7 +26,7 @@ public sealed record AplicacaoDeModeloInput(Guid ModeloId);
 /// derivações copiadas do catálogo ou mantidas como o processo já as tinha.
 /// </summary>
 public sealed record AplicacaoDeModeloDto(
-    string Finalidade,
+    CodigoComRotulo<FinalidadeFormulario> Finalidade,
     IReadOnlyList<string> FatosTrazidosParaAInscricao,
     IReadOnlyList<string> FatosMantidosNaInscricao,
     IReadOnlyList<ParteDescartadaDto> Descartados,

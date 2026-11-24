@@ -201,9 +201,9 @@ public sealed class ConteudoDoModeloJsonTests
 
     [Theory(DisplayName = "O tipo de campo do item é gravado no documento pelo código")]
     [InlineData(TipoRenderizacao.Numero, "NUMERO")]
-    [InlineData(TipoRenderizacao.Booleano, "BOOLEANO")]
-    [InlineData(TipoRenderizacao.SelecaoUnica, "SELECAO_UNICA")]
-    [InlineData(TipoRenderizacao.SelecaoMultipla, "SELECAO_MULTIPLA")]
+    [InlineData(TipoRenderizacao.SimOuNao, "SIM_OU_NAO")]
+    [InlineData(TipoRenderizacao.EscolhaUnica, "ESCOLHA_UNICA")]
+    [InlineData(TipoRenderizacao.EscolhaMultipla, "ESCOLHA_MULTIPLA")]
     [InlineData(TipoRenderizacao.Texto, "TEXTO")]
     [InlineData(TipoRenderizacao.Data, "DATA")]
     [InlineData(TipoRenderizacao.Endereco, "ENDERECO")]
@@ -221,7 +221,7 @@ public sealed class ConteudoDoModeloJsonTests
     [InlineData("0")]
     public void Desserializar_TipoDeCampoForaDoCatalogo_Lanca(string tipo)
     {
-        string corrompido = JsonLegado.Replace("\"tipoRenderizacao\":\"BOOLEANO\"", $"\"tipoRenderizacao\":\"{tipo}\"", StringComparison.Ordinal);
+        string corrompido = JsonLegado.Replace("\"tipoRenderizacao\":\"SIM_OU_NAO\"", $"\"tipoRenderizacao\":\"{tipo}\"", StringComparison.Ordinal);
 
         Action ler = () => ConteudoDoModeloJson.Desserializar(corrompido);
 
@@ -251,10 +251,10 @@ public sealed class ConteudoDoModeloJsonTests
         """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]}}""";
 
     private const string ItemParentescoJson =
-        """{"fatoCodigo":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"fatoCodigo":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string ItemRendaMembroJson =
-        """{"fatoCodigo":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"fatoCodigo":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string GrupoFamiliaJson =
         $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
@@ -269,7 +269,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
-        """{"fatoCodigo":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"fatoCodigo":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string EtapaDadosMinimaJson =
         """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}""";
@@ -299,7 +299,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"titulo":null,"etapas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
-        """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"fatoCodigo":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoRenderizacao":"BOOLEANO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
+        """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"fatoCodigo":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
 
     private const string JsonLegadoRegravado =
         $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";
@@ -324,7 +324,7 @@ public sealed class ConteudoDoModeloJsonTests
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
-        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
+        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
@@ -334,7 +334,7 @@ public sealed class ConteudoDoModeloJsonTests
             [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "INDEFERIMENTO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
 
     private static EtapaDoModelo EtapaCompleta() => new(
-        "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
+        "DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
         "RENDA",
@@ -349,7 +349,7 @@ public sealed class ConteudoDoModeloJsonTests
             new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
         "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),

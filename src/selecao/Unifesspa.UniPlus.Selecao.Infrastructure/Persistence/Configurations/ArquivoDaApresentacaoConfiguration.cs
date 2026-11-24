@@ -6,6 +6,7 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
@@ -22,9 +23,15 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("arquivos_da_apresentacao", t => t.HasComment(
+        builder.ToTable("arquivos_da_apresentacao", t =>
+        {
+            t.HasCheckConstraint("ck_arquivos_da_apresentacao_formato", $"formato IN ({SqlDosCodigosDeContrato.Lista<FormatoPermitido>()})");
+            t.HasCheckConstraint("ck_arquivos_da_apresentacao_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDoArquivoDoCandidato>()})");
+            t.HasCheckConstraint("ck_arquivos_da_apresentacao_motivo_da_recusa", $"motivo_da_recusa IN ({SqlDosCodigosDeContrato.Lista<MotivoDeRecusaDoArquivo>()})");
+            t.HasComment(
             "O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado pelo " +
-            "próprio armazenamento; o nome original do arquivo não é guardado."));
+            "próprio armazenamento; o nome original do arquivo não é guardado.");
+        });
 
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();

@@ -103,7 +103,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
             Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
             ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: "RECLASSIFICAR_AC",
+            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: "RECLASSIFICA_AC",
             BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();

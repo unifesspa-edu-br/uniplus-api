@@ -11,6 +11,7 @@ using Domain.ValueObjects;
 using DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Leitura, no envelope congelado, das exigências de documentos: rótulo, aplicabilidade, obrigatoriedade, formatos, prazo
@@ -161,14 +162,21 @@ internal static class LeituraDoCertameDocumentos
     private static FormatosAceitosCertameDto? ComLista(bool qualquer, JsonNode listaNode) =>
         !qualquer
         && listaNode is JsonArray { Count: > 0 } array
-        && PrimitivasDaProjecao.TentarItens<string>(array, TentarFormato, out List<string>? lista)
+        && PrimitivasDaProjecao.TentarItens<CodigoComRotulo<FormatoPermitido>>(array, TentarFormato, out List<CodigoComRotulo<FormatoPermitido>>? lista)
             ? new FormatosAceitosCertameDto(false, lista)
             : null;
 
-    private static bool TentarFormato(JsonNode? item, [NotNullWhen(true)] out string? formato)
+    private static bool TentarFormato(JsonNode? item, [NotNullWhen(true)] out CodigoComRotulo<FormatoPermitido>? formato)
     {
         formato = null;
-        return item is JsonObject entrada && PrimitivasDaProjecao.TentarTexto(entrada, "formato", out formato);
+        if (item is not JsonObject entrada || !PrimitivasDaProjecao.TentarTexto(entrada, "formato", out string codigo)
+            || !CatalogoDe<FormatoPermitido>.TentarObter(codigo, out FormatoPermitido valor))
+        {
+            return false;
+        }
+
+        formato = CodigoComRotulo<FormatoPermitido>.De(valor);
+        return true;
     }
 
     /// <summary>

@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -71,11 +72,11 @@ internal static class ApoioDosDocumentosExigidos
 
     // Os valores são os tipos do cadastro de tipos de deficiência, que o catálogo entrega como valores do fato.
     internal static FatoCandidatoView FatoTipoDeficiencia() => new(
-        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
         ["DEFICIENCIA_VISUAL", "TEA"], "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
         [new FatoValorDominioViewItem("DEFICIENCIA_VISUAL", "Deficiência visual", 0, Ativo: true),
          new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 1, Ativo: true)],
-        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.TiposDeDeficiencia), Ativo: true, ClassificacaoProtecao: "SENSIVEL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     /// <summary>
     /// Faz o processo coletar o fato, que é o que torna um gatilho sobre ele resolvível.
@@ -83,7 +84,7 @@ internal static class ApoioDosDocumentosExigidos
     /// Sem isto, a exigência condicionada nunca se aplicaria a candidato nenhum — o fato
     /// ficaria indeterminado para sempre, e a exigência pendente. O comando recusa por isso.
     /// </summary>
-    internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
+    internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.EscolhaUnica)
     {
         FatoColetado fato = FatoColetadoDeTeste.Coletando(codigo, 0).DoTipo(renderizacao).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
         processo.DefinirItens([fato]).IsSuccess.Should().BeTrue();
@@ -106,7 +107,7 @@ internal static class ApoioDosDocumentosExigidos
             .Construir();
 
     private static FatoCandidatoView FatoMaiorIdadeDoMembro() =>
-        new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true);
 
     internal static (ProcessoSeletivo Processo, Mocks Mocks, Guid TipoDocumentoId) ProcessoComAmplaConcorrencia(params FaseCronograma[] fases)

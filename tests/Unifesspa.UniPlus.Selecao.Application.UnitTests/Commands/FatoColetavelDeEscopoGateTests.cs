@@ -34,7 +34,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
     private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
         .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-        .DoTipo(TipoRenderizacao.SelecaoMultipla)
+        .DoTipo(TipoRenderizacao.EscolhaMultipla)
         .Construir();
 
     [Fact(DisplayName = "Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar — o gate precede a canonicalização")]

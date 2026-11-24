@@ -5,6 +5,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -23,7 +24,6 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.Property(g => g.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
-        builder.Property(g => g.Finalidade).HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
         builder.Property(g => g.Codigo).HasComment("Código que identifica o item no processo.");
         builder.Property(g => g.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(g => g.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
@@ -34,11 +34,15 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.Property(g => g.Exibicao).HasComment("Condições para exibir o grupo, em JSON, quando houver.");
         builder.Property(g => g.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
 
-        builder.ToTable("grupos_dos_formularios", t => t.HasComment("Grupos repetíveis de dados solicitados nos formulários."));
+        builder.ToTable("grupos_dos_formularios", t =>
+        {
+            t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
+            t.HasCheckConstraint("ck_grupos_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
+        });
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).ValueGeneratedNever();
 
-        builder.Property(g => g.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(g => g.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
         builder.Property(g => g.Codigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(g => g.Ordem).IsRequired();
         builder.Property(g => g.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);

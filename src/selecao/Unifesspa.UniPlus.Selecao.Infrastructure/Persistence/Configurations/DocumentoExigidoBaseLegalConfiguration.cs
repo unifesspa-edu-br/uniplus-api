@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
+using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -29,7 +31,12 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("documentos_exigidos_base_legal", tabela => tabela.HasComment("Bases legais das exigências de documentos."));
+        builder.ToTable("documentos_exigidos_base_legal", tabela =>
+        {
+            tabela.HasComment("Bases legais das exigências de documentos.");
+            tabela.HasCheckConstraint("ck_documentos_exigidos_base_legal_abrangencia", $"abrangencia IN ({SqlDosCodigosDeContrato.Lista<TipoAbrangencia>()})");
+            tabela.HasCheckConstraint("ck_documentos_exigidos_base_legal_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusBaseLegal>()})");
+        });
         builder.HasKey(b => b.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // DocumentoExigido/CondicaoGatilho.

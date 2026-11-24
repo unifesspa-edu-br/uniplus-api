@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitadoDeTeste;
@@ -52,7 +53,7 @@ public sealed class ProtecaoEMotivosNaRetificacaoTests
     [Fact(DisplayName = "Retificar recusa os motivos antes do eixo alterado do fato, porque a configuração se confere antes da operação")]
     public async Task Retificar_RecusaDosMotivos_PrecedeAsRecusasDaOperacao()
     {
-        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO" });
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioCongelado = TipoDoDado.Opcao });
         cenario.ComIsencaoHabilitadaSemMotivos();
 
         (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();

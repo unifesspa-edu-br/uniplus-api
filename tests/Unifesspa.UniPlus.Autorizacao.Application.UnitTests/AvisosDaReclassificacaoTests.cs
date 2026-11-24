@@ -54,7 +54,7 @@ public sealed class AvisosDaReclassificacaoTests
         IReadOnlyList<EnviarEmail>? emails = await cenario.Avisos.MontarAsync(new FatoSemAviso(OrigemDoAviso.Reclassificacao, fato.Id), CancellationToken.None);
 
         emails!.Select(e => e.Destinatario).Should().BeEquivalentTo([EmailProtecao, EmailManutencao]);
-        emails![0].CorpoTexto.Should().Contain("classificação de interno para sensivel").And.Contain("escopo de institucional para de unidade");
+        emails![0].CorpoTexto.Should().Contain("classificação de INTERNO para SENSIVEL").And.Contain("escopo de institucional para de unidade");
     }
 
     [Fact(DisplayName = "A divergência da governança avisa os dois grupos")]

@@ -150,7 +150,7 @@ public sealed class LeituraDosPropriosPedidosTests
     private static void DeveSerPorTitularidade(RegistroDecisaoAcesso registro, PessoaNoToken leitor)
     {
         (registro.AtorContaId, registro.Permissao, registro.FonteGrant, registro.ResourceTipo, registro.Sensibilidade, registro.Resultado)
-            .Should().Be((leitor.Identidade.ContaId, AcessoDoAprovador.CodigoDaLeituraPorTitularidade, "titularidade", ResourceTiposAutorizacao.Pedido, "pessoal", ResultadoDoAcesso.Permitido));
+            .Should().Be((leitor.Identidade.ContaId, AcessoDoAprovador.CodigoDaLeituraPorTitularidade, "titularidade", ResourceTiposAutorizacao.Pedido, "PESSOAL", ResultadoDoAcesso.Permitido));
         (registro.GrantId, registro.PerfilId, registro.VersaoId, registro.EscopoUnidadeId).Should().Be(((Guid?)null, (Guid?)null, (Guid?)null, (Guid?)null));
     }
 

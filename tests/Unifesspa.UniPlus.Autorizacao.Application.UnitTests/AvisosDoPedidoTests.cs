@@ -261,7 +261,7 @@ public sealed class AvisosDoPedidoTests
     }
 
     private static PerfilAvaliado Avaliado(bool sensivel = false) =>
-        new(["selecao:processos:consultar"], sensivel ? "sensivel" : "interno", sensivel, null);
+        new(["selecao:processos:consultar"], sensivel ? "SENSIVEL" : "INTERNO", sensivel, null);
 
     private static Perfil PerfilComum(bool deUnidade = false) =>
         PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", [deUnidade ? "selecao:processos:consultar" : "geral:pedidos:consultar"], new Catalogo());

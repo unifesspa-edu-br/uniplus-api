@@ -13,11 +13,11 @@ public sealed class TermoConsentimentoVersaoTests
     public void Promover_DerivaHashDoConteudo_NaoAceitaHashExterno()
     {
         TermoConsentimentoVersao versaoA = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroSemEnderecoIp,
             Agora, "usuario.revisor");
 
         TermoConsentimentoVersao versaoB = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroSemEnderecoIp,
             Agora, "usuario.revisor");
 
         versaoA.Hash.Should().NotBeNullOrWhiteSpace();
@@ -27,17 +27,17 @@ public sealed class TermoConsentimentoVersaoTests
     }
 
     [Theory(DisplayName = "Cada campo do conteúdo altera o hash")]
-    [InlineData("Texto B", "Base legal A", FormaAceite.RegistroDigitalSemLogIp)]
-    [InlineData("Texto A", "Base legal B", FormaAceite.RegistroDigitalSemLogIp)]
-    [InlineData("Texto A", "Base legal A", FormaAceite.RegistroDigitalComLogIp)]
+    [InlineData("Texto B", "Base legal A", FormaAceite.RegistroSemEnderecoIp)]
+    [InlineData("Texto A", "Base legal B", FormaAceite.RegistroSemEnderecoIp)]
+    [InlineData("Texto A", "Base legal A", FormaAceite.RegistroComEnderecoIp)]
     public void Promover_CampoAlterado_HashDiferente(string texto, string baseLegal, FormaAceite formaAceite)
     {
         TermoConsentimentoVersao original = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), 1, "Texto A", "Base legal A", FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+            Guid.CreateVersion7(), 1, "Texto A", "Base legal A", FormaAceite.RegistroSemEnderecoIp, Agora, "usuario.revisor");
         TermoConsentimentoVersao alterada = TermoConsentimentoVersao.Promover(
             Guid.CreateVersion7(), 1, texto, baseLegal, formaAceite, Agora, "usuario.revisor");
 
-        original.Hash.Should().Be("1a500092c8330a8b1c9ec3e9a948718f2161f093117282597e4e2edc38f5d70d");
+        original.Hash.Should().Be("1d3e9e5ea9a0669b68f72c5c90c61e5339f4ea6de4c76cac3cd2ab2bfffed820");
         alterada.Hash.Should().NotBe(original.Hash);
     }
 
@@ -48,9 +48,9 @@ public sealed class TermoConsentimentoVersaoTests
         const string decomposto = "declarac\u0327a\u0303o";
 
         TermoConsentimentoVersao decompostaVersao = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), 1, decomposto, decomposto, FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+            Guid.CreateVersion7(), 1, decomposto, decomposto, FormaAceite.RegistroSemEnderecoIp, Agora, "usuario.revisor");
         TermoConsentimentoVersao composta = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), 1, "declaração", "declaração", FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+            Guid.CreateVersion7(), 1, "declaração", "declaração", FormaAceite.RegistroSemEnderecoIp, Agora, "usuario.revisor");
 
         decompostaVersao.Texto.Should().Be("declaração");
         decompostaVersao.BaseLegal.Should().Be("declaração");

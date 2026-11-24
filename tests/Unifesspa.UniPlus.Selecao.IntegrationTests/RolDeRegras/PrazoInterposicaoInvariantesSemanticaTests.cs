@@ -59,7 +59,7 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
         invariante.Should().Contain("dias úteis",
             "a unidade principal precisa estar declarada por extenso");
         invariante.Should().Contain("inteiro", "dias úteis só é declarável em valor inteiro");
-        invariante.Should().Contain("HORAS", "horas é a segunda unidade declarável, para prazo menor que um dia");
+        invariante.Should().Contain("horas", "horas é a segunda unidade declarável, para prazo menor que um dia");
     }
 
     [Fact(DisplayName = "As invariantes declaram a recusa de dia corrido e a de fração como causas distintas")]

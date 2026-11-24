@@ -14,34 +14,30 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class RegrasDoBonusRegional
 {
-    internal static DomainError? Recusa(ConfiguracaoDeclarada configuracao, bool aplica, ConfiguracaoBonusRegional? bonus)
-    {
-        if (aplica && bonus is null)
-        {
-            return new DomainError(
-                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
-                "O processo que aplica o bônus regional precisa da configuração do bônus.");
-        }
-
-        if (!aplica && bonus is not null)
-        {
-            return new DomainError(
-                ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
-                "O processo que não aplica o bônus regional não pode ter a configuração do bônus.");
-        }
-
-        return MunicipioCitadoForaDaArea(configuracao, bonus)
+    internal static DomainError? Recusa(ConfiguracaoDeclarada configuracao, bool aplica, ConfiguracaoBonusRegional? bonus) =>
+        RecusaDaConfiguracao(aplica, bonus)
+        ?? (MunicipioCitadoForaDaArea(configuracao, bonus)
             ? new DomainError(
                 "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
                 "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus.")
-            : null;
-    }
+            : null);
+
+    private static DomainError? RecusaDaConfiguracao(bool aplica, ConfiguracaoBonusRegional? bonus) => (aplica, bonus) switch
+    {
+        (true, null) => new DomainError(
+            ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
+            "O processo que aplica o bônus regional precisa da configuração do bônus."),
+        (false, not null) => new DomainError(
+            ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
+            "O processo que não aplica o bônus regional não pode ter a configuração do bônus."),
+        _ => null,
+    };
 
     private static bool MunicipioCitadoForaDaArea(ConfiguracaoDeclarada configuracao, ConfiguracaoBonusRegional? bonus)
     {
         HashSet<string> novosMunicipios = [.. (bonus?.Municipios ?? []).Select(static m => m.CodigoIbge)];
         return configuracao.Coleta.Campos
-            .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
+            .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoFada)
             .Any(f => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, f.FatoCodigo, novosMunicipios));
     }
 }

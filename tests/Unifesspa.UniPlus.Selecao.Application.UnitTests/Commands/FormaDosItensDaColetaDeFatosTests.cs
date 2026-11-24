@@ -5,6 +5,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -62,7 +63,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
-            [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = "MULTIVALORADO" } : f)]));
+            [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores) } : f)]));
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
             [EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
@@ -101,7 +102,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
 
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
@@ -117,7 +118,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [EntradaDoFatoColetadoDeTeste.Coletando("").ComRotulo("Rótulo").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("").ComRotulo("Rótulo").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal("ItemFormulario.FatoCodigoObrigatorio");
     }
@@ -128,8 +129,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
-            EntradaDoFatoColetadoDeTeste.Coletando("FATO_INEXISTENTE", 1).ComRotulo("Rótulo").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("FATO_INEXISTENTE", 1).ComRotulo("Rótulo").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -139,16 +140,16 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ]);
     }
 
-    [Fact(DisplayName = "TipoRenderizacao coerente para fato CATEGORICO multivalorado (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
+    [Fact(DisplayName = "TipoRenderizacao coerente para fato de opção com vários valores (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
     public async Task Handle_TipoRenderizacaoCoerenteComCategoricoMultivalorado_NaoFalhaPorCoerencia()
     {
-        // MODALIDADE é CATEGORICO/MULTIVALORADO no vocabulário-seed, mas é DERIVADO — a
+        // MODALIDADE é OPCAO com VARIOS_VALORES no vocabulário-seed, mas é CALCULADO — a
         // coletabilidade recusa antes da coerência de renderização ser sequer checada. Este
         // teste prova que o erro devolvido continua sendo o de coletabilidade, não o de
         // coerência, quando o TipoRenderizacao informado é o coerente com o domínio.
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("SELECAO_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("ESCOLHA_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
@@ -204,7 +205,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA", "ROXA"])])]).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA", "ROXA"])])]).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
@@ -236,7 +237,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([
                     new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["ROXA"])]),
                     new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA"])]),
                 ]).Construir(),
@@ -257,7 +258,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
                 : f)]));
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]).Construir(),
         ]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
@@ -265,8 +266,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
 
     private static FatoColetadoInput[] OpcoesDasRespostasDe(string fonte) =>
     [
-        EntradaDoFatoColetadoDeTeste.Coletando(fonte).ComRotulo("Campo de origem").DoTipo("SELECAO_UNICA").Construir(),
-        EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_LISTA_ESPERA", 1).ComRotulo("Lista de espera").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").ComRestricoes([new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: [fonte])]).Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando(fonte).ComRotulo("Campo de origem").DoTipo("ESCOLHA_UNICA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_LISTA_ESPERA", 1).ComRotulo("Lista de espera").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").ComRestricoes([new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: [fonte])]).Construir(),
     ];
 
     [Theory(DisplayName = "Opções formadas pelas respostas de campo cujas opções são todas opções do campo são aceitas, e o campo de origem fica citado")]

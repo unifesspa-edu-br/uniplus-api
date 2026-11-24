@@ -84,16 +84,16 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
         int ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao;
         Result itens = processo.DefinirItens(
         [
-            PerguntaDeSelecaoUnica(OrigemEscolar.FatoFormaDeConclusao, ordem, "Como você concluiu o ensino médio?"),
-            PerguntaDeSelecaoUnica(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?"),
+            PerguntaDeEscolhaUnica(OrigemEscolar.FatoFormaDeConclusao, ordem, "Como você concluiu o ensino médio?"),
+            PerguntaDeEscolhaUnica(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?"),
         ]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
-    private static FatoColetado PerguntaDeSelecaoUnica(string fatoCodigo, int ordem, string rotulo) =>
+    private static FatoColetado PerguntaDeEscolhaUnica(string fatoCodigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(fatoCodigo, ordem)
             .ComRotulo(rotulo)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 

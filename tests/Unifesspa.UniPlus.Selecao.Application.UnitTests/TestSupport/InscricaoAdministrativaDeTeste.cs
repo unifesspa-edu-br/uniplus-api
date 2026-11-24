@@ -103,9 +103,9 @@ internal sealed class InscricaoAdministrativaDeTeste
     }
 
     public InscricaoAdministrativaDeTeste Derivado(
-        string codigo, string nome, string dominio, string classificacao, JsonElement valor, string hipoteseLegal = Hipotese)
+        string codigo, string nome, TipoDoDado dominio, string classificacao, JsonElement valor, string hipoteseLegal = Hipotese)
     {
-        _derivados[codigo] = new FatoDerivadoCongelado(codigo, nome, $"Descrição de {codigo}", null, dominio, "ESCALAR", classificacao, hipoteseLegal, "Finalidade");
+        _derivados[codigo] = new FatoDerivadoCongelado(codigo, nome, $"Descrição de {codigo}", null, dominio, QuantidadeDeValores.ValorUnico, classificacao, hipoteseLegal, "Finalidade");
         _derivadas[codigo] = valor;
         return this;
     }
