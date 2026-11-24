@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261124122411_Inicial")]
+    [Migration("20261124122453_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10048,7 +10048,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
-                        .HasColumnName("registro_vivo_sentinela");
+                        .HasColumnName("instituicao_unica")
+                        .HasComment("Sempre verdadeiro; com o índice único entre as instituições ativas, garante que exista uma só instituição ativa.");
 
                     b.Property<string>("Sigla")
                         .IsRequired()
@@ -10063,7 +10064,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid?>("UnidadeRaizId")
                         .HasColumnType("uuid")
-                        .HasColumnName("unidade_raiz_id");
+                        .HasColumnName("reitoria_id")
+                        .HasComment("Unidade do tipo reitoria à qual a instituição está vinculada; opcional.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10089,11 +10091,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("RegistroVivoSentinela")
                         .IsUnique()
-                        .HasDatabaseName("ix_instituicoes_singleton_vivo")
+                        .HasDatabaseName("ix_instituicoes_instituicao_unica_vivo")
                         .HasFilter("is_deleted = false");
 
                     b.HasIndex("UnidadeRaizId")
-                        .HasDatabaseName("ix_instituicoes_unidade_raiz_id");
+                        .HasDatabaseName("ix_instituicoes_reitoria_id");
 
                     b.ToTable("instituicoes", "organizacao", t =>
                         {
@@ -10105,7 +10107,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_instituicoes_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_instituicoes_singleton_sentinela", "registro_vivo_sentinela = true");
+                            t.HasCheckConstraint("ck_instituicoes_instituicao_unica", "instituicao_unica = true");
                         });
                 });
 
@@ -19613,7 +19615,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("UnidadeRaizId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_instituicoes_unidade_unidade_raiz_id");
+                        .HasConstraintName("fk_instituicoes_unidade_reitoria_id");
 
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.Enderecos.ReferenciaEnderecoGeo", "Endereco", b1 =>
                         {
