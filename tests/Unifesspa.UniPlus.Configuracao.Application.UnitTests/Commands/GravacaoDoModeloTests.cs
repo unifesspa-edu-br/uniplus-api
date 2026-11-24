@@ -26,7 +26,7 @@ using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.Co
 /// </summary>
 public sealed class GravacaoDoModeloTests
 {
-    private const string IndiceUnicoDoCodigo = "ix_modelos_formulario_codigo";
+    private const string IndiceUnicoDoCodigo = "ux_modelos_formulario_codigo";
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();

@@ -95,7 +95,7 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ReferenciaDemograficaCensoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ReferenciaDemograficaCensoAtivos)));
 
         Result resultado = await AtualizarReferenciaReservaDemograficaCommandHandler.Handle(
             new AtualizarReferenciaReservaDemograficaCommand(existente.Id, "2022", 79m, 1.3m, 8.5m, BaseLegal),

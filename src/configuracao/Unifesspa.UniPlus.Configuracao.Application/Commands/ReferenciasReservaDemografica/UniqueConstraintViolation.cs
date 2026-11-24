@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 
 /// <summary>
 /// Helper para mapear violações 23505 do índice único parcial do Censo
-/// (<c>ix_referencias_demograficas_censo_vivo</c>) para o
+/// (<c>ux_referencias_demograficas_censo_ativos</c>) para o
 /// <c>DomainError</c> apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c>
 /// por reflection no inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
@@ -22,7 +22,7 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string CensoConstraint = RestricoesDoBanco.ReferenciaDemograficaCensoVivo;
+    private const string CensoConstraint = RestricoesDoBanco.ReferenciaDemograficaCensoAtivos;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

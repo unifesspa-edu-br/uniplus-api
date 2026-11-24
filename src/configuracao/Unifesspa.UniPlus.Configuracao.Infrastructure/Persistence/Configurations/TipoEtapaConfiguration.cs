@@ -65,7 +65,7 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         // A unicidade abrange também itens inativos: código de domínio nunca é reutilizado.
         builder.HasIndex(tipo => tipo.Codigo)
             .IsUnique()
-            .HasDatabaseName("ix_tipos_etapa_codigo");
+            .HasDatabaseName("ux_tipos_etapa_codigo");
         builder.HasIndex(tipo => tipo.Ativo)
             .HasDatabaseName("ix_tipos_etapa_ativo");
 

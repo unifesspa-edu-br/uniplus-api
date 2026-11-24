@@ -150,7 +150,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         builder.HasIndex(o => o.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.OfertaDeCursoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.OfertaDeCursoCodigoAtivos);
 
         builder.HasIndex(o => new { o.CursoId, o.Id })
             .HasDatabaseName("ix_ofertas_de_curso_curso_id");

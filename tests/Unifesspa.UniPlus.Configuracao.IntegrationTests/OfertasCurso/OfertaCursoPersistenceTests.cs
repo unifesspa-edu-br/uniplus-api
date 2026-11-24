@@ -27,7 +27,7 @@ using static Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso.ApoioD
 /// Verifica a ida e volta da cópia gravada e as restrições que dependem do PostgreSQL.
 /// </summary>
 /// <remarks>
-/// O snapshot da unidade ofertante já chega congelado no VO — a persistência não
+/// A cópia da unidade ofertante já chega congelada no VO — a persistência não
 /// precisa de Unidade real (o schema <c>organizacao</c> nem existe nesta fixture);
 /// o congelamento com Unidade real é coberto nos endpoint tests.
 /// </remarks>
@@ -48,7 +48,7 @@ public sealed class OfertaCursoPersistenceTests
     }
 
     [Fact(DisplayName = "Criar persiste os campos, a cópia da unidade ofertante faz ida e volta e a auditoria é carimbada")]
-    public async Task Insert_Completa_PersisteComOwnedRoundtrip()
+    public async Task Insert_Completa_PersisteComIdaEVoltaDoOwned()
     {
         (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
         UnidadeOfertante unidade = NovaUnidade();
@@ -167,7 +167,7 @@ public sealed class OfertaCursoPersistenceTests
 
         DbUpdateException violacao = (await FluentActions.Awaiting(() => ctx.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>()).Which;
 
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.OfertaDeCursoCodigoVivo);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.OfertaDeCursoCodigoAtivos);
     }
 
     private static void ConferirIdentidadeDaOfertaPersistida(OfertaCurso persistida, OfertaCurso oferta)

@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
 internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
-    private const string Constraint = "ix_tipos_conceito_codigo";
+    private const string Constraint = "ux_tipos_conceito_codigo";
 
     public static bool EhConflitoDeCodigo(Exception exception)
     {

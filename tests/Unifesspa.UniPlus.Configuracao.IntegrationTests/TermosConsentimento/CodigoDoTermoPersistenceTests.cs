@@ -38,7 +38,7 @@ public sealed class CodigoDoTermoPersistenceTests
         Func<Task> segundo = () => Gravar(nome.ToUpperInvariant());
 
         DbUpdateException violacao = (await segundo.Should().ThrowAsync<DbUpdateException>()).Which;
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.TermoDeConsentimentoCodigoVivo);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.TermoDeConsentimentoCodigoAtivos);
     }
 
     [Fact(DisplayName = "O código de um termo removido pode ser reaproveitado por um novo")]

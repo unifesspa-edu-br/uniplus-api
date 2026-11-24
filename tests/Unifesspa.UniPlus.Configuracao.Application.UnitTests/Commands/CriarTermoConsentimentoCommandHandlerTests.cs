@@ -70,7 +70,7 @@ public sealed class CriarTermoConsentimentoCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TermoDeConsentimentoCodigoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TermoDeConsentimentoCodigoAtivos)));
 
         Result<Guid> resultado = await CriarTermoConsentimentoCommandHandler.Handle(
             new CriarTermoConsentimentoCommand("Declaração de veracidade", null, null, null), _repository, _unitOfWork, CancellationToken.None);

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal static class GravacaoDoModelo
 {
-    private const string IndiceUnicoDoCodigo = "ix_modelos_formulario_codigo";
+    private const string IndiceUnicoDoCodigo = "ux_modelos_formulario_codigo";
 
     /// <summary>Grava o modelo novo: o código é único entre todos os modelos, desativados inclusive.</summary>
     public static async Task<Result<Guid>> GravarNovoAsync(

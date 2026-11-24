@@ -201,7 +201,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.OfertaDeCursoCodigoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.OfertaDeCursoCodigoAtivos)));
 
         Result<Guid> resultado = await HandleAsync(Comando(cursoId, localId, unidadeId));
 

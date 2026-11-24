@@ -9,21 +9,21 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Persistence;
 /// </summary>
 public static class RestricoesDoBanco
 {
-    public const string BaseLegalBonusRegionalCodigoVivo = "ix_bases_legais_do_fada_codigo_vivo";
+    public const string BaseLegalBonusRegionalCodigoAtivos = "ux_bases_legais_do_fada_codigo_ativos";
 
     public const string CalendarioDeDiasUteisVigenteUnico = "ex_calendarios_de_dias_uteis_vigente_unico";
 
     public const string DiaNaoUtilUnicidade = "ix_dias_nao_uteis_unicidade";
 
-    public const string CategoriaDeDocumentoCodigoVivo = "ix_categorias_de_documento_codigo_vivo";
+    public const string CategoriaDeDocumentoCodigoAtivos = "ux_categorias_de_documento_codigo_ativos";
 
-    public const string CondicaoDeAtendimentoCodigoVivo = "ix_condicoes_de_atendimento_codigo_vivo";
+    public const string CondicaoDeAtendimentoCodigoAtivos = "ux_condicoes_de_atendimento_codigo_ativos";
 
-    public const string CursoCodigoVivo = "ix_cursos_codigo_vivo";
+    public const string CursoCodigoAtivos = "ux_cursos_codigo_ativos";
 
-    public const string OfertaDeCursoCodigoVivo = "ix_ofertas_de_curso_codigo_vivo";
+    public const string OfertaDeCursoCodigoAtivos = "ux_ofertas_de_curso_codigo_ativos";
 
-    public const string FaseCanonicaCodigoVivo = "ix_tipos_de_fase_codigo_vivo";
+    public const string FaseCanonicaCodigoAtivos = "ux_tipos_de_fase_codigo_ativos";
 
     public const string FatoDoCandidatoCodigoUnico = "ux_dados_do_candidato_codigo";
 
@@ -33,35 +33,35 @@ public static class RestricoesDoBanco
 
     public const string ManifestacaoDaProtecaoSubstituicaoUnica = "ux_manifestacoes_da_protecao_substitui";
 
-    public const string ModalidadeCodigoVivo = "ix_modalidades_codigo_vivo";
+    public const string ModalidadeCodigoAtivos = "ux_modalidades_codigo_ativos";
 
-    public const string PesoPorAreaDoEnemResolucaoGrupoVivo = "ix_pesos_por_area_do_enem_resolucao_grupo_vivo";
+    public const string PesoPorAreaDoEnemResolucaoGrupoAtivos = "ux_pesos_por_area_do_enem_resolucao_grupo_ativos";
 
-    public const string PrecedenciaEntreFasesParVivo = "ix_precedencias_entre_fases_par_vivo";
+    public const string PrecedenciaEntreFasesParAtivos = "ux_precedencias_entre_fases_par_ativos";
 
-    public const string RecursoDeAcessibilidadeCodigoVivo = "ix_recursos_de_acessibilidade_codigo_vivo";
+    public const string RecursoDeAcessibilidadeCodigoAtivos = "ux_recursos_de_acessibilidade_codigo_ativos";
 
-    public const string RecursoDeAcessibilidadeNomeVivo = "ix_recursos_de_acessibilidade_nome_vivo";
+    public const string RecursoDeAcessibilidadeNomeAtivos = "ux_recursos_de_acessibilidade_nome_ativos";
 
-    public const string ReferenciaDemograficaCensoVivo = "ix_referencias_demograficas_censo_vivo";
+    public const string ReferenciaDemograficaCensoAtivos = "ux_referencias_demograficas_censo_ativos";
 
-    public const string TipoDeConceitoValorCodigoUnico = "ix_opcoes_do_tipo_de_conceito_codigo";
+    public const string TipoDeConceitoValorCodigoUnico = "ux_opcoes_do_tipo_de_conceito_codigo";
 
-    public const string TipoDeConceitoValorRotuloUnico = "ix_opcoes_do_tipo_de_conceito_rotulo";
+    public const string TipoDeConceitoValorRotuloUnico = "ux_opcoes_do_tipo_de_conceito_rotulo";
 
-    public const string TipoDeConceitoValorPosicaoUnica = "ix_opcoes_do_tipo_de_conceito_posicao";
+    public const string TipoDeConceitoValorPosicaoUnica = "ux_opcoes_do_tipo_de_conceito_posicao";
 
     public const string TipoDeEtapaConceitoAdmitidoChave = "pk_conceitos_do_tipo_de_etapa";
 
-    public const string TipoDeBancaCodigoVivo = "ix_tipos_de_banca_codigo_vivo";
+    public const string TipoDeBancaCodigoAtivos = "ux_tipos_de_banca_codigo_ativos";
 
-    public const string TipoDeDeficienciaCodigoVivo = "ix_tipos_de_deficiencia_codigo_vivo";
+    public const string TipoDeDeficienciaCodigoAtivos = "ux_tipos_de_deficiencia_codigo_ativos";
 
-    public const string TipoDeDeficienciaNomeVivo = "ix_tipos_de_deficiencia_nome_vivo";
+    public const string TipoDeDeficienciaNomeAtivos = "ux_tipos_de_deficiencia_nome_ativos";
 
-    public const string TipoDeDocumentoCodigoVivo = "ix_tipos_de_documento_codigo_vivo";
+    public const string TipoDeDocumentoCodigoAtivos = "ux_tipos_de_documento_codigo_ativos";
 
-    public const string TermoDeConsentimentoCodigoVivo = "ix_termos_de_consentimento_codigo_vivo";
+    public const string TermoDeConsentimentoCodigoAtivos = "ux_termos_de_consentimento_codigo_ativos";
 
     public const string VersaoDoTermoNumeroUnico = "ux_versoes_do_termo_consentimento_termo_numero";
 }

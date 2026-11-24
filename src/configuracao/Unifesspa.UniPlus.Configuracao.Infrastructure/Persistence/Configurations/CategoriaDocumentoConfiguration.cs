@@ -68,7 +68,7 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.CategoriaDeDocumentoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.CategoriaDeDocumentoCodigoAtivos);
 
         // Exibição do catálogo é sempre por (ordem, codigo) — a ordem sozinha não
         // desempata, e o código é a chave natural estável para o desempate.

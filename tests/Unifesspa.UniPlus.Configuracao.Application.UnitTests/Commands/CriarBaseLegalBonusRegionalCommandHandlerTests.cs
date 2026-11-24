@@ -119,7 +119,7 @@ public sealed class CriarBaseLegalBonusRegionalCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.BaseLegalBonusRegionalCodigoAtivos)));
 
         Result<Guid> resultado = await CriarBaseLegalBonusRegionalCommandHandler.Handle(
             ComandoValido(), _repository, _unitOfWork, CancellationToken.None);

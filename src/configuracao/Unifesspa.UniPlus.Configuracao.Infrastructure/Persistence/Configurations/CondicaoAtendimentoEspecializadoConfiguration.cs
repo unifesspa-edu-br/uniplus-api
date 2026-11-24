@@ -60,6 +60,6 @@ internal sealed class CondicaoAtendimentoEspecializadoConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.CondicaoDeAtendimentoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.CondicaoDeAtendimentoCodigoAtivos);
     }
 }

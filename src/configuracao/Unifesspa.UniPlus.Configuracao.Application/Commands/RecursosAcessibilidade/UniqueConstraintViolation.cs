@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Helper para mapear violações 23505 dos índices únicos parciais do recurso de
-/// acessibilidade — <c>ix_recursos_de_acessibilidade_codigo_vivo</c> e
-/// <c>ix_recursos_de_acessibilidade_nome_vivo</c> — para o <c>DomainError</c> da
+/// acessibilidade — <c>ux_recursos_de_acessibilidade_codigo_ativos</c> e
+/// <c>ux_recursos_de_acessibilidade_nome_ativos</c> — para o <c>DomainError</c> da
 /// constraint efetivamente violada. Acessa <c>SqlState</c> e <c>ConstraintName</c>
 /// por reflection no inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
@@ -24,9 +24,9 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string CodigoConstraint = RestricoesDoBanco.RecursoDeAcessibilidadeCodigoVivo;
+    private const string CodigoConstraint = RestricoesDoBanco.RecursoDeAcessibilidadeCodigoAtivos;
 
-    private const string NomeConstraint = RestricoesDoBanco.RecursoDeAcessibilidadeNomeVivo;
+    private const string NomeConstraint = RestricoesDoBanco.RecursoDeAcessibilidadeNomeAtivos;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

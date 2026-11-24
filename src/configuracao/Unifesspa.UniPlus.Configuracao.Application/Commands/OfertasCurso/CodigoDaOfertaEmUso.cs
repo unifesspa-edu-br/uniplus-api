@@ -16,5 +16,5 @@ internal static class CodigoDaOfertaEmUso
         $"Já existe uma oferta de curso viva com o código {codigo?.Trim()}.");
 
     public static bool ViolaOIndice(Exception exception) =>
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(exception) == RestricoesDoBanco.OfertaDeCursoCodigoVivo;
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(exception) == RestricoesDoBanco.OfertaDeCursoCodigoAtivos;
 }

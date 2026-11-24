@@ -58,7 +58,7 @@ public static class CriarTermoConsentimentoCommandHandler
             return Result<Guid>.Success(termo.Id);
         }
         catch (Exception exception) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(exception)
-            == RestricoesDoBanco.TermoDeConsentimentoCodigoVivo)
+            == RestricoesDoBanco.TermoDeConsentimentoCodigoAtivos)
         {
             // Sem descartar, a inserção continua rastreada e o SaveChanges do outbox a repete fora deste catch (500 em vez de 409).
             unitOfWork.DescartarAlteracoesNaoSalvas();

@@ -84,7 +84,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoAtivos);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo recurso vivo com mesmo nome")]
@@ -108,7 +108,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeNomeVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeNomeAtivos);
     }
 
     [Fact(DisplayName = "Nome distinto é aceito")]

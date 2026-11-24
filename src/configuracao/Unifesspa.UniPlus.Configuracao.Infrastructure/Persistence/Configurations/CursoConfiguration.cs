@@ -89,7 +89,7 @@ internal sealed class CursoConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.CursoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.CursoCodigoAtivos);
 
         ConfigurarOrdenacaoAlfabetica(builder);
     }

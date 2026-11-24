@@ -65,7 +65,7 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "violação sintética de teste",
-                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TipoDeDocumentoCodigoVivo)));
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.TipoDeDocumentoCodigoAtivos)));
 
         Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
             Comando(existente.Id), _gravacao, CancellationToken.None);

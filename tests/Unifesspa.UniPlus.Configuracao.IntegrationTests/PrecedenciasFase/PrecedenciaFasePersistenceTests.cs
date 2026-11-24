@@ -92,7 +92,7 @@ public sealed class PrecedenciaFasePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.PrecedenciaEntreFasesParVivo);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.PrecedenciaEntreFasesParAtivos);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do par")]

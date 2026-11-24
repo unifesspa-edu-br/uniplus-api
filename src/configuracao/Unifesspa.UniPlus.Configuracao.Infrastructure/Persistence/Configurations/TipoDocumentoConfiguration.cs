@@ -125,7 +125,7 @@ public sealed class TipoDocumentoConfiguration
         builder.HasIndex(t => t.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.TipoDeDocumentoCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDocumentoCodigoAtivos);
 
         // Índice de filtro por categoria na interface administrativa.
         builder.HasIndex(t => t.Categoria)

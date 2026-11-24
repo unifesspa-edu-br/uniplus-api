@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 
 /// <summary>
 /// Helper para mapear violações 23505 do índice único parcial do código vivo do
-/// tipo de banca — <c>ix_tipos_de_banca_codigo_vivo</c> — para o <c>DomainError</c>
+/// tipo de banca — <c>ux_tipos_de_banca_codigo_ativos</c> — para o <c>DomainError</c>
 /// apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no
 /// inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
@@ -15,7 +15,7 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string CodigoConstraint = RestricoesDoBanco.TipoDeBancaCodigoVivo;
+    private const string CodigoConstraint = RestricoesDoBanco.TipoDeBancaCodigoAtivos;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
