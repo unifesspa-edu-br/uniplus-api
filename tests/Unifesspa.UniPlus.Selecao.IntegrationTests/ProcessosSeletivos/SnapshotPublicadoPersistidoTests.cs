@@ -36,10 +36,10 @@ public sealed class SnapshotPublicadoPersistidoTests
         "atendimento", "fada", "criteriosDesempate", "classificacao", "hashesEdital",
         "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
         "cronogramaFases", "identidadesUnidade",
-        // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
-        // interpretador e conjunto de modalidades ofertadas.
+        // Coleta de dados, cálculos, dependências entre itens, versão das regras de cálculo e
+        // conjunto de modalidades ofertadas.
         "dadosDosFormularios", "calculosDosDados", "dependenciasEntreItens", "versaoDasRegrasDeCalculo", "modalidadesOfertadas",
-        // Issue #1112: taxa de inscrição e fundamentos de isenção — 25º bloco.
+        // Taxa de inscrição e fundamentos de isenção — 25º bloco.
         "taxaInscricao",
         // UNI-REQ-0111: município que rege a contagem dos prazos e fuso aplicado — 26º bloco.
         "localidade",
@@ -105,11 +105,7 @@ public sealed class SnapshotPublicadoPersistidoTests
     }
 
     private const string MotivoDosBlocosReais =
-        "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real, e " +
-        "issue #1112 acrescentou 'taxaInscricao' já como bloco real. Os 25 blocos são todos reais " +
-        "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 promoveu " +
-        "vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu identidadesUnidade; Story #559 " +
-        "promoveu formulario; os demais sempre foram reais)";
+        "Os 25 blocos do documento congelado são todos reais: nenhum é marcador de bloco ainda não construído.";
 
     private static void ConferirBlocosReais(JsonObject objeto)
     {
@@ -129,13 +125,13 @@ public sealed class SnapshotPublicadoPersistidoTests
         // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
         // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
-        // documentosExigidos é totalmente real desde a Story #554 (PR #903, bump 1.2): a sub-chave
-        // `exigencias` deixou de ser stub e materializa o item rico de cada DocumentoExigido vivo
-        // do processo — vazia aqui porque este fixture não configura nenhuma exigência documental.
+        // A sub-chave `exigencias` de documentosExigidos materializa o item rico de cada
+        // DocumentoExigido vivo do processo — vazia aqui porque este fixture não configura
+        // nenhuma exigência documental.
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
         objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
-        objeto["vagas"]!.AsArray().Should().NotBeEmpty("issue #848: o quadro de vagas é sempre materializado junto da configuração");
+        objeto["vagas"]!.AsArray().Should().NotBeEmpty("o quadro de vagas é sempre materializado junto da configuração");
         objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
         ConferirIdentidadesDaUnidade(objeto);
         ConferirDivulgacaoEDocumentos(objeto);
@@ -143,14 +139,14 @@ public sealed class SnapshotPublicadoPersistidoTests
 
     private static void ConferirIdentidadesDaUnidade(JsonObject objeto)
     {
-        // issue #849: identidadesUnidade é bloco real desde a criação — nunca stub na raiz.
+        // identidadesUnidade é bloco real desde a criação — nunca marcador na raiz.
         objeto["identidadesUnidade"]!.AsObject().Should().NotContainKey("status");
         objeto["identidadesUnidade"]!.AsObject()["administradora"]!.AsObject().Should().ContainKey("sigla");
     }
 
     private static void ConferirDivulgacaoEDocumentos(JsonObject objeto)
     {
-        // issue #563: divulgacao é bloco real — o default minimizado (só o número de inscrição),
+        // divulgacao é bloco real — o default minimizado (só o número de inscrição),
         // porque este teste não configura divulgação nenhuma.
         objeto["divulgacao"]!.AsObject().Should().NotContainKey("status");
         objeto["divulgacao"]!.AsObject()["camposPublicos"]!.AsArray().Should().ContainSingle()
@@ -170,7 +166,7 @@ public sealed class SnapshotPublicadoPersistidoTests
         objeto["fada"]!["presente"]!.GetValue<bool>().Should().BeFalse();
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
 
-        // cascataRemanejamento (Story #575): bloco real, ausência congela `{"presente":false}`,
+        // cascataRemanejamento: bloco real, ausência congela `{"presente":false}`,
         // NUNCA o stub `nao_construido` — este fixture não tem nenhuma modalidade SegueCascata
         // (é a mesma AC institucional de fada acima).
         objeto["cascataRemanejamento"]!.AsObject().Should().NotContainKey("status");

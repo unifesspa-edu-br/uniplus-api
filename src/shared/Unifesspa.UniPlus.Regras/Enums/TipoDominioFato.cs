@@ -3,13 +3,12 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// Domínio de valor de um fato do candidato, na forma que
 /// <see cref="Regras.Services.PredicadoDnfValidador"/> consegue validar
-/// genericamente (Story #847). Deliberadamente mais estreito que o
+/// genericamente. Deliberadamente mais estreito que o
 /// <c>Dominio</c> do catálogo <c>dados_do_candidato</c> (ADR-0111, três
 /// tokens: <c>OPCAO</c>/<c>SIM_OU_NAO</c>/<c>NUMERICO</c>): um fato
 /// categórico de <b>escopo-processo</b> (<c>ValoresDominio</c> nulo — ex.:
 /// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) não é representável aqui.
-/// A validação desse domínio dinâmico é responsabilidade do consumidor
-/// (#554/#559), fora do escopo desta Story.
+/// A validação desse domínio dinâmico é responsabilidade do consumidor.
 /// </summary>
 public enum TipoDominioFato
 {
@@ -27,7 +26,7 @@ public enum TipoDominioFato
     /// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>), multivalorado — aceita
     /// <see cref="Operador.Igual"/> (pertinência) e <see cref="Operador.AlgumDe"/> (interseção). O
     /// domínio válido não vem de <c>ValoresDominio</c> (sempre nulo aqui) — vem de um
-    /// domínio dinâmico fornecido pelo chamador (Story #554, PR #896), derivado da oferta do
+    /// domínio dinâmico fornecido pelo chamador, derivado da oferta do
     /// próprio processo (modalidades selecionadas, condições de atendimento ofertadas).
     /// </summary>
     CategoricoDinamico = 4,

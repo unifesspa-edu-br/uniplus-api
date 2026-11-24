@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// A forma JSON de guardar as restrições de valor de um item: uma lista de objetos com
 /// <c>tipo</c> e os campos do tipo — <c>minimo</c>/<c>maximo</c> nas faixas numéricas e de tamanho,
 /// <c>dataMinima</c>/<c>dataMaxima</c> (<c>{referenciaDaData, data, anos, dias}</c>) na faixa de data,
-/// <c>entradas</c> (<c>{quando, valores}</c>) nas opções permitidas e <c>fatos</c> nas opções formadas
+/// <c>entradas</c> (<c>{quando, valores}</c>) nas opções permitidas e <c>codigosDosDados</c> nas opções formadas
 /// pelas respostas. A leitura remonta por <see cref="RestricoesDeValor"/>, então conteúdo gravado que
 /// viola as invariantes é recusado.
 /// </summary>
@@ -68,8 +68,8 @@ public static class RestricaoValorJson
             case Formularios.FaixaNumerica faixa: PreencherFaixa(json, faixa); break;
             case Formularios.TamanhoTexto tamanho: PreencherTamanho(json, tamanho); break;
             case Formularios.OpcoesPermitidas opcoes: PreencherOpcoes(json, opcoes); break;
-            case Formularios.OpcoesDasRespostas respostas: json["fatos"] = new JsonArray([.. respostas.Fatos.Select(static f => (JsonNode)f)]); break;
-            case Formularios.MunicipiosDaUf daUf: json["fatos"] = new JsonArray(daUf.FatoUf); break;
+            case Formularios.OpcoesDasRespostas respostas: json["codigosDosDados"] = new JsonArray([.. respostas.Fatos.Select(static f => (JsonNode)f)]); break;
+            case Formularios.MunicipiosDaUf daUf: json["codigosDosDados"] = new JsonArray(daUf.FatoUf); break;
             case Formularios.FaixaDeData faixa: PreencherFaixaDeData(json, faixa); break;
             default: throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma JSON.");
         }
@@ -143,10 +143,10 @@ public static class RestricaoValorJson
         TipoRestricaoValor.FaixaNumerica => LerFaixaNumerica(json),
         TipoRestricaoValor.TamanhoTexto => LerTamanhoTexto(json),
         TipoRestricaoValor.OpcoesPermitidas => LerOpcoes(json),
-        TipoRestricaoValor.OpcoesDasRespostas => Textos(json, "fatos") is { } fatos
+        TipoRestricaoValor.OpcoesDasRespostas => Textos(json, "codigosDosDados") is { } fatos
             ? RestricoesDeValor.DasRespostas(fatos)
             : Falha("As opções formadas pelas respostas têm a lista de fatos."),
-        TipoRestricaoValor.MunicipiosDaUf => Textos(json, "fatos") is { } fatosDaUf
+        TipoRestricaoValor.MunicipiosDaUf => Textos(json, "codigosDosDados") is { } fatosDaUf
             ? RestricoesDeValor.DaUf(fatosDaUf)
             : Falha("Os municípios da UF têm a lista com o fato da UF."),
         TipoRestricaoValor.FaixaDeData => LerFaixaDeData(json),

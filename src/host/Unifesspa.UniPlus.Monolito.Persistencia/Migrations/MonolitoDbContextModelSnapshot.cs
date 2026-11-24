@@ -20198,7 +20198,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character(64)")
                                 .HasColumnName("regra_hash")
                                 .IsFixedLength()
-                                .HasComment("Hash da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+                                .HasComment("Resumo que identifica o conteúdo da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
                             b1.Property<string>("Versao")
                                 .IsRequired()
@@ -21648,19 +21648,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<DateOnly?>("Data")
                                 .HasColumnType("date")
-                                .HasColumnName("referencia_temporal_fatos_data")
+                                .HasColumnName("referencia_temporal_dados_data")
                                 .HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
 
                             b1.Property<Guid?>("FaseId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("referencia_temporal_fatos_fase_id")
+                                .HasColumnName("referencia_temporal_dados_fase_id")
                                 .HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
 
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("referencia_temporal_fatos_tipo")
+                                .HasColumnName("referencia_temporal_dados_tipo")
                                 .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
 
                             b1.HasKey("ProcessoSeletivoId");
@@ -21717,7 +21717,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character(7)")
                                 .HasColumnName("unidade_administradora_cidade_codigo_ibge")
                                 .IsFixedLength()
-                                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação — pode estar ausente em processos antigos.");
+                                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação, quando a unidade a informa.");
 
                             b1.Property<string>("CidadeNome")
                                 .HasMaxLength(150)
