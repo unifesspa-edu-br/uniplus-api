@@ -199,6 +199,19 @@ public sealed class ConteudoDoModeloJsonTests
         ConteudoDoModeloJson.Comparer.Equals(ConteudoCompleto(), copia).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O item gravado usa as chaves de campo e dado e volta com os mesmos valores")]
+    public void Serializar_ItemComCampoEDado_GravaAsChavesERemontaOItem()
+    {
+        ConteudoDoModelo original = ConteudoMinimo();
+        string json = ConteudoDoModeloJson.Serializar(original);
+        ItemDoModelo item = ConteudoDoModeloJson.Desserializar(json).Itens.Single();
+
+        json.Should().Contain("\"tipoDeCampo\":\"SIM_OU_NAO\"").And.Contain("\"codigoDoDado\":\"QUILOMBOLA\"");
+        json.Should().NotContain("\"tipoRenderizacao\"").And.NotContain("\"fatoCodigo\"");
+        item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SimOuNao);
+        item.FatoCodigo.Should().Be("QUILOMBOLA");
+    }
+
     [Theory(DisplayName = "O tipo de campo do item é gravado no documento pelo código")]
     [InlineData(TipoRenderizacao.Numero, "NUMERO")]
     [InlineData(TipoRenderizacao.SimOuNao, "SIM_OU_NAO")]
@@ -212,7 +225,7 @@ public sealed class ConteudoDoModeloJsonTests
     {
         ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0).ComTipoDeCampo(tipo)] };
 
-        ConteudoDoModeloJson.Serializar(conteudo).Should().Contain($"\"tipoRenderizacao\":\"{codigo}\"");
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Contain($"\"tipoDeCampo\":\"{codigo}\"");
     }
 
     [Theory(DisplayName = "O tipo de campo gravado que o catálogo não declara é dado corrompido e lança")]
@@ -221,7 +234,7 @@ public sealed class ConteudoDoModeloJsonTests
     [InlineData("0")]
     public void Desserializar_TipoDeCampoForaDoCatalogo_Lanca(string tipo)
     {
-        string corrompido = JsonLegado.Replace("\"tipoRenderizacao\":\"SIM_OU_NAO\"", $"\"tipoRenderizacao\":\"{tipo}\"", StringComparison.Ordinal);
+        string corrompido = JsonLegado.Replace("\"tipoDeCampo\":\"SIM_OU_NAO\"", $"\"tipoDeCampo\":\"{tipo}\"", StringComparison.Ordinal);
 
         Action ler = () => ConteudoDoModeloJson.Desserializar(corrompido);
 
@@ -245,16 +258,16 @@ public sealed class ConteudoDoModeloJsonTests
         """{"codigo":"REVISAO","ordem":1,"tipo":"BLOCO","bloco":"REVISAO_E_ACEITE","titulo":"Revis\u00E3o","descricao":null,"aviso":null,"exibicao":null}""";
 
     private const string ItemRendaJson =
-        """{"fatoCodigo":"RENDA","ordem":1,"etapaCodigo":"DADOS","rotulo":"Renda familiar","tipoRenderizacao":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
+        """{"codigoDoDado":"RENDA","ordem":1,"etapaCodigo":"DADOS","rotulo":"Renda familiar","tipoDeCampo":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
 
     private const string TermoUsoJson =
         """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]}}""";
 
     private const string ItemParentescoJson =
-        """{"fatoCodigo":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string ItemRendaMembroJson =
-        """{"fatoCodigo":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string GrupoFamiliaJson =
         $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"fato":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
@@ -266,10 +279,10 @@ public sealed class ConteudoDoModeloJsonTests
         """{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2027-02-01","faseCodigo":null},"efeitoDoVencimento":"ACEITAR_COM_AVISO"}""";
 
     private const string DocumentoCertidaoJson =
-        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"fatoCodigo":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
+        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"fato":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
-        """{"fatoCodigo":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string EtapaDadosMinimaJson =
         """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}""";
@@ -299,7 +312,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"titulo":null,"etapas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
-        """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"fatoCodigo":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoRenderizacao":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
+        """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
 
     private const string JsonLegadoRegravado =
         $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";

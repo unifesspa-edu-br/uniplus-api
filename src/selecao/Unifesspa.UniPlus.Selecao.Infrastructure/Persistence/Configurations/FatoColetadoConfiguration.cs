@@ -32,7 +32,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
-        builder.Property(f => f.TipoRenderizacao).HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+        builder.Property(f => f.TipoRenderizacao).HasColumnName("tipo_de_campo").HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
         builder.Property(f => f.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
         builder.Property(f => f.Ajuda).HasComment("Orientação adicional exibida junto ao campo, quando houver.");
         builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");

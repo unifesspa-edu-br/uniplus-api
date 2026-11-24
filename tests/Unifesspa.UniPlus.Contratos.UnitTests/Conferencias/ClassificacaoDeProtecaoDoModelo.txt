@@ -1482,7 +1482,7 @@ selecao.dados_dos_formularios.pedir_confirmacao: Interno
 selecao.dados_dos_formularios.processo_seletivo_id: Interno
 selecao.dados_dos_formularios.restricoes: Interno
 selecao.dados_dos_formularios.rotulo: Interno
-selecao.dados_dos_formularios.tipo_renderizacao: Interno
+selecao.dados_dos_formularios.tipo_de_campo: Interno
 selecao.dados_dos_formularios.updated_at: Interno
 selecao.deficiencias_atendidas.atendimento_especializado_id: Interno
 selecao.deficiencias_atendidas.created_at: Interno
