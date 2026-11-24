@@ -9674,9 +9674,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("prazo_manifestacao");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status")
+                        .HasComment("Situação da chamada. Códigos: AGENDADA, EM_ANDAMENTO, CONCLUIDA, CANCELADA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9690,7 +9693,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_chamadas_edital_id_numero");
 
-                    b.ToTable("chamadas", "ingresso");
+                    b.ToTable("chamadas", "ingresso", t =>
+                        {
+                            t.HasCheckConstraint("ck_chamadas_status", "status IN ('AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Convocacao", b =>
@@ -9746,9 +9752,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("posicao");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status")
+                        .HasComment("Situação da convocação. Códigos: PENDENTE, ACEITA, RECUSADA, NAO_COMPARECEU, EXPIRADA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9761,7 +9770,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ChamadaId")
                         .HasDatabaseName("ix_convocacoes_chamada_id");
 
-                    b.ToTable("convocacoes", "ingresso");
+                    b.ToTable("convocacoes", "ingresso", t =>
+                        {
+                            t.HasCheckConstraint("ck_convocacoes_status", "status IN ('PENDENTE', 'ACEITA', 'RECUSADA', 'NAO_COMPARECEU', 'EXPIRADA')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.DocumentoMatricula", b =>
@@ -9886,9 +9898,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("observacoes");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status")
+                        .HasComment("Situação da matrícula. Códigos: PENDENTE, DOCUMENTACAO_ENVIADA, EM_ANALISE, DEFERIDA, INDEFERIDA, EFETIVADA, CANCELADA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9898,7 +9913,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_matriculas");
 
-                    b.ToTable("matriculas", "ingresso");
+                    b.ToTable("matriculas", "ingresso", t =>
+                        {
+                            t.HasCheckConstraint("ck_matriculas_status", "status IN ('PENDENTE', 'DOCUMENTACAO_ENVIADA', 'EM_ANALISE', 'DEFERIDA', 'INDEFERIDA', 'EFETIVADA', 'CANCELADA')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
