@@ -12,7 +12,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A autorização passa a gravar entidades próprias: perfis, concessões, pedidos e aprovações, instalação e, mais adiante, a trilha de auditoria ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md)). Ela é transversal, consumida por todos os módulos, e não pertence a nenhum módulo de domínio.
+A autorização passa a gravar entidades próprias: perfis, concessões, pedidos e aprovações, instalação e, mais adiante, o registro de auditoria ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md)). Ela é transversal, consumida por todos os módulos, e não pertence a nenhum módulo de domínio.
 
 A versão anterior desta ADR propunha um banco isolado para a autorização. Depois dela, a [ADR-0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md) adotou, para o monólito, o banco único `uniplus` com um schema por módulo e uma única instância Wolverine com outbox. O problema é onde a autorização grava, de modo que a gravação da concessão e o evento dela entrem na mesma transação, sem acoplar a autorização ao schema dos módulos de domínio.
 
@@ -37,7 +37,7 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 - As chaves estrangeiras entre entidades da autorização ficam dentro do schema `autorizacao`.
 - Referências a outros contextos (unidade, processo seletivo, candidato) entram por identificador, resolvidas por leitor ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). Não há chave estrangeira do schema `autorizacao` para o schema de outro módulo.
 - A autorização usa o mesmo banco e a mesma instância Wolverine do monólito; não há outbox próprio.
-- A trilha de auditoria forense ([ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md)) não é decidida aqui: a fronteira dela (retenção, backup, confidencialidade) depende do Encarregado de dados.
+- O registro de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)) não é decidida aqui: a fronteira dela (retenção, backup, confidencialidade) depende do Encarregado de dados.
 
 ## Consequências
 
@@ -82,11 +82,11 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 
 - **Reescrita em 2026-10-28:** a versão proposta em 2026-06-02 escolhia o banco isolado, antes da ADR-0097.
 - **Pendente:** role própria para o schema `autorizacao`, com privilégios separados da role do monólito. Hoje as migrations rodam na subida com a mesma role da aplicação; separar privilégios pede rodar as migrations fora da subida, com uma role proprietária do schema.
-- **Pendente:** a fronteira da trilha forense, a decidir com o Encarregado de dados.
+- **Pendente:** a fronteira do registro de auditoria forense, a decidir com o Encarregado de dados.
 
 ## Emenda (2026-11-13) — o esquema `autorizacao` é contribuição ao contexto único
 
-O esquema `autorizacao` deixa de ter contexto e migrations próprios: passa a ser contribuição do módulo ao contexto único ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). A pendência de role própria para o esquema deixa de existir, porque há uma só conexão e um só usuário do banco. Continua pendente a fronteira da trilha forense. Nenhum outro trecho desta ADR muda.
+O esquema `autorizacao` deixa de ter contexto e migrations próprios: passa a ser contribuição do módulo ao contexto único ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). A pendência de role própria para o esquema deixa de existir, porque há uma só conexão e um só usuário do banco. Continua pendente a fronteira do registro de auditoria forense. Nenhum outro trecho desta ADR muda.
 
 ## Emenda (2026-11-22) — dependências do domínio
 

@@ -62,15 +62,15 @@ Endpoints `GET`, `PUT` puros (substituição completa, naturalmente idempotente)
 
 Em cada request com `Idempotency-Key`, o middleware (camada API):
 
-1. Calcula a chave de lookup composta: `(scope, endpoint, idempotency_key)`. `scope` carrega tenant futuro + identificador do principal autenticado (sub do JWT) para evitar colisão entre clientes diferentes que escolham a mesma key.
-2. Calcula `body_hash` da request body via SHA-256 (estável por content-type + canonical JSON ordering quando aplicável).
+1. Calcula a chave de lookup composta: `(escopo, rota, chave)`. `escopo` carrega tenant futuro + identificador do principal autenticado (sub do JWT) para evitar colisão entre clientes diferentes que escolham a mesma key.
+2. Calcula `resumo_do_corpo` da request body via SHA-256 (estável por content-type + canonical JSON ordering quando aplicável).
 3. Consulta o cache em PostgreSQL pela chave de lookup.
 
 Resultados possíveis:
 
 - **Cache miss** — primeira execução. Handler roda; ao final, response (status + headers relevantes + body) é gravada na mesma `IEnvelopeTransaction` ([ADR-0004](0004-outbox-transacional-via-wolverine.md)) que commita o agregado. TTL de 24 horas é aplicado.
-- **Cache hit + body_hash bate** — replay legítimo. Resposta cacheada é retornada **verbatim** (mesmo status code, mesmo body, header `Idempotency-Replayed: true` adicional informativo). Handler **não** roda novamente.
-- **Cache hit + body_hash diverge** — mesma key reusada com payload diferente. 422 Unprocessable Entity com `code: uniplus.idempotency.body_mismatch`. Sinaliza bug no cliente; não tenta inferir intent.
+- **Cache hit + resumo_do_corpo bate** — replay legítimo. Resposta cacheada é retornada **verbatim** (mesmo status code, mesmo body, header `Idempotency-Replayed: true` adicional informativo). Handler **não** roda novamente.
+- **Cache hit + resumo_do_corpo diverge** — mesma key reusada com payload diferente. 422 Unprocessable Entity com `code: uniplus.idempotency.body_mismatch`. Sinaliza bug no cliente; não tenta inferir intent.
 - **Cache expirado** — request tratada como nova; handler roda. TTL é responsabilidade do cliente (24h é o teto).
 
 ### Status codes em cache
@@ -124,7 +124,7 @@ O payload do cache (request body + response body) pode conter PII (CPF, nome soc
 ### Esta ADR não decide
 
 - Schema exato da tabela `chaves_de_idempotencia` (índices, particionamento, política de cleanup) — tarefa de implementação.
-- Algoritmo exato de canonicalização de JSON para `body_hash` — sugestão razoável é `RFC 8785 JSON Canonicalization Scheme`, decisão final na implementação.
+- Algoritmo exato de canonicalização de JSON para `resumo_do_corpo` — sugestão razoável é `RFC 8785 JSON Canonicalization Scheme`, decisão final na implementação.
 - Política de cleanup de entradas expiradas (job periódico vs `pg_cron` vs partition drop) — implementação.
 - Headers cacheados além de `Content-Type` e `Location` — caso a caso na implementação.
 
@@ -152,8 +152,8 @@ Invariante travada por fitness test no host (`IdempotenciaCoHostingTests`): nenh
 
 ### Negativas
 
-- **Atomicidade parcial (ajuste pós-implementação, story #286).** A promessa original "commit do agregado + cache na mesma `IEnvelopeTransaction`" não foi alcançada. A implementação usa três transações separadas: `TryReserve` (insert da reservation), o handler do agregado (commit via `IEnvelopeTransaction` do Wolverine), e `Complete` (update da reservation com response cifrada). Integrar `ResourceFilter` ao pipeline da `IEnvelopeTransaction` exige extensão fora do escopo da story que entregou o middleware. Janela de inconsistência: se `Complete` falhar após o handler commitar (network blip, deploy, exceção tardia), a entry permanece em status `Processing` até o TTL (24h) — clientes que retry com a mesma key recebem 409 nesse intervalo. Mitigação parcial: 5xx/Canceled deleta a reservation imediatamente (DELETE atômico próprio) para liberar o cliente a retry após falha do handler. ADR será revisada quando a integração com `IEnvelopeTransaction` for implementada.
-- **Carga adicional no Postgres.** Cada request idempotente faz uma leitura + uma escrita extra na mesma transação. Mitigação: índice em `(scope, endpoint, key)` e TTL agressivo (24h); volume do cache fica limitado por janela.
+- **Atomicidade parcial (ajuste pós-implementação, story #286).** A promessa original "commit do agregado + cache na mesma `IEnvelopeTransaction`" não foi alcançada. A implementação usa três transações separadas: `TryReserve` (insert da reservation), o handler do agregado (commit via `IEnvelopeTransaction` do Wolverine), e `Complete` (update da reservation com response cifrada). Integrar `ResourceFilter` ao pipeline da `IEnvelopeTransaction` exige extensão fora do escopo da story que entregou o middleware. Janela de inconsistência: se `Complete` falhar após o handler commitar (network blip, deploy, exceção tardia), a entry permanece em situação `EM_PROCESSAMENTO` até o TTL (24h) — clientes que retry com a mesma key recebem 409 nesse intervalo. Mitigação parcial: 5xx/Canceled deleta a reservation imediatamente (DELETE atômico próprio) para liberar o cliente a retry após falha do handler. ADR será revisada quando a integração com `IEnvelopeTransaction` for implementada.
+- **Carga adicional no Postgres.** Cada request idempotente faz uma leitura + uma escrita extra na mesma transação. Mitigação: índice em `(escopo, rota, chave)` e TTL agressivo (24h); volume do cache fica limitado por janela.
 - **Complexidade de cleanup.** Entradas expiradas precisam de job periódico ou estratégia de particionamento. Sem cleanup, tabela cresce indefinidamente.
 - **Cifragem adiciona latência.** Cifragem/decifragem por request idempotente acrescenta ~ms por chamada à infraestrutura de chave. Aceitável dado o ganho de segurança.
 - **Carga cognitiva no consumidor.** Cliente precisa saber gerar key estável e quais endpoints exigem o header. Documentação no portal e biblioteca de cliente (futuro Angular client codegen) atenuam.
@@ -180,4 +180,8 @@ Invariante travada por fitness test no host (`IdempotenciaCoHostingTests`): nenh
 - [ADR-0008](0008-redis-como-cache-distribuido.md) — opção B rejeitada referencia esta ADR.
 - [draft-ietf-httpapi-idempotency-key-header-07](https://datatracker.ietf.org/doc/html/draft-ietf-httpapi-idempotency-key-header-07).
 - [Stripe — Idempotent Requests](https://docs.stripe.com/api/idempotent_requests) — referência operacional para comportamento de cache de 4xx e replay verbatim.
-- [RFC 8785 — JSON Canonicalization Scheme (JCS)](https://www.rfc-editor.org/rfc/rfc8785.html) — sugestão para canonicalização de body usada no `body_hash`.
+- [RFC 8785 — JSON Canonicalization Scheme (JCS)](https://www.rfc-editor.org/rfc/rfc8785.html) — sugestão para canonicalização de body usada no `resumo_do_corpo`.
+
+## Emenda (2026-11-24) — colunas em português e situação gravada pelo código
+
+Decisão do líder técnico (24/11/2026). As colunas da tabela das chaves de idempotência são `escopo`, `rota`, `chave`, `resumo_do_corpo`, `situacao_http_da_resposta`, `cabecalhos_da_resposta`, `corpo_da_resposta_cifrado` e `expira_em`. A situação da reserva é gravada pelo código `EM_PROCESSAMENTO` ou `CONCLUIDA` (ADR-0176, emenda 4), e nunca por número. O cabeçalho HTTP `Idempotency-Key` não muda.

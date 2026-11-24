@@ -21,7 +21,7 @@ O problema é a aplicação governar **apenas os grupos que ela define**, manten
 ## Drivers da decisão
 
 - **Fonte da verdade na aplicação**: o que cada grupo concede é definido pela aplicação (registro no banco); o provedor reflete.
-- **Provider-agnostic**: o vocabulário de domínio não embute o nome do produto de identidade; os caminhos de grupo seguem o *slug* da Unidade.
+- **Provider-agnostic**: o vocabulário de domínio não embute o nome do produto de identidade; os caminhos de grupo seguem o identificador no endereço web da Unidade.
 - **Propriedade explícita**: a aplicação só opera grupos marcados como dela.
 - **Não destrutivo por padrão**: a sincronização observa e relata; qualquer alteração exige um plano aprovado.
 - **Isolamento em provedor de identidade compartilhado**: grupos de outros sistemas são invisíveis ao processo de sincronização.
@@ -37,7 +37,7 @@ O problema é a aplicação governar **apenas os grupos que ela define**, manten
 **Escolhida:** "B — grupos governados por vínculo no banco, com marca de propriedade e sincronização não-destrutiva", porque mantém a aplicação como fonte da verdade sobre as concessões e impede, por construção, que a sincronização toque grupos que não são da aplicação no provedor compartilhado.
 
 - A aplicação mantém um **vínculo** que define, para cada grupo, o conjunto de permissões concedidas, o perfil e a Unidade associada. Esse vínculo é a fonte da verdade; o provedor reflete.
-- Os **caminhos de grupo** seguem o *slug* da Unidade, num espaço de nomes próprio da aplicação (prefixo dedicado), de forma independente do produto de identidade.
+- Os **caminhos de grupo** seguem o identificador no endereço web da Unidade, num espaço de nomes próprio da aplicação (prefixo dedicado), de forma independente do produto de identidade.
 - Cada grupo provisionado pela aplicação carrega uma **marca de propriedade** (um atributo que identifica a aplicação como dona).
 - O processo de **sincronização opera somente sobre grupos** que satisfaçam, ao mesmo tempo, o **prefixo** da aplicação **e** a **marca de propriedade**. Qualquer grupo fora desses dois filtros é **invisível**: não é listado, não é alterado, não é renomeado, não é removido, nem reportado como divergência.
 - O **modo padrão é somente-leitura**: a sincronização observa e relata diferenças. Criar, renomear ou remover grupos exige um **plano aprovado** explicitamente. Uma colisão de caminho com um grupo sem a marca de propriedade é **bloqueada** (nunca sobrescrita), com alerta.
